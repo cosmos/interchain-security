@@ -40,6 +40,7 @@ var (
 var (
 	useConsumerVersion = flag.String("consumer-version", "", "ICS tag to specify the consumer version to test the provider against")
 	useProviderVersion = flag.String("provider-version", "", "ICS tag to specify the provider version to test the consumer against")
+	transformGenesis   = flag.Bool("transform-genesis", false, "do consumer genesis transformation for newer clients. Needed when provider chain is on an older version")
 )
 
 // runs E2E tests
@@ -51,14 +52,14 @@ func main() {
 	if shortHappyPathOnly != nil && *shortHappyPathOnly {
 		fmt.Println("=============== running short happy path only ===============")
 		tr := DefaultTestRun()
-		tr.Run(shortHappyPathSteps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
+		tr.Run(shortHappyPathSteps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion, *transformGenesis)
 		return
 	}
 
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")
 		tr := DefaultTestRun()
-		tr.Run(happyPathSteps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
+		tr.Run(happyPathSteps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion, *transformGenesis)
 		return
 	}
 
@@ -82,7 +83,7 @@ func main() {
 			go func(run testRunWithSteps) {
 				defer wg.Done()
 				tr := run.testRun
-				tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
+				tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion, *transformGenesis)
 			}(run)
 		}
 		wg.Wait()
@@ -92,17 +93,20 @@ func main() {
 
 	for _, run := range testRuns {
 		tr := run.testRun
-		tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
+		tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion, *transformGenesis)
 	}
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
 // Run sets up docker container and executes the steps in the test run.
 // Docker containers are torn down after the test run is complete.
-func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string, consumerVersion string, providerVersion string) {
+func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string, consumerVersion string, providerVersion string, transformGenesis bool) {
 	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag, consumerVersion, providerVersion)
 	tr.SetCometMockConfig(*useCometmock)
 	tr.SetRelayerConfig(*useGorelayer)
+
+	// Hack to disable genesis transformation... do it smarter
+	tr.transformGenesis = transformGenesis
 
 	tr.validateStringLiterals()
 	tr.startDocker()

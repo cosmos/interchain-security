@@ -575,7 +575,8 @@ func (tr TestRun) startConsumerChain(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	if tr.consumerVersion != "" {
+	// only needed when consumer is running v3.2.x and later
+	if tr.transformGenesis {
 		log.Printf("@@@@ Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
 		log.Printf("Original ccv genesis: %s\n", string(bz))
 

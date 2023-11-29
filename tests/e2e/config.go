@@ -78,9 +78,10 @@ type TestRun struct {
 	gaiaTag                  string
 
 	// consumer version the provider should be tested against
-	consumerVersion string
-	providerVersion string
-	name            string
+	consumerVersion  string
+	providerVersion  string
+	transformGenesis bool
+	name             string
 }
 
 func getDefaultValidators() map[validatorID]ValidatorConfig {
