@@ -576,10 +576,9 @@ func (tr *TestRun) startConsumerChain(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	// Hack to deal with deprecated consumer genesis exports
-	// TODO: needs better case identification
-	if tr.consumerVersion != "" {
-		log.Printf("Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
+	// only needed when consumer is running v3.2.x and later
+	if tr.transformGenesis {
+		log.Printf("@@@@ Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
 		log.Printf("Original ccv genesis: %s\n", string(bz))
 
 		file, err := os.Create("consumer_genesis.json")
