@@ -68,7 +68,7 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 // The packet must be sent from the sender chain to the receiver chain, and the
 // receiver chain must have a client for the sender chain which has been updated
 // to a recent height of the sender chain so that it can verify the packet.
-func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
+func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packet, expectError bool) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
@@ -83,7 +83,7 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-		true, true, receiver.Chain.SenderPrivKey,
+		true, !expectError, receiver.Chain.SenderPrivKey,
 	)
 	if err != nil {
 		return nil, err

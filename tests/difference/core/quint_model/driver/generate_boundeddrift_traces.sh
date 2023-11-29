@@ -1,1 +1,1 @@
-go run ./... -modelPath=../ccv_boundeddrift.qnt -step stepBoundedDrift  --inv CanTimeoutConsumer -traceFolder traces -numTraces 100
+go run ./... -modelPath=../ccv_boundeddrift.qnt -step stepBoundedDrift  -invariant CanTimeoutConsumer -traceFolder traces -numTraces 150 -numSteps 200 -numSamples 200

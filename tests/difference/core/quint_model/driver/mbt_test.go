@@ -98,7 +98,7 @@ func RunItfTrace(t *testing.T, path string) {
 	t.Log("Chains are: ", chains)
 
 	// create params struct
-	vscTimeout := time.Duration(params["VscTimeout"].Value.(int64))
+	vscTimeout := time.Duration(params["VscTimeout"].Value.(int64)) * time.Second
 
 	unbondingPeriodPerChain := make(map[ChainId]time.Duration, len(consumers))
 	trustingPeriodPerChain := make(map[ChainId]time.Duration, len(consumers))
@@ -189,8 +189,24 @@ func RunItfTrace(t *testing.T, path string) {
 			// needs a header of height H+1 to accept the packet
 			// so we do one time advancement with a very small increment,
 			// and then increment the rest of the time]
+			runningConsumersBefore := driver.runningConsumers()
 			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
+			runningConsumersAfter := driver.runningConsumers()
+
+			// the consumers that were running before but not after must have timed out
+			for _, consumer := range runningConsumersBefore {
+				found := false
+				for _, consumerAfter := range runningConsumersAfter {
+					if consumerAfter.ChainId == consumer.ChainId {
+						found = true
+						break
+					}
+				}
+				if !found {
+					stats.numTimeouts++
+				}
+			}
 
 			// save the last timestamp for runningConsumers,
 			// because setting up chains will modify timestamps
@@ -256,12 +272,36 @@ func RunItfTrace(t *testing.T, path string) {
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			t.Log("DeliverVscPacket", consumerChain)
 
-			driver.DeliverPacketToConsumer(ChainId(consumerChain))
+			// delivering the packet should give an error
+			// if the consumer is timed out in the model
+			var expectError bool
+			if ConsumerStatus(currentModelState, consumerChain) == "timedout" {
+				expectError = true
+				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
+
+				// stop the consumer chain
+				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, true)
+			} else {
+				expectError = false
+				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
+			}
 		case "DeliverVscMaturedPacket":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			t.Log("DeliverVscMaturedPacket", consumerChain)
 
-			driver.DeliverPacketFromConsumer(ChainId(consumerChain))
+			var expectError bool
+			if ConsumerStatus(currentModelState, consumerChain) == "timedout" {
+				expectError = true
+				// expectError is true, because we expect the consumer to have timed out.
+				// the call will fail if there is no error
+				driver.DeliverPacketFromConsumer(ChainId(consumerChain), expectError)
+
+				// stop the consumer chain on the provider
+				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, true)
+			} else {
+				expectError = false
+				driver.DeliverPacketFromConsumer(ChainId(consumerChain), expectError)
+			}
 		default:
 
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
@@ -397,7 +437,7 @@ func ComparePacketQueue(
 		actualPacket := actualSenderQueue[i]
 		modelPacket := modelSenderQueue[i].Value.(itf.MapExprType)
 
-		actualTimeout := int64(actualPacket.Packet.TimeoutTimestamp) - timeOffset.Unix()
+		actualTimeout := time.Unix(0, int64(actualPacket.Packet.TimeoutTimestamp)).Unix() - timeOffset.Unix()
 		modelTimeout := GetTimeoutForPacket(modelPacket)
 
 		require.Equal(t,

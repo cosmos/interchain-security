@@ -357,6 +357,17 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 
 	s.consumerKeeper(consumerChainId).InitGenesis(s.ctx(consumerChainId), consumerGenesis)
 
+	consumerGenesisForProvider := ccvtypes.ConsumerGenesisState{
+		Params:   consumerGenesis.Params,
+		Provider: consumerGenesis.Provider,
+		NewChain: consumerGenesis.NewChain,
+	}
+
+	s.providerKeeper().SetConsumerGenesis(
+		providerChain.GetContext(),
+		string(consumerChainId),
+		consumerGenesisForProvider)
+
 	// Client ID is set in InitGenesis and we treat it as a block box. So
 	// must query it to use it with the endpoint.
 	clientID, _ := s.consumerKeeper(consumerChainId).GetProviderClientID(s.ctx(consumerChainId))
@@ -408,6 +419,13 @@ func (s *Driver) setupProvider(
 	providerChain := newChain(s.t, params, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes, valNames)
 	s.coordinator.Chains["provider"] = providerChain
 
+	// set the VscTimeout
+	s.providerKeeper().SetVscTimeoutPeriod(s.ctx("provider"), params.VscTimeout)
+	// set the CcvTimeoutPeriod
+	providerParams := s.providerKeeper().GetParams(s.ctx("provider"))
+	providerParams.CcvTimeoutPeriod = params.CcvTimeout[ChainId(providerChain.ChainID)]
+	s.providerKeeper().SetParams(s.ctx("provider"), providerParams)
+
 	// produce a first block
 	simibc.EndBlock(providerChain, func() {})
 	simibc.BeginBlock(providerChain, 0)
@@ -444,18 +462,16 @@ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.Te
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
-		ccv.DefaultCCVTimeoutPeriod,
+		modelParams.CcvTimeout[ChainId(consumerClientState.ChainId)],
 		ccv.DefaultTransferTimeoutPeriod,
 		ccv.DefaultConsumerRedistributeFrac,
 		ccv.DefaultHistoricalEntries,
-		consumerClientState.UnbondingPeriod,
+		modelParams.UnbondingPeriodPerChain[ChainId(consumerClientState.ChainId)],
 		"0", // disable soft opt-out
 		[]string{},
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,
 	)
-	params.CcvTimeoutPeriod = modelParams.CcvTimeout[ChainId(consumerClientState.ChainId)]
-	params.UnbondingPeriod = modelParams.UnbondingPeriodPerChain[ChainId(consumerClientState.ChainId)]
 
 	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, valUpdates, params)
 }

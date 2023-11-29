@@ -260,14 +260,6 @@ func (s *Driver) updateClient(chain ChainId) error {
 	return s.path(chain).UpdateClient(string(chain), false)
 }
 
-// deliver numPackets packets from the network to chain
-func (s *Driver) deliver(chain ChainId, numPackets int) {
-	// Deliver any outstanding acks
-	s.path(chain).DeliverAcks(string(chain), 999999)
-	// Consume deliverable packets from the network
-	s.path(chain).DeliverPackets(string(chain), numPackets)
-}
-
 // packetQueue returns the queued packet sfrom sender to receiver,
 // where either sender or receiver must be the provider.
 func (s *Driver) packetQueue(sender ChainId, receiver ChainId) []simibc.Packet {
@@ -485,15 +477,15 @@ func (s *Driver) setAllTimes(newTimes map[ChainId]time.Time) {
 // DeliverPacketToConsumer delivers a packet from the provider to the given consumer recipient.
 // It updates the client before delivering the packet.
 // Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
-func (s *Driver) DeliverPacketToConsumer(recipient ChainId) {
-	s.path(recipient).DeliverPackets(string(recipient), 1)
+func (s *Driver) DeliverPacketToConsumer(recipient ChainId, expectError bool) {
+	s.path(recipient).DeliverPackets(string(recipient), 1, expectError)
 }
 
 // DeliverPacketFromConsumer delivers a packet from the given consumer sender to the provider.
 // It updates the client before delivering the packet.
 // Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
-func (s *Driver) DeliverPacketFromConsumer(sender ChainId) {
-	s.path(sender).DeliverPackets(P, 1) // deliver to the provider
+func (s *Driver) DeliverPacketFromConsumer(sender ChainId, expectError bool) {
+	s.path(sender).DeliverPackets(P, 1, expectError) // deliver to the provider
 }
 
 // DeliverAcks delivers, for each path,

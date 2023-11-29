@@ -132,13 +132,16 @@ func (f *RelayedPath) UpdateClient(chainID string, expectExpiration bool) error 
 //
 // In order to deliver packets, the chain must have an up-to-date client
 // of the counterparty chain. Ie. UpdateClient should be called before this.
-func (f *RelayedPath) DeliverPackets(chainID string, num int) {
+//
+// If expectError is true, we expect *each* packet to be delivered to cause an error.
+func (f *RelayedPath) DeliverPackets(chainID string, num int, expectError bool) {
 	for _, p := range f.Outboxes.ConsumePackets(f.Counterparty(chainID), num) {
-		ack, err := TryRecvPacket(f.endpoint(f.Counterparty(chainID)), f.endpoint(chainID), p.Packet)
-		if err != nil {
-			f.t.Fatal("deliver")
+		ack, err := TryRecvPacket(f.endpoint(f.Counterparty(chainID)), f.endpoint(chainID), p.Packet, expectError)
+		if err != nil && !expectError {
+			f.t.Fatal("Got an error from TryRecvPacket: ", err)
+		} else {
+			f.Outboxes.AddAck(chainID, ack, p.Packet)
 		}
-		f.Outboxes.AddAck(chainID, ack, p.Packet)
 	}
 }
 
