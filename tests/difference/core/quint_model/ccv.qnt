@@ -17,16 +17,21 @@ module ccv_types {
             id: VscId,
             // the new validator set. in the implementation, this would be a list of validator updates
             validatorSet: ValidatorSet,
-            // the time at which the packet was sent. used to check whether packets have timed out.
-            sendingTime: Time
+            // the time at which the packet was sent.
+            sendingTime: Time,
+            // the time (on the receiver) at which the packet will time out
+            timeoutTime: Time
+
         }
 
     type VscMaturedPacket = 
         {
             // the id of the VscPacket that matured
             id: VscId,
-            // the time at which the packet was sent. used to check whether packets have timed out.
-            sendingTime: Time
+            // the time at which the packet was sent.
+            sendingTime: Time,
+            // the time (on the receiver) at which the packet will time out
+            timeoutTime: Time
         }
 
 
@@ -276,7 +281,7 @@ module ccv {
             (Err("No outstanding packets to deliver"), false)
         } else {
             val packet = currentState.consumerStates.get(sender).outstandingPacketsToProvider.head()
-            if(packet.sendingTime + CcvTimeout.get(sender) < currentState.providerState.chainState.runningTimestamp) {
+            if(packet.timeoutTime <= currentState.providerState.chainState.runningTimestamp) {
                 // drop consumer
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
@@ -325,7 +330,7 @@ module ccv {
         } else {
             val packet = currentState.providerState.outstandingPacketsToConsumer.get(receiver).head()
             // check if the consumer timed out
-            if (packet.sendingTime + CcvTimeout.get(PROVIDER_CHAIN) < currentState.consumerStates.get(receiver).chainState.runningTimestamp) {
+            if (packet.timeoutTime <= currentState.consumerStates.get(receiver).chainState.runningTimestamp) {
                 // drop consumer
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
@@ -492,7 +497,8 @@ module ccv {
                     maturedPackets.transform(
                         packet => {
                             id: packet.id, 
-                            sendingTime: newChainState.runningTimestamp
+                            sendingTime: newChainState.runningTimestamp,
+                            timeoutTime: newChainState.runningTimestamp + CcvTimeout.get(chain)
                         }
                     )
                 )
@@ -632,7 +638,8 @@ module ccv {
                 List({
                         id: providerState.runningVscId,
                         validatorSet: providerState.chainState.currentValidatorSet,
-                          sendingTime: providerState.chainState.runningTimestamp
+                        sendingTime: providerState.chainState.runningTimestamp,
+                        timeoutTime: providerState.chainState.runningTimestamp + CcvTimeout.get(PROVIDER_CHAIN)
                 })
             } else {
                 List()

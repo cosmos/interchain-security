@@ -230,6 +230,7 @@ module ccv_model {
             id: 0,
             validatorSet: Map(),
             sendingTime: 9999999999999 * Second,
+            timeoutTime: 9999999999999 * Second,
         }
         packets.fold(
             latestPossiblePacket,
@@ -241,6 +242,7 @@ module ccv_model {
             id: 0,
             validatorSet: Map(),
             sendingTime: -9999999999 * Second,
+            timeoutTime: -9999999999 * Second,
         }
         packets.fold(
             earliestPossiblePacket,
@@ -257,18 +259,21 @@ module ccv_model {
             id: 1,
             validatorSet: Map(),
             sendingTime: 1 * Second,
+            timeoutTime: 1 * Second,
         }
 
         val packet2 = {
             id: 2,
             validatorSet: Map(),
             sendingTime: 2 * Second,
+            timeoutTime: 2 * Second,
         }
 
         val packet3 = {
             id: 3,
             validatorSet: Map(),
             sendingTime: 3 * Second,
+            timeoutTime: 3 * Second,
         }
         all {
             assert(earliest(Set(packet1, packet2, packet3)) == packet1),
