@@ -619,7 +619,7 @@ module ccv_model {
             EndAndBeginBlockForProvider(VscTimeout + 1 * Second, Set(), Set())
         )
         .then(
-            // end a block with the advanced time
+            // eenter the advanced time on chain
             EndAndBeginBlockForProvider(1 * Second, Set(), Set())
         )
         .then(
