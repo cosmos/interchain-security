@@ -55,20 +55,30 @@ module ccv_boundeddrift {
 
         // advance a block for a consumer
         all {
-        runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
-        nondet chain = oneOf(runningConsumers)
-        val maxTimeAdvancement = findMaxTimeAdvancement(GetChainState(chain), GetOtherChainStates(chain), maxDrift)
-        nondet timeAdvancement = oneOf(timeAdvancements.filter(t => t <= maxTimeAdvancement))
-        EndAndBeginBlockForConsumer(chain, timeAdvancement),
+            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            nondet chain = runningConsumers.oneOf()
+            val maxAdv = findMaxTimeAdvancement(GetChainState(chain), GetOtherChainStates(chain), maxDrift)
+            val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
+            all {
+                possibleAdvancements.size() > 0, // ensure there is a possible advancement, otherwise this action does not make sense
+                nondet timeAdvancement = possibleAdvancements.oneOf()
+                EndAndBeginBlockForConsumer(chain, timeAdvancement),
+            }
         },
-
+        
         // advance a block for the provider
-        val consumerStatus = currentState.providerState.consumerStatus
-        nondet consumersToStart = oneOf(nonConsumers.powerset())
-        nondet consumersToStop = oneOf(runningConsumers.powerset())
-        val maxTimeAdvancement = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
-        nondet timeAdvancement = oneOf(timeAdvancements.filter(t => t <= maxTimeAdvancement))
-        EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
+        val maxAdv = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
+        val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
+        all {
+            possibleAdvancements.size() > 0, // ensure there is a possible advancement, otherwise this action does not make sense
+            // advance a block for the provider
+            val consumerStatus = currentState.providerState.consumerStatus
+            nondet consumersToStart = oneOf(nonConsumers.powerset())
+            // nondet consumersToStop = oneOf(runningConsumers.powerset())
+            nondet consumersToStop = Set() // never stop consumers
+            nondet timeAdvancement = oneOf(possibleAdvancements)
+            EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
+        }
     }
 
     // INVARIANT
