@@ -507,7 +507,8 @@ func (tr TestRun) startConsumerChain(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	if tr.consumerVersion != "" {
+	skip := true
+	if tr.consumerVersion != "" && !skip {
 		log.Printf("@@@@ Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
 		log.Printf("Original ccv genesis: %s\n", string(bz))
 
