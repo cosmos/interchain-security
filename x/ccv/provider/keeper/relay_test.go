@@ -6,7 +6,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -106,12 +105,12 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
 
 	// Execute on recv for chain-1, confirm v1 result ack is returned
-	ack := executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-1", 1)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
+	err := executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-1", 1)
+	require.NoError(t, err)
 
 	// Now queue a slash packet data instance for chain-2, confirm v1 result ack is returned
-	ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
+	err = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
+	require.NoError(t, err)
 }
 
 // TestOnRecvDowntimeSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets.
@@ -133,12 +132,14 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 
 	// Set slash meter to negative value and assert a bounce ack is returned
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(-5))
-	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
-	require.Equal(t, channeltypes.NewResultAcknowledgement(ccv.SlashPacketBouncedResult), ack)
+	ackResult, err := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, ccv.SlashPacketBouncedResult, ackResult)
+	require.NoError(t, err)
 
 	// Also bounced for chain-2
-	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
-	require.Equal(t, channeltypes.NewResultAcknowledgement(ccv.SlashPacketBouncedResult), ack)
+	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
+	require.Equal(t, ccv.SlashPacketBouncedResult, ackResult)
+	require.NoError(t, err)
 
 	// Now set slash meter to positive value and assert slash packet handled result is returned
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
@@ -160,8 +161,9 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	gomock.InOrder(calls...)
 
 	// Execute on recv and confirm slash packet handled result is returned
-	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
-	require.Equal(t, channeltypes.NewResultAcknowledgement(ccv.SlashPacketHandledResult), ack)
+	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, ccv.SlashPacketHandledResult, ackResult)
+	require.NoError(t, err)
 
 	// Require slash meter was decremented appropriately, 5-2=3
 	require.Equal(t, int64(3), providerKeeper.GetSlashMeter(ctx).Int64())
@@ -185,8 +187,9 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
 	// Receive the double-sign slash packet for chain-1 and confirm the expected acknowledgement
-	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
-	require.Equal(t, channeltypes.NewResultAcknowledgement(ccv.V1Result), ack)
+	ackResult, err := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, ccv.V1Result, ackResult)
+	require.NoError(t, err)
 
 	require.True(t, providerKeeper.GetSlashLog(ctx,
 		providertypes.NewProviderConsAddress(packetData.Validator.Address)))
@@ -198,7 +201,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 
 func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
 	channelID string, ibcSeqNum uint64,
-) exported.Acknowledgement {
+) error {
 	t.Helper()
 	// Instantiate vsc matured packet data and bytes
 	data := testkeeper.GetNewVSCMaturedPacketData()
@@ -214,7 +217,7 @@ func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, 
 
 func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
 	channelID string, ibcSeqNum uint64, packetData ccv.SlashPacketData,
-) exported.Acknowledgement {
+) (ccv.PacketAckResult, error) {
 	t.Helper()
 	// Instantiate slash packet data and bytes
 	dataBz, err := packetData.Marshal()

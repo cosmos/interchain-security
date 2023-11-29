@@ -26,6 +26,7 @@ func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
 	if vsc.ValidatorUpdates == nil {
 		return errorsmod.Wrap(ErrInvalidPacketData, "validator updates cannot be nil")
 	}
+	// ValsetUpdateId is strictly positive
 	if vsc.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
 	}
@@ -54,6 +55,7 @@ func NewVSCMaturedPacketData(valUpdateID uint64) *VSCMaturedPacketData {
 
 // ValidateBasic is used for validating the VSCMatured packet data.
 func (mat VSCMaturedPacketData) ValidateBasic() error {
+	// ValsetUpdateId is strictly positive
 	if mat.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ErrInvalidPacketData, "vscId cannot be equal to zero")
 	}
@@ -86,9 +88,15 @@ func NewSlashPacketDataV1(validator abci.Validator, valUpdateId uint64, infracti
 }
 
 func (vdt SlashPacketData) ValidateBasic() error {
-	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
-		return errorsmod.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
+	// vdt.Validator.Address must be a consensus address
+	if err := sdk.VerifyAddressFormat(vdt.Validator.Address); err != nil {
+		return errorsmod.Wrap(ErrInvalidPacketData, fmt.Sprintf("invalid validator: %s", err.Error()))
 	}
+	// vdt.Validator.Power must be positive
+	if vdt.Validator.Power == 0 {
+		return errorsmod.Wrap(ErrInvalidPacketData, "validator power cannot be zero")
+	}
+	// Note that ValsetUpdateId can be zero due to the vscID mapping
 
 	if vdt.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
 		return errorsmod.Wrap(ErrInvalidPacketData, "invalid infraction type")
@@ -105,11 +113,11 @@ func (cp ConsumerPacketData) ValidateBasic() (err error) {
 	switch cp.Type {
 	case VscMaturedPacket:
 		// validate VSCMaturedPacket
-		vscPacket := cp.GetVscMaturedPacketData()
-		if vscPacket == nil {
+		vscMaturedPacket := cp.GetVscMaturedPacketData()
+		if vscMaturedPacket == nil {
 			return fmt.Errorf("invalid consumer packet data: VscMaturePacketData data cannot be empty")
 		}
-		err = vscPacket.ValidateBasic()
+		err = vscMaturedPacket.ValidateBasic()
 	case SlashPacket:
 		// validate SlashPacket
 		slashPacket := cp.GetSlashPacketData()

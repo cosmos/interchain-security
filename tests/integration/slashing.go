@@ -270,12 +270,14 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	// Map infraction height on provider so validation passes and provider returns valid ack result
 	providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(), spd.ValsetUpdateId, 47923)
 
-	exportedAck := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, spd)
-	s.Require().NotNil(exportedAck)
+	ackResult, err := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, spd)
+	s.Require().NotNil(ackResult)
+	s.Require().NoError(err)
+	exportedAck := channeltypes.NewResultAcknowledgement(ackResult)
 
 	// Unmarshal ack to struct that's compatible with consumer. IBC does this automatically
 	ack := channeltypes.Acknowledgement{}
-	err := channeltypes.SubModuleCdc.UnmarshalJSON(exportedAck.Acknowledgement(), &ack)
+	err = channeltypes.SubModuleCdc.UnmarshalJSON(exportedAck.Acknowledgement(), &ack)
 	s.Require().NoError(err)
 
 	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ack)
@@ -353,22 +355,16 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper.DeleteInitChainHeight(ctx, consumerChainID)
 
 	packetData := ccv.SlashPacketData{ValsetUpdateId: 0}
-	errAck := providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
-	suite.Require().False(errAck.Success())
-	errAckCast := errAck.(channeltypes.Acknowledgement)
-	// Error strings in err acks are now thrown out by IBC core to prevent app hash.
-	// Hence a generic error string is expected.
-	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
+	_, err := providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
+	suite.Require().Error(err)
 
 	// Restore init chain height
 	providerKeeper.SetInitChainHeight(ctx, consumerChainID, initChainHeight)
 
 	// now the method will fail at infraction height check.
 	packetData.Infraction = stakingtypes.Infraction_INFRACTION_UNSPECIFIED
-	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
-	suite.Require().False(errAck.Success())
-	errAckCast = errAck.(channeltypes.Acknowledgement)
-	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
+	_, err = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
+	suite.Require().Error(err)
 
 	// save current VSC ID
 	vscID := providerKeeper.GetValidatorSetUpdateId(ctx)
@@ -380,10 +376,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	packetData = ccv.SlashPacketData{ValsetUpdateId: vscID}
 
 	// expect an error if mapped block height is not found
-	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
-	suite.Require().False(errAck.Success())
-	errAckCast = errAck.(channeltypes.Acknowledgement)
-	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
+	_, err = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
+	suite.Require().Error(err)
 
 	// construct slashing packet with non existing validator
 	slashingPkt := ccv.NewSlashPacketData(
@@ -397,10 +391,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper.SetInitChainHeight(ctx, consumerChainID, uint64(ctx.BlockHeight()))
 
 	// Expect no error ack if validator does not exist
-	// TODO: this behavior should be changed to return an error ack,
-	// see: https://github.com/cosmos/interchain-security/issues/546
-	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
-	suite.Require().True(ack.Success())
+	_, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
+	suite.Require().NoError(err)
 
 	val := suite.providerChain.Vals.Validators[0]
 
@@ -427,13 +419,13 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	valInfo.Address = sdk.ConsAddress(tmAddr).String()
 	providerSlashingKeeper.SetValidatorSigningInfo(ctx, sdk.ConsAddress(tmAddr), valInfo)
 
-	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
-	suite.Require().False(errAck.Success())
+	_, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
+	suite.Require().Error(err)
 
 	// expect to queue entries for the slash request
 	slashingPkt.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
-	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
-	suite.Require().True(ack.Success())
+	_, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
+	suite.Require().NoError(err)
 }
 
 // TestValidatorDowntime tests if a slash packet is sent
