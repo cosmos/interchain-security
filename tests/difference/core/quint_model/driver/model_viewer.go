@@ -1,6 +1,8 @@
 package main
 
-import "github.com/informalsystems/itf-go/itf"
+import (
+	"github.com/informalsystems/itf-go/itf"
+)
 
 // This file contains logic to process
 // and access parts of the current state of the Quint trace.
@@ -80,4 +82,8 @@ func ConsumerStatus(curStateExpr itf.MapExprType, consumer string) string {
 
 func LocalClientExpired(curStateExpr itf.MapExprType, consumer string) bool {
 	return ConsumerState(curStateExpr, consumer)["localClientExpired"].Value.(bool)
+}
+
+func GetTimeoutForPacket(packetExpr itf.MapExprType) int64 {
+	return packetExpr["timeoutTime"].Value.(int64)
 }

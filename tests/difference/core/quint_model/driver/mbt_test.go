@@ -393,12 +393,21 @@ func ComparePacketQueue(
 		sender,
 		receiver)
 
-	// for i := range modelSenderQueue {
-	// 	actualPacket := actualSenderQueue[i]
-	// 	modelPacket := modelSenderQueue[i]
+	for i := range modelSenderQueue {
+		actualPacket := actualSenderQueue[i]
+		modelPacket := modelSenderQueue[i].Value.(itf.MapExprType)
 
-	// 	actualPacket.Packet.TimeoutTimestamp - timeOffset
-	// }
+		actualTimeout := int64(actualPacket.Packet.TimeoutTimestamp) - timeOffset.Unix()
+		modelTimeout := GetTimeoutForPacket(modelPacket)
+
+		require.Equal(t,
+			modelTimeout,
+			actualTimeout,
+			"Timeouts do not match for packet %v, sender %v, receiver %v",
+			actualPacket,
+			sender,
+			receiver)
+	}
 }
 
 // CompareTimes compares the block times in the model to the block times in the system.
