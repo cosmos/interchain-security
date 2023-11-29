@@ -14,11 +14,22 @@ module ccv_test {
 
     import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain=trustingPeriods).* from "./ccv"
 
+    val votingPowerTestInitState = 
+            GetEmptyProtocolState.with(
+                "providerState", GetEmptyProtocolState.providerState.with(
+                    "chainState", GetEmptyProtocolState.providerState.chainState.with(
+                        "currentValidatorSet", GetEmptyProtocolState.providerState.chainState.currentValidatorSet.put(
+                            "validator", 5
+                        )
+                    )
+                )
+            )
+
     // changing voting power by zero gives an error
     run VotingPowerZeroChangeTest =
     {
         votingPowerChange(
-            GetEmptyProtocolState,
+            votingPowerTestInitState,
             "validator",
             0
         ).hasError()
@@ -27,25 +38,20 @@ module ccv_test {
     run VotingPowerOkTest =
     {
         val result = votingPowerChange(
-            GetEmptyProtocolState,
+            votingPowerTestInitState,
             "validator",
             5
         )
         not(result.hasError()) and
         result.newState.providerState.chainState.currentValidatorSet.keys().contains("validator") and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 5
+        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 10
     }
 
     // voting power of 0 is allowed and applied as usual
     run VotingPowerZeroTest =
     {
-        val tmpResult = votingPowerChange(
-            GetEmptyProtocolState,
-            "validator",
-            5
-        )
         val finalResult = votingPowerChange(
-            tmpResult.newState,
+            votingPowerTestInitState,
             "validator",
             -5
         )
@@ -57,7 +63,7 @@ module ccv_test {
     {
         // change voting power
         val tmpResult = votingPowerChange(
-            GetEmptyProtocolState,
+            votingPowerTestInitState,
             "validator",
             5
         )
@@ -77,12 +83,32 @@ module ccv_test {
     run VotingPowerChangeDoesNotChangeHistoryTest =
     {
         val result = votingPowerChange(
-            GetEmptyProtocolState,
+            votingPowerTestInitState,
             "validator",
             2
         )
         not(result.hasError()) and
         result.newState.providerState.chainState.votingPowerHistory == List()
+    }
+
+    // Changing the voting power to positive from zero is not possible,
+    // since the validator will be removed from the current validator set
+    run VotingPowerChangeFromZeroTest =
+    {
+        val result = votingPowerChange(
+            votingPowerTestInitState,
+            "validator",
+            -5
+        )
+        val result2 = votingPowerChange(
+            result.newState,
+            "validator",
+            5
+        )
+        not(result.hasError()) and
+        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
+        result2.hasError()
+
     }
 
     // Defines a test state to test the deliverPacketToProvider function against.
@@ -100,7 +126,8 @@ module ccv_test {
             "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List({
                 id: 0,
                 validatorSet: Map(),
-                sendingTime: 0
+                sendingTime: 0,
+                timeoutTime: CcvTimeout.get(sender)
             }))
         )
         currentState.with(
@@ -115,7 +142,8 @@ module ccv_test {
             "sender", _DeliverPacketToProvider_TestState.consumerStates.get("sender").with(
                 "outstandingPacketsToProvider", List({
                     id: 0,
-                    sendingTime: 0
+                    sendingTime: 0,
+                    timeoutTime: CcvTimeout.get("sender")
                 })
             )
         )
@@ -126,7 +154,8 @@ module ccv_test {
                 "sender", List({
                     id: 0,
                     validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorSet,
-                    sendingTime: 0
+                    sendingTime: 0,
+                    timeoutTime: CcvTimeout.get("sender")
                 })
             )
         )
