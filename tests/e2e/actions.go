@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -573,6 +574,31 @@ func (tr *TestRun) startConsumerChain(
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
+	}
+
+	// Hack to deal with deprecated consumer genesis exports
+	// TODO: needs better case identification
+	if tr.consumerVersion != "" {
+		log.Printf("Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
+		log.Printf("Original ccv genesis: %s\n", string(bz))
+
+		file, err := os.Create("consumer_genesis.json")
+		if err != nil {
+			panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
+		}
+		os.WriteFile(file.Name(), bz, 0644)
+		cmd := exec.Command("docker", "cp", file.Name(), fmt.Sprintf("%s:/tmp/%s", tr.containerConfig.InstanceName, file.Name()))
+		bz, err = cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+		cmd = exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.ConsumerChain].BinaryName,
+			"genesis", "transform", fmt.Sprintf("/tmp/%s", file.Name()))
+		bz, err = cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(bz))
+		}
+		log.Printf("Transformed genesis is: %s", string(bz))
 	}
 
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
