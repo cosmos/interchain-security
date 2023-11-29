@@ -381,8 +381,17 @@ module ccv {
         // forced stops, e.g. because a consumer timed out,
         // will be added automatically. 
         consumersToStop: Set[Chain]): Result = {
-        // commit the current running validator set on chain
         val currentProviderState = currentState.providerState
+        
+        // check for Vsc timeouts
+        val timedOutConsumers = getRunningConsumers(currentProviderState).filter(
+            consumer => 
+            val res = TimeoutDueToVscTimeout(currentState, consumer)
+            res._1
+        )
+        
+
+        // run the shared core chainState logic
         val newChainState = currentProviderState.chainState.endAndBeginBlockShared(timeAdvancement)
         val providerStateAfterTimeAdvancement = currentProviderState.with(
             "chainState", newChainState
@@ -392,13 +401,6 @@ module ccv {
             "providerState", providerStateAfterTimeAdvancement
         )
         
-        // check for Vsc timeouts
-        // needs to be done with the old provider state, since this happens during EndBlock
-        val timedOutConsumers = getRunningConsumers(currentProviderState).filter(
-            consumer => 
-            val res = TimeoutDueToVscTimeout(tmpState, consumer)
-            res._1
-        )
 
         // send vsc packets
         val providerStateAfterSending =
