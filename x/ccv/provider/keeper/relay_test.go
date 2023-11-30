@@ -245,16 +245,6 @@ func TestValidateSlashPacket(t *testing.T) {
 			true,
 		},
 		{
-			"non-set infraction type",
-			ccv.SlashPacketData{ValsetUpdateId: validVscID},
-			true,
-		},
-		{
-			"invalid infraction type",
-			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.MaxMonikerLength},
-			true,
-		},
-		{
 			"valid double sign packet with non-zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN},
 			false,

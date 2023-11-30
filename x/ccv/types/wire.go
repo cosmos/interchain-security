@@ -98,8 +98,8 @@ func (vdt SlashPacketData) ValidateBasic() error {
 	}
 	// Note that ValsetUpdateId can be zero due to the vscID mapping
 
-	if vdt.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
-		return errorsmod.Wrap(ErrInvalidPacketData, "invalid infraction type")
+	if vdt.Infraction != stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN && vdt.Infraction != stakingtypes.Infraction_INFRACTION_DOWNTIME {
+		return errorsmod.Wrap(ErrInvalidPacketData, fmt.Sprintf("invalid infraction type: %s", vdt.Infraction.String()))
 	}
 
 	return nil
