@@ -26,7 +26,7 @@ import (
 // processed by ApplyCCValidatorChanges) s.t. more recent val power changes overwrite older ones.
 func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) error {
 	// validate packet data upon receiving
-	if err := newChanges.ValidateBasic(); err != nil {
+	if err := newChanges.Validate(); err != nil {
 		return errorsmod.Wrapf(err, "error validating VSCPacket data")
 	}
 

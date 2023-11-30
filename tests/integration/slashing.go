@@ -350,7 +350,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 		_, _ = providerKeeper.OnRecvSlashPacket(ctx, packet, ccv.SlashPacketData{})
 	})
 
-	// Check ValidateBasic for SlashPacket data
+	// Check Validate for SlashPacket data
 	validAddress := ed25519.GenPrivKey().PubKey().Address()
 	slashPacketData := ccv.NewSlashPacketData(
 		abci.Validator{

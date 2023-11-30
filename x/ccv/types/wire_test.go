@@ -110,11 +110,11 @@ func TestPacketDataValidateBasic(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		err := c.packetData.ValidateBasic()
+		err := c.packetData.Validate()
 		if c.expError {
-			require.Error(t, err, "%s invalid but passed ValidateBasic", c.name)
+			require.Error(t, err, "%s invalid but passed Validate", c.name)
 		} else {
-			require.NoError(t, err, "%s valid but ValidateBasic returned error: %w", c.name, err)
+			require.NoError(t, err, "%s valid but Validate returned error: %w", c.name, err)
 		}
 	}
 }

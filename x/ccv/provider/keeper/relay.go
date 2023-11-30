@@ -34,7 +34,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	}
 
 	// validate packet data upon receiving
-	if err := data.ValidateBasic(); err != nil {
+	if err := data.Validate(); err != nil {
 		return errorsmod.Wrapf(err, "error validating VSCMaturedPacket data")
 	}
 
@@ -285,7 +285,7 @@ func (k Keeper) OnRecvSlashPacket(
 	}
 
 	// validate packet data upon receiving
-	if err := data.ValidateBasic(); err != nil {
+	if err := data.Validate(); err != nil {
 		return nil, errorsmod.Wrapf(err, "error validating SlashPacket data")
 	}
 
