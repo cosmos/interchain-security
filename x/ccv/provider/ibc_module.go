@@ -239,9 +239,6 @@ func (am AppModule) OnRecvPacket(
 
 	// NOTE: acknowledgement will be written synchronously during IBC handler execution.
 	return ack
-
-	// TODO: call ValidateBasic method on consumer packet data
-	// See: https://github.com/cosmos/interchain-security/issues/634
 }
 
 func UnmarshalConsumerPacket(packet channeltypes.Packet) (consumerPacket ccv.ConsumerPacketData, err error) {

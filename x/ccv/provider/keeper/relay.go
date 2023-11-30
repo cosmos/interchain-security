@@ -22,11 +22,6 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	packet channeltypes.Packet,
 	data ccv.VSCMaturedPacketData,
 ) error {
-	// validate packet data upon receiving
-	if err := data.ValidateBasic(); err != nil {
-		return errorsmod.Wrapf(err, "error validating VSCMaturedPacket data")
-	}
-
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -36,6 +31,11 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 			"channelID", packet.DestinationChannel,
 		)
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
+	}
+
+	// validate packet data upon receiving
+	if err := data.ValidateBasic(); err != nil {
+		return errorsmod.Wrapf(err, "error validating VSCMaturedPacket data")
 	}
 
 	k.HandleVSCMaturedPacket(ctx, chainID, data)
