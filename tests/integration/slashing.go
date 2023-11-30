@@ -9,7 +9,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -406,13 +405,13 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	slashPacketData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
 	// Expect the packet to bounce if the slash meter is negative
-	providerKeeper.SetSlashMeter(ctx, sdktypes.NewInt(-1))
+	providerKeeper.SetSlashMeter(ctx, sdk.NewInt(-1))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err, "no error expected")
 	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected successful ack")
 
 	// Expect the packet to be handled if the slash meter is positive
-	providerKeeper.SetSlashMeter(ctx, sdktypes.NewInt(0))
+	providerKeeper.SetSlashMeter(ctx, sdk.NewInt(0))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err, "no error expected")
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")

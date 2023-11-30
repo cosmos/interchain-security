@@ -17,7 +17,6 @@ import (
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -195,7 +194,7 @@ func (am AppModule) OnRecvPacket(
 	// only attempt the application logic if the packet data
 	// was successfully decoded
 	if ack.Success() {
-		var err error = nil
+		var err error
 		switch consumerPacket.Type {
 		case ccv.VscMaturedPacket:
 			// handle VSCMaturedPacket
@@ -203,7 +202,7 @@ func (am AppModule) OnRecvPacket(
 			err = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, data)
 			if err == nil {
 				logger.Info("successfully handled VSCMaturedPacket sequence: %d", packet.Sequence)
-				eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
+				eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
 			}
 		case ccv.SlashPacket:
 			// handle SlashPacket
@@ -213,7 +212,7 @@ func (am AppModule) OnRecvPacket(
 			if err == nil {
 				ack = channeltypes.NewResultAcknowledgement(ackResult)
 				logger.Info("successfully handled SlashPacket sequence: %d", packet.Sequence)
-				eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
+				eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
 			}
 		default:
 			err = fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type)
