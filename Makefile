@@ -31,7 +31,9 @@ test-integration-cov:
 
 # run mbt tests
 test-mbt:
-	go test ./tests/mbt/... -timeout 30m
+	cd tests/mbt/driver;\
+	sh generate_traces.sh;\
+	go test ./... -timeout 30m
 
 test-mbt-cov:
 	go test ./tests/mbt/... -timeout 30m -coverpkg=./... -coverprofile=mbt-profile.out -covermode=atomic

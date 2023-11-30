@@ -89,7 +89,7 @@ jobs:
           name: "${{ github.sha }}-integration-coverage"
           path: ./integration-profile.out
 
-  test-difference:
+  test-mbt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -99,6 +99,12 @@ jobs:
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">= 18"
+          check-latest: true
+          cache: 'npm'
+      - run: npm i @informalsystems/quint -g
       - uses: technote-space/get-diff-action@v6.1.2
         id: git_diff
         with:
@@ -145,7 +151,7 @@ jobs:
       - uses: actions/download-artifact@v3
         if: env.GIT_DIFF
         with:
-          name: "${{ github.sha }}-difference-coverage"
+          name: "${{ github.sha }}-mbt-coverage"
         continue-on-error: true
       - name: sonarcloud
         if: ${{ env.GIT_DIFF && !github.event.pull_request.draft }}
