@@ -49,14 +49,13 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		true, !expectExpiration, receiver.Chain.SenderPrivKey,
 	)
 
+	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {
 		return err
 	}
 
-	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
-
-	if err != nil {
-		return err
+	if setSequenceErr != nil {
+		return setSequenceErr
 	}
 
 	return nil
@@ -85,14 +84,14 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
 		true, !expectError, receiver.Chain.SenderPrivKey,
 	)
+	// need to set the sequence even if there was an error in delivery
+	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {
 		return nil, err
 	}
 
-	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
-
-	if err != nil {
-		return nil, err
+	if setSequenceErr != nil {
+		return nil, setSequenceErr
 	}
 
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
@@ -129,14 +128,13 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
 		true, true, receiver.Chain.SenderPrivKey,
 	)
 
+	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {
 		return err
 	}
 
-	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
-
-	if err != nil {
-		return err
+	if setSequenceErr != nil {
+		return setSequenceErr
 	}
 
 	return nil
