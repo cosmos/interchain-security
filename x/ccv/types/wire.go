@@ -89,7 +89,7 @@ func NewSlashPacketDataV1(validator abci.Validator, valUpdateId uint64, infracti
 
 func (vdt SlashPacketData) Validate() error {
 	// vdt.Validator.Address must be a consensus address
-	if err := sdk.VerifyAddressFormat(vdt.Validator.Address); err != nil {
+	if err := sdk.ConsAddressFromBech32(vdt.Validator.Address.String()); err != nil {
 		return errorsmod.Wrap(ErrInvalidPacketData, fmt.Sprintf("invalid validator: %s", err.Error()))
 	}
 	// vdt.Validator.Power must be positive
