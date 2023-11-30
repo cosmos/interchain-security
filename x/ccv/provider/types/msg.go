@@ -77,8 +77,7 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	// It is possible to assign keys for consumer chains that are not yet approved.
 	// This can only be done by a signing validator, but it is still sensible
 	// to limit the chainID size to prevent abuse.
-	// TODO: In future, a mechanism will be added to limit assigning keys to chains
-	// which are approved or pending approval, only.
+
 	if 128 < len(msg.ChainId) {
 		return ErrBlankConsumerChainID
 	}

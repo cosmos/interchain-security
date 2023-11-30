@@ -14,6 +14,7 @@ import (
 	types0 "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/capability/types"
+	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types4 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	types5 "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
@@ -1165,4 +1166,42 @@ func (m *MockScopedKeeper) GetCapability(ctx types0.Context, name string) (*type
 func (mr *MockScopedKeeperMockRecorder) GetCapability(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapability", reflect.TypeOf((*MockScopedKeeper)(nil).GetCapability), ctx, name)
+}
+
+// MockGovKeeper is a mock of GovKeeper interface.
+type MockGovKeeper struct {
+	ctrl     *gomock.Controller
+	recorder *MockGovKeeperMockRecorder
+}
+
+// MockGovKeeperMockRecorder is the mock recorder for MockGovKeeper.
+type MockGovKeeperMockRecorder struct {
+	mock *MockGovKeeper
+}
+
+// NewMockGovKeeper creates a new mock instance.
+func NewMockGovKeeper(ctrl *gomock.Controller) *MockGovKeeper {
+	mock := &MockGovKeeper{ctrl: ctrl}
+	mock.recorder = &MockGovKeeperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGovKeeper) EXPECT() *MockGovKeeperMockRecorder {
+	return m.recorder
+}
+
+// GetProposal mocks base method.
+func (m *MockGovKeeper) GetProposal(ctx types0.Context, proposalID uint64) (v1.Proposal, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProposal", ctx, proposalID)
+	ret0, _ := ret[0].(v1.Proposal)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetProposal indicates an expected call of GetProposal.
+func (mr *MockGovKeeperMockRecorder) GetProposal(ctx, proposalID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProposal", reflect.TypeOf((*MockGovKeeper)(nil).GetProposal), ctx, proposalID)
 }

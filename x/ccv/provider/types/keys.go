@@ -142,6 +142,9 @@ const (
 	// to the minimum height of a valid consumer equivocation evidence
 	EquivocationEvidenceMinHeightBytePrefix
 
+	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
+	ProposedConsumerChainByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -492,6 +495,26 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 
 func VSCMaturedHandledThisBlockKey() []byte {
 	return []byte{VSCMaturedHandledThisBlockBytePrefix}
+}
+
+// ProposedConsumerChainKey returns the key of proposed consumer chainId in consumerAddition gov proposal before voting finishes, the stored key format is prefix|proposalID, value is chainID
+func ProposedConsumerChainKey(proposalID uint64) []byte {
+	return ccvtypes.AppendMany(
+		[]byte{ProposedConsumerChainByteKey},
+		sdk.Uint64ToBigEndian(proposalID),
+	)
+}
+
+// ParseProposedConsumerChainKey get the proposalID in the key
+func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+	proposalID := sdk.BigEndianToUint64(bz[prefixL:])
+
+	return proposalID, nil
 }
 
 //

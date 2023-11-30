@@ -50,6 +50,11 @@ func transform(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
 		return nil, fmt.Errorf("invalid source version. Unexpected element 'provider.consensus_state'")
 	}
 
+	// Use DefaultRetryDelayPeriod if not set
+	if oldConsumerGenesis.Params.RetryDelayPeriod == 0 {
+		oldConsumerGenesis.Params.RetryDelayPeriod = types.DefaultRetryDelayPeriod
+	}
+
 	// Version 2 of provider genesis data fills up deprecated fields
 	// ProviderClientState, ConsensusState and InitialValSet
 	newGenesis := types.ConsumerGenesisState{
