@@ -360,6 +360,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+	time.Sleep(500 * time.Millisecond) // Hack to stabalize tests
 }
 
 type submitParamChangeProposalAction struct {
