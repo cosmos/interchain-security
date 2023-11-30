@@ -33,13 +33,13 @@ test-integration-cov:
 test-mbt:
 	cd tests/mbt/driver;\
 	sh generate_traces.sh;\
-	cd ../..;\
+	cd ../../..;\
 	go test ./tests/mbt/... -timeout 30m
 
 test-mbt-cov:
 	cd tests/mbt/driver;\
 	sh generate_traces.sh;\
-	cd ../..;\
+	cd ../../..;\
 	go test ./tests/mbt/... -timeout 30m -coverpkg=./... -coverprofile=mbt-profile.out -covermode=atomic
 
 # run E2E tests
