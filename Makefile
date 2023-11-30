@@ -36,6 +36,8 @@ test-mbt:
 	go test ./... -timeout 30m
 
 test-mbt-cov:
+	cd tests/mbt/driver;\
+	sh generate_traces.sh;\
 	go test ./tests/mbt/... -timeout 30m -coverpkg=./... -coverprofile=mbt-profile.out -covermode=atomic
 
 # run E2E tests
