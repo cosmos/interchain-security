@@ -631,6 +631,7 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 			addr := ed25519.GenPrivKey().PubKey().Address()
 			val := abci.Validator{
 				Address: addr,
+				Power:   int64(1),
 			}
 			consumerKeeper.QueueSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
