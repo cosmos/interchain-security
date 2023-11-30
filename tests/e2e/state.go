@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os/exec"
@@ -19,6 +20,7 @@ type State map[ChainID]ChainState
 type ChainState struct {
 	ValBalances                    *map[ValidatorID]uint
 	Proposals                      *map[uint]Proposal
+	ProposedConsumerChains         *[]string
 	ValPowers                      *map[ValidatorID]uint
 	StakedTokens                   *map[ValidatorID]uint
 	Params                         *[]Param
@@ -26,9 +28,9 @@ type ChainState struct {
 	ConsumerChains                 *map[ChainID]bool
 	AssignedKeys                   *map[ValidatorID]string
 	ProviderKeys                   *map[ValidatorID]string // validatorID: validator provider key
-	ConsumerChainQueueSizes        *map[ChainID]uint
-	GlobalSlashQueueSize           *uint
+	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
 	RegisteredConsumerRewardDenoms *[]string
+	ClientsFrozenHeights           *map[string]clienttypes.Height
 }
 
 type Proposal interface {
@@ -72,16 +74,6 @@ type ConsumerRemovalProposal struct {
 }
 
 func (p ConsumerRemovalProposal) isProposal() {}
-
-type EquivocationProposal struct {
-	Height           uint
-	Power            uint
-	ConsensusAddress string
-	Deposit          uint
-	Status           string
-}
-
-func (p EquivocationProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[ValidatorID]bool
@@ -132,6 +124,11 @@ func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainSt
 		chainState.Proposals = &proposals
 	}
 
+	if modelState.ProposedConsumerChains != nil {
+		proposedConsumerChains := tr.getProposedConsumerChains(chain)
+		chainState.ProposedConsumerChains = &proposedConsumerChains
+	}
+
 	if modelState.ValPowers != nil {
 		tr.waitBlocks(chain, 1, 10*time.Second)
 		powers := tr.getValPowers(chain, *modelState.ValPowers)
@@ -168,22 +165,22 @@ func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainSt
 		chainState.ProviderKeys = &providerKeys
 	}
 
-	if modelState.GlobalSlashQueueSize != nil {
-		globalQueueSize := tr.getGlobalSlashQueueSize()
-		chainState.GlobalSlashQueueSize = &globalQueueSize
-	}
-
-	if modelState.ConsumerChainQueueSizes != nil {
-		consumerChainQueueSizes := map[ChainID]uint{}
-		for c := range *modelState.ConsumerChainQueueSizes {
-			consumerChainQueueSizes[c] = tr.getConsumerChainPacketQueueSize(c)
-		}
-		chainState.ConsumerChainQueueSizes = &consumerChainQueueSizes
-	}
-
 	if modelState.RegisteredConsumerRewardDenoms != nil {
 		registeredConsumerRewardDenoms := tr.getRegisteredConsumerRewardDenoms(chain)
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
+	}
+
+	if modelState.ClientsFrozenHeights != nil {
+		chainClientsFrozenHeights := map[string]clienttypes.Height{}
+		for id := range *modelState.ClientsFrozenHeights {
+			chainClientsFrozenHeights[id] = tr.getClientFrozenHeight(chain, id)
+		}
+		chainState.ClientsFrozenHeights = &chainClientsFrozenHeights
+	}
+
+	if modelState.ConsumerPendingPacketQueueSize != nil {
+		pendingPacketQueueSize := tr.getPendingPacketQueueSize(chain)
+		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
 	}
 
 	if *verbose {
@@ -323,6 +320,7 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 	if chain != ChainID("provi") && tr.validatorConfigs[validator].UseConsumerKey {
 		delAddresss = tr.validatorConfigs[validator].ConsumerDelAddress
 	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 
@@ -459,16 +457,6 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 			Chain:    chain,
 			StopTime: int(stopTime.Milliseconds()),
 		}
-
-	case "/interchain_security.ccv.provider.v1.EquivocationProposal":
-		return EquivocationProposal{
-			Deposit:          uint(deposit),
-			Status:           status,
-			Height:           uint(gjson.Get(string(bz), `messages.0.content.equivocations.0.height`).Uint()),
-			Power:            uint(gjson.Get(string(bz), `messages.0.content.equivocations.0.power`).Uint()),
-			ConsensusAddress: gjson.Get(string(bz), `messages.0.content.equivocations.0.consensus_address`).String(),
-		}
-
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
 		return ParamsProposal{
 			Deposit:  uint(deposit),
@@ -667,9 +655,10 @@ func (tr TestConfig) getProviderAddressFromConsumer(consumerChain ChainID, valid
 	return addr
 }
 
-func (tr TestConfig) getGlobalSlashQueueSize() uint {
+func (tr TestConfig) getSlashMeter() int64 {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
+	cmd := exec.Command("docker", "exec",
+		tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 
 		"query", "provider", "throttle-state",
 		`--node`, tr.getQueryNode(ChainID("provi")),
@@ -680,26 +669,8 @@ func (tr TestConfig) getGlobalSlashQueueSize() uint {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	packets := gjson.Get(string(bz), "packets").Array()
-	return uint(len(packets))
-}
-
-func (tr TestConfig) getConsumerChainPacketQueueSize(consumerChain ChainID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
-
-		"query", "provider", "throttled-consumer-packet-data",
-		string(consumerChain),
-		`--node`, tr.getQueryNode(ChainID("provi")),
-		`-o`, `json`,
-	)
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	size := gjson.Get(string(bz), "size").Uint()
-	return uint(size)
+	slashMeter := gjson.Get(string(bz), "slash_meter")
+	return slashMeter.Int()
 }
 
 func (tr TestConfig) getRegisteredConsumerRewardDenoms(chain ChainID) []string {
@@ -722,6 +693,27 @@ func (tr TestConfig) getRegisteredConsumerRewardDenoms(chain ChainID) []string {
 	}
 
 	return rewardDenoms
+}
+
+func (tr TestConfig) getPendingPacketQueueSize(chain ChainID) uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+
+		"query", "ccvconsumer", "throttle-state",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	if !gjson.ValidBytes(bz) {
+		panic("invalid json response from query ccvconsumer throttle-state: " + string(bz))
+	}
+
+	packetData := gjson.Get(string(bz), "packet_data_queue").Array()
+	return uint(len(packetData))
 }
 
 func (tr TestConfig) getValidatorNode(chain ChainID, validator ValidatorID) string {
@@ -771,4 +763,107 @@ func (tr TestConfig) curlJsonRPCRequest(method, params, address string) {
 
 	verbosity := false
 	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+}
+
+// getClientFrozenHeight returns the frozen height for a client with the given client ID
+// by querying the hosting chain with the given chainID
+func (tc TestConfig) getClientFrozenHeight(chain ChainID, clientID string) clienttypes.Height {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tc.containerConfig.InstanceName, tc.chainConfigs[ChainID("provi")].BinaryName,
+		"query", "ibc", "client", "state", clientID,
+		`--node`, tc.getQueryNode(ChainID("provi")),
+		`-o`, `json`,
+	)
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	frozenHeight := gjson.Get(string(bz), "client_state.frozen_height")
+
+	revHeight, err := strconv.Atoi(frozenHeight.Get("revision_height").String())
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	revNumber, err := strconv.Atoi(frozenHeight.Get("revision_number").String())
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+}
+
+func (tc TestConfig) getTrustedHeight(
+	chain ChainID,
+	clientID string,
+	index int,
+) clienttypes.Height {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	configureNodeCmd := exec.Command("docker", "exec", tc.containerConfig.InstanceName, "hermes",
+		"--json", "query", "client", "consensus", "--chain", string(chain),
+		`--client`, clientID,
+	)
+
+	cmdReader, err := configureNodeCmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	configureNodeCmd.Stderr = configureNodeCmd.Stdout
+
+	if err := configureNodeCmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	var trustedHeight gjson.Result
+	// iterate on the relayer's response
+	// and parse the the command "result"
+	for scanner.Scan() {
+		out := scanner.Text()
+		if len(gjson.Get(out, "result").Array()) > 0 {
+			trustedHeight = gjson.Get(out, "result").Array()[index]
+			break
+		}
+	}
+
+	revHeight, err := strconv.Atoi(trustedHeight.Get("revision_height").String())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	revNumber, err := strconv.Atoi(trustedHeight.Get("revision_number").String())
+	if err != nil {
+		log.Fatal(err)
+	}
+	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+}
+
+func (tr TestConfig) getProposedConsumerChains(chain ChainID) []string {
+	tr.waitBlocks(chain, 1, 10*time.Second)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+		"query", "provider", "list-proposed-consumer-chains",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	arr := gjson.Get(string(bz), "proposedChains").Array()
+	chains := []string{}
+	for _, c := range arr {
+		cid := c.Get("chainID").String()
+		chains = append(chains, cid)
+	}
+
+	return chains
+}
+
+func uintPtr(i uint) *uint {
+	return &i
 }

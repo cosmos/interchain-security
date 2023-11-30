@@ -1,7 +1,11 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
+	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
@@ -13,12 +17,19 @@ type Hooks struct {
 	k *Keeper
 }
 
-var _ stakingtypes.StakingHooks = Hooks{}
+var (
+	_ stakingtypes.StakingHooks = Hooks{}
+	_ sdkgov.GovHooks           = Hooks{}
+)
 
 // Returns new provider hooks
 func (k *Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
+
+//
+// staking hooks
+//
 
 // This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
@@ -80,38 +91,8 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 	return nil
 }
 
-// ValidatorConsensusKeyInUse is called when a new validator is created
-// in the x/staking module of cosmos-sdk. In case it panics, the TX aborts
-// and thus, the validator is not created. See AfterValidatorCreated hook.
-func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
-	// Get the validator being added in the staking module.
-	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
-		// Abort TX, do NOT allow validator to be created
-		panic("did not find newly created validator in staking module")
-	}
-
-	// Get the consensus address of the validator being added
-	consensusAddr, err := val.GetConsAddr()
-	if err != nil {
-		// Abort TX, do NOT allow validator to be created
-		panic("could not get validator cons addr ")
-	}
-
-	inUse := false
-
-	for _, validatorConsumerAddrs := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
-		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(consensusAddr) {
-			inUse = true
-			break
-		}
-	}
-
-	return inUse
-}
-
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) error {
-	if ValidatorConsensusKeyInUse(h.k, ctx, valAddr) {
+	if h.k.ValidatorConsensusKeyInUse(ctx, valAddr) {
 		// Abort TX, do NOT allow validator to be created
 		panic("cannot create a validator with a consensus key that is already in use or was recently in use as an assigned consumer chain key")
 	}
@@ -165,5 +146,74 @@ func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ 
 }
 
 func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+	return nil
+}
+
+//
+// gov hooks
+//
+
+// AfterProposalSubmission - call hook if registered
+// After a consumerAddition proposal submission, a record is created
+// that maps the proposal ID to the consumer chain ID.
+func (h Hooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
+	if p, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
+		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
+	}
+}
+
+// AfterProposalVotingPeriodEnded - call hook if registered
+// After proposal voting ends, the consumer chainID in store is deleted.
+// When a consumerAddition proposal passes, the consumer chainID is available in providerKeeper.GetAllPendingConsumerAdditionProps
+// or providerKeeper.GetAllConsumerChains(ctx).
+func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64) {
+	if _, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
+		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
+	}
+}
+
+func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
+}
+
+func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {
+}
+
+func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
+}
+
+// GetConsumerAdditionLegacyPropFromProp extracts a consumer addition legacy proposal from
+// the proposal with the given ID
+func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
+	ctx sdk.Context,
+	proposalID uint64,
+) (providertypes.ConsumerAdditionProposal, bool) {
+	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
+	if !ok {
+		panic(fmt.Errorf("failed to get proposal %d from store", proposalID))
+	}
+
+	// Iterate over the messages in the proposal
+	// Note that it's assumed that at most ONE message can contain a consumer addition proposal
+	for _, msg := range p.GetMessages() {
+		sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent)
+		if !isLegacyProposal {
+			continue
+		}
+
+		content, err := v1.LegacyContentFromMessage(sdkMsg)
+		if err != nil {
+			panic(fmt.Errorf("failed to get legacy proposal %d from prop message", proposalID))
+		}
+
+		// returns if legacy prop is of ConsumerAddition proposal type
+		prop, ok := content.(*providertypes.ConsumerAdditionProposal)
+		if ok {
+			return *prop, true
+		}
+	}
+	return providertypes.ConsumerAdditionProposal{}, false
+}
+
+func (h Hooks) BeforeTokenizeShareRecordRemoved(_ sdk.Context, _ uint64) error {
 	return nil
 }

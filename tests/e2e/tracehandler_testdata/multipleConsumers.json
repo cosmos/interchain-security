@@ -21,7 +21,7 @@
         }
       ],
       "GenesisChanges": "",
-      "SkipGentx": false
+      "IsConsumer": false
     },
     "State": {
       "provi": {
@@ -37,9 +37,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -71,9 +71,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -115,9 +115,9 @@
         "ProviderKeys": {
           "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
         },
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -159,9 +159,9 @@
         "ProviderKeys": {
           "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
         },
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -195,9 +195,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -253,9 +253,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -271,9 +271,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -328,9 +328,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "2": {
             "RawProposal": {
@@ -372,9 +372,9 @@
         "ProviderKeys": {
           "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
         },
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -416,9 +416,9 @@
         "ProviderKeys": {
           "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
         },
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -452,9 +452,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "2": {
             "RawProposal": {
@@ -510,9 +510,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -528,9 +528,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -580,9 +580,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -598,9 +598,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -616,9 +616,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -645,9 +645,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -663,9 +663,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -681,9 +681,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -710,9 +710,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -728,9 +728,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -746,9 +746,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -775,9 +775,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -793,9 +793,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -811,9 +811,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -840,9 +840,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -858,9 +858,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -876,9 +876,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -905,9 +905,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -923,9 +923,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -941,9 +941,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -971,9 +971,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -989,9 +989,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1007,9 +1007,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1036,9 +1036,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1054,9 +1054,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1072,9 +1072,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1101,9 +1101,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1119,9 +1119,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1137,9 +1137,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1164,9 +1164,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1182,9 +1182,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1200,9 +1200,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1229,9 +1229,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1247,9 +1247,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1265,9 +1265,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1294,9 +1294,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1312,9 +1312,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1341,9 +1341,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1359,9 +1359,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1386,9 +1386,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1404,9 +1404,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1422,9 +1422,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1451,9 +1451,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1469,9 +1469,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1487,9 +1487,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1516,9 +1516,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1534,9 +1534,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1552,9 +1552,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1579,9 +1579,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1597,9 +1597,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1615,9 +1615,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1644,9 +1644,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1662,9 +1662,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1680,9 +1680,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1709,9 +1709,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1727,9 +1727,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1745,9 +1745,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1772,9 +1772,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1790,9 +1790,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1808,9 +1808,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1837,9 +1837,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1855,9 +1855,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1873,9 +1873,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1902,9 +1902,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1920,9 +1920,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -1938,9 +1938,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -1965,9 +1965,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -1983,9 +1983,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -2001,9 +2001,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -2030,9 +2030,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -2048,9 +2048,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -2066,9 +2066,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -2095,9 +2095,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -2113,9 +2113,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -2131,9 +2131,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -2158,9 +2158,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -2176,9 +2176,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -2194,9 +2194,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -2223,9 +2223,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -2241,9 +2241,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -2259,9 +2259,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -2288,9 +2288,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -2306,9 +2306,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -2324,9 +2324,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -2353,9 +2353,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "densu": {
@@ -2371,9 +2371,9 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }

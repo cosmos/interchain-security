@@ -181,10 +181,6 @@ func TestDoubleSignDoesNotAffectThrottling(t *testing.T) {
 	runCCVTestByName(t, "TestDoubleSignDoesNotAffectThrottling")
 }
 
-func TestQueueOrdering(t *testing.T) {
-	runCCVTestByName(t, "TestQueueOrdering")
-}
-
 func TestSlashingSmallValidators(t *testing.T) {
 	runCCVTestByName(t, "TestSlashingSmallValidators")
 }
@@ -193,20 +189,8 @@ func TestSlashMeterAllowanceChanges(t *testing.T) {
 	runCCVTestByName(t, "TestSlashMeterAllowanceChanges")
 }
 
-func TestSlashSameValidator(t *testing.T) {
-	runCCVTestByName(t, "TestSlashSameValidator")
-}
-
 func TestSlashAllValidators(t *testing.T) {
 	runCCVTestByName(t, "TestSlashAllValidators")
-}
-
-func TestLeadingVSCMaturedAreDequeued(t *testing.T) {
-	runCCVTestByName(t, "TestLeadingVSCMaturedAreDequeued")
-}
-
-func TestVscMaturedHandledPerBlockLimit(t *testing.T) {
-	runCCVTestByName(t, "TestVscMaturedHandledPerBlockLimit")
 }
 
 //
@@ -258,6 +242,33 @@ func TestRecycleTransferChannel(t *testing.T) {
 }
 
 //
+// Misbehaviour tests
+//
+
+func TestHandleConsumerMisbehaviour(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerMisbehaviour")
+}
+
+func TestGetByzantineValidators(t *testing.T) {
+	runCCVTestByName(t, "TestGetByzantineValidators")
+}
+
+func TestCheckMisbehaviour(t *testing.T) {
+	runCCVTestByName(t, "TestCheckMisbehaviour")
+}
+
+//
+// Consumer Equivocation test
+//
+
+func TestHandleConsumerDoubleVoting(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
+}
+
+func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations")
+}
+
 // Throttle retry tests
 //
 

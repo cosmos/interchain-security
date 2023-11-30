@@ -95,12 +95,6 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.submitEquivocationProposalAction":
-		var a submitEquivocationProposalAction
-		err := json.Unmarshal(rawAction, &a)
-		if err == nil {
-			return a, nil
-		}
 	case "main.submitParamChangeLegacyProposalAction":
 		var a submitParamChangeLegacyProposalAction
 		err := json.Unmarshal(rawAction, &a)
@@ -221,8 +215,14 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.slashThrottleDequeueAction":
-		var a slashThrottleDequeueAction
+	case "main.slashMeterReplenishmentAction":
+		var a slashMeterReplenishmentAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
+	case "main.waitTimeAction":
+		var a waitTimeAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
 			return a, nil
@@ -271,6 +271,24 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		}
 	case "main.lightClientLunaticAttackAction":
 		var a lightClientLunaticAttackAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
+	case "main.forkConsumerChainAction":
+		var a forkConsumerChainAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
+	case "main.startConsumerEvidenceDetectorAction":
+		var a startConsumerEvidenceDetectorAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
+	case "main.updateLightClientAction":
+		var a updateLightClientAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
 			return a, nil
@@ -350,12 +368,6 @@ func UnmarshalProposalWithType(inputMap json.RawMessage, proposalType string) (P
 		}
 	case "main.ConsumerRemovalProposal":
 		prop := ConsumerRemovalProposal{}
-		err := json.Unmarshal(inputMap, &prop)
-		if err == nil {
-			return prop, nil
-		}
-	case "main.EquivocationProposal":
-		prop := EquivocationProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil

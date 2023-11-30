@@ -176,7 +176,7 @@ func (am AppModule) OnChanOpenAck(
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			types.EventTypeFeeTransferChannelOpened,
+			consumertypes.EventTypeFeeTransferChannelOpened,
 			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 			sdk.NewAttribute(channeltypes.AttributeKeyChannelID, channelID),
 			sdk.NewAttribute(channeltypes.AttributeKeyPortID, transfertypes.PortID),

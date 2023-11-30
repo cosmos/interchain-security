@@ -22,6 +22,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(
 		CmdNextFeeDistribution(),
 		CmdProviderInfo(),
+		CmdThrottleState(),
 	)
 
 	return cmd
@@ -68,6 +69,33 @@ func CmdProviderInfo() *cobra.Command {
 
 			req := &types.QueryProviderInfoRequest{}
 			res, err := queryClient.QueryProviderInfo(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdThrottleState() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "throttle-state",
+		Short: "Query throttle state",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryThrottleStateRequest{}
+			res, err := queryClient.QueryThrottleState(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

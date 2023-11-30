@@ -10,24 +10,35 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
-test:
-	go test ./... && go run ./tests/e2e/...
+test: test-unit test-integration test-difference test-e2e
 
-# run all unit tests
+# shortcut for local development
+test-dev: test-unit test-integration test-difference
+
+# run unit tests
 test-unit:
-	go test ./...
+	go test ./x/... ./app/...
+
+test-unit-cov:
+	go test ./x/... ./app/... -coverpkg=./... -coverprofile=profile.out -covermode=atomic
 
 # run unit and integration tests
-test-short:
-	go test ./x/... ./app/... ./tests/integration/...
+test-integration:
+	go test ./tests/integration/... -timeout 30m
+
+test-integration-cov:
+	go test ./tests/integration/... -timeout 30m -coverpkg=./... -coverprofile=integration-profile.out -covermode=atomic
+
+# run difference tests
+test-difference:
+	go test ./tests/difference/... -timeout 30m
+
+test-difference-cov:
+	go test ./tests/difference/... -timeout 30m -coverpkg=./... -coverprofile=difference-profile.out -covermode=atomic
 
 # run E2E tests
 test-e2e:
 	go run ./tests/e2e/...
-
-# run difference tests
-test-diff:
-	go test ./tests/difference/...
 
 # run only happy path E2E tests
 test-e2e-short:
@@ -183,3 +194,10 @@ build-docs:
 	@cd docs && ./build.sh
 
 .PHONY: build-docs
+
+###############################################################################
+### 							Test Traces									###
+###############################################################################
+
+e2e-traces:
+	cd tests/e2e; go test -timeout 30s -run ^TestWriteExamples -v

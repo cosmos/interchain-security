@@ -21,4 +21,7 @@ var (
 	ErrInvalidProviderAddress           = errorsmod.Register(ModuleName, 13, "invalid provider address")
 	ErrInvalidConsumerRewardDenom       = errorsmod.Register(ModuleName, 14, "invalid consumer reward denom")
 	ErrInvalidDepositorAddress          = errorsmod.Register(ModuleName, 15, "invalid depositor address")
+	ErrInvalidConsumerClient            = errorsmod.Register(ModuleName, 16, "ccv channel is not built on correct client")
+	ErrDuplicateConsumerChain           = errorsmod.Register(ModuleName, 17, "consumer chain already exists")
+	ErrConsumerChainNotFound            = errorsmod.Register(ModuleName, 18, "consumer chain not found")
 )

@@ -27,15 +27,15 @@ const (
 var (
 	_ govv1beta1.Content = &ConsumerAdditionProposal{}
 	_ govv1beta1.Content = &ConsumerRemovalProposal{}
-	_ govv1beta1.Content = &EquivocationProposal{}
 	_ govv1beta1.Content = &ChangeRewardDenomsProposal{}
+	_ govv1beta1.Content = &EquivocationProposal{}
 )
 
 func init() {
 	govv1beta1.RegisterProposalType(ProposalTypeConsumerAddition)
 	govv1beta1.RegisterProposalType(ProposalTypeConsumerRemoval)
-	govv1beta1.RegisterProposalType(ProposalTypeEquivocation)
 	govv1beta1.RegisterProposalType(ProposalTypeChangeRewardDenoms)
+	govv1beta1.RegisterProposalType(ProposalTypeEquivocation)
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
@@ -204,6 +204,8 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 }
 
 // NewEquivocationProposal creates a new equivocation proposal.
+// [DEPRECATED]: do not use because equivocations can be submitted
+// and verified automatically on the provider.
 func NewEquivocationProposal(title, description string, equivocations []*evidencetypes.Equivocation) govv1beta1.Content {
 	return &EquivocationProposal{
 		Title:         title,
