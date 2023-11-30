@@ -20,6 +20,8 @@ module ccv_test {
                     "chainState", GetEmptyProtocolState.providerState.chainState.with(
                         "currentValidatorSet", GetEmptyProtocolState.providerState.chainState.currentValidatorSet.put(
                             "validator", 5
+                        ).put(
+                            "validator2", 5
                         )
                     )
                 )
@@ -108,7 +110,23 @@ module ccv_test {
         not(result.hasError()) and
         result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
         result2.hasError()
+    }
 
+    // Changing the validator set to be empty results in an error
+    run VotingPowerChangeToEmptyTest =
+    {
+        val result = votingPowerChange(
+            votingPowerTestInitState,
+            "validator",
+            -5
+        )
+        val result2 = votingPowerChange(
+            result.newState,
+            "validator2",
+            -5
+        )
+        not(result.hasError()) and
+        result2.hasError()
     }
 
     // Defines a test state to test the deliverPacketToProvider function against.

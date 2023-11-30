@@ -255,15 +255,20 @@ module ccv {
             } else {
                 pure val newVotingPower = oldVotingPower + amount
                 pure val newValidatorSet = currentValidatorSet.put(validator, if(newVotingPower >= 0) newVotingPower else 0)
-                // set the validator set changed flag
-                val newProviderState = currentState.providerState.with(
-                    "providerValidatorSetChangedInThisBlock", true
-                )
-                pure val tmpState = currentState.with(
-                    "providerState", newProviderState
-                )
-                pure val newState = setProviderValidatorSet(tmpState, newValidatorSet)
-                Ok(newState)
+                // if the new validator set contains no validators with positive voting power, the validator set is invalid
+                if (newValidatorSet.values().filter(votingPower => votingPower > 0).size() == 0) {
+                    Err("Voting power change resulted in empty validator set!")
+                } else {
+                    // set the validator set changed flag
+                    val newProviderState = currentState.providerState.with(
+                        "providerValidatorSetChangedInThisBlock", true
+                    )
+                    pure val tmpState = currentState.with(
+                        "providerState", newProviderState
+                    )
+                    pure val newState = setProviderValidatorSet(tmpState, newValidatorSet)
+                    Ok(newState)
+                }
             }
     }
 
