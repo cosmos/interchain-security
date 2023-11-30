@@ -246,6 +246,11 @@ func RunItfTrace(t *testing.T, path string) {
 				)
 			}
 
+			// stop consumers
+			for _, consumer := range consumersToStop {
+				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumer.Value.(string), true)
+			}
+
 			// reset the times for the consumers that were not stopped or started just now
 			// their times were messed up by the coordinator
 			for consumer, timestamp := range lastTimestamps {
