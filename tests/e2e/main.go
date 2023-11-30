@@ -51,14 +51,14 @@ func main() {
 	if shortHappyPathOnly != nil && *shortHappyPathOnly {
 		fmt.Println("=============== running short happy path only ===============")
 		tr := DefaultTestRun()
-		tr.Run(shortHappyPathSteps, *localSdkPath, *useGaia, *gaiaTag)
+		tr.Run(shortHappyPathSteps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
 		return
 	}
 
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")
 		tr := DefaultTestRun()
-		tr.Run(happyPathSteps, *localSdkPath, *useGaia, *gaiaTag)
+		tr.Run(happyPathSteps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
 		return
 	}
 
@@ -86,7 +86,7 @@ func main() {
 			go func(run testRunWithSteps) {
 				defer wg.Done()
 				tr := run.testRun
-				tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
+				tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
 			}(run)
 		}
 		wg.Wait()
@@ -96,7 +96,7 @@ func main() {
 
 	for _, run := range testRuns {
 		tr := run.testRun
-		tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
+		tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
 	}
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
@@ -217,7 +217,7 @@ func (tr *TestRun) executeSteps(steps []Step) {
 	fmt.Printf("=============== finished %s tests in %v ===============\n", tr.name, time.Since(start))
 }
 
-func (tr *TestConfig) buildDockerImages() {
+func (tr *TestRun) buildDockerImages() {
 	fmt.Printf("=============== building %s images ===============\n", tr.name)
 	tmpDir, err := os.MkdirTemp(os.TempDir(), "e2eWorkTree")
 	if err != nil {
@@ -238,7 +238,7 @@ func (tr *TestConfig) buildDockerImages() {
 	}
 }
 
-func (tr *TestConfig) startDocker() {
+func (tr *TestRun) startDocker() {
 	tr.buildDockerImages()
 	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
 
@@ -272,8 +272,8 @@ func (tr *TestConfig) startDocker() {
 	scriptStr := fmt.Sprintf(
 		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s",
 		strings.Join(options, " "),
-		tr.containerConfig.ContainerName,
-		tr.containerConfig.InstanceName,
+		tr.containerConfig.containerName,
+		tr.containerConfig.instanceName,
 	)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
