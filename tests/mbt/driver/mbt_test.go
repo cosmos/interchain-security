@@ -71,6 +71,7 @@ func TestMBT(t *testing.T) {
 }
 
 func RunItfTrace(t *testing.T, path string) {
+	t.Helper()
 	t.Logf("🟡 Testing trace %s", path)
 
 	// Load trace
@@ -140,7 +141,8 @@ func RunItfTrace(t *testing.T, path string) {
 	}
 
 	// initialValSet has the right vals, but not yet the right powers
-	valSet, addressMap, signers := CreateValSet(t, initialValSet)
+	valSet, addressMap, signers, err := CreateValSet(initialValSet)
+	require.NoError(t, err, "Error creating validator set")
 
 	// get a slice of validators in the right order
 	nodes := make([]*cmttypes.Validator, len(valNames))
@@ -249,7 +251,10 @@ func RunItfTrace(t *testing.T, path string) {
 
 			// stop consumers
 			for _, consumer := range consumersToStop {
-				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumer.Value.(string), true)
+				err := driver.stopConsumer(ChainId(consumer.Value.(string)))
+				if err != nil {
+					log.Fatalf("Error stopping consumer %v: %v", consumer, err)
+				}
 			}
 
 			// reset the times for the consumers that were not stopped or started just now
@@ -264,7 +269,7 @@ func RunItfTrace(t *testing.T, path string) {
 				if len(consumersToStart) > 0 && consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(string) {
 					continue
 				}
-				consumerChainId := string(consumer.ChainId)
+				consumerChainId := consumer.ChainId
 
 				driver.path(ChainId(consumerChainId)).AddClientHeader(Provider, driver.providerHeader())
 				err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
@@ -363,7 +368,7 @@ func RunItfTrace(t *testing.T, path string) {
 		CompareValidatorSets(t, driver, currentModelState, actualRunningConsumers, index)
 
 		// check times - sanity check that the block times match the ones from the model
-		CompareTimes(t, driver, actualRunningConsumers, currentModelState, timeOffset)
+		CompareTimes(driver, actualRunningConsumers, currentModelState, timeOffset)
 
 		// check sent packets: we check that the package queues in the model and the system have the same length.
 		for _, consumer := range actualRunningConsumers {
@@ -380,6 +385,7 @@ func RunItfTrace(t *testing.T, path string) {
 }
 
 func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[string]itf.Expr, consumers []string, index int) {
+	t.Helper()
 	modelValSet := ValidatorSet(currentModelState, "provider")
 	curValSet := driver.providerValidatorSet()
 
@@ -387,7 +393,7 @@ func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[st
 
 	for _, val := range curValSet {
 		valName := val.Description.Moniker
-		actualValSet[valName] = int64(val.Tokens.Int64())
+		actualValSet[valName] = val.Tokens.Int64()
 	}
 
 	require.NoError(t, CompareValSet(modelValSet, actualValSet), "Validator sets do not match")
@@ -411,7 +417,7 @@ func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[st
 			providerVal, found := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), providerConsAddr.Address)
 			require.True(t, found, "Error getting provider validator")
 
-			consumerCurValSet[providerVal.GetMoniker()] = int64(val.Power)
+			consumerCurValSet[providerVal.GetMoniker()] = val.Power
 		}
 		for val, power := range modelValSet {
 			_ = val
@@ -432,6 +438,7 @@ func ComparePacketQueues(
 	consumer string,
 	timeOffset time.Time,
 ) {
+	t.Helper()
 	ComparePacketQueue(t, driver, currentModelState, Provider, consumer, timeOffset)
 	ComparePacketQueue(t, driver, currentModelState, consumer, Provider, timeOffset)
 }
@@ -444,6 +451,7 @@ func ComparePacketQueue(
 	receiver string,
 	timeOffset time.Time,
 ) {
+	t.Helper()
 	modelSenderQueue := PacketQueue(currentModelState, sender, receiver)
 	actualSenderQueue := driver.packetQueue(ChainId(sender), ChainId(receiver))
 
@@ -477,7 +485,6 @@ func ComparePacketQueue(
 // We only compare down to seconds, because the model and system will differ
 // on the order of nanoseconds.
 func CompareTimes(
-	t *testing.T,
 	driver *Driver,
 	consumers []string,
 	currentModelState map[string]itf.Expr,

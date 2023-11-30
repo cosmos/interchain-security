@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -87,17 +86,8 @@ func (b *Driver) providerStakingKeeper() stakingkeeper.Keeper {
 	return *b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *Driver) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
-}
-
 func (b *Driver) consumerKeeper(chain ChainId) consumerkeeper.Keeper {
 	return b.chain(chain).App.(*appConsumer.App).ConsumerKeeper
-}
-
-// height returns the height of the current header of chain
-func (s *Driver) height(chain ChainId) int64 {
-	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
 // runningTime returns the timestamp of the current header of chain
@@ -112,15 +102,6 @@ func (s *Driver) lastTime(chain ChainId) time.Time {
 	return testChain.LastHeader.Header.Time
 }
 
-func (s *Driver) allTimes() map[ChainId]time.Time {
-	chains := s.coordinator.Chains
-	times := make(map[ChainId]time.Time, len(chains))
-	for _, chain := range chains {
-		times[ChainId(chain.ChainID)] = chain.CurrentHeader.Time
-	}
-	return times
-}
-
 // delegator retrieves the address for the delegator account
 func (s *Driver) delegator() sdk.AccAddress {
 	return s.providerChain().SenderAccount.GetAddress()
@@ -131,25 +112,12 @@ func (s *Driver) validator(i int64) sdk.ValAddress {
 	return sdk.ValAddress(s.validators[i].Address)
 }
 
-// consAddr returns the ConsAdd for the validator with id (ix) i
-func (s *Driver) consAddr(i int64) sdk.ConsAddress {
-	return sdk.ConsAddress(s.validator(i))
-}
-
-// isJailed returns the jail status of validator with id (ix) i
-func (s *Driver) isJailed(i int64) bool {
-	val, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-
-	require.True(s.t, found, "GetValidator(%v) -> !found", s.validator(i))
-	return val.IsJailed()
-}
-
 // consumerPower returns the power on the consumer chain chain for
 // validator with id (ix) i
 func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 	v, found := s.consumerKeeper(chain).GetCCValidator(s.ctx(chain), s.validator(i))
 	if !found {
-		return 0, fmt.Errorf("GetCCValidator(%v) -> !found", s.validator(i))
+		return 0, fmt.Errorf("validator %v not found", s.validator(i))
 	}
 	return v.Power, nil
 }
@@ -159,39 +127,10 @@ func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 func (s *Driver) providerPower(i int64) (int64, error) {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
 	if !found {
-		return 0, fmt.Errorf("Validator with id %v not found on provider!", i)
+		return 0, fmt.Errorf("validator with id %v not found on provider", i)
 	} else {
 		return v.BondedTokens().Int64(), nil
 	}
-}
-
-// delegation returns the number of delegated tokens in the delegation from
-// the delegator account to the validator with id (ix) i
-func (s *Driver) delegation(i int64) int64 {
-	d, found := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
-	require.True(s.t, found, "GetDelegation(%v) -> !found", s.validator(i))
-	return d.Shares.TruncateInt64()
-}
-
-// validatorStatus returns the validator status for validator with id (ix) i
-// on the provider chain, and also whether the validator was found.
-// If the validator was not found, the status is returned as Unbonded.
-func (s *Driver) validatorStatus(i int64) (stakingtypes.BondStatus, bool) {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	if !found {
-		return stakingtypes.Unbonded, false
-	}
-	return v.GetStatus(), true
-}
-
-// providerTokens returns the number of tokens that the validator with
-// id (ix) i has delegated to it in total on the provider chain
-func (s *Driver) providerTokens(i int64) int64 {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	if !found {
-		return 0
-	}
-	return v.Tokens.Int64()
 }
 
 func (s *Driver) providerValidatorSet() []stakingtypes.Validator {
@@ -200,13 +139,6 @@ func (s *Driver) providerValidatorSet() []stakingtypes.Validator {
 
 func (s *Driver) consumerValidatorSet(chain ChainId) []consumertypes.CrossChainValidator {
 	return s.consumerKeeper(chain).GetAllCCValidator(s.ctx(chain))
-}
-
-// delegatorBalance returns the balance of the delegator account
-func (s *Driver) delegatorBalance() int64 {
-	d := s.delegator()
-	bal := s.providerChain().App.(*appProvider.App).BankKeeper.GetBalance(s.ctx(P), d, sdk.DefaultBondDenom)
-	return bal.Amount.Int64()
 }
 
 // delegate delegates amt tokens to validator val
@@ -236,28 +168,6 @@ func (s *Driver) undelegate(val, amt int64) {
 	providerStaking.GetAllDelegations(s.ctx(P))
 }
 
-// consumerSlash simulates a slash event occurring on the consumer chain.
-// It can be for a downtime or doublesign.
-func (s *Driver) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool, chain ChainId) {
-	kind := stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
-	if isDowntime {
-		kind = stakingtypes.Infraction_INFRACTION_DOWNTIME
-	}
-	ctx := s.ctx(chain)
-	before := len(ctx.EventManager().Events())
-	s.consumerKeeper(chain).SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
-	// consumer module emits packets on slash, so these must be collected.
-	evts := ctx.EventManager().Events()
-	packets := simibc.ParsePacketsFromEvents(evts[before:])
-	if len(packets) > 0 {
-		s.path(chain).Outboxes.AddPacket(string(chain), packets[0])
-	}
-}
-
-func (s *Driver) updateClient(chain ChainId) error {
-	return s.path(chain).UpdateClient(string(chain), false)
-}
-
 // packetQueue returns the queued packet sfrom sender to receiver,
 // where either sender or receiver must be the provider.
 func (s *Driver) packetQueue(sender, receiver ChainId) []simibc.Packet {
@@ -275,14 +185,6 @@ func (s *Driver) packetQueue(sender, receiver ChainId) []simibc.Packet {
 	} else {
 		return res
 	}
-}
-
-func (s *Driver) getPacketsFromProviderToConsumer(consumer ChainId) []simibc.Packet {
-	return s.path(consumer).Outboxes.OutboxPackets[string(consumer)]
-}
-
-func (s *Driver) getPacketsFromConsumerToProvider(consumer ChainId) []simibc.Packet {
-	return s.path(consumer).Outboxes.OutboxPackets[P]
 }
 
 func (s *Driver) getStateString() string {
@@ -466,12 +368,6 @@ func (s *Driver) setTime(chain ChainId, newTime time.Time) {
 	testChain.App.BeginBlock(abcitypes.RequestBeginBlock{Header: testChain.CurrentHeader})
 }
 
-func (s *Driver) setAllTimes(newTimes map[ChainId]time.Time) {
-	for chain, newTime := range newTimes {
-		s.setTime(chain, newTime)
-	}
-}
-
 // DeliverPacketToConsumer delivers a packet from the provider to the given consumer recipient.
 // It updates the client before delivering the packet.
 // Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
@@ -491,19 +387,15 @@ func (s *Driver) DeliverPacketFromConsumer(sender ChainId, expectError bool) {
 func (s *Driver) DeliverAcks() {
 	for _, chain := range s.runningConsumers() {
 		path := s.path(ChainId(chain.ChainId))
-		path.DeliverAcks(string(path.Path.EndpointA.Chain.ChainID), math.MaxInt)
-		path.DeliverAcks(string(path.Path.EndpointB.Chain.ChainID), math.MaxInt)
+		path.DeliverAcks(path.Path.EndpointA.Chain.ChainID, math.MaxInt)
+		path.DeliverAcks(path.Path.EndpointB.Chain.ChainID, math.MaxInt)
 	}
 }
 
 // stopConsumer stops a given consumer chain.
-func (s *Driver) stopConsumer(chain ChainId) {
+func (s *Driver) stopConsumer(chain ChainId) error {
 	// stop the consumer chain on the provider
-	s.providerKeeper().StopConsumerChain(s.providerCtx(), string(chain), true)
-	// delete the chain from the coordinator
-	delete(s.coordinator.Chains, string(chain))
-	// delete the path from the driver
-	delete(s.simibcs, chain)
+	return s.providerKeeper().StopConsumerChain(s.providerCtx(), string(chain), true)
 }
 
 // newDriver creates a new Driver object.
@@ -511,6 +403,7 @@ func (s *Driver) stopConsumer(chain ChainId) {
 // The caller must call setupChains to start the chains and
 // fully populate the Driver.
 func newDriver(t *testing.T, validators []*cmttypes.Validator, valNames []string) *Driver {
+	t.Helper()
 	t.Log("Creating coordinator")
 	coordinator := ibctesting.NewCoordinator(t, 0) // start without chains, which we add later
 

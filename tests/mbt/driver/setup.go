@@ -10,7 +10,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
 
@@ -33,7 +32,6 @@ import (
 	"github.com/cosmos/interchain-security/v3/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -58,9 +56,12 @@ var (
 // - a validator set
 // - a map from node names to validator objects and
 // - a map from validator addresses to private validators (signers)
-func CreateValSet(t *testing.T, initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator) {
+func CreateValSet(initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator, error) {
 	// create a valSet and signers, but the voting powers will not yet be right
-	valSet, _, signers := integration.CreateValidators(t, len(initialValidatorSet))
+	valSet, _, signers, err := integration.CreateValidators(len(initialValidatorSet))
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	// create a map from validator names to validators
 	valMap := make(map[string]*cmttypes.Validator)
@@ -87,7 +88,7 @@ func CreateValSet(t *testing.T, initialValidatorSet map[string]int64) (*cmttypes
 
 	// override the valSet by creating a new one with the right voting powers
 	valSet = cmttypes.NewValidatorSet(vals)
-	return valSet, valMap, signers
+	return valSet, valMap, signers, nil
 }
 
 func getAppBytesAndSenders(
@@ -251,6 +252,7 @@ func newChain(
 	nodes []*cmttypes.Validator,
 	valNames []string,
 ) *ibctesting.TestChain {
+	t.Helper()
 	app, genesis := appInit()
 
 	baseapp.SetChainID(chainID)(app.GetBaseApp())
@@ -310,7 +312,7 @@ func newChain(
 // Creates a path for cross-chain validation from the consumer to the provider and configures the channel config of the endpoints
 // as well as the clients.
 // this function stops when there is an initialized, ready-to-relay channel between the provider and consumer.
-func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestChain, params ModelParams, lastProviderHeader *ibctmtypes.Header) *ibctesting.Path {
+func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestChain, params ModelParams) *ibctesting.Path {
 	consumerChainId := ChainId(consumerChain.ChainID)
 
 	path := ibctesting.NewPath(consumerChain, providerChain)
@@ -388,7 +390,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// the same time and height. This is the starting point for all our
 	// data driven testing.
 	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
-	lastProviderHeader, _ = simibc.EndBlock(providerChain, func() {})
+	lastProviderHeader, _ := simibc.EndBlock(providerChain, func() {})
 
 	// Get ready to update clients.
 	simibc.BeginBlock(providerChain, 5)
@@ -404,7 +406,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	return path
 }
 
-func (s *Driver) providerHeader() *tendermint.Header {
+func (s *Driver) providerHeader() *ibctmtypes.Header {
 	return s.coordinator.Chains["provider"].LastHeader
 }
 
@@ -450,7 +452,7 @@ func (s *Driver) setupConsumer(
 	consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes, valNames)
 	s.coordinator.Chains[chain] = consumerChain
 
-	path := s.ConfigureNewPath(consumerChain, providerChain, params, s.providerHeader())
+	path := s.ConfigureNewPath(consumerChain, providerChain, params)
 	s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
 }
 
@@ -458,20 +460,20 @@ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.Te
 	providerConsState := providerChain.LastHeader.ConsensusState()
 
 	valUpdates := cmttypes.TM2PB.ValidatorUpdates(providerChain.Vals)
-	params := ccv.NewParams(
+	params := ccvtypes.NewParams(
 		true,
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
 		modelParams.CcvTimeout[ChainId(consumerClientState.ChainId)],
-		ccv.DefaultTransferTimeoutPeriod,
-		ccv.DefaultConsumerRedistributeFrac,
-		ccv.DefaultHistoricalEntries,
+		ccvtypes.DefaultTransferTimeoutPeriod,
+		ccvtypes.DefaultConsumerRedistributeFrac,
+		ccvtypes.DefaultHistoricalEntries,
 		modelParams.UnbondingPeriodPerChain[ChainId(consumerClientState.ChainId)],
 		"0", // disable soft opt-out
 		[]string{},
 		[]string{},
-		ccv.DefaultRetryDelayPeriod,
+		ccvtypes.DefaultRetryDelayPeriod,
 	)
 
 	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, valUpdates, params)

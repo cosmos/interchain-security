@@ -7,6 +7,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -88,7 +89,8 @@ func AddDemocracyConsumer[T testutil.DemocConsumerApp](
 	s.T().Helper()
 
 	// generate validators private/public key
-	valSet, valUpdates, signers := testutil.CreateValidators(s.T(), 4)
+	valSet, valUpdates, signers, err := testutil.CreateValidators(4)
+	require.NoError(s.T(), err)
 
 	ibctesting.DefaultTestingAppInit = appIniter(valUpdates)
 	democConsumer := ibctesting.NewTestChainWithValSet(s.T(), coordinator, democConsumerChainID, valSet, signers)

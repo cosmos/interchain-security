@@ -12,7 +12,8 @@ import (
 )
 
 func TestDemocracyGovernanceWhitelistingKeys(t *testing.T) {
-	_, valUpdates, _ := testutil.CreateValidators(t, 4)
+	_, valUpdates, _, err := testutil.CreateValidators(4)
+	require.NoError(t, err)
 	ibctesting.DefaultTestingAppInit = icstestingutils.DemocracyConsumerAppIniter(valUpdates)
 	chain := ibctesting.NewTestChain(t, ibctesting.NewCoordinator(t, 0), "test")
 	paramKeeper := chain.App.(*appConsumer.App).ParamsKeeper
