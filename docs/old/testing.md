@@ -16,7 +16,7 @@ To run integration tests against your own consumer/provider implementations, use
 
 ## Differential Tests (WIP)
 
-[Differential tests](../../tests/difference/) is similar to integration tests, but they compare the system state to an expected state generated from a model implementation.
+Differential tests is similar to integration tests, but they compare the system state to an expected state generated from a model implementation.
 
 ## End-to-End (E2E) Tests 
 
