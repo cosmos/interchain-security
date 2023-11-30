@@ -86,7 +86,7 @@ in CometBFT [v0.34.29](https://github.com/cometbft/cometbft/releases/tag/v0.34.2
   > This is an error code that is returned by the transaction flow. In the case of
   > success, it is `0`. On a general error, it is `1`. Additionally, each module
   > defines its custom error codes. 
-  > For example, `x/provider` currently has [these error codes](./x/ccv/provider/types/errors.go) defined.
+  > For example, `x/provider` currently has [these error codes](x/ccv/provider/types/errors.go) defined.
   >
   > As a result, it is important to avoid changing custom error codes or change
   > the semantics of what is valid logic in transaction flows.
