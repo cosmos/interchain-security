@@ -35,10 +35,10 @@ make test-unit
 # run integration tests
 make test-integration
 
-# run difference tests
-make test-difference
+# run mbt tests
+make test-mbt
 
-# run unit, integration, and difference tests - shortcut for local development
+# run unit and integration, and mbt tests - shortcut for local development
 mate test-dev
 
 # run E2E tests
