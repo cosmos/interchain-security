@@ -134,7 +134,7 @@ func (tr *TestRun) startChain(
 	}
 
 	startChainScript := "/testnet-scripts/start-chain.sh"
-	if tr.providerVersion != "" && chainConfig.BinaryName == "interchain-security-pd" {
+	if tr.providerVersion != "" && chainConfig.binaryName == "interchain-security-pd" {
 		log.Printf("Using start-chain script for provider version '%s'", tr.providerVersion)
 		startChainScript = fmt.Sprintf("/provider-%s/testnet-scripts/start-chain.sh", tr.providerVersion)
 	}
@@ -587,12 +587,12 @@ func (tr *TestRun) startConsumerChain(
 			panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 		}
 		os.WriteFile(file.Name(), bz, 0644)
-		cmd := exec.Command("docker", "cp", file.Name(), fmt.Sprintf("%s:/tmp/%s", tr.containerConfig.InstanceName, file.Name()))
+		cmd := exec.Command("docker", "cp", file.Name(), fmt.Sprintf("%s:/tmp/%s", tr.containerConfig.instanceName, file.Name()))
 		bz, err = cmd.CombinedOutput()
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
 		}
-		cmd = exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.ConsumerChain].BinaryName,
+		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.consumerChain].binaryName,
 			"genesis", "transform", fmt.Sprintf("/tmp/%s", file.Name()))
 		bz, err = cmd.CombinedOutput()
 		if err != nil {
