@@ -15,8 +15,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -68,7 +66,7 @@ type StartChainAction struct {
 	Validators []StartChainValidator
 	// Genesis changes specific to this action, appended to genesis changes defined in chain config
 	GenesisChanges string
-	SkipGentx      bool
+	IsConsumer     bool
 }
 
 type StartChainValidator struct {
@@ -138,7 +136,7 @@ func (tr *TestConfig) startChain(
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.BinaryName, string(vals),
 		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
-		fmt.Sprint(action.SkipGentx),
+		fmt.Sprint(action.IsConsumer),
 		// override config/config.toml for each node on chain
 		// usually timeout_commit and peer_gossip_sleep_duration are changed to vary the test run duration
 		// lower timeout_commit means the blocks are produced faster making the test run shorter
@@ -173,8 +171,9 @@ func (tr *TestConfig) startChain(
 	}
 
 	tr.addChainToRelayer(addChainToRelayerAction{
-		Chain:     action.Chain,
-		Validator: action.Validators[0].Id,
+		Chain:      action.Chain,
+		Validator:  action.Validators[0].Id,
+		IsConsumer: action.IsConsumer,
 	}, verbose)
 
 	// store the fact that we started the chain
@@ -445,80 +444,6 @@ func (tr TestConfig) submitParamChangeProposal(
 	tr.waitBlocks(action.Chain, 2, 60*time.Second)
 }
 
-type submitEquivocationProposalAction struct {
-	Chain     ChainID
-	Height    int64
-	Time      time.Time
-	Power     int64
-	Validator ValidatorID
-	Deposit   uint
-	From      ValidatorID
-}
-
-func (tr TestConfig) submitEquivocationProposal(action submitEquivocationProposalAction, verbose bool) {
-	val := tr.validatorConfigs[action.Validator]
-	providerChain := tr.chainConfigs[ChainID("provi")]
-
-	prop := client.EquivocationProposalJSON{
-		Summary: "Validator equivocation!",
-		EquivocationProposal: types.EquivocationProposal{
-			Title:       "Validator equivocation!",
-			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on ChainID: %s", action.Validator, action.Chain),
-			Equivocations: []*evidencetypes.Equivocation{
-				{
-					Height:           action.Height,
-					Time:             action.Time,
-					Power:            action.Power,
-					ConsensusAddress: val.ValconsAddress,
-				},
-			},
-		},
-		Deposit: fmt.Sprint(action.Deposit) + `stake`,
-	}
-
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName,
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/equivocation-proposal.json")).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	// EQUIVOCATION PROPOSAL
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName, providerChain.BinaryName,
-
-		"tx", "gov", "submit-legacy-proposal", "equivocation", "/equivocation-proposal.json",
-
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(providerChain.ChainId),
-		`--home`, tr.getValidatorHome(providerChain.ChainId, action.From),
-		`--node`, tr.getValidatorNode(providerChain.ChainId, action.From),
-		`--gas`, "auto",
-		`--gas-prices`, `0.0025stake`,
-		`--gas-adjustment`, `1.5`,
-		`--keyring-backend`, `test`,
-		`-y`,
-	).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
-}
-
 type voteGovProposalAction struct {
 	Chain      ChainID
 	From       []ValidatorID
@@ -604,7 +529,7 @@ func (tr *TestConfig) startConsumerChain(
 		Chain:          action.ConsumerChain,
 		Validators:     action.Validators,
 		GenesisChanges: consumerGenesis,
-		SkipGentx:      true,
+		IsConsumer:     true,
 	}, verbose)
 }
 
@@ -736,8 +661,9 @@ func (tr TestConfig) startChangeover(
 }
 
 type addChainToRelayerAction struct {
-	Chain     ChainID
-	Validator ValidatorID
+	Chain      ChainID
+	Validator  ValidatorID
+	IsConsumer bool
 }
 
 const hermesChainConfigTemplate = `
@@ -754,7 +680,8 @@ rpc_addr = "%s"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "14days"
-websocket_addr = "%s"
+event_source = { mode = "push", url = "%s", batch_delay = "50ms" }
+ccv_consumer_chain = %v
 
 [chains.gas_price]
 	denom = "stake"
@@ -853,7 +780,7 @@ func (tr TestConfig) addChainToHermes(
 		keyName,
 		rpcAddr,
 		wsAddr,
-		// action.consumer,
+		action.IsConsumer,
 	)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
@@ -867,7 +794,15 @@ func (tr TestConfig) addChainToHermes(
 	}
 
 	// Save mnemonic to file within container
-	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.Validator].Mnemonic, "/root/.hermes/mnemonic.txt")
+	var mnemonic string
+	if tr.validatorConfigs[action.Validator].UseConsumerKey && action.IsConsumer {
+		mnemonic = tr.validatorConfigs[action.Validator].ConsumerMnemonic
+	} else {
+		mnemonic = tr.validatorConfigs[action.Validator].Mnemonic
+	}
+
+	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, mnemonic, "/root/.hermes/mnemonic.txt")
+	fmt.Println("Add to hermes", action.Validator)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName, "bash", "-c",
 		saveMnemonicCommand,
@@ -2144,6 +2079,29 @@ func (tr TestConfig) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 	}
 
 	return pathName
+}
+
+// Run an instance of the Hermes relayer using the "evidence" command,
+// which detects evidences committed to the blocks of a consumer chain.
+// Each infraction detected is reported to the provider chain using
+// either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
+type startConsumerEvidenceDetectorAction struct {
+	Chain ChainID
+}
+
+func (tc TestConfig) startConsumerEvidenceDetector(
+	action startConsumerEvidenceDetectorAction,
+	verbose bool,
+) {
+	chainConfig := tc.chainConfigs[action.Chain]
+	// run in detached mode so it will keep running in the background
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", "-d", tc.containerConfig.InstanceName,
+		"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	tc.waitBlocks("provi", 10, 2*time.Minute)
 }
 
 // WaitTime waits for the given duration.

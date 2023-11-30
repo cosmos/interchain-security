@@ -258,8 +258,12 @@ do
         fi
     done
 
-    # Remove leading comma and concat to flag
-    PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
+    
+    if [ "$PERSISTENT_PEERS" != "" ]; then
+        # Remove leading comma and concat to flag
+        PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
+    fi
+   
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     if [[ "$USE_COMETMOCK" == "true" ]]; then

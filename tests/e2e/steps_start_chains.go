@@ -42,6 +42,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
 						},
 					},
+					ProposedConsumerChains: &[]string{consumerName},
 				},
 			},
 		},
