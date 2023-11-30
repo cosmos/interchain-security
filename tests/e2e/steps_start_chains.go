@@ -10,20 +10,12 @@ func stepStartProviderChain() []Step {
 			Action: StartChainAction{
 				Chain: ChainID("provi"),
 				Validators: []StartChainValidator{
-					{Id: ValidatorID("bob"), Stake: 500000000, Allocation: 10000000000},
-					{Id: ValidatorID("alice"), Stake: 500000000, Allocation: 10000000000},
-					{Id: ValidatorID("carol"), Stake: 500000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 500000000, Allocation: 1000000000000000},
+					{Id: ValidatorID("alice"), Stake: 500000000, Allocation: 1000000000000000},
+					{Id: ValidatorID("carol"), Stake: 500000000, Allocation: 1000000000000000},
 				},
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValBalances: &map[ValidatorID]uint{
-						ValidatorID("alice"): 9500000000,
-						ValidatorID("bob"):   9500000000,
-						ValidatorID("carol"): 9500000000,
-					},
-				},
-			},
+			State: State{},
 		},
 	}
 }
@@ -41,10 +33,6 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 			State: State{
 				ChainID("provi"): ChainState{
-					ValBalances: &map[ValidatorID]uint{
-						ValidatorID("alice"): 9489999999,
-						ValidatorID("bob"):   9500000000,
-					},
 					Proposals: &map[uint]Proposal{
 						proposalIndex: ConsumerAdditionProposal{
 							Deposit:       10000001,
@@ -133,10 +121,6 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 							Status:        "PROPOSAL_STATUS_PASSED",
 						},
 					},
-					ValBalances: &map[ValidatorID]uint{
-						ValidatorID("alice"): 9500000000,
-						ValidatorID("bob"):   9500000000,
-					},
 				},
 			},
 		},
@@ -156,22 +140,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				// values from the genesis file.
 				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValBalances: &map[ValidatorID]uint{
-						ValidatorID("alice"): 9500000000,
-						ValidatorID("bob"):   9500000000,
-						ValidatorID("carol"): 9500000000,
-					},
-				},
-				ChainID(consumerName): ChainState{
-					ValBalances: &map[ValidatorID]uint{
-						ValidatorID("alice"): 10000000000,
-						ValidatorID("bob"):   10000000000,
-						ValidatorID("carol"): 10000000000,
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: addIbcConnectionAction{
