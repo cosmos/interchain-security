@@ -109,7 +109,7 @@ If your architecture decision is a simple change, you may contribute directly wi
 
 In certain circumstances, the architecture decision may require changes to the ICS spec. Note that the spec is responsible for defining language-agnostic, implementation-agnostic behaviors for the ICS protocol. Whereas ADRs are responsible for communicating implementation decisions contained within this repo.
 
-To create an ADR, follow the [template](docs/docs/adrs/adr-template.md) and [doc](docs/docs/adrs/into.md). If you would like to see examples of how these are written, please refer to the current [ADRs](docs/docs/adrs).
+To create an ADR, follow the [template](docs/docs/adrs/adr-template.md) and [doc](docs/docs/adrs/intro.md). If you would like to see examples of how these are written, please refer to the current [ADRs](docs/docs/adrs).
 
 ### ADR Proposals
 
