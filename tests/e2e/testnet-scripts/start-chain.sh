@@ -198,7 +198,6 @@ do
         #'s/foo/bar/;s/abc/def/'
         sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
     fi
-    sed -i 's/minimum-gas-prices = "0stake"/minimum-gas-prices = "0.0025stake"/g' $CHAIN_ID/validator$VAL_ID/config/app.toml
 done
 
 
