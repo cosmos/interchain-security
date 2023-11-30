@@ -103,7 +103,6 @@ jobs:
         with:
           node-version: ">= 18"
           check-latest: true
-          cache: 'npm'
       - run: npm i @informalsystems/quint -g
       - uses: technote-space/get-diff-action@v6.1.2
         id: git_diff
