@@ -341,13 +341,13 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// Expect panic if ccv channel is not established via dest channel of packet
 	suite.Panics(func() {
-		providerKeeper.OnRecvSlashPacket(ctx, channeltypes.Packet{}, ccv.SlashPacketData{})
+		_, _ = providerKeeper.OnRecvSlashPacket(ctx, channeltypes.Packet{}, ccv.SlashPacketData{})
 	})
 
 	// Add correct channelID to packet. Now we will not panic anymore.
 	packet := channeltypes.Packet{DestinationChannel: firstBundle.Path.EndpointB.ChannelID}
 	suite.NotPanics(func() {
-		providerKeeper.OnRecvSlashPacket(ctx, packet, ccv.SlashPacketData{})
+		_, _ = providerKeeper.OnRecvSlashPacket(ctx, packet, ccv.SlashPacketData{})
 	})
 
 	// Check ValidateBasic for SlashPacket data
