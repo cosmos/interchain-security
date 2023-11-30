@@ -48,7 +48,7 @@ func RunningTime(curStateExpr itf.MapExprType, chain string) int64 {
 
 // PacketQueue returns the queued packets between sender and receiver.
 // Either sender or receiver need to be the provider.
-func PacketQueue(curStateExpr itf.MapExprType, sender string, receiver string) itf.ListExprType {
+func PacketQueue(curStateExpr itf.MapExprType, sender, receiver string) itf.ListExprType {
 	if sender == Provider {
 		packetQueue := ProviderState(curStateExpr)["outstandingPacketsToConsumer"].Value.(itf.MapExprType)[receiver]
 		if packetQueue.Value == nil {

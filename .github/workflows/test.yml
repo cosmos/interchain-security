@@ -110,19 +110,19 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
-      - name: difference tests
+      - name: mbt tests
         if: env.GIT_DIFF
         run: |
-          make test-difference-cov
+          make test-mbt-cov
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:
-          name: "${{ github.sha }}-difference-coverage"
-          path: ./difference-profile.out
+          name: "${{ github.sha }}-mbt-coverage"
+          path: ./mbt-profile.out
   
   repo-analysis:
     runs-on: ubuntu-latest
-    needs: [tests, test-integration, test-difference]
+    needs: [tests, test-integration, test-mbt]
     steps:
       - uses: actions/checkout@v4
       - uses: technote-space/get-diff-action@v6.1.2

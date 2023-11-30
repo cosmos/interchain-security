@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
@@ -15,20 +16,17 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-
-	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
-
-	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -262,7 +260,7 @@ func (s *Driver) updateClient(chain ChainId) error {
 
 // packetQueue returns the queued packet sfrom sender to receiver,
 // where either sender or receiver must be the provider.
-func (s *Driver) packetQueue(sender ChainId, receiver ChainId) []simibc.Packet {
+func (s *Driver) packetQueue(sender, receiver ChainId) []simibc.Packet {
 	var path *simibc.RelayedPath
 	if sender == P {
 		path = s.path(receiver)
@@ -405,7 +403,7 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 }
 
 // endAndBeginBlock ends the current block and begins a new one.
-// After comitting, it processes any packets that have been sent by the chain,
+// After committing, it processes any packets that have been sent by the chain,
 // as witnessed by events, and adds them to the correct paths.
 // It also updates the client header on the paths
 // that involve the chain.

@@ -3,7 +3,7 @@ package simibc
 import channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 // The number of blocks to wait before a packet or ack is available for delivery
-// after it has been comitted on the chain.
+// after it has been committed on the chain.
 // For example, if DelayPeriodBlocks is 0 and a packet p was sent at height h
 // (i.e. the chain has produced a header height h)
 // the packet can immediately be received.

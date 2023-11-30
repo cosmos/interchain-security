@@ -10,15 +10,16 @@ import (
 	"testing"
 	"time"
 
-	cmttypes "github.com/cometbft/cometbft/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	"github.com/kylelemons/godebug/pretty"
-
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/informalsystems/itf-go/itf"
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
+
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 const verbose = false
@@ -481,25 +482,23 @@ func CompareTimes(
 	consumers []string,
 	currentModelState map[string]itf.Expr,
 	timeOffset time.Time,
-) {
+) (err error) {
 	providerRunningTimestamp := RunningTime(currentModelState, "provider")
 	actualRunningProviderTime := driver.runningTime("provider")
 
-	require.Equal(t,
-		providerRunningTimestamp,
-		actualRunningProviderTime.Unix()-timeOffset.Unix(),
-		"Running times do not match for provider")
+	if providerRunningTimestamp != actualRunningProviderTime.Unix()-timeOffset.Unix() {
+		return fmt.Errorf("Running times do not match for provider")
+	}
 
 	for _, chain := range consumers {
 		modelRunningTimestamp := RunningTime(currentModelState, chain)
 		actualRunningChainTime := driver.runningTime(ChainId(chain))
 
-		require.Equal(t,
-			modelRunningTimestamp,
-			actualRunningChainTime.Unix()-timeOffset.Unix(),
-			"Running times do not match for chain %v", chain)
-
+		if modelRunningTimestamp != actualRunningChainTime.Unix()-timeOffset.Unix() {
+			return fmt.Errorf("Running times do not match for chain %v", chain)
+		}
 	}
+	return nil
 }
 
 // CompareValSet compares the validator set in the model to the validator set in the system.

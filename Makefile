@@ -10,10 +10,10 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
-test: test-unit test-integration test-difference test-e2e
+test: test-unit test-integration test-mbt test-e2e
 
 # shortcut for local development
-test-dev: test-unit test-integration test-difference
+test-dev: test-unit test-integration test-mbt
 
 # run unit tests
 test-unit:
@@ -29,12 +29,12 @@ test-integration:
 test-integration-cov:
 	go test ./tests/integration/... -timeout 30m -coverpkg=./... -coverprofile=integration-profile.out -covermode=atomic
 
-# run difference tests
-test-difference:
-	go test ./tests/difference/... -timeout 30m
+# run mbt tests
+test-mbt:
+	go test ./tests/mbt/... -timeout 30m
 
-test-difference-cov:
-	go test ./tests/difference/... -timeout 30m -coverpkg=./... -coverprofile=difference-profile.out -covermode=atomic
+test-mbt-cov:
+	go test ./tests/mbt/... -timeout 30m -coverpkg=./... -coverprofile=mbt-profile.out -covermode=atomic
 
 # run E2E tests
 test-e2e:
