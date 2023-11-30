@@ -251,10 +251,7 @@ func RunItfTrace(t *testing.T, path string) {
 
 			// stop consumers
 			for _, consumer := range consumersToStop {
-				err := driver.stopConsumer(ChainId(consumer.Value.(string)))
-				if err != nil {
-					log.Fatalf("Error stopping consumer %v: %v", consumer, err)
-				}
+				driver.stopConsumer(ChainId(consumer.Value.(string)))
 			}
 
 			// reset the times for the consumers that were not stopped or started just now
