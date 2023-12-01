@@ -42,6 +42,13 @@ test-mbt-cov:
 	cd ../../..;\
 	go test ./tests/mbt/... -timeout 30m -coverpkg=./... -coverprofile=mbt-profile.out -covermode=atomic
 
+# runs mbt tests, but generates more traces
+test-mbt-long:
+	cd tests/mbt/driver;\
+	sh generate_traces_long.sh;\
+	cd ../../..;\
+	go test ./tests/mbt/... -timeout 30m
+
 # run E2E tests
 test-e2e:
 	go run ./tests/e2e/...
