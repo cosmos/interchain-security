@@ -124,7 +124,11 @@ jobs:
         with:
           name: "${{ github.sha }}-mbt-coverage"
           path: ./mbt-profile.out
-  
+      - name: Archive MBT traces
+        uses: actions/upload-artifact@v3
+        with:
+          name: mbt-traces
+          path: tests/mbt/driver/traces  
   repo-analysis:
     runs-on: ubuntu-latest
     needs: [tests, test-integration, test-mbt]
