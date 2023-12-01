@@ -1,20 +1,23 @@
 name: Check Markdown links
 on: push
 jobs:
-  markdown-link-check:
+  Check markdown links in the repo root:
     runs-on: ubuntu-latest
     steps:
       # Check out the latest version of the code
       - uses: actions/checkout@v4
-
-      # Remove folders that we do not want to check.
-      # This is due to the markdown-link-check action
-      # not having an exclude parameter, see
-      # https://github.com/gaurav-nelson/github-action-markdown-link-check/issues/38
-      - name: Remove folders that we do not want to check
-        run: rm -rf .changelog
-
-      # Checks the status of hyperlinks in *.md files in docs/
+      # Checks the status of hyperlinks in *.md files in the repo root
       - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
         with:
-          config-file: .markdownlink_check_config.json
+          folder-path: '.'
+          max-depth: 1
+  
+  Check markdown links in docs/docs:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the latest version of the code
+      - uses: actions/checkout@v4
+      # Checks the status of hyperlinks in *.md files in the docs/docs folder
+      - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
+        with:
+          folder-path: 'docs/docs'
