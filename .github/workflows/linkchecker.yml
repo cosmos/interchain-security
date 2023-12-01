@@ -1,7 +1,7 @@
 name: Check Markdown links
 on: push
 jobs:
-  Check markdown links in the repo root:
+  repo-root:
     runs-on: ubuntu-latest
     steps:
       # Check out the latest version of the code
@@ -12,7 +12,7 @@ jobs:
           folder-path: '.'
           max-depth: 1
   
-  Check markdown links in docs/docs:
+  docs:
     runs-on: ubuntu-latest
     steps:
       # Check out the latest version of the code
