@@ -862,8 +862,10 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			packetData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
 			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(),
+			_, err = providerKeeper.OnRecvSlashPacket(s.providerCtx(),
 				packet, *packetData.GetSlashPacketData())
+			s.Require().NoError(err)
+
 		}
 	}
 
@@ -875,8 +877,9 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(data, &packetData)
 			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
-			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
+			err := providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
 				packet, *packetData.GetVscMaturedPacketData())
+			s.Require().NoError(err)
 		}
 	}
 

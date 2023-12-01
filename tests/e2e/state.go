@@ -769,8 +769,6 @@ func (tr TestConfig) curlJsonRPCRequest(method, params, address string) {
 	verbosity := false
 	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
 }
-<<<<<<< HEAD
-=======
 
 // getClientFrozenHeight returns the frozen height for a client with the given client ID
 // by querying the hosting chain with the given chainID
@@ -874,4 +872,3 @@ func (tr TestConfig) getProposedConsumerChains(chain ChainID) []string {
 func uintPtr(i uint) *uint {
 	return &i
 }
->>>>>>> 1e8512a0 (feat!: add cryptographic equivocation (#1340))

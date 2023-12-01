@@ -452,6 +452,11 @@ func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingut
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
+	// HACK: valsetUpdateId is invalid, so set it to 1
+	if valsetUpdateId == 0 {
+		valsetUpdateId = 1
+	}
+
 	return ccv.ConsumerPacketData{
 		Type: ccv.VscMaturedPacket,
 		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{

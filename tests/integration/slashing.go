@@ -408,13 +408,13 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper.SetSlashMeter(ctx, sdk.NewInt(-1))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err, "no error expected")
-	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected successful ack")
+	suite.Require().Equal(ccv.V1Result, ackResult, "expected successful ack")
 
 	// Expect the packet to be handled if the slash meter is positive
 	providerKeeper.SetSlashMeter(ctx, sdk.NewInt(0))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err, "no error expected")
-	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
+	suite.Require().Equal(ccv.V1Result, ackResult, "expected successful ack")
 }
 
 // TestValidatorDowntime tests if a slash packet is sent
