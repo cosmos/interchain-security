@@ -397,6 +397,92 @@ func ChangeoverTestConfig() TestConfig {
 	return tr
 }
 
+func ConsumerMisbehaviourTestConfig() TestConfig {
+	tc := TestConfig{
+		name: "consumer-misbehaviour",
+		containerConfig: ContainerConfig{
+			ContainerName: "interchain-security-container",
+			InstanceName:  "interchain-security-instance",
+			CcvVersion:    "1",
+			Now:           time.Now(),
+		},
+		validatorConfigs: map[ValidatorID]ValidatorConfig{
+			ValidatorID("alice"): {
+				Mnemonic:         "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
+				DelAddress:       "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
+				ValoperAddress:   "cosmosvaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtrgtng",
+				ValconsAddress:   "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+				PrivValidatorKey: `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
+				NodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
+				IpSuffix:         "4",
+
+				// consumer chain assigned key
+				ConsumerMnemonic:         "exile install vapor thing little toss immune notable lounge december final easy strike title end program interest quote cloth forget forward job october twenty",
+				ConsumerDelAddress:       "cosmos1eeeggku6dzk3mv7wph3zq035rhtd890sjswszd",
+				ConsumerValoperAddress:   "cosmosvaloper1eeeggku6dzk3mv7wph3zq035rhtd890shy69w7",
+				ConsumerValconsAddress:   "cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe",
+				ConsumerValPubKey:        `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="}`,
+				ConsumerPrivValidatorKey: `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`,
+				ConsumerNodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"F966RL9pi20aXRzEBe4D0xRQJtZt696Xxz44XUON52cFc83FMn1WXJbP6arvA2JPyn2LA3DLKCFHSgALrCGXGA=="}}`,
+				UseConsumerKey:           true,
+			},
+			ValidatorID("bob"): {
+				Mnemonic:         "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
+				DelAddress:       "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
+				ValoperAddress:   "cosmosvaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qakmjnw",
+				ValconsAddress:   "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+				PrivValidatorKey: `{"address":"99BD3A72EF12CD024E7584B3AC900AE3743C6ADF","pub_key":{"type":"tendermint/PubKeyEd25519","value":"mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"QePcwfWtOavNK7pBJrtoLMzarHKn6iBWfWPFeyV+IdmYA3pFdjFIzgw0ZIiuJiJLuke7ABw4cNADL3/CeVLM4g=="}}`,
+				NodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
+				IpSuffix:         "5",
+
+				// consumer chain assigned key
+				ConsumerMnemonic:         "grunt list hour endless observe better spoil penalty lab duck only layer vague fantasy satoshi record demise topple space shaft solar practice donor sphere",
+				ConsumerDelAddress:       "cosmos1q90l6j6lzzgt460ehjj56azknlt5yrd4s38n97",
+				ConsumerValoperAddress:   "cosmosvaloper1q90l6j6lzzgt460ehjj56azknlt5yrd449nxfd",
+				ConsumerValconsAddress:   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
+				ConsumerValPubKey:        `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
+				ConsumerPrivValidatorKey: `{"address":"E73388E246EC9945E5E70A94FE4072BD937415C4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"OFR4w+FC6EMw5fAGTrHVexyPrjzQ7QfqgZOMgVf0izlCUb6Jh7oDJim9jXP1E0koJWUfXhD+pLPgSMZ0YKu7eg=="}}`,
+				ConsumerNodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uhPCqnL2KE8m/8OFNLQ5bN3CJr6mds+xfBi0E4umT/s2uWiJhet+vbYx88DHSdof3gGFNTIzAIxSppscBKX96w=="}}`,
+				UseConsumerKey:           false,
+			},
+		},
+		chainConfigs: map[ChainID]ChainConfig{
+			ChainID("provi"): {
+				ChainId:        ChainID("provi"),
+				BinaryName:     "interchain-security-pd",
+				IpPrefix:       "7.7.7",
+				VotingWaitTime: 20,
+				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
+			},
+			ChainID("consu"): {
+				ChainId:        ChainID("consu"),
+				BinaryName:     "interchain-security-cd",
+				IpPrefix:       "7.7.8",
+				VotingWaitTime: 20,
+				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;` +
+			// Required to start consumer chain by running a single big validator
+			`s/block_sync = true/block_sync = false/;`,
+	}
+	tc.Initialize()
+	return tc
+}
+
 func (s *TestConfig) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
 	if localSdkPath != "" {
 		fmt.Println("USING LOCAL SDK", localSdkPath)
@@ -419,7 +505,7 @@ func (s *TestConfig) SetRelayerConfig(useRly bool) {
 }
 
 // validateStringLiterals enforces that configs follow the constraints
-// necessary to to execute the tests
+// necessary to execute the tests
 //
 // Note: Network interfaces (name of virtual ethernet interfaces for ip link)
 // within the container will be named as "$CHAIN_ID-$VAL_ID-out" etc.
@@ -427,7 +513,6 @@ func (s *TestConfig) SetRelayerConfig(useRly bool) {
 // used as a validatorID or chainID needs to be 5 char or less.
 func (s *TestConfig) validateStringLiterals() {
 	for valID, valConfig := range s.validatorConfigs {
-
 		if len(valID) > 5 {
 			panic("validator id string literal must be 5 char or less")
 		}
