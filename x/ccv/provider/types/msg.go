@@ -72,14 +72,13 @@ func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
-		return ErrBlankConsumerChainID
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
 	}
 	// It is possible to assign keys for consumer chains that are not yet approved.
 	// This can only be done by a signing validator, but it is still sensible
 	// to limit the chainID size to prevent abuse.
-
 	if 128 < len(msg.ChainId) {
-		return ErrBlankConsumerChainID
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {

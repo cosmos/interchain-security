@@ -6,7 +6,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -22,7 +21,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	data ccv.VSCMaturedPacketData,
-) exported.Acknowledgement {
+) error {
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -34,9 +33,14 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// validate packet data upon receiving
+	if err := data.Validate(); err != nil {
+		return errorsmod.Wrapf(err, "error validating VSCMaturedPacket data")
+	}
+
 	if err := k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf(
-			"failed to queue VSCMatured packet data: %s", err.Error()))
+		return errorsmod.Wrapf(err,
+			"failed to queue VSCMatured packet data")
 	}
 
 	k.Logger(ctx).Info("VSCMaturedPacket received and enqueued",
@@ -44,8 +48,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		"vscID", data.ValsetUpdateId,
 	)
 
-	ack := channeltypes.NewResultAcknowledgement(ccv.V1Result)
-	return ack
+	return nil
 }
 
 // HandleLeadingVSCMaturedPackets handles all VSCMatured packet data that has been queued this block,
@@ -312,7 +315,11 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and
 // then queues the slash packet as pending if valid.
-func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
+func (k Keeper) OnRecvSlashPacket(
+	ctx sdk.Context,
+	packet channeltypes.Packet,
+	data ccv.SlashPacketData,
+) (ccv.PacketAckResult, error) {
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -324,6 +331,11 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// validate packet data upon receiving
+	if err := data.Validate(); err != nil {
+		return nil, errorsmod.Wrapf(err, "error validating SlashPacket data")
+	}
+
 	if err := k.ValidateSlashPacket(ctx, chainID, packet, data); err != nil {
 		k.Logger(ctx).Error("invalid slash packet",
 			"error", err.Error(),
@@ -332,7 +344,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
-		return ccv.NewErrorAcknowledgementWithLog(ctx, err)
+		return nil, err
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -355,7 +367,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
-		return channeltypes.NewResultAcknowledgement(ccv.V1Result)
+		return ccv.V1Result, nil
 	}
 
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
@@ -368,7 +380,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
 	// to enforce order of handling between the two packet data types.
 	if err := k.QueueThrottledSlashPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
+		return nil, err
 	}
 
 	k.Logger(ctx).Info("slash packet received and enqueued",
@@ -379,7 +391,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		"infractionType", data.Infraction,
 	)
 
-	return channeltypes.NewResultAcknowledgement(ccv.V1Result)
+	return ccv.V1Result, nil
 }
 
 // ValidateSlashPacket validates a recv slash packet before it is
@@ -393,10 +405,6 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	if !found {
 		return fmt.Errorf("cannot find infraction height matching "+
 			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
-	}
-
-	if data.Infraction != stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN && data.Infraction != stakingtypes.Infraction_INFRACTION_DOWNTIME {
-		return fmt.Errorf("invalid infraction type: %s", data.Infraction)
 	}
 
 	return nil

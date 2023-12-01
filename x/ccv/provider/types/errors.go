@@ -11,7 +11,7 @@ var (
 	ErrUnknownConsumerChainId           = errorsmod.Register(ModuleName, 3, "no consumer chain with this chain id")
 	ErrUnknownConsumerChannelId         = errorsmod.Register(ModuleName, 4, "no consumer chain with this channel id")
 	ErrInvalidConsumerConsensusPubKey   = errorsmod.Register(ModuleName, 5, "empty consumer consensus public key")
-	ErrBlankConsumerChainID             = errorsmod.Register(ModuleName, 6, "consumer chain id must not be blank")
+	ErrInvalidConsumerChainID           = errorsmod.Register(ModuleName, 6, "invalid consumer chain id")
 	ErrConsumerKeyNotFound              = errorsmod.Register(ModuleName, 7, "consumer key not found")
 	ErrNoValidatorConsumerAddress       = errorsmod.Register(ModuleName, 8, "error getting validator consumer address")
 	ErrNoValidatorProviderAddress       = errorsmod.Register(ModuleName, 9, "error getting validator provider address")
