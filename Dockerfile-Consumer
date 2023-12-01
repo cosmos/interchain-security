@@ -57,13 +57,13 @@ COPY --from=cometmock-builder /usr/local/bin/cometmock /usr/local/bin/cometmock
 COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
 
 # Copy consumer from specified image
-COPY --from=consumer /usr/local/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
-COPY --from=consumer /testnet-scripts /provider-${CONSUMER_VERSION}/testnet-scripts
+COPY --from=consumer /usr/local/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
+COPY --from=consumer /usr/local/bin/interchain-security-cdd /usr/local/bin/interchain-security-cdd
+COPY --from=consumer /usr/local/bin/interchain-security-sd /usr/local/bin/interchain-security-sd
+COPY --from=consumer /testnet-scripts /consumer-${CONSUMER_VERSION}/testnet-scripts
 
 # Copy provider from local build
-COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
-COPY --from=is-builder /go/bin/interchain-security-cdd /usr/local/bin/interchain-security-cdd
-COPY --from=is-builder /go/bin/interchain-security-sd /usr/local/bin/interchain-security-sd
+COPY --from=is-builder /go/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
 
 # Copy in the shell scripts that run the testnet
 ADD ./tests/e2e/testnet-scripts /testnet-scripts

@@ -134,11 +134,11 @@ func executeTests(tests []testStepsWithConfig) (err error) {
 			wg.Add(1)
 			go func(run testStepsWithConfig) {
 				defer wg.Done()
-				run.testRun.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
+				run.testRun.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion, *transformGenesis)
 			}(testCase)
 		} else {
 			log.Printf("=============== running %s ===============\n", testCase.testRun.name)
-			testCase.testRun.Run(testCase.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion)
+			testCase.testRun.Run(testCase.steps, *localSdkPath, *useGaia, *gaiaTag, *useConsumerVersion, *useProviderVersion, *transformGenesis)
 		}
 	}
 
@@ -286,7 +286,7 @@ func main() {
 	if err := parseArguments(); err != nil {
 		flag.Usage()
 		log.Fatalf("Error parsing command arguments %s\n", err)
-		}
+	}
 
 	if *useConsumerVersion != "" && *useProviderVersion != "" {
 		log.Fatalf("consumer-version & provider-version specified! Note: for compatibility tests current checked out version can only be tested against a different provider or consumer version")
