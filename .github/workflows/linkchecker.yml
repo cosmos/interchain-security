@@ -16,3 +16,5 @@ jobs:
 
       # Checks the status of hyperlinks in *.md files in docs/
       - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
+        with:
+          config-file: .markdownlink_check_config.json
