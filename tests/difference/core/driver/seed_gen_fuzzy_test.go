@@ -16,7 +16,7 @@ import (
 
 func GetPV(seed []byte) mock.PV {
 	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // SA1019: cosmosEd25519.PrivKey is deprecated: PrivKey defines a ed25519 private key. NOTE: ed25519 keys must not be used in SDK apps except in a tendermint validator context.
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} 
 }
 
 // getStakingKeyBytes takes seed bytes which can be be used to create
