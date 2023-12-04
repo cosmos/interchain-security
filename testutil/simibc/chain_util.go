@@ -49,7 +49,6 @@ func EndBlock(
 		It is useful to call arbitrary code after ending the block but before
 		committing the block because the sdk.Context is cleared after committing.
 	*/
-	// preCommitCallback()
 
 	c.App.Commit()
 
