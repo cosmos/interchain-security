@@ -1,4 +1,120 @@
-## Updating the trace format and tests when adjusting the framework
+# End-to-end testing
+
+This folder contains end-to-end tests and related infrastructure.
+The goal of end-to-end tests is to test our application completely.
+End-to-end in this context means tests
+where the whole app (including command line interfaces, interfaces to external components like
+relayers, CometBFT, etc) is in scope for testing.
+
+The high-level overview of what a single test case does is:
+* The test starts a docker container, see [the startup script](testnet-scripts/start-docker.sh)
+* We run a defined sequence of actions and expected states, see as an example the steps for [testing the democracy module](steps_democracy.go)
+    * Actions are things like: submitting transactions to a node, but also things like making nodes double-sign, starting a relayer, starting a new chain, ..., in short anything
+that might modify the system state meaningfully
+    * Expected states defined as parts of the system state that have to match. For example, after an action that modifies validator balances, we would specify
+    the validator balances, so those would be checked against the actual validator balances. We might not care about the governance proposals that are on chain
+    though, and just leave that part of the state unspecified.
+* After each action, the state of the system is queried and compared against the expected state.
+
+## Defining a new test case
+
+This section explains how to define a new test case. For now, let's assume that
+all actions and state checks we want to perform already exist (see (actions.go)[actions.go]
+for possible actions and (state.go)[state.go] for possible state checks).
+Then what we need to do is the following:
+* Create a new test config (or decide on an existing one to reuse), see (config.go)[config.go].
+The test config governs the config parameters of validators and chains that can be run in the test,
+for example we can set genesis parameters using `ChainConfig.GenesisChanges`.
+* Define a sequence of actions and state checks to perform for our test case.
+* Add our test case in the main file (main.go)[main.go].
+
+For most steps, we can reuse existing code, for example
+the actions necessary to start a provider and multiple consumer chains
+are already "packaged together" and available as
+`stepsStartChains` in (steps_start_chains.go)[steps_start_chains.go].
+
+An important node is that the parts of the state that are *not* defined are
+just *not checked*. For example, 
+if the balance of a validator isn't listed in a state, it doesn't mean that we want to check
+that the validator balance is absent in the actual system, it means we
+don't care about the balance of that validator in this particular state.
+
+### How to use relayers
+
+For relayers, there are currently several actions defined.
+There are some subtleties here.
+
+* `addChainToRelayer` gives the relayer the config for the chain and should be called before the relayer is expected to interact with the chain for the first time.
+* `createIbcClientsAction`, `addIbcConnectionAction` and `addIbcChannel` are used to create clients, connections and channels.
+* `relayPackets` relays all *currently queued* packets and their acknowledgements.
+* `startRelayer` starts the relayer, which means from now on, it will *automatically relay all packets*.
+Before `startRelayer`, it's possible to let packets queue up and not clear them.
+Afterwards, *all packets* will be relayed immediately, so it's no longer possible
+to e.g. delay the relaying of a packet.
+
+
+## Defining new actions
+
+When we want to test something that does not yet have a corresponding action,
+for example if a feature adds a new transaction to submit on chain and
+there exists no action yet that submits such a tx,
+it's necessary to define a new action.
+You can see the basic template for how to do this by looking at the actions in
+(actions.go)[actions.go].
+The basic principle is to use exec.Command to execute a docker exec to execute a
+command inside the docker container.
+The pattern for this looks something like this:
+```
+cmd := exec.Command("docker", "exec", 
+    tr.containerConfig.InstanceName,
+    tr.chainConfigs[action.Chain].BinaryName,
+    "the command to execute, for example tx",
+    "argument 1",
+    "argument 2")
+output, err := cmd.CombinedOutput()
+if err != nil {
+    log.Fatal(err, "\n", string(bz))
+}
+
+// potentially check something in the output, or log something, ...
+```
+
+Remember that actions don't need to check that the state was modified correctly,
+since we have the state checks for this.
+Still, it's generally a good idea to do a basic check for errors,
+since in case the action encounters an error,
+we'd rather fail inside the action and immediately know something went wrong,
+rather than just getting a non-matching state during the state check that happens after the action.
+
+### Gas
+When submitting txs, generally either specify a large enough amount of gas manually,
+or use `--gas=auto` with a large `--gas-adjustment`.
+You should avoid situations where transactions non-deterministically sometimes
+work and sometimes fail due to gas, as can happen with `--gas=auto` and no `--gas-adjustment`.
+
+### Waiting for blocks/time
+
+To wait for blocks to be produced or for time to pass,
+you should avoid writing your own logic, and reuse the existing
+utility functions `testConfig.waitBlocks` and `testConfig.WaitTime`.
+These already take care of subtleties, like `WaitTime` working with
+(CometMock)[https://github.com/informalsystems/CometMock] to
+advance the time instead of sleeping.
+
+## Defining new state checks
+
+When we want to check a part of the state that was never accessed before, it
+might be necessary to define a new state check.
+This is done by adding new fields to `ChainState` in (state.go)[state.go].
+
+We also need to populate the newly added fields by querying the actual system state,
+which is done in `getChainState`.
+Typically, this is ultimately done, like actions, by issuing commands to the chain binary
+inside the docker container. See how this is done e.g. for `getBalance`.
+
+## Traces
+
+### Updating the trace format and tests when adjusting the framework
 
 Some things in the test framework should stay consistent, in particular with respect to the trace format.
 When adding or modifying actions, please follow these guidelines:
@@ -12,13 +128,27 @@ When adding a new proposal type:
 * add a case for your proposal type to `json_utils.go/UnmarshalProposalWithType`
 * add a generator for your proposal type in `state_rapid_test.go` and add it to the `GetProposalGen` function
 
-## Regenerating Traces
+### Regenerating Traces
 
 The traces in `tracehandler_testdata` are generated by the test `trace_handlers_test.go/TestWriteExamples`.
 
 You can regenerate them by running `make e2e-traces` in the root of the repo.
 
-## Running against traces
+### Running against traces
 
 To run a test trace in the e2e tests, run `go run . --test-file $TRACEFILE::$TESTCONFIG`.
 See `--help` for more details.
+
+## Debugging and using the e2e infrastructure to set up a testnet
+
+When something in the tests goes wrong, a nice thing about the tests is that the
+docker container doesn't get killed.
+You can sh into the docker container via e.g. `docker exec -it "testinstance" sh` and manually look around,
+Useful pointers are:
+* Look at logs in the node homes: `/$CHAIN_ID/validator$VAL_ID`
+* Query/Run txs on the running apps (find out the relevant addresses and node homes to use e.g. by running `htop "binaryname"`)
+
+It is also possible to locally change a step so it will *always* fail (e.g. by checking for nonsense validator balances)
+and to use this to see the testnet. Alternatively, to debug an action,
+you can temporarily add a very long `time.Sleep`, then sh into the docker container
+and e.g. try running the commands from the action yourself to see what happens.
