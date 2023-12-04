@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -1073,64 +1072,4 @@ func TestBeginBlockCCR(t *testing.T) {
 	found = providerKeeper.PendingConsumerRemovalPropExists(
 		ctx, invalidProp.ChainId, invalidProp.StopTime)
 	require.False(t, found)
-}
-
-func TestHandleEquivocationProposal(t *testing.T) {
-	equivocations := []*evidencetypes.Equivocation{
-		{
-			Time:             time.Now(),
-			Height:           1,
-			Power:            1,
-			ConsensusAddress: "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
-		},
-		{
-			Time:             time.Now(),
-			Height:           1,
-			Power:            1,
-			ConsensusAddress: "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
-		},
-	}
-
-	prop := &providertypes.EquivocationProposal{
-		Equivocations: []*evidencetypes.Equivocation{equivocations[0], equivocations[1]},
-	}
-
-	testCases := []struct {
-		name                string
-		setSlashLogs        bool
-		expectEquivsHandled bool
-		expectErr           bool
-	}{
-		{name: "slash logs not set", setSlashLogs: false, expectEquivsHandled: false, expectErr: true},
-		{name: "slash logs set", setSlashLogs: true, expectEquivsHandled: true, expectErr: false},
-	}
-	for _, tc := range testCases {
-
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-
-		if tc.setSlashLogs {
-			// Set slash logs according to cons addrs in equivocations
-			consAddr := equivocations[0].GetConsensusAddress()
-			require.NotNil(t, consAddr, "consensus address could not be parsed")
-			keeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(consAddr))
-			consAddr = equivocations[1].GetConsensusAddress()
-			require.NotNil(t, consAddr, "consensus address could not be parsed")
-			keeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(consAddr))
-		}
-
-		if tc.expectEquivsHandled {
-			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocations[0])
-			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocations[1])
-		}
-
-		err := keeper.HandleEquivocationProposal(ctx, prop)
-
-		if tc.expectErr {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
-		}
-		ctrl.Finish()
-	}
 }

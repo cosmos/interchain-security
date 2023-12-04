@@ -74,31 +74,59 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		nil,
 	)
 
+	pd3 := types.NewValidatorSetChangePacketData(
+		[]abci.ValidatorUpdate{},
+		3,
+		[]string{
+			"invalid_slash_ack",
+		},
+	)
+
 	testCases := []struct {
 		name                   string
+		expError               bool
 		packet                 channeltypes.Packet
-		newChanges             types.ValidatorSetChangePacketData
 		expectedPendingChanges types.ValidatorSetChangePacketData
 	}{
 		{
 			"success on first packet",
+			false,
 			channeltypes.NewPacket(pd.GetBytes(), 1, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on subsequent packet",
+			false,
 			channeltypes.NewPacket(pd.GetBytes(), 2, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on packet with more changes",
+			false,
 			channeltypes.NewPacket(pd2.GetBytes(), 3, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
+				{
+					PubKey: pk1,
+					Power:  30,
+				},
+				{
+					PubKey: pk2,
+					Power:  40,
+				},
+				{
+					PubKey: pk3,
+					Power:  10,
+				},
+			}},
+		},
+		{
+			"failure on packet with invalid slash acks",
+			true,
+			channeltypes.NewPacket(pd3.GetBytes(), 4, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
+				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
 					PubKey: pk1,
@@ -128,10 +156,16 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	consumerKeeper.SetParams(ctx, moduleParams)
 
 	for _, tc := range testCases {
-		ack := consumerKeeper.OnRecvVSCPacket(ctx, tc.packet, tc.newChanges)
+		var newChanges types.ValidatorSetChangePacketData
+		err := types.ModuleCdc.UnmarshalJSON(tc.packet.GetData(), &newChanges)
+		require.Nil(t, err, "invalid test case: %s - cannot unmarshal VSCPacket data", tc.name)
+		err = consumerKeeper.OnRecvVSCPacket(ctx, tc.packet, newChanges)
+		if tc.expError {
+			require.Error(t, err, "%s - invalid but OnRecvVSCPacket did not return error", tc.name)
+			continue
+		}
+		require.NoError(t, err, "%s - valid but OnRecvVSCPacket returned error: %w", tc.name, err)
 
-		require.NotNil(t, ack, "invalid test case: %s did not return ack", tc.name)
-		require.True(t, ack.Success(), "invalid test case: %s did not return a Success Acknowledgment", tc.name)
 		providerChannel, ok := consumerKeeper.GetProviderChannel(ctx)
 		require.True(t, ok)
 		require.Equal(t, tc.packet.DestinationChannel, providerChannel,
@@ -152,7 +186,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		expectedTime := ctx.BlockTime().Add(consumerKeeper.GetUnbondingPeriod(ctx))
 		require.True(
 			t,
-			consumerKeeper.PacketMaturityTimeExists(ctx, tc.newChanges.ValsetUpdateId, expectedTime),
+			consumerKeeper.PacketMaturityTimeExists(ctx, newChanges.ValsetUpdateId, expectedTime),
 			"no packet maturity time for case: %s", tc.name,
 		)
 	}
@@ -199,9 +233,8 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 	require.False(t, ok)
 
 	// Execute OnRecvVSCPacket
-	ack := consumerKeeper.OnRecvVSCPacket(ctx, packet, vscData)
-	require.NotNil(t, ack)
-	require.True(t, ack.Success())
+	err := consumerKeeper.OnRecvVSCPacket(ctx, packet, vscData)
+	require.Nil(t, err)
 
 	// Confirm pending changes are queued by OnRecvVSCPacket
 	gotPendingChanges, ok := consumerKeeper.GetPendingChanges(ctx)

@@ -14,11 +14,10 @@
     - [Pull Request Templates](#pull-request-templates)
     - [Requesting Reviews](#requesting-reviews)
     - [Updating Documentation](#updating-documentation)
+    - [Changelog](#changelog)
   - [Dependencies](#dependencies)
   - [Protobuf](#protobuf)
   - [Branching Model and Release](#branching-model-and-release)
-    - [Semantic Versioning](#semantic-versioning)
-    - [Backwards Compatibility](#backwards-compatibility)
     - [PR Targeting](#pr-targeting)
 
 Thank you for considering making contributions to the Interchain Security (ICS) repository! 🎉👍
@@ -216,6 +215,63 @@ items. In addition, use the following review explanations:
 
 If you open a PR in ICS, it is mandatory to update the relevant documentation in `/docs`.
 
+### Changelog
+
+To manage and generate our changelog, we currently use [unclog](https://github.com/informalsystems/unclog).
+
+Every PR with types `fix`, `feat`, `deps`, and `refactor` should include a file 
+`.changelog/unreleased/${section}/[${component}/]${pr-number}-${short-description}.md`,
+where:
+
+- `section` is one of 
+  `dependencies`, `improvements`, `features`, `bug-fixes`, `state-breaking`, `api-breaking`, 
+  and _**if multiple apply, create multiple files**_, 
+  not necessarily with the same `short-description` or content;
+- `pr-number` is the PR number;
+- `short-description` is a short (4 to 6 word), hyphen separated description of the change;
+- `component` is used for changes that affect one of the components defined in the [config](.changelog/config.toml), e.g., `provider`, `consumer`.
+
+For examples, see the [.changelog](.changelog) folder.
+
+Use `unclog` to add a changelog entry in `.changelog` (check the [requirements](https://github.com/informalsystems/unclog#requirements) first): 
+```bash
+# add a general entry
+unclog add \
+   -i "${pr-number}-${short-description}" \
+   -p "${pr-number}" \
+   -s "${section}" \
+   -m "${description}" \
+
+# add a entry to a component 
+unclog add 
+   -i "${pr-number}-${short-description}" \
+   -p "${pr-number}" \
+   -c "${component}" \
+   -s "${section}" \
+   -m "${description}" \
+```
+where `${description}` is a detailed description of the changelog entry.
+
+For example, 
+```bash
+# add an entry for bumping IBC to v7.2.0
+unclog add -i "1196-bump-ibc" -p 1196 -s dependencies -m "Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0)" 
+
+# add an entry for changing the consumer module;
+# note that the entry is added to both state-breaking and features sections
+unclog add -i "1024-jail-throttling-v2" -p 1024 -c consumer -s state-breaking -m "Add the consumer-side changes for jail throttling with retries (cf. ADR 008)." 
+unclog add -i "1024-jail-throttling-v2" -p 1024 -c consumer -s features -m "Add the consumer-side changes for jail throttling with retries (cf. ADR 008)." 
+```
+
+**Note:** `unclog add` requires an editor. This can be set either by configuring 
+an `$EDITOR` environment variable or by manually specify an editor binary path 
+via the `--editor` flag. 
+
+**Note:** Changelog entries should answer the question: "what is important about this
+change for users to know?" or "what problem does this solve for users?". It
+should not simply be a reiteration of the title of the associated PR, unless the
+title of the PR _very_ clearly explains the benefit of a change to a user.
+
 ## Dependencies
 
 We use [Go Modules](https://github.com/golang/go/wiki/Modules) to manage
@@ -242,18 +298,6 @@ To generate the protobuf stubs, you can run `make proto-gen`.
 ## Branching Model and Release
 
 ICS adheres to the [trunk based development branching model](https://trunkbaseddevelopment.com/). User branches should start with a user name, example: `{moniker}/{issue#}-branch-name`.
-
-### Semantic Versioning
-
-ICS follows [semantic versioning](https://semver.org), but with the following deviations (similar to [IBC-Go](https://github.com/cosmos/ibc-go/blob/main/RELEASES.md)):
-
-- A library API breaking change to EITHER the provider or consumer module will result in an increase of the MAJOR version number for BOTH modules (X.y.z-provider AND X.y.z-consumer).
-- A state breaking change (change requiring coordinated upgrade and/or state migration) will result in an increase of the MINOR version number for the AFFECTED module(s) (x.Y.z-provider AND/OR x.Y.z-consumer).
-- Any other changes (including node API breaking changes) will result in an increase of the PATCH version number for the AFFECTED module(s) (x.y.Z-provider AND/OR x.y.Z-consumer).
-
-### Backwards Compatibility
-
-A MAJOR version of ICS will always be backwards compatible with the previous MAJOR version of ICS. Versions before that are not supported. For example, a provider chain could run ICS at version 3.4.5, and would be compatible with consumers running ICS at 2.0.0, 2.1.2, 3.2.1, but not 1.2.7.
 
 ### PR Targeting
 

@@ -24,6 +24,7 @@ import (
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	"github.com/cosmos/interchain-security/v3/testutil/simibc"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -129,6 +130,9 @@ func (suite *CCVTestSuite) SetupTest() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
 	// re-assign all validator keys for the first consumer chain
+	providerKeeper.SetPendingConsumerAdditionProp(suite.providerCtx(), &types.ConsumerAdditionProposal{
+		ChainId: icstestingutils.FirstConsumerChainID,
+	})
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
 
 	// start consumer chains

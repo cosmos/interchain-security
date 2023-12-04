@@ -30,10 +30,6 @@ To ensure the security of the consumer chain, provider delegators cannot unbond 
 
 If downtime is initiated by a validator on a consumer chain, a downtime packet will be relayed to the provider to jail that validator for a set amount of time. The validator who committed downtime will then miss out on staking rewards for the configured jailing period.
 
-### Equivocation (Double Sign) Slashing
-
-Evidence of equivocation must be submitted to provider governance and be voted on. This behavior is an extra safeguard before a validator is slashed, and may be replaced by a more automated system in the future.
-
 ### Tokenomics and Rewards
 
 Consumer chains are free to create their own native token which can be used for fees, and can be created on the consumer chain in the form of inflationary rewards. These rewards can be used to incentivize user behavior, for example, LPing or staking. A portion of these fees and rewards will be sent to provider chain stakers, but that proportion is completely customizable by the developers, and subject to governance.

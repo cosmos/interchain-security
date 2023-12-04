@@ -32,6 +32,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdProviderValidatorKey())
 	cmd.AddCommand(CmdThrottleState())
 	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
+	cmd.AddCommand(CmdProposedConsumerChains())
 
 	return cmd
 }
@@ -79,6 +80,33 @@ func CmdConsumerChains() *cobra.Command {
 
 			req := &types.QueryConsumerChainsRequest{}
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdProposedConsumerChains() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list-proposed-consumer-chains",
+		Short: "Query chainIDs in consumer addition proposal before voting finishes",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryProposedChainIDsRequest{}
+			res, err := queryClient.QueryProposedConsumerChainIDs(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

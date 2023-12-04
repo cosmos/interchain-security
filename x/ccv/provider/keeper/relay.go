@@ -6,7 +6,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -22,7 +21,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	data ccv.VSCMaturedPacketData,
-) exported.Acknowledgement {
+) error {
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -34,6 +33,11 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// validate packet data upon receiving
+	if err := data.Validate(); err != nil {
+		return errorsmod.Wrapf(err, "error validating VSCMaturedPacket data")
+	}
+
 	k.HandleVSCMaturedPacket(ctx, chainID, data)
 
 	k.Logger(ctx).Info("VSCMaturedPacket handled",
@@ -41,8 +45,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		"vscID", data.ValsetUpdateId,
 	)
 
-	ack := channeltypes.NewResultAcknowledgement(ccv.V1Result)
-	return ack
+	return nil
 }
 
 // HandleVSCMaturedPacket handles a VSCMatured packet.
@@ -265,7 +268,11 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and
 // then queues the slash packet as pending if valid.
-func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
+func (k Keeper) OnRecvSlashPacket(
+	ctx sdk.Context,
+	packet channeltypes.Packet,
+	data ccv.SlashPacketData,
+) (ccv.PacketAckResult, error) {
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -277,6 +284,11 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// validate packet data upon receiving
+	if err := data.Validate(); err != nil {
+		return nil, errorsmod.Wrapf(err, "error validating SlashPacket data")
+	}
+
 	if err := k.ValidateSlashPacket(ctx, chainID, packet, data); err != nil {
 		k.Logger(ctx).Error("invalid slash packet",
 			"error", err.Error(),
@@ -285,7 +297,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
-		return ccv.NewErrorAcknowledgementWithLog(ctx, err)
+		return nil, err
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -308,7 +320,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
-		return channeltypes.NewResultAcknowledgement(ccv.V1Result)
+		return ccv.V1Result, nil
 	}
 
 	meter := k.GetSlashMeter(ctx)
@@ -321,7 +333,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
-		return channeltypes.NewResultAcknowledgement(ccv.SlashPacketBouncedResult)
+		return ccv.SlashPacketBouncedResult, nil
 	}
 
 	// Subtract voting power that will be jailed/tombstoned from the slash meter,
@@ -340,7 +352,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	)
 
 	// Return result ack that the packet was handled successfully
-	return channeltypes.NewResultAcknowledgement(ccv.SlashPacketHandledResult)
+	return ccv.SlashPacketHandledResult, nil
 }
 
 // ValidateSlashPacket validates a recv slash packet before it is
@@ -354,10 +366,6 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	if !found {
 		return fmt.Errorf("cannot find infraction height matching "+
 			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
-	}
-
-	if data.Infraction != stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN && data.Infraction != stakingtypes.Infraction_INFRACTION_DOWNTIME {
-		return fmt.Errorf("invalid infraction type: %s", data.Infraction)
 	}
 
 	return nil

@@ -12,7 +12,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
@@ -305,62 +304,6 @@ func TestConsumerAdditionProposalString(t *testing.T) {
 		100000000000)
 
 	require.Equal(t, expect, proposal.String(), "string method for ConsumerAdditionProposal returned unexpected string")
-}
-
-func TestEquivocationProposalValidateBasic(t *testing.T) {
-	tests := []struct {
-		name          string
-		proposal      govv1beta1.Content
-		expectedError string
-	}{
-		{
-			name:          "fail: validate abstract - empty title",
-			proposal:      types.NewEquivocationProposal("", "", nil),
-			expectedError: "proposal title cannot be blank: invalid proposal content",
-		},
-		{
-			name:          "fail: equivocations is empty",
-			proposal:      types.NewEquivocationProposal("title", "desc", nil),
-			expectedError: "invalid equivocation proposal: empty equivocations",
-		},
-		{
-			name: "fail: invalid equivocation",
-			proposal: types.NewEquivocationProposal("title", "desc",
-				[]*evidencetypes.Equivocation{
-					{
-						Time:             time.Now(),
-						Height:           1,
-						Power:            1,
-						ConsensusAddress: "addr",
-					},
-					{}, // invalid one
-				}),
-			expectedError: "invalid equivocation time: 0001-01-01 00:00:00 +0000 UTC",
-		},
-		{
-			name: "ok",
-			proposal: types.NewEquivocationProposal("title", "desc",
-				[]*evidencetypes.Equivocation{
-					{
-						Time:             time.Now(),
-						Height:           1,
-						Power:            1,
-						ConsensusAddress: "addr",
-					},
-				}),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.proposal.ValidateBasic()
-
-			if tt.expectedError != "" {
-				require.EqualError(t, err, tt.expectedError)
-				return
-			}
-			require.NoError(t, err)
-		})
-	}
 }
 
 func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {

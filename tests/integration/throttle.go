@@ -30,10 +30,34 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		expectedAllowanceAfterFirstSlash int64
 		expectedReplenishesTillPositive  int
 	}{
-		{"0.2", 800, -200, 600, 1},
-		{"0.1", 400, -600, 300, 3}, // 600/300 = 2, so 3 replenishes to reach positive
-		{"0.05", 200, -800, 150, 6},
-		{"0.01", 40, -960, 30, 33}, // 960/30 = 32, so 33 replenishes to reach positive
+		{
+			"0.2",
+			800,  // replenishFraction * totalPower: 0.2 * 4000
+			-200, // expectedMeterBeforeFirstSlash - power(V0): 800 - 1000
+			600,  // replenishFraction * newTotalPower: 0.2 * 3000
+			1,    // ceil((200+1)/600)
+		},
+		{
+			"0.1",
+			400,  // replenishFraction * totalPower: 0.1 * 4000
+			-600, // expectedMeterBeforeFirstSlash - power(V0): 400 - 1000
+			300,  // replenishFraction * newTotalPower: 0.1 * 3000
+			3,    // ceil((600+1)/300)
+		},
+		{
+			"0.05",
+			200,  // replenishFraction * totalPower: 0.05 * 4000
+			-800, // expectedMeterBeforeFirstSlash - power(V0): 200 - 1000
+			150,  // replenishFraction * newTotalPower: 0.05 * 3000
+			6,    // ceil((800+1)/150)
+		},
+		{
+			"0.01",
+			40,   // replenishFraction * totalPower: 0.01 * 4000
+			-960, // expectedMeterBeforeFirstSlash - power(V0): 40 - 1000
+			30,   // replenishFraction * newTotalPower: 0.01 * 3000
+			33,   // ceil((960+1)/30)
+		},
 	}
 
 	for _, tc := range testCases {
@@ -209,10 +233,10 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.confirmValidatorJailed(valsToSlash[0], true)
 
 	// Packets were bounced for the second and third consumers.
-	s.confirmValidatorNotJailed(valsToSlash[1], 1000)
+	s.confirmValidatorNotJailed(valsToSlash[1], 1000) // each validator has 1000 power from the setup
 	s.confirmValidatorNotJailed(valsToSlash[2], 1000)
 
-	// Total power is now 3000
+	// Total power is now 3000 (as one validator was jailed)
 	s.Require().Equal(int64(3000),
 		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 
@@ -330,7 +354,8 @@ func (s *CCVTestSuite) TestPacketSpam() {
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := s.newPacketFromConsumer(data, uint64(sequence), firstBundle.Path, timeoutHeight, timeoutTimestamp)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		_, err = providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		s.Require().NoError(err)
 	}
 
 	// Execute block
@@ -387,7 +412,8 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := s.newPacketFromConsumer(data, uint64(sequence), firstBundle.Path, timeoutHeight, timeoutTimestamp)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		_, err = providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		s.Require().NoError(err)
 	}
 
 	// Execute block to handle packets in endblock
@@ -557,7 +583,8 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := s.newPacketFromConsumer(data, ibcSeqNum, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		_, err = providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		s.Require().NoError(err)
 	}
 
 	// Check that all validators are jailed.

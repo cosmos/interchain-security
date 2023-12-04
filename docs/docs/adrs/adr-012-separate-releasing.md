@@ -8,10 +8,11 @@ title: Separate Releasing
 
 * {8/18/22}: Initial draft of idea in [#801](https://github.com/cosmos/interchain-security/issues/801)
 * {8/22/22}: Put idea in this ADR
+* {11/10/22}: Reject this ADR
 
 ## Status
 
-Accepted
+Rejected
 
 ## Context
 
@@ -63,8 +64,12 @@ We upgrade `main` to use a new version of SDK. This is a major version bump, tri
 
 ### Negative
 
-* Slightly more complexity.
-* This solution does not allow having provider and consumer on separate versions of e.g. the Cosmos SDK
+* ~~Slightly more complexity.~~Considerably more complex to manage the ICS library. 
+  This is because ICS needs to support multiple versions of SDK (e.g., 0.45, 0.47, 0.50). 
+  In addition, ICS needs to support a special fork of SDK (with LSM included) for the Cosmos Hub. 
+  This means that instead of focusing on main the development team needs to manage multiple release 
+  branches with different dependency trees. 
+* This solution does not allow having provider and consumer on separate versions of e.g. the Cosmos SDK.
 
 ### Neutral
 
