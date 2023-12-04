@@ -82,7 +82,7 @@ html {
 
   /* MAINNAV */
   .navbar {
-    @apply py-2 h-auto border-b border-b-docusaurusColorBorder shadow-none bg-docusaurusBgColor;
+    @apply pb-2 pt-5 h-auto border-b border-b-docusaurusColorBorder shadow-none bg-docusaurusBgColor;
     &__toggle {
       @apply bg-card rounded-s h-8 w-8 flex justify-center items-center;
       @media (min-width: 997px) {
@@ -482,7 +482,7 @@ html {
       @apply text-[1rem];
     }
     code {
-      @apply border-0 px-3 align-baseline font-normal;
+      @apply border-0 px-3 align-baseline;
     }
     blockquote {
       @apply my-7;
@@ -530,6 +530,11 @@ html {
       & > ul,
       & > ol {
         @apply my-5;
+      }
+    }
+    .card-section {
+      a {
+        @apply no-underline;
       }
     }
   }

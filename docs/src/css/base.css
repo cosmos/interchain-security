@@ -32,4 +32,8 @@
       background-color: var(--ifm-color-primary);
       color: white;
     }
+
+    &[data-theme="dark"] ::selection{
+      color: black;
+    }
 }
