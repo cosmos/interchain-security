@@ -1,5 +1,89 @@
 # CHANGELOG
 
+## v3.3.0
+
+*December 4th, 2023*
+
+This release is state and api reaking.
+
+Notable features of this release:
+* Cryptohraphic-equivocation feature added to provider in [\#1340](https://github.com/cosmos/interchain-security/pull/1340) moves ICS towards untrusted consumers.
+* Key assignment upgrades [\#1339](https://github.com/cosmos/interchain-security/pull/1339)
+* Additional message validation and constraints for the core protocol [\#1460](https://github.com/cosmos/interchain-security/pull/1460)
+* ICS quint model added [\#1336](https://github.com/cosmos/interchain-security/pull/1336)
+* Upgrades to consumer genesis procedure [\#1324](https://github.com/cosmos/interchain-security/pull/1324)
+This PR extends the consumer command with a `transform` subcommand that transform genesis outputs from provider on v1/2/3 into output that can be used by consumer on `>=v3.3.0`
+
+```shell
+# Example:
+$ interchain-security-cd transform /path/to/ccv_consumer_genesis.json
+```
+
+### API BREAKING
+
+- [Provider](x/ccv/provider)
+  - Deprecate equivocation proposals.
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+### DEPENDENCIES
+
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v7.3.1](https://github.com/cosmos/ibc-go/releases/tag/v7.3.1).
+  ([\#1373](https://github.com/cosmos/interchain-security/pull/1373))
+
+### FEATURES
+
+- General
+  - Add Quint model of Replicated Security.
+    ([\#1336](https://github.com/cosmos/interchain-security/pull/1336))
+- [Provider](x/ccv/provider)
+  - Update how consumer-assigned keys are checked when a validator is
+    created on the provider.
+    ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
+  - Introduce the cryptographic verification of equivocation feature to the provider
+    (cf. [ADR-005](/docs/docs/adrs/adr-005-cryptographic-equivocation-verification.md)
+    & [ADR-013](/docs/docs/adrs/adr-013-equivocation-slashing.md)).
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+### IMPROVEMENTS
+
+- Split out consumer genesis state to reduce shared data between provider and
+  consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
+  - Note: This breaks json format used by augmenting Genesis files of consumer 
+  chains with consumer genesis content exported from provider chain. Consumer 
+  Genesis content exported from a provider chain using major version 1, 2 or 3 
+  of the provider module needs to be transformed with the transformation command 
+  introduced by this PR:
+    ```
+    Transform the consumer genesis file from a provider version v1, v2 or v3 to a version supported by this consumer. Result is printed to STDOUT.
+
+    Example:
+    $ <appd> transform /path/to/ccv_consumer_genesis.json
+
+    Usage:
+      interchain-security-cd genesis transform [genesis-file] [flags]
+    ```
+- Refactor shared events, codecs and errors assign to
+  consumer and provider dedicated types where possible.
+  ([\#1350](https://github.com/cosmos/interchain-security/pull/1350))
+
+### STATE BREAKING
+
+- General
+  - Split out consumer genesis state to reduce shared data between provider and
+    consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
+  - Improve validation of IBC packet data and provider messages. Also,
+    enable the provider to validate consumer packets before handling them.
+    ([\#1460](https://github.com/cosmos/interchain-security/pull/1460))
+- [Provider](x/ccv/provider)
+  - Change the states by adding a consumer key for each chain that is
+    not yet registered meaning for which the gov proposal has not passed.
+    ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
+  - Introduce the cryptographic verification of equivocation feature to the provider
+    (cf. [ADR-005](/docs/docs/adrs/adr-005-cryptographic-equivocation-verification.md)
+    & [ADR-013](/docs/docs/adrs/adr-013-equivocation-slashing.md)).
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
 ## v3.2.0
 
 *November 24, 2023*
