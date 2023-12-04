@@ -869,6 +869,7 @@ func (tr TestConfig) getProposedConsumerChains(chain ChainID) []string {
 	return chains
 }
 
+//lint:ignore U1000 function can only be used in tests
 func uintPtr(i uint) *uint {
 	return &i
 }
