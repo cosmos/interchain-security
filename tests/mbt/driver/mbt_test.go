@@ -304,7 +304,7 @@ func RunItfTrace(t *testing.T, path string) {
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
 
 				// stop the consumer chain
-				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, true)
+				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, expectError)
 			} else {
 				expectError = false
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
@@ -321,7 +321,7 @@ func RunItfTrace(t *testing.T, path string) {
 				driver.DeliverPacketFromConsumer(ChainId(consumerChain), expectError)
 
 				// stop the consumer chain on the provider
-				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, true)
+				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, expectError)
 			} else {
 				expectError = false
 				driver.DeliverPacketFromConsumer(ChainId(consumerChain), expectError)
