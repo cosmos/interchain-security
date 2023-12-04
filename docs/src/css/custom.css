@@ -359,7 +359,7 @@ html {
 
   /* RELATED ARTICLES */
   &[data-theme="dark"] .pagination-nav > a {
-    @apply bg-fg;
+    @apply bg-fg border-stone-800;
   }
   .pagination-nav {
     @apply pb-7 mt-9;
@@ -488,7 +488,8 @@ html {
       @apply my-7;
     }
     a {
-      @apply no-underline hover:underline;
+      @apply underline;
+      /* color: var(--ifm-color-primary ); */
       color: var(--ifm-color-primary);
     }
     ol,
