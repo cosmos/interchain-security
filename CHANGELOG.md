@@ -4,7 +4,7 @@
 
 *December 4th, 2023*
 
-This release is state and api reaking.
+This release is state and api breaking.
 
 Notable features of this release:
 * Cryptohraphic-equivocation feature added to provider in [\#1340](https://github.com/cosmos/interchain-security/pull/1340) moves ICS towards untrusted consumers.
