@@ -1,0 +1,13 @@
+name: Check Markdown links
+on:
+  pull_request:
+    paths:
+      - "**.md"
+      - "!.github/**"
+      - "!.changelog/**"
+jobs:
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15

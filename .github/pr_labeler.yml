@@ -1,29 +1,37 @@
 "C:x/consumer":
-  - x/ccv/consumer/**/*
+- changed-files:
+  - any-glob-to-any-file: x/ccv/consumer/**
 "C:x/democracy":
-  - x/ccv/democracy/**/*
+- changed-files:
+  - any-glob-to-any-file: x/ccv/democracy/**
 "C:x/provider":
-  - x/ccv/provider/**/*
+- changed-files:
+  - any-glob-to-any-file: x/ccv/provider/**
 "C:x/types":
-  - x/ccv/types/**/*
+- changed-files:
+  - any-glob-to-any-file: x/ccv/types/**
 "C:Docs":
-  - docs/docs/**/*
+- changed-files:
+  - any-glob-to-any-file: docs/docs/**
 "C:ADR":
-  - docs/docs/adrs/**/*
+- changed-files:
+  - any-glob-to-any-file: docs/docs/adrs/**
 "C:CI":
-  - .github/**/*.yml
-  - buf.work.yaml
-  - .mergify.yml
-  - .golangci.yml
-  - mlc_config.json
-  - sonar-project.properties
+- changed-files:
+  - any-glob-to-any-file: .github/**/*.yml
+  - any-glob-to-any-file: buf.work.yaml
+  - any-glob-to-any-file: .mergify.yml
+  - any-glob-to-any-file: .golangci.yml
+  - any-glob-to-any-file: mlc_config.json
+  - any-glob-to-any-file: sonar-project.properties
 "C:Build":
-  - Makefile
-  - Dockerfile
-  - scripts/*
+- changed-files:
+  - any-glob-to-any-file: Makefile
+  - any-glob-to-any-file: Dockerfile
+  - any-glob-to-any-file: scripts/**
 "C:Testing":
-  - app/**/*
-  - cmd/**/*
-  - legacy_ibc_testing/**/*
-  - tests/**/*
-  - testutil/**/*
+- changed-files:
+  - any-glob-to-any-file: app/**
+  - any-glob-to-any-file: cmd/**
+  - any-glob-to-any-file: tests/**
+  - any-glob-to-any-file: testutil/**

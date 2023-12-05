@@ -1,13 +1,22 @@
-name: gosec
+name: Run Gosec
 on:
+  pull_request:
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+    branches:
+      - main
+      - feat/*
   push:
     branches:
       - main
       - feat/*
-  pull_request:
-    branches:
-      - main
-      - feat/*
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+
 jobs:
   Gosec:
     runs-on: ubuntu-latest

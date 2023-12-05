@@ -30,17 +30,26 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 
 ## Table of Contents
 
-| ADR \# | Description | Status |
-| ------ | ----------- | ------ |
-| [001](./adr-001-key-assignment.md) | Consumer chain key assignment | Accepted, Implemented |
-| [002](./adr-002-throttle.md) | Jail Throttling | Accepted, Implemented |
-| [003](./adr-003-equivocation-gov-proposal.md) | Equivocation governance proposal | Accepted, Implemented |
-| [004](./adr-004-denom-dos-fixes.md) | Denom DOS fixes | Accepted, Implemented |
-| [005](./adr-005-cryptographic-equivocation-verification.md) | Cryptographic verification of equivocation evidence | Accepted, In-progress |
-| [007](./adr-007-pause-unbonding-on-eqv-prop.md) | Pause validator unbonding during equivocation proposal | Proposed |
-| [008](./adr-008-throttle-retries.md) | Throttle with retries | Accepted, In-progress |
-| [009](./adr-009-soft-opt-out.md) | Soft Opt-out | Accepted, Implemented |
-| [010](./adr-010-standalone-changeover.md) | Standalone to Consumer Changeover | Accepted, Implemented |
-| [011](./adr-011-improving-test-confidence.md) | Improving testing and increasing confidence | Proposed |
-| [012](./adr-012-separate-releasing.md) | Separate Releasing | Proposed |
-| [013](./adr-013-equivocation-slashing.md) | Slashing on the provider for consumer equivocation | Proposed |
+### Accepted
+
+- [ADR 001: Key Assignment](./adr-001-key-assignment.md)
+- [ADR 002: Jail Throttling](./adr-002-throttle.md)
+- [ADR 004: Denom DOS fixes](./adr-004-denom-dos-fixes.md)
+- [ADR 005: Cryptographic verification of equivocation evidence](./adr-005-cryptographic-equivocation-verification.md)
+- [ADR 008: Throttle with retries](./adr-008-throttle-retries.md)
+- [ADR 009: Soft Opt-Out](./adr-009-soft-opt-out.md)
+- [ADR 010: Standalone to Consumer Changeover](./adr-010-standalone-changeover.md)
+- [ADR 013: Slashing on the provider for consumer equivocation](./adr-013-equivocation-slashing.md)
+
+### Proposed
+
+- [ADR 011: Improving testing and increasing confidence](./adr-011-improving-test-confidence.md)
+
+### Rejected
+
+- [ADR 007: Pause validator unbonding during equivocation proposal](./adr-007-pause-unbonding-on-eqv-prop.md)
+- [ADR 012: Separate Releasing](./adr-012-separate-releasing.md)
+
+### Deprecated
+
+- [ADR 003: Equivocation governance proposal](./adr-003-equivocation-gov-proposal.md)
