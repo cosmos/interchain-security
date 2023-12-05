@@ -868,7 +868,3 @@ func (tr TestConfig) getProposedConsumerChains(chain ChainID) []string {
 
 	return chains
 }
-
-func uintPtr(i uint) *uint {
-	return &i
-}

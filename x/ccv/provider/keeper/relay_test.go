@@ -145,7 +145,6 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	// Now queue a slash packet data instance for chain-2, confirm v1 result ack is returned
 	err = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
 	require.NoError(t, err)
-
 }
 
 func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
