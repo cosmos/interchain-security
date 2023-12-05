@@ -23,7 +23,7 @@ I have...
 * [ ] Confirmed this PR does not introduce changes requiring state migrations, OR migration code has been added to consumer and/or provider modules
 * [ ] Targeted the correct branch (see [PR Targeting](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
 * [ ] Provided a link to the relevant issue or specification
-* [ ] Followed the guidelines for [building SDK modules](https://github.com/cosmos/cosmos-sdk/blob/main/docs/docs/building-modules)
+* [ ] Followed the guidelines for [building SDK modules](https://github.com/cosmos/cosmos-sdk/blob/main/docs/build/building-modules/00-intro.md)
 * [ ] Included the necessary unit and integration [tests](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#testing)
 * [ ] Added a changelog entry to `CHANGELOG.md`
 * [ ] Included comments for [documenting Go code](https://blog.golang.org/godoc)
