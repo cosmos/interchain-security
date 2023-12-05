@@ -37,7 +37,7 @@ RUN make install
 FROM --platform=linux/amd64 ${PROVIDER_IMAGE}:${PROVIDER_VERSION} AS provider
 
 # Get Hermes build
-FROM otacrew/hermes-ics:evidence-cmd AS hermes-builder
+FROM --platform=linux/amd64 otacrew/hermes-ics:evidence-cmd AS hermes-builder
 
 # Get CometMock
 FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder
