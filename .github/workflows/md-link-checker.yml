@@ -1,5 +1,9 @@
 name: Check Markdown links
-on: push
+on:
+  pull_request:
+    paths:
+      - "*.md"
+      - "docs/docs/**.md"
 jobs:
   repo-root:
     runs-on: ubuntu-latest
