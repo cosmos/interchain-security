@@ -6,21 +6,21 @@ To increase confidence in the correctness of the Interchain Security code we con
 
 Unit tests are useful for simple standalone functionality, and CRUD operations. Unit tests should use golang's standard testing package, and be defined in files formatted as ```<file being tested>_test.go``` in the same directory as the file being tested, following standard conventions.
 
-[Mocked external keepers](../../testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing code that briefly interacts with external modules, but still only a single function/method relevant to ccv, and a single chain. Ie. do not use mocked external keepers to test the integration of the ccv module with external modules, or integration between consumer and provider.
+[Mocked external keepers](testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing code that briefly interacts with external modules, but still only a single function/method relevant to ccv, and a single chain. Ie. do not use mocked external keepers to test the integration of the ccv module with external modules, or integration between consumer and provider.
 
 ## Integration Tests
 
-[integration-tests](../../tests/integration/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc.
+[integration-tests](tests/integration/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc.
 
-To run integration tests against your own consumer/provider implementations, use [instance_test.go](../../tests/integration/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](../../testutil/integration/interfaces.go), pattern match [specific_setup.go](../../testutil/ibc_testing/specific_setup.go), then pass in the appropriate types and parameters to the suite, as is done in `instance_test.go` for the dummy provider/consumer implementations.
+To run integration tests against your own consumer/provider implementations, use [instance_test.go](tests/integration/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](testutil/integration/interfaces.go), pattern match [specific_setup.go](testutil/ibc_testing/specific_setup.go), then pass in the appropriate types and parameters to the suite, as is done in `instance_test.go` for the dummy provider/consumer implementations.
 
 ## Model-Based Tests (MBT)
 
-[MBT](tests/mbt/) tests are similar to integration tests, but they compare the system state to an expected state generated from a formally verified specification written in Quint.
+[MBT](tests/mbt/) tests are similar to integration tests, but they compare the system state to an expected state generated from a formally verified specification written in Quint
 
 ## End-to-End (E2E) Tests 
 
-[E2E tests](../../tests/e2e/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. E2E tests use queries/transactions invoked from CLI to drive and validate the code.
+[E2E tests](tests/e2e/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. E2E tests use queries/transactions invoked from CLI to drive and validate the code.
 
 ## Running Tests
 Tests can be run using `make`:
@@ -103,7 +103,7 @@ gofmt -w -s -e .
 go vet ./...
 ```
 
-Some useful tools are included in the repository using [pre-commit](https://pre-commit.com/hooks.html). pre-commit lets you run developer tools either on every git commit, or manually with `pre-commit run --all-files`. See the [config](../../.pre-commit-config.yaml) for details. In this repo the hooks are not installed to git, as that can be cumbersome, but it is still possible to benefit from them.
+Some useful tools are included in the repository using [pre-commit](https://pre-commit.com/hooks.html). pre-commit lets you run developer tools either on every git commit, or manually with `pre-commit run --all-files`. See the [config](.pre-commit-config.yaml) for details. In this repo the hooks are not installed to git, as that can be cumbersome, but it is still possible to benefit from them.
 
 ```bash
 ## Prerequisites

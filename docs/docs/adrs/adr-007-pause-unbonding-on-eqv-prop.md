@@ -6,12 +6,18 @@ title: ADR Template
 
 ## Changelog
 * 2023-05-16: Initial Draft
+* 2023-11-30: Change the status to rejected
 
 ## Status
 
-Proposed
+Rejected
 
 ## Context
+
+**Note:** ADR rejected as the equivocation proposal was removed by the 
+cryptographic verification of equivocation feature 
+(see [ADR-005](./adr-005-cryptographic-equivocation-verification.md) and 
+[ADR-013](./adr-013-equivocation-slashing.md)).
 
 Currently, if an equivocation slashing proposal is created after more than one
 week has passed since the equivocation, it is possible that the validator in

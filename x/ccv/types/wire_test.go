@@ -22,23 +22,75 @@ func TestPacketDataValidateBasic(t *testing.T) {
 	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
 
+	cId := crypto.NewCryptoIdentityFromIntSeed(4732894342)
+	validSlashAck := cId.SDKValConsAddress().String()
+	tooLongSlashAck := string(make([]byte, 1024))
+
 	cases := []struct {
 		name       string
 		expError   bool
 		packetData types.ValidatorSetChangePacketData
 	}{
 		{
-			"nil packet data",
+			"invalid: nil packet data",
 			true,
 			types.NewValidatorSetChangePacketData(nil, 1, nil),
 		},
 		{
-			"empty packet data",
-			true,
+			"valid: empty packet data",
+			false,
 			types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 2, nil),
 		},
 		{
-			"valid packet data",
+			"invalid: slash ack not consensus address",
+			true,
+			types.NewValidatorSetChangePacketData(
+				[]abci.ValidatorUpdate{
+					{
+						PubKey: pk1,
+						Power:  30,
+					},
+				},
+				3,
+				[]string{
+					"some_string",
+				},
+			),
+		},
+		{
+			"valid: packet data with valid slash ack",
+			false,
+			types.NewValidatorSetChangePacketData(
+				[]abci.ValidatorUpdate{
+					{
+						PubKey: pk2,
+						Power:  20,
+					},
+				},
+				4,
+				[]string{
+					validSlashAck,
+				},
+			),
+		},
+		{
+			"invalid: slash ack is too long",
+			true,
+			types.NewValidatorSetChangePacketData(
+				[]abci.ValidatorUpdate{
+					{
+						PubKey: pk2,
+						Power:  20,
+					},
+				},
+				5,
+				[]string{
+					tooLongSlashAck,
+				},
+			),
+		},
+		{
+			"valid: packet data with nil slash ack",
 			false,
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
@@ -51,18 +103,18 @@ func TestPacketDataValidateBasic(t *testing.T) {
 						Power:  20,
 					},
 				},
-				3,
+				6,
 				nil,
 			),
 		},
 	}
 
 	for _, c := range cases {
-		err := c.packetData.ValidateBasic()
+		err := c.packetData.Validate()
 		if c.expError {
-			require.Error(t, err, "%s invalid but passed ValidateBasic", c.name)
+			require.Error(t, err, "%s invalid but passed Validate", c.name)
 		} else {
-			require.NoError(t, err, "%s valid but ValidateBasic returned error: %w", c.name, err)
+			require.NoError(t, err, "%s valid but Validate returned error: %w", c.name, err)
 		}
 	}
 }

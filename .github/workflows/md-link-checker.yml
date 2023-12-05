@@ -1,0 +1,27 @@
+name: Check Markdown links
+on:
+  pull_request:
+    paths:
+      - "*.md"
+      - "docs/docs/**.md"
+jobs:
+  repo-root:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the latest version of the code
+      - uses: actions/checkout@v4
+      # Checks the status of hyperlinks in *.md files in the repo root
+      - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
+        with:
+          folder-path: '.'
+          max-depth: 1
+  
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the latest version of the code
+      - uses: actions/checkout@v4
+      # Checks the status of hyperlinks in *.md files in the docs/docs folder
+      - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
+        with:
+          folder-path: 'docs/docs'

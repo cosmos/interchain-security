@@ -6,7 +6,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -25,7 +24,12 @@ import (
 //
 // Note: CCV uses an ordered IBC channel, meaning VSC packet changes will be accumulated (and later
 // processed by ApplyCCValidatorChanges) s.t. more recent val power changes overwrite older ones.
-func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
+func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) error {
+	// validate packet data upon receiving
+	if err := newChanges.Validate(); err != nil {
+		return errorsmod.Wrapf(err, "error validating VSCPacket data")
+	}
+
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
 	if found && providerChannel != packet.DestinationChannel {
@@ -87,8 +91,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		"len updates", len(newChanges.ValidatorUpdates),
 		"len slash acks", len(newChanges.SlashAcks),
 	)
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
+	return nil
 }
 
 // QueueVSCMaturedPackets appends matured VSCs to an internal queue.
