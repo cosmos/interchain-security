@@ -354,7 +354,8 @@ func (s *CCVTestSuite) TestPacketSpam() {
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := s.newPacketFromConsumer(data, uint64(sequence), firstBundle.Path, timeoutHeight, timeoutTimestamp)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		_, err = providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		s.Require().NoError(err)
 	}
 
 	// Execute block
@@ -411,7 +412,8 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := s.newPacketFromConsumer(data, uint64(sequence), firstBundle.Path, timeoutHeight, timeoutTimestamp)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		_, err = providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		s.Require().NoError(err)
 	}
 
 	// Execute block to handle packets in endblock
@@ -581,7 +583,8 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := s.newPacketFromConsumer(data, ibcSeqNum, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		_, err = providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+		s.Require().NoError(err)
 	}
 
 	// Check that all validators are jailed.
