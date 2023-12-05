@@ -113,7 +113,7 @@ func (s *Driver) validator(i int64) sdk.ValAddress {
 }
 
 // consumerPower returns the power on the consumer chain chain for
-// validator with id (ix) i
+// the validator with index i
 func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 	v, found := s.consumerKeeper(chain).GetCCValidator(s.ctx(chain), s.validator(i))
 	if !found {
@@ -149,9 +149,7 @@ func (s *Driver) delegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
-	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	// There may or may not be an error, depending on the trace
-	_ = err
+	server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
 // undelegate undelegates amt tokens from validator val
@@ -162,13 +160,11 @@ func (s *Driver) undelegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
-	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	// There may or may not be an error, depending on the trace
-	_ = err
+	server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 	providerStaking.GetAllDelegations(s.ctx(P))
 }
 
-// packetQueue returns the queued packet sfrom sender to receiver,
+// packetQueue returns the queued packets from sender to receiver,
 // where either sender or receiver must be the provider.
 func (s *Driver) packetQueue(sender, receiver ChainId) []simibc.Packet {
 	var path *simibc.RelayedPath
@@ -213,7 +209,7 @@ func (s *Driver) getStateString() string {
 }
 
 func (s *Driver) isProviderChain(chain ChainId) bool {
-	return chain == "provider"
+	return chain == P
 }
 
 func (s *Driver) getChainStateString(chain ChainId) string {

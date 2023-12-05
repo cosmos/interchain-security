@@ -388,7 +388,7 @@ module ccv {
         consumersToStop: Set[Chain]): Result = {
         val currentProviderState = currentState.providerState
         
-        // check for Vsc timeouts
+        // check for vsc timeouts
         val timedOutConsumers = getRunningConsumers(currentProviderState).filter(
             consumer => 
             val res = TimeoutDueToVscTimeout(currentState, consumer)
