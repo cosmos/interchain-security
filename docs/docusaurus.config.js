@@ -1,8 +1,10 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 
-const lightCodeTheme = require('prism-react-renderer').themes.github;
-const darkCodeTheme = require('prism-react-renderer').themes.dracula;
+const lightCodeTheme = require("prism-react-renderer").themes.github;
+const darkCodeTheme = require("prism-react-renderer").themes.dracula;
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -35,7 +37,7 @@ const config = {
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
-          sidebarPath: require.resolve('./sidebars.js'),
+          sidebarPath: require.resolve("./sidebars.js"),
           routeBasePath: "/",
           versions: {
             current: {
@@ -43,6 +45,8 @@ const config = {
               // banner: "current",
             },
           },
+          remarkPlugins: [remarkMath],
+          rehypePlugins: [rehypeKatex],
         },
 
         theme: {
@@ -62,19 +66,19 @@ const config = {
         },
       },
       colorMode: {
-        defaultMode: 'dark',
-        disableSwitch: true,
+        defaultMode: "dark",
+        disableSwitch: false,
         respectPrefersColorScheme: false,
       },
       navbar: {
         title: "Interchain Security",
         hideOnScroll: false,
-        // logo: {
-        //   alt: "Interchain Security Logo",
-        //   src: "img/logo-sdk.svg",
-        //   href: "/",
-        //   target: "_self",
-        // },
+        logo: {
+          alt: "Interchain Security Logo",
+          src: "/img/hub.svg",
+          href: "/",
+          target: "_self",
+        },
         items: [
           {
             href: "https://github.com/cosmos/interchain-security",
@@ -96,7 +100,7 @@ const config = {
           {
             items: [
               {
-                html: `<a href="https://cosmos.network"><img src="/img/logo-bw.svg" alt="Cosmos Logo"></a>`,
+                html: `<a href="https://cosmos.network"><img src="/interchain-security/img/logo-bw.svg" alt="Interchain Security Logo"></a>`,
               },
             ],
           },
@@ -164,7 +168,8 @@ const config = {
             ],
           },
         ],
-        copyright: "Informal Systems",
+        copyright:
+          "The development of Interchain Security is primarily led by Informal Systems. Funding for this development comes primarily from the Interchain Foundation, a Swiss non-profit.",
       },
       prism: {
         theme: lightCodeTheme,
@@ -206,7 +211,7 @@ const config = {
         toExtensions: ["html"],
         redirects: [
           {
-            from: ["/", "/main", "/master"],
+            from: ["/main", "/master"],
             to: "/",
           },
         ],
