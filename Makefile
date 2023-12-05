@@ -71,9 +71,8 @@ test-e2e-parallel:
 	go run ./tests/e2e/... --include-multi-consumer --parallel
 
 # run E2E compatibility tests for v3.x
-# Note: e54799020 is the rev for v3.1.x candidate as build is broken for  v3.1.0
 test-e2e-compatibility-v3:
-	go run ./tests/e2e/... -parallel -tc compatibility -pv v3.2.0-rc1 -pv e54799020 -pv v3.0.0 -cv v3.2.0-rc1 -cv e54799020 -cv v3.0.0
+	go run ./tests/e2e/... -parallel -tc compatibility -pv v3.2.0-rc1 -pv v3.1.0 -pv v3.0.0 -cv v3.2.0-rc1 -cv v3.1.0 -cv v3.0.0
 
 # run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
 test-gaia-e2e:

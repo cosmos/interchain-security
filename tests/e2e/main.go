@@ -1,19 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
-	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/kylelemons/godebug/pretty"
 )
 
 // The list of test cases to be executed
@@ -94,12 +87,6 @@ var (
 var selectedTestfiles TestSet
 
 var stepChoices = map[string]StepChoice{
-	"compatibility": {
-		name:        "compatibility",
-		steps:       compatibilitySteps,
-		description: `Minimal set of test steps to perform compatibility tests`,
-		testConfig:  DefaultTestConfig(),
-	},
 	"happy-path-short": {
 		name:        "happy-path-short",
 		steps:       shortHappyPathSteps,
@@ -160,31 +147,6 @@ var stepChoices = map[string]StepChoice{
 		description: "consumer double signing tests",
 		testConfig:  DefaultTestConfig(),
 	},
-}
-
-func executeTests(tests []testStepsWithConfig) (err error) {
-	if parallel != nil && *parallel {
-		fmt.Println("=============== running all tests in parallel ===============")
-	}
-
-	var wg sync.WaitGroup
-	for _, testCase := range tests {
-		if parallel != nil && *parallel {
-			wg.Add(1)
-			go func(run testStepsWithConfig) {
-				defer wg.Done()
-				run.testRun.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
-			}(testCase)
-		} else {
-			log.Printf("=============== running %s ===============\n", testCase.testRun.name)
-			testCase.testRun.Run(testCase.steps, *localSdkPath, *useGaia, *gaiaTag)
-		}
-	}
-
-	if parallel != nil && *parallel {
-		wg.Wait()
-	}
-	return
 }
 
 func getTestCaseUsageString() string {
@@ -323,48 +285,90 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []t
 	return tests
 }
 
-// Create multiversion test cases
-// Based on the original set of test cases a multitude of test cases
-// for the provided consumer and provider versions are generated.
-func multiVersionConfig(testCases []testStepsWithConfig, providerVersions, consumerVerions VersionSet) []testStepsWithConfig {
-	var newTCs []testStepsWithConfig
-	if len(consumerVerions) == 0 && len(providerVersions) == 0 {
-		return testCases
+func deleteTargets(targets []ExecutionTarget) error {
+	for _, target := range targets {
+		target.Delete()
 	}
+	return nil
+}
+
+// Create targets where test cases should be executed on
+// For each combination of provider & consumer versions an ExecutionTarget
+// is created.
+func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTarget, error) {
+	targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag}
+	var targets []ExecutionTarget
 
 	if len(consumerVersions) == 0 {
-		consumerVerions = append(consumerVerions, "")
+		consumerVersions = append(consumerVersions, "")
 	}
 	if len(providerVersions) == 0 {
 		providerVersions = append(providerVersions, "")
 	}
 
 	for _, provider := range providerVersions {
-		for _, consumer := range consumerVerions {
-			if consumer == provider {
-				log.Printf("Skipping same version '%s' for provider & consumer", consumer)
-				continue
+		for _, consumer := range consumerVersions {
+			targetCfg.consumerVersion = consumer
+			targetCfg.providerVersion = provider
+			target := DockerContainer{targetConfig: targetCfg}
+			err := target.Build()
+			if err != nil {
+				deleteTargets(targets)
+				return nil, err
 			}
-			log.Printf("Configuring test cases for: provider version %s, consumer version %s", provider, consumer)
-			for _, tc := range testCases {
-				tc.testRun.consumerVersion = consumer
-				tc.testRun.providerVersion = provider
-				tc.testRun.transformGenesis = *transformGenesis
-				suffix := ""
-				if consumer != "" {
-					suffix = fmt.Sprintf("_cons-%s", consumer)
-				}
-				if provider != "" {
-					suffix += fmt.Sprintf("_prov-%s", provider)
-				}
-				tc.testRun.containerConfig.ContainerName += suffix
-				tc.testRun.containerConfig.InstanceName += suffix
-				tc.testRun.name += suffix
-				newTCs = append(newTCs, tc)
-			}
+			targets = append(targets, &target)
 		}
 	}
-	return newTCs
+	return targets, nil
+}
+
+func createTestRunners(targets []ExecutionTarget, testCases []testStepsWithConfig) []TestRunner {
+	runners := []TestRunner{}
+	for _, target := range targets {
+		for _, tc := range testCases {
+			tr := TestRunner{
+				config:  tc.testRun,
+				steps:   tc.steps,
+				target:  target,
+				verbose: *verbose,
+			}
+			//TODO: refactor this target specific setting
+			tr.target.(*DockerContainer).containerCfg = tc.testRun.containerConfig
+			tr.config.transformGenesis = *transformGenesis
+			tr.config.SetCometMockConfig(*useCometmock)
+			tr.config.SetRelayerConfig(*useGorelayer)
+			runners = append(runners, tr)
+		}
+	}
+	return runners
+}
+
+func executeTests(runners []TestRunner) error {
+	if parallel != nil && *parallel {
+		fmt.Println("=============== running all tests in parallel ===============")
+	}
+
+	var wg sync.WaitGroup
+	var err error = nil
+
+	for _, runner := range runners {
+		if parallel != nil && *parallel {
+			wg.Add(1)
+			go func(runner TestRunner) {
+				defer wg.Done()
+				runner.Run()
+			}(runner)
+		} else {
+			log.Printf("=============== running %s ===============\n", runner.config.name)
+			err = runner.Run()
+		}
+	}
+
+	if parallel != nil && *parallel {
+		wg.Wait()
+	}
+
+	return err
 }
 
 // runs E2E tests
@@ -377,28 +381,20 @@ func main() {
 	}
 
 	testCases := getTestCases(selectedTests, selectedTestfiles)
-	testCases = multiVersionConfig(testCases, providerVersions, consumerVersions)
+	targets, err := createTargets(providerVersions, consumerVersions)
+	if err != nil {
+		log.Fatal("failed creating test targets: ", err)
+	}
+	defer func() { deleteTargets(targets) }()
 
+	testRunners := createTestRunners(targets, testCases)
 	start := time.Now()
-	err := executeTests(testCases)
+	err = executeTests(testRunners)
 	if err != nil {
 		log.Fatalf("Test execution failed '%s'", err)
 	}
 	log.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
-}
 
-// Run sets up docker container and executes the steps in the test run.
-// Docker containers are torn down after the test run is complete.
-func (tr *TestConfig) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
-
-	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag, tr.consumerVersion, tr.providerVersion)
-	tr.SetCometMockConfig(*useCometmock)
-	tr.SetRelayerConfig(*useGorelayer)
-
-	tr.validateStringLiterals()
-	tr.startDocker()
-	tr.executeSteps(steps)
-	tr.teardownDocker()
 }
 
 type StepChoice struct {
@@ -406,221 +402,4 @@ type StepChoice struct {
 	steps       []Step
 	description string
 	testConfig  TestConfig
-}
-
-func (tr *TestConfig) runStep(step Step, verbose bool) {
-	switch action := step.Action.(type) {
-	case StartChainAction:
-		tr.startChain(action, verbose)
-	case StartSovereignChainAction:
-		tr.startSovereignChain(action, verbose)
-	case LegacyUpgradeProposalAction:
-		tr.submitLegacyUpgradeProposal(action, verbose)
-	case WaitUntilBlockAction:
-		tr.waitUntilBlockOnChain(action)
-	case ChangeoverChainAction:
-		tr.changeoverChain(action, verbose)
-	case SendTokensAction:
-		tr.sendTokens(action, verbose)
-	case SubmitTextProposalAction:
-		tr.submitTextProposal(action, verbose)
-	case SubmitConsumerAdditionProposalAction:
-		tr.submitConsumerAdditionProposal(action, verbose)
-	case SubmitConsumerRemovalProposalAction:
-		tr.submitConsumerRemovalProposal(action, verbose)
-	case SubmitParamChangeLegacyProposalAction:
-		tr.submitParamChangeProposal(action, verbose)
-	case VoteGovProposalAction:
-		tr.voteGovProposal(action, verbose)
-	case StartConsumerChainAction:
-		tr.startConsumerChain(action, verbose)
-	case AddChainToRelayerAction:
-		tr.addChainToRelayer(action, verbose)
-	case CreateIbcClientsAction:
-		tr.createIbcClientsHermes(action, verbose)
-	case AddIbcConnectionAction:
-		tr.addIbcConnection(action, verbose)
-	case AddIbcChannelAction:
-		tr.addIbcChannel(action, verbose)
-	case TransferChannelCompleteAction:
-		tr.transferChannelComplete(action, verbose)
-	case RelayPacketsAction:
-		tr.relayPackets(action, verbose)
-	case RelayRewardPacketsToProviderAction:
-		tr.relayRewardPacketsToProvider(action, verbose)
-	case DelegateTokensAction:
-		tr.delegateTokens(action, verbose)
-	case UnbondTokensAction:
-		tr.unbondTokens(action, verbose)
-	case CancelUnbondTokensAction:
-		tr.cancelUnbondTokens(action, verbose)
-	case RedelegateTokensAction:
-		tr.redelegateTokens(action, verbose)
-	case DowntimeSlashAction:
-		tr.invokeDowntimeSlash(action, verbose)
-	case UnjailValidatorAction:
-		tr.unjailValidator(action, verbose)
-	case DoublesignSlashAction:
-		tr.invokeDoublesignSlash(action, verbose)
-	case LightClientAmnesiaAttackAction:
-		tr.lightClientAmnesiaAttack(action, verbose)
-	case LightClientEquivocationAttackAction:
-		tr.lightClientEquivocationAttack(action, verbose)
-	case LightClientLunaticAttackAction:
-		tr.lightClientLunaticAttack(action, verbose)
-	case RegisterRepresentativeAction:
-		tr.registerRepresentative(action, verbose)
-	case AssignConsumerPubKeyAction:
-		tr.assignConsumerPubKey(action, verbose)
-	case SlashMeterReplenishmentAction:
-		tr.waitForSlashMeterReplenishment(action, verbose)
-	case WaitTimeAction:
-		tr.waitForTime(action, verbose)
-	case StartRelayerAction:
-		tr.startRelayer(action, verbose)
-	case ForkConsumerChainAction:
-		tr.forkConsumerChain(action, verbose)
-	case UpdateLightClientAction:
-		tr.updateLightClient(action, verbose)
-	case StartConsumerEvidenceDetectorAction:
-		tr.startConsumerEvidenceDetector(action, verbose)
-	case SubmitChangeRewardDenomsProposalAction:
-		tr.submitChangeRewardDenomsProposal(action, verbose)
-	default:
-		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
-	}
-
-	modelState := step.State
-	actualState := tr.getState(step.State)
-
-	// Check state
-	if !reflect.DeepEqual(actualState, modelState) {
-		fmt.Printf("=============== %s FAILED ===============\n", tr.name)
-		fmt.Println("FAILED action", reflect.TypeOf(step.Action).Name())
-		pretty.Print("actual state", actualState)
-		pretty.Print("model state", modelState)
-		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
-	}
-}
-
-// executeSteps sequentially runs steps.
-func (tr *TestConfig) executeSteps(steps []Step) {
-	fmt.Printf("=============== started %s tests ===============\n", tr.name)
-
-	start := time.Now()
-	for i, step := range steps {
-		// print something the show the test is alive
-		fmt.Printf("running %s: step %d == %s \n",
-			tr.name, i+1, reflect.TypeOf(step.Action).Name())
-		tr.runStep(step, *verbose)
-	}
-
-	fmt.Printf("=============== finished %s tests in %v ===============\n", tr.name, time.Since(start))
-}
-
-func (tr *TestConfig) buildDockerImages() {
-	fmt.Printf("=============== building %s images ===============\n", tr.name)
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "e2eWorkTree")
-	if err != nil {
-		log.Fatalf("Error createing temp directory for docker creation")
-	}
-
-	// Build ICS image of a given version
-	icsVersions := []string{}
-	if tr.consumerVersion != "" {
-		icsVersions = append(icsVersions, tr.consumerVersion)
-	}
-	if tr.providerVersion != "" && tr.consumerVersion != tr.providerVersion {
-		icsVersions = append(icsVersions, tr.providerVersion)
-	}
-	for _, icsVersion := range icsVersions {
-		imageName := fmt.Sprintf("cosmos-ics:%s", icsVersion)
-		err := buildDockerImage(imageName, icsVersion, tmpDir)
-		if err != nil {
-			log.Fatalf("Error building docker image '%s':%v", icsVersion, err)
-		}
-	}
-}
-
-func (tr *TestConfig) startDocker() {
-	tr.buildDockerImages()
-	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
-
-	options := []string{}
-
-	localSdk := tr.localSdkPath
-	if localSdk != "" {
-		options = append(options, fmt.Sprintf("-s %s", tr.localSdkPath))
-	}
-
-	if tr.consumerVersion != "" {
-		options = append(options, fmt.Sprintf("-c %s", tr.consumerVersion))
-	}
-
-	if tr.providerVersion != "" {
-		options = append(options, fmt.Sprintf("-p %s", tr.providerVersion))
-	}
-
-	if tr.useGaia {
-		if tr.gaiaTag != "" {
-			majVersion, err := strconv.Atoi(tr.gaiaTag[1:strings.Index(tr.gaiaTag, ".")])
-			if err != nil {
-				panic(fmt.Sprintf("invalid gaia version %s", tr.gaiaTag))
-			}
-			if majVersion < 9 {
-				panic(fmt.Sprintf("gaia version %s is not supported - supporting only v9.x.x and newer", tr.gaiaTag))
-			}
-			options = append(options, fmt.Sprintf("-g %s", tr.gaiaTag))
-		}
-	}
-	scriptStr := fmt.Sprintf(
-		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s",
-		strings.Join(options, " "),
-		tr.containerConfig.ContainerName,
-		tr.containerConfig.InstanceName,
-	)
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("/bin/bash", "-c", scriptStr)
-
-	cmdReader, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	cmd.Stderr = cmd.Stdout
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(cmdReader)
-
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose != nil && *verbose {
-			fmt.Println("startDocker: " + out)
-		}
-		if out == "beacon!!!!!!!!!!" {
-			return
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	err = cmd.Wait()
-	log.Fatalf("StartDocker exited with error: %v", err)
-}
-
-// remove docker container to reduce resource usage
-// otherwise the chain will keep running in the background
-func (tr *TestConfig) teardownDocker() {
-	fmt.Printf("===============  tearing down %s testRun ===============\n", tr.name)
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "kill", tr.containerConfig.InstanceName)
-
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
 }

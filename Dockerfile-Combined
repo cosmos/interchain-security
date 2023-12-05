@@ -3,21 +3,17 @@
 # Consumer image to be used for compatibility tests with provider from workspace
 # use docker's build argument --build-arg to overwrite the defaults
 # e.g. docker build --build-arg CONSUMER_TAG=v3.1.0
-ARG PROVIDER_VERSION
-ARG PROVIDER_IMAGE="cosmos-ics"
+ARG PROVIDER_IMAGE
+ARG CONSUMER_IMAGE
 
-ARG CONSUMER_VERSION
-ARG CONSUMER_IMAGE="cosmos-ics"
+# The image from where the consumer implementation will be used
+# Defaults to
+FROM --platform=linux/amd64 ${PROVIDER_IMAGE} AS provider
 
 
 # The image from where the consumer implementation will be used
 # Defaults to
-FROM --platform=linux/amd64 ${PROVIDER_IMAGE}:${PROVIDER_VERSION} AS provider
-
-
-# The image from where the consumer implementation will be used
-# Defaults to
-FROM --platform=linux/amd64 ${CONSUMER_IMAGE}:${CONSUMER_VERSION} AS consumer
+FROM --platform=linux/amd64 ${CONSUMER_IMAGE} AS consumer
 
 # Get Hermes build
 FROM --platform=linux/amd64 otacrew/hermes-ics:evidence-cmd AS hermes-builder
@@ -27,6 +23,7 @@ FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder
 
 # Get GoRelayer
 FROM ghcr.io/informalsystems/relayer-no-gas-sim:v2.3.0-rc4-no-gas-sim AS gorelayer-builder
+
 
 FROM --platform=linux/amd64 fedora:39
 RUN dnf update -y
@@ -42,6 +39,7 @@ COPY --from=consumer /usr/local/bin/interchain-security-cd /usr/local/bin/interc
 COPY --from=consumer /usr/local/bin/interchain-security-cdd /usr/local/bin/interchain-security-cdd
 COPY --from=consumer /usr/local/bin/interchain-security-sd /usr/local/bin/interchain-security-sd
 COPY --from=consumer /testnet-scripts /consumer/testnet-scripts
+
 
 # Copy provider from specified image
 COPY --from=provider /usr/local/bin/interchain-security-pd /usr/local/bin/interchain-security-pd

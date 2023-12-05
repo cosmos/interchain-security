@@ -6,27 +6,36 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
+	"strings"
 )
 
-func setupWorkspace(revision string, tmpDir string) error {
-	log.Printf("Setting up worktree in '%s'", tmpDir)
+// setupWorkSpace checks out given revision in a tmp directory
+// and returns path where the workspace is located
+func setupWorkSpace(revision string) (string, error) {
+	workSpace, err := os.MkdirTemp(os.TempDir(), "e2eWorkTree_")
+	if err != nil {
+		return "", fmt.Errorf("error creating temp directory %v", err)
+	}
+
+	log.Printf("Setting up worktree in '%s'", workSpace)
+
 	cmd := exec.Command("git", "worktree", "add",
-		"--checkout", tmpDir, revision)
+		"--checkout", workSpace, revision)
 	var errbuf bytes.Buffer
 	cmd.Stderr = &errbuf
 	log.Printf("Running: %s", cmd.String())
 	if err := cmd.Start(); err != nil {
-		return err
+		return "", err
 	}
 	if err := cmd.Wait(); err != nil {
 		log.Printf("Error creating worktree (%v): %s", err, errbuf.String())
-		return err
+		return "", err
 	}
-	return nil
+	return workSpace, nil
 }
 
-func cleanupWorkspace(workSpacePath string) error {
+// cleanupWorkSpace removes the created worktree
+func cleanupWorkSpace(workSpacePath string) error {
 	cmd := exec.Command("git", "worktree", "remove", workSpacePath)
 	cmd.Stderr = cmd.Stdout
 	if err := cmd.Start(); err != nil {
@@ -49,37 +58,64 @@ func dockerIsUp() bool {
 }
 
 // Build docker image of ICS for a given revision
-func buildDockerImage(imageName string, revision string, tmpDir string) error {
-	log.Printf("Building ICS image for version %s", revision)
-
+func buildDockerImage(imageName, revision string, targetCfg TargetConfig) error {
+	log.Printf("Building ICS %s image %s", revision, imageName)
 	if !dockerIsUp() {
 		return fmt.Errorf("docker engine is not running")
 	}
-	workSpace := path.Join(tmpDir, revision)
-	if err := setupWorkspace(revision, workSpace); err != nil {
-		return err
-	}
-	defer cleanupWorkspace(workSpace)
 
-	_, err := os.Stat(workSpace)
+	workSpace := "./"
+	var err error = nil
+	// if a revision is provided the related version will be staged
+	// on a separate worktree (note: revision should _not_ be checked out already elsewhere).
+	// which will be deleted after image creation
+	if revision != "" {
+		workSpace, err = setupWorkSpace(revision)
+		if err != nil {
+			return err
+		}
+		defer cleanupWorkSpace(workSpace)
+	}
+
+	// Check if workspace exists
+	_, err = os.Stat(workSpace)
 	if err != nil {
-		log.Fatalf("Worktree creation for image build failed: %v", err)
+		log.Fatalf("image build failed. invalid workspace: %v", err)
 	}
 
-	log.Printf("Building docker image")
-	// TODO: TBD if we should use option "--no-cache" here
-	cmd := exec.Command("docker", "build", "-t",
-		fmt.Sprintf("cosmos-ics:%s", revision), "-f", "./Dockerfile", "./")
+	// Use custom SDK setup if required
+	sdkPath := strings.Join([]string{workSpace, "cosmos-sdk"}, string(os.PathSeparator))
+	err = os.RemoveAll(sdkPath) //delete old SDK directory
+	if err != nil {
+		return fmt.Errorf("error deleting SDK directory from workspace: %v", err)
+	}
+	if targetCfg.localSdkPath != "" {
+		fmt.Printf("Using local SDK version from %s\n", targetCfg.localSdkPath)
+		cmd := exec.Command("cp", "-n", "-r", targetCfg.localSdkPath, sdkPath)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("Error running command %v: %s", cmd, string(out))
+			return fmt.Errorf("error setting up local SDK: %v, %s", err, string(out))
+		}
+	} else {
+		fmt.Println("Using default SDK version")
+	}
+
+	dockerFile := "Dockerfile"
+	args := []string{"build", "-t", imageName}
+	if targetCfg.useGaia && targetCfg.gaiaTag != "" {
+		dockerFile = "Dockerfile.gaia"
+		args = append(args, "--build-arg", fmt.Sprintf("USE_GAIA_TAG=%s", targetCfg.gaiaTag))
+	}
+	args = append(args, "-f", dockerFile, "./")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", args...)
 	cmd.Dir = workSpace
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("building docker image failed running '%v' (%v): %s", cmd, err, out)
+	}
 
-	if err := cmd.Start(); err != nil {
-		log.Printf("Failed building docker image '%s': %v", revision, err)
-		return err
-	}
-	if err := cmd.Wait(); err != nil {
-		out, _ := cmd.CombinedOutput()
-		log.Printf("Error building image (%v): %s", err, out)
-		return err
-	}
-	return nil
+	return err
 }

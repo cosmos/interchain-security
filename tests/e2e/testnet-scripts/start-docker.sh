@@ -65,20 +65,20 @@ if [[ ${USE_GAIA_TAG+x} ]]
 then
     printf "\n\nUsing gaia as provider\n\n"
     printf "\n\nUsing gaia tag %s\n\n" "$USE_GAIA_TAG"
-    docker build  -f Dockerfile.gaia -t "$CONTAINER_NAME" --build-arg USE_GAIA_TAG="$USE_GAIA_TAG" ./
+    docker build  -f Dockerfile.gaia -t "$CONTAINER_NAME" --build-arg USE_GAIA_TAG="$USE_GAIA_TAG" .
 elif [ ${CONSUMER_VERSION+x} ] && [ ${PROVIDER_VERSION+x} ]; then
     printf "\n\nUsing ICS consumer app from image version ${CONSUMER_VERSION} and provider from image version ${PROVIDER_VERSION}"
-    docker build -f Dockerfile-Combined --build-arg PROVIDER_VERSION="${PROVIDER_VERSION}" --build-arg CONSUMER_VERSION="${CONSUMER_VERSION}" -t "$CONTAINER_NAME" ./
+    docker build -f Dockerfile-Combined --build-arg PROVIDER_VERSION="${PROVIDER_VERSION}" --build-arg CONSUMER_VERSION="${CONSUMER_VERSION}" -t "$CONTAINER_NAME" .
 
 elif [ ${CONSUMER_VERSION+x} ]; then
     printf "\n\nUsing ICS consumer app from image version ${CONSUMER_VERSION}"
-    docker build -f Dockerfile-Consumer --build-arg CONSUMER_VERSION="${CONSUMER_VERSION}" -t "$CONTAINER_NAME" ./
+    docker build -f Dockerfile-Consumer --build-arg CONSUMER_VERSION="${CONSUMER_VERSION}" -t "$CONTAINER_NAME" .
 elif [ ${PROVIDER_VERSION+x} ]; then
     printf "\n\nUsing ICS provider app from image version ${PROVIDER_VERSION}"
-    docker build -f Dockerfile-Provider --build-arg PROVIDER_VERSION="${PROVIDER_VERSION}" -t "$CONTAINER_NAME" ./
+    docker build -f Dockerfile-Provider --build-arg PROVIDER_VERSION="${PROVIDER_VERSION}" -t "$CONTAINER_NAME" .
 else
     printf "\n\nUsing ICS provider app as provider\n\n\n"
-    docker build -f Dockerfile -t "$CONTAINER_NAME" ./
+    docker build -f Dockerfile -t "$CONTAINER_NAME" .
 fi
 
 # Remove copied sdk directory

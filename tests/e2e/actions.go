@@ -77,6 +77,7 @@ type StartChainValidator struct {
 
 func (tr *TestConfig) startChain(
 	action StartChainAction,
+	target ExecutionTarget,
 	verbose bool,
 ) {
 	chainConfig := tr.chainConfigs[action.Chain]
@@ -132,18 +133,8 @@ func (tr *TestConfig) startChain(
 		cometmockArg = "false"
 	}
 
-	startChainScript := "/testnet-scripts/start-chain.sh"
-	if tr.providerVersion != "" && chainConfig.BinaryName == "interchain-security-pd" {
-		log.Printf("Using start-chain script for provider version '%s'", tr.providerVersion)
-		startChainScript = "/provider/testnet-scripts/start-chain.sh"
-	}
-	if tr.consumerVersion != "" && chainConfig.BinaryName != "interchain-security-pd" {
-		log.Printf("Using start-chain script for consumer version '%s'", tr.consumerVersion)
-		startChainScript = "/consumer/testnet-scripts/start-chain.sh"
-	}
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "/bin/bash",
+	startChainScript := target.GetStartChainScript(action.IsConsumer)
+	cmd := target.ExecCommand("/bin/bash",
 		startChainScript, chainConfig.BinaryName, string(vals),
 		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
 		fmt.Sprint(action.IsConsumer),
@@ -208,7 +199,7 @@ func (tr TestConfig) submitTextProposal(
 	verbose bool,
 ) {
 	// TEXT PROPOSAL
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	//#nosec G204 -- Bypass linter warning for spa	wning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal",
 		`--title`, action.Title,
@@ -491,54 +482,80 @@ type StartConsumerChainAction struct {
 	GenesisChanges string
 }
 
-func (tr *TestConfig) startConsumerChain(
-	action StartConsumerChainAction,
-	verbose bool,
-) {
+// Transform consumer genesis content from older version
+func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []byte) []byte {
+	log.Print("Transforming consumer genesis")
+	log.Printf("Original ccv genesis: %s\n", string(genesis))
+
+	fileName := "consumer_genesis.json"
+	file, err := os.CreateTemp("", fileName)
+	if err != nil {
+		panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
+	}
+	defer file.Close()
+	err = os.WriteFile(file.Name(), genesis, 0644)
+	if err != nil {
+		log.Fatalf("Failed writing consumer genesis to file: %v", err)
+	}
+
+	containerInstance := tr.containerConfig.InstanceName
+	targetFile := fmt.Sprintf("/tmp/%s", fileName)
+	sourceFile := file.Name()
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.ProviderChain].BinaryName,
+	cmd := exec.Command("docker", "cp", sourceFile,
+		fmt.Sprintf("%s:%s", containerInstance, targetFile))
+	genesis, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(genesis))
+	}
+
+	consumerBinaryName := tr.chainConfigs[consumerChain].BinaryName
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd = exec.Command("docker", "exec", containerInstance, consumerBinaryName,
+		"genesis", "transform", targetFile)
+	result, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(result))
+	}
+	log.Printf("Transformed genesis is: %s", string(result))
+	return result
+}
+
+// Get consumer genesis from provider
+func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID) string {
+	log.Print("Exporting consumer genesis from provider")
+	containerInstance := tr.containerConfig.InstanceName
+	providerBinaryName := tr.chainConfigs[providerChain].BinaryName
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", containerInstance, providerBinaryName,
 
 		"query", "provider", "consumer-genesis",
-		string(tr.chainConfigs[action.ConsumerChain].ChainId),
+		string(tr.chainConfigs[consumerChain].ChainId),
 
-		`--node`, tr.getQueryNode(action.ProviderChain),
+		`--node`, tr.getQueryNode(providerChain),
 		`-o`, `json`,
 	)
-
-	if verbose {
-		log.Println("startConsumerChain cmd: ", cmd.String())
-	}
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	// only needed when consumer is running v3.2.x and later
+	// only needed when consumer is running v3.3.x and later
 	if tr.transformGenesis {
-		log.Printf("@@@@ Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
-		log.Printf("Original ccv genesis: %s\n", string(bz))
-
-		file, err := os.Create("consumer_genesis.json")
-		if err != nil {
-			panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
-		}
-		os.WriteFile(file.Name(), bz, 0644)
-		cmd := exec.Command("docker", "cp", file.Name(), fmt.Sprintf("%s:/tmp/%s", tr.containerConfig.InstanceName, file.Name()))
-		bz, err = cmd.CombinedOutput()
-		if err != nil {
-			log.Fatal(err, "\n", string(bz))
-		}
-		cmd = exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.ConsumerChain].BinaryName,
-			"genesis", "transform", fmt.Sprintf("/tmp/%s", file.Name()))
-		bz, err = cmd.CombinedOutput()
-		if err != nil {
-			log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(bz))
-		}
-		log.Printf("Transformed genesis is: %s", string(bz))
+		return string(tr.transformConsumerGenesis(consumerChain, bz))
 	}
+	return string(bz)
+}
 
-	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
+func (tr *TestConfig) startConsumerChain(
+	action StartConsumerChainAction,
+	target ExecutionTarget,
+	verbose bool,
+) {
+	log.Printf("Starting consumer chain %s", action.ConsumerChain)
+	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.ConsumerChain)
 	consumerGenesisChanges := tr.chainConfigs[action.ConsumerChain].GenesisChanges
 	if consumerGenesisChanges != "" {
 		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.GenesisChanges
@@ -549,7 +566,7 @@ func (tr *TestConfig) startConsumerChain(
 		Validators:     action.Validators,
 		GenesisChanges: consumerGenesis,
 		IsConsumer:     true,
-	}, verbose)
+	}, target, verbose)
 }
 
 type ChangeoverChainAction struct {
