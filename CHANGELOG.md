@@ -22,8 +22,6 @@
   - Add Quint model of Replicated Security.
     ([\#1336](https://github.com/cosmos/interchain-security/pull/1336))
 - [Provider](x/ccv/provider)
-  - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
-    ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
   - Update how consumer-assigned keys are checked when a validator is
     created on the provider.
     ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
@@ -63,8 +61,6 @@
     enable the provider to validate consumer packets before handling them.
     ([\#1460](https://github.com/cosmos/interchain-security/pull/1460))
 - [Provider](x/ccv/provider)
-  - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
-    ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
   - Change the states by adding a consumer key for each chain that is
     not yet registered meaning for which the gov proposal has not passed.
     ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
