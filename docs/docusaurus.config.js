@@ -211,7 +211,7 @@ const config = {
         toExtensions: ["html"],
         redirects: [
           {
-            from: ["/", "/main", "/master"],
+            from: ["/main", "/master"],
             to: "/",
           },
         ],

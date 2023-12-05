@@ -79,7 +79,6 @@ html {
       @apply no-underline w-full text-2;
     }
   }
-
   /* MAINNAV */
   .navbar {
     @apply pb-2 pt-5 h-auto border-b border-b-docusaurusColorBorder shadow-none bg-docusaurusBgColor;
@@ -537,5 +536,9 @@ html {
         @apply no-underline;
       }
     }
+  }
+
+  .main-wrapper {
+    @apply min-h-screen;
   }
 }
