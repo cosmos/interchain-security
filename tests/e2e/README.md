@@ -115,8 +115,7 @@ there is likely no existing action to submit these transactions to the chain.
 
 You can see the basic template for how to do this by looking at the actions in
 (actions.go)[actions.go].
-The basic principle is to use exec.Command to execute a docker exec to execute a
-command inside the docker container.
+The basic principle is to use `exec.Command` to execute a command inside the docker container.
 The pattern for this looks something like this:
 ```
 cmd := exec.Command("docker", "exec", 
