@@ -9,8 +9,7 @@ relayers, CometBFT, etc) is in scope for testing.
 The high-level overview of what a single test case does is:
 * The test starts a docker container, see [the startup script](testnet-scripts/start-docker.sh)
 * We run a defined sequence of actions and expected states, see as an example the steps for [testing the democracy module](steps_democracy.go)
-    * Actions are things like: submitting transactions to a node, but also things like making nodes double-sign, starting a relayer, starting a new chain, ..., in short anything
-that might modify the system state meaningfully
+    * Actions are any event that might meaningfully modify the system state, such as submitting transactions to a node, making nodes double-sign, starting a relayer, starting a new chain, etc.
     * Expected states defined as parts of the system state that have to match. For example, after an action that modifies validator balances, we would specify
     the validator balances, so those would be checked against the actual validator balances. We might not care about the governance proposals that are on chain
     though, and just leave that part of the state unspecified.
