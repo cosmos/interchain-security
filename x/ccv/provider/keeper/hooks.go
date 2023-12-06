@@ -167,3 +167,7 @@ func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ 
 func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
+
+func (h Hooks) BeforeTokenizeShareRecordRemoved(ctx sdk.Context, recordID uint64) error {
+	return nil
+}
