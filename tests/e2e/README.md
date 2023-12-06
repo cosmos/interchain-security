@@ -6,13 +6,28 @@ End-to-end in this context means tests
 where the whole app (including command line interfaces, interfaces to external components like
 relayers, CometBFT, etc) is in scope for testing.
 
+End-to-end tests should tyoically be used only to perform basic sanity checks that the provided
+APIs and protocols work as expected.
+For more detailed tests, like exhaustively testing edge cases,
+utilize in-memory tests.
+The reasoning behind this is that end-to-end tests
+make it harder to actually locate errors, and are more brittle and might need to be changed extensively
+when unrelated components change.
+End-to-end tests can still be useful, and we need them,
+but when possible, we should prefer more local tests.
+
 At a high-level, every test case consists of the following steps.
 * The test starts a docker container, see [the startup script](testnet-scripts/start-docker.sh)
 * We run a defined sequence of actions and expected states, see as an example the steps for [testing the democracy module](steps_democracy.go)
     * Actions are any event that might meaningfully modify the system state, such as submitting transactions to a node, making nodes double-sign, starting a relayer, starting a new chain, etc.
-    * Expected states defined as parts of the system state that have to match. For example, after an action that modifies validator balances, we would specify
-    the validator balances, so those would be checked against the actual validator balances. We might not care about the governance proposals that are on chain
-    though, and just leave that part of the state unspecified.
+    * Expected states define the state we expect after the action was taken.
+    We might specify what we expect the balances of validators to be,
+    which chains are running, etc.
+    We don't have to specify a complete state after each step, but instead we only
+    specify the parts of the state we care about.
+    For example, after an action that sends tokens from one validator to another,
+    we would usually just specify the expected, new validator balances,
+    but not check what chains are currently running.
 * After each action, the state of the system is queried and compared against the expected state.
 
 ## Defining a new test case
