@@ -10,7 +10,7 @@ The following should be considered as complementary to [Cosmos SDK v0.47 UPGRADI
 
 #### Protobuf 
 
-Protobuf code generation, linting and formatting have been updated to leverage the `ghcr.io/cosmos/proto-builder:0.11.5` docker container. Replicated Security protobuf definitions are now packaged and published to [buf.build/cosmos/interchain-security](buf.build/cosmos/interchain-security) via CI workflows. The `third_party/proto` directory has been removed in favour of dependency management using [buf.build](https://docs.buf.build/introduction).
+Protobuf code generation, linting and formatting have been updated to leverage the `ghcr.io/cosmos/proto-builder:0.11.5` docker container. Replicated Security protobuf definitions are now packaged and published to [buf.build/cosmos/interchain-security](https://buf.build/cosmos/interchain-security) via CI workflows. The `third_party/proto` directory has been removed in favour of dependency management using [buf.build](https://docs.buf.build/introduction).
 
 #### App modules
 
@@ -66,8 +66,8 @@ import (
 
 ### Provider 
 
-Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](./x/ccv/provider/keeper/migration.go). See the provider module's `ConsensusVersion` in [module](./x/ccv/provider/module.go).
+Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](x/ccv/provider/keeper/migration.go). See the provider module's `ConsensusVersion` in [module](x/ccv/provider/module.go).
 
 ### Consumer
 
-Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. See the consumer module's `ConsensusVersion` in [module](./x/ccv/consumer/module.go).
+Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. See the consumer module's `ConsensusVersion` in [module](x/ccv/consumer/module.go).

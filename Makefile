@@ -96,7 +96,7 @@ test-trace:
 ###                                Linting                                  ###
 ###############################################################################
 
-golangci_version=v1.52.2
+golangci_version=v1.54.1
 
 lint:
 	@echo "--> Running linter"
