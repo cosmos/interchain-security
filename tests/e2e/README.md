@@ -141,7 +141,7 @@ we'd rather fail inside the action and immediately know something went wrong,
 rather than just getting a non-matching state during the state check that happens after the action.
 
 ### Gas
-When submitting txs, generally either specify a large enough amount of gas manually,
+When submitting transactions, generally either specify a large enough amount of gas manually,
 or use `--gas=auto` with a large `--gas-adjustment`.
 You should avoid situations where transactions non-deterministically sometimes
 work and sometimes fail due to gas, as can happen with `--gas=auto` and no `--gas-adjustment`.
@@ -167,6 +167,15 @@ Typically, this is ultimately done, like actions, by issuing commands to the cha
 inside the docker container. See how this is done e.g. for `getBalance`.
 
 ## Traces
+
+It is possible to dump the test cases (in the form of actions+state checks)
+to files and read them from files, instead of just having them defined inside of Go code.
+The reasoning behind this is that
+with this, it becomes possible to generate test traces e.g. outside of
+the Go code via other tools.
+You should not need to write these json files by hand.
+If you want to just write an end-to-end test, write it inside the
+Go files, as outlined above.
 
 ### Updating the trace format and tests when adjusting the framework
 
@@ -197,7 +206,7 @@ See `--help` for more details.
 
 When something in the tests goes wrong, a nice thing about the tests is that the
 docker container doesn't get killed.
-You can sh into the docker container via e.g. `docker exec -it "testinstance" sh` and manually look around,
+You can sh into the docker container via e.g. `docker exec -it "testinstance" sh` and manually look around.
 Useful pointers are:
 * Look at logs in the node homes: `/$CHAIN_ID/validator$VAL_ID`
 * Query/Run txs on the running apps (find out the relevant addresses and node homes to use e.g. by running `htop "binaryname"`)
