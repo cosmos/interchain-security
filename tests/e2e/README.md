@@ -89,11 +89,9 @@ the actions necessary to start a provider and multiple consumer chains
 are already "packaged together" and available as
 `stepsStartChains` in (steps_start_chains.go)[steps_start_chains.go].
 
-An important node is that the parts of the state that are *not* defined are
-just *not checked*. For example, 
-if the balance of a validator isn't listed in a state, it doesn't mean that we want to check
-that the validator balance is absent in the actual system, it means we
-don't care about the balance of that validator in this particular state.
+**Note:** The parts of the state that are *not* defined are just *not checked*. 
+For example, if the balance of a validator is not listed in a state, it means we
+do not care about the balance of that validator in this particular state.
 
 ### How to use relayers
 
