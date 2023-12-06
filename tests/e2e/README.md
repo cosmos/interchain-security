@@ -198,7 +198,7 @@ When something in the tests goes wrong, a nice thing about the tests is that the
 docker container doesn't get killed.
 You can sh into the docker container via e.g. `docker exec -it "testinstance" sh` and manually look around,
 Useful pointers are:
-* Look at logs in the node homes: `/$CHAIN_ID/validator$VAL_ID`
+* Look at logs in the nodes' home folder, i.e., `/$CHAIN_ID/validator$VAL_ID`
 * Query/Run txs on the running apps (find out the relevant addresses and node homes to use e.g. by running `htop "binaryname"`)
 
 It is also possible to locally change a step so it will *always* fail (e.g. by checking for nonsense validator balances)
