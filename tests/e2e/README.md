@@ -41,6 +41,8 @@ The test config governs the config parameters of validators and chains that can 
 for example we can set the genesis parameters of a chain using `ChainConfig.GenesisChanges`.
 * Define a sequence of actions and state checks to perform for our test case.
 * Add our test case in the main file (main.go)[main.go].
+We do this in several places:
+
 
 For example, a short sequence of actions and state checks could look like this:
 ```
@@ -111,10 +113,10 @@ to e.g. delay the relaying of a packet.
 
 ## Defining new actions
 
-When we want to test something that does not yet have a corresponding action,
-for example if a feature adds a new transaction to submit on chain and
-there exists no action yet that submits such a tx,
-it's necessary to define a new action.
+It is necessary to define new actions when we want to test something that does not yet have the corresponding actions defined.
+For example, a new feature may introduce new transactions, and
+there is likely no existing action to submit these transactions to the chain.
+
 You can see the basic template for how to do this by looking at the actions in
 (actions.go)[actions.go].
 The basic principle is to use exec.Command to execute a docker exec to execute a
