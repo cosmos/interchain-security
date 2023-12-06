@@ -42,6 +42,48 @@ for example we can set genesis parameters using `ChainConfig.GenesisChanges`.
 * Define a sequence of actions and state checks to perform for our test case.
 * Add our test case in the main file (main.go)[main.go].
 
+For example, a short sequence of actions and state checks could look like this:
+```
+steps := []Step{
+    Action: delegateTokensAction{
+        Chain:  ChainID("provi"),
+        From:   ValidatorID("alice"),
+        To:     ValidatorID("alice"),
+        Amount: 11000000,
+    },
+    State: State{
+        ChainID("provi"): ChainState{
+            ValPowers: &map[ValidatorID]uint{
+                ValidatorID("alice"): 511,
+                ValidatorID("bob"):   500,
+                ValidatorID("carol"): 500,
+            },
+        },
+    },
+    Action: delegateTokensAction{
+        Chain:  ChainID("provi"),
+        From:   ValidatorID("alice"),
+        To:     ValidatorID("bob"),
+        Amount: 99000000,
+    },
+    State: State{
+        ChainID("provi"): ChainState{
+            ValPowers: &map[ValidatorID]uint{
+                ValidatorID("alice"): 511,
+                ValidatorID("bob"):   599,
+                ValidatorID("carol"): 500,
+            },
+        },
+    },
+},
+```
+In this sequence, we first use the `delegateTokensAction`
+to delegate 11000000 tokens from alice to herself,
+then check that alices voting power was set to 511 (note that 11000000 tokens correspond to 11 voting power here),
+then afterwards use the same action again, this time to delegate 99000000
+tokens from alice to bob, and again check the voting powers, with the change that
+bobs voting power should now be 599.
+
 For most steps, we can reuse existing code, for example
 the actions necessary to start a provider and multiple consumer chains
 are already "packaged together" and available as
