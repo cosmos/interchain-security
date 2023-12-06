@@ -31,16 +31,16 @@ jobs:
       - name: Setup Node.js 🔧
         uses: actions/setup-node@v4
         with:
-          node-version: "16.x"
+          node-version: "21.x"
 
       # npm install npm should be removed when https://github.com/npm/cli/issues/4942 is fixed
       - name: Build 🔧
         run: |
-          npm install -g npm@8.5.5
+          npm install -g npm@10.2.4
           make build-docs
 
       - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4.4.3
+        uses: JamesIves/github-pages-deploy-action@v4.5.0
         with:
           branch: gh-pages
           folder: ~/output

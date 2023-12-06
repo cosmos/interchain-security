@@ -56,7 +56,7 @@ To avoid these problems, let's now examine how these hashes work.
 **Note:** The following explanation is simplified for clarity.
 
 An app hash is a hash of hashes of every store's Merkle root that is returned by ABCI's `Commit()` from Cosmos-SDK to CometBFT.
-Cosmos-SDK [takes an app hash of the application state](https://github.com/osmosis-labs/cosmos-sdk/blob/5c9a51c277d067e0ec5cf48df30a85fae95bcd14/store/rootmulti/store.go#L430), and propagates it to CometBFT which, in turn, compares it to the app hash of the rest of the network.
+Cosmos-SDK [takes an app hash of the application state](https://github.com/cosmos/cosmos-sdk/blob/v0.47.6/store/rootmulti/store.go#L468), and propagates it to CometBFT which, in turn, compares it to the app hash of the rest of the network.
 Then, CometBFT ensures that the app hash of the local node matches the app hash of the network. 
 
 ### LastResultsHash
@@ -86,7 +86,7 @@ in CometBFT [v0.34.29](https://github.com/cometbft/cometbft/releases/tag/v0.34.2
   > This is an error code that is returned by the transaction flow. In the case of
   > success, it is `0`. On a general error, it is `1`. Additionally, each module
   > defines its custom error codes. 
-  > For example, `x/provider` currently has [these error codes](./x/ccv/provider/types/errors.go) defined.
+  > For example, `x/provider` currently has [these error codes](x/ccv/provider/types/errors.go) defined.
   >
   > As a result, it is important to avoid changing custom error codes or change
   > the semantics of what is valid logic in transaction flows.

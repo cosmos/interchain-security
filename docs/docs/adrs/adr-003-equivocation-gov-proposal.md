@@ -6,12 +6,18 @@ title: Equivocation governance proposal
 
 ## Changelog
 * 2023-02-06: Initial draft
+* 2023-11-30: Change status to deprecated
 
 ## Status
 
-Accepted
+Deprecated
 
 ## Context
+
+**Note:** ADR deprecated as the equivocation proposal was removed by the 
+cryptographic verification of equivocation feature 
+(see [ADR-005](./adr-005-cryptographic-equivocation-verification.md) and 
+[ADR-013](./adr-013-equivocation-slashing.md)).
 
 We want to limit the possibilities of a consumer chain to execute actions on the provider chain to maintain and ensure optimum security of the provider chain.
 
