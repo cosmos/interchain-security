@@ -16,7 +16,7 @@ To run integration tests against your own consumer/provider implementations, use
 
 ## Model-Based Tests (MBT)
 
-[MBT](tests/mbt/) tests are similar to integration tests, but they compare the system state to an expected state generated from a formally verified specification written in Quint
+[MBT](tests/mbt/) tests are similar to integration tests, but they compare the system state to an expected state generated from a formally verified specification written in Quint.
 
 ## End-to-End (E2E) Tests 
 
