@@ -6,7 +6,7 @@ End-to-end in this context means tests
 where the whole app (including command line interfaces, interfaces to external components like
 relayers, CometBFT, etc) is in scope for testing.
 
-The high-level overview of what a single test case does is:
+At a high-level, every test case consists of the following steps.
 * The test starts a docker container, see [the startup script](testnet-scripts/start-docker.sh)
 * We run a defined sequence of actions and expected states, see as an example the steps for [testing the democracy module](steps_democracy.go)
     * Actions are any event that might meaningfully modify the system state, such as submitting transactions to a node, making nodes double-sign, starting a relayer, starting a new chain, etc.
