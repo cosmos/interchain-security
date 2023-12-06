@@ -200,7 +200,6 @@ module ccv {
 
     // Things that are not modelled:
     // * Reward distribution
-    // * Starting/Stopping chains during execution
     // * Slashes
 
     // Things that explicitly are modelled:
