@@ -58,6 +58,13 @@ Before cutting a _**release candidate**_ (e.g., `v3.3.0-rc0`), the following ste
     ```bash
     unclog release v3.3.0
     ```
+    - `unclog release` requires an editor. This can be set either by configuring 
+    an `$EDITOR` environment variable or by manually specify an editor binary path 
+    via the `--editor` flag.
+- add the date as the summary of the release (`unclog release` requires adding a summary), e.g.,
+    ```md
+    *December 5, 2023*
+    ```
 - update `CHANGELOG.md`, i.e.,
     ```bash
     unclog build > CHANGELOG.md
