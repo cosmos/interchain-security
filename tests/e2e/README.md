@@ -38,7 +38,7 @@ for possible actions and (state.go)[state.go] for possible state checks).
 Then what we need to do is the following:
 * Create a new test config (or decide on an existing one to reuse), see (config.go)[config.go].
 The test config governs the config parameters of validators and chains that can be run in the test,
-for example we can set genesis parameters using `ChainConfig.GenesisChanges`.
+for example we can set the genesis parameters of a chain using `ChainConfig.GenesisChanges`.
 * Define a sequence of actions and state checks to perform for our test case.
 * Add our test case in the main file (main.go)[main.go].
 
