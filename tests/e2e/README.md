@@ -132,7 +132,7 @@ if err != nil {
 // potentially check something in the output, or log something, ...
 ```
 
-Remember that actions don't need to check that the state was modified correctly,
+**Note:** Actions don't need to check that the state was modified correctly,
 since we have the state checks for this.
 Still, it's generally a good idea to do a basic check for errors,
 since in case the action encounters an error,
