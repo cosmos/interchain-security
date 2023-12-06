@@ -40,7 +40,7 @@ Then what we need to do is the following:
 The test config governs the config parameters of validators and chains that can be run in the test,
 for example we can set the genesis parameters of a chain using `ChainConfig.GenesisChanges`.
 * Define a sequence of actions and state checks to perform for our test case.
-* Add our test case in the main file (main.go)[main.go].
+* Add the new test case to the main file (main.go)[main.go].
 
 For example, a short sequence of actions and state checks could look like this:
 ```
