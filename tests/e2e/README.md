@@ -210,7 +210,6 @@ Useful pointers are:
 * Look at logs in the nodes' home folder, i.e., `/$CHAIN_ID/validator$VAL_ID`
 * Query/Run txs on the running apps (find out the relevant addresses and node homes to use e.g. by running `htop "binaryname"`)
 
-It is also possible to locally change a step so it will *always* fail (e.g. by checking for nonsense validator balances)
-and to use this to see the testnet. Alternatively, to debug an action,
-you can temporarily add a very long `time.Sleep`, then sh into the docker container
+To debug an action,
+you can temporarily add a very long `time.Sleep` inside the action you are interested in, then sh into the docker container
 and e.g. try running the commands from the action yourself to see what happens.
