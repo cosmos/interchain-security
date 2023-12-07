@@ -33,14 +33,14 @@ At a high-level, every test case consists of the following steps.
 ## Defining a new test case
 
 This section explains how to define a new test case. For now, let's assume that
-all actions and state checks we want to perform already exist (see (actions.go)[actions.go]
-for possible actions and (state.go)[state.go] for possible state checks).
+all actions and state checks we want to perform already exist (see [actions.go](actions.go)
+for possible actions and [state.go](state.go) for possible state checks).
 Then what we need to do is the following:
-* Create a new test config (or decide on an existing one to reuse), see (config.go)[config.go].
+* Create a new test config (or decide on an existing one to reuse), see [config.go](config.go).
 The test config governs the config parameters of validators and chains that can be run in the test,
 for example we can set the genesis parameters of a chain using `ChainConfig.GenesisChanges`.
 * Define a sequence of actions and state checks to perform for our test case.
-* Add the new test case to the main file (main.go)[main.go].
+* Add the new test case to the main file [main.go](main.go).
 
 For example, a short sequence of actions and state checks could look like this:
 ```
@@ -87,7 +87,7 @@ bobs voting power should now be 599.
 For most steps, we can reuse existing code, for example
 the actions necessary to start a provider and multiple consumer chains
 are already "packaged together" and available as
-`stepsStartChains` in (steps_start_chains.go)[steps_start_chains.go].
+`stepsStartChains` in [steps_start_chains.go](steps_start_chains.go).
 
 **Note:** The parts of the state that are *not* defined are just *not checked*. 
 For example, if the balance of a validator is not listed in a state, it means we
@@ -114,7 +114,7 @@ For example, a new feature may introduce new transactions, and
 there is likely no existing action to submit these transactions to the chain.
 
 You can see the basic template for how to do this by looking at the actions in
-(actions.go)[actions.go].
+[actions.go](actions.go).
 The basic principle is to use `exec.Command` to execute a command inside the docker container.
 The pattern for this looks something like this:
 ```
@@ -157,14 +157,14 @@ To wait for blocks to be produced or for time to pass,
 you should avoid writing your own logic, and reuse the existing
 utility functions `testConfig.waitBlocks` and `testConfig.WaitTime`.
 These already take care of subtleties, like `WaitTime` working with
-(CometMock)[https://github.com/informalsystems/CometMock] to
+[CometMock](https://github.com/informalsystems/CometMock) to
 advance the time instead of sleeping.
 
 ## Defining new state checks
 
 When we want to check a part of the state that was never accessed before, it
 might be necessary to define a new state check.
-This is done by adding new fields to `ChainState` in (state.go)[state.go].
+This is done by adding new fields to `ChainState` in [state.go](state.go).
 
 We also need to populate the newly added fields by querying the actual system state,
 which is done in `getChainState`.
