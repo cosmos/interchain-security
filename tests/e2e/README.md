@@ -143,7 +143,13 @@ rather than just getting a non-matching state during the state check that happen
 When submitting transactions, generally either specify a large enough amount of gas manually,
 or use `--gas=auto` with a large `--gas-adjustment`.
 You should avoid situations where transactions non-deterministically sometimes
-work and sometimes fail due to gas, as can happen with `--gas=auto` and no `--gas-adjustment`.
+work and sometimes fail due to gas, as can happen with `--gas=auto` and no `--gas-adjustment` (or gas adjustment too close to 1).
+Essentially, sometimes the gas estimation will underestimate gas, but not always -
+it seems to be non-deterministic, and probably depends on subtle things like
+block times, or heights, which are not finely controlled in the end-to-end tests
+and do not perfectly match each time. 
+To be sure we don't introduce nondeterminism like this,
+we need to use a sufficient adjustment to make sure there is enough gas for transactions to pass.
 
 ### Waiting for blocks/time
 
