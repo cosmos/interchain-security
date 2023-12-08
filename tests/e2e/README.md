@@ -41,6 +41,10 @@ The test config governs the config parameters of validators and chains that can 
 for example we can set the genesis parameters of a chain using `ChainConfig.GenesisChanges`.
 * Define a sequence of actions and state checks to perform for our test case.
 * Add the new test case to the main file [main.go](main.go).
+    * ...in the stepChoices slice, where you need to put your step slice and the test config you want to run your steps on.
+    * ...add your test config to the testConfigs map (which is used to specify configs when calling from the CLI)
+    * ...if your test case should run by default (if you're not sure, it probably should), also add it to the predefined test cases in
+    getTestCases (which governs which test cases will be run when no specific test case is specified on the CLI)
 
 For example, a short sequence of actions and state checks could look like this:
 ```
@@ -131,6 +135,9 @@ if err != nil {
 
 // potentially check something in the output, or log something, ...
 ```
+
+Don't forget to wire your action into [main.go](main.go):runStep, where
+the action structs and functions to run for each of them are wired together.
 
 **Note:** Actions don't need to check that the state was modified correctly,
 since we have the state checks for this.
