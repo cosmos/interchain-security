@@ -18,7 +18,7 @@ This is especially important for standalone chains transitioning to become consu
 For more details, see the [changeover procedure](../consumer-development/changeover-procedure.md).
 :::
 
-Reward distribution on the provider is handled by the distribution module - validators and delegators receive a fraction of the consumer chain tokens as staking rewards.
+Reward distribution on the provider is handled by the distribution module.
 
 ## Whitelisting Reward Denoms
 
