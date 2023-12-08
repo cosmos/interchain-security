@@ -248,3 +248,23 @@ jobs:
             Makefile
       - name: trace-e2e tests
         run: make test-trace
+  model-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: checkout LFS objects
+        run: git lfs checkout
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">= 18"
+          check-latest: true
+      - run: npm i @informalsystems/quint -g
+      - uses: technote-space/get-diff-action@v6.1.2
+        id: git_diff
+        with:
+          PATTERNS: |
+            tests/mbt/model/**.qnt
+      - name: verify the Quint model
+        run: make verify-models
