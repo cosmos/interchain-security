@@ -93,9 +93,14 @@ Minimal example:
 ```
 
 :::tip
-Besides native provider denoms (e.g., `uatom`), please use the `ibc/*` denom trace format. 
-For example, use `ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5`, 
-for `untrn` transferred on the channel `transfer/channel-569`, e.g., 
+Besides native provider denoms (e.g., `uatom` for the Cosmos Hub), please use the `ibc/*` denom trace format.
+For example, for `untrn` transfered over the path `transfer/channel-569`, the denom trace 
+can be queried using the following command:
+```bash
+> gaiad query ibc-transfer denom-hash transfer/channel-569/untrn
+hash: 0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5
+```
+Then use the resulting hash in the `ChangeRewardDenomProposal`, e.g., 
 ```js
 {
   "title": "Add untrn as a reward denom",
