@@ -2,7 +2,7 @@
 sidebar_position: 4
 ---
 
-# Validator instructions for Changeover Procedure
+# Validator Instructions for Changeover Procedure
 
 More details available in [Changeover Procedure documentation](../consumer-development/changeover-procedure.md).
 
