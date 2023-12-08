@@ -14,7 +14,7 @@ For more details, see the [reward distribution parameters](../introduction/param
 
 :::tip
 Providing an IBC transfer channel (see `DistributionTransmissionChannel`) enables a consumer chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. This will preserve the `ibc denom` that may already be in use. 
-This is especially important for standalone chain transitioning to become consumer chains. 
+This is especially important for standalone chains transitioning to become consumer chains. 
 For more details, see the [changeover procedure](../consumer-development/changeover-procedure.md).
 :::
 
