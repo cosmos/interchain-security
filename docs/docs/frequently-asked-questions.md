@@ -50,10 +50,10 @@ The only thing that separates consumer chains from standalone chains is that the
 
 ## What's in it for the validators and stakers?
 
-The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `consumer_redistribution_fraction`. The rewards are distributed (sent to the provider) every `blocks_per_distribution_transmission`.
+The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `ConsumerRedistributionFraction`. The rewards are distributed (sent to the provider) every `BlocksPerDistributionTransmission`.
 
 :::note
-  `consumer_redistribution_fraction` and `blocks_per_distribution_transmission` are parameters defined in the `ConsumerAdditionProposal` used to create the consumer chain. These parameters can be changed via consumer chain governance.
+  `ConsumerRedistributionFraction` and `BlocksPerDistributionTransmission` are parameters defined in the `ConsumerAdditionProposal` used to create the consumer chain. These parameters can be changed via consumer chain governance.
 :::
 
 ## Can the consumer chain have its own governance?

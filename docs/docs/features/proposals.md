@@ -75,18 +75,33 @@ Minimal example:
 ```
 
 ## ChangeRewardDenomProposal
-:::tip
-`ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the denomsToAdd or denomsToRemove fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
-:::
 
 Proposal type used to mutate the set of denoms accepted by the provider as rewards.
+
+:::tip
+`ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the `denomsToAdd` or `denomsToRemove` fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
+:::
 
 Minimal example:
 ```js
 {
-  "title": "Add untrn as a reward denom",
+  "title": "Add uatom as a reward denom",
   "description": "Here is more information about the proposal",
-  "denomsToAdd": ["untrn"],
+  "denomsToAdd": ["uatom"],
   "denomsToRemove": []
 }
 ```
+
+:::tip
+Besides native provider denoms (e.g., `uatom`), please use the `ibc/*` denom trace format. 
+For example, use `ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5`, 
+for `untrn` transferred on the channel `transfer/channel-569`, e.g., 
+```js
+{
+  "title": "Add untrn as a reward denom",
+  "description": "Here is more information about the proposal",
+  "denomsToAdd": ["ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5"],
+  "denomsToRemove": []
+}
+```
+:::
