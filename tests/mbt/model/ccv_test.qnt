@@ -126,6 +126,7 @@ module ccv_test {
             -5
         )
         not(result.hasError()) and
+        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
         result2.hasError()
     }
 
