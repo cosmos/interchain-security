@@ -196,7 +196,7 @@ module ccv_model {
         all {
             runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
             nondet receiver = oneOf(runningConsumers)
-            DeliverVscPacket(recciver),
+            DeliverVscPacket(receiver),
         },
     }
 
@@ -249,18 +249,13 @@ module ccv_model {
             (res, pack) => if(res.sendingTime >= pack.sendingTime) { res } else { pack }
         )
 
-    // run maxByTest =
-    // all {
-    //   assert(maxBy(Set(1, 2, 3), __x => __x) == 3),
-    //   assert(maxBy(Set(1, 2, 3), __x => -__x) == 1),
-    // }
     run earliestLatestTest = {
-    val packet1 = {
-            id: 1,
-            validatorSet: Map(),
-            sendingTime: 1 * Second,
-            timeoutTime: 1 * Second,
-        }
+        val packet1 = {
+                id: 1,
+                validatorSet: Map(),
+                sendingTime: 1 * Second,
+                timeoutTime: 1 * Second,
+            }
 
         val packet2 = {
             id: 2,
