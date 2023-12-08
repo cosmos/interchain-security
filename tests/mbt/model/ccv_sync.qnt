@@ -13,21 +13,21 @@ module ccv_sync {
     // "action scheduling", essentially using a variable to
     // determine the next action to be taken.
 
-    // QueuedEndBlocks contains a list of chains which will end their blocks next,
+    // QueuedChainsToEndBlock contains a list of chains which will end their blocks next,
     // together with the time advancement they should advance by.
-    // When stepHappy selects an action, it checks if there are any chains in this list,
+    // When stepSync selects an action, it checks if there are any chains in this list,
     // and if so, it will only select actions that end blocks on the head of the list.
-    // QueuedEndBlocks is thus used to schedule actions.
-    var QueuedEndBlocks: List[(ccvt::Chain, Time)]
+    // QueuedChainsToEndBlock is thus used to schedule actions.
+    var QueuedChainsToEndBlock: List[(ccvt::Chain, Time)]
 
     // runs init, then ends and begins a block for each chain, while also starting all consumers.
     // necessary because we want the happy path to have all consumer chains started.
-    action initHappy =
+    action initSync =
         all {
             init.then(
                 EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
             ),
-            QueuedEndBlocks' = consumerChainList.foldl(
+            QueuedChainsToEndBlock' = consumerChainList.foldl(
                 List(),
                 (acc, consumer) => acc.append((consumer, 1 * Second))
             ),
@@ -38,30 +38,30 @@ module ccv_sync {
     // step will advance time for all chains at the same rate,
     // thus the clock times are always in sync.
     // This is useful to test happy paths.
-    action stepHappy = any {
+    action stepSync = any { // choose any of the three "all" blocks
         nondet timeAdvancement = oneOf(timeAdvancements)
         all {
-            QueuedEndBlocks.length() == 0,
-            EndAndBeginBlockForProvider(timeAdvancement, Set(), Set()),
-            QueuedEndBlocks' = consumerChainList.foldl(
+            QueuedChainsToEndBlock.length() == 0, // no queued action needs to be taken
+            EndAndBeginBlockForProvider(timeAdvancement, Set(), Set()), // end a block for the provider
+            QueuedChainsToEndBlock' = consumerChainList.foldl( // queue all consumers to end a block
                 List(),
                 (acc, consumer) => acc.append((consumer, timeAdvancement))
             ),
         },
 
         all {
-            QueuedEndBlocks.length() > 0,
-            val pair = QueuedEndBlocks.head()
+            QueuedChainsToEndBlock.length() > 0, // there is a consumer that needs to end a block next
+            val pair = QueuedChainsToEndBlock.head()
             val chain = pair._1
             val timeAdv = pair._2
-            EndAndBeginBlockForConsumer(chain, timeAdv),
-            QueuedEndBlocks' = QueuedEndBlocks.tail(),
+            EndAndBeginBlockForConsumer(chain, timeAdv), // end a block for that consumer
+            QueuedChainsToEndBlock' = QueuedChainsToEndBlock.tail(), // remove that consumer from the queue
         },
 
-        all {
-            QueuedEndBlocks.length() == 0,
-            step_common,
-            QueuedEndBlocks' = QueuedEndBlocks,
+        all { 
+            QueuedChainsToEndBlock.length() == 0, // no action is queued
+            stepCommon, // do one of the actions that are NOT ending a block, like delivering packets, voting power changes, ...
+            QueuedChainsToEndBlock' = QueuedChainsToEndBlock,
         }
     }
 }

@@ -16,6 +16,8 @@ module ccv_boundeddrift {
     // In particular, it will ensure that the lastTime of any chain
     // does not differ from the runningTime of any other chain by more than
     // this value.
+    // We choose unbondingPeriod - 2 * Hour here, because we want this to be less than the trustingPeriod,
+    // which is currently defined as unbondingPeriod - 1 * Hour
     pure val maxDrift = defUnbondingPeriod - 2 * Hour
 
     // The chance, in percentage points, that we will stop consumer chains, whenever we begin a block on the provider chain.
@@ -54,7 +56,7 @@ module ccv_boundeddrift {
     // thus the clock times are always in sync.
     // This is useful to test happy paths.
     action stepBoundedDrift = any {
-        step_common, // allow actions that do not influence time
+        stepCommon, // allow actions that do not influence time
 
         // advance a block for a consumer
         all {
@@ -77,7 +79,7 @@ module ccv_boundeddrift {
             // advance a block for the provider
             val consumerStatus = currentState.providerState.consumerStatus
             nondet consumersToStart = oneOf(nonConsumers.powerset())
-            // make it so we stop consumers only with small likelyhood:
+            // make it so we stop consumers only with small likelihood:
             nondet stopConsumers = oneOf(1.to(100))
             nondet consumersToStop = if (stopConsumers <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
             nondet timeAdvancement = oneOf(possibleAdvancements)

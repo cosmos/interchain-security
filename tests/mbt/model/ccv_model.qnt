@@ -34,6 +34,10 @@ module ccv_model {
         InitialValidatorSet: Node -> int,
     }
 
+    // The params variable is never actually changed, and
+    // just exists so the parameters are entered into the .itf file when we generate traces.
+    // This should be removed when/if Quint adds support to put the
+    // constant initializations in its output.
     var params: Parameters
 
     var currentState: ProtocolState
@@ -64,7 +68,7 @@ module ccv_model {
     // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
     // These should be smaller than the minimal TrustingPeriodPerChain,
     // otherwise connections will break down.
-    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour) // 4 * Week)
+    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour, 4 * Week)
 
     pure def emptyAction =
             {
@@ -175,8 +179,8 @@ module ccv_model {
             params' = params,
         }
 
-     // step_common is the core functionality of steps that does not have anything to do with time.
-    action step_common = any {
+     // stepCommon is the core functionality of steps that does not have anything to do with time.
+    action stepCommon = any {
         nondet node = oneOf(nodes)
         // very restricted set of voting powers. exact values are not important,
         // and this keeps the state space smaller.
@@ -218,38 +222,38 @@ module ccv_model {
         nondet timeAdvancement = oneOf(timeAdvancements)
         EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
 
-        step_common
+        stepCommon
     }
 
     // ==================
     // UTILITY FUNCTIONS
     // ==================
 
-    pure def earliest(packets: Set[VscPacket]): VscPacket =
-        val latestPossiblePacket: VscPacket = {
+    pure def oldest(packets: Set[VscPacket]): VscPacket =
+        val newestPossiblePacket: VscPacket = {
             id: 0,
             validatorSet: Map(),
             sendingTime: 9999999999999 * Second,
             timeoutTime: 9999999999999 * Second,
         }
         packets.fold(
-            latestPossiblePacket,
+            newestPossiblePacket,
             (res, pack) => if(res.sendingTime < pack.sendingTime) { res } else { pack }
         )
 
-    pure def latest(packets: Set[VscPacket]): VscPacket =
-        val earliestPossiblePacket: VscPacket = {
+    pure def newest(packets: Set[VscPacket]): VscPacket =
+        val oldestPossiblePacket: VscPacket = {
             id: 0,
             validatorSet: Map(),
             sendingTime: -9999999999 * Second,
             timeoutTime: -9999999999 * Second,
         }
         packets.fold(
-            earliestPossiblePacket,
+            oldestPossiblePacket,
             (res, pack) => if(res.sendingTime >= pack.sendingTime) { res } else { pack }
         )
 
-    run earliestLatestTest = {
+    run oldestnewestTest = {
         val packet1 = {
                 id: 1,
                 validatorSet: Map(),
@@ -271,10 +275,10 @@ module ccv_model {
             timeoutTime: 3 * Second,
         }
         all {
-            assert(earliest(Set(packet1, packet2, packet3)) == packet1),
-            assert(earliest(Set(packet3, packet2, packet1)) == packet1),
-            assert(latest(Set(packet1, packet2, packet3)) == packet3),
-            assert(latest(Set(packet3, packet2, packet1)) == packet3),
+            assert(oldest(Set(packet1, packet2, packet3)) == packet1),
+            assert(oldest(Set(packet3, packet2, packet1)) == packet1),
+            assert(newest(Set(packet1, packet2, packet3)) == packet3),
+            assert(newest(Set(packet3, packet2, packet1)) == packet3),
         }
     }        
 
@@ -328,8 +332,8 @@ module ccv_model {
                     if (commonPackets.size() == 0) {
                         true // they don't share any packets, so nothing to check
                     } else {
-                        val newestCommonPacket = commonPackets.latest()
-                        val oldestCommonPacket = commonPackets.earliest()
+                        val newestCommonPacket = commonPackets.newest()
+                        val oldestCommonPacket = commonPackets.oldest()
                         // get all packets sent between the oldest and newest common packet
                         val packetsBetween1 = packets1.select(
                             packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime
@@ -508,6 +512,8 @@ module ccv_model {
                     assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 200)),
                     // advance time on provider and consumer until unbonding period is over - ensure that the consumer and provider
                     // stay in sync relative to each other
+                    // We want to make sure the steps we make are shorter the trusting period,
+                    // since that would time out clients in reality.
                     4.reps(
                         i => 
                         EndAndBeginBlockForProvider(UnbondingPeriodPerChain.get("consumer1")/4, Set(), Set()).then(
@@ -614,7 +620,7 @@ module ccv_model {
             EndAndBeginBlockForProvider(VscTimeout + 1 * Second, Set(), Set())
         )
         .then(
-            // eenter the advanced time on chain
+            // enter the advanced time on chain
             EndAndBeginBlockForProvider(1 * Second, Set(), Set())
         )
         .then(

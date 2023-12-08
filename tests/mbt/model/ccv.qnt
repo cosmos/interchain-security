@@ -622,9 +622,9 @@ module ccv {
     // Advances the timestamp in the chainState by timeAdvancement
     pure def advanceTime(chainState: ChainState, timeAdvancement: Time): ChainState = 
     {
+        ...chainState,
         lastTimestamp: chainState.runningTimestamp,
         runningTimestamp: chainState.runningTimestamp + timeAdvancement,
-        ...chainState
     }
 
     // common logic to update the chain state, used by both provider and consumers.
