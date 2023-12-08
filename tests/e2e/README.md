@@ -30,6 +30,15 @@ At a high-level, every test case consists of the following steps.
     but not check what chains are currently running.
 * After each action, the state of the system is queried and compared against the expected state.
 
+## Running e2e tests
+
+If you just want to run the end-to-end tests,
+see the commands in the Makefile in the repo root.
+
+If you want to run the tests with a bit more control, see the help by running 
+```go run ./tests/e2e/... --help```
+in the repo root to see how to do that.
+
 ## Defining a new test case
 
 This section explains how to define a new test case. For now, let's assume that
