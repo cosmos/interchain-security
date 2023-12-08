@@ -79,7 +79,7 @@ Minimal example:
 Proposal type used to mutate the set of denoms accepted by the provider as rewards.
 
 :::tip
-`ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the `denomsToAdd` or `denomsToRemove` fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
+A `ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the `denomsToAdd` or `denomsToRemove` fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
 :::
 
 Minimal example:
