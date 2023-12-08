@@ -24,7 +24,7 @@ Reward distribution on the provider is handled by the distribution module.
 
 The ICS distribution system works by allowing consumer chains to send rewards to a module address on the provider called the `ConsumerRewardsPool`.
 To avoid spam, the provider must whitelist denoms before accepting them as ICS rewards. 
-Only whitelisted denoms are transferred from the `ConsumerRewardsPool` to the `FeePoolAddress`, to be distributed out to delegators and validators.
+Only whitelisted denoms are transferred from the `ConsumerRewardsPool` to the `FeePoolAddress`, to be distributed to delegators and validators.
 The whitelisted denoms can be adjusted through governance by sending a [`ChangeRewardDenomProposal`](./proposals.md#changerewarddenomproposal). 
 
 To query the list of whitelisted reward denoms on the Cosmos Hub, use the following command:
