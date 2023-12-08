@@ -4,6 +4,7 @@ on:
     paths:
       - "*.md"
       - "docs/docs/**.md"
+      - "tests/e2e/README.md"
 jobs:
   repo-root:
     runs-on: ubuntu-latest
