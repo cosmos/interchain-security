@@ -195,7 +195,7 @@ module ccv_model {
         // but it's probably not much faster than just trying and failing.
         all {
             runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
-            nondet recciver = oneOf(runningConsumers)
+            nondet receiver = oneOf(runningConsumers)
             DeliverVscPacket(recciver),
         },
     }
