@@ -4,7 +4,7 @@ package main
 func stepsDelegate(consumerName string) []Step {
 	return []Step{
 		{
-			Action: delegateTokensAction{
+			Action: DelegateTokensAction{
 				Chain:  ChainID("provi"),
 				From:   ValidatorID("alice"),
 				To:     ValidatorID("alice"),
@@ -45,7 +45,7 @@ func stepsDelegate(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -85,7 +85,7 @@ func stepsDelegate(consumerName string) []Step {
 func stepsUnbond(consumerName string) []Step {
 	return []Step{
 		{
-			Action: unbondTokensAction{
+			Action: UnbondTokensAction{
 				Chain:      ChainID("provi"),
 				UnbondFrom: ValidatorID("alice"),
 				Sender:     ValidatorID("alice"),
@@ -110,7 +110,7 @@ func stepsUnbond(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -134,7 +134,7 @@ func stepsUnbond(consumerName string) []Step {
 func stepsCancelUnbond(consumerName string) []Step {
 	return []Step{
 		{
-			Action: unbondTokensAction{
+			Action: UnbondTokensAction{
 				Chain:      ChainID("provi"),
 				UnbondFrom: ValidatorID("alice"),
 				Sender:     ValidatorID("alice"),
@@ -159,7 +159,7 @@ func stepsCancelUnbond(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -176,7 +176,7 @@ func stepsCancelUnbond(consumerName string) []Step {
 			},
 		},
 		{
-			Action: cancelUnbondTokensAction{
+			Action: CancelUnbondTokensAction{
 				Chain:     ChainID("provi"),
 				Delegator: ValidatorID("alice"),
 				Validator: ValidatorID("alice"),
@@ -201,7 +201,7 @@ func stepsCancelUnbond(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -226,7 +226,7 @@ func stepsCancelUnbond(consumerName string) []Step {
 func stepsRedelegateForOptOut(consumerName string) []Step {
 	return []Step{
 		{
-			Action: redelegateTokensAction{
+			Action: ReDelegateTokensAction{
 				Chain:    ChainID("provi"),
 				Src:      ValidatorID("alice"),
 				Dst:      ValidatorID("carol"),
@@ -252,7 +252,7 @@ func stepsRedelegateForOptOut(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -276,7 +276,7 @@ func stepsRedelegateForOptOut(consumerName string) []Step {
 func stepsRedelegate(consumerName string) []Step {
 	return []Step{
 		{
-			Action: redelegateTokensAction{
+			Action: ReDelegateTokensAction{
 				Chain:    ChainID("provi"),
 				Src:      ValidatorID("carol"),
 				Dst:      ValidatorID("alice"),
@@ -305,7 +305,7 @@ func stepsRedelegate(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -329,7 +329,7 @@ func stepsRedelegate(consumerName string) []Step {
 func stepsRedelegateShort(consumerName string) []Step {
 	return []Step{
 		{
-			Action: redelegateTokensAction{
+			Action: ReDelegateTokensAction{
 				Chain:    ChainID("provi"),
 				Src:      ValidatorID("alice"),
 				Dst:      ValidatorID("carol"),
@@ -358,7 +358,7 @@ func stepsRedelegateShort(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",

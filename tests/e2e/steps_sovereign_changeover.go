@@ -10,7 +10,7 @@ import clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 func stepsSovereignTransferChan() []Step {
 	return []Step{
 		{
-			Action: createIbcClientsAction{
+			Action: CreateIbcClientsAction{
 				ChainA: ChainID("sover"),
 				ChainB: ChainID("provi"),
 			},
@@ -18,7 +18,7 @@ func stepsSovereignTransferChan() []Step {
 		},
 		{
 			// this will create channel-0 connection end on both chain
-			Action: addIbcChannelAction{
+			Action: AddIbcChannelAction{
 				ChainA:      ChainID("sover"),
 				ChainB:      ChainID("provi"),
 				ConnectionA: 0,
@@ -36,7 +36,7 @@ func stepsSovereignTransferChan() []Step {
 func stepsChangeoverToConsumer(consumerName string) []Step {
 	s := []Step{
 		{
-			Action: submitConsumerAdditionProposalAction{
+			Action: SubmitConsumerAdditionProposalAction{
 				PreCCV:        true,
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
@@ -68,7 +68,7 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			Action: voteGovProposalAction{
+			Action: VoteGovProposalAction{
 				Chain:      ChainID("provi"),
 				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
 				Vote:       []string{"yes", "yes", "yes"},
@@ -122,7 +122,7 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			Action: addIbcConnectionAction{
+			Action: AddIbcConnectionAction{
 				ChainA:  ChainID(consumerName),
 				ChainB:  ChainID("provi"),
 				ClientA: 1,
@@ -131,7 +131,7 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 			State: State{},
 		},
 		{
-			Action: addIbcChannelAction{
+			Action: AddIbcChannelAction{
 				ChainA:      ChainID(consumerName),
 				ChainB:      ChainID("provi"),
 				ConnectionA: 1,
@@ -169,7 +169,7 @@ func stepRunSovereignChain() []Step {
 			},
 		},
 		{
-			Action: delegateTokensAction{
+			Action: DelegateTokensAction{
 				Chain:  ChainID("sover"),
 				From:   ValidatorID("alice"),
 				To:     ValidatorID("alice"),
@@ -213,7 +213,7 @@ func stepsUpgradeChain() []Step {
 			},
 		},
 		{
-			Action: voteGovProposalAction{
+			Action: VoteGovProposalAction{
 				Chain:      ChainID("sover"),
 				From:       []ValidatorID{ValidatorID("alice")},
 				Vote:       []string{"yes"},
@@ -234,7 +234,7 @@ func stepsUpgradeChain() []Step {
 			},
 		},
 		{
-			Action: waitUntilBlockAction{
+			Action: WaitUntilBlockAction{
 				Chain: ChainID("sover"),
 				Block: 110,
 			},
@@ -265,7 +265,7 @@ func stepsPostChangeoverDelegate(consumerName string) []Step {
 			},
 		},
 		{
-			Action: delegateTokensAction{
+			Action: DelegateTokensAction{
 				Chain:  ChainID("provi"),
 				From:   ValidatorID("alice"),
 				To:     ValidatorID("alice"),
@@ -289,7 +289,7 @@ func stepsPostChangeoverDelegate(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -322,7 +322,7 @@ func stepsPostChangeoverDelegate(consumerName string) []Step {
 			},
 		},
 		{
-			Action: unbondTokensAction{
+			Action: UnbondTokensAction{
 				Chain:      ChainID("provi"),
 				UnbondFrom: ValidatorID("alice"),
 				Sender:     ValidatorID("alice"),
@@ -347,7 +347,7 @@ func stepsPostChangeoverDelegate(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",

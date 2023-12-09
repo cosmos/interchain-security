@@ -5,7 +5,7 @@ func stepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
 	return []Step{
 		{
 			// Provider double sign
-			Action: lightClientEquivocationAttackAction{
+			Action: LightClientEquivocationAttackAction{
 				Chain:     ChainID("provi"),
 				Validator: ValidatorID("carol"),
 			},
@@ -29,7 +29,7 @@ func stepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
 		},
 		{
 			// Relay power change to consumerName
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -55,7 +55,7 @@ func stepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
 		{
 			// Consumer double sign
 			// Provider will only log the double sign slash
-			Action: lightClientEquivocationAttackAction{
+			Action: LightClientEquivocationAttackAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 			},
@@ -77,7 +77,7 @@ func stepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -102,7 +102,7 @@ func stepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
 		},
 		{
 			// Consumer learns about the double sign
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",

@@ -45,7 +45,7 @@
     }
   },
   {
-    "ActionType": "main.submitConsumerAdditionProposalAction",
+    "ActionType": "main.SubmitConsumerAdditionProposalAction",
     "Action": {
       "PreCCV": false,
       "Chain": "provi",
@@ -92,7 +92,7 @@
     }
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "carol",
@@ -123,7 +123,7 @@
     }
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "carol",
@@ -135,7 +135,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "bob",
@@ -167,7 +167,7 @@
     }
   },
   {
-    "ActionType": "main.voteGovProposalAction",
+    "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "provi",
       "From": [
@@ -216,7 +216,7 @@
     }
   },
   {
-    "ActionType": "main.startConsumerChainAction",
+    "ActionType": "main.StartConsumerChainAction",
     "Action": {
       "ConsumerChain": "consu",
       "ProviderChain": "provi",
@@ -279,7 +279,7 @@
     }
   },
   {
-    "ActionType": "main.addIbcConnectionAction",
+    "ActionType": "main.AddIbcConnectionAction",
     "Action": {
       "ChainA": "consu",
       "ChainB": "provi",
@@ -289,7 +289,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.addIbcChannelAction",
+    "ActionType": "main.AddIbcChannelAction",
     "Action": {
       "ChainA": "consu",
       "ChainB": "provi",
@@ -302,7 +302,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.submitConsumerAdditionProposalAction",
+    "ActionType": "main.SubmitConsumerAdditionProposalAction",
     "Action": {
       "PreCCV": false,
       "Chain": "provi",
@@ -349,7 +349,7 @@
     }
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "densu",
       "Validator": "carol",
@@ -380,7 +380,7 @@
     }
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "densu",
       "Validator": "carol",
@@ -392,7 +392,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "densu",
       "Validator": "bob",
@@ -424,7 +424,7 @@
     }
   },
   {
-    "ActionType": "main.voteGovProposalAction",
+    "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "provi",
       "From": [
@@ -473,7 +473,7 @@
     }
   },
   {
-    "ActionType": "main.startConsumerChainAction",
+    "ActionType": "main.StartConsumerChainAction",
     "Action": {
       "ConsumerChain": "densu",
       "ProviderChain": "provi",
@@ -536,7 +536,7 @@
     }
   },
   {
-    "ActionType": "main.addIbcConnectionAction",
+    "ActionType": "main.AddIbcConnectionAction",
     "Action": {
       "ChainA": "densu",
       "ChainB": "provi",
@@ -546,7 +546,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.addIbcChannelAction",
+    "ActionType": "main.AddIbcChannelAction",
     "Action": {
       "ChainA": "densu",
       "ChainB": "provi",
@@ -559,7 +559,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.delegateTokensAction",
+    "ActionType": "main.DelegateTokensAction",
     "Action": {
       "Chain": "provi",
       "From": "alice",
@@ -624,7 +624,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -689,7 +689,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",
@@ -754,7 +754,7 @@
     }
   },
   {
-    "ActionType": "main.unbondTokensAction",
+    "ActionType": "main.UnbondTokensAction",
     "Action": {
       "Chain": "provi",
       "Sender": "alice",
@@ -819,7 +819,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -884,7 +884,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",
@@ -949,7 +949,7 @@
     }
   },
   {
-    "ActionType": "main.redelegateTokensAction",
+    "ActionType": "main.ReDelegateTokensAction",
     "Action": {
       "Chain": "provi",
       "Src": "alice",
@@ -1015,7 +1015,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -1080,7 +1080,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",
@@ -1145,7 +1145,7 @@
     }
   },
   {
-    "ActionType": "main.downtimeSlashAction",
+    "ActionType": "main.DowntimeSlashAction",
     "Action": {
       "Chain": "consu",
       "Validator": "bob"
@@ -1208,7 +1208,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -1273,7 +1273,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -1320,7 +1320,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",
@@ -1367,7 +1367,7 @@
     }
   },
   {
-    "ActionType": "main.unjailValidatorAction",
+    "ActionType": "main.UnjailValidatorAction",
     "Action": {
       "Provider": "provi",
       "Validator": "bob"
@@ -1430,7 +1430,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -1495,7 +1495,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",
@@ -1560,7 +1560,7 @@
     }
   },
   {
-    "ActionType": "main.downtimeSlashAction",
+    "ActionType": "main.DowntimeSlashAction",
     "Action": {
       "Chain": "provi",
       "Validator": "carol"
@@ -1623,7 +1623,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -1688,7 +1688,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",
@@ -1753,7 +1753,7 @@
     }
   },
   {
-    "ActionType": "main.unjailValidatorAction",
+    "ActionType": "main.UnjailValidatorAction",
     "Action": {
       "Provider": "provi",
       "Validator": "carol"
@@ -1816,7 +1816,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -1881,7 +1881,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",
@@ -1946,7 +1946,7 @@
     }
   },
   {
-    "ActionType": "main.doublesignSlashAction",
+    "ActionType": "main.DoublesignSlashAction",
     "Action": {
       "Validator": "carol",
       "Chain": "provi"
@@ -2009,7 +2009,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -2074,7 +2074,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",
@@ -2139,7 +2139,7 @@
     }
   },
   {
-    "ActionType": "main.doublesignSlashAction",
+    "ActionType": "main.DoublesignSlashAction",
     "Action": {
       "Validator": "bob",
       "Chain": "consu"
@@ -2202,7 +2202,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -2267,7 +2267,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",
@@ -2332,7 +2332,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "densu",

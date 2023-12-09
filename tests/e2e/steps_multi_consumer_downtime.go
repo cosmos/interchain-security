@@ -7,7 +7,7 @@ package main
 func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			Action: downtimeSlashAction{
+			Action: DowntimeSlashAction{
 				Chain:     ChainID(consumer1),
 				Validator: ValidatorID("bob"),
 			},
@@ -39,7 +39,7 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		{
 			// Downtime jailing and corresponding voting power change are processed by provider
 			// Validator powers are unchanged on consumer chains
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -73,7 +73,7 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 			// A block is incremented each action, hence why VSC is committed on provider,
 			// and can now be relayed as packet to consumer
 			// consumer1 will now see the validator power changes - consumer2 will not (had not been relayed)
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -101,7 +101,7 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		},
 		{
 			// both consumer1 and consumer will now see the validator power changes
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",
@@ -125,7 +125,7 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			Action: unjailValidatorAction{
+			Action: UnjailValidatorAction{
 				Provider:  ChainID("provi"),
 				Validator: ValidatorID("bob"),
 			},
@@ -158,7 +158,7 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		},
 		{
 			// relay to consumer 1
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -190,7 +190,7 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		},
 		{
 			// relay to consumer2
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",
@@ -229,7 +229,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 	return []Step{
 		// Now we test provider initiated downtime/slashing
 		{
-			Action: downtimeSlashAction{
+			Action: DowntimeSlashAction{
 				Chain:     ChainID("provi"),
 				Validator: ValidatorID("carol"),
 			},
@@ -259,7 +259,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -293,7 +293,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",
@@ -326,7 +326,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			Action: unjailValidatorAction{
+			Action: UnjailValidatorAction{
 				Provider:  ChainID("provi"),
 				Validator: ValidatorID("carol"),
 			},
@@ -355,7 +355,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -387,7 +387,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",

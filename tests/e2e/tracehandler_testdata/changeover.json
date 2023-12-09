@@ -32,7 +32,7 @@
     }
   },
   {
-    "ActionType": "main.delegateTokensAction",
+    "ActionType": "main.DelegateTokensAction",
     "Action": {
       "Chain": "sover",
       "From": "alice",
@@ -106,7 +106,7 @@
     }
   },
   {
-    "ActionType": "main.createIbcClientsAction",
+    "ActionType": "main.CreateIbcClientsAction",
     "Action": {
       "ChainA": "sover",
       "ChainB": "provi"
@@ -114,7 +114,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.addIbcChannelAction",
+    "ActionType": "main.AddIbcChannelAction",
     "Action": {
       "ChainA": "sover",
       "ChainB": "provi",
@@ -164,7 +164,7 @@
     }
   },
   {
-    "ActionType": "main.voteGovProposalAction",
+    "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "sover",
       "From": [
@@ -205,7 +205,7 @@
     }
   },
   {
-    "ActionType": "main.waitUntilBlockAction",
+    "ActionType": "main.WaitUntilBlockAction",
     "Action": {
       "Block": 110,
       "Chain": "sover"
@@ -213,7 +213,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.submitConsumerAdditionProposalAction",
+    "ActionType": "main.SubmitConsumerAdditionProposalAction",
     "Action": {
       "PreCCV": true,
       "Chain": "provi",
@@ -260,7 +260,7 @@
     }
   },
   {
-    "ActionType": "main.voteGovProposalAction",
+    "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "provi",
       "From": [
@@ -372,7 +372,7 @@
     }
   },
   {
-    "ActionType": "main.addIbcConnectionAction",
+    "ActionType": "main.AddIbcConnectionAction",
     "Action": {
       "ChainA": "sover",
       "ChainB": "provi",
@@ -382,7 +382,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.addIbcChannelAction",
+    "ActionType": "main.AddIbcChannelAction",
     "Action": {
       "ChainA": "sover",
       "ChainB": "provi",
@@ -422,7 +422,7 @@
     }
   },
   {
-    "ActionType": "main.delegateTokensAction",
+    "ActionType": "main.DelegateTokensAction",
     "Action": {
       "Chain": "provi",
       "From": "alice",
@@ -469,7 +469,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "sover",
@@ -525,7 +525,7 @@
     }
   },
   {
-    "ActionType": "main.unbondTokensAction",
+    "ActionType": "main.UnbondTokensAction",
     "Action": {
       "Chain": "provi",
       "Sender": "alice",
@@ -572,7 +572,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "sover",
