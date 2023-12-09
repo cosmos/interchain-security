@@ -372,7 +372,7 @@ func (tr *TestConfig) runStep(step Step, verbose bool) {
 		tr.unbondTokens(action, verbose)
 	case CancelUnbondTokensAction:
 		tr.cancelUnbondTokens(action, verbose)
-	case ReDelegateTokensAction:
+	case RedelegateTokensAction:
 		tr.redelegateTokens(action, verbose)
 	case DowntimeSlashAction:
 		tr.invokeDowntimeSlash(action, verbose)

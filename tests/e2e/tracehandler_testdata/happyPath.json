@@ -770,7 +770,7 @@
     }
   },
   {
-    "ActionType": "main.ReDelegateTokensAction",
+    "ActionType": "main.RedelegateTokensAction",
     "Action": {
       "Chain": "provi",
       "Src": "alice",
@@ -939,7 +939,7 @@
     }
   },
   {
-    "ActionType": "main.ReDelegateTokensAction",
+    "ActionType": "main.RedelegateTokensAction",
     "Action": {
       "Chain": "provi",
       "Src": "carol",

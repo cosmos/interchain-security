@@ -1456,7 +1456,7 @@ func (tr TestConfig) cancelUnbondTokens(
 	tr.waitBlocks(action.Chain, 2, 20*time.Second)
 }
 
-type ReDelegateTokensAction struct {
+type RedelegateTokensAction struct {
 	Chain    ChainID
 	Src      ValidatorID
 	Dst      ValidatorID
@@ -1464,7 +1464,7 @@ type ReDelegateTokensAction struct {
 	Amount   uint
 }
 
-func (tr TestConfig) redelegateTokens(action ReDelegateTokensAction, verbose bool) {
+func (tr TestConfig) redelegateTokens(action RedelegateTokensAction, verbose bool) {
 	srcCfg := tr.validatorConfigs[action.Src]
 	dstCfg := tr.validatorConfigs[action.Dst]
 

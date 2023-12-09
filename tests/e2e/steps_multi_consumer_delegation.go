@@ -209,7 +209,7 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			Action: ReDelegateTokensAction{
+			Action: RedelegateTokensAction{
 				Chain:    ChainID("provi"),
 				Src:      ValidatorID("alice"),
 				Dst:      ValidatorID("carol"),

@@ -77,7 +77,7 @@ func GetActionGen() *rapid.Generator[any] {
 		GetRelayRewardPacketsToProviderActionGen().AsAny(),
 		GetDelegateTokensActionGen().AsAny(),
 		GetUnbondTokensActionGen().AsAny(),
-		GetReDelegateTokensActionGen().AsAny(),
+		GetRedelegateTokensActionGen().AsAny(),
 		GetDowntimeSlashActionGen().AsAny(),
 		GetUnjailValidatorActionGen().AsAny(),
 		GetRegisterRepresentativeActionGen().AsAny(),
@@ -418,9 +418,9 @@ func GetUnbondTokensActionGen() *rapid.Generator[UnbondTokensAction] {
 	})
 }
 
-func GetReDelegateTokensActionGen() *rapid.Generator[ReDelegateTokensAction] {
-	return rapid.Custom(func(t *rapid.T) ReDelegateTokensAction {
-		return ReDelegateTokensAction{
+func GetRedelegateTokensActionGen() *rapid.Generator[RedelegateTokensAction] {
+	return rapid.Custom(func(t *rapid.T) RedelegateTokensAction {
+		return RedelegateTokensAction{
 			Chain:    GetChainIDGen().Draw(t, "Chain"),
 			Amount:   rapid.Uint().Draw(t, "Amount"),
 			Src:      GetValidatorIDGen().Draw(t, "Src"),

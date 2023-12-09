@@ -226,7 +226,7 @@ func stepsCancelUnbond(consumerName string) []Step {
 func stepsRedelegateForOptOut(consumerName string) []Step {
 	return []Step{
 		{
-			Action: ReDelegateTokensAction{
+			Action: RedelegateTokensAction{
 				Chain:    ChainID("provi"),
 				Src:      ValidatorID("alice"),
 				Dst:      ValidatorID("carol"),
@@ -276,7 +276,7 @@ func stepsRedelegateForOptOut(consumerName string) []Step {
 func stepsRedelegate(consumerName string) []Step {
 	return []Step{
 		{
-			Action: ReDelegateTokensAction{
+			Action: RedelegateTokensAction{
 				Chain:    ChainID("provi"),
 				Src:      ValidatorID("carol"),
 				Dst:      ValidatorID("alice"),
@@ -329,7 +329,7 @@ func stepsRedelegate(consumerName string) []Step {
 func stepsRedelegateShort(consumerName string) []Step {
 	return []Step{
 		{
-			Action: ReDelegateTokensAction{
+			Action: RedelegateTokensAction{
 				Chain:    ChainID("provi"),
 				Src:      ValidatorID("alice"),
 				Dst:      ValidatorID("carol"),

@@ -197,8 +197,8 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.ReDelegateTokensAction":
-		var a ReDelegateTokensAction
+	case "main.RedelegateTokensAction":
+		var a RedelegateTokensAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
 			return a, nil
