@@ -362,7 +362,7 @@ func RunItfTrace(t *testing.T, path string) {
 		require.Equal(t, modelRunningConsumers, actualRunningConsumers, "Running consumers do not match")
 
 		// check validator sets - provider current validator set should be the one from the staking keeper
-		CompareValidatorSets(t, driver, currentModelState, actualRunningConsumers, index)
+		CompareValidatorSets(t, driver, currentModelState, actualRunningConsumers)
 
 		// check times - sanity check that the block times match the ones from the model
 		CompareTimes(driver, actualRunningConsumers, currentModelState, timeOffset)
@@ -381,7 +381,7 @@ func RunItfTrace(t *testing.T, path string) {
 	t.Log("🟢 Trace is ok!")
 }
 
-func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[string]itf.Expr, consumers []string, index int) {
+func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[string]itf.Expr, consumers []string) {
 	t.Helper()
 	modelValSet := ValidatorSet(currentModelState, "provider")
 	curValSet := driver.providerValidatorSet()
