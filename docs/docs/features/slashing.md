@@ -257,6 +257,339 @@ Use the following command to submit evidence of light client attacks:
 gaiad tx provider submit-consumer-misbehaviour [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
 ```
 
+<details>
+  <summary>Example of `misbehaviour.json`</summary>
+  <div>
+    <div>
+    ```json
+    {
+        "client_id": "07-tendermint-0",
+        "header_1": {
+            "signed_header": {
+                "header": {
+                    "version": {
+                        "block": "11",
+                        "app": "2"
+                    },
+                    "chain_id": "testchain2",
+                    "height": "19",
+                    "time": "2020-01-02T00:08:10Z",
+                    "last_block_id": {
+                        "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+                        "part_set_header": {
+                            "total": 10000,
+                            "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+                        }
+                    },
+                    "last_commit_hash": "dPJh3vUG5ls8NeP/SBSEkIgTOzrkFOROqhKnuk2zRgc=",
+                    "data_hash": "bW4ouLmLUycELqUKV91G5syFHHLlKL3qpu/e7v5moLg=",
+                    "validators_hash": "ImwBH++bKKkm2NDCwOxRn04P5GWWypgzeLVZWoc10+I=",
+                    "next_validators_hash": "ImwBH++bKKkm2NDCwOxRn04P5GWWypgzeLVZWoc10+I=",
+                    "consensus_hash": "5eVmxB7Vfj/4zBDxhBeHiLj6pgKwfPH0JSF72BefHyQ=",
+                    "app_hash": "dPJh3vUG5ls8NeP/SBSEkIgTOzrkFOROqhKnuk2zRgc=",
+                    "last_results_hash": "CS4FhjAkftYAmGOhLu4RfSbNnQi1rcqrN/KrNdtHWjc=",
+                    "evidence_hash": "c4ZdsI9J1YQokF04mrTKS5bkWjIGx6adQ6Xcc3LmBxQ=",
+                    "proposer_address": "CbKqPquy50bcrY7JRdW7zXybSuA="
+                },
+                "commit": {
+                    "height": "19",
+                    "round": 1,
+                    "block_id": {
+                        "hash": "W2xVqzPw03ZQ1kAMpcpht9WohwMzsGnyKKNjPYKDF6U=",
+                        "part_set_header": {
+                            "total": 3,
+                            "hash": "hwgKOc/jNqZj6lwNm97vSTq9wYt8Pj4MjmYTVMGDFDI="
+                        }
+                    },
+                    "signatures": [
+                        {
+                            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+                            "validator_address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                            "timestamp": "2020-01-02T00:08:10Z",
+                            "signature": "PGTquCtnTNFFY5HfEFz9f9pA7PYqjtQfBwHq6cxF/Ux8OI6nVqyadD9a84Xm7fSm6mqdW+T6YVfqIKmIoRjJDQ=="
+                        },
+                        {
+                            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+                            "validator_address": "Ua+R3vfKH1LWhRg/k8PbA/uSLnc=",
+                            "timestamp": "2020-01-02T00:08:10Z",
+                            "signature": "0e39yoBorwORAH/K9qJ7D1N1Yr7CutMiQJ+oiIK39eMhuoK3UWzQyMGRLzDOIDupf8yD99mvGVVAlNIODlV3Dg=="
+                        },
+                        {
+                            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+                            "validator_address": "Uns+2wsfv6IYTpOnYfAnPplVzTE=",
+                            "timestamp": "2020-01-02T00:08:10Z",
+                            "signature": "lhc2tkwydag9D1iLQhdDCE8GgrHP94M1LbHFYMoL9tExaEq6RiFW/k71TQH5x96XQ9XYOznMIHKC2BDh4GlnAQ=="
+                        },
+                        {
+                            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+                            "validator_address": "sS7FyKFPDEG7StI+4o3+6fZy1pY=",
+                            "timestamp": "2020-01-02T00:08:10Z",
+                            "signature": "8xeSBf0nSFs/X/rQ9CZLzwkJJhQBLA2jKdPGP3MlULxm992XxrOsIYq47u1daxvSsn6ql5OVYjzBNU0qbPpvCA=="
+                        }
+                    ]
+                }
+            },
+            "validator_set": {
+                "validators": [
+                    {
+                        "address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                        "pub_key": {
+                            "ed25519": "sUkpD9xhOgWna0dv4bSwI7N7CkyH6q1bBDPYhjRolaY="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "-3"
+                    },
+                    {
+                        "address": "Ua+R3vfKH1LWhRg/k8PbA/uSLnc=",
+                        "pub_key": {
+                            "ed25519": "H+7myYFFaCBTAxPiYaTX4IZIRtaUu+rcJVp+doLxd8c="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    },
+                    {
+                        "address": "Uns+2wsfv6IYTpOnYfAnPplVzTE=",
+                        "pub_key": {
+                            "ed25519": "QMHyl6i2OjmMEh73VXS5QBdsQ1vQ2mU3XzKGAhnKqmc="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    },
+                    {
+                        "address": "sS7FyKFPDEG7StI+4o3+6fZy1pY=",
+                        "pub_key": {
+                            "ed25519": "uSNKjObXRHsNslEdqdublnVDa4Vc2aoCpr0j+Fuvv5U="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    }
+                ],
+                "proposer": {
+                    "address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                    "pub_key": {
+                        "ed25519": "sUkpD9xhOgWna0dv4bSwI7N7CkyH6q1bBDPYhjRolaY="
+                    },
+                    "voting_power": "1",
+                    "proposer_priority": "-3"
+                },
+                "total_voting_power": "0"
+            },
+            "trusted_height": {
+                "revision_number": "0",
+                "revision_height": "18"
+            },
+            "trusted_validators": {
+                "validators": [
+                    {
+                        "address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                        "pub_key": {
+                            "ed25519": "sUkpD9xhOgWna0dv4bSwI7N7CkyH6q1bBDPYhjRolaY="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "-3"
+                    },
+                    {
+                        "address": "Ua+R3vfKH1LWhRg/k8PbA/uSLnc=",
+                        "pub_key": {
+                            "ed25519": "H+7myYFFaCBTAxPiYaTX4IZIRtaUu+rcJVp+doLxd8c="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    },
+                    {
+                        "address": "Uns+2wsfv6IYTpOnYfAnPplVzTE=",
+                        "pub_key": {
+                            "ed25519": "QMHyl6i2OjmMEh73VXS5QBdsQ1vQ2mU3XzKGAhnKqmc="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    },
+                    {
+                        "address": "sS7FyKFPDEG7StI+4o3+6fZy1pY=",
+                        "pub_key": {
+                            "ed25519": "uSNKjObXRHsNslEdqdublnVDa4Vc2aoCpr0j+Fuvv5U="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    }
+                ],
+                "proposer": {
+                    "address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                    "pub_key": {
+                        "ed25519": "sUkpD9xhOgWna0dv4bSwI7N7CkyH6q1bBDPYhjRolaY="
+                    },
+                    "voting_power": "1",
+                    "proposer_priority": "-3"
+                },
+                "total_voting_power": "0"
+            }
+        },
+        "header_2": {
+            "signed_header": {
+                "header": {
+                    "version": {
+                        "block": "11",
+                        "app": "2"
+                    },
+                    "chain_id": "testchain2",
+                    "height": "19",
+                    "time": "2020-01-02T00:08:20Z",
+                    "last_block_id": {
+                        "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+                        "part_set_header": {
+                            "total": 10000,
+                            "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+                        }
+                    },
+                    "last_commit_hash": "dPJh3vUG5ls8NeP/SBSEkIgTOzrkFOROqhKnuk2zRgc=",
+                    "data_hash": "bW4ouLmLUycELqUKV91G5syFHHLlKL3qpu/e7v5moLg=",
+                    "validators_hash": "ImwBH++bKKkm2NDCwOxRn04P5GWWypgzeLVZWoc10+I=",
+                    "next_validators_hash": "ImwBH++bKKkm2NDCwOxRn04P5GWWypgzeLVZWoc10+I=",
+                    "consensus_hash": "5eVmxB7Vfj/4zBDxhBeHiLj6pgKwfPH0JSF72BefHyQ=",
+                    "app_hash": "dPJh3vUG5ls8NeP/SBSEkIgTOzrkFOROqhKnuk2zRgc=",
+                    "last_results_hash": "CS4FhjAkftYAmGOhLu4RfSbNnQi1rcqrN/KrNdtHWjc=",
+                    "evidence_hash": "c4ZdsI9J1YQokF04mrTKS5bkWjIGx6adQ6Xcc3LmBxQ=",
+                    "proposer_address": "CbKqPquy50bcrY7JRdW7zXybSuA="
+                },
+                "commit": {
+                    "height": "19",
+                    "round": 1,
+                    "block_id": {
+                        "hash": "IZM8NKS+8FHB7CBmgB8Nz7BRVVXiiyqMQDvHFUvgzxo=",
+                        "part_set_header": {
+                            "total": 3,
+                            "hash": "hwgKOc/jNqZj6lwNm97vSTq9wYt8Pj4MjmYTVMGDFDI="
+                        }
+                    },
+                    "signatures": [
+                        {
+                            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+                            "validator_address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                            "timestamp": "2020-01-02T00:08:20Z",
+                            "signature": "pLIEZ4WSAtnMsgryujheHSq4+YG3RqTfMn2ZxgEymr0wyi+BNlQAKRtRfesm0vfYxvjzc/jhGqtUqHtSIaCwCQ=="
+                        },
+                        {
+                            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+                            "validator_address": "Ua+R3vfKH1LWhRg/k8PbA/uSLnc=",
+                            "timestamp": "2020-01-02T00:08:20Z",
+                            "signature": "XG7iTe/spWyTUkT7XDzfLMpYqrdyqizE4/X4wl/W+1eaQp0WsCHYnvPU3x9NAnYfZzaKdonZiDWs7wacbZTcDg=="
+                        },
+                        {
+                            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+                            "validator_address": "Uns+2wsfv6IYTpOnYfAnPplVzTE=",
+                            "timestamp": "2020-01-02T00:08:20Z",
+                            "signature": "TqegK7ORuICSy++wVdPHt8fL2WfPlYsMPv1XW79wUdcjnQkezOM50OSqYaP4ua5frIZsn+sWteDrlqFTdkl3BA=="
+                        },
+                        {
+                            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+                            "validator_address": "sS7FyKFPDEG7StI+4o3+6fZy1pY=",
+                            "timestamp": "2020-01-02T00:08:20Z",
+                            "signature": "dhvp3XlIaCxx5MFDs0TCkAPHSm0PS2EtJzYAx2c/7MWdLwUJFZrAUTeimQE2c9i9ro91cjZn/vI0/oFRXab6Aw=="
+                        }
+                    ]
+                }
+            },
+            "validator_set": {
+                "validators": [
+                    {
+                        "address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                        "pub_key": {
+                            "ed25519": "sUkpD9xhOgWna0dv4bSwI7N7CkyH6q1bBDPYhjRolaY="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "-3"
+                    },
+                    {
+                        "address": "Ua+R3vfKH1LWhRg/k8PbA/uSLnc=",
+                        "pub_key": {
+                            "ed25519": "H+7myYFFaCBTAxPiYaTX4IZIRtaUu+rcJVp+doLxd8c="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    },
+                    {
+                        "address": "Uns+2wsfv6IYTpOnYfAnPplVzTE=",
+                        "pub_key": {
+                            "ed25519": "QMHyl6i2OjmMEh73VXS5QBdsQ1vQ2mU3XzKGAhnKqmc="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    },
+                    {
+                        "address": "sS7FyKFPDEG7StI+4o3+6fZy1pY=",
+                        "pub_key": {
+                            "ed25519": "uSNKjObXRHsNslEdqdublnVDa4Vc2aoCpr0j+Fuvv5U="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    }
+                ],
+                "proposer": {
+                    "address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                    "pub_key": {
+                        "ed25519": "sUkpD9xhOgWna0dv4bSwI7N7CkyH6q1bBDPYhjRolaY="
+                    },
+                    "voting_power": "1",
+                    "proposer_priority": "-3"
+                },
+                "total_voting_power": "0"
+            },
+            "trusted_height": {
+                "revision_number": "0",
+                "revision_height": "18"
+            },
+            "trusted_validators": {
+                "validators": [
+                    {
+                        "address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                        "pub_key": {
+                            "ed25519": "sUkpD9xhOgWna0dv4bSwI7N7CkyH6q1bBDPYhjRolaY="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "-3"
+                    },
+                    {
+                        "address": "Ua+R3vfKH1LWhRg/k8PbA/uSLnc=",
+                        "pub_key": {
+                            "ed25519": "H+7myYFFaCBTAxPiYaTX4IZIRtaUu+rcJVp+doLxd8c="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    },
+                    {
+                        "address": "Uns+2wsfv6IYTpOnYfAnPplVzTE=",
+                        "pub_key": {
+                            "ed25519": "QMHyl6i2OjmMEh73VXS5QBdsQ1vQ2mU3XzKGAhnKqmc="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    },
+                    {
+                        "address": "sS7FyKFPDEG7StI+4o3+6fZy1pY=",
+                        "pub_key": {
+                            "ed25519": "uSNKjObXRHsNslEdqdublnVDa4Vc2aoCpr0j+Fuvv5U="
+                        },
+                        "voting_power": "1",
+                        "proposer_priority": "1"
+                    }
+                ],
+                "proposer": {
+                    "address": "CbKqPquy50bcrY7JRdW7zXybSuA=",
+                    "pub_key": {
+                        "ed25519": "sUkpD9xhOgWna0dv4bSwI7N7CkyH6q1bBDPYhjRolaY="
+                    },
+                    "voting_power": "1",
+                    "proposer_priority": "-3"
+                },
+                "total_voting_power": "0"
+            }
+        }
+    }
+    ```
+    </div>
+  </div>
+</details>
+
 ### Report equivocation infractions with Hermes
 
 Ensure you have a well-configured Hermes `v1.7.3+` relayer effectively relaying packets between a consumer chain and a provider chain. 
