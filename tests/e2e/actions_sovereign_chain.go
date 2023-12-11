@@ -99,7 +99,7 @@ func (tr TestConfig) startSovereignChain(
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-	tr.addChainToRelayer(addChainToRelayerAction{
+	tr.addChainToRelayer(AddChainToRelayerAction{
 		Chain:     action.Chain,
 		Validator: action.Validators[0].Id,
 	}, verbose)
@@ -156,12 +156,12 @@ func (tr *TestConfig) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAc
 	tr.waitBlocks(action.ChainID, 1, 15*time.Second)
 }
 
-type waitUntilBlockAction struct {
+type WaitUntilBlockAction struct {
 	Block uint
 	Chain ChainID
 }
 
-func (tr *TestConfig) waitUntilBlockOnChain(action waitUntilBlockAction) {
+func (tr *TestConfig) waitUntilBlockOnChain(action WaitUntilBlockAction) {
 	fmt.Println("waitUntilBlockOnChain is waiting for block:", action.Block)
 	tr.waitUntilBlock(action.Chain, action.Block, 120*time.Second)
 	fmt.Println("waitUntilBlockOnChain done waiting for block:", action.Block)

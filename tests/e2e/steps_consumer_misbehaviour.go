@@ -29,7 +29,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			},
 		},
 		{
-			Action: submitConsumerAdditionProposalAction{
+			Action: SubmitConsumerAdditionProposalAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				Deposit:       10000001,
@@ -58,7 +58,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 		// add a consumer key before the chain starts
 		// the key will be present in consumer genesis initial_val_set
 		{
-			Action: assignConsumerPubKeyAction{
+			Action: AssignConsumerPubKeyAction{
 				Chain:          ChainID(consumerName),
 				Validator:      ValidatorID("alice"),
 				ConsumerPubkey: `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="}`,
@@ -79,7 +79,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			},
 		},
 		{
-			Action: voteGovProposalAction{
+			Action: VoteGovProposalAction{
 				Chain:      ChainID("provi"),
 				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
 				Vote:       []string{"yes", "yes"},
@@ -106,7 +106,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 		{
 			// start a consumer chain using a single big validator knowing that it holds more than 2/3 of the voting power
 			// and that the other validators hold less than 5% so they won't get jailed thanks to the sof opt-out mechanism.
-			Action: startConsumerChainAction{
+			Action: StartConsumerChainAction{
 				ConsumerChain: ChainID(consumerName),
 				ProviderChain: ChainID("provi"),
 				Validators: []StartChainValidator{
@@ -134,7 +134,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			},
 		},
 		{
-			Action: addIbcConnectionAction{
+			Action: AddIbcConnectionAction{
 				ChainA:  ChainID(consumerName),
 				ChainB:  ChainID("provi"),
 				ClientA: 0,
@@ -143,7 +143,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			State: State{},
 		},
 		{
-			Action: addIbcChannelAction{
+			Action: AddIbcChannelAction{
 				ChainA:      ChainID(consumerName),
 				ChainB:      ChainID("provi"),
 				ConnectionA: 0,
@@ -156,7 +156,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 		// delegate some token and relay the resulting VSC packets
 		// in oder to initiates the CCV channel
 		{
-			Action: delegateTokensAction{
+			Action: DelegateTokensAction{
 				Chain:  ChainID("provi"),
 				From:   ValidatorID("alice"),
 				To:     ValidatorID("alice"),
@@ -178,7 +178,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -205,7 +205,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 	return []Step{
 		{
 			// fork the consumer chain by cloning the alice validator node
-			Action: forkConsumerChainAction{
+			Action: ForkConsumerChainAction{
 				ConsumerChain: ChainID(consumerName),
 				ProviderChain: ChainID("provi"),
 				Validator:     ValidatorID("alice"),
@@ -215,13 +215,13 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 		},
 		// start relayer to detect IBC misbehaviour
 		{
-			Action: startRelayerAction{},
+			Action: StartRelayerAction{},
 			State:  State{},
 		},
 		// run Hermes relayer instance to detect the ICS misbehaviour
 		// and jail alice on the provider
 		{
-			Action: startConsumerEvidenceDetectorAction{
+			Action: StartConsumerEvidenceDetectorAction{
 				Chain: ChainID(consumerName),
 			},
 			State: State{
@@ -246,7 +246,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 		{
 			// update the fork consumer client to create a light client attack
 			// which should trigger a ICS misbehaviour message
-			Action: updateLightClientAction{
+			Action: UpdateLightClientAction{
 				Chain:         ChainID(consumerName),
 				ClientID:      consumerClientID,
 				HostChain:     ChainID("provi"),

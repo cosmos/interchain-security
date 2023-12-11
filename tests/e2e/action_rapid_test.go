@@ -96,9 +96,9 @@ func GetActionGen() *rapid.Generator[any] {
 	)
 }
 
-func CreateSubmitChangeRewardDenomsProposalActionGen() *rapid.Generator[submitChangeRewardDenomsProposalAction] {
-	return rapid.Custom(func(t *rapid.T) submitChangeRewardDenomsProposalAction {
-		return submitChangeRewardDenomsProposalAction{
+func CreateSubmitChangeRewardDenomsProposalActionGen() *rapid.Generator[SubmitChangeRewardDenomsProposalAction] {
+	return rapid.Custom(func(t *rapid.T) SubmitChangeRewardDenomsProposalAction {
+		return SubmitChangeRewardDenomsProposalAction{
 			From:    GetValidatorIDGen().Draw(t, "From"),
 			Deposit: rapid.Uint().Draw(t, "Deposit"),
 			Denom:   rapid.String().Draw(t, "Denom"),
@@ -106,36 +106,36 @@ func CreateSubmitChangeRewardDenomsProposalActionGen() *rapid.Generator[submitCh
 	})
 }
 
-func CreateLightClientEquivocationAttackActionGen() *rapid.Generator[lightClientEquivocationAttackAction] {
-	return rapid.Custom(func(t *rapid.T) lightClientEquivocationAttackAction {
-		return lightClientEquivocationAttackAction{
+func CreateLightClientEquivocationAttackActionGen() *rapid.Generator[LightClientEquivocationAttackAction] {
+	return rapid.Custom(func(t *rapid.T) LightClientEquivocationAttackAction {
+		return LightClientEquivocationAttackAction{
 			Validator: GetValidatorIDGen().Draw(t, "Validator"),
 			Chain:     GetChainIDGen().Draw(t, "Chain"),
 		}
 	})
 }
 
-func CreateLightClientAmnesiaAttackActionGen() *rapid.Generator[lightClientAmnesiaAttackAction] {
-	return rapid.Custom(func(t *rapid.T) lightClientAmnesiaAttackAction {
-		return lightClientAmnesiaAttackAction{
+func CreateLightClientAmnesiaAttackActionGen() *rapid.Generator[LightClientAmnesiaAttackAction] {
+	return rapid.Custom(func(t *rapid.T) LightClientAmnesiaAttackAction {
+		return LightClientAmnesiaAttackAction{
 			Validator: GetValidatorIDGen().Draw(t, "Validator"),
 			Chain:     GetChainIDGen().Draw(t, "Chain"),
 		}
 	})
 }
 
-func CreateLightClientLunaticAttackActionGen() *rapid.Generator[lightClientLunaticAttackAction] {
-	return rapid.Custom(func(t *rapid.T) lightClientLunaticAttackAction {
-		return lightClientLunaticAttackAction{
+func CreateLightClientLunaticAttackActionGen() *rapid.Generator[LightClientLunaticAttackAction] {
+	return rapid.Custom(func(t *rapid.T) LightClientLunaticAttackAction {
+		return LightClientLunaticAttackAction{
 			Validator: GetValidatorIDGen().Draw(t, "Validator"),
 			Chain:     GetChainIDGen().Draw(t, "Chain"),
 		}
 	})
 }
 
-func CreateCancelUnbondTokensActionGen() *rapid.Generator[cancelUnbondTokensAction] {
-	return rapid.Custom(func(t *rapid.T) cancelUnbondTokensAction {
-		return cancelUnbondTokensAction{
+func CreateCancelUnbondTokensActionGen() *rapid.Generator[CancelUnbondTokensAction] {
+	return rapid.Custom(func(t *rapid.T) CancelUnbondTokensAction {
+		return CancelUnbondTokensAction{
 			Chain:     GetChainIDGen().Draw(t, "Chain"),
 			Amount:    rapid.Uint().Draw(t, "Amount"),
 			Delegator: GetValidatorIDGen().Draw(t, "Delegator"),
@@ -144,9 +144,9 @@ func CreateCancelUnbondTokensActionGen() *rapid.Generator[cancelUnbondTokensActi
 	})
 }
 
-func GetCreateIbcClientsActionGen() *rapid.Generator[createIbcClientsAction] {
-	return rapid.Custom(func(t *rapid.T) createIbcClientsAction {
-		return createIbcClientsAction{
+func GetCreateIbcClientsActionGen() *rapid.Generator[CreateIbcClientsAction] {
+	return rapid.Custom(func(t *rapid.T) CreateIbcClientsAction {
+		return CreateIbcClientsAction{
 			ChainA: GetChainIDGen().Draw(t, "ChainA"),
 			ChainB: GetChainIDGen().Draw(t, "ChainB"),
 		}
@@ -174,9 +174,9 @@ func GetSubmitLegacyUpgradeProposalActionGen() *rapid.Generator[LegacyUpgradePro
 	})
 }
 
-func GetWaitUntilBlockActionGen() *rapid.Generator[waitUntilBlockAction] {
-	return rapid.Custom(func(t *rapid.T) waitUntilBlockAction {
-		return waitUntilBlockAction{
+func GetWaitUntilBlockActionGen() *rapid.Generator[WaitUntilBlockAction] {
+	return rapid.Custom(func(t *rapid.T) WaitUntilBlockAction {
+		return WaitUntilBlockAction{
 			Chain: GetChainIDGen().Draw(t, "Chain"),
 			Block: rapid.Uint().Draw(t, "Block"),
 		}
@@ -232,9 +232,9 @@ func GetStartChainValidatorGen() *rapid.Generator[StartChainValidator] {
 	})
 }
 
-func GetSubmitTextProposalActionGen() *rapid.Generator[submitTextProposalAction] {
-	return rapid.Custom(func(t *rapid.T) submitTextProposalAction {
-		return submitTextProposalAction{
+func GetSubmitTextProposalActionGen() *rapid.Generator[SubmitTextProposalAction] {
+	return rapid.Custom(func(t *rapid.T) SubmitTextProposalAction {
+		return SubmitTextProposalAction{
 			Chain:       GetChainIDGen().Draw(t, "Chain"),
 			From:        GetValidatorIDGen().Draw(t, "From"),
 			Deposit:     rapid.Uint().Draw(t, "Deposit"),
@@ -244,9 +244,9 @@ func GetSubmitTextProposalActionGen() *rapid.Generator[submitTextProposalAction]
 	})
 }
 
-func GetSubmitConsumerAdditionProposalActionGen() *rapid.Generator[submitConsumerAdditionProposalAction] {
-	return rapid.Custom(func(t *rapid.T) submitConsumerAdditionProposalAction {
-		return submitConsumerAdditionProposalAction{
+func GetSubmitConsumerAdditionProposalActionGen() *rapid.Generator[SubmitConsumerAdditionProposalAction] {
+	return rapid.Custom(func(t *rapid.T) SubmitConsumerAdditionProposalAction {
+		return SubmitConsumerAdditionProposalAction{
 			Chain:         GetChainIDGen().Draw(t, "Chain"),
 			From:          GetValidatorIDGen().Draw(t, "From"),
 			Deposit:       rapid.Uint().Draw(t, "Deposit"),
@@ -257,9 +257,9 @@ func GetSubmitConsumerAdditionProposalActionGen() *rapid.Generator[submitConsume
 	})
 }
 
-func GetSubmitConsumerRemovalProposalActionGen() *rapid.Generator[submitConsumerRemovalProposalAction] {
-	return rapid.Custom(func(t *rapid.T) submitConsumerRemovalProposalAction {
-		return submitConsumerRemovalProposalAction{
+func GetSubmitConsumerRemovalProposalActionGen() *rapid.Generator[SubmitConsumerRemovalProposalAction] {
+	return rapid.Custom(func(t *rapid.T) SubmitConsumerRemovalProposalAction {
+		return SubmitConsumerRemovalProposalAction{
 			Chain:          GetChainIDGen().Draw(t, "Chain"),
 			From:           GetValidatorIDGen().Draw(t, "From"),
 			Deposit:        rapid.Uint().Draw(t, "Deposit"),
@@ -269,9 +269,9 @@ func GetSubmitConsumerRemovalProposalActionGen() *rapid.Generator[submitConsumer
 	})
 }
 
-func GetSubmitParamChangeProposalActionGen() *rapid.Generator[submitParamChangeLegacyProposalAction] {
-	return rapid.Custom(func(t *rapid.T) submitParamChangeLegacyProposalAction {
-		return submitParamChangeLegacyProposalAction{
+func GetSubmitParamChangeProposalActionGen() *rapid.Generator[SubmitParamChangeLegacyProposalAction] {
+	return rapid.Custom(func(t *rapid.T) SubmitParamChangeLegacyProposalAction {
+		return SubmitParamChangeLegacyProposalAction{
 			Chain:    GetChainIDGen().Draw(t, "Chain"),
 			From:     GetValidatorIDGen().Draw(t, "From"),
 			Deposit:  rapid.Uint().Draw(t, "Deposit"),
@@ -300,9 +300,9 @@ func GetTimeGen() *rapid.Generator[time.Time] {
 	})
 }
 
-func GetVoteGovProposalActionGen() *rapid.Generator[voteGovProposalAction] {
-	return rapid.Custom(func(t *rapid.T) voteGovProposalAction {
-		return voteGovProposalAction{
+func GetVoteGovProposalActionGen() *rapid.Generator[VoteGovProposalAction] {
+	return rapid.Custom(func(t *rapid.T) VoteGovProposalAction {
+		return VoteGovProposalAction{
 			Chain:      GetChainIDGen().Draw(t, "Chain"),
 			From:       rapid.SliceOf(GetValidatorIDGen()).Draw(t, "From"),
 			Vote:       rapid.SliceOf(rapid.String()).Draw(t, "Vote"),
@@ -311,9 +311,9 @@ func GetVoteGovProposalActionGen() *rapid.Generator[voteGovProposalAction] {
 	})
 }
 
-func GetStartConsumerChainActionGen() *rapid.Generator[startConsumerChainAction] {
-	return rapid.Custom(func(t *rapid.T) startConsumerChainAction {
-		return startConsumerChainAction{
+func GetStartConsumerChainActionGen() *rapid.Generator[StartConsumerChainAction] {
+	return rapid.Custom(func(t *rapid.T) StartConsumerChainAction {
+		return StartConsumerChainAction{
 			ConsumerChain:  GetChainIDGen().Draw(t, "ConsumerChain"),
 			ProviderChain:  GetChainIDGen().Draw(t, "ProviderChain"),
 			Validators:     GetStartChainValidatorsGen().Draw(t, "Validators"),
@@ -322,18 +322,18 @@ func GetStartConsumerChainActionGen() *rapid.Generator[startConsumerChainAction]
 	})
 }
 
-func GetAddChainToRelayerActionGen() *rapid.Generator[addChainToRelayerAction] {
-	return rapid.Custom(func(t *rapid.T) addChainToRelayerAction {
-		return addChainToRelayerAction{
+func GetAddChainToRelayerActionGen() *rapid.Generator[AddChainToRelayerAction] {
+	return rapid.Custom(func(t *rapid.T) AddChainToRelayerAction {
+		return AddChainToRelayerAction{
 			Chain:     GetChainIDGen().Draw(t, "Chain"),
 			Validator: GetValidatorIDGen().Draw(t, "Validator"),
 		}
 	})
 }
 
-func GetAddIbcConnectionActionGen() *rapid.Generator[addIbcConnectionAction] {
-	return rapid.Custom(func(t *rapid.T) addIbcConnectionAction {
-		return addIbcConnectionAction{
+func GetAddIbcConnectionActionGen() *rapid.Generator[AddIbcConnectionAction] {
+	return rapid.Custom(func(t *rapid.T) AddIbcConnectionAction {
+		return AddIbcConnectionAction{
 			ChainA:  GetChainIDGen().Draw(t, "ChainA"),
 			ChainB:  GetChainIDGen().Draw(t, "ChainB"),
 			ClientA: rapid.Uint().Draw(t, "ClientA"),
@@ -342,9 +342,9 @@ func GetAddIbcConnectionActionGen() *rapid.Generator[addIbcConnectionAction] {
 	})
 }
 
-func GetAddIbcChannelActionGen() *rapid.Generator[addIbcChannelAction] {
-	return rapid.Custom(func(t *rapid.T) addIbcChannelAction {
-		return addIbcChannelAction{
+func GetAddIbcChannelActionGen() *rapid.Generator[AddIbcChannelAction] {
+	return rapid.Custom(func(t *rapid.T) AddIbcChannelAction {
+		return AddIbcChannelAction{
 			ChainA:      GetChainIDGen().Draw(t, "ChainA"),
 			ChainB:      GetChainIDGen().Draw(t, "ChainB"),
 			ConnectionA: rapid.Uint().Draw(t, "ConnectionA"),
@@ -355,13 +355,13 @@ func GetAddIbcChannelActionGen() *rapid.Generator[addIbcChannelAction] {
 	})
 }
 
-func GetStartRelayerActionGen() *rapid.Generator[startRelayerAction] {
-	return rapid.Just(startRelayerAction{})
+func GetStartRelayerActionGen() *rapid.Generator[StartRelayerAction] {
+	return rapid.Just(StartRelayerAction{})
 }
 
-func GetTransferChannelCompleteActionGen() *rapid.Generator[transferChannelCompleteAction] {
-	return rapid.Custom(func(t *rapid.T) transferChannelCompleteAction {
-		return transferChannelCompleteAction{
+func GetTransferChannelCompleteActionGen() *rapid.Generator[TransferChannelCompleteAction] {
+	return rapid.Custom(func(t *rapid.T) TransferChannelCompleteAction {
+		return TransferChannelCompleteAction{
 			ChainA:      GetChainIDGen().Draw(t, "ChainA"),
 			ChainB:      GetChainIDGen().Draw(t, "ChainB"),
 			ConnectionA: rapid.Uint().Draw(t, "ConnectionA"),
@@ -374,9 +374,9 @@ func GetTransferChannelCompleteActionGen() *rapid.Generator[transferChannelCompl
 	})
 }
 
-func GetRelayPacketsActionGen() *rapid.Generator[relayPacketsAction] {
-	return rapid.Custom(func(t *rapid.T) relayPacketsAction {
-		return relayPacketsAction{
+func GetRelayPacketsActionGen() *rapid.Generator[RelayPacketsAction] {
+	return rapid.Custom(func(t *rapid.T) RelayPacketsAction {
+		return RelayPacketsAction{
 			ChainA:  GetChainIDGen().Draw(t, "Chain"),
 			ChainB:  GetChainIDGen().Draw(t, "Chain"),
 			Port:    rapid.String().Draw(t, "Port"),
@@ -385,9 +385,9 @@ func GetRelayPacketsActionGen() *rapid.Generator[relayPacketsAction] {
 	})
 }
 
-func GetRelayRewardPacketsToProviderActionGen() *rapid.Generator[relayRewardPacketsToProviderAction] {
-	return rapid.Custom(func(t *rapid.T) relayRewardPacketsToProviderAction {
-		return relayRewardPacketsToProviderAction{
+func GetRelayRewardPacketsToProviderActionGen() *rapid.Generator[RelayRewardPacketsToProviderAction] {
+	return rapid.Custom(func(t *rapid.T) RelayRewardPacketsToProviderAction {
+		return RelayRewardPacketsToProviderAction{
 			ConsumerChain: GetChainIDGen().Draw(t, "ConsumerChain"),
 			ProviderChain: GetChainIDGen().Draw(t, "ProviderChain"),
 			Port:          rapid.String().Draw(t, "Port"),
@@ -396,9 +396,9 @@ func GetRelayRewardPacketsToProviderActionGen() *rapid.Generator[relayRewardPack
 	})
 }
 
-func GetDelegateTokensActionGen() *rapid.Generator[delegateTokensAction] {
-	return rapid.Custom(func(t *rapid.T) delegateTokensAction {
-		return delegateTokensAction{
+func GetDelegateTokensActionGen() *rapid.Generator[DelegateTokensAction] {
+	return rapid.Custom(func(t *rapid.T) DelegateTokensAction {
+		return DelegateTokensAction{
 			Chain:  GetChainIDGen().Draw(t, "Chain"),
 			Amount: rapid.Uint().Draw(t, "Amount"),
 			From:   GetValidatorIDGen().Draw(t, "From"),
@@ -407,9 +407,9 @@ func GetDelegateTokensActionGen() *rapid.Generator[delegateTokensAction] {
 	})
 }
 
-func GetUnbondTokensActionGen() *rapid.Generator[unbondTokensAction] {
-	return rapid.Custom(func(t *rapid.T) unbondTokensAction {
-		return unbondTokensAction{
+func GetUnbondTokensActionGen() *rapid.Generator[UnbondTokensAction] {
+	return rapid.Custom(func(t *rapid.T) UnbondTokensAction {
+		return UnbondTokensAction{
 			Chain:      GetChainIDGen().Draw(t, "Chain"),
 			Amount:     rapid.Uint().Draw(t, "Amount"),
 			Sender:     GetValidatorIDGen().Draw(t, "Sender"),
@@ -418,9 +418,9 @@ func GetUnbondTokensActionGen() *rapid.Generator[unbondTokensAction] {
 	})
 }
 
-func GetRedelegateTokensActionGen() *rapid.Generator[redelegateTokensAction] {
-	return rapid.Custom(func(t *rapid.T) redelegateTokensAction {
-		return redelegateTokensAction{
+func GetRedelegateTokensActionGen() *rapid.Generator[RedelegateTokensAction] {
+	return rapid.Custom(func(t *rapid.T) RedelegateTokensAction {
+		return RedelegateTokensAction{
 			Chain:    GetChainIDGen().Draw(t, "Chain"),
 			Amount:   rapid.Uint().Draw(t, "Amount"),
 			Src:      GetValidatorIDGen().Draw(t, "Src"),
@@ -430,27 +430,27 @@ func GetRedelegateTokensActionGen() *rapid.Generator[redelegateTokensAction] {
 	})
 }
 
-func GetDowntimeSlashActionGen() *rapid.Generator[downtimeSlashAction] {
-	return rapid.Custom(func(t *rapid.T) downtimeSlashAction {
-		return downtimeSlashAction{
+func GetDowntimeSlashActionGen() *rapid.Generator[DowntimeSlashAction] {
+	return rapid.Custom(func(t *rapid.T) DowntimeSlashAction {
+		return DowntimeSlashAction{
 			Chain:     GetChainIDGen().Draw(t, "Chain"),
 			Validator: GetValidatorIDGen().Draw(t, "Validator"),
 		}
 	})
 }
 
-func GetUnjailValidatorActionGen() *rapid.Generator[unjailValidatorAction] {
-	return rapid.Custom(func(t *rapid.T) unjailValidatorAction {
-		return unjailValidatorAction{
+func GetUnjailValidatorActionGen() *rapid.Generator[UnjailValidatorAction] {
+	return rapid.Custom(func(t *rapid.T) UnjailValidatorAction {
+		return UnjailValidatorAction{
 			Validator: GetValidatorIDGen().Draw(t, "Validator"),
 			Provider:  GetChainIDGen().Draw(t, "Provider"),
 		}
 	})
 }
 
-func GetRegisterRepresentativeActionGen() *rapid.Generator[registerRepresentativeAction] {
-	return rapid.Custom(func(t *rapid.T) registerRepresentativeAction {
-		return registerRepresentativeAction{
+func GetRegisterRepresentativeActionGen() *rapid.Generator[RegisterRepresentativeAction] {
+	return rapid.Custom(func(t *rapid.T) RegisterRepresentativeAction {
+		return RegisterRepresentativeAction{
 			Chain:           GetChainIDGen().Draw(t, "Chain"),
 			Representatives: rapid.SliceOf(GetValidatorIDGen()).Draw(t, "Representatives"),
 			Stakes:          rapid.SliceOf(rapid.Uint()).Draw(t, "Stakes"),
@@ -458,18 +458,18 @@ func GetRegisterRepresentativeActionGen() *rapid.Generator[registerRepresentativ
 	})
 }
 
-func GetDoublesignSlashActionGen() *rapid.Generator[doublesignSlashAction] {
-	return rapid.Custom(func(t *rapid.T) doublesignSlashAction {
-		return doublesignSlashAction{
+func GetDoublesignSlashActionGen() *rapid.Generator[DoublesignSlashAction] {
+	return rapid.Custom(func(t *rapid.T) DoublesignSlashAction {
+		return DoublesignSlashAction{
 			Chain:     GetChainIDGen().Draw(t, "Chain"),
 			Validator: GetValidatorIDGen().Draw(t, "Validator"),
 		}
 	})
 }
 
-func GetAssignConsumerPubKeyActionGen() *rapid.Generator[assignConsumerPubKeyAction] {
-	return rapid.Custom(func(t *rapid.T) assignConsumerPubKeyAction {
-		return assignConsumerPubKeyAction{
+func GetAssignConsumerPubKeyActionGen() *rapid.Generator[AssignConsumerPubKeyAction] {
+	return rapid.Custom(func(t *rapid.T) AssignConsumerPubKeyAction {
+		return AssignConsumerPubKeyAction{
 			Chain:           GetChainIDGen().Draw(t, "Chain"),
 			Validator:       GetValidatorIDGen().Draw(t, "Validator"),
 			ConsumerPubkey:  rapid.String().Draw(t, "ConsumerPubkey"),
@@ -479,26 +479,26 @@ func GetAssignConsumerPubKeyActionGen() *rapid.Generator[assignConsumerPubKeyAct
 	})
 }
 
-func GetSlashMeterReplenishmentAction() *rapid.Generator[slashMeterReplenishmentAction] {
-	return rapid.Custom(func(t *rapid.T) slashMeterReplenishmentAction {
-		return slashMeterReplenishmentAction{
+func GetSlashMeterReplenishmentAction() *rapid.Generator[SlashMeterReplenishmentAction] {
+	return rapid.Custom(func(t *rapid.T) SlashMeterReplenishmentAction {
+		return SlashMeterReplenishmentAction{
 			TargetValue: rapid.Int64().Draw(t, "TargetValue"),
 			Timeout:     time.Duration(rapid.Int().Draw(t, "Timeout")) * time.Millisecond,
 		}
 	})
 }
 
-func GetWaitTimeAction() *rapid.Generator[waitTimeAction] {
-	return rapid.Custom(func(t *rapid.T) waitTimeAction {
-		return waitTimeAction{
+func GetWaitTimeAction() *rapid.Generator[WaitTimeAction] {
+	return rapid.Custom(func(t *rapid.T) WaitTimeAction {
+		return WaitTimeAction{
 			WaitTime: time.Duration(rapid.Int().Draw(t, "Timeout")) * time.Millisecond,
 		}
 	})
 }
 
-func GetForkConsumerChainActionGen() *rapid.Generator[forkConsumerChainAction] {
-	return rapid.Custom(func(t *rapid.T) forkConsumerChainAction {
-		return forkConsumerChainAction{
+func GetForkConsumerChainActionGen() *rapid.Generator[ForkConsumerChainAction] {
+	return rapid.Custom(func(t *rapid.T) ForkConsumerChainAction {
+		return ForkConsumerChainAction{
 			ConsumerChain: GetChainIDGen().Draw(t, "ConsumerChain"),
 			ProviderChain: GetChainIDGen().Draw(t, "ProviderChain"),
 			Validator:     GetValidatorIDGen().Draw(t, "Validator"),
@@ -507,17 +507,17 @@ func GetForkConsumerChainActionGen() *rapid.Generator[forkConsumerChainAction] {
 	})
 }
 
-func GetStartConsumerEvidenceDetectorActionGen() *rapid.Generator[startConsumerEvidenceDetectorAction] {
-	return rapid.Custom(func(t *rapid.T) startConsumerEvidenceDetectorAction {
-		return startConsumerEvidenceDetectorAction{
+func GetStartConsumerEvidenceDetectorActionGen() *rapid.Generator[StartConsumerEvidenceDetectorAction] {
+	return rapid.Custom(func(t *rapid.T) StartConsumerEvidenceDetectorAction {
+		return StartConsumerEvidenceDetectorAction{
 			Chain: GetChainIDGen().Draw(t, "Chain"),
 		}
 	})
 }
 
-func GetUpdateLightClientActionGen() *rapid.Generator[updateLightClientAction] {
-	return rapid.Custom(func(t *rapid.T) updateLightClientAction {
-		return updateLightClientAction{
+func GetUpdateLightClientActionGen() *rapid.Generator[UpdateLightClientAction] {
+	return rapid.Custom(func(t *rapid.T) UpdateLightClientAction {
+		return UpdateLightClientAction{
 			Chain:         GetChainIDGen().Draw(t, "Chain"),
 			HostChain:     GetChainIDGen().Draw(t, "HostChain"),
 			RelayerConfig: rapid.String().Draw(t, "RelayerConfig"),

@@ -5,7 +5,7 @@ const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821
 func stepsDemocracy(consumerName string) []Step {
 	return []Step{
 		{
-			Action: registerRepresentativeAction{
+			Action: RegisterRepresentativeAction{
 				Chain:           ChainID(consumerName),
 				Representatives: []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
 				Stakes:          []uint{100000000, 40000000},
@@ -29,7 +29,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: delegateTokensAction{
+			Action: DelegateTokensAction{
 				Chain:  ChainID(consumerName),
 				From:   ValidatorID("carol"),
 				To:     ValidatorID("alice"),
@@ -63,7 +63,7 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			// whitelisted legacy proposal can only handle ibctransfer.SendEnabled/ReceiveEnabled
-			Action: submitParamChangeLegacyProposalAction{
+			Action: SubmitParamChangeLegacyProposalAction{
 				Chain:    ChainID(consumerName),
 				From:     ValidatorID("alice"),
 				Deposit:  10000001,
@@ -93,7 +93,7 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			// Have accounts vote on something on the gov-consumer chain
-			Action: voteGovProposalAction{
+			Action: VoteGovProposalAction{
 				Chain:      ChainID(consumerName),
 				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
 				Vote:       []string{"yes", "no"},
@@ -122,7 +122,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayRewardPacketsToProviderAction{
+			Action: RelayRewardPacketsToProviderAction{
 				ConsumerChain: ChainID(consumerName),
 				ProviderChain: ChainID("provi"),
 				Port:          "transfer",
@@ -146,7 +146,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: submitChangeRewardDenomsProposalAction{
+			Action: SubmitChangeRewardDenomsProposalAction{
 				Denom:   consumerRewardDenom,
 				Deposit: 10000001,
 				From:    ValidatorID("bob"),
@@ -159,7 +159,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: voteGovProposalAction{
+			Action: VoteGovProposalAction{
 				Chain:      ChainID("provi"),
 				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
 				Vote:       []string{"yes", "yes", "yes"},
@@ -173,7 +173,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayRewardPacketsToProviderAction{
+			Action: RelayRewardPacketsToProviderAction{
 				ConsumerChain: ChainID(consumerName),
 				ProviderChain: ChainID("provi"),
 				Port:          "transfer",
@@ -195,7 +195,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: downtimeSlashAction{
+			Action: DowntimeSlashAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 			},
@@ -218,7 +218,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -245,7 +245,7 @@ func stepsDemocracy(consumerName string) []Step {
 		// A block is incremented each action, hence why VSC is committed on provider,
 		// and can now be relayed as packet to consumer
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -263,7 +263,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: unjailValidatorAction{
+			Action: UnjailValidatorAction{
 				Provider:  ChainID("provi"),
 				Validator: ValidatorID("bob"),
 			},
@@ -285,7 +285,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",

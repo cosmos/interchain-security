@@ -169,7 +169,7 @@ func (tr *TestConfig) startChain(
 		log.Fatal(err)
 	}
 
-	tr.addChainToRelayer(addChainToRelayerAction{
+	tr.addChainToRelayer(AddChainToRelayerAction{
 		Chain:      action.Chain,
 		Validator:  action.Validators[0].Id,
 		IsConsumer: action.IsConsumer,
@@ -184,7 +184,7 @@ func (tr *TestConfig) startChain(
 	}
 }
 
-type submitTextProposalAction struct {
+type SubmitTextProposalAction struct {
 	Chain       ChainID
 	From        ValidatorID
 	Deposit     uint
@@ -193,7 +193,7 @@ type submitTextProposalAction struct {
 }
 
 func (tr TestConfig) submitTextProposal(
-	action submitTextProposalAction,
+	action SubmitTextProposalAction,
 	verbose bool,
 ) {
 	// TEXT PROPOSAL
@@ -218,7 +218,7 @@ func (tr TestConfig) submitTextProposal(
 	tr.waitBlocks(action.Chain, 1, 10*time.Second)
 }
 
-type submitConsumerAdditionProposalAction struct {
+type SubmitConsumerAdditionProposalAction struct {
 	PreCCV              bool
 	Chain               ChainID
 	From                ValidatorID
@@ -230,7 +230,7 @@ type submitConsumerAdditionProposalAction struct {
 }
 
 func (tr TestConfig) submitConsumerAdditionProposal(
-	action submitConsumerAdditionProposalAction,
+	action SubmitConsumerAdditionProposalAction,
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
@@ -292,7 +292,7 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 	tr.waitBlocks(ChainID("provi"), 2, 10*time.Second)
 }
 
-type submitConsumerRemovalProposalAction struct {
+type SubmitConsumerRemovalProposalAction struct {
 	Chain          ChainID
 	From           ValidatorID
 	Deposit        uint
@@ -301,7 +301,7 @@ type submitConsumerRemovalProposalAction struct {
 }
 
 func (tr TestConfig) submitConsumerRemovalProposal(
-	action submitConsumerRemovalProposalAction,
+	action SubmitConsumerRemovalProposalAction,
 	verbose bool,
 ) {
 	stopTime := tr.containerConfig.Now.Add(action.StopTimeOffset)
@@ -353,7 +353,7 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
 }
 
-type submitParamChangeLegacyProposalAction struct {
+type SubmitParamChangeLegacyProposalAction struct {
 	Chain    ChainID
 	From     ValidatorID
 	Deposit  uint
@@ -377,7 +377,7 @@ type paramChangeJSON struct {
 }
 
 func (tr TestConfig) submitParamChangeProposal(
-	action submitParamChangeLegacyProposalAction,
+	action SubmitParamChangeLegacyProposalAction,
 	verbose bool,
 ) {
 	prop := paramChangeProposalJSON{
@@ -430,7 +430,7 @@ func (tr TestConfig) submitParamChangeProposal(
 	tr.waitBlocks(action.Chain, 2, 60*time.Second)
 }
 
-type voteGovProposalAction struct {
+type VoteGovProposalAction struct {
 	Chain      ChainID
 	From       []ValidatorID
 	Vote       []string
@@ -438,7 +438,7 @@ type voteGovProposalAction struct {
 }
 
 func (tr *TestConfig) voteGovProposal(
-	action voteGovProposalAction,
+	action VoteGovProposalAction,
 	verbose bool,
 ) {
 	var wg sync.WaitGroup
@@ -473,7 +473,7 @@ func (tr *TestConfig) voteGovProposal(
 	tr.WaitTime(time.Duration(tr.chainConfigs[action.Chain].VotingWaitTime) * time.Second)
 }
 
-type startConsumerChainAction struct {
+type StartConsumerChainAction struct {
 	ConsumerChain  ChainID
 	ProviderChain  ChainID
 	Validators     []StartChainValidator
@@ -481,7 +481,7 @@ type startConsumerChainAction struct {
 }
 
 func (tr *TestConfig) startConsumerChain(
-	action startConsumerChainAction,
+	action StartConsumerChainAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -644,7 +644,7 @@ func (tr TestConfig) startChangeover(
 	}
 }
 
-type addChainToRelayerAction struct {
+type AddChainToRelayerAction struct {
 	Chain      ChainID
 	Validator  ValidatorID
 	IsConsumer bool
@@ -699,7 +699,7 @@ const gorelayerChainConfigTemplate = `
 }`
 
 func (tr TestConfig) addChainToRelayer(
-	action addChainToRelayerAction,
+	action AddChainToRelayerAction,
 	verbose bool,
 ) {
 	if !tr.useGorelayer {
@@ -710,7 +710,7 @@ func (tr TestConfig) addChainToRelayer(
 }
 
 func (tr TestConfig) addChainToGorelayer(
-	action addChainToRelayerAction,
+	action AddChainToRelayerAction,
 	verbose bool,
 ) {
 	queryNodeIP := tr.getQueryNodeIP(action.Chain)
@@ -748,7 +748,7 @@ func (tr TestConfig) addChainToGorelayer(
 }
 
 func (tr TestConfig) addChainToHermes(
-	action addChainToRelayerAction,
+	action AddChainToRelayerAction,
 	verbose bool,
 ) {
 	queryNodeIP := tr.getQueryNodeIP(action.Chain)
@@ -827,7 +827,7 @@ const gorelayerPathConfigTemplate = `{
 }
 `
 
-type addIbcConnectionAction struct {
+type AddIbcConnectionAction struct {
 	ChainA  ChainID
 	ChainB  ChainID
 	ClientA uint
@@ -835,7 +835,7 @@ type addIbcConnectionAction struct {
 }
 
 func (tr TestConfig) addIbcConnection(
-	action addIbcConnectionAction,
+	action AddIbcConnectionAction,
 	verbose bool,
 ) {
 	if !tr.useGorelayer {
@@ -846,7 +846,7 @@ func (tr TestConfig) addIbcConnection(
 }
 
 func (tr TestConfig) addIbcConnectionGorelayer(
-	action addIbcConnectionAction,
+	action AddIbcConnectionAction,
 	verbose bool,
 ) {
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
@@ -895,7 +895,7 @@ func (tr TestConfig) addIbcConnectionGorelayer(
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
 }
 
-type createIbcClientsAction struct {
+type CreateIbcClientsAction struct {
 	ChainA ChainID
 	ChainB ChainID
 }
@@ -904,7 +904,7 @@ type createIbcClientsAction struct {
 // create new clients and then a new connection
 // otherwise, it would use client provided as CLI argument (-a-client)
 func (tr TestConfig) createIbcClientsHermes(
-	action createIbcClientsAction,
+	action CreateIbcClientsAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -941,7 +941,7 @@ func (tr TestConfig) createIbcClientsHermes(
 }
 
 func (tr TestConfig) addIbcConnectionHermes(
-	action addIbcConnectionAction,
+	action AddIbcConnectionAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -978,7 +978,7 @@ func (tr TestConfig) addIbcConnectionHermes(
 	}
 }
 
-type addIbcChannelAction struct {
+type AddIbcChannelAction struct {
 	ChainA      ChainID
 	ChainB      ChainID
 	ConnectionA uint
@@ -988,10 +988,10 @@ type addIbcChannelAction struct {
 	Version     string
 }
 
-type startRelayerAction struct{}
+type StartRelayerAction struct{}
 
 func (tr TestConfig) startRelayer(
-	action startRelayerAction,
+	action StartRelayerAction,
 	verbose bool,
 ) {
 	if tr.useGorelayer {
@@ -1002,7 +1002,7 @@ func (tr TestConfig) startRelayer(
 }
 
 func (tr TestConfig) startGorelayer(
-	action startRelayerAction,
+	action StartRelayerAction,
 	verbose bool,
 ) {
 	// gorelayer start is running in detached mode
@@ -1021,7 +1021,7 @@ func (tr TestConfig) startGorelayer(
 }
 
 func (tr TestConfig) startHermes(
-	action startRelayerAction,
+	action StartRelayerAction,
 	verbose bool,
 ) {
 	// hermes start is running in detached mode
@@ -1040,7 +1040,7 @@ func (tr TestConfig) startHermes(
 }
 
 func (tr TestConfig) addIbcChannel(
-	action addIbcChannelAction,
+	action AddIbcChannelAction,
 	verbose bool,
 ) {
 	if tr.useGorelayer {
@@ -1051,7 +1051,7 @@ func (tr TestConfig) addIbcChannel(
 }
 
 func (tr TestConfig) addIbcChannelGorelayer(
-	action addIbcChannelAction,
+	action AddIbcChannelAction,
 	verbose bool,
 ) {
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
@@ -1069,7 +1069,7 @@ func (tr TestConfig) addIbcChannelGorelayer(
 }
 
 func (tr TestConfig) addIbcChannelHermes(
-	action addIbcChannelAction,
+	action AddIbcChannelAction,
 	verbose bool,
 ) {
 	// if version is not specified, use the default version when creating ccv connections
@@ -1120,7 +1120,7 @@ func (tr TestConfig) addIbcChannelHermes(
 	}
 }
 
-type transferChannelCompleteAction struct {
+type TransferChannelCompleteAction struct {
 	ChainA      ChainID
 	ChainB      ChainID
 	ConnectionA uint
@@ -1132,7 +1132,7 @@ type transferChannelCompleteAction struct {
 }
 
 func (tr TestConfig) transferChannelComplete(
-	action transferChannelCompleteAction,
+	action TransferChannelCompleteAction,
 	verbose bool,
 ) {
 	if tr.useGorelayer {
@@ -1212,7 +1212,7 @@ func executeCommand(cmd *exec.Cmd, cmdName string) {
 	executeCommandWithVerbosity(cmd, cmdName, *verbose)
 }
 
-type relayPacketsAction struct {
+type RelayPacketsAction struct {
 	ChainA  ChainID
 	ChainB  ChainID
 	Port    string
@@ -1220,7 +1220,7 @@ type relayPacketsAction struct {
 }
 
 func (tr TestConfig) relayPackets(
-	action relayPacketsAction,
+	action RelayPacketsAction,
 	verbose bool,
 ) {
 	if tr.useGorelayer {
@@ -1231,7 +1231,7 @@ func (tr TestConfig) relayPackets(
 }
 
 func (tr TestConfig) relayPacketsGorelayer(
-	action relayPacketsAction,
+	action RelayPacketsAction,
 	verbose bool,
 ) {
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
@@ -1255,7 +1255,7 @@ func (tr TestConfig) relayPacketsGorelayer(
 }
 
 func (tr TestConfig) relayPacketsHermes(
-	action relayPacketsAction,
+	action RelayPacketsAction,
 	verbose bool,
 ) {
 	// hermes clear packets ibc0 transfer channel-13
@@ -1278,7 +1278,7 @@ func (tr TestConfig) relayPacketsHermes(
 	tr.waitBlocks(action.ChainB, 1, 30*time.Second)
 }
 
-type relayRewardPacketsToProviderAction struct {
+type RelayRewardPacketsToProviderAction struct {
 	ConsumerChain ChainID
 	ProviderChain ChainID
 	Port          string
@@ -1286,7 +1286,7 @@ type relayRewardPacketsToProviderAction struct {
 }
 
 func (tr TestConfig) relayRewardPacketsToProvider(
-	action relayRewardPacketsToProviderAction,
+	action RelayRewardPacketsToProviderAction,
 	verbose bool,
 ) {
 	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
@@ -1295,11 +1295,11 @@ func (tr TestConfig) relayRewardPacketsToProvider(
 		tr.waitBlocks(action.ConsumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
 
-	tr.relayPackets(relayPacketsAction{ChainA: action.ConsumerChain, ChainB: action.ProviderChain, Port: action.Port, Channel: action.Channel}, verbose)
+	tr.relayPackets(RelayPacketsAction{ChainA: action.ConsumerChain, ChainB: action.ProviderChain, Port: action.Port, Channel: action.Channel}, verbose)
 	tr.waitBlocks(action.ProviderChain, 1, 10*time.Second)
 }
 
-type delegateTokensAction struct {
+type DelegateTokensAction struct {
 	Chain  ChainID
 	From   ValidatorID
 	To     ValidatorID
@@ -1307,7 +1307,7 @@ type delegateTokensAction struct {
 }
 
 func (tr TestConfig) delegateTokens(
-	action delegateTokensAction,
+	action DelegateTokensAction,
 	verbose bool,
 ) {
 	toValCfg := tr.validatorConfigs[action.To]
@@ -1343,7 +1343,7 @@ func (tr TestConfig) delegateTokens(
 	tr.waitBlocks(action.Chain, 2, 10*time.Second)
 }
 
-type unbondTokensAction struct {
+type UnbondTokensAction struct {
 	Chain      ChainID
 	Sender     ValidatorID
 	UnbondFrom ValidatorID
@@ -1351,7 +1351,7 @@ type unbondTokensAction struct {
 }
 
 func (tr TestConfig) unbondTokens(
-	action unbondTokensAction,
+	action UnbondTokensAction,
 	verbose bool,
 ) {
 	unbondFrom := tr.validatorConfigs[action.UnbondFrom].ValoperAddress
@@ -1388,7 +1388,7 @@ func (tr TestConfig) unbondTokens(
 	tr.waitBlocks(action.Chain, 2, 20*time.Second)
 }
 
-type cancelUnbondTokensAction struct {
+type CancelUnbondTokensAction struct {
 	Chain     ChainID
 	Delegator ValidatorID
 	Validator ValidatorID
@@ -1396,7 +1396,7 @@ type cancelUnbondTokensAction struct {
 }
 
 func (tr TestConfig) cancelUnbondTokens(
-	action cancelUnbondTokensAction,
+	action CancelUnbondTokensAction,
 	verbose bool,
 ) {
 	validator := tr.validatorConfigs[action.Validator].ValoperAddress
@@ -1456,7 +1456,7 @@ func (tr TestConfig) cancelUnbondTokens(
 	tr.waitBlocks(action.Chain, 2, 20*time.Second)
 }
 
-type redelegateTokensAction struct {
+type RedelegateTokensAction struct {
 	Chain    ChainID
 	Src      ValidatorID
 	Dst      ValidatorID
@@ -1464,7 +1464,7 @@ type redelegateTokensAction struct {
 	Amount   uint
 }
 
-func (tr TestConfig) redelegateTokens(action redelegateTokensAction, verbose bool) {
+func (tr TestConfig) redelegateTokens(action RedelegateTokensAction, verbose bool) {
 	srcCfg := tr.validatorConfigs[action.Src]
 	dstCfg := tr.validatorConfigs[action.Dst]
 
@@ -1509,7 +1509,7 @@ func (tr TestConfig) redelegateTokens(action redelegateTokensAction, verbose boo
 	tr.waitBlocks(action.Chain, 2, 10*time.Second)
 }
 
-type downtimeSlashAction struct {
+type DowntimeSlashAction struct {
 	Chain     ChainID
 	Validator ValidatorID
 }
@@ -1528,7 +1528,7 @@ func (tr TestConfig) getValidatorKeyAddressFromString(keystring string) string {
 	return key.Address
 }
 
-func (tr TestConfig) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) {
+func (tr TestConfig) invokeDowntimeSlash(action DowntimeSlashAction, verbose bool) {
 	// Bring validator down
 	tr.setValidatorDowntime(action.Chain, action.Validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
@@ -1597,13 +1597,13 @@ func (tr TestConfig) GetValidatorPrivateKeyAddress(chain ChainID, validator Vali
 	return validatorPrivateKeyAddress
 }
 
-type unjailValidatorAction struct {
+type UnjailValidatorAction struct {
 	Provider  ChainID
 	Validator ValidatorID
 }
 
 // Sends an unjail transaction to the provider chain
-func (tr TestConfig) unjailValidator(action unjailValidatorAction, verbose bool) {
+func (tr TestConfig) unjailValidator(action UnjailValidatorAction, verbose bool) {
 	// wait until downtime_jail_duration has elapsed, to make sure the validator can be unjailed
 	tr.WaitTime(61 * time.Second)
 
@@ -1636,14 +1636,14 @@ func (tr TestConfig) unjailValidator(action unjailValidatorAction, verbose bool)
 	tr.waitBlocks(action.Provider, 2, time.Minute)
 }
 
-type registerRepresentativeAction struct {
+type RegisterRepresentativeAction struct {
 	Chain           ChainID
 	Representatives []ValidatorID
 	Stakes          []uint
 }
 
 func (tr TestConfig) registerRepresentative(
-	action registerRepresentativeAction,
+	action RegisterRepresentativeAction,
 	verbose bool,
 ) {
 	var wg sync.WaitGroup
@@ -1693,13 +1693,13 @@ func (tr TestConfig) registerRepresentative(
 	wg.Wait()
 }
 
-type submitChangeRewardDenomsProposalAction struct {
+type SubmitChangeRewardDenomsProposalAction struct {
 	Denom   string
 	Deposit uint
 	From    ValidatorID
 }
 
-func (tr TestConfig) submitChangeRewardDenomsProposal(action submitChangeRewardDenomsProposalAction, verbose bool) {
+func (tr TestConfig) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
 	providerChain := tr.chainConfigs[ChainID("provi")]
 
 	prop := client.ChangeRewardDenomsProposalJSON{
@@ -1762,14 +1762,14 @@ func (tr TestConfig) submitChangeRewardDenomsProposal(action submitChangeRewardD
 // - reset priv_validator_state.json to initial values
 // - start the new node
 // Double sign should be registered within couple blocks.
-type doublesignSlashAction struct {
+type DoublesignSlashAction struct {
 	// start another node for this Validator
 	Validator ValidatorID
 	Chain     ChainID
 }
 
 func (tr TestConfig) invokeDoublesignSlash(
-	action doublesignSlashAction,
+	action DoublesignSlashAction,
 	verbose bool,
 ) {
 	if !tr.useCometmock {
@@ -1800,13 +1800,13 @@ func (tr TestConfig) invokeDoublesignSlash(
 // The evidence will look like the validator equivocated to a light client.
 // See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
 // for more information about light client attacks.
-type lightClientEquivocationAttackAction struct {
+type LightClientEquivocationAttackAction struct {
 	Validator ValidatorID
 	Chain     ChainID
 }
 
 func (tr TestConfig) lightClientEquivocationAttack(
-	action lightClientEquivocationAttackAction,
+	action LightClientEquivocationAttackAction,
 	verbose bool,
 ) {
 	tr.lightClientAttack(action.Validator, action.Chain, LightClientEquivocationAttack)
@@ -1816,13 +1816,13 @@ func (tr TestConfig) lightClientEquivocationAttack(
 // The evidence will look like the validator tried to perform an amnesia attack.
 // See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
 // for more information about light client attacks.
-type lightClientAmnesiaAttackAction struct {
+type LightClientAmnesiaAttackAction struct {
 	Validator ValidatorID
 	Chain     ChainID
 }
 
 func (tr TestConfig) lightClientAmnesiaAttack(
-	action lightClientAmnesiaAttackAction,
+	action LightClientAmnesiaAttackAction,
 	verbose bool,
 ) {
 	tr.lightClientAttack(action.Validator, action.Chain, LightClientAmnesiaAttack)
@@ -1832,13 +1832,13 @@ func (tr TestConfig) lightClientAmnesiaAttack(
 // The evidence will look like the validator tried to perform a lunatic attack.
 // See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
 // for more information about light client attacks.
-type lightClientLunaticAttackAction struct {
+type LightClientLunaticAttackAction struct {
 	Validator ValidatorID
 	Chain     ChainID
 }
 
 func (tr TestConfig) lightClientLunaticAttack(
-	action lightClientLunaticAttackAction,
+	action LightClientLunaticAttackAction,
 	verbose bool,
 ) {
 	tr.lightClientAttack(action.Validator, action.Chain, LightClientLunaticAttack)
@@ -1871,7 +1871,7 @@ func (tr TestConfig) lightClientAttack(
 	tr.waitBlocks(chain, 1, 10*time.Second)
 }
 
-type assignConsumerPubKeyAction struct {
+type AssignConsumerPubKeyAction struct {
 	Chain          ChainID
 	Validator      ValidatorID
 	ConsumerPubkey string
@@ -1882,7 +1882,7 @@ type assignConsumerPubKeyAction struct {
 	ExpectedError string
 }
 
-func (tr TestConfig) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
+func (tr TestConfig) assignConsumerPubKey(action AssignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.Validator]
 
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
@@ -1982,15 +1982,15 @@ func (tr TestConfig) assignConsumerPubKey(action assignConsumerPubKeyAction, ver
 	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
 }
 
-// slashMeterReplenishmentAction polls the slash meter on provider until value is achieved
-type slashMeterReplenishmentAction struct {
+// SlashMeterReplenishmentAction polls the slash meter on provider until value is achieved
+type SlashMeterReplenishmentAction struct {
 	TargetValue int64
 	// panic if timeout is exceeded
 	Timeout time.Duration
 }
 
 func (tr TestConfig) waitForSlashMeterReplenishment(
-	action slashMeterReplenishmentAction,
+	action SlashMeterReplenishmentAction,
 	verbose bool,
 ) {
 	timeout := time.Now().Add(action.Timeout)
@@ -2019,12 +2019,12 @@ func (tr TestConfig) waitForSlashMeterReplenishment(
 	}
 }
 
-type waitTimeAction struct {
+type WaitTimeAction struct {
 	WaitTime time.Duration
 }
 
 func (tr TestConfig) waitForTime(
-	action waitTimeAction,
+	action WaitTimeAction,
 	verbose bool,
 ) {
 	tr.WaitTime(action.WaitTime)
@@ -2048,12 +2048,12 @@ func (tr TestConfig) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 // which detects evidences committed to the blocks of a consumer chain.
 // Each infraction detected is reported to the provider chain using
 // either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
-type startConsumerEvidenceDetectorAction struct {
+type StartConsumerEvidenceDetectorAction struct {
 	Chain ChainID
 }
 
 func (tc TestConfig) startConsumerEvidenceDetector(
-	action startConsumerEvidenceDetectorAction,
+	action StartConsumerEvidenceDetectorAction,
 	verbose bool,
 ) {
 	chainConfig := tc.chainConfigs[action.Chain]
