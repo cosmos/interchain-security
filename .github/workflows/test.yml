@@ -131,6 +131,7 @@ jobs:
           name: mbt-traces
           path: tests/mbt/driver/traces
           retention-days: 2
+          
   repo-analysis:
     runs-on: ubuntu-latest
     needs: [tests, test-integration, test-mbt]
