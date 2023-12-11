@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
@@ -101,9 +102,16 @@ Example:
 			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			submitter := clientCtx.GetFromAddress()
-			var misbehaviour ibctmtypes.Misbehaviour
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &misbehaviour); err != nil {
+			misbRaw, err := os.ReadFile(args[0])
+			if err != nil {
 				return err
+			}
+
+			cdc := codec.NewProtoCodec(clientCtx.InterfaceRegistry)
+
+			misbehaviour := ibctmtypes.Misbehaviour{}
+			if err := cdc.UnmarshalJSON(misbRaw, &misbehaviour); err != nil {
+				return fmt.Errorf("misbehaviour unmarshalling failed: %s", err)
 			}
 
 			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehaviour)
@@ -169,8 +177,10 @@ Example:
 				return err
 			}
 
+			cdc := codec.NewProtoCodec(clientCtx.InterfaceRegistry)
+
 			header := ibctmtypes.Header{}
-			if err := types.ModuleCdc.UnmarshalJSON(headerRaw, &header); err != nil {
+			if err := cdc.UnmarshalJSON(headerRaw, &header); err != nil {
 				return fmt.Errorf("infraction IBC header unmarshalling failed: %s", err)
 			}
 
