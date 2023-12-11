@@ -384,11 +384,12 @@ func RunItfTrace(t *testing.T, path string) {
 func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[string]itf.Expr, consumers []string) {
 	t.Helper()
 	modelValSet := ValidatorSet(currentModelState, "provider")
-	curValSet := driver.providerValidatorSet()
 
-	actualValSet := make(map[string]int64, len(curValSet))
+	rawActualValSet := driver.providerValidatorSet()
 
-	for _, val := range curValSet {
+	actualValSet := make(map[string]int64, len(rawActualValSet))
+
+	for _, val := range rawActualValSet {
 		valName := val.Description.Moniker
 		actualValSet[valName] = val.Tokens.Int64()
 	}
@@ -406,14 +407,20 @@ func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[st
 
 			consAddr := providertypes.NewConsumerConsAddress(sdktypes.ConsAddress(pubkey.Address().Bytes()))
 
+			// the consumer vals right now are CrossChainValidators, for which we don't know their mnemonic
+			// so we need to find the mnemonic of the consumer val now to enter it by name in the map
+
+			// get the address on the provider that corresponds to the consumer address
 			providerConsAddr, found := driver.providerKeeper().GetValidatorByConsumerAddr(driver.providerCtx(), consumer, consAddr)
 			if !found {
 				providerConsAddr = providertypes.NewProviderConsAddress(consAddr.Address)
 			}
 
+			// get the validator for that address on the provider
 			providerVal, found := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), providerConsAddr.Address)
 			require.True(t, found, "Error getting provider validator")
 
+			// use the moniker of that validator
 			consumerCurValSet[providerVal.GetMoniker()] = val.Power
 		}
 		require.NoError(t, CompareValSet(modelValSet, consumerCurValSet), "Validator sets do not match for consumer %v", consumer)
@@ -422,7 +429,8 @@ func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[st
 
 // ComparePacketQueues compares the packet queues in the model to the packet queues in the system.
 // It compares both incoming (provider->consumer) and outgoing (consumer->provider) packets.
-// It only takes the number of packets into account, not the contents.
+// It takes the number of packets into account, as well as the timeout timestamp on each packet.
+// Other fields are not compared.
 func ComparePacketQueues(
 	t *testing.T,
 	driver *Driver,
@@ -476,6 +484,13 @@ func ComparePacketQueue(
 // of the chains in the system after the system has been initialized.
 // We only compare down to seconds, because the model and system will differ
 // on the order of nanoseconds.
+// In more detail, the model will have timestamp `X seconds, 0 nanoseconds`,
+// and the actual system will have timestamp `X seconds, Y nanoseconds`,
+// where Y roughly depends on how many extra blocks needed to be produced
+// when setting up consumer chains.
+// Note: If Y gets too large, the check might fail, even though it should not.
+// This will happen if on the order of 10^8 consumer chains
+// are started during the execution of a trace.
 func CompareTimes(
 	driver *Driver,
 	consumers []string,
