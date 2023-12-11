@@ -512,7 +512,7 @@ module ccv_model {
                     assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 200)),
                     // advance time on provider and consumer until unbonding period is over - ensure that the consumer and provider
                     // stay in sync relative to each other
-                    // We want to make sure the steps we make are shorter the trusting period,
+                    // We want to make sure the steps we make are shorter than the trusting period,
                     // since that would time out clients in reality.
                     4.reps(
                         i => 
