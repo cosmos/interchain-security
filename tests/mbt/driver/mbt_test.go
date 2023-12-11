@@ -93,7 +93,7 @@ func RunItfTrace(t *testing.T, path string) {
 		_, ok := varNames[expectedVarName]
 		require.True(t, ok, "Expected var name %v not found in actual var names %v", expectedVarName, varNames)
 	}
-	// extra var names are ok, so no need to change the length
+	// extra var names are ok, so no need to check inclusion the other way around
 
 	t.Log("Reading params...")
 	params := trace.States[0].VarValues["params"].Value.(itf.MapExprType)
@@ -140,7 +140,6 @@ func RunItfTrace(t *testing.T, path string) {
 		valNames[i] = val.Value.(string)
 	}
 
-	// initialValSet has the right vals, but not yet the right powers
 	valSet, addressMap, signers, err := CreateValSet(initialValSet)
 	require.NoError(t, err, "Error creating validator set")
 
@@ -167,9 +166,9 @@ func RunItfTrace(t *testing.T, path string) {
 	for index, state := range trace.States {
 		t.Logf("Reading state %v of trace %v", index, path)
 
-		// modelState := state.VarValues["currentState"]
 		trace := state.VarValues["trace"].Value.(itf.ListExprType)
-		// fmt.Println(modelState)
+		// lastAction will get the last action that was executed so far along the model trace,
+		// i.e. the action we should perform before checking model vs actual system equivalence
 		lastAction := trace[len(trace)-1].Value.(itf.MapExprType)
 
 		currentModelState := state.VarValues["currentState"].Value.(itf.MapExprType)
@@ -207,7 +206,7 @@ func RunItfTrace(t *testing.T, path string) {
 			// we need 2 blocks, because for a packet sent at height H, the receiving chain
 			// needs a header of height H+1 to accept the packet
 			// so we do one time advancement with a very small increment,
-			// and then increment the rest of the time]
+			// and then increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
 			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
@@ -262,6 +261,7 @@ func RunItfTrace(t *testing.T, path string) {
 
 			// for all connected consumers, update the clients...
 			// unless it was the last consumer to be started, in which case it already has the header
+			// as we called driver.setupConsumer
 			for _, consumer := range driver.runningConsumers() {
 				if len(consumersToStart) > 0 && consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(string) {
 					continue
