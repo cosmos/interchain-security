@@ -68,7 +68,7 @@ module ccv_model {
     // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
     // These should be smaller than the minimal TrustingPeriodPerChain,
     // otherwise connections will break down.
-    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour, 4 * Week)
+    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour, 2 * Week - 2 * Hour)
 
     pure def emptyAction =
             {
@@ -512,7 +512,7 @@ module ccv_model {
                     assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 200)),
                     // advance time on provider and consumer until unbonding period is over - ensure that the consumer and provider
                     // stay in sync relative to each other
-                    // We want to make sure the steps we make are shorter than the trusting period,
+                    // We want to make sure the steps we make are shorter the trusting period,
                     // since that would time out clients in reality.
                     4.reps(
                         i => 
