@@ -599,5 +599,5 @@ hermes evidence --chain <CONSUMER-CHAIN-ID>
 ```
 
 :::tip
-`hermes evidence` takes a `--check-past-blocks` option giving the possibility to look for older evidences (default is 100).
+`hermes evidence` takes a `--check-past-blocks` option giving the possibility to look for older evidence (default is 100).
 :::
