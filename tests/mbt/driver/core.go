@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strings"
 	"testing"
@@ -125,7 +126,7 @@ func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 // consumerTokens returns the number of tokens that the validator with
 // id (ix) i has delegated to it in total on the provider chain
 func (s *Driver) providerPower(i int64) (int64, error) {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+	v, found := s.providerStakingKeeper().GetValidator(s.ctx(PROVIDER), s.validator(i))
 	if !found {
 		return 0, fmt.Errorf("validator with id %v not found on provider", i)
 	} else {
@@ -134,7 +135,7 @@ func (s *Driver) providerPower(i int64) (int64, error) {
 }
 
 func (s *Driver) providerValidatorSet() []stakingtypes.Validator {
-	return s.providerStakingKeeper().GetAllValidators(s.ctx(P))
+	return s.providerStakingKeeper().GetAllValidators(s.ctx(PROVIDER))
 }
 
 func (s *Driver) consumerValidatorSet(chain ChainId) []consumertypes.CrossChainValidator {
@@ -149,7 +150,7 @@ func (s *Driver) delegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
-	server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
 }
 
 // undelegate undelegates amt tokens from validator val
@@ -160,17 +161,19 @@ func (s *Driver) undelegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
-	server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	providerStaking.GetAllDelegations(s.ctx(P))
+	server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
 }
 
 // packetQueue returns the queued packets from sender to receiver,
 // where either sender or receiver must be the provider.
 func (s *Driver) packetQueue(sender, receiver ChainId) []simibc.Packet {
 	var path *simibc.RelayedPath
-	if sender == P {
+	if sender == PROVIDER {
 		path = s.path(receiver)
 	} else {
+		if receiver != PROVIDER {
+			log.Fatalf("either receiver '%v' or sender '%v' should be provider '%v', but neither is", sender, receiver, PROVIDER)
+		}
 		path = s.path(sender)
 	}
 	outboxes := path.Outboxes
@@ -209,7 +212,7 @@ func (s *Driver) getStateString() string {
 }
 
 func (s *Driver) isProviderChain(chain ChainId) bool {
-	return chain == P
+	return chain == PROVIDER
 }
 
 func (s *Driver) getChainStateString(chain ChainId) string {
@@ -275,7 +278,7 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 		}
 
 		outboxInfo.WriteString("IncomingPackets: \n")
-		incoming := s.path(chain).Outboxes.OutboxPackets[P]
+		incoming := s.path(chain).Outboxes.OutboxPackets[PROVIDER]
 		for _, packet := range incoming {
 			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet.Packet.String()))
 		}
@@ -289,7 +292,7 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 		}
 
 		outboxInfo.WriteString("IncomingAcks: \n")
-		incomingAcks := s.path(chain).Outboxes.OutboxAcks[P]
+		incomingAcks := s.path(chain).Outboxes.OutboxAcks[PROVIDER]
 		for _, packet := range incomingAcks {
 			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet.Packet.String()))
 		}
@@ -375,7 +378,7 @@ func (s *Driver) DeliverPacketToConsumer(recipient ChainId, expectError bool) {
 // It updates the client before delivering the packet.
 // Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
 func (s *Driver) DeliverPacketFromConsumer(sender ChainId, expectError bool) {
-	s.path(sender).DeliverPackets(P, 1, expectError) // deliver to the provider
+	s.path(sender).DeliverPackets(PROVIDER, 1, expectError) // deliver to the provider
 }
 
 // DeliverAcks delivers, for each path,

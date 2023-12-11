@@ -7,8 +7,6 @@ import (
 // This file contains logic to process
 // and access parts of the current state of the Quint trace.
 
-const Provider = "provider"
-
 func ProviderState(curStateExpr itf.MapExprType) itf.MapExprType {
 	return curStateExpr["providerState"].Value.(itf.MapExprType)
 }
@@ -18,7 +16,7 @@ func ConsumerState(curStateExpr itf.MapExprType, consumer string) itf.MapExprTyp
 }
 
 func State(curStateExpr itf.MapExprType, chain string) itf.MapExprType {
-	if chain == Provider {
+	if chain == PROVIDER {
 		return ProviderState(curStateExpr)
 	} else {
 		return ConsumerState(curStateExpr, chain)
@@ -38,10 +36,6 @@ func HistoricalValidatorSet(curStateExpr itf.MapExprType, chain string, index in
 	return history[index].Value.(itf.MapExprType)
 }
 
-func LastTime(curStateExpr itf.MapExprType, chain string) int64 {
-	return ChainState(curStateExpr, chain)["lastTimestamp"].Value.(int64)
-}
-
 func RunningTime(curStateExpr itf.MapExprType, chain string) int64 {
 	return ChainState(curStateExpr, chain)["runningTimestamp"].Value.(int64)
 }
@@ -49,7 +43,7 @@ func RunningTime(curStateExpr itf.MapExprType, chain string) int64 {
 // PacketQueue returns the queued packets between sender and receiver.
 // Either sender or receiver need to be the provider.
 func PacketQueue(curStateExpr itf.MapExprType, sender, receiver string) itf.ListExprType {
-	if sender == Provider {
+	if sender == PROVIDER {
 		packetQueue := ProviderState(curStateExpr)["outstandingPacketsToConsumer"].Value.(itf.MapExprType)[receiver]
 		if packetQueue.Value == nil {
 			return itf.ListExprType{}
@@ -78,10 +72,6 @@ func RunningConsumers(curStateExpr itf.MapExprType) []string {
 
 func ConsumerStatus(curStateExpr itf.MapExprType, consumer string) string {
 	return ProviderState(curStateExpr)["consumerStatus"].Value.(itf.MapExprType)[consumer].Value.(string)
-}
-
-func LocalClientExpired(curStateExpr itf.MapExprType, consumer string) bool {
-	return ConsumerState(curStateExpr, consumer)["localClientExpired"].Value.(bool)
 }
 
 func GetTimeoutForPacket(packetExpr itf.MapExprType) int64 {

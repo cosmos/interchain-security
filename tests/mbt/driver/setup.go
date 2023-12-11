@@ -39,13 +39,13 @@ const (
 	INITIAL_ACCOUNT_BALANCE = 1000000000
 
 	// Parameters used in the staking module
-	StakingParamsMaxEntries    = 10000
-	StakingParamsMaxValidators = 100
+	STAKING_PARAMS_MAX_ENTRIES = 10000
+	STAKING_PARAMS_MAX_VALS    = 100
 )
 
 // Parameters used by CometBFT
 var (
-	ConsensusParams = cmttypes.DefaultConsensusParams()
+	CONSENSUS_PARAMS = cmttypes.DefaultConsensusParams()
 )
 
 // Given a map from node names to voting powers, create a validator set with the right voting powers.
@@ -111,8 +111,6 @@ func getAppBytesAndSenders(
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
 		// Give enough funds for many delegations
-		// Extra units are to delegate to extra validators created later
-		// in order to bond them and still have INITIAL_DELEGATOR_TOKENS remaining
 		bal := banktypes.Balance{
 			Address: acc.GetAddress().String(),
 			Coins: sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom,
@@ -211,8 +209,8 @@ func getAppBytesAndSenders(
 	}
 
 	// Set model parameters
-	genesisStaking.Params.MaxEntries = StakingParamsMaxEntries
-	genesisStaking.Params.MaxValidators = StakingParamsMaxValidators
+	genesisStaking.Params.MaxEntries = STAKING_PARAMS_MAX_ENTRIES
+	genesisStaking.Params.MaxValidators = STAKING_PARAMS_MAX_VALS
 	genesisStaking.Params.UnbondingTime = modelParams.UnbondingPeriodPerChain[ChainId(chainID)]
 	genesisStaking = *stakingtypes.NewGenesisState(genesisStaking.Params, stakingValidators, delegations)
 	genesis[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&genesisStaking)
@@ -259,7 +257,7 @@ func newChain(
 
 	stateBytes, senderAccounts := getAppBytesAndSenders(chainID, modelParams, app, genesis, validators, nodes, valNames)
 
-	protoConsParams := ConsensusParams.ToProto()
+	protoConsParams := CONSENSUS_PARAMS.ToProto()
 	app.InitChain(
 		abcitypes.RequestInitChain{
 			ChainId:         chainID,
@@ -336,14 +334,6 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// Create the Consumer chain ID mapping in the provider state
 	s.providerKeeper().SetConsumerClientId(providerChain.GetContext(), consumerChain.ChainID, providerEndPoint.ClientID)
 
-	// create consumer key assignment
-	// for _, val := range s.providerValidatorSet(ChainId(providerChain.ChainID)) {
-	// 	pubKey, err := val.TmConsPublicKey()
-	// 	require.NoError(s.t, err, "Error getting consensus pubkey for validator %v", val)
-
-	// 	err = s.providerKeeper().AssignConsumerKey(providerChain.GetContext(), consumerChain.ChainID, val, pubKey)
-	// }
-
 	// Configure and create the client on the consumer
 	tmCfg = consumerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[consumerChainId]
@@ -371,7 +361,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		string(consumerChainId),
 		consumerGenesisForProvider)
 
-	// Client ID is set in InitGenesis and we treat it as a block box. So
+	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.
 	clientID, _ := s.consumerKeeper(consumerChainId).GetProviderClientID(s.ctx(consumerChainId))
 	consumerEndPoint.ClientID = clientID

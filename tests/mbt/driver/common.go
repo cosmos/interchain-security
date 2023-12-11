@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	P = "provider"
+	PROVIDER = "provider"
 )
 
 // getIndexOfString returns the index of the first occurrence of the given string

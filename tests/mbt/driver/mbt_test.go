@@ -268,7 +268,7 @@ func RunItfTrace(t *testing.T, path string) {
 				}
 				consumerChainId := consumer.ChainId
 
-				driver.path(ChainId(consumerChainId)).AddClientHeader(Provider, driver.providerHeader())
+				driver.path(ChainId(consumerChainId)).AddClientHeader(PROVIDER, driver.providerHeader())
 				err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
 				require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
 			}
@@ -289,7 +289,7 @@ func RunItfTrace(t *testing.T, path string) {
 			// update the client on the provider
 			consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
 			driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
-			err := driver.path(ChainId(consumerChain)).UpdateClient(Provider, false)
+			err := driver.path(ChainId(consumerChain)).UpdateClient(PROVIDER, false)
 			require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChain, err)
 
 		case "DeliverVscPacket":
@@ -439,8 +439,8 @@ func ComparePacketQueues(
 	timeOffset time.Time,
 ) {
 	t.Helper()
-	ComparePacketQueue(t, driver, currentModelState, Provider, consumer, timeOffset)
-	ComparePacketQueue(t, driver, currentModelState, consumer, Provider, timeOffset)
+	ComparePacketQueue(t, driver, currentModelState, PROVIDER, consumer, timeOffset)
+	ComparePacketQueue(t, driver, currentModelState, consumer, PROVIDER, timeOffset)
 }
 
 func ComparePacketQueue(
@@ -578,8 +578,8 @@ func (s *Stats) EnterStats(driver *Driver) {
 	// max number of in-flight packets
 	inFlightPackets := 0
 	for _, consumer := range driver.runningConsumers() {
-		inFlightPackets += len(driver.packetQueue(Provider, ChainId(consumer.ChainId)))
-		inFlightPackets += len(driver.packetQueue(ChainId(consumer.ChainId), Provider))
+		inFlightPackets += len(driver.packetQueue(PROVIDER, ChainId(consumer.ChainId)))
+		inFlightPackets += len(driver.packetQueue(ChainId(consumer.ChainId), PROVIDER))
 	}
 	if inFlightPackets > s.maxNumInFlightPackets {
 		s.maxNumInFlightPackets = inFlightPackets
