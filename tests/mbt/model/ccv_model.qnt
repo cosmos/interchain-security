@@ -68,7 +68,7 @@ module ccv_model {
     // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
     // These should be smaller than the minimal TrustingPeriodPerChain,
     // otherwise connections will break down.
-    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour, 2 * Week - 2 * Hour)
+    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour)
 
     pure def emptyAction =
             {
