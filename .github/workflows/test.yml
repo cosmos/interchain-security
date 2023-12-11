@@ -127,7 +127,7 @@ jobs:
           path: ./mbt-profile.out
       - name: Archive MBT traces
         uses: actions/upload-artifact@v3
-        if: success() | failure() # to upload the traces only when the test failed
+        if: ${{ success() | failure() }} # to upload the traces only when the test failed
         with:
           name: mbt-traces
           path: tests/mbt/driver/traces
