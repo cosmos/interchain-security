@@ -102,7 +102,7 @@ Example:
 			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			submitter := clientCtx.GetFromAddress()
-			misbRaw, err := os.ReadFile(args[0])
+			misbJson, err := os.ReadFile(args[0])
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ Example:
 			cdc := codec.NewProtoCodec(clientCtx.InterfaceRegistry)
 
 			misbehaviour := ibctmtypes.Misbehaviour{}
-			if err := cdc.UnmarshalJSON(misbRaw, &misbehaviour); err != nil {
+			if err := cdc.UnmarshalJSON(misbJson, &misbehaviour); err != nil {
 				return fmt.Errorf("misbehaviour unmarshalling failed: %s", err)
 			}
 
@@ -172,7 +172,7 @@ Example:
 				return fmt.Errorf("duplicate vote evidence unmarshalling failed: %s", err)
 			}
 
-			headerRaw, err := os.ReadFile(args[1])
+			headerJson, err := os.ReadFile(args[1])
 			if err != nil {
 				return err
 			}
@@ -180,7 +180,7 @@ Example:
 			cdc := codec.NewProtoCodec(clientCtx.InterfaceRegistry)
 
 			header := ibctmtypes.Header{}
-			if err := cdc.UnmarshalJSON(headerRaw, &header); err != nil {
+			if err := cdc.UnmarshalJSON(headerJson, &header); err != nil {
 				return fmt.Errorf("infraction IBC header unmarshalling failed: %s", err)
 			}
 
