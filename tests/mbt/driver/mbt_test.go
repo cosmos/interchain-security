@@ -521,7 +521,7 @@ func CompareTimes(
 // The names in the model validator set are expected to correspond to the monikers in the system validator set.
 func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int64) error {
 	expectedValSet := make(map[string]int64, len(modelValSet))
-	// strip away vals with power 0, because they are not always in the system validator set
+	// strip away vals with power 0, because they don't matter for the comparison
 	for val, power := range modelValSet {
 		if power.Value.(int64) == 0 {
 			continue
