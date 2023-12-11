@@ -51,9 +51,9 @@ for example we can set the genesis parameters of a chain using `ChainConfig.Gene
 * Define a sequence of actions and state checks to perform for our test case.
 * Add the new test case to the main file [main.go](main.go).
     * ...in the stepChoices slice, where you need to put your step slice and the test config you want to run your steps on.
-    * ...add your test config to the testConfigs map (which is used to specify configs when calling from the CLI)
+    * ...add your test config to the `testConfigs` map (which is used to specify configs when calling from the CLI)
     * ...if your test case should run by default (if you're not sure, it probably should), also add it to the predefined test cases in
-    getTestCases (which governs which test cases will be run when no specific test case is specified on the CLI)
+    `getTestCases` (which governs which test cases will be run when no specific test case is specified on the CLI)
 
 For example, a short sequence of actions and state checks could look like this:
 ```
@@ -92,7 +92,7 @@ steps := []Step{
 ```
 In this sequence, we first use the `delegateTokensAction`
 to delegate 11000000 tokens from alice to herself,
-then check that alices voting power was set to 511 (note that 11000000 tokens correspond to 11 voting power here),
+then check that alices voting power was set to 511 (note that 11000000 stake=11 voting power here),
 then afterwards use the same action again, this time to delegate 99000000
 tokens from alice to bob, and again check the voting powers, with the change that
 bobs voting power should now be 599.
@@ -157,7 +157,7 @@ rather than just getting a non-matching state during the state check that happen
 
 ### Gas
 When submitting transactions, generally either specify a large enough amount of gas manually,
-or use `--gas=auto` with a large `--gas-adjustment`.
+or use `--gas=auto` with a large `--gas-adjustment` (1.5 seems pretty safe).
 You should avoid situations where transactions non-deterministically sometimes
 work and sometimes fail due to gas, as can happen with `--gas=auto` and no `--gas-adjustment` (or gas adjustment too close to 1).
 Essentially, sometimes the gas estimation will underestimate gas, but not always -
