@@ -416,11 +416,6 @@ func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[st
 
 			consumerCurValSet[providerVal.GetMoniker()] = val.Power
 		}
-		for val, power := range modelValSet {
-			_ = val
-			intPow := power.Value.(int64)
-			_ = intPow
-		}
 		require.NoError(t, CompareValSet(modelValSet, consumerCurValSet), "Validator sets do not match for consumer %v", consumer)
 	}
 }
