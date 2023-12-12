@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -17,6 +18,8 @@ import (
 
 func TestDisabledModulesDecorator(t *testing.T) {
 	txCfg := params.MakeTestEncodingConfig().TxConfig
+	authzMsgExecSlashing := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&slashingtypes.MsgUnjail{}})
+	authzMsgExecEvidence := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&evidencetypes.MsgSubmitEvidence{}})
 
 	testCases := []struct {
 		name      string
@@ -53,6 +56,22 @@ func TestDisabledModulesDecorator(t *testing.T) {
 			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
 				&slashingtypes.MsgUnjail{},
+			},
+			expectErr: true,
+		},
+		{
+			name: "authz MsgExec contain slashing module messages not supported",
+			ctx:  sdk.Context{},
+			msgs: []sdk.Msg{
+				&authzMsgExecSlashing,
+			},
+			expectErr: true,
+		},
+		{
+			name: "authz MsgExec contain evidence module messages not supported",
+			ctx:  sdk.Context{},
+			msgs: []sdk.Msg{
+				&authzMsgExecEvidence,
 			},
 			expectErr: true,
 		},
