@@ -42,8 +42,8 @@ func (mfd MsgFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 
 	// Check if there is an atempt to bypass disabled module msg
 	// with authz MsgExec
-	wrapperMsgs := fetchMsgExecWrapperMsgs(tx.GetMsgs())
-	if hasDisabledModuleMsgs(wrapperMsgs, mfd.prefixes...) {
+	wrappedMsgs := fetchMsgExecWrapperMsgs(tx.GetMsgs())
+	if hasDisabledModuleMsgs(wrappedMsgs, mfd.prefixes...) {
 		return ctx, fmt.Errorf("tx contains message types from unsupported modules at height %d", currHeight)
 	}
 
@@ -66,7 +66,7 @@ func hasValidMsgsPreCCV(msgs []sdk.Msg) bool {
 }
 
 func fetchMsgExecWrapperMsgs(msgs []sdk.Msg) []sdk.Msg {
-	var wrapperMsgs = []sdk.Msg{}
+	var wrappedMsgs = []sdk.Msg{}
 	for _, msg := range msgs {
 		msgType := sdk.MsgTypeURL(msg)
 
@@ -83,12 +83,12 @@ func fetchMsgExecWrapperMsgs(msgs []sdk.Msg) []sdk.Msg {
 				continue
 			}
 
-			wrapperMsgs = append(wrapperMsgs, sdkMsgs...)
+			wrappedMsgs = append(wrappedMsgs, sdkMsgs...)
 
 		}
 	}
 
-	return wrapperMsgs
+	return wrappedMsgs
 }
 
 func hasDisabledModuleMsgs(msgs []sdk.Msg, prefixes ...string) bool {
