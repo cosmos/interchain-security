@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 )
 
 type (
@@ -17,12 +18,14 @@ type (
 	// filtering based on certain criteria.
 	MsgFilterDecorator struct {
 		ConsumerKeeper ConsumerKeeper
+		prefixes       []string
 	}
 )
 
-func NewMsgFilterDecorator(k ConsumerKeeper) MsgFilterDecorator {
+func NewMsgFilterDecorator(k ConsumerKeeper, disabledModules ...string) MsgFilterDecorator {
 	return MsgFilterDecorator{
 		ConsumerKeeper: k,
+		prefixes:       disabledModules,
 	}
 }
 
@@ -35,6 +38,13 @@ func (mfd MsgFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		if !hasValidMsgsPreCCV(tx.GetMsgs()) {
 			return ctx, fmt.Errorf("tx contains unsupported message types at height %d", currHeight)
 		}
+	}
+
+	// Check if there is an atempt to bypass disabled module msg
+	// with authz MsgExec
+	wrapperMsgs := fetchMsgExecWrapperMsgs(tx.GetMsgs())
+	if hasDisabledModuleMsgs(wrapperMsgs, mfd.prefixes...) {
+		return ctx, fmt.Errorf("tx contains message types from unsupported modules at height %d", currHeight)
 	}
 
 	return next(ctx, tx, simulate)
@@ -53,4 +63,44 @@ func hasValidMsgsPreCCV(msgs []sdk.Msg) bool {
 	}
 
 	return true
+}
+
+func fetchMsgExecWrapperMsgs(msgs []sdk.Msg) []sdk.Msg {
+	var wrapperMsgs = []sdk.Msg{}
+	for _, msg := range msgs {
+		msgType := sdk.MsgTypeURL(msg)
+
+		if msgType == "/cosmos.authz.v1beta1.MsgExec" {
+			msgExec, ok := msg.(*authz.MsgExec)
+
+			// TODO: We should decide to continue checking the other msgs or break the loop
+			if !ok {
+				continue
+			}
+
+			sdkMsgs, err := msgExec.GetMessages()
+			if err != nil {
+				continue
+			}
+
+			wrapperMsgs = append(wrapperMsgs, sdkMsgs...)
+
+		}
+	}
+
+	return wrapperMsgs
+}
+
+func hasDisabledModuleMsgs(msgs []sdk.Msg, prefixes ...string) bool {
+	for _, msg := range msgs {
+		msgType := sdk.MsgTypeURL(msg)
+
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(msgType, prefix) {
+				return true
+			}
+		}
+	}
+
+	return false
 }

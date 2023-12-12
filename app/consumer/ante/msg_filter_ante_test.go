@@ -7,7 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
 	"github.com/cosmos/interchain-security/v3/app/consumer/ante"
 	"github.com/cosmos/interchain-security/v3/app/params"
@@ -29,6 +31,7 @@ func noOpAnteDecorator() sdk.AnteHandler {
 
 func TestMsgFilterDecorator(t *testing.T) {
 	txCfg := params.MakeTestEncodingConfig().TxConfig
+	authzMsgExec := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&evidencetypes.MsgSubmitEvidence{}})
 
 	testCases := []struct {
 		name           string
@@ -64,13 +67,22 @@ func TestMsgFilterDecorator(t *testing.T) {
 			},
 			expectErr: false,
 		},
+		{
+			name:           "invalid tx post-CCV authz MsgExec bypass",
+			ctx:            sdk.Context{},
+			consumerKeeper: consumerKeeper{channelExists: true},
+			msgs: []sdk.Msg{
+				&authzMsgExec,
+			},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-			handler := ante.NewMsgFilterDecorator(tc.consumerKeeper)
+			handler := ante.NewMsgFilterDecorator(tc.consumerKeeper, "/cosmos.evidence", "/cosmos.slashing")
 
 			txBuilder := txCfg.NewTxBuilder()
 			require.NoError(t, txBuilder.SetMsgs(tc.msgs...))
