@@ -4,6 +4,7 @@ on:
     paths:
       - "*.md"
       - "docs/docs/**.md"
+      - "tests/e2e/README.md"
 jobs:
   repo-root:
     runs-on: ubuntu-latest
@@ -21,7 +22,10 @@ jobs:
     steps:
       # Check out the latest version of the code
       - uses: actions/checkout@v4
-      # Checks the status of hyperlinks in *.md files in the docs/docs folder
+      # Checks the status of hyperlinks in *.md files in the docs/docs folder,
+      # as well as various explicitly listed files throughout the repo.
+      # We don't use this to check the repo root, since there we want to use max-depth=1.
       - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
         with:
           folder-path: 'docs/docs'
+          file-path: 'tests/e2e/README.md'
