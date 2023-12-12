@@ -19,7 +19,7 @@ please add links to any relevant follow up issues.*
 I have...
 
 * [ ] Included the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
-* [ ] Added `!` to the type prefix if state-machine breaking change (i.e., requires coordinated upgrade)
+* [ ] Added `!` to the type prefix if the change is library breaking, state-machine breaking, or node API breaking (see more info [here](https://github.com/cosmos/interchain-security/blob/main/RELEASES.md#breaking-changes
 * [ ] Confirmed this PR does not introduce changes requiring state migrations, OR migration code has been added to consumer and/or provider modules
 * [ ] Targeted the correct branch (see [PR Targeting](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
 * [ ] Provided a link to the relevant issue or specification
@@ -40,7 +40,7 @@ your handle next to the items reviewed if you only reviewed selected items.*
 I have...
 
 * [ ] confirmed the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
-* [ ] confirmed `!` in the type prefix if API or client breaking change
+* [ ] confirmed `!` in the type prefix if the change is library breaking, state-machine breaking, or node API breaking
 * [ ] confirmed this PR does not introduce changes requiring state migrations, OR confirmed migration code has been added to consumer and/or provider modules
 * [ ] confirmed all author checklist items have been addressed
 * [ ] reviewed state machine logic
