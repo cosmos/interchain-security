@@ -242,7 +242,7 @@ unclog add \
    -s "${section}" \
    -m "${description}" \
 
-# add a entry to a component 
+# add an entry to a component 
 unclog add 
    -i "${pr-number}-${short-description}" \
    -p "${pr-number}" \
@@ -264,7 +264,7 @@ unclog add -i "1024-jail-throttling-v2" -p 1024 -c consumer -s features -m "Add 
 ```
 
 **Note:** `unclog add` requires an editor. This can be set either by configuring 
-an `$EDITOR` environment variable or by manually specify an editor binary path 
+an `$EDITOR` environment variable or by manually specifying an editor binary path 
 via the `--editor` flag. 
 
 **Note:** Changelog entries should answer the question: "what is important about this
