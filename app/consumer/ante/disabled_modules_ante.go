@@ -25,7 +25,7 @@ func (dmd DisabledModulesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 
 		// Check if there is an atempt to bypass disabled module msg
 		// with authz MsgExec
-		if nestedCheck(msg, dmd.prefixes...) {
+		if nestedAuthzMsgExecCheck(msg, dmd.prefixes...) {
 			return ctx, fmt.Errorf("tx contains message types from unsupported modules at height %d", currHeight)
 		}
 	}
@@ -33,7 +33,7 @@ func (dmd DisabledModulesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 	return next(ctx, tx, simulate)
 }
 
-func nestedCheck(msg sdk.Msg, prefixes ...string) bool {
+func nestedAuthzMsgExecCheck(msg sdk.Msg, prefixes ...string) bool {
 	check := false
 	msgExec, ok := msg.(*authz.MsgExec)
 
@@ -54,7 +54,7 @@ func nestedCheck(msg sdk.Msg, prefixes ...string) bool {
 
 		// Check for nested authz msgExec
 		if hasAuthzMsgExec(msg) {
-			check = nestedCheck(msg, prefixes...)
+			check = nestedAuthzMsgExecCheck(msg, prefixes...)
 			if check {
 				break
 			}
