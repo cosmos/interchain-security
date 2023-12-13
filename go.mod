@@ -190,4 +190,4 @@ require (
 // following versions might cause unexpected behavior
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
-replace github.com/cosmos/cosmos-sdk => github.com/informalsystems/cosmos-sdk v0.46.0-alpha2.0.20231206144452-5b8e28f3247b
+replace github.com/cosmos/cosmos-sdk => github.com/informalsystems/cosmos-sdk v0.46.0-alpha2.0.20231213145240-817c772e6b80

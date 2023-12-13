@@ -652,8 +652,8 @@ github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANyt
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
-github.com/informalsystems/cosmos-sdk v0.46.0-alpha2.0.20231206144452-5b8e28f3247b h1:30cT7RklLxEObRhrPNWfxmzpwA7L9wlOZtEQGqwUvkU=
-github.com/informalsystems/cosmos-sdk v0.46.0-alpha2.0.20231206144452-5b8e28f3247b/go.mod h1:5XeJ1MRNGiKgoCj/1nWQm0xadHcOP8wqpeCUihzead4=
+github.com/informalsystems/cosmos-sdk v0.46.0-alpha2.0.20231213145240-817c772e6b80 h1:oCxPruzvb+O3/Bz8Q2Ff6+aKsoK7OYCZVTfY4tMTI+o=
+github.com/informalsystems/cosmos-sdk v0.46.0-alpha2.0.20231213145240-817c772e6b80/go.mod h1:5XeJ1MRNGiKgoCj/1nWQm0xadHcOP8wqpeCUihzead4=
 github.com/jhump/protoreflect v1.15.1 h1:HUMERORf3I3ZdX05WaQ6MIpd/NJ434hTp5YiKgfCL6c=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
