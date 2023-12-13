@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
+import "tendermint/crypto/keys.proto";
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -195,4 +196,5 @@ message PairValConAddrProviderAndConsumer {
   string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // The consensus address of the validator on the consumer chain
   string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  tendermint.crypto.PublicKey consumer_key = 3;
 }
