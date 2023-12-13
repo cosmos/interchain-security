@@ -20,6 +20,7 @@ func TestDisabledModulesDecorator(t *testing.T) {
 	txCfg := params.MakeTestEncodingConfig().TxConfig
 	authzMsgExecSlashing := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&slashingtypes.MsgUnjail{}})
 	authzMsgExecEvidence := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&evidencetypes.MsgSubmitEvidence{}})
+	nestedAuthzMsgExecSlashing := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&authzMsgExecSlashing})
 
 	testCases := []struct {
 		name      string
@@ -72,6 +73,14 @@ func TestDisabledModulesDecorator(t *testing.T) {
 			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
 				&authzMsgExecEvidence,
+			},
+			expectErr: true,
+		},
+		{
+			name: "nested authz MsgExec contain slashing module messages not supported",
+			ctx:  sdk.Context{},
+			msgs: []sdk.Msg{
+				&nestedAuthzMsgExecSlashing,
 			},
 			expectErr: true,
 		},
