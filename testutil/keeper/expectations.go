@@ -36,7 +36,7 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	createClientExp := mocks.MockClientKeeper.EXPECT().CreateClient(
 		gomock.Any(),
 		// Allows us to expect a match by field. These are the only two client state values
-		// that are dependant on parameters passed to CreateConsumerClient.
+		// that are dependent on parameters passed to CreateConsumerClient.
 		extra.StructMatcher().Field(
 			"ChainId", expectedChainID).Field(
 			"LatestHeight", expectedLatestHeight,

@@ -268,7 +268,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
-	// If one of the entires was handled, total power will be 2000 (1000 power was just slashed)
+	// If one of the entries was handled, total power will be 2000 (1000 power was just slashed)
 	s.Require().Equal(int64(2000),
 		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 

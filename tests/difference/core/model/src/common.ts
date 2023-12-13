@@ -9,7 +9,7 @@ enum Status {
 }
 
 /**
- * All the data needed to represent an undelegation occuring
+ * All the data needed to represent an undelegation occurring
  * in the sdk staking module.
  */
 interface Undelegation {
@@ -25,7 +25,7 @@ interface Undelegation {
 
 /**
  * All the data needed to represent an unbonding validator
- * occuring in the sdk staking module.
+ * occurring in the sdk staking module.
  */
 interface Unval {
   val: Validator;

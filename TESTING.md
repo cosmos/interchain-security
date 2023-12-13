@@ -94,7 +94,7 @@ NOTE: versions < v9.0.0 are not compatible with ICS.
 
 ## Linters and Static Analysis
 
-Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs ect, but some tools are also applicable locally, and are built into golang.
+Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs etc, but some tools are also applicable locally, and are built into golang.
 
 ```bash
 # gofmt to format and simplify code (https://pkg.go.dev/cmd/gofmt)

@@ -77,7 +77,7 @@ message ConsumerState {
 }
 
 // ValsetUpdateIdToHeight defines the genesis information for the mapping
-// of each valset udpate id to a block height
+// of each valset update id to a block height
 message ValsetUpdateIdToHeight {
   uint64 valset_update_id = 1;
   uint64 height = 2;
