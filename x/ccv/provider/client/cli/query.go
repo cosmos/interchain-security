@@ -33,6 +33,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdThrottleState())
 	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
 	cmd.AddCommand(CmdProposedConsumerChains())
+	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
 
 	return cmd
 }
@@ -335,6 +336,33 @@ $ %s query provider registered-consumer-reward-denoms
 
 			req := &types.QueryRegisteredConsumerRewardDenomsRequest{}
 			res, err := queryClient.QueryRegisteredConsumerRewardDenoms(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdAllPairsValConAddrByConsumerChainID() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "All-pairs-valconsensus-address",
+		Short: "Query all pairs of valconsensus address by consumer chainId.",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := types.QueryAllPairsValConAddrByConsumerChainIDRequest{ChainId: args[0]}
+			res, err := queryClient.QueryAllPairsValConAddrByConsumerChainID(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}

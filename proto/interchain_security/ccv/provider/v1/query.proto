@@ -82,6 +82,15 @@ service Query {
   option (google.api.http).get =
       "/interchain_security/ccv/provider/proposed_consumer_chains";
       }
+
+  // QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
+  // between provider and consumer chain
+  rpc QueryAllPairsValConAddrByConsumerChainID (
+    QueryAllPairsValConAddrByConsumerChainIDRequest)
+    returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
+      option (google.api.http).get =
+    "/interchain_security/ccv/provider/consumer_chain_id";
+    }  
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -170,4 +179,20 @@ message QueryProposedChainIDsResponse {
 message ProposedChain {
   string chainID = 1;
   uint64 proposalID = 2;
+}
+
+message QueryAllPairsValConAddrByConsumerChainIDRequest {
+  // The id of the consumer chain
+  string chain_id = 1;
+}
+
+message QueryAllPairsValConAddrByConsumerChainIDResponse {
+  repeated PairValConAddrProviderAndConsumer pair_val_con_addr = 1;
+}
+
+message PairValConAddrProviderAndConsumer {
+  // The consensus address of the validator on the provider chain
+  string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The consensus address of the validator on the consumer chain
+  string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
 }

@@ -182,3 +182,24 @@ func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.
 		ProposedChains: chains,
 	}, nil
 }
+
+func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, req *types.QueryAllPairsValConAddrByConsumerChainIDRequest) (*types.QueryAllPairsValConAddrByConsumerChainIDResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// list of pairs valconsensus addr <providerValConAddrs : consumerValConAddrs>
+	pairValConAddrs := []*types.PairValConAddrProviderAndConsumer{}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	validatorConsumerAddrs := k.GetAllValidatorsByConsumerAddr(ctx, &req.ChainId)
+	for _, data := range validatorConsumerAddrs {
+		pairValConAddrs = append(pairValConAddrs, &types.PairValConAddrProviderAndConsumer{
+			ProviderAddress: string(data.ProviderAddr),
+			ConsumerAddress: string(data.ConsumerAddr),
+		})
+	}
+	return  &types.QueryAllPairsValConAddrByConsumerChainIDResponse{
+		PairValConAddr: pairValConAddrs,
+	}, nil
+}
