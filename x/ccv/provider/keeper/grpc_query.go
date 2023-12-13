@@ -199,7 +199,7 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 			ConsumerAddress: string(data.ConsumerAddr),
 		})
 	}
-	return  &types.QueryAllPairsValConAddrByConsumerChainIDResponse{
+	return &types.QueryAllPairsValConAddrByConsumerChainIDResponse{
 		PairValConAddr: pairValConAddrs,
 	}, nil
 }
