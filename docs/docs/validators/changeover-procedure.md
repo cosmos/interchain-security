@@ -67,7 +67,7 @@ If you are validating both the `standalone` and the `provider`, you **can** use 
 
 Yes.
 
-Please assign your consensus key as stated aboce.
+Please assign your consensus key as stated above.
 
 ### Can I set up a new node to validate the `standalone/consumer` chain after it transitions to replicated security?
 
@@ -76,7 +76,7 @@ Yes.
 If you are planning to do this please make sure that the node is synced with `standalone` network and to submit `AssignConsumerKey` tx before `spawn_time`.
 
 
-###  What happens to the `standalone` validator set after it after it transitions to replicated security?
+###  What happens to the `standalone` validator set after it transitions to replicated security?
 
 The `standalone` chain validators will stop being validators after the first 3 blocks are created while using replicated security. The `standalone` validators will become **governors** and still can receive delegations if the `consumer` chain is using the `consumer-democracy` module.
 
