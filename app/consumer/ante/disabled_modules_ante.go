@@ -34,34 +34,32 @@ func (dmd DisabledModulesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 }
 
 func nestedAuthzMsgExecCheck(msg sdk.Msg, prefixes ...string) bool {
-	check := false
 	msgExec, ok := msg.(*authz.MsgExec)
 
 	if !ok {
-		return check
+		return false
 	}
 
 	sdkMsgs, err := msgExec.GetMessages()
 	if err != nil {
-		return check
+		return false
 	}
 
 	for _, msg := range sdkMsgs {
 		if hasDisabledModuleMsgs(msg, prefixes...) {
-			check = true
-			break
+			return true
 		}
 
 		// Check for nested authz msgExec
-		if hasAuthzMsgExec(msg) {
-			check = nestedAuthzMsgExecCheck(msg, prefixes...)
-			if check {
-				break
+		_, ok = msg.(*authz.MsgExec)
+		if ok {
+			if nestedAuthzMsgExecCheck(msg, prefixes...) {
+				return true
 			}
 		}
 	}
 
-	return check
+	return false
 }
 
 func hasDisabledModuleMsgs(msg sdk.Msg, prefixes ...string) bool {
@@ -74,14 +72,4 @@ func hasDisabledModuleMsgs(msg sdk.Msg, prefixes ...string) bool {
 	}
 
 	return false
-}
-
-func hasAuthzMsgExec(msg sdk.Msg) bool {
-	_, ok := msg.(*authz.MsgExec)
-
-	if !ok {
-		return false
-	}
-
-	return true
 }
