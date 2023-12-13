@@ -67,7 +67,7 @@ If you are validating both the `standalone` and the `provider`, you **can** use 
 
 Yes.
 
-Please assign your consensus key as stated aboce.
+Please assign your consensus key as stated above.
 
 ### Can I set up a new node to validate the `standalone/consumer` chain after it transitions to replicated security?
 

@@ -102,7 +102,7 @@ class PartialOrder {
    *
    * @param chain chain of block
    * @param height height of block
-   * @returns Returns the height of the least successing block on the counterparty
+   * @returns Returns the height of the least successor block on the counterparty
    * chain if it exists, else undefined.
    */
   getLeastSucc = (chain: Chain, height: number): number | undefined => {
