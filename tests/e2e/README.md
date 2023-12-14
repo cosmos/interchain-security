@@ -6,7 +6,7 @@ End-to-end in this context means tests
 where the whole app (including command line interfaces, interfaces to external components like
 relayers, CometBFT, etc) is in scope for testing.
 
-End-to-end tests should tyoically be used only to perform basic sanity checks that the provided
+End-to-end tests should typically be used only to perform basic sanity checks that the provided
 APIs and protocols work as expected.
 For more detailed tests, like exhaustively testing edge cases,
 utilize in-memory tests.
