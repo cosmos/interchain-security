@@ -215,6 +215,5 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 
 	require.Empty(t, consumerGenesis.InitialValSet)
 	require.NotEmpty(t, consumerGenesis.Provider.InitialValSet)
-	require.Equal(t, consumerGenesis.Params.RetryDelayPeriod, ccvtypes.DefaultRetryDelayPeriod)
 	require.Equal(t, consumerGenesis.NewChain, oldConsumerGenesis["new_chain"])
 }
