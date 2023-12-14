@@ -59,7 +59,6 @@ All missing minor release versions have been discontinued.
 
 | Release | End of Life Date |
 |---------|------------------|
-| `v1.2.x` | February 21, 2024 |
 | `v2.0.x` | June 09, 2024 |
 | `v2.1.x-provider-lsm` | June 09, 2024 |
 | `v2.4.x-lsm` | June 09, 2024 |
@@ -81,7 +80,6 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 
 | ICS | Golang | IBC | Cosmos SDK | CometBFT | Note |
 |-----|--------|-----|------------|----------|------|
-| [v1.2.0-multiden](https://github.com/cosmos/interchain-security/releases/tag/v1.2.0-multiden) | 1.18 | v4.2.0 | v0.45.15-ics | v0.34.27 | Consumer only |
 | [v2.0.0](https://github.com/cosmos/interchain-security/releases/tag/v2.0.0) | 1.19 | v4.4.2 | v0.45.15-ics | v0.34.28 | 
 | [v2.1.0-provider-lsm](https://github.com/cosmos/interchain-security/releases/tag/v2.1.0-provider-lsm) | 1.19 | v4.4.2 | v0.45.16-ics-lsm | v0.34.28 | Provider only (Cosmos Hub specific) |
 | [v2.4.0-lsm](https://github.com/cosmos/interchain-security/releases/tag/v2.4.0-lsm) | 1.19 | v4.4.2 | v0.45.16-ics-lsm | v0.34.28 | Provider only (Cosmos Hub specific) |
@@ -100,7 +98,6 @@ The following table indicates the compatibility of currently active releases:
 
 | Consumer | Provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` | `v3.2.0` | `v3.3.0` | `v4.0.0` | 
 |----------|----------|----------|-----------------------|--------------|----------|----------|----------|----------|
-| `v1.2.0-multiden` || ✅ (1) | ✅ (1) | ✅ (1) | ✅ (1),(2) | ✅ (1),(2) | ✅ (1),(2),(4) | ❌ |
 | `v2.0.0` || ✅ | ✅ | ✅ | ✅ (2) | ✅ (2) | ✅ (2),(4) | ❌ |
 | `v3.1.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (4) | ❌ |
 | `v3.2.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (4) | ✅ |
