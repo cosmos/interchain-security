@@ -77,7 +77,7 @@ go test -fuzz=<regex-to-match-test-name>
 go run ./tests/e2e/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/" --verbose
 ```
 
-### Tesing with Gaia as the provider
+### Testing with Gaia as the provider
 
 Integration tests can be run with Gaia as the provider.
 By default, the latest tagged release of Gaia is used - this includes release candidates and stabile releases.
