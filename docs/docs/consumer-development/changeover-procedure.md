@@ -46,7 +46,7 @@ RevisionNumber: 0, RevisionHeight: 111
 
 * `binary_hash` may not be available ahead of time. All chains performing the changeover go through rigorous testing - if bugs are caught and fixed the hash listed in the proposal may not be the most recent one.
 
-* `spawn_time` listed in the proposal MUST be before the `upgrade_height` listed in the the upgrade proposal on the standalone chain.
+* `spawn_time` listed in the proposal MUST be before the `upgrade_height` listed in the upgrade proposal on the standalone chain.
 :::caution
 `spawn_time` must occur before the `upgrade_height` on the standalone chain is reached because the `provider` chain must generate the `ConsumerGenesis` that contains the **validator set** that will be used after the changeover.
 :::
@@ -139,7 +139,7 @@ Example of such a repository can be found [here](https://github.com/hyphacoop/ic
 
 ## 3. Submit a ConsumerChainAddition Governance Proposal to the provider
 
-Before you submit a `ConsumerChainAddition` proposal, please provide a `spawn_time` that is **before** the the `upgrade_height` of the upgrade that will introduce the `ccv module` to your chain.
+Before you submit a `ConsumerChainAddition` proposal, please provide a `spawn_time` that is **before** the `upgrade_height` of the upgrade that will introduce the `ccv module` to your chain.
 :::danger
 If the `spawn_time` happens after your `upgrade_height` the provider will not be able to communicate the new validator set to be used after the changeover.
 :::
@@ -211,7 +211,7 @@ Example of a consumer chain addition proposal.
 	// channel is created on top of the same connection as the CCV channel.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
     // it is most relevant for chains performing a standalone to consumer changeover
-    // in order to maintan the existing ibc transfer channel
+    // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"  // NOTE: use existing transfer channel if available
 }
 ```
