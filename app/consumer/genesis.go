@@ -59,6 +59,7 @@ func transform(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
 			ConsensusState: oldConsumerGenesis.ProviderConsensusState,
 			InitialValSet:  oldConsumerGenesis.InitialValSet,
 		},
+		NewChain: oldConsumerGenesis.NewChain,
 	}
 
 	newJson, err := ctx.Codec.MarshalJSON(&newGenesis)

@@ -3,6 +3,7 @@ package app_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -191,6 +192,10 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 	_, err = cmd.ExecuteC()
 	require.NoError(t, err)
 
+	var oldConsumerGenesis map[string]interface{}
+	err = json.Unmarshal([]byte(consumerGenesisStates[version]), &oldConsumerGenesis)
+	require.NoError(t, err, "Error parsing old version of ccv genesis content for consumer")
+
 	consumerGenesis := consumerTypes.GenesisState{}
 
 	bz := output.Bytes()
@@ -210,4 +215,9 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 
 	require.Empty(t, consumerGenesis.InitialValSet)
 	require.NotEmpty(t, consumerGenesis.Provider.InitialValSet)
+<<<<<<< HEAD
+=======
+	require.Equal(t, consumerGenesis.Params.RetryDelayPeriod, ccvtypes.DefaultRetryDelayPeriod)
+	require.Equal(t, consumerGenesis.NewChain, oldConsumerGenesis["new_chain"])
+>>>>>>> f86c61f (fix: missing transformation for field 'new_chain' in ccv consumer genesis (#1509))
 }
