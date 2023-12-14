@@ -215,9 +215,6 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 
 	require.Empty(t, consumerGenesis.InitialValSet)
 	require.NotEmpty(t, consumerGenesis.Provider.InitialValSet)
-<<<<<<< HEAD
-=======
 	require.Equal(t, consumerGenesis.Params.RetryDelayPeriod, ccvtypes.DefaultRetryDelayPeriod)
 	require.Equal(t, consumerGenesis.NewChain, oldConsumerGenesis["new_chain"])
->>>>>>> f86c61f (fix: missing transformation for field 'new_chain' in ccv consumer genesis (#1509))
 }
