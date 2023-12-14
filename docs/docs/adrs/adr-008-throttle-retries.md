@@ -77,7 +77,7 @@ This poor append performance isn't a problem when the pending packets list is sm
 But with this ADR being implemented, the pending packets list could potentially grow to the order of thousands of entries when `SlashPackets` need to be resent.
 
 We can improve the append time for this queue by converting it from a protobuf-esq list, to a queue implemented with sdk-esq code. 
-The idea is to persist an uint64 index that will be incremented each time you queue up a packet. 
+The idea is to persist a uint64 index that will be incremented each time you queue up a packet. 
 You can think of this as storing the tail of the queue. 
 Then, packet data will be keyed by that index, making the data naturally ordered byte-wise for sdk's iterator. 
 The index will also be stored in the packet data value bytes, so that the index can later be used to delete certain packets from the queue.
