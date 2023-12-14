@@ -39,7 +39,7 @@ make test-integration
 make test-difference
 
 # run unit, integration, and difference tests - shortcut for local development
-mate test-dev
+make test-dev
 
 # run E2E tests
 make test-e2e
