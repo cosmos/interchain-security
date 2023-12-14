@@ -60,7 +60,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().True(found)
 	valOldBalance := stakingVal.Tokens
 
-	// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
+	// Setup first val with mapped consensus address to be jailed on provider by setting signing info
 	// convert validator to TM type
 	pk, err := stakingVal.ConsPubKey()
 	s.Require().NoError(err)
@@ -193,7 +193,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().True(found)
 	valOldBalance := stakingVal.Tokens
 
-	// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
+	// Setup first val with mapped consensus address to be jailed on provider by setting signing info
 	// convert validator to TM type
 	pk, err := stakingVal.ConsPubKey()
 	s.Require().NoError(err)
@@ -475,7 +475,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	res, _ := consumerSlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
 	// expect increased jail time
 	suite.Require().True(res.JailedUntil.Equal(ctx.BlockTime().Add(consumerSlashingKeeper.DowntimeJailDuration(ctx))), "did not update validator jailed until signing info")
-	// expect missed block counters reseted
+	// expect missed block counters reset
 	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
 	suite.Require().Zero(res.IndexOffset)
 	consumerSlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
@@ -538,7 +538,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	channelID := suite.path.EndpointA.ChannelID
 
 	// create a validator pubkey and address
-	// note that the validator wont't necessarily be in valset to due the TM delay
+	// note that the validator won't necessarily be in valset to due the TM delay
 	pubkey := ed25519.GenPrivKey().PubKey()
 	consAddr := sdk.ConsAddress(pubkey.Address())
 
@@ -564,7 +564,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	seq, ok := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
 	suite.Require().True(ok)
 
-	// construct slash packet data and get the expcted commit hash
+	// construct slash packet data and get the expected commit hash
 	packetData := ccv.NewSlashPacketData(
 		abci.Validator{Address: consAddr.Bytes(), Power: power},
 		// get VSC ID mapping to the infraction height with the TM delay subtracted

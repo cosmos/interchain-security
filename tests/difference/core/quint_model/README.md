@@ -38,7 +38,7 @@ or all invariants one after another with the help of the script `run_invariants.
 Each invariant takes about a minute to run.
 
 Invariants are as follows:
-- [X] ValidatorUpdatesArePropagatedInv: When a validator power update is comitted on chain, a packet containing that change in voting power is sent to all running consumers.
+- [X] ValidatorUpdatesArePropagatedInv: When a validator power update is committed on chain, a packet containing that change in voting power is sent to all running consumers.
 - [X] ValidatorSetHasExistedInv: Every validator set on consumer chains is/was a validator set on the provider.
 - [X] SameVscPacketsInv: Ensure that consumer chains receive the same VscPackets in the same order.
 Because of nuances with starting/stopping consumers, this invariant is not as simple as it sounds. In detail:

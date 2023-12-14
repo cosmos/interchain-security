@@ -56,7 +56,7 @@ RevisionNumber: 0, RevisionHeight: 111
 * `distribution_transmission_channel` **should be set**.
 
 :::note
-Populating `distribution_transmission_channel` will enable the standalone chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. This will preserve the `ibc denom` that may already be in use.
+Populating `distribution_transmission_channel` will enable the standalone chain to reuse one of the existing channels to the provider for consumer chain rewards distribution. This will preserve the `ibc denom` that may already be in use.
 
 If the parameter is not set, a new channel will be created.
 :::
@@ -84,7 +84,7 @@ Otherwise, the upgrade is indistinguishable from a regular on-chain upgrade prop
 
 ### 3. spawn time is reached
 
-When the `spawn_time` is reached on the `provider` it will generate a `ConsumerGenesis` that contains the validator set that will supercede the `standalone` validator set.
+When the `spawn_time` is reached on the `provider` it will generate a `ConsumerGenesis` that contains the validator set that will supersede the `standalone` validator set.
 
 This `ConsumerGenesis` must be available on the standalone chain during the on-chain upgrade.
 
@@ -93,7 +93,7 @@ This `ConsumerGenesis` must be available on the standalone chain during the on-c
 Performing the on-chain upgrade on the standalone chain will add the `ccv/consumer` module and allow the chain to become a `consumer` of replicated security.
 
 :::caution
-The `ConsumerGenesis` must be exported to a file and placed in the correct folder on the standalone chain before the upgade.
+The `ConsumerGenesis` must be exported to a file and placed in the correct folder on the standalone chain before the upgrade.
 
 The file must be placed at the exact specified location, otherwise the upgrade will not be executed correctly.
 

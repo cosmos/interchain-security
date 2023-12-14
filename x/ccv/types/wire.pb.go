@@ -57,7 +57,7 @@ func (ConsumerPacketDataType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_8fd0dc67df6b10ed, []int{0}
 }
 
-// InfractionType indicates the infraction type a validator commited.
+// InfractionType indicates the infraction type a validator committed.
 // Note ccv.InfractionType to maintain compatibility between ICS versions
 // using different versions of the cosmos-sdk and ibc-go modules.
 type InfractionType int32

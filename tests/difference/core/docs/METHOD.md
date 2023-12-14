@@ -45,7 +45,7 @@ We have three major components, a model and driver, and the SUT. The creation of
 2. Figure out which API calls influence that state.
 3. Create the simplest possible implementation of those API calls that results in the correct state. This is the raw model.
 4. Randomly make API calls against your model. You might need some heuristics or bespoke logic to make sure these random calls result in good coverage (see [Limitations](#limitations)).
-5. Record the random API calls made ('actions') and obervations of the state made at regular intervals. Together this data forms a trace. Repeated many times from the zero state you obtain *traces*.
+5. Record the random API calls made ('actions') and observations of the state made at regular intervals. Together this data forms a trace. Repeated many times from the zero state you obtain *traces*.
 6. Create a 'driver': some code that wraps the API of the SUT and can interpret traces and 'test' those traces against the SUT. For each tested trace, setup the SUT to a suitable zero state, and make each API call as in the trace. For each state observation in the trace, check that the SUT state corresponds.
 
 ## Benefits
@@ -99,7 +99,7 @@ The model could be the spec, if you want it to be. All the dependencies should b
 
 ### Creating many implementations from a single model
 
-The same model can be used to create drivers for, and test, many different implementations of the system in any language, environment ect
+The same model can be used to create drivers for, and test, many different implementations of the system in any language, environment etc
 
 ## Comparison to Model Based Testing
 
@@ -109,7 +109,7 @@ Informal Systems uses the term model based testing to refer to, essentially diff
 Example languages: [TLA+](https://en.wikipedia.org/wiki/TLA%2B), [Quint](https://github.com/informalsystems/quint). Example semantic: [Temporal Logic of Actions](https://en.wikipedia.org/wiki/Temporal_logic_of_actions). Example techniques: [SAT Solving](https://en.wikipedia.org/wiki/SAT_solver), [Symbolic Model Checking](https://blog.acolyer.org/2019/11/29/tla-model-checking-made-symbolic/), [State Enumerating Model Checking](https://en.wikipedia.org/wiki/State_space_enumeration). Example tools: [TLC](https://github.com/tlaplus/tlaplus), [Apalache](https://apalache.informal.systems/).
 - The model is explored not by randomness and heuristics but by using a [*model checker*](https://en.wikipedia.org/wiki/Model_checking). Model checkers pull on a massive field of research and they're about applying efficient techniques for exploring program behaviors. While modern model checkers are highly optimized and capable, they are not silver bullets, as they all suffer from the [State Space Explosion Problem](https://en.wikipedia.org/wiki/Combinatorial_explosion). See [this wiki page](https://en.wikipedia.org/wiki/Model_checking#Techniques) for more info.
 
-Why not use model checking? They require expert knowledge which is hard to onboard, the State Space Explosion Problem can be very real in practice, and the tooling e.g TLA+ is generally not industrial strength in terms of maintainability ect.
+Why not use model checking? They require expert knowledge which is hard to onboard, the State Space Explosion Problem can be very real in practice, and the tooling e.g TLA+ is generally not industrial strength in terms of maintainability etc.
 
 Note that the Apalache team at Informal is working hard to make MBT a powerful practical tool. They have made leaps and bounds in the last year since diff testing began in April 2022. In particular they have created a new programming language called Quint which should be an industrial strength formal specification language. They have also added powerful exploration capabilities (see [::simulate](https://apalache.informal.systems/docs/apalache/running.html?highlight=simulate#running-the-tool)) which combines random exploration with optimized model checker based exploration.
 

@@ -42,7 +42,7 @@ type NextFeeDistributionEstimate struct {
 	DistributionFraction string `protobuf:"bytes,4,opt,name=distribution_fraction,json=distributionFraction,proto3" json:"distribution_fraction,omitempty"`
 	// total accruead fees at the time of querying
 	Total string `protobuf:"bytes,5,opt,name=total,proto3" json:"total,omitempty"`
-	// amount distibuted to provider chain
+	// amount distributed to provider chain
 	ToProvider string `protobuf:"bytes,6,opt,name=toProvider,proto3" json:"toProvider,omitempty"`
 	// amount distributed (kept) by consumer chain
 	ToConsumer string `protobuf:"bytes,7,opt,name=toConsumer,proto3" json:"toConsumer,omitempty"`

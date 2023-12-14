@@ -617,7 +617,7 @@ func GetZeroState(
 	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
 
 	// Update clients to the latest header. Now everything is ready to go!
-	// Ignore errors for brevity. Everything is checked in Assuptions test.
+	// Ignore errors for brevity. Everything is checked in Assumptions test.
 	_ = simibc.UpdateReceiverClient(b.consumerEndpoint(), b.providerEndpoint(), lastConsumerHeader)
 	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
 

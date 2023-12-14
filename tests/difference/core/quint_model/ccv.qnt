@@ -42,7 +42,7 @@ module ccv_types {
         // e.g. there may be more modifications in the current block.
         currentValidatorSet: ValidatorSet,
 
-        // the latest timestamp that was comitted on chain
+        // the latest timestamp that was committed on chain
         lastTimestamp: Time,
     }
 
