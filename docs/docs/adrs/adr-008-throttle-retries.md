@@ -32,7 +32,7 @@ Throttled `SlashPackets` are persisted on the provider, leading to multiple poss
   Right after being jailed, validators would have to unjail themselves promptly to ensure safety. 
   The coordination required to maintain safety in such a scenario is not ideal.
 
-As as solution, we can improve the throttling mechanism to instead queue/persist relevant data on each consumer, and have consumers retry slash requests as needed.
+As a solution, we can improve the throttling mechanism to instead queue/persist relevant data on each consumer, and have consumers retry slash requests as needed.
 
 ## Decision
 
