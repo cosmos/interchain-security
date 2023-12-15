@@ -181,7 +181,9 @@ jobs:
             **/Makefile
             Makefile
       - name: e2e tests
-        run: make test-e2e-short
+        if: env.GIT_DIFF
+        run: |
+          make test-e2e-short
   
   test-cometmock:
     runs-on: ubuntu-latest
@@ -209,7 +211,9 @@ jobs:
             **/Makefile
             Makefile
       - name: cometmock tests
-        run: make test-e2e-short-cometmock
+        if: env.GIT_DIFF
+        run: |
+          make test-e2e-short-cometmock
   
   test-trace:
     runs-on: ubuntu-latest
@@ -237,4 +241,6 @@ jobs:
             **/Makefile
             Makefile
       - name: trace-e2e tests
-        run: make test-trace
+        if: env.GIT_DIFF
+        run: |
+          run: make test-trace
