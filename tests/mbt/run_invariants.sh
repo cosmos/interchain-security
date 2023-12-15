@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/bash
 
 quint test ccv_model.qnt
 quint test ccv_test.qnt
