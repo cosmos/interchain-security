@@ -98,16 +98,15 @@ The following table indicates the compatibility of currently active releases:
 
 | Consumer | Provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` | `v3.2.0` | `v3.3.0` | `v4.0.0` |
 |----------|----------|----------|-----------------------|--------------|----------|----------|----------|----------|
-| `v2.0.0` || ✅ | ✅ | ✅ | ✅ (2) | ✅ (2) | ✅ (2),(3) | ❌ |
-| `v3.1.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (3) | ❌ |
-| `v3.2.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (3) | ✅ |
-| `v3.3.0` || ✅ (3)| ✅ (3)| ✅ (3)| ✅ (3) | ✅ (3) | ✅ | ✅ |
-| `v4.0.0` || ✅ (3) | ✅ (3) | ✅ (3) | ✅ (3) | ✅ (3)| ✅ (3)| ✅ |
+| `v2.0.0` || ✅ | ✅ | ✅ | ✅ (1) | ✅ (1) | ✅ (1),(2) | ❌ |
+| `v3.1.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (2) | ❌ |
+| `v3.2.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (2) | ✅ |
+| `v3.3.0` || ✅ (2)| ✅ (2)| ✅ (2)| ✅ (2) | ✅ (2) | ✅ | ✅ |
+| `v4.0.0` || ✅ (2) | ✅ (2) | ✅ (2) | ✅ (2) | ✅ (2)| ✅ (2)| ✅ |
 
 #### Notes
 
 The following adjustments must be made to the CCV consumer genesis state that is obtained from the provider chain after the spawn time is reached in order for the consumer chain to start without errors.
 
-- (1) Remove “preCCV” key
-- (2) Remove “prehash_key_before_comparison” keys
-- (3) Use `interchain-security-cd genesis transform` to transform the consumer genesis file obtained from the provider.
+- (1) Remove “prehash_key_before_comparison” keys
+- (2) Use `interchain-security-cd genesis transform` to transform the consumer genesis file obtained from the provider.
