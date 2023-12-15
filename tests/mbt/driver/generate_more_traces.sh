@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Generating bounded drift traces with timeouts"
 go run ./... -modelPath=../model/ccv_boundeddrift.qnt -step stepBoundedDrift  -invariant CanTimeoutConsumer -traceFolder traces/bound_timeout -numTraces 20 -numSteps 200 -numSamples 200
 echo "Generating long bounded drift traces without invariants"
