@@ -85,9 +85,9 @@ func GetSendingTimeForPacket(packetExpr itf.MapExprType) int64 {
 func VscSendTimestamps(curStateExpr itf.MapExprType, consumer string) []int64 {
 	sentVscPackets := ProviderState(curStateExpr)["sentVscPacketsToConsumer"].Value.(itf.MapExprType)[consumer].Value.(itf.ListExprType)
 
-	res := make([]int64, 0)
-	for _, packetExpr := range sentVscPackets {
-		res = append(res, GetSendingTimeForPacket(packetExpr.Value.(itf.MapExprType)))
+	res := make([]int64, len(sentVscPackets))
+	for i, packetExpr := range sentVscPackets {
+		res[i] = GetSendingTimeForPacket(packetExpr.Value.(itf.MapExprType))
 	}
 	return res
 }

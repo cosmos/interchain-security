@@ -123,8 +123,7 @@ func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 	return v.Power, nil
 }
 
-// consumerTokens returns the number of tokens that the validator with
-// id (ix) i has delegated to it in total on the provider chain
+// providerPower returns the power(=number of bonded tokens) of the i-th validator on the provider.
 func (s *Driver) providerPower(i int64) (int64, error) {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(PROVIDER), s.validator(i))
 	if !found {
@@ -181,9 +180,8 @@ func (s *Driver) packetQueue(sender, receiver ChainId) []simibc.Packet {
 	res, ok := outboxPackets[string(sender)]
 	if !ok {
 		return []simibc.Packet{}
-	} else {
-		return res
 	}
+	return res
 }
 
 func (s *Driver) getStateString() string {
@@ -345,7 +343,6 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 }
 
 func (s *Driver) runningConsumers() []providertypes.Chain {
-	// consumers that are still consumers on the provider
 	consumersOnProvider := s.providerKeeper().GetAllConsumerChains(s.providerCtx())
 
 	consumersWithIntactChannel := make([]providertypes.Chain, 0)
