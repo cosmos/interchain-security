@@ -41,7 +41,7 @@ func MakeRelayedPath(t *testing.T, path *ibctesting.Path) *RelayedPath {
 	}
 }
 
-// PacketBelongs returns true if the packet belongs to this relayed path.
+// PacketSentByChain returns true if the packet belongs to this relayed path.
 func (f *RelayedPath) PacketSentByChain(packet channeltypes.Packet, chainID string) bool {
 	if chainID == f.Path.EndpointA.Chain.ChainID {
 		return f.PacketSentByA(packet)
