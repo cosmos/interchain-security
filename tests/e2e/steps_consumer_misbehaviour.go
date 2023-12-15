@@ -154,7 +154,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			State: State{},
 		},
 		// delegate some token and relay the resulting VSC packets
-		// in oder to initiates the CCV channel
+		// in order to initiates the CCV channel
 		{
 			Action: DelegateTokensAction{
 				Chain:  ChainID("provi"),

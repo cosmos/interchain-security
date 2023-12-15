@@ -82,7 +82,7 @@ func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.Val
 	panic("unimplemented on CCV keeper")
 }
 
-// IsJailed returns the outstanding slashing flag for the given validator adddress
+// IsJailed returns the outstanding slashing flag for the given validator address
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
 	// if the changeover is not complete for prev standalone chain,
 	// return the standalone staking keeper's jailed status

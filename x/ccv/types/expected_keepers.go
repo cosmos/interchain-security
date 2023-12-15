@@ -133,7 +133,7 @@ type IBCTransferKeeper interface {
 	Transfer(context.Context, *transfertypes.MsgTransfer) (*transfertypes.MsgTransferResponse, error)
 }
 
-// IBCKeeper defines the expected interface needed for openning a
+// IBCKeeper defines the expected interface needed for opening a
 // channel
 type IBCCoreKeeper interface {
 	ChannelOpenInit(

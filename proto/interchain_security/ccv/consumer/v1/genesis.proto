@@ -70,7 +70,7 @@ message OutstandingDowntime { string validator_consensus_address = 1; }
 
 // LastTransmissionBlockHeight is the last time validator holding
 // pools were transmitted to the provider chain. This type is used internally
-// to the consumer CCV modul.
+// to the consumer CCV module.
 message LastTransmissionBlockHeight { int64 height = 1; }
 
 // MaturingVSCPacket represents a vsc packet that is maturing internal to the

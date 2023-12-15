@@ -44,7 +44,7 @@ message NextFeeDistributionEstimate {
   string distribution_fraction = 4;
   // total accruead fees at the time of querying
   string total = 5;
-  // amount distibuted to provider chain
+  // amount distributed to provider chain
   string toProvider = 6;
   // amount distributed (kept) by consumer chain
   string toConsumer = 7;

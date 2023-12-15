@@ -540,7 +540,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 			// If a key assignment replacement is not found, we check if the validator's key is assigned.
 			// If it is, we replace the update containing the provider key with an update containing
 			// the consumer key.
-			// Note that this will always be the brach taken when creating the genesis state
+			// Note that this will always be the branch taken when creating the genesis state
 			// of a newly registered consumer chain.
 			consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if found {

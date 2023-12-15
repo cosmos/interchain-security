@@ -1919,7 +1919,7 @@ func (tr TestConfig) assignConsumerPubKey(action AssignConsumerPubKeyAction, ver
 		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 
-	if action.ExpectError && !tr.useCometmock { // error report ony works with --gas auto, which does not work with CometMock, so ignore
+	if action.ExpectError && !tr.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if err == nil || !strings.Contains(string(bz), action.ExpectedError) {
 			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.ExpectedError, (bz))
 		}

@@ -52,7 +52,7 @@ var (
 	selectedTests TestSet
 
 	// map the test config names to their structs to allow for easy selection of test configs,
-	// and also to programatically set parameters, i.e. see DemocracyTestConfig
+	// and also to programmatically set parameters, i.e. see DemocracyTestConfig
 	testConfigs = map[string]TestConfig{
 		"default":               DefaultTestConfig(),
 		"changeover":            ChangeoverTestConfig(),

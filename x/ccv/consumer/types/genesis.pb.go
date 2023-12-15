@@ -301,7 +301,7 @@ func (m *OutstandingDowntime) GetValidatorConsensusAddress() string {
 
 // LastTransmissionBlockHeight is the last time validator holding
 // pools were transmitted to the provider chain. This type is used internally
-// to the consumer CCV modul.
+// to the consumer CCV module.
 type LastTransmissionBlockHeight struct {
 	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }
