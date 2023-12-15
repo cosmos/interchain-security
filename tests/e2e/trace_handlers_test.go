@@ -14,13 +14,13 @@ import (
 
 // an isolated test case for a proposal submission
 var proposalSubmissionSteps = []Step{
-	{submitTextProposalAction{Title: "Proposal 1", Description: "Description 1"}, State{}},
+	{SubmitTextProposalAction{Title: "Proposal 1", Description: "Description 1"}, State{}},
 }
 
 // an isolated test case for a state check involving a proposal
 var proposalInStateSteps = []Step{
 	{
-		Action: submitConsumerRemovalProposalAction{},
+		Action: SubmitConsumerRemovalProposalAction{},
 		State: State{
 			ChainID("provi"): ChainState{
 				Proposals: &map[uint]Proposal{

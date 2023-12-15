@@ -12,7 +12,7 @@ The relevant protocol specifications are available below:
 
 ## Overview
 
-Standalone to consumer changeover procedure can rougly be separated into 4 parts:
+Standalone to consumer changeover procedure can roughly be separated into 4 parts:
 
 ### 1. ConsumerAddition proposal submitted to the `provider` chain
 The proposal is equivalent to the "normal" ConsumerAddition proposal submitted by new consumer chains.

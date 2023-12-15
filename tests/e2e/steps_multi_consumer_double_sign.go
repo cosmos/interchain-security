@@ -13,7 +13,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
 			// provider double sign
-			Action: doublesignSlashAction{
+			Action: DoublesignSlashAction{
 				Chain:     ChainID("provi"),
 				Validator: ValidatorID("carol"),
 			},
@@ -44,7 +44,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay power change to consumer1
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -76,7 +76,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay power change to consumer2
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",
@@ -109,7 +109,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// consumer double sign
 			// nothing should happen - double sign from consumer is dropped
-			Action: doublesignSlashAction{
+			Action: DoublesignSlashAction{
 				Chain:     ChainID("consu"),
 				Validator: ValidatorID("bob"),
 			},
@@ -138,7 +138,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -170,7 +170,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			// consumer1 learns about the double sign
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -202,7 +202,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			// consumer2 learns about the double sign
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",

@@ -8,16 +8,16 @@ import (
 	"time"
 )
 
-// forkConsumerChainAction forks the consumer chain by cloning of a validator node
+// ForkConsumerChainAction forks the consumer chain by cloning of a validator node
 // Note that the chain fork is running in an different network
-type forkConsumerChainAction struct {
+type ForkConsumerChainAction struct {
 	ConsumerChain ChainID
 	ProviderChain ChainID
 	Validator     ValidatorID
 	RelayerConfig string
 }
 
-func (tc TestConfig) forkConsumerChain(action forkConsumerChainAction, verbose bool) {
+func (tc TestConfig) forkConsumerChain(action ForkConsumerChainAction, verbose bool) {
 	valCfg := tc.validatorConfigs[action.Validator]
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -62,7 +62,7 @@ func (tc TestConfig) forkConsumerChain(action forkConsumerChainAction, verbose b
 	time.Sleep(5 * time.Second)
 }
 
-type updateLightClientAction struct {
+type UpdateLightClientAction struct {
 	Chain         ChainID
 	HostChain     ChainID
 	RelayerConfig string
@@ -70,7 +70,7 @@ type updateLightClientAction struct {
 }
 
 func (tc TestConfig) updateLightClient(
-	action updateLightClientAction,
+	action UpdateLightClientAction,
 	verbose bool,
 ) {
 	// retrieve a trusted height of the consumer light client
@@ -86,7 +86,7 @@ func (tc TestConfig) updateLightClient(
 		"--trusted-height", strconv.Itoa(int(trustedHeight.RevisionHeight)),
 	)
 	if verbose {
-		log.Println("updateLightClientAction cmd:", cmd.String())
+		log.Println("UpdateLightClientAction cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()

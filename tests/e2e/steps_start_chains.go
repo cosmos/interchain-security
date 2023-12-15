@@ -31,7 +31,7 @@ func stepStartProviderChain() []Step {
 func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint, setupTransferChans bool) []Step {
 	s := []Step{
 		{
-			Action: submitConsumerAdditionProposalAction{
+			Action: SubmitConsumerAdditionProposalAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				Deposit:       10000001,
@@ -61,7 +61,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		// add a consumer key before the chain starts
 		// the key will be present in consumer genesis initial_val_set
 		{
-			Action: assignConsumerPubKeyAction{
+			Action: AssignConsumerPubKeyAction{
 				Chain:          ChainID(consumerName),
 				Validator:      ValidatorID("carol"),
 				ConsumerPubkey: `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
@@ -83,7 +83,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		},
 		{
 			// op should fail - key already assigned by the same validator
-			Action: assignConsumerPubKeyAction{
+			Action: AssignConsumerPubKeyAction{
 				Chain:           ChainID(consumerName),
 				Validator:       ValidatorID("carol"),
 				ConsumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
@@ -95,7 +95,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		},
 		{
 			// op should fail - key already assigned by another validator
-			Action: assignConsumerPubKeyAction{
+			Action: AssignConsumerPubKeyAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 				// same pub key as carol
@@ -117,7 +117,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		{
-			Action: voteGovProposalAction{
+			Action: VoteGovProposalAction{
 				Chain:      ChainID("provi"),
 				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
 				Vote:       []string{"yes", "yes", "yes"},
@@ -142,7 +142,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		{
-			Action: startConsumerChainAction{
+			Action: StartConsumerChainAction{
 				ConsumerChain: ChainID(consumerName),
 				ProviderChain: ChainID("provi"),
 				Validators: []StartChainValidator{
@@ -176,7 +176,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		{
-			Action: addIbcConnectionAction{
+			Action: AddIbcConnectionAction{
 				ChainA:  ChainID(consumerName),
 				ChainB:  ChainID("provi"),
 				ClientA: 0,
@@ -185,7 +185,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			State: State{},
 		},
 		{
-			Action: addIbcChannelAction{
+			Action: AddIbcChannelAction{
 				ChainA:      ChainID(consumerName),
 				ChainB:      ChainID("provi"),
 				ConnectionA: 0,
@@ -200,7 +200,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 	// currently only used in democracy tests
 	if setupTransferChans {
 		s = append(s, Step{
-			Action: transferChannelCompleteAction{
+			Action: TransferChannelCompleteAction{
 				ChainA:      ChainID(consumerName),
 				ChainB:      ChainID("provi"),
 				ConnectionA: 0,
@@ -230,7 +230,7 @@ func stepsStartChains(consumerNames []string, setupTransferChans bool) []Step {
 func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step {
 	return []Step{
 		{
-			Action: assignConsumerPubKeyAction{
+			Action: AssignConsumerPubKeyAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 				// reconfigure the node -> validator was using provider key
@@ -268,7 +268,7 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",

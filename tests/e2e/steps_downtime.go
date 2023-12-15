@@ -15,7 +15,7 @@ import "time"
 func stepsDowntime(consumerName string) []Step {
 	return []Step{
 		{
-			Action: downtimeSlashAction{
+			Action: DowntimeSlashAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 			},
@@ -38,7 +38,7 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -66,7 +66,7 @@ func stepsDowntime(consumerName string) []Step {
 		// A block is incremented each action, hence why VSC is committed on provider,
 		// and can now be relayed as packet to consumer
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -84,7 +84,7 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			Action: unjailValidatorAction{
+			Action: UnjailValidatorAction{
 				Provider:  ChainID("provi"),
 				Validator: ValidatorID("bob"),
 			},
@@ -108,7 +108,7 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -128,7 +128,7 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		// Now we test provider initiated downtime/slashing
 		{
-			Action: downtimeSlashAction{
+			Action: DowntimeSlashAction{
 				Chain:     ChainID("provi"),
 				Validator: ValidatorID("carol"),
 			},
@@ -153,7 +153,7 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -170,7 +170,7 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			Action: unjailValidatorAction{
+			Action: UnjailValidatorAction{
 				Provider:  ChainID("provi"),
 				Validator: ValidatorID("carol"),
 			},
@@ -192,7 +192,7 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -218,7 +218,7 @@ func stepsDowntime(consumerName string) []Step {
 func stepsDowntimeWithOptOut(consumerName string) []Step {
 	return []Step{
 		{
-			Action: downtimeSlashAction{
+			Action: DowntimeSlashAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("alice"),
 			},
@@ -241,7 +241,7 @@ func stepsDowntimeWithOptOut(consumerName string) []Step {
 			},
 		},
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -274,7 +274,7 @@ func stepsDowntimeWithOptOut(consumerName string) []Step {
 func stepsThrottledDowntime(consumerName string) []Step {
 	return []Step{
 		{
-			Action: downtimeSlashAction{
+			Action: DowntimeSlashAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 			},
@@ -301,7 +301,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		// and consumer receives ack that provider recv the downtime slash.
 		// The latter is necessary for the consumer to send the second downtime slash.
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -328,7 +328,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		},
 		// Invoke carol downtime slash on consumer
 		{
-			Action: downtimeSlashAction{
+			Action: DowntimeSlashAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("carol"),
 			},
@@ -352,7 +352,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		},
 		// Relay slash packet to provider, and ack back to consumer
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -377,7 +377,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			Action: slashMeterReplenishmentAction{
+			Action: SlashMeterReplenishmentAction{
 				TargetValue: 0, // We just want slash meter to be non-negative
 
 				// Slash meter replenish fraction is set to 10%, replenish period is 20 seconds, see config.go
@@ -408,7 +408,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		// Retry delay period is set to 30 seconds, see config.go,
 		// wait this amount of time to elapse the period.
 		{
-			Action: waitTimeAction{
+			Action: WaitTimeAction{
 				WaitTime: 30 * time.Second,
 			},
 			State: State{
@@ -426,7 +426,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		},
 		// Relay now that retry delay period has passed, confirm provider applies jailing
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",

@@ -334,75 +334,75 @@ func (tr *TestConfig) runStep(step Step, verbose bool) {
 		tr.startSovereignChain(action, verbose)
 	case LegacyUpgradeProposalAction:
 		tr.submitLegacyUpgradeProposal(action, verbose)
-	case waitUntilBlockAction:
+	case WaitUntilBlockAction:
 		tr.waitUntilBlockOnChain(action)
 	case ChangeoverChainAction:
 		tr.changeoverChain(action, verbose)
 	case SendTokensAction:
 		tr.sendTokens(action, verbose)
-	case submitTextProposalAction:
+	case SubmitTextProposalAction:
 		tr.submitTextProposal(action, verbose)
-	case submitConsumerAdditionProposalAction:
+	case SubmitConsumerAdditionProposalAction:
 		tr.submitConsumerAdditionProposal(action, verbose)
-	case submitConsumerRemovalProposalAction:
+	case SubmitConsumerRemovalProposalAction:
 		tr.submitConsumerRemovalProposal(action, verbose)
-	case submitParamChangeLegacyProposalAction:
+	case SubmitParamChangeLegacyProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
-	case voteGovProposalAction:
+	case VoteGovProposalAction:
 		tr.voteGovProposal(action, verbose)
-	case startConsumerChainAction:
+	case StartConsumerChainAction:
 		tr.startConsumerChain(action, verbose)
-	case addChainToRelayerAction:
+	case AddChainToRelayerAction:
 		tr.addChainToRelayer(action, verbose)
-	case createIbcClientsAction:
+	case CreateIbcClientsAction:
 		tr.createIbcClientsHermes(action, verbose)
-	case addIbcConnectionAction:
+	case AddIbcConnectionAction:
 		tr.addIbcConnection(action, verbose)
-	case addIbcChannelAction:
+	case AddIbcChannelAction:
 		tr.addIbcChannel(action, verbose)
-	case transferChannelCompleteAction:
+	case TransferChannelCompleteAction:
 		tr.transferChannelComplete(action, verbose)
-	case relayPacketsAction:
+	case RelayPacketsAction:
 		tr.relayPackets(action, verbose)
-	case relayRewardPacketsToProviderAction:
+	case RelayRewardPacketsToProviderAction:
 		tr.relayRewardPacketsToProvider(action, verbose)
-	case delegateTokensAction:
+	case DelegateTokensAction:
 		tr.delegateTokens(action, verbose)
-	case unbondTokensAction:
+	case UnbondTokensAction:
 		tr.unbondTokens(action, verbose)
-	case cancelUnbondTokensAction:
+	case CancelUnbondTokensAction:
 		tr.cancelUnbondTokens(action, verbose)
-	case redelegateTokensAction:
+	case RedelegateTokensAction:
 		tr.redelegateTokens(action, verbose)
-	case downtimeSlashAction:
+	case DowntimeSlashAction:
 		tr.invokeDowntimeSlash(action, verbose)
-	case unjailValidatorAction:
+	case UnjailValidatorAction:
 		tr.unjailValidator(action, verbose)
-	case doublesignSlashAction:
+	case DoublesignSlashAction:
 		tr.invokeDoublesignSlash(action, verbose)
-	case lightClientAmnesiaAttackAction:
+	case LightClientAmnesiaAttackAction:
 		tr.lightClientAmnesiaAttack(action, verbose)
-	case lightClientEquivocationAttackAction:
+	case LightClientEquivocationAttackAction:
 		tr.lightClientEquivocationAttack(action, verbose)
-	case lightClientLunaticAttackAction:
+	case LightClientLunaticAttackAction:
 		tr.lightClientLunaticAttack(action, verbose)
-	case registerRepresentativeAction:
+	case RegisterRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
-	case assignConsumerPubKeyAction:
+	case AssignConsumerPubKeyAction:
 		tr.assignConsumerPubKey(action, verbose)
-	case slashMeterReplenishmentAction:
+	case SlashMeterReplenishmentAction:
 		tr.waitForSlashMeterReplenishment(action, verbose)
-	case waitTimeAction:
+	case WaitTimeAction:
 		tr.waitForTime(action, verbose)
-	case startRelayerAction:
+	case StartRelayerAction:
 		tr.startRelayer(action, verbose)
-	case forkConsumerChainAction:
+	case ForkConsumerChainAction:
 		tr.forkConsumerChain(action, verbose)
-	case updateLightClientAction:
+	case UpdateLightClientAction:
 		tr.updateLightClient(action, verbose)
-	case startConsumerEvidenceDetectorAction:
+	case StartConsumerEvidenceDetectorAction:
 		tr.startConsumerEvidenceDetector(action, verbose)
-	case submitChangeRewardDenomsProposalAction:
+	case SubmitChangeRewardDenomsProposalAction:
 		tr.submitChangeRewardDenomsProposal(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)

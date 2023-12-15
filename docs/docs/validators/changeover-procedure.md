@@ -6,7 +6,7 @@ sidebar_position: 4
 
 More details available in [Changeover Procedure documentation](../consumer-development/changeover-procedure.md).
 
-A major difference betwen launching a new consumer chain vs. onboarding a standalone chain to ICS is that there is no consumer genesis available for the standalone chain. Since a standalone chain already exists, its state must be preserved once it transitions to being a consumer chain.
+A major difference between launching a new consumer chain vs. onboarding a standalone chain to ICS is that there is no consumer genesis available for the standalone chain. Since a standalone chain already exists, its state must be preserved once it transitions to being a consumer chain.
 
 ## Timeline
 

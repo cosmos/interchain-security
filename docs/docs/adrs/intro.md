@@ -34,7 +34,7 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 
 - [ADR 001: Key Assignment](./adr-001-key-assignment.md)
 - [ADR 002: Jail Throttling](./adr-002-throttle.md)
-- [ADR 004: Denom DOS fixes](./adr-004-denom-dos-fixes)
+- [ADR 004: Denom DOS fixes](./adr-004-denom-dos-fixes.md)
 - [ADR 005: Cryptographic verification of equivocation evidence](./adr-005-cryptographic-equivocation-verification.md)
 - [ADR 008: Throttle with retries](./adr-008-throttle-retries.md)
 - [ADR 009: Soft Opt-Out](./adr-009-soft-opt-out.md)

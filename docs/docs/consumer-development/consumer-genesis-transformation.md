@@ -4,7 +4,7 @@ sidebar_position: 6
 
 # Consumer Genesis Transformation
 
-Preparing a consumer chain for onboarding requires some information explaining how to run your chain. This includes a genesis file with CCV data where the CCV data is exported from the provider chain and added to the consumers genesis file (for more details check the documentaion on [Onboarding](./onboarding.md) and [Changeover](./changeover-procedure.md)).
+Preparing a consumer chain for onboarding requires some information explaining how to run your chain. This includes a genesis file with CCV data where the CCV data is exported from the provider chain and added to the consumers genesis file (for more details check the documentation on [Onboarding](./onboarding.md) and [Changeover](./changeover-procedure.md)).
 In case that the provider chain is running an older version of the InterChainSecurity (ICS) module than the consumer chain the exported CCV data might need to be transformed to the format supported by the ICS implementation run on the consumer chain. This is the case if the cosumer chain runs version 4 of ICS or later and the provider is running version 3 or older of the ICS module.
 
 To transform such CCV data follow the instructions below
