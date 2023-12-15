@@ -15,7 +15,7 @@ To generate traces, run
 
 This will generate several "families" of traces in the `traces` folder.
 
-Here is what one of the lines from `./generate traces` looks like:
+Here is what one of the lines from `./generate_traces.sh` looks like:
 ```
 go run ./... -modelPath=../model/ccv_boundeddrift.qnt -step stepBoundedDrift  -invariant CanTimeoutConsumer -traceFolder traces/bound_timeout -numTraces 10 -numSteps 200 -numSamples 200
 ```
