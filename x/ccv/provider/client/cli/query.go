@@ -351,7 +351,7 @@ $ %s query provider registered-consumer-reward-denoms
 
 func CmdAllPairsValConAddrByConsumerChainID() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "All-pairs-valconsensus-address",
+		Use:   "all-pairs-valconsensus-address",
 		Short: "Query all pairs of valconsensus address by consumer chainId.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

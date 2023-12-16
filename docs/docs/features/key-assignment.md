@@ -65,6 +65,14 @@ gaiad query provider validator-provider-key <consumer-chain-id> consumervalcons1
 
 You must use a `valcons` address. You can obtain it by querying your node on the consumer `consumerd tendermint show-address`
 
+OR
+
+```bash
+gaiad query provider vall-pairs-valconsensus-address <consumer-chain-id>
+```
+
+You just need to use the `chainId` of consumer to query all pairs valconsensus address with `consumer-pub-key` for each of pair
+
 ## Changing a key
 
 To change your key, simply repeat all of the steps listed above. Take note that your old key will be remembered for at least the unbonding period of the consumer chain so any slashes can be correctly applied
