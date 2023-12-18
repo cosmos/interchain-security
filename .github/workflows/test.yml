@@ -131,7 +131,7 @@ jobs:
         with:
           name: mbt-traces
           path: tests/mbt/driver/traces
-          retention-days: 2
+          retention-days: 6 # to not clog our cloud storage too much, we retain only for a few days
 
   repo-analysis:
     runs-on: ubuntu-latest
