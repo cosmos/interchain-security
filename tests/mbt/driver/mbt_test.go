@@ -24,6 +24,8 @@ import (
 
 const verbose = false
 
+const TIMEDOUT_STATUS = "timedout"
+
 // keep some interesting statistics
 var stats = Stats{}
 
@@ -299,7 +301,7 @@ func RunItfTrace(t *testing.T, path string) {
 			// delivering the packet should give an error
 			// if the consumer is timed out in the model
 			var expectError bool
-			if ConsumerStatus(currentModelState, consumerChain) == "timedout" {
+			if ConsumerStatus(currentModelState, consumerChain) == TIMEDOUT_STATUS {
 				expectError = true
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
 
@@ -314,7 +316,7 @@ func RunItfTrace(t *testing.T, path string) {
 			t.Log("DeliverVscMaturedPacket", consumerChain)
 
 			var expectError bool
-			if ConsumerStatus(currentModelState, consumerChain) == "timedout" {
+			if ConsumerStatus(currentModelState, consumerChain) == TIMEDOUT_STATUS {
 				expectError = true
 				// expectError is true, because we expect the consumer to have timed out.
 				// the call will fail if there is no error
