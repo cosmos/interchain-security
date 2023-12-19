@@ -68,7 +68,7 @@ You must use a `valcons` address. You can obtain it by querying your node on the
 OR
 
 ```bash
-gaiad query provider vall-pairs-valconsensus-address <consumer-chain-id>
+gaiad query provider all-pairs-valconsensus-address <consumer-chain-id>
 ```
 
 You just need to use the `chainId` of consumer to query all pairs valconsensus address with `consumer-pub-key` for each of pair
