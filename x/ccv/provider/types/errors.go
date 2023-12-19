@@ -27,4 +27,5 @@ var (
 	ErrNoUnbondingTime                  = errorsmod.Register(ModuleName, 19, "provider unbonding time not found")
 	ErrInvalidAddress                   = errorsmod.Register(ModuleName, 20, "invalid address")
 	ErrUnauthorized                     = errorsmod.Register(ModuleName, 21, "unauthorized")
+	ErrBlankConsumerChainID             = errorsmod.Register(ModuleName, 22, "consumer chain id must not be blank")
 )

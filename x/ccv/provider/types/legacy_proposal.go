@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	time "time"
@@ -10,6 +11,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
+	evidencetypes "cosmossdk.io/x/evidence/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
@@ -19,6 +21,7 @@ import (
 const (
 	ProposalTypeConsumerAddition   = "ConsumerAddition"
 	ProposalTypeConsumerRemoval    = "ConsumerRemoval"
+	ProposalTypeEquivocation       = "Equivocation"
 	ProposalTypeChangeRewardDenoms = "ChangeRewardDenoms"
 )
 
