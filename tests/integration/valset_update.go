@@ -71,9 +71,8 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 
 	// send first packet
 	packet := suite.newPacketFromProvider(pd.GetBytes(), 1, suite.path, clienttypes.NewHeight(1, 0), 0)
-	ack := consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
+	err = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	suite.Require().Nil(err, "OnRecvVSCPacket did return non-nil error")
 
 	// increase time
 	incrementTime(suite, time.Hour)
@@ -83,9 +82,8 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	pd.ValsetUpdateId = 2
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 2
-	ack = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
+	err = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	suite.Require().Nil(err, "OnRecvVSCPacket did return non-nil error")
 
 	// increase time
 	incrementTime(suite, 24*time.Hour)
@@ -95,9 +93,8 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	pd.ValsetUpdateId = 3
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 3
-	ack = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
+	err = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	suite.Require().Nil(err, "OnRecvVSCPacket did return non-nil error")
 
 	packetMaturities := consumerKeeper.GetAllPacketMaturityTimes(suite.consumerChain.GetContext())
 

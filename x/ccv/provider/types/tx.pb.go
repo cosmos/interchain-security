@@ -6,6 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
+	types "github.com/cometbft/cometbft/proto/tendermint/types"
 	_ "github.com/cosmos/cosmos-proto"
 	_ "github.com/cosmos/cosmos-sdk/codec/types"
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
@@ -16,6 +17,7 @@ import (
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	types "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -281,6 +283,107 @@ func (m *MsgConsumerAddition) XXX_Unmarshal(b []byte) error {
 func (m *MsgConsumerAddition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_MsgConsumerAddition.Marshal(b, m, deterministic)
+// MsgSubmitConsumerMisbehaviour defines a message that reports a light client attack,
+// also known as a misbehaviour, observed on a consumer chain
+type MsgSubmitConsumerMisbehaviour struct {
+	Submitter string `protobuf:"bytes,1,opt,name=submitter,proto3" json:"submitter,omitempty"`
+	// The Misbehaviour of the consumer chain wrapping
+	// two conflicting IBC headers
+	Misbehaviour *_07_tendermint.Misbehaviour `protobuf:"bytes,2,opt,name=misbehaviour,proto3" json:"misbehaviour,omitempty"`
+}
+
+func (m *MsgSubmitConsumerMisbehaviour) Reset()         { *m = MsgSubmitConsumerMisbehaviour{} }
+func (m *MsgSubmitConsumerMisbehaviour) String() string { return proto.CompactTextString(m) }
+func (*MsgSubmitConsumerMisbehaviour) ProtoMessage()    {}
+func (*MsgSubmitConsumerMisbehaviour) Descriptor() ([]byte, []int) {
+	return fileDescriptor_43221a4391e9fbf4, []int{2}
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSubmitConsumerMisbehaviour.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSubmitConsumerMisbehaviour.Merge(m, src)
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSubmitConsumerMisbehaviour.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSubmitConsumerMisbehaviour proto.InternalMessageInfo
+
+type MsgSubmitConsumerMisbehaviourResponse struct {
+}
+
+func (m *MsgSubmitConsumerMisbehaviourResponse) Reset()         { *m = MsgSubmitConsumerMisbehaviourResponse{} }
+func (m *MsgSubmitConsumerMisbehaviourResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSubmitConsumerMisbehaviourResponse) ProtoMessage()    {}
+func (*MsgSubmitConsumerMisbehaviourResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_43221a4391e9fbf4, []int{3}
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSubmitConsumerMisbehaviourResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSubmitConsumerMisbehaviourResponse.Merge(m, src)
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSubmitConsumerMisbehaviourResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSubmitConsumerMisbehaviourResponse proto.InternalMessageInfo
+
+// MsgSubmitConsumerDoubleVoting defines a message that reports
+// a double signing infraction observed on a consumer chain
+type MsgSubmitConsumerDoubleVoting struct {
+	Submitter string `protobuf:"bytes,1,opt,name=submitter,proto3" json:"submitter,omitempty"`
+	// The equivocation of the consumer chain wrapping
+	// an evidence of a validator that signed two conflicting votes
+	DuplicateVoteEvidence *types.DuplicateVoteEvidence `protobuf:"bytes,2,opt,name=duplicate_vote_evidence,json=duplicateVoteEvidence,proto3" json:"duplicate_vote_evidence,omitempty"`
+	// The light client header of the infraction block
+	InfractionBlockHeader *_07_tendermint.Header `protobuf:"bytes,3,opt,name=infraction_block_header,json=infractionBlockHeader,proto3" json:"infraction_block_header,omitempty"`
+}
+
+func (m *MsgSubmitConsumerDoubleVoting) Reset()         { *m = MsgSubmitConsumerDoubleVoting{} }
+func (m *MsgSubmitConsumerDoubleVoting) String() string { return proto.CompactTextString(m) }
+func (*MsgSubmitConsumerDoubleVoting) ProtoMessage()    {}
+func (*MsgSubmitConsumerDoubleVoting) Descriptor() ([]byte, []int) {
+	return fileDescriptor_43221a4391e9fbf4, []int{4}
+}
+func (m *MsgSubmitConsumerDoubleVoting) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSubmitConsumerDoubleVoting) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSubmitConsumerDoubleVoting.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -409,6 +512,33 @@ func (m *MsgConsumerAdditionResponse) XXX_Unmarshal(b []byte) error {
 func (m *MsgConsumerAdditionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_MsgConsumerAdditionResponse.Marshal(b, m, deterministic)
+func (m *MsgSubmitConsumerDoubleVoting) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSubmitConsumerDoubleVoting.Merge(m, src)
+}
+func (m *MsgSubmitConsumerDoubleVoting) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSubmitConsumerDoubleVoting) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSubmitConsumerDoubleVoting.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSubmitConsumerDoubleVoting proto.InternalMessageInfo
+
+type MsgSubmitConsumerDoubleVotingResponse struct {
+}
+
+func (m *MsgSubmitConsumerDoubleVotingResponse) Reset()         { *m = MsgSubmitConsumerDoubleVotingResponse{} }
+func (m *MsgSubmitConsumerDoubleVotingResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSubmitConsumerDoubleVotingResponse) ProtoMessage()    {}
+func (*MsgSubmitConsumerDoubleVotingResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_43221a4391e9fbf4, []int{5}
+}
+func (m *MsgSubmitConsumerDoubleVotingResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSubmitConsumerDoubleVotingResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSubmitConsumerDoubleVotingResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -640,6 +770,17 @@ func (m *MsgChangeRewardDenomsResponse) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_MsgChangeRewardDenomsResponse proto.InternalMessageInfo
+func (m *MsgSubmitConsumerDoubleVotingResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSubmitConsumerDoubleVotingResponse.Merge(m, src)
+}
+func (m *MsgSubmitConsumerDoubleVotingResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSubmitConsumerDoubleVotingResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSubmitConsumerDoubleVotingResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSubmitConsumerDoubleVotingResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*MsgUpdateParams)(nil), "interchain_security.ccv.provider.v1.MsgUpdateParams")
@@ -652,6 +793,10 @@ func init() {
 	proto.RegisterType((*MsgConsumerRemovalResponse)(nil), "interchain_security.ccv.provider.v1.MsgConsumerRemovalResponse")
 	proto.RegisterType((*MsgChangeRewardDenoms)(nil), "interchain_security.ccv.provider.v1.MsgChangeRewardDenoms")
 	proto.RegisterType((*MsgChangeRewardDenomsResponse)(nil), "interchain_security.ccv.provider.v1.MsgChangeRewardDenomsResponse")
+	proto.RegisterType((*MsgSubmitConsumerMisbehaviour)(nil), "interchain_security.ccv.provider.v1.MsgSubmitConsumerMisbehaviour")
+	proto.RegisterType((*MsgSubmitConsumerMisbehaviourResponse)(nil), "interchain_security.ccv.provider.v1.MsgSubmitConsumerMisbehaviourResponse")
+	proto.RegisterType((*MsgSubmitConsumerDoubleVoting)(nil), "interchain_security.ccv.provider.v1.MsgSubmitConsumerDoubleVoting")
+	proto.RegisterType((*MsgSubmitConsumerDoubleVotingResponse)(nil), "interchain_security.ccv.provider.v1.MsgSubmitConsumerDoubleVotingResponse")
 }
 
 func init() {
@@ -728,6 +873,46 @@ var fileDescriptor_43221a4391e9fbf4 = []byte{
 	0x87, 0x44, 0x46, 0xcd, 0xba, 0x83, 0x58, 0x6c, 0xbe, 0x32, 0xdd, 0xb3, 0x7c, 0x9b, 0x9d, 0x8f,
 	0xc4, 0xd6, 0x35, 0xf7, 0x76, 0xf7, 0x97, 0xa2, 0x6c, 0x27, 0x58, 0xd4, 0x27, 0xf5, 0x54, 0xba,
 	0xf6, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x9e, 0xed, 0x28, 0x35, 0xa5, 0x0b, 0x00, 0x00,
+	// 610 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0xcf, 0x4f, 0xd4, 0x4e,
+	0x14, 0xdf, 0x42, 0xf2, 0xfd, 0xc2, 0x80, 0x26, 0x36, 0x10, 0x60, 0x83, 0x5d, 0x5d, 0xa3, 0x78,
+	0xc0, 0x99, 0x00, 0x07, 0x23, 0x89, 0x07, 0x56, 0x4c, 0xfc, 0x91, 0x4d, 0x4c, 0x4d, 0x30, 0xf1,
+	0x60, 0xd3, 0x4e, 0x1f, 0xdd, 0x09, 0xed, 0xcc, 0x66, 0x66, 0xda, 0xd0, 0xff, 0x80, 0xa3, 0x9e,
+	0x8c, 0x37, 0xfe, 0x00, 0xff, 0x10, 0x8f, 0x1c, 0x3d, 0x19, 0x03, 0x17, 0xcf, 0x5e, 0xbc, 0x9a,
+	0x9d, 0xb6, 0x6c, 0x89, 0x15, 0x08, 0xde, 0xfa, 0xde, 0xfb, 0xbc, 0xf7, 0x3e, 0x9f, 0x37, 0xaf,
+	0x0f, 0xad, 0x32, 0xae, 0x41, 0xd2, 0x81, 0xcf, 0xb8, 0xa7, 0x80, 0xa6, 0x92, 0xe9, 0x9c, 0x50,
+	0x9a, 0x91, 0xa1, 0x14, 0x19, 0x0b, 0x41, 0x92, 0x6c, 0x8d, 0xe8, 0x7d, 0x3c, 0x94, 0x42, 0x0b,
+	0xfb, 0x4e, 0x03, 0x1a, 0x53, 0x9a, 0xe1, 0x0a, 0x8d, 0xb3, 0xb5, 0xf6, 0x5c, 0x24, 0x22, 0x61,
+	0xf0, 0x64, 0xf4, 0x55, 0xa4, 0xb6, 0x97, 0xa8, 0x50, 0x89, 0x50, 0x5e, 0x11, 0x28, 0x8c, 0x2a,
+	0x14, 0x09, 0x11, 0xc5, 0x40, 0x8c, 0x15, 0xa4, 0xbb, 0xc4, 0xe7, 0x79, 0x19, 0x22, 0x2c, 0xa0,
+	0x24, 0x66, 0xd1, 0x40, 0xd3, 0x98, 0x01, 0xd7, 0x8a, 0x68, 0xe0, 0x21, 0xc8, 0x84, 0x71, 0x6d,
+	0x98, 0x9d, 0x5a, 0x65, 0x42, 0xa7, 0x16, 0xd7, 0xf9, 0x10, 0x14, 0x81, 0x11, 0x31, 0x4e, 0xa1,
+	0x00, 0x74, 0x3f, 0x5a, 0x68, 0xae, 0xaf, 0xa2, 0x2d, 0xa5, 0x58, 0xc4, 0x9f, 0x08, 0xae, 0xd2,
+	0x04, 0xe4, 0x4b, 0xc8, 0xed, 0x25, 0x34, 0x55, 0x08, 0x63, 0xe1, 0xa2, 0x75, 0xcb, 0xba, 0x3f,
+	0xed, 0xfe, 0x6f, 0xec, 0xe7, 0xa1, 0xfd, 0x10, 0x5d, 0xab, 0x04, 0x7a, 0x7e, 0x18, 0xca, 0xc5,
+	0x89, 0x51, 0xbc, 0x67, 0xff, 0xfc, 0xd6, 0xb9, 0x9e, 0xfb, 0x49, 0xbc, 0xd9, 0x1d, 0x79, 0x41,
+	0xa9, 0xae, 0x3b, 0x5b, 0x01, 0xb7, 0xc2, 0x50, 0xda, 0xb7, 0xd1, 0x2c, 0x2d, 0x5b, 0x78, 0x7b,
+	0x90, 0x2f, 0x4e, 0x9a, 0xba, 0x33, 0x74, 0xdc, 0x76, 0x73, 0xea, 0xe0, 0xb0, 0xd3, 0xfa, 0x71,
+	0xd8, 0x69, 0x75, 0x1d, 0xb4, 0xdc, 0x44, 0xcc, 0x05, 0x35, 0x14, 0x5c, 0x41, 0xf7, 0x93, 0x85,
+	0x6e, 0xf6, 0x55, 0xf4, 0x3a, 0x0d, 0x12, 0xa6, 0x2b, 0x40, 0x9f, 0xa9, 0x00, 0x06, 0x7e, 0xc6,
+	0x44, 0x2a, 0xed, 0x65, 0x34, 0xad, 0x4c, 0x54, 0x83, 0x2c, 0x35, 0x8c, 0x1d, 0xf6, 0x2b, 0x34,
+	0x9b, 0xd4, 0xd0, 0x46, 0xc4, 0xcc, 0xfa, 0x2a, 0x66, 0x01, 0xc5, 0xf5, 0x11, 0xe3, 0xda, 0x50,
+	0xb3, 0x35, 0x5c, 0xef, 0xe0, 0x9e, 0xa9, 0x50, 0xe3, 0xbe, 0x82, 0xee, 0x9e, 0x4b, 0xed, 0x54,
+	0xc4, 0xc1, 0x44, 0x83, 0x88, 0x6d, 0x91, 0x06, 0x31, 0xec, 0x08, 0xcd, 0x78, 0x74, 0x81, 0x08,
+	0x0f, 0x2d, 0x84, 0xe9, 0x30, 0x66, 0xd4, 0xd7, 0xe0, 0x65, 0x42, 0x83, 0x57, 0xbd, 0x6f, 0xa9,
+	0x67, 0xa5, 0x4e, 0xdf, 0x6c, 0x00, 0xde, 0xae, 0x12, 0x76, 0x84, 0x86, 0xa7, 0x25, 0xdc, 0x9d,
+	0x0f, 0x9b, 0xdc, 0xf6, 0x3b, 0xb4, 0xc0, 0xf8, 0xae, 0xf4, 0xa9, 0x66, 0x82, 0x7b, 0x41, 0x2c,
+	0xe8, 0x9e, 0x37, 0x00, 0x3f, 0x04, 0x69, 0x5e, 0x6f, 0x66, 0xfd, 0xde, 0x45, 0x03, 0x7b, 0x66,
+	0xd0, 0xee, 0xfc, 0xb8, 0x4c, 0x6f, 0x54, 0xa5, 0x70, 0x5f, 0x30, 0xb3, 0xfa, 0x24, 0xaa, 0x99,
+	0xad, 0xff, 0x9a, 0x44, 0x93, 0x7d, 0x15, 0xd9, 0x1f, 0x2c, 0x74, 0xe3, 0xcf, 0xbd, 0x7d, 0x84,
+	0x2f, 0xf1, 0x53, 0xe2, 0xa6, 0xcd, 0x6a, 0x6f, 0x5d, 0x39, 0xb5, 0xe2, 0x66, 0x7f, 0xb6, 0x50,
+	0xfb, 0x9c, 0x8d, 0xec, 0x5d, 0xb6, 0xc3, 0xdf, 0x6b, 0xb4, 0x5f, 0xfc, 0x7b, 0x8d, 0x73, 0xe8,
+	0x9e, 0xd9, 0xbd, 0x2b, 0xd2, 0xad, 0xd7, 0xb8, 0x2a, 0xdd, 0xa6, 0x97, 0xef, 0xbd, 0xf9, 0x72,
+	0xec, 0x58, 0x47, 0xc7, 0x8e, 0xf5, 0xfd, 0xd8, 0xb1, 0xde, 0x9f, 0x38, 0xad, 0xa3, 0x13, 0xa7,
+	0xf5, 0xf5, 0xc4, 0x69, 0xbd, 0x7d, 0x1c, 0x31, 0x3d, 0x48, 0x03, 0x4c, 0x45, 0x52, 0x1e, 0x53,
+	0x32, 0x6e, 0xfb, 0xe0, 0xf4, 0x92, 0x67, 0x1b, 0x64, 0xff, 0xec, 0x39, 0x37, 0xbf, 0x44, 0xf0,
+	0x9f, 0x39, 0x86, 0x1b, 0xbf, 0x03, 0x00, 0x00, 0xff, 0xff, 0x4c, 0x5a, 0x31, 0xaa, 0xff, 0x05,
+	0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -747,6 +932,8 @@ type MsgClient interface {
 	ConsumerRemoval(ctx context.Context, in *MsgConsumerRemoval, opts ...grpc.CallOption) (*MsgConsumerRemovalResponse, error)
 	ChangeRewardDenoms(ctx context.Context, in *MsgChangeRewardDenoms, opts ...grpc.CallOption) (*MsgChangeRewardDenomsResponse, error)
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
+	SubmitConsumerMisbehaviour(ctx context.Context, in *MsgSubmitConsumerMisbehaviour, opts ...grpc.CallOption) (*MsgSubmitConsumerMisbehaviourResponse, error)
+	SubmitConsumerDoubleVoting(ctx context.Context, in *MsgSubmitConsumerDoubleVoting, opts ...grpc.CallOption) (*MsgSubmitConsumerDoubleVotingResponse, error)
 }
 
 type msgClient struct {
@@ -769,6 +956,9 @@ func (c *msgClient) AssignConsumerKey(ctx context.Context, in *MsgAssignConsumer
 func (c *msgClient) ConsumerAddition(ctx context.Context, in *MsgConsumerAddition, opts ...grpc.CallOption) (*MsgConsumerAdditionResponse, error) {
 	out := new(MsgConsumerAdditionResponse)
 	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Msg/ConsumerAddition", in, out, opts...)
+func (c *msgClient) SubmitConsumerMisbehaviour(ctx context.Context, in *MsgSubmitConsumerMisbehaviour, opts ...grpc.CallOption) (*MsgSubmitConsumerMisbehaviourResponse, error) {
+	out := new(MsgSubmitConsumerMisbehaviourResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Msg/SubmitConsumerMisbehaviour", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -796,6 +986,9 @@ func (c *msgClient) ChangeRewardDenoms(ctx context.Context, in *MsgChangeRewardD
 func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error) {
 	out := new(MsgUpdateParamsResponse)
 	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Msg/UpdateParams", in, out, opts...)
+func (c *msgClient) SubmitConsumerDoubleVoting(ctx context.Context, in *MsgSubmitConsumerDoubleVoting, opts ...grpc.CallOption) (*MsgSubmitConsumerDoubleVotingResponse, error) {
+	out := new(MsgSubmitConsumerDoubleVotingResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Msg/SubmitConsumerDoubleVoting", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -809,6 +1002,8 @@ type MsgServer interface {
 	ConsumerRemoval(context.Context, *MsgConsumerRemoval) (*MsgConsumerRemovalResponse, error)
 	ChangeRewardDenoms(context.Context, *MsgChangeRewardDenoms) (*MsgChangeRewardDenomsResponse, error)
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
+	SubmitConsumerMisbehaviour(context.Context, *MsgSubmitConsumerMisbehaviour) (*MsgSubmitConsumerMisbehaviourResponse, error)
+	SubmitConsumerDoubleVoting(context.Context, *MsgSubmitConsumerDoubleVoting) (*MsgSubmitConsumerDoubleVotingResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -829,6 +1024,11 @@ func (*UnimplementedMsgServer) ChangeRewardDenoms(ctx context.Context, req *MsgC
 }
 func (*UnimplementedMsgServer) UpdateParams(ctx context.Context, req *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateParams not implemented")
+func (*UnimplementedMsgServer) SubmitConsumerMisbehaviour(ctx context.Context, req *MsgSubmitConsumerMisbehaviour) (*MsgSubmitConsumerMisbehaviourResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitConsumerMisbehaviour not implemented")
+}
+func (*UnimplementedMsgServer) SubmitConsumerDoubleVoting(ctx context.Context, req *MsgSubmitConsumerDoubleVoting) (*MsgSubmitConsumerDoubleVotingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitConsumerDoubleVoting not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -855,6 +1055,8 @@ func _Msg_AssignConsumerKey_Handler(srv interface{}, ctx context.Context, dec fu
 
 func _Msg_ConsumerAddition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MsgConsumerAddition)
+func _Msg_SubmitConsumerMisbehaviour_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSubmitConsumerMisbehaviour)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -867,12 +1069,22 @@ func _Msg_ConsumerAddition_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).ConsumerAddition(ctx, req.(*MsgConsumerAddition))
+		return srv.(MsgServer).SubmitConsumerMisbehaviour(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Msg/SubmitConsumerMisbehaviour",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).SubmitConsumerMisbehaviour(ctx, req.(*MsgSubmitConsumerMisbehaviour))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Msg_ConsumerRemoval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MsgConsumerRemoval)
+func _Msg_SubmitConsumerDoubleVoting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSubmitConsumerDoubleVoting)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -921,6 +1133,14 @@ func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdateParams(ctx, req.(*MsgUpdateParams))
+		return srv.(MsgServer).SubmitConsumerDoubleVoting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Msg/SubmitConsumerDoubleVoting",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).SubmitConsumerDoubleVoting(ctx, req.(*MsgSubmitConsumerDoubleVoting))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -948,6 +1168,12 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateParams",
 			Handler:    _Msg_UpdateParams_Handler,
+			MethodName: "SubmitConsumerMisbehaviour",
+			Handler:    _Msg_SubmitConsumerMisbehaviour_Handler,
+		},
+		{
+			MethodName: "SubmitConsumerDoubleVoting",
+			Handler:    _Msg_SubmitConsumerDoubleVoting_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1091,7 +1317,7 @@ func (m *MsgAssignConsumerKeyResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgConsumerAddition) Marshal() (dAtA []byte, err error) {
+func (m *MsgSubmitConsumerMisbehaviour) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1101,12 +1327,12 @@ func (m *MsgConsumerAddition) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgConsumerAddition) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgSubmitConsumerMisbehaviour) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgConsumerAddition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgSubmitConsumerMisbehaviour) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1202,6 +1428,22 @@ func (m *MsgConsumerAddition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.ChainId)
 		copy(dAtA[i:], m.ChainId)
 		i = encodeVarintTx(dAtA, i, uint64(len(m.ChainId)))
+	if m.Misbehaviour != nil {
+		{
+			size, err := m.Misbehaviour.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTx(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Submitter) > 0 {
+		i -= len(m.Submitter)
+		copy(dAtA[i:], m.Submitter)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Submitter)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1209,6 +1451,7 @@ func (m *MsgConsumerAddition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *MsgConsumerAdditionResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgSubmitConsumerMisbehaviourResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1219,11 +1462,13 @@ func (m *MsgConsumerAdditionResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MsgConsumerAdditionResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgSubmitConsumerMisbehaviourResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *MsgConsumerAdditionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgSubmitConsumerMisbehaviourResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1232,6 +1477,7 @@ func (m *MsgConsumerAdditionResponse) MarshalToSizedBuffer(dAtA []byte) (int, er
 }
 
 func (m *MsgConsumerRemoval) Marshal() (dAtA []byte, err error) {
+func (m *MsgSubmitConsumerDoubleVoting) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1242,11 +1488,13 @@ func (m *MsgConsumerRemoval) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MsgConsumerRemoval) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgSubmitConsumerDoubleVoting) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *MsgConsumerRemoval) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgSubmitConsumerDoubleVoting) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1270,6 +1518,34 @@ func (m *MsgConsumerRemoval) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.ChainId)
 		copy(dAtA[i:], m.ChainId)
 		i = encodeVarintTx(dAtA, i, uint64(len(m.ChainId)))
+	if m.InfractionBlockHeader != nil {
+		{
+			size, err := m.InfractionBlockHeader.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTx(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.DuplicateVoteEvidence != nil {
+		{
+			size, err := m.DuplicateVoteEvidence.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTx(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Submitter) > 0 {
+		i -= len(m.Submitter)
+		copy(dAtA[i:], m.Submitter)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Submitter)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1277,6 +1553,7 @@ func (m *MsgConsumerRemoval) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *MsgConsumerRemovalResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgSubmitConsumerDoubleVotingResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1287,6 +1564,7 @@ func (m *MsgConsumerRemovalResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MsgConsumerRemovalResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgSubmitConsumerDoubleVotingResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
@@ -1363,6 +1641,7 @@ func (m *MsgChangeRewardDenomsResponse) MarshalTo(dAtA []byte) (int, error) {
 }
 
 func (m *MsgChangeRewardDenomsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgSubmitConsumerDoubleVotingResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1440,6 +1719,7 @@ func (m *MsgAssignConsumerKeyResponse) Size() (n int) {
 }
 
 func (m *MsgConsumerAddition) Size() (n int) {
+func (m *MsgSubmitConsumerMisbehaviour) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1483,12 +1763,19 @@ func (m *MsgConsumerAddition) Size() (n int) {
 	}
 	l = len(m.Authority)
 	if l > 0 {
+	l = len(m.Submitter)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Misbehaviour != nil {
+		l = m.Misbehaviour.Size()
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
 
 func (m *MsgConsumerAdditionResponse) Size() (n int) {
+func (m *MsgSubmitConsumerMisbehaviourResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1498,6 +1785,7 @@ func (m *MsgConsumerAdditionResponse) Size() (n int) {
 }
 
 func (m *MsgConsumerRemoval) Size() (n int) {
+func (m *MsgSubmitConsumerDoubleVoting) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1511,6 +1799,16 @@ func (m *MsgConsumerRemoval) Size() (n int) {
 	n += 1 + l + sovTx(uint64(l))
 	l = len(m.Authority)
 	if l > 0 {
+	l = len(m.Submitter)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.DuplicateVoteEvidence != nil {
+		l = m.DuplicateVoteEvidence.Size()
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.InfractionBlockHeader != nil {
+		l = m.InfractionBlockHeader.Size()
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
@@ -1551,6 +1849,7 @@ func (m *MsgChangeRewardDenoms) Size() (n int) {
 }
 
 func (m *MsgChangeRewardDenomsResponse) Size() (n int) {
+func (m *MsgSubmitConsumerDoubleVotingResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1959,6 +2258,7 @@ func (m *MsgAssignConsumerKeyResponse) Unmarshal(dAtA []byte) error {
 	return nil
 }
 func (m *MsgConsumerAddition) Unmarshal(dAtA []byte) error {
+func (m *MsgSubmitConsumerMisbehaviour) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1985,11 +2285,16 @@ func (m *MsgConsumerAddition) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgConsumerAddition: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgSubmitConsumerMisbehaviour: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSubmitConsumerMisbehaviour: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Submitter", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2022,6 +2327,11 @@ func (m *MsgConsumerAddition) Unmarshal(dAtA []byte) error {
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field InitialHeight", wireType)
+			m.Submitter = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Misbehaviour", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2049,6 +2359,178 @@ func (m *MsgConsumerAddition) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.InitialHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if m.Misbehaviour == nil {
+				m.Misbehaviour = &_07_tendermint.Misbehaviour{}
+			}
+			if err := m.Misbehaviour.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSubmitConsumerMisbehaviourResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSubmitConsumerMisbehaviourResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSubmitConsumerDoubleVoting) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSubmitConsumerDoubleVoting: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSubmitConsumerDoubleVoting: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Submitter", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Submitter = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DuplicateVoteEvidence", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DuplicateVoteEvidence == nil {
+				m.DuplicateVoteEvidence = &types.DuplicateVoteEvidence{}
+			}
+			if err := m.DuplicateVoteEvidence.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2123,6 +2605,7 @@ func (m *MsgConsumerAddition) Unmarshal(dAtA []byte) error {
 		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SpawnTime", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field InfractionBlockHeader", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2386,6 +2869,13 @@ func (m *MsgConsumerAddition) Unmarshal(dAtA []byte) error {
 			}
 			m.Authority = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+			if m.InfractionBlockHeader == nil {
+				m.InfractionBlockHeader = &_07_tendermint.Header{}
+			}
+			if err := m.InfractionBlockHeader.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -2408,6 +2898,7 @@ func (m *MsgConsumerAddition) Unmarshal(dAtA []byte) error {
 	return nil
 }
 func (m *MsgConsumerAdditionResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgSubmitConsumerDoubleVotingResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2827,6 +3318,10 @@ func (m *MsgChangeRewardDenomsResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgChangeRewardDenomsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgSubmitConsumerDoubleVotingResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSubmitConsumerDoubleVotingResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

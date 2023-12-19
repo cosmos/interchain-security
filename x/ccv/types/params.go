@@ -40,6 +40,9 @@ const (
 
 	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
 	DefaultSoftOptOutThreshold = "0.05"
+
+	// Default retry delay period is 1 hour.
+	DefaultRetryDelayPeriod = time.Hour
 )
 
 // Reflection based keys for params subspace
@@ -56,11 +59,12 @@ var (
 	KeySoftOptOutThreshold               = []byte("SoftOptOutThreshold")
 	KeyRewardDenoms                      = []byte("RewardDenoms")
 	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
+	KeyRetryDelayPeriod                  = []byte("RetryDelayPeriod")
 )
 
 // ParamKeyTable type declaration for parameters
 func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+	return paramtypes.NewKeyTable().RegisterParamSet(&ConsumerParams{})
 }
 
 // NewParams creates new consumer parameters with provided arguments
@@ -68,9 +72,10 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration, softOptOutThreshold string, rewardDenoms, providerRewardDenoms []string,
-) Params {
-	return Params{
+	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
+	rewardDenoms, providerRewardDenoms []string, retryDelayPeriod time.Duration,
+) ConsumerParams {
+	return ConsumerParams{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,
@@ -83,11 +88,12 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		SoftOptOutThreshold:               softOptOutThreshold,
 		RewardDenoms:                      rewardDenoms,
 		ProviderRewardDenoms:              providerRewardDenoms,
+		RetryDelayPeriod:                  retryDelayPeriod,
 	}
 }
 
 // DefaultParams is the default params for the consumer module
-func DefaultParams() Params {
+func DefaultParams() ConsumerParams {
 	var rewardDenoms []string
 	var provideRewardDenoms []string
 	return NewParams(
@@ -103,11 +109,12 @@ func DefaultParams() Params {
 		DefaultSoftOptOutThreshold,
 		rewardDenoms,
 		provideRewardDenoms,
+		DefaultRetryDelayPeriod,
 	)
 }
 
 // Validate all ccv-consumer module parameters
-func (p Params) Validate() error {
+func (p ConsumerParams) Validate() error {
 	if err := ValidateBool(p.Enabled); err != nil {
 		return err
 	}
@@ -144,11 +151,14 @@ func (p Params) Validate() error {
 	if err := ValidateDenoms(p.ProviderRewardDenoms); err != nil {
 		return err
 	}
+	if err := ValidateDuration(p.RetryDelayPeriod); err != nil {
+		return err
+	}
 	return nil
 }
 
 // ParamSetPairs implements params.ParamSet
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
+func (p *ConsumerParams) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
@@ -173,6 +183,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.RewardDenoms, ValidateDenoms),
 		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
 			p.ProviderRewardDenoms, ValidateDenoms),
+		paramtypes.NewParamSetPair(KeyRetryDelayPeriod,
+			p.RetryDelayPeriod, ValidateDuration),
 	}
 }
 

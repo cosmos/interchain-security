@@ -40,7 +40,7 @@ pkill -f "^"interchain-security-sd &> /dev/null || true
 
 mkdir -p /root/.sovereign/config
 
-# apply genesis changes to existing genesis -> this creates the changeover genesis file wih intial validator set
+# apply genesis changes to existing genesis -> this creates the changeover genesis file with initial validator set
 jq "$GENESIS_TRANSFORM" /sover/validatoralice/config/genesis.json > /root/.sovereign/config/genesis.json
 
 

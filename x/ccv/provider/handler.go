@@ -22,6 +22,12 @@ func NewHandler(k *keeper.Keeper) baseapp.MsgServiceHandler {
 		case *types.MsgAssignConsumerKey:
 			res, err := msgServer.AssignConsumerKey(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgSubmitConsumerMisbehaviour:
+			res, err := msgServer.SubmitConsumerMisbehaviour(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgSubmitConsumerDoubleVoting:
+			res, err := msgServer.SubmitConsumerDoubleVoting(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
 		default:
 			return nil, errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)
 		}

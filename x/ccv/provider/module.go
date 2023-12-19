@@ -146,7 +146,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 { return 3 }
 
 // NOTE: @MSalopek -> swapped sdk.Context with context.Context
 // NOTE: @MSalopek -> renamed BeginBlock to BeginBlocker
@@ -156,6 +156,8 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	am.keeper.BeginBlockInit(sdkCtx)
 	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
 	am.keeper.BeginBlockCCR(sdkCtx)
+	// Check for replenishing slash meter before any slash packets are processed for this block
+	am.keeper.BeginBlockCIS(sdkCtx)
 	return nil
 }
 

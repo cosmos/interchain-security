@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"strings"
 	"testing"
-	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -11,6 +10,8 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -93,10 +94,8 @@ func TestQueueVSCPackets(t *testing.T) {
 }
 
 // TestOnRecvVSCMaturedPacket tests the OnRecvVSCMaturedPacket method of the keeper.
-// Particularly the behavior that VSC matured packet data should be handled immediately
-// if the pending packet data queue is empty, and should be queued otherwise.
 //
-// Note: Handling logic itself is not testing in here, just queueing behavior.
+// Note: Handling logic itself is not tested here.
 func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -106,131 +105,72 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
 
-	// Execute on recv for chain-1
-	ack := executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-1", 1)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
-
-	// Assert that the packet data was queued for chain-1
-	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
-
-	// chain-2 queue empty
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
-
-	// Now queue a slash packet data instance for chain-2, then confirm the on recv method
-	// queues the vsc matured behind the slash packet data
-	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 1, testkeeper.GetNewSlashPacketData())
+	// Execute on recv for chain-1, confirm v1 result ack is returned
+	err := executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-1", 1)
 	require.NoError(t, err)
-	ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
-	require.Equal(t, uint64(2), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 
-	// Chain-1 still has 1 packet data queued
-	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
-
-	// Receive 5 more vsc matured packets for chain-2, then confirm chain-2 queue size is 7, chain-1 still size 1
-	for i := 0; i < 5; i++ {
-		ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", uint64(i+3))
-		require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
-	}
-	require.Equal(t, uint64(7), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
-	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
-
-	// Delete chain-2's data from its queue, then confirm the queue size is 0
-	providerKeeper.DeleteThrottledPacketData(ctx, "chain-2", []uint64{1, 2, 3, 4, 5, 6, 7}...)
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
+	// Now queue a slash packet data instance for chain-2, confirm v1 result ack is returned
+	err = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
+	require.NoError(t, err)
 }
 
-func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+// TestOnRecvDowntimeSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets.
+func TestOnRecvDowntimeSlashPacket(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
-	vscData := getTenSampleVSCMaturedPacketData()
-
-	// Set channel to chain, and chain to client mappings
-	// (faking multiple established consumer channels)
+	// Set channel to chain (faking multiple established channels)
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetConsumerClientId(ctx, "chain-1", "client-1")
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
-	providerKeeper.SetConsumerClientId(ctx, "chain-2", "client-2")
 
-	// Queue some leading vsc matured packet data for chain-1
-	err := providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 1, vscData[0])
-	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 2, vscData[1])
-	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 3, vscData[2])
-	require.NoError(t, err)
+	// Generate a new slash packet data instance with double sign infraction type
+	packetData := testkeeper.GetNewSlashPacketData()
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
-	// Queue some trailing slash packet data (and a couple more vsc matured)
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 4, testkeeper.GetNewSlashPacketData())
-	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 5, testkeeper.GetNewSlashPacketData())
-	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 6, vscData[3])
-	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 7, vscData[4])
+	// Set a block height for the valset update id in the generated packet data
+	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
+
+	// Set slash meter to negative value and assert a bounce ack is returned
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(-5))
+	ackResult, err := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, ccv.SlashPacketBouncedResult, ackResult)
 	require.NoError(t, err)
 
-	// Queue some leading vsc matured packet data for chain-2
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 1, vscData[5])
-	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 2, vscData[6])
-	require.NoError(t, err)
-
-	// And trailing slash packet data for chain-2
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 3, testkeeper.GetNewSlashPacketData())
-	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 4, testkeeper.GetNewSlashPacketData())
+	// Also bounced for chain-2
+	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
+	require.Equal(t, ccv.SlashPacketBouncedResult, ackResult)
 	require.NoError(t, err)
 
-	// And one more trailing vsc matured packet for chain-2
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 5, vscData[7])
+	// Now set slash meter to positive value and assert slash packet handled result is returned
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
+
+	// Mock call to GetEffectiveValPower, so that it returns 2.
+	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
+	calls := []*gomock.Call{
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()).
+			Return(stakingtypes.Validator{}, true).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(ctx, gomock.Any()).
+			Return(int64(2)).Times(1),
+	}
+
+	// Add mocks for slash packet handling
+	calls = append(calls,
+		testkeeper.GetMocksForHandleSlashPacket(
+			ctx, mocks, providerAddr, stakingtypes.Validator{Jailed: false}, true)...,
+	)
+	gomock.InOrder(calls...)
+
+	// Execute on recv and confirm slash packet handled result is returned
+	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, ccv.SlashPacketHandledResult, ackResult)
 	require.NoError(t, err)
 
-	// Set VSC Send timestamps for each recv vsc matured packet
-	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[0].ValsetUpdateId, time.Now())
-	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[1].ValsetUpdateId, time.Now())
-	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[2].ValsetUpdateId, time.Now())
-	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[3].ValsetUpdateId, time.Now())
-	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[4].ValsetUpdateId, time.Now())
-	providerKeeper.SetVscSendTimestamp(ctx, "chain-2", vscData[5].ValsetUpdateId, time.Now())
-	providerKeeper.SetVscSendTimestamp(ctx, "chain-2", vscData[6].ValsetUpdateId, time.Now())
-	providerKeeper.SetVscSendTimestamp(ctx, "chain-2", vscData[7].ValsetUpdateId, time.Now())
-
-	// Confirm each chain-specific queue has the expected number of packet data instances
-	require.Equal(t, uint64(7), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
-	require.Equal(t, uint64(5), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
-
-	// Handle leading vsc matured packets and confirm queue sizes change for both chains
-	providerKeeper.HandleLeadingVSCMaturedPackets(ctx)
-	require.Equal(t, uint64(4), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
-	require.Equal(t, uint64(3), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
-
-	// Confirm the leading vsc matured packet data was handled for both chains,
-	// but not the vsc matured packet data that trails slash data in the queue.
-	// This assertion is made by checking that VSC Send timestamps were deleted for
-	// handled vsc matured packet data.
-	_, found := providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[0].ValsetUpdateId)
-	require.False(t, found)
-	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[1].ValsetUpdateId)
-	require.False(t, found)
-	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[2].ValsetUpdateId)
-	require.False(t, found)
-	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[3].ValsetUpdateId)
-	require.True(t, found)
-	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[4].ValsetUpdateId)
-	require.True(t, found)
-
-	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-2", vscData[5].ValsetUpdateId)
-	require.False(t, found)
-	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-2", vscData[6].ValsetUpdateId)
-	require.False(t, found)
-	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-2", vscData[7].ValsetUpdateId)
-	require.True(t, found)
+	// Require slash meter was decremented appropriately, 5-2=3
+	require.Equal(t, int64(3), providerKeeper.GetSlashMeter(ctx).Int64())
 }
 
-// TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for double-sign slash packets.
+// TestOnRecvDoubleSignSlashPacket tests the OnRecvSlashPacket method specifically for double-sign slash packets.
 func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -248,13 +188,10 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
 	// Receive the double-sign slash packet for chain-1 and confirm the expected acknowledgement
-	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
+	ackResult, err := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, ccv.V1Result, ackResult)
+	require.NoError(t, err)
 
-	// Nothing should be queued
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
-	require.Equal(t, 0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
 	require.True(t, providerKeeper.GetSlashLog(ctx,
 		providertypes.NewProviderConsAddress(packetData.Validator.Address)))
 
@@ -263,59 +200,9 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
 }
 
-// TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets,
-// and how the method interacts with the parent and per-chain slash packet queues.
-func TestOnRecvDowntimeSlashPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
-
-	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
-
-	// Generate a new slash packet data instance with downtime infraction type
-	packetData := testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
-
-	// Set a block height for the valset update id in the generated packet data
-	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
-
-	// Receive the downtime slash packet for chain-1 at time.Now()
-	ctx = ctx.WithBlockTime(time.Now())
-	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
-
-	// Confirm an entry was added to the global queue, and pending packet data was added to the per-chain queue
-	globalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx) // parent queue
-	require.Equal(t, 1, len(globalEntries))
-	require.Equal(t, "chain-1", globalEntries[0].ConsumerChainID)
-	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1")) // per chain queue
-
-	// Generate a new downtime packet data instance with downtime infraction type
-	packetData = testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
-
-	// Set a block height for the valset update id in the generated packet data
-	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
-
-	// Receive a downtime slash packet for chain-2 at time.Now(Add(1 *time.Hour))
-	ctx = ctx.WithBlockTime(time.Now().Add(1 * time.Hour))
-	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
-
-	// Confirm sizes of parent queue and both per-chain queues
-	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
-	require.Equal(t, 2, len(globalEntries))
-	require.Equal(t, "chain-1", globalEntries[0].ConsumerChainID)
-	require.Equal(t, "chain-2", globalEntries[1].ConsumerChainID)
-	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1")) // per chain queue
-	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2")) // per chain queue
-}
-
 func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
 	channelID string, ibcSeqNum uint64,
-) exported.Acknowledgement {
+) error {
 	t.Helper()
 	// Instantiate vsc matured packet data and bytes
 	data := testkeeper.GetNewVSCMaturedPacketData()
@@ -331,7 +218,7 @@ func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, 
 
 func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
 	channelID string, ibcSeqNum uint64, packetData ccv.SlashPacketData,
-) exported.Acknowledgement {
+) (ccv.PacketAckResult, error) {
 	t.Helper()
 	// Instantiate slash packet data and bytes
 	dataBz, err := packetData.Marshal()
@@ -356,16 +243,6 @@ func TestValidateSlashPacket(t *testing.T) {
 		{
 			"no block height found for given vscID",
 			ccv.SlashPacketData{ValsetUpdateId: 61},
-			true,
-		},
-		{
-			"non-set infraction type",
-			ccv.SlashPacketData{ValsetUpdateId: validVscID},
-			true,
-		},
-		{
-			"invalid infraction type",
-			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.MaxMonikerLength},
 			true,
 		},
 		{

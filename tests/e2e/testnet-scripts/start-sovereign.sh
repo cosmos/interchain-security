@@ -67,7 +67,7 @@ BRIDGE_IP="$CHAIN_IP_PREFIX.254/24"
 ip addr add $BRIDGE_IP dev virtual-bridge
 
 # first we start a genesis.json with the first validator
-# the first validator will also collect the gentx's once gnerated
+# the first validator will also collect the gentx's once generated
 echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /$CHAIN_ID/validator$VAL_ID --chain-id=$CHAIN_ID validator$VAL_ID --recover > /dev/null
 
 # !!!!!!!!! IMPORTANT !!!!!!!!! #

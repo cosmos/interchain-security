@@ -8,7 +8,7 @@ title: Slashing on the provider for consumer equivocation
 * 1st Sept. 2023: Initial draft
 
 ## Status
-Proposed
+Accepted
 
 ## Context
 This ADR presents some approaches on how to slash on the provider chain validators that performed equivocations on consumer chains.

@@ -8,7 +8,6 @@ import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
-import "tendermint/crypto/keys.proto";
 
 // GenesisState defines the CCV provider chain genesis state
 message GenesisState {
@@ -64,7 +63,7 @@ message ConsumerState {
   // InitalHeight defines the initial block height for the consumer chain
   uint64 initial_height = 4;
   // ConsumerGenesis defines the initial consumer chain genesis states
-  interchain_security.ccv.v1.GenesisState consumer_genesis = 5
+  interchain_security.ccv.v1.ConsumerGenesisState consumer_genesis = 5
       [ (gogoproto.nullable) = false ];
   // PendingValsetChanges defines the pending validator set changes for the
   // consumer chain
@@ -78,7 +77,7 @@ message ConsumerState {
 }
 
 // ValsetUpdateIdToHeight defines the genesis information for the mapping
-// of each valset udpate id to a block height
+// of each valset update id to a block height
 message ValsetUpdateIdToHeight {
   uint64 valset_update_id = 1;
   uint64 height = 2;

@@ -52,6 +52,7 @@ type Keeper struct {
 	slashingKeeper     ccv.SlashingKeeper
 	distributionKeeper ccv.DistributionKeeper
 	bankKeeper         ccv.BankKeeper
+	govKeeper          ccv.GovKeeper
 	feeCollectorName   string
 
 	validatorAddressCodec addresscodec.Codec
@@ -66,8 +67,9 @@ func NewKeeper(
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper,
 	distributionKeeper ccv.DistributionKeeper, bankKeeper ccv.BankKeeper,
-	feeCollectorName, authority string, validatorAddressCodec,
-	consensusAddressCodec addresscodec.Codec,
+	feeCollectorName, authority string,
+	validatorAddressCodec, consensusAddressCodec addresscodec.Codec,
+	govKeeper ccv.GovKeeper, feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -91,6 +93,7 @@ func NewKeeper(
 		feeCollectorName:      feeCollectorName,
 		validatorAddressCodec: validatorAddressCodec,
 		consensusAddressCodec: consensusAddressCodec,
+		govKeeper:             govKeeper,
 	}
 
 	k.mustValidateFields()
@@ -147,6 +150,8 @@ func (k Keeper) mustValidateFields() {
 	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 14
 	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 15
 	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 16
+	ccv.PanicIfZeroOrNil(k.govKeeper, "govKeeper")                         // 17
+
 	// TODO: @MSalopek -> validate once connected
 	// ccv.PanicIfZeroOrNil(k.storeService, "storeService")                   // 17
 }
@@ -215,6 +220,60 @@ func (k Keeper) GetChainToChannel(ctx sdk.Context, chainID string) (string, bool
 func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToChannelKey(chainID))
+}
+
+// SetProposedConsumerChain stores a consumer chainId corresponding to a submitted consumer addition proposal
+// This consumer chainId is deleted once the voting period for the proposal ends.
+func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, chainID string, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ProposedConsumerChainKey(proposalID), []byte(chainID))
+}
+
+// GetProposedConsumerChain returns the proposed chainID for the given consumerAddition proposal ID.
+func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.ProposedConsumerChainKey(proposalID)))
+}
+
+// DeleteProposedConsumerChainInStore deletes the consumer chainID from store
+// which is in gov consumerAddition proposal
+func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ProposedConsumerChainKey(proposalID))
+}
+
+// GetAllProposedConsumerChainIDs returns the proposed chainID of all gov consumerAddition proposals that are still in the voting period.
+func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
+	defer iterator.Close()
+
+	proposedChains := []types.ProposedChain{}
+	for ; iterator.Valid(); iterator.Next() {
+		proposalID, err := types.ParseProposedConsumerChainKey(types.ProposedConsumerChainByteKey, iterator.Key())
+		if err != nil {
+			panic(fmt.Errorf("proposed chains cannot be parsed: %w", err))
+		}
+
+		proposedChains = append(proposedChains, types.ProposedChain{
+			ChainID:    string(iterator.Value()),
+			ProposalID: proposalID,
+		})
+
+	}
+
+	return proposedChains
+}
+
+// GetAllPendingConsumerChainIDs gets pending consumer chains have not reach spawn time
+func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
+	chainIDs := []string{}
+	props := k.GetAllPendingConsumerAdditionProps(ctx)
+	for _, prop := range props {
+		chainIDs = append(chainIDs, prop.ChainId)
+	}
+
+	return chainIDs
 }
 
 // GetAllConsumerChains gets all of the consumer chains, for which the provider module
@@ -290,7 +349,7 @@ func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.Channel
 	return channels
 }
 
-func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.GenesisState) error {
+func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.ConsumerGenesisState) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := gen.Marshal()
 	if err != nil {
@@ -301,14 +360,14 @@ func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.Gene
 	return nil
 }
 
-func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (ccv.GenesisState, bool) {
+func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (ccv.ConsumerGenesisState, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerGenesisKey(chainID))
 	if bz == nil {
-		return ccv.GenesisState{}, false
+		return ccv.ConsumerGenesisState{}, false
 	}
 
-	var data ccv.GenesisState
+	var data ccv.ConsumerGenesisState
 	if err := data.Unmarshal(bz); err != nil {
 		// An error here would indicate something is very wrong,
 		// the ConsumerGenesis is assumed to be correctly serialized in SetConsumerGenesis.
@@ -338,7 +397,7 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 		return errorsmod.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
 	if ccvClientId != clientID {
-		return errorsmod.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+		return errorsmod.Wrapf(types.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
@@ -1104,4 +1163,20 @@ func (k Keeper) GetSlashLog(
 
 func (k Keeper) BondDenom(ctx sdk.Context) (string, error) {
 	return k.stakingKeeper.BondDenom(ctx)
+}
+
+func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
+	allConsumerChains := []string{}
+	consumerChains := k.GetAllConsumerChains(ctx)
+	for _, consumerChain := range consumerChains {
+		allConsumerChains = append(allConsumerChains, consumerChain.ChainId)
+	}
+	proposedChains := k.GetAllProposedConsumerChainIDs(ctx)
+	for _, proposedChain := range proposedChains {
+		allConsumerChains = append(allConsumerChains, proposedChain.ChainID)
+	}
+	pendingChainIDs := k.GetAllPendingConsumerChainIDs(ctx)
+	allConsumerChains = append(allConsumerChains, pendingChainIDs...)
+
+	return allConsumerChains
 }

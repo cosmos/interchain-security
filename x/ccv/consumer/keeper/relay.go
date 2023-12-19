@@ -25,7 +25,12 @@ import (
 //
 // Note: CCV uses an ordered IBC channel, meaning VSC packet changes will be accumulated (and later
 // processed by ApplyCCValidatorChanges) s.t. more recent val power changes overwrite older ones.
-func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
+func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) error {
+	// validate packet data upon receiving
+	if err := newChanges.Validate(); err != nil {
+		return errorsmod.Wrapf(err, "error validating VSCPacket data")
+	}
+
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
 	if found && providerChannel != packet.DestinationChannel {
@@ -87,8 +92,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		"len updates", len(newChanges.ValidatorUpdates),
 		"len slash acks", len(newChanges.SlashAcks),
 	)
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
+	return nil
 }
 
 // QueueVSCMaturedPackets appends matured VSCs to an internal queue.
@@ -115,12 +119,12 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypeVSCMatured,
+				types.EventTypeVSCMatured,
 				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 				sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
-				sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+				sdk.NewAttribute(types.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
 				sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
-				sdk.NewAttribute(ccv.AttributeTimestamp, ctx.BlockTime().String()),
+				sdk.NewAttribute(types.AttributeTimestamp, ctx.BlockTime().String()),
 			),
 		)
 	}
@@ -162,7 +166,7 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeConsumerSlashRequest,
+			types.EventTypeConsumerSlashRequest,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(validator.Address).String()),
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),

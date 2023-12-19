@@ -43,7 +43,7 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	}
 
 	// Update LastTransmissionBlockHeight
-	newLtbh := ccv.LastTransmissionBlockHeight{
+	newLtbh := types.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}
 	k.SetLastTransmissionBlockHeight(ctx, newLtbh)
@@ -162,13 +162,13 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 	currentHeight := ctx.BlockHeight()
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeFeeDistribution,
+			types.EventTypeFeeDistribution,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
-			sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
-			sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
-			sdk.NewAttribute(ccv.AttributeDistributionTotal, allBalances.String()),
-			sdk.NewAttribute(ccv.AttributeDistributionToProvider, sentCoins.String()),
+			sdk.NewAttribute(types.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
+			sdk.NewAttribute(types.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
+			sdk.NewAttribute(types.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
+			sdk.NewAttribute(types.AttributeDistributionTotal, allBalances.String()),
+			sdk.NewAttribute(types.AttributeDistributionToProvider, sentCoins.String()),
 		),
 	)
 
@@ -203,10 +203,10 @@ func (k Keeper) AllowedRewardDenoms(ctx sdk.Context) []string {
 	return rewardDenoms
 }
 
-func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) ccv.LastTransmissionBlockHeight {
+func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) types.LastTransmissionBlockHeight {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastDistributionTransmissionKey())
-	ltbh := ccv.LastTransmissionBlockHeight{}
+	ltbh := types.LastTransmissionBlockHeight{}
 	if bz != nil {
 		if err := ltbh.Unmarshal(bz); err != nil {
 			panic(fmt.Errorf("failed to unmarshal LastTransmissionBlockHeight: %w", err))
@@ -215,7 +215,7 @@ func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) ccv.LastTransmis
 	return ltbh
 }
 
-func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh ccv.LastTransmissionBlockHeight) {
+func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh types.LastTransmissionBlockHeight) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := ltbh.Marshal()
 	if err != nil {

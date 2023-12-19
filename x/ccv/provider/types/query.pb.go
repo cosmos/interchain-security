@@ -79,7 +79,7 @@ func (m *QueryConsumerGenesisRequest) GetChainId() string {
 }
 
 type QueryConsumerGenesisResponse struct {
-	GenesisState types.GenesisState `protobuf:"bytes,1,opt,name=genesis_state,json=genesisState,proto3" json:"genesis_state"`
+	GenesisState types.ConsumerGenesisState `protobuf:"bytes,1,opt,name=genesis_state,json=genesisState,proto3" json:"genesis_state"`
 }
 
 func (m *QueryConsumerGenesisResponse) Reset()         { *m = QueryConsumerGenesisResponse{} }
@@ -115,11 +115,11 @@ func (m *QueryConsumerGenesisResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryConsumerGenesisResponse proto.InternalMessageInfo
 
-func (m *QueryConsumerGenesisResponse) GetGenesisState() types.GenesisState {
+func (m *QueryConsumerGenesisResponse) GetGenesisState() types.ConsumerGenesisState {
 	if m != nil {
 		return m.GenesisState
 	}
-	return types.GenesisState{}
+	return types.ConsumerGenesisState{}
 }
 
 type QueryConsumerChainsRequest struct {
@@ -637,8 +637,6 @@ type QueryThrottleStateResponse struct {
 	// next time the slash meter could potentially be replenished, iff it's not
 	// full
 	NextReplenishCandidate time.Time `protobuf:"bytes,3,opt,name=next_replenish_candidate,json=nextReplenishCandidate,proto3,stdtime" json:"next_replenish_candidate"`
-	// data relevant to currently throttled slash packets
-	Packets []*ThrottledSlashPacket `protobuf:"bytes,4,rep,name=packets,proto3" json:"packets,omitempty"`
 }
 
 func (m *QueryThrottleStateResponse) Reset()         { *m = QueryThrottleStateResponse{} }
@@ -695,262 +693,6 @@ func (m *QueryThrottleStateResponse) GetNextReplenishCandidate() time.Time {
 	return time.Time{}
 }
 
-func (m *QueryThrottleStateResponse) GetPackets() []*ThrottledSlashPacket {
-	if m != nil {
-		return m.Packets
-	}
-	return nil
-}
-
-type QueryThrottledConsumerPacketDataRequest struct {
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-}
-
-func (m *QueryThrottledConsumerPacketDataRequest) Reset() {
-	*m = QueryThrottledConsumerPacketDataRequest{}
-}
-func (m *QueryThrottledConsumerPacketDataRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryThrottledConsumerPacketDataRequest) ProtoMessage()    {}
-func (*QueryThrottledConsumerPacketDataRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{15}
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryThrottledConsumerPacketDataRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryThrottledConsumerPacketDataRequest.Merge(m, src)
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryThrottledConsumerPacketDataRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryThrottledConsumerPacketDataRequest proto.InternalMessageInfo
-
-func (m *QueryThrottledConsumerPacketDataRequest) GetChainId() string {
-	if m != nil {
-		return m.ChainId
-	}
-	return ""
-}
-
-type QueryThrottledConsumerPacketDataResponse struct {
-	ChainId             string                       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	Size_               uint64                       `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
-	PacketDataInstances []ThrottledPacketDataWrapper `protobuf:"bytes,3,rep,name=packetDataInstances,proto3" json:"packetDataInstances"`
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) Reset() {
-	*m = QueryThrottledConsumerPacketDataResponse{}
-}
-func (m *QueryThrottledConsumerPacketDataResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryThrottledConsumerPacketDataResponse) ProtoMessage()    {}
-func (*QueryThrottledConsumerPacketDataResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{16}
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryThrottledConsumerPacketDataResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryThrottledConsumerPacketDataResponse.Merge(m, src)
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryThrottledConsumerPacketDataResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryThrottledConsumerPacketDataResponse proto.InternalMessageInfo
-
-func (m *QueryThrottledConsumerPacketDataResponse) GetChainId() string {
-	if m != nil {
-		return m.ChainId
-	}
-	return ""
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) GetSize_() uint64 {
-	if m != nil {
-		return m.Size_
-	}
-	return 0
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) GetPacketDataInstances() []ThrottledPacketDataWrapper {
-	if m != nil {
-		return m.PacketDataInstances
-	}
-	return nil
-}
-
-// A query wrapper type for the global entry and data relevant to a throttled
-// slash packet.
-type ThrottledSlashPacket struct {
-	GlobalEntry GlobalSlashEntry      `protobuf:"bytes,1,opt,name=global_entry,json=globalEntry,proto3" json:"global_entry"`
-	Data        types.SlashPacketData `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`
-}
-
-func (m *ThrottledSlashPacket) Reset()         { *m = ThrottledSlashPacket{} }
-func (m *ThrottledSlashPacket) String() string { return proto.CompactTextString(m) }
-func (*ThrottledSlashPacket) ProtoMessage()    {}
-func (*ThrottledSlashPacket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{17}
-}
-func (m *ThrottledSlashPacket) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ThrottledSlashPacket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ThrottledSlashPacket.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ThrottledSlashPacket) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ThrottledSlashPacket.Merge(m, src)
-}
-func (m *ThrottledSlashPacket) XXX_Size() int {
-	return m.Size()
-}
-func (m *ThrottledSlashPacket) XXX_DiscardUnknown() {
-	xxx_messageInfo_ThrottledSlashPacket.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ThrottledSlashPacket proto.InternalMessageInfo
-
-func (m *ThrottledSlashPacket) GetGlobalEntry() GlobalSlashEntry {
-	if m != nil {
-		return m.GlobalEntry
-	}
-	return GlobalSlashEntry{}
-}
-
-func (m *ThrottledSlashPacket) GetData() types.SlashPacketData {
-	if m != nil {
-		return m.Data
-	}
-	return types.SlashPacketData{}
-}
-
-// ThrottledPacketDataWrapper contains either SlashPacketData or
-// VSCMaturedPacketData
-type ThrottledPacketDataWrapper struct {
-	// Types that are valid to be assigned to Data:
-	//	*ThrottledPacketDataWrapper_SlashPacket
-	//	*ThrottledPacketDataWrapper_VscMaturedPacket
-	Data isThrottledPacketDataWrapper_Data `protobuf_oneof:"data"`
-}
-
-func (m *ThrottledPacketDataWrapper) Reset()         { *m = ThrottledPacketDataWrapper{} }
-func (m *ThrottledPacketDataWrapper) String() string { return proto.CompactTextString(m) }
-func (*ThrottledPacketDataWrapper) ProtoMessage()    {}
-func (*ThrottledPacketDataWrapper) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{18}
-}
-func (m *ThrottledPacketDataWrapper) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ThrottledPacketDataWrapper) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ThrottledPacketDataWrapper.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ThrottledPacketDataWrapper) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ThrottledPacketDataWrapper.Merge(m, src)
-}
-func (m *ThrottledPacketDataWrapper) XXX_Size() int {
-	return m.Size()
-}
-func (m *ThrottledPacketDataWrapper) XXX_DiscardUnknown() {
-	xxx_messageInfo_ThrottledPacketDataWrapper.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ThrottledPacketDataWrapper proto.InternalMessageInfo
-
-type isThrottledPacketDataWrapper_Data interface {
-	isThrottledPacketDataWrapper_Data()
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type ThrottledPacketDataWrapper_SlashPacket struct {
-	SlashPacket *types.SlashPacketData `protobuf:"bytes,1,opt,name=slash_packet,json=slashPacket,proto3,oneof" json:"slash_packet,omitempty"`
-}
-type ThrottledPacketDataWrapper_VscMaturedPacket struct {
-	VscMaturedPacket *types.VSCMaturedPacketData `protobuf:"bytes,2,opt,name=vsc_matured_packet,json=vscMaturedPacket,proto3,oneof" json:"vsc_matured_packet,omitempty"`
-}
-
-func (*ThrottledPacketDataWrapper_SlashPacket) isThrottledPacketDataWrapper_Data()      {}
-func (*ThrottledPacketDataWrapper_VscMaturedPacket) isThrottledPacketDataWrapper_Data() {}
-
-func (m *ThrottledPacketDataWrapper) GetData() isThrottledPacketDataWrapper_Data {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-func (m *ThrottledPacketDataWrapper) GetSlashPacket() *types.SlashPacketData {
-	if x, ok := m.GetData().(*ThrottledPacketDataWrapper_SlashPacket); ok {
-		return x.SlashPacket
-	}
-	return nil
-}
-
-func (m *ThrottledPacketDataWrapper) GetVscMaturedPacket() *types.VSCMaturedPacketData {
-	if x, ok := m.GetData().(*ThrottledPacketDataWrapper_VscMaturedPacket); ok {
-		return x.VscMaturedPacket
-	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*ThrottledPacketDataWrapper) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*ThrottledPacketDataWrapper_SlashPacket)(nil),
-		(*ThrottledPacketDataWrapper_VscMaturedPacket)(nil),
-	}
-}
-
 type QueryRegisteredConsumerRewardDenomsRequest struct {
 }
 
@@ -962,7 +704,7 @@ func (m *QueryRegisteredConsumerRewardDenomsRequest) String() string {
 }
 func (*QueryRegisteredConsumerRewardDenomsRequest) ProtoMessage() {}
 func (*QueryRegisteredConsumerRewardDenomsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{19}
+	return fileDescriptor_422512d7b7586cd7, []int{15}
 }
 func (m *QueryRegisteredConsumerRewardDenomsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1003,7 +745,7 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) String() string {
 }
 func (*QueryRegisteredConsumerRewardDenomsResponse) ProtoMessage() {}
 func (*QueryRegisteredConsumerRewardDenomsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{20}
+	return fileDescriptor_422512d7b7586cd7, []int{16}
 }
 func (m *QueryRegisteredConsumerRewardDenomsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1055,6 +797,21 @@ func (m *QueryParamsRequest) XXX_Unmarshal(b []byte) error {
 func (m *QueryParamsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_QueryParamsRequest.Marshal(b, m, deterministic)
+type QueryProposedChainIDsRequest struct {
+}
+
+func (m *QueryProposedChainIDsRequest) Reset()         { *m = QueryProposedChainIDsRequest{} }
+func (m *QueryProposedChainIDsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryProposedChainIDsRequest) ProtoMessage()    {}
+func (*QueryProposedChainIDsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{17}
+}
+func (m *QueryProposedChainIDsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryProposedChainIDsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryProposedChainIDsRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1094,6 +851,34 @@ func (m *QueryParamsResponse) XXX_Unmarshal(b []byte) error {
 func (m *QueryParamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_QueryParamsResponse.Marshal(b, m, deterministic)
+func (m *QueryProposedChainIDsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryProposedChainIDsRequest.Merge(m, src)
+}
+func (m *QueryProposedChainIDsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryProposedChainIDsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryProposedChainIDsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryProposedChainIDsRequest proto.InternalMessageInfo
+
+type QueryProposedChainIDsResponse struct {
+	ProposedChains []ProposedChain `protobuf:"bytes,1,rep,name=proposedChains,proto3" json:"proposedChains"`
+}
+
+func (m *QueryProposedChainIDsResponse) Reset()         { *m = QueryProposedChainIDsResponse{} }
+func (m *QueryProposedChainIDsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryProposedChainIDsResponse) ProtoMessage()    {}
+func (*QueryProposedChainIDsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{18}
+}
+func (m *QueryProposedChainIDsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryProposedChainIDsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryProposedChainIDsResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1120,6 +905,75 @@ func (m *QueryParamsResponse) GetParams() Params {
 		return m.Params
 	}
 	return Params{}
+func (m *QueryProposedChainIDsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryProposedChainIDsResponse.Merge(m, src)
+}
+func (m *QueryProposedChainIDsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryProposedChainIDsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryProposedChainIDsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryProposedChainIDsResponse proto.InternalMessageInfo
+
+func (m *QueryProposedChainIDsResponse) GetProposedChains() []ProposedChain {
+	if m != nil {
+		return m.ProposedChains
+	}
+	return nil
+}
+
+type ProposedChain struct {
+	ChainID    string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
+	ProposalID uint64 `protobuf:"varint,2,opt,name=proposalID,proto3" json:"proposalID,omitempty"`
+}
+
+func (m *ProposedChain) Reset()         { *m = ProposedChain{} }
+func (m *ProposedChain) String() string { return proto.CompactTextString(m) }
+func (*ProposedChain) ProtoMessage()    {}
+func (*ProposedChain) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{19}
+}
+func (m *ProposedChain) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ProposedChain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ProposedChain.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ProposedChain) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProposedChain.Merge(m, src)
+}
+func (m *ProposedChain) XXX_Size() int {
+	return m.Size()
+}
+func (m *ProposedChain) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProposedChain.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProposedChain proto.InternalMessageInfo
+
+func (m *ProposedChain) GetChainID() string {
+	if m != nil {
+		return m.ChainID
+	}
+	return ""
+}
+
+func (m *ProposedChain) GetProposalID() uint64 {
+	if m != nil {
+		return m.ProposalID
+	}
+	return 0
 }
 
 func init() {
@@ -1138,14 +992,11 @@ func init() {
 	proto.RegisterType((*QueryValidatorProviderAddrResponse)(nil), "interchain_security.ccv.provider.v1.QueryValidatorProviderAddrResponse")
 	proto.RegisterType((*QueryThrottleStateRequest)(nil), "interchain_security.ccv.provider.v1.QueryThrottleStateRequest")
 	proto.RegisterType((*QueryThrottleStateResponse)(nil), "interchain_security.ccv.provider.v1.QueryThrottleStateResponse")
-	proto.RegisterType((*QueryThrottledConsumerPacketDataRequest)(nil), "interchain_security.ccv.provider.v1.QueryThrottledConsumerPacketDataRequest")
-	proto.RegisterType((*QueryThrottledConsumerPacketDataResponse)(nil), "interchain_security.ccv.provider.v1.QueryThrottledConsumerPacketDataResponse")
-	proto.RegisterType((*ThrottledSlashPacket)(nil), "interchain_security.ccv.provider.v1.ThrottledSlashPacket")
-	proto.RegisterType((*ThrottledPacketDataWrapper)(nil), "interchain_security.ccv.provider.v1.ThrottledPacketDataWrapper")
 	proto.RegisterType((*QueryRegisteredConsumerRewardDenomsRequest)(nil), "interchain_security.ccv.provider.v1.QueryRegisteredConsumerRewardDenomsRequest")
 	proto.RegisterType((*QueryRegisteredConsumerRewardDenomsResponse)(nil), "interchain_security.ccv.provider.v1.QueryRegisteredConsumerRewardDenomsResponse")
-	proto.RegisterType((*QueryParamsRequest)(nil), "interchain_security.ccv.provider.v1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "interchain_security.ccv.provider.v1.QueryParamsResponse")
+	proto.RegisterType((*QueryProposedChainIDsRequest)(nil), "interchain_security.ccv.provider.v1.QueryProposedChainIDsRequest")
+	proto.RegisterType((*QueryProposedChainIDsResponse)(nil), "interchain_security.ccv.provider.v1.QueryProposedChainIDsResponse")
+	proto.RegisterType((*ProposedChain)(nil), "interchain_security.ccv.provider.v1.ProposedChain")
 }
 
 func init() {
@@ -1153,94 +1004,81 @@ func init() {
 }
 
 var fileDescriptor_422512d7b7586cd7 = []byte{
-	// 1384 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0xc1, 0x6f, 0x13, 0xc7,
-	0x1b, 0xf5, 0x26, 0x21, 0x24, 0x13, 0x7e, 0x3f, 0xd0, 0x90, 0x52, 0xb3, 0xa0, 0x98, 0x2e, 0x6a,
-	0x1b, 0xa0, 0xdd, 0x4d, 0x8c, 0xaa, 0x02, 0x6d, 0x08, 0x71, 0x48, 0x43, 0x04, 0x88, 0x74, 0x83,
-	0x40, 0x6a, 0x2b, 0x96, 0xc9, 0xee, 0xd4, 0x59, 0x75, 0xbd, 0xb3, 0xcc, 0x8c, 0x1d, 0xd2, 0xaa,
-	0x87, 0xb6, 0x52, 0xcb, 0x11, 0xa9, 0xea, 0x9d, 0x53, 0xff, 0x80, 0xde, 0x7b, 0xe7, 0x56, 0x5a,
-	0x2e, 0x9c, 0x68, 0x15, 0x7a, 0xe8, 0xb1, 0xea, 0xbd, 0x52, 0xb5, 0x33, 0xb3, 0xb6, 0x37, 0xde,
-	0xd8, 0x6b, 0x93, 0x9b, 0x3d, 0x3b, 0xdf, 0xfb, 0xde, 0x7b, 0xfe, 0x66, 0xf6, 0x19, 0x58, 0x7e,
-	0xc8, 0x31, 0x75, 0x37, 0x90, 0x1f, 0x3a, 0x0c, 0xbb, 0x75, 0xea, 0xf3, 0x2d, 0xcb, 0x75, 0x1b,
-	0x56, 0x44, 0x49, 0xc3, 0xf7, 0x30, 0xb5, 0x1a, 0xb3, 0xd6, 0xbd, 0x3a, 0xa6, 0x5b, 0x66, 0x44,
-	0x09, 0x27, 0xf0, 0x64, 0x46, 0x81, 0xe9, 0xba, 0x0d, 0x33, 0x29, 0x30, 0x1b, 0xb3, 0xfa, 0xf1,
-	0x2a, 0x21, 0xd5, 0x00, 0x5b, 0x28, 0xf2, 0x2d, 0x14, 0x86, 0x84, 0x23, 0xee, 0x93, 0x90, 0x49,
-	0x08, 0x7d, 0xb2, 0x4a, 0xaa, 0x44, 0x7c, 0xb4, 0xe2, 0x4f, 0x6a, 0xb5, 0xa4, 0x6a, 0xc4, 0xb7,
-	0xf5, 0xfa, 0xa7, 0x16, 0xf7, 0x6b, 0x98, 0x71, 0x54, 0x8b, 0xd4, 0x86, 0x72, 0x1e, 0xaa, 0x4d,
-	0x16, 0xb2, 0x66, 0x66, 0xb7, 0x9a, 0xc6, 0xac, 0xc5, 0x36, 0x10, 0xc5, 0x9e, 0xe3, 0x92, 0x90,
-	0xd5, 0x6b, 0xcd, 0x8a, 0xd7, 0xbb, 0x54, 0x6c, 0xfa, 0x14, 0xcb, 0x6d, 0xc6, 0x39, 0x70, 0xec,
-	0xc3, 0xd8, 0x95, 0x45, 0x55, 0xbd, 0x8c, 0x43, 0xcc, 0x7c, 0x66, 0xe3, 0x7b, 0x75, 0xcc, 0x38,
-	0x3c, 0x0a, 0xc6, 0x24, 0x84, 0xef, 0x15, 0xb5, 0x13, 0xda, 0xf4, 0xb8, 0xbd, 0x5f, 0x7c, 0x5f,
-	0xf1, 0x0c, 0x06, 0x8e, 0x67, 0x57, 0xb2, 0x88, 0x84, 0x0c, 0xc3, 0x35, 0xf0, 0xbf, 0xaa, 0x5c,
-	0x72, 0x18, 0x47, 0x1c, 0x8b, 0xfa, 0x89, 0xf2, 0xb4, 0xb9, 0x9b, 0xf1, 0x8d, 0x59, 0x53, 0x61,
-	0xac, 0xc5, 0xfb, 0x2b, 0x23, 0x8f, 0x9f, 0x97, 0x0a, 0xf6, 0x81, 0x6a, 0xdb, 0x9a, 0x71, 0x1c,
-	0xe8, 0xa9, 0xa6, 0x8b, 0x31, 0x4c, 0xc2, 0xd6, 0x40, 0x3b, 0xc4, 0x24, 0x4f, 0x15, 0xa3, 0x0a,
-	0x18, 0x15, 0x6d, 0x59, 0x51, 0x3b, 0x31, 0x3c, 0x3d, 0x51, 0x3e, 0x6d, 0xe6, 0x98, 0x01, 0x53,
-	0x80, 0xd8, 0xaa, 0xd2, 0x38, 0x05, 0xde, 0xec, 0x6c, 0xb1, 0xc6, 0x11, 0xe5, 0xab, 0x94, 0x44,
-	0x84, 0xa1, 0xa0, 0xc9, 0xe6, 0x81, 0x06, 0xa6, 0x7b, 0xef, 0x55, 0xdc, 0x3e, 0x01, 0xe3, 0x51,
-	0xb2, 0xa8, 0x9c, 0xba, 0x98, 0x8f, 0x9e, 0x02, 0x5f, 0xf0, 0x3c, 0x3f, 0x1e, 0xce, 0x16, 0x74,
-	0x0b, 0xd0, 0x98, 0x06, 0x6f, 0x64, 0x31, 0x21, 0x51, 0x07, 0xe9, 0x6f, 0xb5, 0x6c, 0x81, 0xa9,
-	0xad, 0x8a, 0xf3, 0xc7, 0x9d, 0x9c, 0xe7, 0xfa, 0xe2, 0x6c, 0xe3, 0x1a, 0x69, 0xa0, 0x20, 0x93,
-	0xf2, 0x3c, 0xd8, 0x27, 0x5a, 0x77, 0x19, 0x41, 0x78, 0x0c, 0x8c, 0xbb, 0x81, 0x8f, 0x43, 0x1e,
-	0x3f, 0x1b, 0x12, 0xcf, 0xc6, 0xe4, 0xc2, 0x8a, 0x67, 0x7c, 0xa7, 0x81, 0xd7, 0x84, 0x92, 0x5b,
-	0x28, 0xf0, 0x3d, 0xc4, 0x09, 0x6d, 0xb3, 0x8a, 0xf6, 0x1e, 0x70, 0x38, 0x07, 0x0e, 0x25, 0xa4,
-	0x1d, 0xe4, 0x79, 0x14, 0x33, 0x26, 0x9b, 0x54, 0xe0, 0x3f, 0xcf, 0x4b, 0xff, 0xdf, 0x42, 0xb5,
-	0xe0, 0x82, 0xa1, 0x1e, 0x18, 0xf6, 0xc1, 0x64, 0xef, 0x82, 0x5c, 0xb9, 0x30, 0xf6, 0xe0, 0x51,
-	0xa9, 0xf0, 0xd7, 0xa3, 0x52, 0xc1, 0xb8, 0x01, 0x8c, 0x6e, 0x44, 0x94, 0x9b, 0xa7, 0xc0, 0xa1,
-	0xe4, 0x08, 0x37, 0xdb, 0x49, 0x46, 0x07, 0xdd, 0xb6, 0xfd, 0x71, 0xb3, 0x4e, 0x69, 0xab, 0x6d,
-	0xcd, 0xf3, 0x49, 0xeb, 0xe8, 0xd5, 0x45, 0xda, 0x8e, 0xfe, 0xdd, 0xa4, 0xa5, 0x89, 0xb4, 0xa4,
-	0x75, 0x38, 0xa9, 0xa4, 0xed, 0x70, 0xcd, 0x38, 0x06, 0x8e, 0x0a, 0xc0, 0x9b, 0x1b, 0x94, 0x70,
-	0x1e, 0x60, 0x71, 0xec, 0x93, 0xe1, 0xfc, 0x71, 0x48, 0x1d, 0xff, 0x1d, 0x4f, 0x55, 0x9b, 0x12,
-	0x98, 0x60, 0x01, 0x62, 0x1b, 0x4e, 0x0d, 0x73, 0x4c, 0x45, 0x87, 0x61, 0x1b, 0x88, 0xa5, 0xeb,
-	0xf1, 0x0a, 0x2c, 0x83, 0x57, 0xda, 0x36, 0x38, 0x28, 0x08, 0xc8, 0x26, 0x0a, 0x5d, 0x2c, 0xb4,
-	0x0f, 0xdb, 0x87, 0x5b, 0x5b, 0x17, 0x92, 0x47, 0xf0, 0x0e, 0x28, 0x86, 0xf8, 0x3e, 0x77, 0x28,
-	0x8e, 0x02, 0x1c, 0xfa, 0x6c, 0xc3, 0x71, 0x51, 0xe8, 0xc5, 0x62, 0x71, 0x71, 0x58, 0xcc, 0xbc,
-	0x6e, 0xca, 0x1b, 0xdf, 0x4c, 0x6e, 0x7c, 0xf3, 0x66, 0x72, 0xe3, 0x57, 0xc6, 0xe2, 0x3b, 0xec,
-	0xe1, 0xef, 0x25, 0xcd, 0x3e, 0x12, 0xa3, 0xd8, 0x09, 0xc8, 0x62, 0x82, 0x01, 0xd7, 0xc0, 0xfe,
-	0x08, 0xb9, 0x9f, 0x61, 0xce, 0x8a, 0x23, 0xe2, 0x56, 0x3a, 0x9f, 0xeb, 0x08, 0x25, 0x0e, 0x78,
-	0x6b, 0x31, 0xe7, 0x55, 0x81, 0x60, 0x27, 0x48, 0xc6, 0x65, 0x75, 0x88, 0x9b, 0xbb, 0x92, 0x89,
-	0x93, 0x1b, 0x2f, 0x23, 0x8e, 0x72, 0xdc, 0xf0, 0xbf, 0x25, 0x17, 0x58, 0x57, 0x18, 0x65, 0x7e,
-	0x97, 0x69, 0x83, 0x60, 0x84, 0xf9, 0x9f, 0x4b, 0x97, 0x47, 0x6c, 0xf1, 0x19, 0x6e, 0x82, 0xc3,
-	0x51, 0x13, 0x64, 0x25, 0x64, 0x3c, 0x36, 0x9b, 0x15, 0x87, 0x85, 0x05, 0xf3, 0xfd, 0x59, 0xd0,
-	0x62, 0x73, 0x9b, 0xa2, 0x28, 0xc2, 0x54, 0xbd, 0x3a, 0xb2, 0x3a, 0x18, 0x3f, 0x6b, 0x60, 0x32,
-	0xcb, 0x3c, 0x78, 0x07, 0x1c, 0xa8, 0x06, 0x64, 0x1d, 0x05, 0x0e, 0x0e, 0x39, 0xdd, 0x52, 0x17,
-	0xda, 0x3b, 0xb9, 0xa8, 0x2c, 0x8b, 0x42, 0x81, 0xb6, 0x14, 0x17, 0x2b, 0x02, 0x13, 0x12, 0x50,
-	0x2c, 0xc1, 0x25, 0x30, 0xe2, 0x21, 0x8e, 0x84, 0x0b, 0x13, 0xe5, 0x33, 0xdd, 0x5e, 0x83, 0x6d,
-	0xb4, 0x62, 0xf2, 0x0a, 0x4d, 0x94, 0x1b, 0xcf, 0x34, 0xa0, 0xef, 0xae, 0x1c, 0xae, 0x82, 0x03,
-	0x72, 0xc4, 0xa5, 0x76, 0xa5, 0xa2, 0x9f, 0x6e, 0x57, 0x0a, 0xb6, 0x3c, 0x46, 0xca, 0x97, 0xbb,
-	0x00, 0x36, 0x98, 0xeb, 0xd4, 0x10, 0xaf, 0xc7, 0x31, 0x43, 0xe1, 0x4a, 0x15, 0x33, 0xdd, 0x70,
-	0x6f, 0xad, 0x2d, 0x5e, 0x97, 0x45, 0x29, 0xf0, 0x43, 0x0d, 0xe6, 0xa6, 0xd6, 0x2b, 0xa3, 0xd2,
-	0x19, 0xe3, 0x2d, 0x70, 0x5a, 0x8c, 0x9b, 0x8d, 0xab, 0x3e, 0xe3, 0x98, 0xb6, 0xe6, 0xcd, 0xc6,
-	0x9b, 0x88, 0x7a, 0x97, 0x71, 0x48, 0x6a, 0xcd, 0x37, 0xd5, 0x12, 0x38, 0x93, 0x6b, 0xb7, 0x9a,
-	0xcf, 0x23, 0x60, 0xd4, 0x13, 0x2b, 0xe2, 0xe5, 0x3f, 0x6e, 0xab, 0x6f, 0xc6, 0x24, 0x80, 0x02,
-	0x66, 0x15, 0x51, 0xd4, 0x02, 0xbf, 0x0b, 0x0e, 0xa7, 0x56, 0x15, 0xc8, 0x0a, 0x18, 0x8d, 0xc4,
-	0x4a, 0x4f, 0x5f, 0xdb, 0xa7, 0x43, 0x82, 0xa8, 0x5f, 0x51, 0x01, 0x94, 0x7f, 0x85, 0x60, 0x9f,
-	0x68, 0x01, 0xb7, 0x35, 0x30, 0x99, 0x95, 0xa4, 0xe0, 0xa5, 0x5c, 0xe8, 0x5d, 0xe2, 0x9b, 0xbe,
-	0xf0, 0x12, 0x08, 0x52, 0xb2, 0xb1, 0xf4, 0xf5, 0xd3, 0x3f, 0xbf, 0x1f, 0x9a, 0x87, 0x73, 0xbd,
-	0x13, 0x76, 0xf3, 0x95, 0xa2, 0x22, 0x9b, 0xf5, 0x45, 0x72, 0x23, 0x7c, 0x09, 0x9f, 0x6a, 0xca,
-	0xd1, 0x74, 0x36, 0x83, 0xf3, 0xfd, 0x33, 0x4c, 0x65, 0x3e, 0xfd, 0xd2, 0xe0, 0x00, 0x4a, 0xe1,
-	0x79, 0xa1, 0xf0, 0x2c, 0x9c, 0xed, 0x43, 0xa1, 0x4c, 0x83, 0xf0, 0xab, 0x21, 0x50, 0xdc, 0x25,
-	0xe2, 0x31, 0x78, 0x6d, 0x40, 0x66, 0x99, 0x69, 0x52, 0xbf, 0xbe, 0x47, 0x68, 0x4a, 0xf4, 0x15,
-	0x21, 0xba, 0x02, 0x2f, 0xf5, 0x2b, 0x3a, 0x0e, 0xf3, 0x94, 0x3b, 0xcd, 0xa0, 0x06, 0xff, 0xd5,
-	0xc0, 0xab, 0xd9, 0x89, 0x91, 0xc1, 0xab, 0x03, 0x93, 0xee, 0x8c, 0xa6, 0xfa, 0xb5, 0xbd, 0x01,
-	0x53, 0x06, 0x2c, 0x0b, 0x03, 0x16, 0xe0, 0xfc, 0x00, 0x06, 0x90, 0xa8, 0x4d, 0xff, 0xdf, 0x9a,
-	0x0a, 0x25, 0x99, 0xf1, 0x0e, 0x7e, 0x90, 0x9f, 0x75, 0xb7, 0xa0, 0xaa, 0x2f, 0xbf, 0x34, 0x8e,
-	0x12, 0xbe, 0x20, 0x84, 0xbf, 0x07, 0xcf, 0xe7, 0xf8, 0xcb, 0x9c, 0x00, 0x39, 0xa9, 0xb4, 0x98,
-	0x21, 0xb9, 0x3d, 0xf6, 0x0d, 0x24, 0x39, 0x23, 0xc0, 0x0e, 0x24, 0x39, 0x2b, 0x7f, 0x0e, 0x26,
-	0x39, 0x95, 0x58, 0xe1, 0x2f, 0x9a, 0x7a, 0x4f, 0xa4, 0xa2, 0x27, 0xbc, 0x98, 0x9f, 0x62, 0x56,
-	0xa2, 0xd5, 0xe7, 0x07, 0xae, 0x57, 0xd2, 0xce, 0x09, 0x69, 0x65, 0x38, 0xd3, 0x5b, 0x1a, 0x57,
-	0x00, 0xf2, 0xef, 0x38, 0xfc, 0x66, 0x08, 0x9c, 0xe8, 0x95, 0xee, 0xfa, 0xb9, 0xc3, 0x7a, 0x67,
-	0xcd, 0x7e, 0xee, 0xb0, 0x1c, 0x91, 0xd3, 0xa8, 0x08, 0xed, 0xef, 0xc3, 0x0b, 0xbd, 0xb5, 0x47,
-	0x38, 0xf4, 0xfc, 0xb0, 0xda, 0x9a, 0x63, 0x95, 0x94, 0xe1, 0x0f, 0x43, 0xe0, 0x64, 0x8e, 0x18,
-	0x01, 0x6f, 0xe4, 0xa7, 0x9e, 0x2b, 0xbe, 0xe8, 0xab, 0x7b, 0x07, 0xa8, 0xec, 0xb8, 0x2a, 0xec,
-	0x58, 0x82, 0x8b, 0xbd, 0xed, 0xa0, 0x4d, 0xc4, 0x96, 0x23, 0x54, 0x60, 0x3a, 0x32, 0x16, 0xc1,
-	0x9f, 0x34, 0x30, 0xd1, 0x96, 0x80, 0xe0, 0xbb, 0xf9, 0xe9, 0xa6, 0x92, 0x94, 0x7e, 0xae, 0xff,
-	0x42, 0xa5, 0x67, 0x46, 0xe8, 0x39, 0x0d, 0xa7, 0x73, 0xfc, 0xbc, 0x32, 0x61, 0xdd, 0x7e, 0xbc,
-	0x3d, 0xa5, 0x3d, 0xd9, 0x9e, 0xd2, 0xfe, 0xd8, 0x9e, 0xd2, 0x1e, 0xbe, 0x98, 0x2a, 0x3c, 0x79,
-	0x31, 0x55, 0x78, 0xf6, 0x62, 0xaa, 0xf0, 0xd1, 0x5c, 0xd5, 0xe7, 0x1b, 0xf5, 0x75, 0xd3, 0x25,
-	0x35, 0xcb, 0x25, 0xac, 0x46, 0x58, 0x1b, 0xe8, 0xdb, 0x4d, 0xd0, 0xc6, 0x59, 0xeb, 0xfe, 0x8e,
-	0x43, 0xb3, 0x15, 0x61, 0xb6, 0x3e, 0x2a, 0xfe, 0xda, 0x9d, 0xfd, 0x2f, 0x00, 0x00, 0xff, 0xff,
-	0x0d, 0xfa, 0x6f, 0xc1, 0x66, 0x14, 0x00, 0x00,
+	// 1170 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0xcf, 0x6f, 0x1b, 0xc5,
+	0x17, 0xf7, 0x26, 0x6d, 0xbe, 0xc9, 0xe4, 0xdb, 0x1f, 0x4c, 0x4b, 0x71, 0x37, 0xc1, 0x2e, 0x5b,
+	0x01, 0x69, 0x81, 0xdd, 0xc4, 0xb9, 0xb4, 0x81, 0x34, 0xb1, 0xe3, 0x10, 0xac, 0xb6, 0x6a, 0xd8,
+	0x56, 0x20, 0x01, 0x62, 0xd9, 0xec, 0x0e, 0xf6, 0x4a, 0xeb, 0x9d, 0xed, 0xcc, 0xd8, 0x69, 0x54,
+	0x71, 0x28, 0x48, 0xd0, 0x63, 0x25, 0xc4, 0xbd, 0x7f, 0x4e, 0x6f, 0x14, 0xf5, 0xc2, 0xa9, 0xa0,
+	0x84, 0x03, 0xe2, 0x84, 0xb8, 0x23, 0xa1, 0x9d, 0x9d, 0x5d, 0xaf, 0xed, 0x8d, 0xbd, 0x76, 0x72,
+	0xb3, 0x67, 0xde, 0xfb, 0xbc, 0xcf, 0xe7, 0xf9, 0xcd, 0x7b, 0xcf, 0x40, 0x73, 0x3c, 0x86, 0x88,
+	0xd5, 0x30, 0x1d, 0xcf, 0xa0, 0xc8, 0x6a, 0x11, 0x87, 0xed, 0x69, 0x96, 0xd5, 0xd6, 0x7c, 0x82,
+	0xdb, 0x8e, 0x8d, 0x88, 0xd6, 0x5e, 0xd2, 0xee, 0xb7, 0x10, 0xd9, 0x53, 0x7d, 0x82, 0x19, 0x86,
+	0x97, 0x53, 0x1c, 0x54, 0xcb, 0x6a, 0xab, 0x91, 0x83, 0xda, 0x5e, 0x92, 0xe7, 0xeb, 0x18, 0xd7,
+	0x5d, 0xa4, 0x99, 0xbe, 0xa3, 0x99, 0x9e, 0x87, 0x99, 0xc9, 0x1c, 0xec, 0xd1, 0x10, 0x42, 0x3e,
+	0x5f, 0xc7, 0x75, 0xcc, 0x3f, 0x6a, 0xc1, 0x27, 0x71, 0x5a, 0x14, 0x3e, 0xfc, 0xdb, 0x4e, 0xeb,
+	0x6b, 0x8d, 0x39, 0x4d, 0x44, 0x99, 0xd9, 0xf4, 0x85, 0x41, 0x29, 0x0b, 0xd5, 0x98, 0x45, 0xe8,
+	0xb3, 0x78, 0x98, 0x4f, 0x7b, 0x49, 0xa3, 0x0d, 0x93, 0x20, 0xdb, 0xb0, 0xb0, 0x47, 0x5b, 0xcd,
+	0xd8, 0xe3, 0xcd, 0x01, 0x1e, 0xbb, 0x0e, 0x41, 0xa1, 0x99, 0x72, 0x0d, 0xcc, 0x7d, 0x1c, 0x64,
+	0x65, 0x43, 0x78, 0x6f, 0x21, 0x0f, 0x51, 0x87, 0xea, 0xe8, 0x7e, 0x0b, 0x51, 0x06, 0x2f, 0x82,
+	0xe9, 0x10, 0xc2, 0xb1, 0xf3, 0xd2, 0x25, 0x69, 0x61, 0x46, 0xff, 0x1f, 0xff, 0x5e, 0xb3, 0x95,
+	0x87, 0x60, 0x3e, 0xdd, 0x93, 0xfa, 0xd8, 0xa3, 0x08, 0x7e, 0x0e, 0x4e, 0xd5, 0xc3, 0x23, 0x83,
+	0x32, 0x93, 0x21, 0xee, 0x3f, 0x5b, 0x5a, 0x54, 0x0f, 0x4b, 0x7c, 0x7b, 0x49, 0xed, 0xc1, 0xba,
+	0x1b, 0xf8, 0x55, 0x4e, 0x3c, 0x7b, 0x59, 0xcc, 0xe9, 0xff, 0xaf, 0x27, 0xce, 0x94, 0x79, 0x20,
+	0x77, 0x05, 0xdf, 0x08, 0xe0, 0x22, 0xd6, 0x8a, 0xd9, 0x23, 0x2a, 0xba, 0x15, 0xcc, 0x2a, 0x60,
+	0x8a, 0x87, 0xa7, 0x79, 0xe9, 0xd2, 0xe4, 0xc2, 0x6c, 0xe9, 0xaa, 0x9a, 0xa1, 0x16, 0x54, 0x0e,
+	0xa2, 0x0b, 0x4f, 0xe5, 0x0a, 0x78, 0xbb, 0x3f, 0xc4, 0x5d, 0x66, 0x12, 0xb6, 0x4d, 0xb0, 0x8f,
+	0xa9, 0xe9, 0xc6, 0x6c, 0x1e, 0x4b, 0x60, 0x61, 0xb8, 0xad, 0xe0, 0xf6, 0x05, 0x98, 0xf1, 0xa3,
+	0x43, 0x91, 0xb1, 0x1b, 0xd9, 0xe8, 0x09, 0xf0, 0xb2, 0x6d, 0x3b, 0x41, 0x91, 0x76, 0xa0, 0x3b,
+	0x80, 0xca, 0x02, 0x78, 0x2b, 0x8d, 0x09, 0xf6, 0xfb, 0x48, 0x7f, 0x2f, 0xa5, 0x0b, 0xec, 0x32,
+	0x8d, 0x7f, 0xe9, 0x3e, 0xce, 0xab, 0x23, 0x71, 0xd6, 0x51, 0x13, 0xb7, 0x4d, 0x37, 0x95, 0xf2,
+	0x1a, 0x38, 0xc9, 0x43, 0x0f, 0x28, 0x45, 0x38, 0x07, 0x66, 0x2c, 0xd7, 0x41, 0x1e, 0x0b, 0xee,
+	0x26, 0xf8, 0xdd, 0x74, 0x78, 0x50, 0xb3, 0x95, 0x1f, 0x24, 0xf0, 0x06, 0x57, 0xf2, 0x89, 0xe9,
+	0x3a, 0xb6, 0xc9, 0x30, 0x49, 0xa4, 0x8a, 0x0c, 0x2f, 0x74, 0xb8, 0x0a, 0xce, 0x46, 0xa4, 0x0d,
+	0xd3, 0xb6, 0x09, 0xa2, 0x34, 0x0c, 0x52, 0x81, 0xff, 0xbc, 0x2c, 0x9e, 0xde, 0x33, 0x9b, 0xee,
+	0x8a, 0x22, 0x2e, 0x14, 0xfd, 0x4c, 0x64, 0x5b, 0x0e, 0x4f, 0x56, 0xa6, 0x1f, 0x3f, 0x2d, 0xe6,
+	0xfe, 0x7c, 0x5a, 0xcc, 0x29, 0x77, 0x80, 0x32, 0x88, 0x88, 0xc8, 0xe6, 0x15, 0x70, 0x36, 0x7a,
+	0xca, 0x71, 0xb8, 0x90, 0xd1, 0x19, 0x2b, 0x61, 0x1f, 0x04, 0xeb, 0x97, 0xb6, 0x9d, 0x08, 0x9e,
+	0x4d, 0x5a, 0x5f, 0xac, 0x01, 0xd2, 0x7a, 0xe2, 0x0f, 0x92, 0xd6, 0x4d, 0xa4, 0x23, 0xad, 0x2f,
+	0x93, 0x42, 0x5a, 0x4f, 0xd6, 0x94, 0x39, 0x70, 0x91, 0x03, 0xde, 0x6b, 0x10, 0xcc, 0x98, 0x8b,
+	0xf8, 0xb3, 0x8f, 0x8a, 0xf3, 0x17, 0x49, 0x3c, 0xff, 0x9e, 0x5b, 0x11, 0xa6, 0x08, 0x66, 0xa9,
+	0x6b, 0xd2, 0x86, 0xd1, 0x44, 0x0c, 0x11, 0x1e, 0x61, 0x52, 0x07, 0xfc, 0xe8, 0x76, 0x70, 0x02,
+	0x4b, 0xe0, 0xd5, 0x84, 0x81, 0x61, 0xba, 0x2e, 0xde, 0x35, 0x3d, 0x0b, 0x71, 0xed, 0x93, 0xfa,
+	0xb9, 0x8e, 0x69, 0x39, 0xba, 0x82, 0x5f, 0x82, 0xbc, 0x87, 0x1e, 0x30, 0x83, 0x20, 0xdf, 0x45,
+	0x9e, 0x43, 0x1b, 0x86, 0x65, 0x7a, 0x76, 0x20, 0x16, 0xe5, 0x27, 0x79, 0xcd, 0xcb, 0x6a, 0xd8,
+	0xf9, 0xd5, 0xa8, 0xf3, 0xab, 0xf7, 0xa2, 0xce, 0x5f, 0x99, 0x0e, 0x7a, 0xd8, 0x93, 0xdf, 0x8a,
+	0x92, 0x7e, 0x21, 0x40, 0xd1, 0x23, 0x90, 0x8d, 0x08, 0x43, 0x79, 0x17, 0x5c, 0xe5, 0x92, 0x74,
+	0x54, 0x77, 0x28, 0x43, 0x04, 0xd9, 0x9d, 0xd7, 0xb1, 0x6b, 0x12, 0xbb, 0x8a, 0x3c, 0xdc, 0x8c,
+	0x9f, 0xe7, 0x26, 0x78, 0x27, 0x93, 0xb5, 0xc8, 0xc8, 0x05, 0x30, 0x65, 0xf3, 0x13, 0xde, 0xf1,
+	0x66, 0x74, 0xf1, 0x4d, 0x29, 0x88, 0x1e, 0x1e, 0xbe, 0x3c, 0x64, 0xf3, 0x97, 0x56, 0xab, 0xc6,
+	0x61, 0x1e, 0x49, 0xe0, 0xf5, 0x43, 0x0c, 0x04, 0xf2, 0x57, 0xe0, 0xb4, 0x9f, 0xbc, 0x8b, 0x7a,
+	0x6a, 0x29, 0x53, 0x03, 0xe8, 0x82, 0x15, 0x8d, 0xbe, 0x07, 0x4f, 0xa9, 0x81, 0x53, 0x5d, 0x66,
+	0x30, 0x0f, 0x44, 0xfd, 0x56, 0xbb, 0xcb, 0xb9, 0x0a, 0x0b, 0x00, 0x44, 0x8d, 0xa3, 0x56, 0xe5,
+	0x3f, 0xe6, 0x09, 0x3d, 0x71, 0x52, 0xfa, 0xee, 0x15, 0x70, 0x92, 0xcb, 0x81, 0xfb, 0x12, 0x38,
+	0x9f, 0x36, 0xbd, 0xe0, 0x7a, 0x26, 0xde, 0x03, 0x46, 0xa6, 0x5c, 0x3e, 0x02, 0x42, 0x98, 0x54,
+	0x65, 0xf3, 0xdb, 0x17, 0x7f, 0xfc, 0x38, 0xb1, 0x06, 0x57, 0x87, 0x6f, 0x35, 0xf1, 0xf3, 0x15,
+	0xe3, 0x51, 0x7b, 0x18, 0xbd, 0xf5, 0x6f, 0xe0, 0x0b, 0x09, 0x9c, 0x4b, 0x99, 0x83, 0x70, 0x6d,
+	0x74, 0x86, 0x5d, 0xf3, 0x55, 0x5e, 0x1f, 0x1f, 0x40, 0x28, 0xbc, 0xce, 0x15, 0x2e, 0xc3, 0xa5,
+	0x11, 0x14, 0x86, 0x93, 0x17, 0x3e, 0x9a, 0x00, 0xf9, 0x43, 0xc6, 0x29, 0x85, 0xb7, 0xc6, 0x64,
+	0x96, 0x3a, 0xb9, 0xe5, 0xdb, 0xc7, 0x84, 0x26, 0x44, 0x7f, 0xc4, 0x45, 0x57, 0xe0, 0xfa, 0xa8,
+	0xa2, 0x83, 0x05, 0x8a, 0x30, 0x23, 0x1e, 0x8a, 0xf0, 0x5f, 0x09, 0xbc, 0x96, 0x3e, 0x9d, 0x29,
+	0xbc, 0x39, 0x36, 0xe9, 0xfe, 0x35, 0x40, 0xbe, 0x75, 0x3c, 0x60, 0x22, 0x01, 0x5b, 0x3c, 0x01,
+	0x65, 0xb8, 0x36, 0x46, 0x02, 0xb0, 0x9f, 0xd0, 0xff, 0x77, 0x34, 0x00, 0x52, 0x47, 0x29, 0xfc,
+	0x30, 0x3b, 0xeb, 0x41, 0x4b, 0x81, 0xbc, 0x75, 0x64, 0x1c, 0x21, 0xbc, 0xcc, 0x85, 0xbf, 0x0f,
+	0xaf, 0x67, 0xf8, 0x9b, 0x12, 0x01, 0x19, 0x5d, 0x93, 0x39, 0x45, 0x72, 0x72, 0xc4, 0x8e, 0x25,
+	0x39, 0x65, 0x59, 0x18, 0x4b, 0x72, 0xda, 0xac, 0x1f, 0x4f, 0x72, 0xd7, 0x76, 0x00, 0x7f, 0x96,
+	0x00, 0xec, 0x1f, 0xf3, 0xf0, 0x46, 0x76, 0x8a, 0x69, 0xdb, 0x83, 0xbc, 0x36, 0xb6, 0xbf, 0x90,
+	0x76, 0x8d, 0x4b, 0x2b, 0xc1, 0xc5, 0xe1, 0xd2, 0x98, 0x00, 0x08, 0xff, 0x02, 0xc1, 0x9f, 0x26,
+	0xc0, 0xe5, 0x0c, 0x73, 0x1b, 0xde, 0xc9, 0x4e, 0x31, 0xd3, 0xbe, 0x20, 0x6f, 0x1f, 0x1f, 0xa0,
+	0x48, 0xc2, 0x4d, 0x9e, 0x84, 0x4d, 0xb8, 0x31, 0x3c, 0x09, 0x24, 0x46, 0xec, 0xd4, 0x34, 0xe1,
+	0x98, 0x46, 0xb8, 0x87, 0xc0, 0xbf, 0xfa, 0xf6, 0x8c, 0x64, 0x33, 0xa9, 0x55, 0x29, 0x1c, 0x61,
+	0xaa, 0x1e, 0xb2, 0xcc, 0xc8, 0x95, 0xa3, 0x40, 0x08, 0xd5, 0x15, 0xae, 0xfa, 0x03, 0xb8, 0x32,
+	0x5c, 0x75, 0xb4, 0xc6, 0x18, 0x3d, 0x03, 0xac, 0xf2, 0xe9, 0xb3, 0xfd, 0x82, 0xf4, 0x7c, 0xbf,
+	0x20, 0xfd, 0xbe, 0x5f, 0x90, 0x9e, 0x1c, 0x14, 0x72, 0xcf, 0x0f, 0x0a, 0xb9, 0x5f, 0x0f, 0x0a,
+	0xb9, 0xcf, 0x56, 0xeb, 0x0e, 0x6b, 0xb4, 0x76, 0x54, 0x0b, 0x37, 0x35, 0x0b, 0xd3, 0x26, 0xa6,
+	0x89, 0x30, 0xef, 0xc5, 0x61, 0xda, 0xcb, 0xda, 0x83, 0x9e, 0x32, 0xdb, 0xf3, 0x11, 0xdd, 0x99,
+	0xe2, 0x8b, 0xe7, 0xf2, 0x7f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xc2, 0x02, 0x37, 0x01, 0x0c, 0x11,
+	0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1274,13 +1112,13 @@ type QueryClient interface {
 	// QueryThrottleState returns the main on-chain state relevant to currently
 	// throttled slash packets
 	QueryThrottleState(ctx context.Context, in *QueryThrottleStateRequest, opts ...grpc.CallOption) (*QueryThrottleStateResponse, error)
-	// QueryThrottledConsumerPacketData returns a list of pending packet data
-	// instances (slash packet and vsc matured) for a single consumer chain
-	QueryThrottledConsumerPacketData(ctx context.Context, in *QueryThrottledConsumerPacketDataRequest, opts ...grpc.CallOption) (*QueryThrottledConsumerPacketDataResponse, error)
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error)
 	QueryParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// QueryProposedConsumerChainIDs returns the chain IDs of the proposed consumer chain addition proposals
+	// that are still in the voting period
+	QueryProposedConsumerChainIDs(ctx context.Context, in *QueryProposedChainIDsRequest, opts ...grpc.CallOption) (*QueryProposedChainIDsResponse, error)
 }
 
 type queryClient struct {
@@ -1354,18 +1192,18 @@ func (c *queryClient) QueryThrottleState(ctx context.Context, in *QueryThrottleS
 	return out, nil
 }
 
-func (c *queryClient) QueryThrottledConsumerPacketData(ctx context.Context, in *QueryThrottledConsumerPacketDataRequest, opts ...grpc.CallOption) (*QueryThrottledConsumerPacketDataResponse, error) {
-	out := new(QueryThrottledConsumerPacketDataResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryThrottledConsumerPacketData", in, out, opts...)
+func (c *queryClient) QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error) {
+	out := new(QueryRegisteredConsumerRewardDenomsResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryRegisteredConsumerRewardDenoms", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error) {
-	out := new(QueryRegisteredConsumerRewardDenomsResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryRegisteredConsumerRewardDenoms", in, out, opts...)
+func (c *queryClient) QueryProposedConsumerChainIDs(ctx context.Context, in *QueryProposedChainIDsRequest, opts ...grpc.CallOption) (*QueryProposedChainIDsResponse, error) {
+	out := new(QueryProposedChainIDsResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryProposedConsumerChainIDs", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1402,13 +1240,13 @@ type QueryServer interface {
 	// QueryThrottleState returns the main on-chain state relevant to currently
 	// throttled slash packets
 	QueryThrottleState(context.Context, *QueryThrottleStateRequest) (*QueryThrottleStateResponse, error)
-	// QueryThrottledConsumerPacketData returns a list of pending packet data
-	// instances (slash packet and vsc matured) for a single consumer chain
-	QueryThrottledConsumerPacketData(context.Context, *QueryThrottledConsumerPacketDataRequest) (*QueryThrottledConsumerPacketDataResponse, error)
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(context.Context, *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error)
 	QueryParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// QueryProposedConsumerChainIDs returns the chain IDs of the proposed consumer chain addition proposals
+	// that are still in the voting period
+	QueryProposedConsumerChainIDs(context.Context, *QueryProposedChainIDsRequest) (*QueryProposedChainIDsResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -1436,14 +1274,13 @@ func (*UnimplementedQueryServer) QueryValidatorProviderAddr(ctx context.Context,
 func (*UnimplementedQueryServer) QueryThrottleState(ctx context.Context, req *QueryThrottleStateRequest) (*QueryThrottleStateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryThrottleState not implemented")
 }
-func (*UnimplementedQueryServer) QueryThrottledConsumerPacketData(ctx context.Context, req *QueryThrottledConsumerPacketDataRequest) (*QueryThrottledConsumerPacketDataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryThrottledConsumerPacketData not implemented")
-}
 func (*UnimplementedQueryServer) QueryRegisteredConsumerRewardDenoms(ctx context.Context, req *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryRegisteredConsumerRewardDenoms not implemented")
 }
 func (*UnimplementedQueryServer) QueryParams(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryParams not implemented")
+func (*UnimplementedQueryServer) QueryProposedConsumerChainIDs(ctx context.Context, req *QueryProposedChainIDsRequest) (*QueryProposedChainIDsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryProposedConsumerChainIDs not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -1576,24 +1413,6 @@ func _Query_QueryThrottleState_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_QueryThrottledConsumerPacketData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryThrottledConsumerPacketDataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).QueryThrottledConsumerPacketData(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryThrottledConsumerPacketData",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).QueryThrottledConsumerPacketData(ctx, req.(*QueryThrottledConsumerPacketDataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Query_QueryRegisteredConsumerRewardDenoms_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryRegisteredConsumerRewardDenomsRequest)
 	if err := dec(in); err != nil {
@@ -1614,6 +1433,8 @@ func _Query_QueryRegisteredConsumerRewardDenoms_Handler(srv interface{}, ctx con
 
 func _Query_QueryParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryParamsRequest)
+func _Query_QueryProposedConsumerChainIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProposedChainIDsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1626,6 +1447,14 @@ func _Query_QueryParams_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).QueryParams(ctx, req.(*QueryParamsRequest))
+		return srv.(QueryServer).QueryProposedConsumerChainIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryProposedConsumerChainIDs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryProposedConsumerChainIDs(ctx, req.(*QueryProposedChainIDsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1663,16 +1492,14 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_QueryThrottleState_Handler,
 		},
 		{
-			MethodName: "QueryThrottledConsumerPacketData",
-			Handler:    _Query_QueryThrottledConsumerPacketData_Handler,
-		},
-		{
 			MethodName: "QueryRegisteredConsumerRewardDenoms",
 			Handler:    _Query_QueryRegisteredConsumerRewardDenoms_Handler,
 		},
 		{
 			MethodName: "QueryParams",
 			Handler:    _Query_QueryParams_Handler,
+			MethodName: "QueryProposedConsumerChainIDs",
+			Handler:    _Query_QueryProposedConsumerChainIDs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -2132,20 +1959,6 @@ func (m *QueryThrottleStateResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 	_ = i
 	var l int
 	_ = l
-	if len(m.Packets) > 0 {
-		for iNdEx := len(m.Packets) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Packets[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
-		}
-	}
 	n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.NextReplenishCandidate, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.NextReplenishCandidate):])
 	if err4 != nil {
 		return 0, err4
@@ -2167,202 +1980,6 @@ func (m *QueryThrottleStateResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryThrottledConsumerPacketDataRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryThrottledConsumerPacketDataRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryThrottledConsumerPacketDataRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.PacketDataInstances) > 0 {
-		for iNdEx := len(m.PacketDataInstances) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.PacketDataInstances[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
-		}
-	}
-	if m.Size_ != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Size_))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ThrottledSlashPacket) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ThrottledSlashPacket) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ThrottledSlashPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Data.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintQuery(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.GlobalEntry.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintQuery(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ThrottledPacketDataWrapper) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ThrottledPacketDataWrapper) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ThrottledPacketDataWrapper) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Data != nil {
-		{
-			size := m.Data.Size()
-			i -= size
-			if _, err := m.Data.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ThrottledPacketDataWrapper_SlashPacket) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ThrottledPacketDataWrapper_SlashPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.SlashPacket != nil {
-		{
-			size, err := m.SlashPacket.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-func (m *ThrottledPacketDataWrapper_VscMaturedPacket) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ThrottledPacketDataWrapper_VscMaturedPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.VscMaturedPacket != nil {
-		{
-			size, err := m.VscMaturedPacket.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	return len(dAtA) - i, nil
-}
 func (m *QueryRegisteredConsumerRewardDenomsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -2419,6 +2036,7 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) MarshalToSizedBuffer(dAtA 
 }
 
 func (m *QueryParamsRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryProposedChainIDsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2429,11 +2047,13 @@ func (m *QueryParamsRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *QueryParamsRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryProposedChainIDsRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *QueryParamsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryProposedChainIDsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2442,6 +2062,7 @@ func (m *QueryParamsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *QueryParamsResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryProposedChainIDsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2452,11 +2073,13 @@ func (m *QueryParamsResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *QueryParamsResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryProposedChainIDsResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryProposedChainIDsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2471,6 +2094,55 @@ func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0xa
+	if len(m.ProposedChains) > 0 {
+		for iNdEx := len(m.ProposedChains) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ProposedChains[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ProposedChain) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ProposedChain) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ProposedChain) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ProposalID != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.ProposalID))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ChainID) > 0 {
+		i -= len(m.ChainID)
+		copy(dAtA[i:], m.ChainID)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainID)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2677,99 +2349,9 @@ func (m *QueryThrottleStateResponse) Size() (n int) {
 	}
 	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.NextReplenishCandidate)
 	n += 1 + l + sovQuery(uint64(l))
-	if len(m.Packets) > 0 {
-		for _, e := range m.Packets {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
 	return n
 }
 
-func (m *QueryThrottledConsumerPacketDataRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ChainId)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ChainId)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	if m.Size_ != 0 {
-		n += 1 + sovQuery(uint64(m.Size_))
-	}
-	if len(m.PacketDataInstances) > 0 {
-		for _, e := range m.PacketDataInstances {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *ThrottledSlashPacket) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.GlobalEntry.Size()
-	n += 1 + l + sovQuery(uint64(l))
-	l = m.Data.Size()
-	n += 1 + l + sovQuery(uint64(l))
-	return n
-}
-
-func (m *ThrottledPacketDataWrapper) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Data != nil {
-		n += m.Data.Size()
-	}
-	return n
-}
-
-func (m *ThrottledPacketDataWrapper_SlashPacket) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.SlashPacket != nil {
-		l = m.SlashPacket.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-func (m *ThrottledPacketDataWrapper_VscMaturedPacket) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.VscMaturedPacket != nil {
-		l = m.VscMaturedPacket.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
 func (m *QueryRegisteredConsumerRewardDenomsRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2795,6 +2377,7 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) Size() (n int) {
 }
 
 func (m *QueryParamsRequest) Size() (n int) {
+func (m *QueryProposedChainIDsRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2804,6 +2387,7 @@ func (m *QueryParamsRequest) Size() (n int) {
 }
 
 func (m *QueryParamsResponse) Size() (n int) {
+func (m *QueryProposedChainIDsResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2811,6 +2395,28 @@ func (m *QueryParamsResponse) Size() (n int) {
 	_ = l
 	l = m.Params.Size()
 	n += 1 + l + sovQuery(uint64(l))
+	if len(m.ProposedChains) > 0 {
+		for _, e := range m.ProposedChains {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ProposedChain) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainID)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.ProposalID != 0 {
+		n += 1 + sovQuery(uint64(m.ProposalID))
+	}
 	return n
 }
 
@@ -4047,493 +3653,6 @@ func (m *QueryThrottleStateResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Packets", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Packets = append(m.Packets, &ThrottledSlashPacket{})
-			if err := m.Packets[len(m.Packets)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryThrottledConsumerPacketDataRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryThrottledConsumerPacketDataRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryThrottledConsumerPacketDataRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryThrottledConsumerPacketDataResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryThrottledConsumerPacketDataResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryThrottledConsumerPacketDataResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Size_", wireType)
-			}
-			m.Size_ = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Size_ |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PacketDataInstances", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.PacketDataInstances = append(m.PacketDataInstances, ThrottledPacketDataWrapper{})
-			if err := m.PacketDataInstances[len(m.PacketDataInstances)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ThrottledSlashPacket) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ThrottledSlashPacket: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ThrottledSlashPacket: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GlobalEntry", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.GlobalEntry.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Data.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ThrottledPacketDataWrapper) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ThrottledPacketDataWrapper: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ThrottledPacketDataWrapper: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SlashPacket", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &types.SlashPacketData{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Data = &ThrottledPacketDataWrapper_SlashPacket{v}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VscMaturedPacket", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &types.VSCMaturedPacketData{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Data = &ThrottledPacketDataWrapper_VscMaturedPacket{v}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -4688,6 +3807,7 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) Unmarshal(dAtA []byte) err
 	return nil
 }
 func (m *QueryParamsRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryProposedChainIDsRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4714,6 +3834,10 @@ func (m *QueryParamsRequest) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: QueryParamsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryProposedChainIDsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryProposedChainIDsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -4738,6 +3862,7 @@ func (m *QueryParamsRequest) Unmarshal(dAtA []byte) error {
 	return nil
 }
 func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryProposedChainIDsResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4764,11 +3889,16 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: QueryParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryProposedChainIDsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryProposedChainIDsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProposedChains", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4796,9 +3926,112 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ProposedChains = append(m.ProposedChains, ProposedChain{})
+			if err := m.ProposedChains[len(m.ProposedChains)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ProposedChain) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProposedChain: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProposedChain: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProposalID", wireType)
+			}
+			m.ProposalID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ProposalID |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])

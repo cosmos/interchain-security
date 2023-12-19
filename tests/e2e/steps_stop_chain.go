@@ -11,8 +11,8 @@ import (
 func stepsStartRelayer() []Step {
 	return []Step{
 		{
-			action: startRelayerAction{},
-			state:  State{},
+			Action: StartRelayerAction{},
+			State:  State{},
 		},
 	}
 }
@@ -21,51 +21,51 @@ func stepsStartRelayer() []Step {
 func stepsStopChain(consumerName string, propNumber uint) []Step {
 	s := []Step{
 		{
-			action: submitConsumerRemovalProposalAction{
-				chain:          chainID("provi"),
-				from:           validatorID("bob"),
-				deposit:        10000001,
-				consumerChain:  chainID(consumerName),
-				stopTimeOffset: 0 * time.Millisecond,
+			Action: SubmitConsumerRemovalProposalAction{
+				Chain:          ChainID("provi"),
+				From:           ValidatorID("bob"),
+				Deposit:        10000001,
+				ConsumerChain:  ChainID(consumerName),
+				StopTimeOffset: 0 * time.Millisecond,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9489999999,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValBalances: &map[ValidatorID]uint{
+						ValidatorID("bob"): 9489999999,
 					},
 					Proposals: &map[uint]Proposal{
 						propNumber: ConsumerRemovalProposal{
 							Deposit:  10000001,
-							Chain:    chainID(consumerName),
+							Chain:    ChainID(consumerName),
 							StopTime: 0,
 							Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
-					ConsumerChains: &map[chainID]bool{"consu": true}, // consumer chain not yet removed
+					ConsumerChains: &map[ChainID]bool{"consu": true}, // consumer chain not yet removed
 				},
 			},
 		},
 		{
-			action: voteGovProposalAction{
-				chain:      chainID("provi"),
-				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
-				vote:       []string{"yes", "yes", "yes"},
-				propNumber: propNumber,
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: propNumber,
 			},
-			state: State{
-				chainID("provi"): ChainState{
+			State: State{
+				ChainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
 						propNumber: ConsumerRemovalProposal{
 							Deposit:  10000001,
-							Chain:    chainID(consumerName),
+							Chain:    ChainID(consumerName),
 							StopTime: 0,
 							Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9500000000,
+					ValBalances: &map[ValidatorID]uint{
+						ValidatorID("bob"): 9500000000,
 					},
-					ConsumerChains: &map[chainID]bool{}, // Consumer chain is now removed
+					ConsumerChains: &map[ChainID]bool{}, // Consumer chain is now removed
 				},
 			},
 		},
@@ -79,51 +79,51 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []Step {
 	s := []Step{
 		{
-			action: submitConsumerRemovalProposalAction{
-				chain:          chainID("provi"),
-				from:           validatorID("bob"),
-				deposit:        10000001,
-				consumerChain:  chainID(consumerName),
-				stopTimeOffset: 0 * time.Millisecond,
+			Action: SubmitConsumerRemovalProposalAction{
+				Chain:          ChainID("provi"),
+				From:           ValidatorID("bob"),
+				Deposit:        10000001,
+				ConsumerChain:  ChainID(consumerName),
+				StopTimeOffset: 0 * time.Millisecond,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9489999999,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValBalances: &map[ValidatorID]uint{
+						ValidatorID("bob"): 9489999999,
 					},
 					Proposals: &map[uint]Proposal{
 						propNumber: ConsumerRemovalProposal{
 							Deposit:  10000001,
-							Chain:    chainID(consumerName),
+							Chain:    ChainID(consumerName),
 							StopTime: 0,
 							Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
-					ConsumerChains: &map[chainID]bool{"consu": true}, // consumer chain not removed
+					ConsumerChains: &map[ChainID]bool{"consu": true}, // consumer chain not removed
 				},
 			},
 		},
 		{
-			action: voteGovProposalAction{
-				chain:      chainID("provi"),
-				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
-				vote:       []string{"no", "no", "no"},
-				propNumber: propNumber,
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"no", "no", "no"},
+				PropNumber: propNumber,
 			},
-			state: State{
-				chainID("provi"): ChainState{
+			State: State{
+				ChainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
 						propNumber: ConsumerRemovalProposal{
 							Deposit:  10000001,
-							Chain:    chainID(consumerName),
+							Chain:    ChainID(consumerName),
 							StopTime: 0,
 							Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_REJECTED)),
 						},
 					},
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9500000000,
+					ValBalances: &map[ValidatorID]uint{
+						ValidatorID("bob"): 9500000000,
 					},
-					ConsumerChains: &map[chainID]bool{"consu": true}, // consumer chain not removed
+					ConsumerChains: &map[ChainID]bool{"consu": true}, // consumer chain not removed
 				},
 			},
 		},

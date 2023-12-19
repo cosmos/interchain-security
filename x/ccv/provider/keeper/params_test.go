@@ -45,7 +45,6 @@ func TestParams(t *testing.T) {
 		10*time.Minute,
 		time.Hour,
 		"0.4",
-		100,
 		sdk.Coin{
 			Denom:  "stake",
 			Amount: math.NewInt(10000000),

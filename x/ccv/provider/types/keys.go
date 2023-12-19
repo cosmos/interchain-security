@@ -138,6 +138,13 @@ const (
 	// handled in the current block
 	VSCMaturedHandledThisBlockBytePrefix
 
+	// EquivocationEvidenceMinHeightBytePrefix is the byte prefix storing the mapping from consumer chain IDs
+	// to the minimum height of a valid consumer equivocation evidence
+	EquivocationEvidenceMinHeightBytePrefix
+
+	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
+	ProposedConsumerChainByteKey
+
 	// ParametersKey is the is the single byte key for storing provider's parameters.
 	ParametersByteKey
 
@@ -385,6 +392,12 @@ func ConsumerRewardDenomsKey(denom string) []byte {
 	return append([]byte{ConsumerRewardDenomsBytePrefix}, []byte(denom)...)
 }
 
+// EquivocationEvidenceMinHeightKey returns the key storing the minimum height
+// of a valid consumer equivocation evidence for a given consumer chain ID
+func EquivocationEvidenceMinHeightKey(consumerChainID string) []byte {
+	return append([]byte{EquivocationEvidenceMinHeightBytePrefix}, []byte(consumerChainID)...)
+}
+
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
 
 //
@@ -490,6 +503,26 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 
 func VSCMaturedHandledThisBlockKey() []byte {
 	return []byte{VSCMaturedHandledThisBlockBytePrefix}
+}
+
+// ProposedConsumerChainKey returns the key of proposed consumer chainId in consumerAddition gov proposal before voting finishes, the stored key format is prefix|proposalID, value is chainID
+func ProposedConsumerChainKey(proposalID uint64) []byte {
+	return ccvtypes.AppendMany(
+		[]byte{ProposedConsumerChainByteKey},
+		sdk.Uint64ToBigEndian(proposalID),
+	)
+}
+
+// ParseProposedConsumerChainKey get the proposalID in the key
+func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+	proposalID := sdk.BigEndianToUint64(bz[prefixL:])
+
+	return proposalID, nil
 }
 
 //

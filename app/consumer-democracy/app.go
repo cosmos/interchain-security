@@ -115,7 +115,6 @@ import (
 	ccvdistr "github.com/cosmos/interchain-security/v3/x/ccv/democracy/distribution"
 	ccvgov "github.com/cosmos/interchain-security/v3/x/ccv/democracy/governance"
 	ccvstaking "github.com/cosmos/interchain-security/v3/x/ccv/democracy/staking"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const (
@@ -703,7 +702,7 @@ func New(
 				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
 			}
 
-			consumerGenesis := ccvtypes.GenesisState{}
+			consumerGenesis := consumertypes.GenesisState{}
 			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
 			consumerGenesis.PreCCV = true
@@ -1002,10 +1001,10 @@ func GetMaccPerms() map[string][]string {
 func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey storetypes.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, tkey)
 
-	paramsKeeper.Subspace(authtypes.ModuleName).WithKeyTable(authtypes.ParamKeyTable()) //nolint:staticcheck // TODO: remove this temorary solution
+	paramsKeeper.Subspace(authtypes.ModuleName).WithKeyTable(authtypes.ParamKeyTable()) //nolint:staticcheck // TODO: remove this temporary solution
 	paramsKeeper.Subspace(banktypes.ModuleName)
 	paramsKeeper.Subspace(stakingtypes.ModuleName)
-	paramsKeeper.Subspace(minttypes.ModuleName).WithKeyTable(minttypes.ParamKeyTable()) //nolint:staticcheck // TODO: remove this temorary solution
+	paramsKeeper.Subspace(minttypes.ModuleName).WithKeyTable(minttypes.ParamKeyTable()) //nolint:staticcheck // TODO: remove this temporary solution
 	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(gov.ProvideKeyTable())

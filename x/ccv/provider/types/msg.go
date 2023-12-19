@@ -5,15 +5,25 @@ import (
 	"fmt"
 	"strings"
 
-	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
+
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
+
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // provider message types
 const (
-	TypeMsgAssignConsumerKey = "assign_consumer_key"
+	TypeMsgAssignConsumerKey          = "assign_consumer_key"
+	TypeMsgSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
+	TypeMsgSubmitConsumerDoubleVoting = "submit_consumer_double_vote"
 )
 
 var (
@@ -21,11 +31,15 @@ var (
 	_ sdk.Msg = (*MsgConsumerAddition)(nil)
 	_ sdk.Msg = (*MsgConsumerRemoval)(nil)
 	_ sdk.Msg = (*MsgChangeRewardDenoms)(nil)
+	_ sdk.Msg = (*MsgSubmitConsumerMisbehaviour)(nil)
+	_ sdk.Msg = (*MsgSubmitConsumerDoubleVoting)(nil)
 
 	_ sdk.HasValidateBasic = (*MsgAssignConsumerKey)(nil)
 	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
 	_ sdk.HasValidateBasic = (*MsgConsumerRemoval)(nil)
 	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
+	_ sdk.HasValidateBasic = (*MsgSubmitConsumerMisbehaviour)(nil)
+	_ sdk.HasValidateBasic = (*MsgSubmitConsumerDoubleVoting)(nil)
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
@@ -64,22 +78,20 @@ func (msg MsgAssignConsumerKey) GetSigners() []sdk.AccAddress {
 
 // GetSignBytes returns the message bytes to sign over.
 func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&msg)
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
 }
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
-		return ErrBlankConsumerChainID
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
 	}
 	// It is possible to assign keys for consumer chains that are not yet approved.
 	// This can only be done by a signing validator, but it is still sensible
 	// to limit the chainID size to prevent abuse.
-	// TODO: In future, a mechanism will be added to limit assigning keys to chains
-	// which are approved or pending approval, only.
 	if 128 < len(msg.ChainId) {
-		return ErrBlankConsumerChainID
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -107,6 +119,102 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 		return "", "", err
 	}
 	return pubKey.Type, pubKey.Key, nil
+}
+
+func NewMsgSubmitConsumerMisbehaviour(submitter sdk.AccAddress, misbehaviour *ibctmtypes.Misbehaviour) (*MsgSubmitConsumerMisbehaviour, error) {
+	return &MsgSubmitConsumerMisbehaviour{Submitter: submitter.String(), Misbehaviour: misbehaviour}, nil
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) Type() string {
+	return TypeMsgSubmitConsumerMisbehaviour
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
+	if msg.Submitter == "" {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+	}
+
+	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.Submitter)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
+
+func NewMsgSubmitConsumerDoubleVoting(submitter sdk.AccAddress, ev *tmtypes.DuplicateVoteEvidence, header *ibctmtypes.Header) (*MsgSubmitConsumerDoubleVoting, error) {
+	return &MsgSubmitConsumerDoubleVoting{Submitter: submitter.String(), DuplicateVoteEvidence: ev, InfractionBlockHeader: header}, nil
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) Type() string {
+	return TypeMsgSubmitConsumerDoubleVoting
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
+	if msg.Submitter == "" {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+	}
+	if msg.DuplicateVoteEvidence == nil {
+		return fmt.Errorf("double voting evidence cannot be nil")
+	}
+
+	if msg.InfractionBlockHeader == nil {
+		return fmt.Errorf("infraction block header cannot be nil")
+	}
+
+	if msg.InfractionBlockHeader.SignedHeader == nil {
+		return fmt.Errorf("signed header in infraction block header cannot be nil")
+	}
+
+	if msg.InfractionBlockHeader.SignedHeader.Header == nil {
+		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
+	}
+
+	if msg.InfractionBlockHeader.ValidatorSet == nil {
+		return fmt.Errorf("invalid infraction block header, validator set is nil")
+	}
+
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.Submitter)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
 }
 
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that

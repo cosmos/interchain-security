@@ -153,7 +153,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 				tmProtoPubKey, err := sdkcryptocodec.ToTmProtoPublicKey(ccvValPubKey)
 				require.NoError(t, err)
 				if returnedValUpdate.PubKey.Equal(tmProtoPubKey) {
-					// If val was already matched to a val update for new set, it's power wont be 0
+					// If val was already matched to a val update for new set, it's power won't be 0
 					if found {
 						continue
 					}

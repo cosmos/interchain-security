@@ -37,10 +37,6 @@ const (
 	// that is replenished to the slash meter every replenish period. This param also serves as a maximum
 	// fraction of total voting power that the slash meter can hold.
 	DefaultSlashMeterReplenishFraction = "0.05"
-
-	// DefaultMaxThrottledPackets defines the default amount of throttled slash or vsc matured packets
-	// that can be queued for a single consumer before the provider chain halts.
-	DefaultMaxThrottledPackets = 100000
 )
 
 // Reflection based keys for params subspace
@@ -54,7 +50,6 @@ var (
 	KeyVscTimeoutPeriod                   = []byte("VscTimeoutPeriod")
 	KeySlashMeterReplenishPeriod          = []byte("SlashMeterReplenishPeriod")
 	KeySlashMeterReplenishFraction        = []byte("SlashMeterReplenishFraction")
-	KeyMaxThrottledPackets                = []byte("MaxThrottledPackets")
 	KeyConsumerRewardDenomRegistrationFee = []byte("ConsumerRewardDenomRegistrationFee")
 )
 
@@ -72,7 +67,6 @@ func NewParams(
 	vscTimeoutPeriod time.Duration,
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
-	maxThrottledPackets int64,
 	consumerRewardDenomRegistrationFee sdk.Coin,
 ) Params {
 	return Params{
@@ -83,7 +77,6 @@ func NewParams(
 		VscTimeoutPeriod:                   vscTimeoutPeriod,
 		SlashMeterReplenishPeriod:          slashMeterReplenishPeriod,
 		SlashMeterReplenishFraction:        slashMeterReplenishFraction,
-		MaxThrottledPackets:                maxThrottledPackets,
 		ConsumerRewardDenomRegistrationFee: consumerRewardDenomRegistrationFee,
 	}
 }
@@ -109,7 +102,6 @@ func DefaultParams() Params {
 		DefaultVscTimeoutPeriod,
 		DefaultSlashMeterReplenishPeriod,
 		DefaultSlashMeterReplenishFraction,
-		DefaultMaxThrottledPackets,
 		// Defining this inline because it's not possible to define a constant of type sdk.Coin.
 		// Following the pattern from cosmos-sdk/staking/types/params.go
 		sdk.Coin{
@@ -145,9 +137,6 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateStringFraction(p.SlashMeterReplenishFraction); err != nil {
 		return fmt.Errorf("slash meter replenish fraction is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.MaxThrottledPackets); err != nil {
-		return fmt.Errorf("max throttled packets is invalid: %s", err)
-	}
 	if err := ValidateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
 		return fmt.Errorf("consumer reward denom registration fee is invalid: %s", err)
 	}
@@ -164,7 +153,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
-		paramtypes.NewParamSetPair(KeyMaxThrottledPackets, p.MaxThrottledPackets, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
 	}
 }

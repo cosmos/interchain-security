@@ -208,7 +208,7 @@ type App struct { // nolint: golint
 	// different fee-pool from the consumer chain ConsumerKeeper
 	DistrKeeper distrkeeper.Keeper
 
-	GovKeeper             govkeeper.Keeper
+	GovKeeper             *govkeeper.Keeper // Gov Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	CrisisKeeper          crisiskeeper.Keeper
 	UpgradeKeeper         upgradekeeper.Keeper
 	ParamsKeeper          paramskeeper.Keeper
@@ -446,28 +446,6 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	app.ProviderKeeper = icsproviderkeeper.NewKeeper(
-		appCodec,
-		keys[providertypes.StoreKey],
-		app.GetSubspace(providertypes.ModuleName),
-		scopedIBCProviderKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.PortKeeper,
-		app.IBCKeeper.ConnectionKeeper,
-		app.IBCKeeper.ClientKeeper,
-		app.StakingKeeper,
-		app.SlashingKeeper,
-		app.AccountKeeper,
-		app.DistrKeeper,
-		app.BankKeeper,
-		authtypes.FeeCollectorName,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		authcodec.NewBech32Codec(sdk.Bech32PrefixValAddr),
-		authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
-	)
-
-	providerModule := icsprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
-
 	// create evidence keeper with router
 	app.EvidenceKeeper = *evidencekeeper.NewKeeper(
 		appCodec,
@@ -503,6 +481,33 @@ func New(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	app.GovKeeper.SetLegacyRouter(govRouter)
 
+	app.GovKeeper = app.GovKeeper.SetHooks(
+		govtypes.NewMultiGovHooks(app.ProviderKeeper.Hooks()),
+	)
+
+	app.ProviderKeeper = icsproviderkeeper.NewKeeper(
+		appCodec,
+		keys[providertypes.StoreKey],
+		app.GetSubspace(providertypes.ModuleName),
+		scopedIBCProviderKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.ConnectionKeeper,
+		app.IBCKeeper.ClientKeeper,
+		app.StakingKeeper,
+		app.SlashingKeeper,
+		app.AccountKeeper,
+		app.DistrKeeper,
+		app.BankKeeper,
+		app.GovKeeper,
+		authtypes.FeeCollectorName,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		authcodec.NewBech32Codec(sdk.Bech32PrefixValAddr),
+		authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
+	)
+
+	providerModule := icsprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
+
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
 		keys[ibctransfertypes.StoreKey],
@@ -524,6 +529,16 @@ func New(
 	ibcRouter.AddRoute(providertypes.ModuleName, providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	// create evidence keeper with router
+	evidenceKeeper := evidencekeeper.NewKeeper(
+		appCodec,
+		keys[evidencetypes.StoreKey],
+		app.StakingKeeper,
+		app.SlashingKeeper,
+	)
+
+	app.EvidenceKeeper = *evidenceKeeper
+
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
@@ -540,7 +555,7 @@ func New(
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
-		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),

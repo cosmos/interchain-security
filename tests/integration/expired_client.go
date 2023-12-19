@@ -129,7 +129,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 
 	// try to send slash packet for downtime infraction
 	addr := ed25519.GenPrivKey().PubKey().Address()
-	val := abci.Validator{Address: addr}
+	val := abci.Validator{Address: addr, Power: 1}
 	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	// try to send slash packet for the same downtime infraction
 	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Infraction_INFRACTION_DOWNTIME)

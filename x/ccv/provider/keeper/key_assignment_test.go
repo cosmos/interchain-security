@@ -347,6 +347,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 
 	good := true
 	for _, valByConsAddr := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
+		valByConsAddr := valByConsAddr // Fix linter error G601
 		if _, ok := willBePruned[string(valByConsAddr.ConsumerAddr)]; ok {
 			// Address will be pruned, everything is fine.
 			continue
@@ -389,17 +390,32 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		doActions func(sdk.Context, providerkeeper.Keeper)
 	}{
 		/*
-			0. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
-			1. Consumer     registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
-			2. Consumer     registered: Assign PK0->CK0, PK1->CK0 and error
-			3. Consumer     registered: Assign PK1->PK0 and error
-			4. Consumer not registered: Assign PK0->CK0 and retrieve PK0->CK0
-			5. Consumer not registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
-			6. Consumer not registered: Assign PK0->CK0, PK1->CK0 and error
-			7. Consumer not registered: Assign PK1->PK0 and error
+			0. Consumer not registered: Assign PK0->CK0 and error
+			1. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
+			2. Consumer     registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
+			3. Consumer     registered: Assign PK0->CK0, PK1->CK0 and error
+			4. Consumer     registered: Assign PK1->PK0 and error
+			5. Consumer proposed: Assign Assign PK0->CK0 and retrieve PK0->CK0
+			6. Consumer proposed: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
+			7. Consumer proposed: Assign PK0->CK0, PK1->CK0 and error
+			8. Consumer proposed: Assign PK1->PK0 and error
 		*/
 		{
-			name: "0",
+			name:      "0",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+				_, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
+				require.False(t, found)
+			},
+		},
+		{
+			name: "1",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				// TODO: @MSalopek check why this ctx needed to be extracted for the mock call to
 				// GetLastValidatorPower to work as expected
@@ -427,7 +443,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			},
 		},
 		{
-			name: "1",
+			name: "2",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				// TODO: @MSalopek check why this ctx needed to be extracted for the mock call to
 				// GetLastValidatorPower to work as expected
@@ -466,7 +482,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			},
 		},
 		{
-			name: "2",
+			name: "3",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				useCtx := ctx.Context()
 				gomock.InOrder(
@@ -500,7 +516,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			},
 		},
 		{
-			name: "3",
+			name: "4",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
@@ -518,7 +534,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			},
 		},
 		{
-			name: "4",
+			name: "5",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
@@ -527,6 +543,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetProposedConsumerChain(ctx, chainID, 0)
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -539,7 +556,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			},
 		},
 		{
-			name: "5",
+			name: "6",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
@@ -551,6 +568,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetProposedConsumerChain(ctx, chainID, 0)
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -568,7 +586,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			},
 		},
 		{
-			name: "6",
+			name: "7",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
@@ -580,6 +598,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetProposedConsumerChain(ctx, chainID, 0)
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -597,7 +616,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			},
 		},
 		{
-			name: "7",
+			name: "8",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
@@ -606,6 +625,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetProposedConsumerChain(ctx, chainID, 0)
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[1].SDKStakingValidator(),
 					providerIdentities[0].TMProtoCryptoPublicKey(),
@@ -640,6 +660,10 @@ func TestCannotReassignDefaultKeyAssignment(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+
+	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{
+		ChainId: "chain",
+	})
 
 	// Mock that the validator is validating with the single key, as confirmed by provider's staking keeper
 	gomock.InOrder(

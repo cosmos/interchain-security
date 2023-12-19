@@ -129,3 +129,9 @@ func (k Keeper) GetProviderRewardDenoms(ctx sdk.Context) []string {
 	params := k.GetConsumerParams(ctx)
 	return params.ProviderRewardDenoms
 }
+
+func (k Keeper) GetRetryDelayPeriod(ctx sdk.Context) time.Duration {
+	var period time.Duration
+	k.paramStore.Get(ctx, ccvtypes.KeyRetryDelayPeriod, &period)
+	return period
+}

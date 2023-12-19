@@ -371,13 +371,22 @@ func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 }
 
 // AssignConsumerKey assigns the consumerKey to the validator with providerAddr
-// on the consumer chain with ID chainID
+// on the consumer chain with ID chainID, if it is either registered or currently
+// voted on in a ConsumerAddition governance proposal
 func (k Keeper) AssignConsumerKey(
 	ctx sdk.Context,
 	chainID string,
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
+	// check that the consumer chain is either registered or that
+	// a ConsumerAdditionProposal was submitted.
+	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
+		return errorsmod.Wrapf(
+			types.ErrUnknownConsumerChainId, chainID,
+		)
+	}
+
 	consAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
 	if err != nil {
 		return err
@@ -401,6 +410,8 @@ func (k Keeper) AssignConsumerKey(
 				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
 			)
 		}
+		// We prevent a validator from assigning the default provider key as a consumer key
+		// if it has not already assigned a different consumer key
 		_, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 		if !found {
 			return errorsmod.Wrapf(
@@ -543,7 +554,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 			// If a key assignment replacement is not found, we check if the validator's key is assigned.
 			// If it is, we replace the update containing the provider key with an update containing
 			// the consumer key.
-			// Note that this will always be the brach taken when creating the genesis state
+			// Note that this will always be the branch taken when creating the genesis state
 			// of a newly registered consumer chain.
 			consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if found {
@@ -640,4 +651,48 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	for _, consumerAddrsToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
 		k.DeleteConsumerAddrsToPrune(ctx, chainID, consumerAddrsToPrune.VscId)
 	}
+}
+
+// IsConsumerProposedOrRegistered checks if a consumer chain is either registered, meaning either already running
+// or will run soon, or proposed its ConsumerAdditionProposal was submitted but the chain was not yet added to ICS yet.
+func (k Keeper) IsConsumerProposedOrRegistered(ctx sdk.Context, chainID string) bool {
+	allConsumerChains := k.GetAllRegisteredAndProposedChainIDs(ctx)
+	for _, c := range allConsumerChains {
+		if c == chainID {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ValidatorConsensusKeyInUse checks if the given consensus key is already
+// used by validator in a consumer chain.
+// Note that this method is called when a new validator is created in the x/staking module of cosmos-sdk.
+// In case it panics, the TX aborts and thus, the validator is not created. See AfterValidatorCreated hook.
+func (k Keeper) ValidatorConsensusKeyInUse(ctx sdk.Context, valAddr sdk.ValAddress) bool {
+	// Get the validator being added in the staking module.
+	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !found {
+		// Abort TX, do NOT allow validator to be created
+		panic("did not find newly created validator in staking module")
+	}
+
+	// Get the consensus address of the validator being added
+	consensusAddr, err := val.GetConsAddr()
+	if err != nil {
+		// Abort TX, do NOT allow validator to be created
+		panic("could not get validator cons addr ")
+	}
+
+	allConsumerChains := k.GetAllRegisteredAndProposedChainIDs(ctx)
+	for _, c := range allConsumerChains {
+		if _, exist := k.GetValidatorByConsumerAddr(ctx,
+			c,
+			types.NewConsumerConsAddress(consensusAddr),
+		); exist {
+			return true
+		}
+	}
+	return false
 }

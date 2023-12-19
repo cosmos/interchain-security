@@ -10,24 +10,48 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
-test:
-	go test ./... && go run ./tests/e2e/...
+test: test-unit test-integration test-mbt test-e2e
 
-# run all unit tests
+# shortcut for local development
+test-dev: test-unit test-integration test-mbt
+
+# run unit tests
 test-unit:
-	go test ./...
+	go test ./x/... ./app/...
+
+test-unit-cov:
+	go test ./x/... ./app/... -coverpkg=./... -coverprofile=profile.out -covermode=atomic
 
 # run unit and integration tests
-test-short:
-	go test ./x/... ./app/... ./tests/integration/...
+test-integration:
+	go test ./tests/integration/... -timeout 30m
+
+test-integration-cov:
+	go test ./tests/integration/... -timeout 30m -coverpkg=./... -coverprofile=integration-profile.out -covermode=atomic
+
+# run mbt tests
+test-mbt:
+	cd tests/mbt/driver;\
+	sh generate_traces.sh;\
+	cd ../../..;\
+	go test ./tests/mbt/... -timeout 30m
+
+test-mbt-cov:
+	cd tests/mbt/driver;\
+	sh generate_traces.sh;\
+	cd ../../..;\
+	go test ./tests/mbt/... -timeout 30m -coverpkg=./... -coverprofile=mbt-profile.out -covermode=atomic
+
+# runs mbt tests, but generates more traces
+test-mbt-more-traces:
+	cd tests/mbt/driver;\
+	sh generate_more_traces.sh;\
+	cd ../../..;\
+	go test ./tests/mbt/... -timeout 30m
 
 # run E2E tests
 test-e2e:
 	go run ./tests/e2e/...
-
-# run difference tests
-test-diff:
-	go test ./tests/difference/...
 
 # run only happy path E2E tests
 test-e2e-short:
@@ -77,11 +101,25 @@ test-gaia-e2e-parallel-tagged:
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/e2e/...
 
+# test reading a trace from a file
+test-trace:
+	go run ./tests/e2e/... --test-file tests/e2e/tracehandler_testdata/happyPath.json::default
+
+# tests and verifies the Quint models.
+# Note: this is *not* using the Quint models to test the system,
+# this tests/verifies the Quint models *themselves*.
+verify-models:
+	quint test tests/mbt/model/ccv_test.qnt;\
+	quint test tests/mbt/model/ccv_model.qnt;\
+	quint run --invariant "all{ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" tests/mbt/model/ccv_model.qnt --max-steps 200 --max-samples 200
+
+
+
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
 
-golangci_version=v1.52.2
+golangci_version=v1.54.1
 
 lint:
 	@echo "--> Running linter"
@@ -97,6 +135,8 @@ mockgen_cmd=go run github.com/golang/mock/mockgen
 mocks:
 	$(mockgen_cmd) -package=keeper -destination=testutil/keeper/mocks.go -source=x/ccv/types/expected_keepers.go
 
+
+BUILDDIR ?= $(CURDIR)/build
 BUILD_TARGETS := build
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
@@ -177,3 +217,10 @@ build-docs:
 	@cd docs && ./build.sh
 
 .PHONY: build-docs
+
+###############################################################################
+### 							Test Traces									###
+###############################################################################
+
+e2e-traces:
+	cd tests/e2e; go test -timeout 30s -run ^TestWriteExamples -v

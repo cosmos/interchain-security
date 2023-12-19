@@ -7,7 +7,6 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -34,23 +33,27 @@ func (m Migrator) MigrateParams(ctx sdk.Context) error {
 	return nil
 }
 
+// Migrate1to2 migrates x/ccvconsumer state from consensus version 1 to 2.
+func (m Migrator) Migrate1to2(ctx sdk.Context) error {
+	return m.ccvConsumerKeeper.MigrateConsumerPacketData(ctx)
+}
+
 // MigrateConsumerPacketData migrates consumer packet data according to
 // https://github.com/cosmos/interchain-security/pull/1037
 //
 // Note an equivalent migration is not required for providers.
-func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) {
+func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) error {
 	// deserialize packet data from old format
-	var depreciatedType ccvtypes.ConsumerPacketDataList
+	var depreciatedType consumertypes.ConsumerPacketDataList
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{consumertypes.PendingDataPacketsBytePrefix})
 	if bz == nil {
 		ctx.Logger().Info("no pending data packets to migrate")
-		return
+		return nil
 	}
 	err := depreciatedType.Unmarshal(bz)
 	if err != nil {
-		// An error here would indicate something is very wrong
-		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
+		return fmt.Errorf("failed to unmarshal pending data packets: %w", err)
 	}
 
 	// Delete old data
@@ -61,6 +64,7 @@ func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) {
 	for _, data := range depreciatedType.List {
 		k.AppendPendingPacket(ctx, data.Type, data.Data)
 	}
+	return nil
 }
 
 // TODO: the following hackyness could be removed if we're able to reference older versions of ICS.
@@ -72,7 +76,7 @@ func PendingDataPacketsKeyOnlyForTesting() []byte {
 
 // Note: a better test of the old functionality would be to directly reference the old ICS version,
 // including the version of ccv.ConsumerPacketDataList has a list of ccv.ConsumerPacketData without indexes.
-func (k Keeper) SetPendingPacketsOnlyForTesting(ctx sdk.Context, packets ccvtypes.ConsumerPacketDataList) {
+func (k Keeper) SetPendingPacketsOnlyForTesting(ctx sdk.Context, packets consumertypes.ConsumerPacketDataList) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := packets.Marshal()
 	if err != nil {

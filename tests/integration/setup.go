@@ -21,6 +21,9 @@ import (
 
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	"github.com/cosmos/interchain-security/v3/testutil/simibc"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -126,6 +129,9 @@ func (suite *CCVTestSuite) SetupTest() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
 	// re-assign all validator keys for the first consumer chain
+	providerKeeper.SetPendingConsumerAdditionProp(suite.providerCtx(), &types.ConsumerAdditionProposal{
+		ChainId: icstestingutils.FirstConsumerChainID,
+	})
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
 
 	// start consumer chains
@@ -145,8 +151,12 @@ func (suite *CCVTestSuite) SetupTest() {
 			chainID,
 		)
 		suite.Require().True(found, "consumer genesis not found")
-
-		initConsumerChain(suite, chainID, &consumerGenesisState)
+		genesisState := consumertypes.GenesisState{
+			Params:   consumerGenesisState.Params,
+			Provider: consumerGenesisState.Provider,
+			NewChain: consumerGenesisState.NewChain,
+		}
+		initConsumerChain(suite, chainID, &genesisState)
 	}
 
 	// try updating all clients
@@ -182,7 +192,7 @@ func (s *CCVTestSuite) getSentPacket(chain *ibctesting.TestChain, sequence uint6
 func initConsumerChain(
 	s *CCVTestSuite,
 	chainID string,
-	genesisState *ccv.GenesisState,
+	genesisState *consumertypes.GenesisState,
 ) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	bundle := s.consumerBundles[chainID]
@@ -199,8 +209,8 @@ func initConsumerChain(
 	if genesisState.NewChain {
 		consumerEndpointClientState,
 			consumerEndpointConsState := s.GetConsumerEndpointClientAndConsState(*bundle)
-		s.Require().Equal(genesisState.ProviderClientState, consumerEndpointClientState)
-		s.Require().Equal(genesisState.ProviderConsensusState, consumerEndpointConsState)
+		s.Require().Equal(genesisState.Provider.ClientState, consumerEndpointClientState)
+		s.Require().Equal(genesisState.Provider.ConsensusState, consumerEndpointConsState)
 	}
 
 	// create path for the CCV channel

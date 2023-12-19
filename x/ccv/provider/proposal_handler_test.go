@@ -19,7 +19,7 @@ import (
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
-// concerning creating and stopping consumer chains.
+// concerning creating, stopping consumer chains and changing reward denom.
 func TestProviderProposalHandler(t *testing.T) {
 	// Snapshot times asserted in tests
 	now := time.Now().UTC()
@@ -110,7 +110,8 @@ func TestProviderProposalHandler(t *testing.T) {
 		proposalHandler := provider.NewProviderProposalHandler(providerKeeper)
 		err := proposalHandler(ctx, tc.content)
 
-		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval || tc.expValidChangeRewardDenom {
+		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
+			tc.expValidChangeRewardDenom {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)

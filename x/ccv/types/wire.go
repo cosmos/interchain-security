@@ -5,6 +5,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -18,13 +19,23 @@ func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdat
 	}
 }
 
-// ValidateBasic is used for validating the CCV packet data.
-func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
-	if len(vsc.ValidatorUpdates) == 0 {
-		return errorsmod.Wrap(ErrInvalidPacketData, "validator updates cannot be empty")
+// Validate is used for validating the CCV packet data.
+func (vsc ValidatorSetChangePacketData) Validate() error {
+	// Note that vsc.ValidatorUpdates can be empty in the case of unbonding
+	// operations w/o changes in the voting power of the validators in the validator set
+	if vsc.ValidatorUpdates == nil {
+		return errorsmod.Wrap(ErrInvalidPacketData, "validator updates cannot be nil")
 	}
+	// ValsetUpdateId is strictly positive
 	if vsc.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
+	}
+	// Validate the slash acks - must be consensus addresses
+	for _, ack := range vsc.SlashAcks {
+		_, err := sdk.ConsAddressFromBech32(ack)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -42,8 +53,9 @@ func NewVSCMaturedPacketData(valUpdateID uint64) *VSCMaturedPacketData {
 	}
 }
 
-// ValidateBasic is used for validating the VSCMatured packet data.
-func (mat VSCMaturedPacketData) ValidateBasic() error {
+// Validate is used for validating the VSCMatured packet data.
+func (mat VSCMaturedPacketData) Validate() error {
+	// ValsetUpdateId is strictly positive
 	if mat.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ErrInvalidPacketData, "vscId cannot be equal to zero")
 	}
@@ -75,13 +87,19 @@ func NewSlashPacketDataV1(validator abci.Validator, valUpdateId uint64, infracti
 	}
 }
 
-func (vdt SlashPacketData) ValidateBasic() error {
-	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
-		return errorsmod.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
+func (vdt SlashPacketData) Validate() error {
+	// vdt.Validator.Address must be a consensus address
+	if err := sdk.VerifyAddressFormat(vdt.Validator.Address); err != nil {
+		return errorsmod.Wrap(ErrInvalidPacketData, fmt.Sprintf("invalid validator: %s", err.Error()))
 	}
+	// vdt.Validator.Power must be positive
+	if vdt.Validator.Power == 0 {
+		return errorsmod.Wrap(ErrInvalidPacketData, "validator power cannot be zero")
+	}
+	// Note that ValsetUpdateId can be zero due to the vscID mapping
 
-	if vdt.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
-		return errorsmod.Wrap(ErrInvalidPacketData, "invalid infraction type")
+	if vdt.Infraction != stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN && vdt.Infraction != stakingtypes.Infraction_INFRACTION_DOWNTIME {
+		return errorsmod.Wrap(ErrInvalidPacketData, fmt.Sprintf("invalid infraction type: %s", vdt.Infraction.String()))
 	}
 
 	return nil
@@ -91,22 +109,22 @@ func (vdt SlashPacketData) ToV1() *SlashPacketDataV1 {
 	return NewSlashPacketDataV1(vdt.Validator, vdt.ValsetUpdateId, vdt.Infraction)
 }
 
-func (cp ConsumerPacketData) ValidateBasic() (err error) {
+func (cp ConsumerPacketData) Validate() (err error) {
 	switch cp.Type {
 	case VscMaturedPacket:
 		// validate VSCMaturedPacket
-		vscPacket := cp.GetVscMaturedPacketData()
-		if vscPacket == nil {
+		vscMaturedPacket := cp.GetVscMaturedPacketData()
+		if vscMaturedPacket == nil {
 			return fmt.Errorf("invalid consumer packet data: VscMaturePacketData data cannot be empty")
 		}
-		err = vscPacket.ValidateBasic()
+		err = vscMaturedPacket.Validate()
 	case SlashPacket:
 		// validate SlashPacket
 		slashPacket := cp.GetSlashPacketData()
 		if slashPacket == nil {
 			return fmt.Errorf("invalid consumer packet data: SlashPacketData data cannot be empty")
 		}
-		err = slashPacket.ValidateBasic()
+		err = slashPacket.Validate()
 	default:
 		err = fmt.Errorf("invalid consumer packet type: %q", cp.Type)
 	}
