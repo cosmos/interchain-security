@@ -10,10 +10,10 @@ import (
 
 	"cosmossdk.io/math"
 
+	evidencetypes "cosmossdk.io/x/evidence/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
