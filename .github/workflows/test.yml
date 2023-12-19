@@ -90,7 +90,7 @@ jobs:
           name: "${{ github.sha }}-integration-coverage"
           path: ./integration-profile.out
 
-  test-difference:
+  test-mbt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,6 +100,11 @@ jobs:
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">= 18"
+          check-latest: true
+      - run: npm i @informalsystems/quint -g
       - uses: technote-space/get-diff-action@v6.1.2
         id: git_diff
         with:
@@ -111,19 +116,26 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
-      - name: difference tests
+      - name: mbt tests
         if: env.GIT_DIFF
         run: |
-          make test-difference-cov
+          make test-mbt-cov
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:
-          name: "${{ github.sha }}-difference-coverage"
-          path: ./difference-profile.out
-  
+          name: "${{ github.sha }}-mbt-coverage"
+          path: ./mbt-profile.out
+      - name: Archive MBT traces
+        uses: actions/upload-artifact@v3
+        if: ${{ success() || failure() }} # to upload the traces only when the test failed
+        with:
+          name: mbt-traces
+          path: tests/mbt/driver/traces
+          retention-days: 6 # to not clog our cloud storage too much, we retain only for a few days
+
   repo-analysis:
     runs-on: ubuntu-latest
-    needs: [tests, test-integration, test-difference]
+    needs: [tests, test-integration, test-mbt]
     steps:
       - uses: actions/checkout@v4
       - uses: technote-space/get-diff-action@v6.1.2
@@ -135,18 +147,18 @@ jobs:
             go.sum
             **/go.mod
             **/go.sum
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-coverage"
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-integration-coverage"
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         if: env.GIT_DIFF
         with:
-          name: "${{ github.sha }}-difference-coverage"
+          name: "${{ github.sha }}-mbt-coverage"
         continue-on-error: true
       - name: sonarcloud
         if: ${{ env.GIT_DIFF && !github.event.pull_request.draft }}
@@ -181,7 +193,9 @@ jobs:
             **/Makefile
             Makefile
       - name: e2e tests
-        run: make test-e2e-short
+        if: env.GIT_DIFF
+        run: |
+          make test-e2e-short
   
   test-cometmock:
     runs-on: ubuntu-latest
@@ -209,7 +223,9 @@ jobs:
             **/Makefile
             Makefile
       - name: cometmock tests
-        run: make test-e2e-short-cometmock
+        if: env.GIT_DIFF
+        run: |
+          make test-e2e-short-cometmock
   
   test-trace:
     runs-on: ubuntu-latest
@@ -237,4 +253,28 @@ jobs:
             **/Makefile
             Makefile
       - name: trace-e2e tests
-        run: make test-trace
+        if: env.GIT_DIFF
+        run: |
+          make test-trace
+  model-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: checkout LFS objects
+        run: git lfs checkout
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">= 18"
+          check-latest: true
+      - run: npm i @informalsystems/quint -g
+      - uses: technote-space/get-diff-action@v6.1.2
+        id: git_diff
+        with:
+          PATTERNS: |
+            tests/mbt/model/**.qnt
+      - name: verify the Quint model
+        if: env.GIT_DIFF
+        run: |
+          make verify-models

@@ -43,7 +43,7 @@ Minimal example:
     "historical_entries": 10000,
     "genesis_hash": "d86d756e10118e66e6805e9cc476949da2e750098fcc7634fd0cc77f57a0b2b0",
     "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1"
-    // relevant for chains performing a sovereign to consumer changeover
+    // relevant for chains performing a standalone to consumer changeover
     // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"
 }
@@ -75,18 +75,38 @@ Minimal example:
 ```
 
 ## ChangeRewardDenomProposal
-:::tip
-`ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the denomsToAdd or denomsToRemove fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
-:::
 
 Proposal type used to mutate the set of denoms accepted by the provider as rewards.
+
+:::tip
+A `ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the `denomsToAdd` or `denomsToRemove` fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
+:::
 
 Minimal example:
 ```js
 {
-  "title": "Add untrn as a reward denom",
+  "title": "Add uatom as a reward denom",
   "description": "Here is more information about the proposal",
-  "denomsToAdd": ["untrn"],
+  "denomsToAdd": ["uatom"],
   "denomsToRemove": []
 }
 ```
+
+:::tip
+Besides native provider denoms (e.g., `uatom` for the Cosmos Hub), please use the `ibc/*` denom trace format.
+For example, for `untrn` transferred over the path `transfer/channel-569`, the denom trace 
+can be queried using the following command:
+```bash
+> gaiad query ibc-transfer denom-hash transfer/channel-569/untrn
+hash: 0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5
+```
+Then use the resulting hash in the `ChangeRewardDenomProposal`, e.g., 
+```js
+{
+  "title": "Add untrn as a reward denom",
+  "description": "Here is more information about the proposal",
+  "denomsToAdd": ["ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5"],
+  "denomsToRemove": []
+}
+```
+:::

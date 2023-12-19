@@ -10,10 +10,10 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
-test: test-unit test-integration test-difference test-e2e
+test: test-unit test-integration test-mbt test-e2e
 
 # shortcut for local development
-test-dev: test-unit test-integration test-difference
+test-dev: test-unit test-integration test-mbt
 
 # run unit tests
 test-unit:
@@ -29,12 +29,25 @@ test-integration:
 test-integration-cov:
 	go test ./tests/integration/... -timeout 30m -coverpkg=./... -coverprofile=integration-profile.out -covermode=atomic
 
-# run difference tests
-test-difference:
-	go test ./tests/difference/... -timeout 30m
+# run mbt tests
+test-mbt:
+	cd tests/mbt/driver;\
+	sh generate_traces.sh;\
+	cd ../../..;\
+	go test ./tests/mbt/... -timeout 30m
 
-test-difference-cov:
-	go test ./tests/difference/... -timeout 30m -coverpkg=./... -coverprofile=difference-profile.out -covermode=atomic
+test-mbt-cov:
+	cd tests/mbt/driver;\
+	sh generate_traces.sh;\
+	cd ../../..;\
+	go test ./tests/mbt/... -timeout 30m -coverpkg=./... -coverprofile=mbt-profile.out -covermode=atomic
+
+# runs mbt tests, but generates more traces
+test-mbt-more-traces:
+	cd tests/mbt/driver;\
+	sh generate_more_traces.sh;\
+	cd ../../..;\
+	go test ./tests/mbt/... -timeout 30m
 
 # run E2E tests
 test-e2e:
@@ -91,6 +104,16 @@ test-no-cache:
 # test reading a trace from a file
 test-trace:
 	go run ./tests/e2e/... --test-file tests/e2e/tracehandler_testdata/happyPath.json::default
+
+# tests and verifies the Quint models.
+# Note: this is *not* using the Quint models to test the system,
+# this tests/verifies the Quint models *themselves*.
+verify-models:
+	quint test tests/mbt/model/ccv_test.qnt;\
+	quint test tests/mbt/model/ccv_model.qnt;\
+	quint run --invariant "all{ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" tests/mbt/model/ccv_model.qnt --max-steps 200 --max-samples 200
+
+
 
 ###############################################################################
 ###                                Linting                                  ###

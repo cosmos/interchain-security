@@ -14,9 +14,9 @@ Unit tests are useful for simple standalone functionality, and CRUD operations. 
 
 To run integration tests against your own consumer/provider implementations, use [instance_test.go](tests/integration/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](testutil/integration/interfaces.go), pattern match [specific_setup.go](testutil/ibc_testing/specific_setup.go), then pass in the appropriate types and parameters to the suite, as is done in `instance_test.go` for the dummy provider/consumer implementations.
 
-## Differential Tests (WIP)
+## Model-Based Tests (MBT)
 
-[Differential tests](tests/difference/) is similar to integration tests, but they compare the system state to an expected state generated from a model implementation.
+[MBT](tests/mbt/) tests are similar to integration tests, but they compare the system state to an expected state generated from a formally verified specification written in Quint.
 
 ## End-to-End (E2E) Tests 
 
@@ -35,10 +35,10 @@ make test-unit
 # run integration tests
 make test-integration
 
-# run difference tests
-make test-difference
+# run mbt tests
+make test-mbt
 
-# run unit, integration, and difference tests - shortcut for local development
+# run unit, integration, and mbt tests - shortcut for local development
 make test-dev
 
 # run E2E tests
