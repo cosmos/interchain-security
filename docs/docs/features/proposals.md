@@ -94,7 +94,7 @@ Minimal example:
 
 :::tip
 Besides native provider denoms (e.g., `uatom` for the Cosmos Hub), please use the `ibc/*` denom trace format.
-For example, for `untrn` transfered over the path `transfer/channel-569`, the denom trace 
+For example, for `untrn` transferred over the path `transfer/channel-569`, the denom trace 
 can be queried using the following command:
 ```bash
 > gaiad query ibc-transfer denom-hash transfer/channel-569/untrn
