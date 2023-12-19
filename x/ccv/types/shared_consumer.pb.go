@@ -9,7 +9,6 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
-	_ "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	_07_tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	io "io"
