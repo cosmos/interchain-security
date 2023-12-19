@@ -59,7 +59,7 @@ module ccv_types {
         {
             votingPowerHistory: List(),
             currentValidatorSet: Map(),
-            lastTimestamp: -1, // last timestamp -1 means that in the model, there was no block comitted on chain yet.
+            lastTimestamp: -1, // last timestamp -1 means that in the model, there was no block committed on chain yet.
             runningTimestamp: 0,
         }
 
@@ -489,14 +489,14 @@ module ccv {
                     pair =>
                     val packet = pair._1 
                     val maturationTime: Time = pair._2
-                    // important: this uses the last comitted timestamp, not the running timestamp!
+                    // important: this uses the last committed timestamp, not the running timestamp!
                     maturationTime <= newChainState.lastTimestamp
                 ).transform(pair => pair._1)
                 val newMaturationTimes = newConsumerState.maturationTimes.select(
                     pair =>
                     val packet = pair._1 
                     val maturationTime: Time = pair._2
-                    // important: this uses the last comitted timestamp, not the running timestamp!
+                    // important: this uses the last committed timestamp, not the running timestamp!
 
                     maturationTime > newChainState.lastTimestamp
                 )
