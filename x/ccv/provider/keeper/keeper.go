@@ -27,6 +27,7 @@ import (
 
 	"cosmossdk.io/log"
 
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -52,7 +53,7 @@ type Keeper struct {
 	slashingKeeper     ccv.SlashingKeeper
 	distributionKeeper ccv.DistributionKeeper
 	bankKeeper         ccv.BankKeeper
-	govKeeper          ccv.GovKeeper
+	govKeeper          govkeeper.Keeper
 	feeCollectorName   string
 
 	validatorAddressCodec addresscodec.Codec
@@ -67,9 +68,10 @@ func NewKeeper(
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper,
 	distributionKeeper ccv.DistributionKeeper, bankKeeper ccv.BankKeeper,
+	govKeeper govkeeper.Keeper,
 	authority string,
 	validatorAddressCodec, consensusAddressCodec addresscodec.Codec,
-	govKeeper ccv.GovKeeper, feeCollectorName string,
+	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {

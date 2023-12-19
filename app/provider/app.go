@@ -466,7 +466,7 @@ func New(
 		AddRoute(providertypes.RouterKey, icsprovider.NewProviderProposalHandler(app.ProviderKeeper))
 	govConfig := govtypes.DefaultConfig()
 
-	app.GovKeeper = *govkeeper.NewKeeper(
+	app.GovKeeper = govkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
@@ -499,11 +499,11 @@ func New(
 		app.AccountKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
-		app.GovKeeper,
-		authtypes.FeeCollectorName,
+		*app.GovKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		authcodec.NewBech32Codec(sdk.Bech32PrefixValAddr),
 		authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
+		authtypes.FeeCollectorName,
 	)
 
 	providerModule := icsprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
@@ -532,9 +532,11 @@ func New(
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
-		keys[evidencetypes.StoreKey],
+		runtime.NewKVStoreService(keys[evidencetypes.StoreKey]),
 		app.StakingKeeper,
 		app.SlashingKeeper,
+		app.AccountKeeper.AddressCodec(),
+		runtime.ProvideCometInfoService(),
 	)
 
 	app.EvidenceKeeper = *evidenceKeeper

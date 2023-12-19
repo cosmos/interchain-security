@@ -13,9 +13,7 @@ import (
 	"cosmossdk.io/math"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -127,7 +125,7 @@ type BankKeeper interface {
 
 // AccountKeeper defines the expected account keeper used for simulations
 type AccountKeeper interface {
-	GetModuleAccount(ctx context.Context, name string) types.ModuleAccountI
+	GetModuleAccount(ctx context.Context, name string) sdk.ModuleAccountI
 }
 
 // IBCTransferKeeper defines the expected interface needed for distribution transfer
@@ -149,8 +147,4 @@ type ScopedKeeper interface {
 	GetCapability(ctx sdk.Context, name string) (*capabilitytypes.Capability, bool)
 	AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool
 	ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error
-}
-
-type GovKeeper interface {
-	GetProposal(ctx sdk.Context, proposalID uint64) (v1.Proposal, bool)
 }

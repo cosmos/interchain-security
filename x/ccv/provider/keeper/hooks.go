@@ -203,9 +203,9 @@ func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 	ctx sdk.Context,
 	proposalID uint64,
 ) (providertypes.ConsumerAdditionProposal, bool) {
-	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
-	if !ok {
-		panic(fmt.Errorf("failed to get proposal %d from store", proposalID))
+	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalID)
+	if err != nil {
+		return providertypes.ConsumerAdditionProposal{}, false
 	}
 
 	// Iterate over the messages in the proposal
