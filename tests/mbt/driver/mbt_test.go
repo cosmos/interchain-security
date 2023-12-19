@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"

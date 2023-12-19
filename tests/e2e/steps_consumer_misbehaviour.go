@@ -1,7 +1,7 @@
 package main
 
 import (
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
 
 // starts a provider chain and a consumer chain with two validators,

@@ -17,7 +17,7 @@ import (
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	types "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
-	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	_07_tendermint "github.com/cosmos/v8/modules/light-clients/07-tendermint"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
