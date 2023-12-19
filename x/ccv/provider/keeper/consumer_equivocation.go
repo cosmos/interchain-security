@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -222,7 +223,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	// create a map with the validators' address that signed header1
 	header1Signers := map[string]int{}
 	for idx, sign := range lightBlock1.Commit.Signatures {
-		if sign.Absent() {
+		if sign.BlockIDFlag == tmtypes.BlockIDFlagAbsent {
 			continue
 		}
 		header1Signers[sign.ValidatorAddress.String()] = idx
@@ -230,7 +231,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	// iterate over the header2 signers and check if they signed header1
 	for sigIdxHeader2, sign := range lightBlock2.Commit.Signatures {
-		if sign.Absent() {
+		if sign.BlockIDFlag == tmtypes.BlockIDFlagAbsent {
 			continue
 		}
 		if sigIdxHeader1, ok := header1Signers[sign.ValidatorAddress.String()]; ok {
@@ -354,9 +355,11 @@ func verifyLightBlockCommitSig(lightBlock tmtypes.LightBlock, sigIdx int) error 
 
 // JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
 func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-	if !found {
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
+	} else if err != nil {
+		return errorsmod.Wrapf(slashingtypes.ErrBadValidatorAddr, "unkown error looking for provider consensus address: %s", providerAddr.String())
 	}
 
 	if validator.IsUnbonded() {
@@ -385,24 +388,28 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 
 // ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured `undelegations` and
 // `redelegations`, as well as the current `power` of the validator.
-// Note that this method does not perform any slashing.
+//
+// Note: this method does not perform any slashing.
+// All errors are ignored.
 func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Validator, undelegations []stakingtypes.UnbondingDelegation,
 	redelegations []stakingtypes.Redelegation, power int64, powerReduction math.Int,
 ) int64 {
 	// compute the total numbers of tokens currently being undelegated
-	undelegationsInTokens := sdk.NewInt(0)
+	undelegationsInTokens := math.NewInt(0)
 
 	// Note that we use a **cached** context to avoid any actual slashing of undelegations or redelegations.
 	cachedCtx, _ := ctx.CacheContext()
 	for _, u := range undelegations {
-		amountSlashed := k.stakingKeeper.SlashUnbondingDelegation(cachedCtx, u, 0, sdk.NewDec(1))
+		// v50: errors are ignored
+		amountSlashed, _ := k.stakingKeeper.SlashUnbondingDelegation(cachedCtx, u, 0, math.LegacyNewDec(1))
 		undelegationsInTokens = undelegationsInTokens.Add(amountSlashed)
 	}
 
 	// compute the total numbers of tokens currently being redelegated
-	redelegationsInTokens := sdk.NewInt(0)
+	redelegationsInTokens := math.NewInt(0)
 	for _, r := range redelegations {
-		amountSlashed := k.stakingKeeper.SlashRedelegation(cachedCtx, validator, r, 0, sdk.NewDec(1))
+		// v50 errors are ignored
+		amountSlashed, _ := k.stakingKeeper.SlashRedelegation(cachedCtx, validator, r, 0, math.LegacyNewDec(1))
 		redelegationsInTokens = redelegationsInTokens.Add(amountSlashed)
 	}
 
@@ -415,10 +422,13 @@ func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Vali
 }
 
 // SlashValidator slashes validator with given provider Address
+// NOTE: v50 errors will cause a panic
 func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-	if !found {
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
+	} else if err != nil {
+		return errorsmod.Wrapf(slashingtypes.ErrBadValidatorAddr, "unkown error looking for provider consensus address: %s", providerAddr.String())
 	}
 
 	if validator.IsUnbonded() {
@@ -429,12 +439,29 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}
 
-	undelegations := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator())
-	redelegations := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validator.GetOperator())
-	lastPower := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
+	valAddr, err := k.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+	if err != nil {
+		panic(err)
+	}
+
+	undelegations, err := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, valAddr)
+	if err != nil {
+		panic(err)
+	}
+	redelegations, err := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, valAddr)
+	if err != nil {
+		panic(err)
+	}
+	lastPower, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+	if err != nil {
+		panic(err)
+	}
 	powerReduction := k.stakingKeeper.PowerReduction(ctx)
 	totalPower := k.ComputePowerToSlash(ctx, validator, undelegations, redelegations, lastPower, powerReduction)
-	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
+	slashFraction, err := k.slashingKeeper.SlashFractionDoubleSign(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	consAdrr, err := validator.GetConsAddr()
 	if err != nil {

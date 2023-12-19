@@ -449,7 +449,7 @@ func createUndelegation(initialBalances []int64, completionTimes []time.Time) st
 	var entries []stakingtypes.UnbondingDelegationEntry
 	for i, balance := range initialBalances {
 		entry := stakingtypes.UnbondingDelegationEntry{
-			InitialBalance: sdk.NewInt(balance),
+			InitialBalance: math.NewInt(balance),
 			CompletionTime: completionTimes[i],
 		}
 		entries = append(entries, entry)
@@ -463,7 +463,7 @@ func createRedelegation(initialBalances []int64, completionTimes []time.Time) st
 	var entries []stakingtypes.RedelegationEntry
 	for i, balance := range initialBalances {
 		entry := stakingtypes.RedelegationEntry{
-			InitialBalance: sdk.NewInt(balance),
+			InitialBalance: math.NewInt(balance),
 			CompletionTime: completionTimes[i],
 		}
 		entries = append(entries, entry)
@@ -504,7 +504,7 @@ func TestComputePowerToSlash(t *testing.T) {
 				createRedelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
 			},
 			int64(1000),
-			sdk.NewInt(1),
+			math.NewInt(1),
 			int64(2000/1 + 1000),
 		},
 		{
@@ -527,7 +527,7 @@ func TestComputePowerToSlash(t *testing.T) {
 				createRedelegation([]int64{400}, []time.Time{nowPlus1Hour}),
 			},
 			int64(8391),
-			sdk.NewInt(2),
+			math.NewInt(2),
 			int64((2000+3500)/2 + 8391),
 		},
 		{
@@ -535,7 +535,7 @@ func TestComputePowerToSlash(t *testing.T) {
 			[]stakingtypes.UnbondingDelegation{},
 			[]stakingtypes.Redelegation{},
 			int64(3000),
-			sdk.NewInt(5),
+			math.NewInt(5),
 			int64(3000), // expectedPower is 0/5 + 3000
 		},
 		{
@@ -551,7 +551,7 @@ func TestComputePowerToSlash(t *testing.T) {
 				createRedelegation([]int64{100}, []time.Time{nowPlus1Hour}),
 			},
 			int64(17),
-			sdk.NewInt(3),
+			math.NewInt(3),
 			int64(2000/3 + 17),
 		},
 		{
@@ -566,7 +566,7 @@ func TestComputePowerToSlash(t *testing.T) {
 			},
 			[]stakingtypes.Redelegation{},
 			int64(1),
-			sdk.NewInt(3),
+			math.NewInt(3),
 			int64(2000/3 + 1),
 		},
 		{
@@ -591,38 +591,38 @@ func TestComputePowerToSlash(t *testing.T) {
 				createRedelegation([]int64{400}, []time.Time{now}),
 			},
 			int64(8391),
-			sdk.NewInt(2),
+			math.NewInt(2),
 			int64((1150+2550)/2 + 8391),
 		},
 	}
 
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
-	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+	validator, _ := stakingtypes.NewValidator(pubKey.Address().String(), pubKey, stakingtypes.Description{})
 
 	for _, tc := range testCases {
 		gomock.InOrder(mocks.MockStakingKeeper.EXPECT().
-			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), int64(0), sdk.NewDec(1)).
+			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), int64(0), math.LegacyNewDec(1)).
 			DoAndReturn(
-				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ math.LegacyDec) math.Int {
+					sum := math.NewInt(0)
 					for _, r := range undelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
 					return sum
 				}).AnyTimes(),
 			mocks.MockStakingKeeper.EXPECT().
-				SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), int64(0), sdk.NewDec(1)).
+				SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), int64(0), math.LegacyNewDec(1)).
 				DoAndReturn(
-					func(ctx sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
-						sum := sdk.NewInt(0)
+					func(ctx sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ math.LegacyDec) math.Int {
+						sum := math.NewInt(0)
 						for _, r := range redelegation.Entries {
 							if r.IsMature(ctx.BlockTime()) {
 								continue
 							}
-							sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+							sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 						}
 						return sum
 					}).AnyTimes(),
@@ -655,7 +655,7 @@ func TestSlashValidator(t *testing.T) {
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	validator, err := stakingtypes.NewValidator(
-		sdk.ValAddress(pubKey.Address().Bytes()),
+		pubKey.Address().String(),
 		pubKey,
 		stakingtypes.NewDescription("", "", "", "", ""),
 	)
@@ -679,8 +679,8 @@ func TestSlashValidator(t *testing.T) {
 	// validator's current power
 	currentPower := int64(3000)
 
-	powerReduction := sdk.NewInt(2)
-	slashFraction, _ := sdk.NewDecFromStr("0.5")
+	powerReduction := math.NewInt(2)
+	slashFraction, _ := math.LegacyNewDecFromStr("0.5")
 
 	// the call to `Slash` should provide an `infractionHeight` of 0 and an expected power of
 	// (750 (undelegations) + 750 (redelegations)) / 2 (= powerReduction) + 3000 (currentPower) = 3750
@@ -709,26 +709,26 @@ func TestSlashValidator(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().
 			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ math.LegacyDec) math.Int {
+					sum := math.NewInt(0)
 					for _, r := range undelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
 					return sum
 				}).AnyTimes(),
 		mocks.MockStakingKeeper.EXPECT().
 			SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ math.LegacyDec) math.Int {
+					sum := math.NewInt(0)
 					for _, r := range redelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
 					return sum
 				}).AnyTimes(),
@@ -756,7 +756,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	// validator is initially unbonded
-	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+	validator, _ := stakingtypes.NewValidator(pubKey.Address().String(), pubKey, stakingtypes.Description{})
 
 	consAddr, _ := validator.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(consAddr)

@@ -12,11 +12,13 @@ import (
 
 	"cosmossdk.io/math"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -35,9 +37,8 @@ type StakingKeeper interface {
 	Jail(context.Context, sdk.ConsAddress) error // jail a validator
 	Slash(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec) (math.Int, error)
 	SlashWithInfractionReason(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec, infraction stakingtypes.Infraction) (math.Int, error)
-	SlashUnbondingDelegation(sdk.Context, stakingtypes.UnbondingDelegation, int64, sdk.Dec) math.Int
 	SlashUnbondingDelegation(ctx context.Context, unbondingDelegation stakingtypes.UnbondingDelegation, infractionHeight int64, slashFactor math.LegacyDec) (math.Int, error)
-	SlashRedelegation(ctx context.Context, srcValidator types.Validator, redelegation types.Redelegation, infractionHeight int64, slashFactor math.LegacyDec) (math.Int, error)
+	SlashRedelegation(ctx context.Context, srcValidator stakingtypes.Validator, redelegation stakingtypes.Redelegation, infractionHeight int64, slashFactor math.LegacyDec) (math.Int, error)
 	Unjail(ctx context.Context, addr sdk.ConsAddress) error
 	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
 	IterateLastValidatorPowers(ctx context.Context, cb func(addr sdk.ValAddress, power int64) (stop bool)) error
@@ -102,7 +103,7 @@ type ClientKeeper interface {
 	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
 	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
-	ClientStore(ctx sdk.Context, clientID string) sdk.KVStore
+	ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore
 	SetClientState(ctx sdk.Context, clientID string, clientState ibcexported.ClientState)
 	GetClientConsensusState(ctx sdk.Context, clientID string, height ibcexported.Height) (ibcexported.ConsensusState, bool)
 }
