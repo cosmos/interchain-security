@@ -64,14 +64,6 @@ func getSlashMeterReplenishFraction(ctx sdk.Context, paramSpace paramtypes.Subsp
 	return f
 }
 
-// getMaxThrottledPackets returns the maximum amount of throttled slash or vsc matured packets
-// that can be queued for a single consumer before the provider chain halts.
-func getMaxThrottledPackets(ctx sdk.Context, paramSpace paramtypes.Subspace) int64 {
-	var p int64
-	paramSpace.Get(ctx, types.KeyMaxThrottledPackets, &p)
-	return p
-}
-
 func getConsumerRewardDenomRegistrationFee(ctx sdk.Context, paramSpace paramtypes.Subspace) sdk.Coin {
 	var c sdk.Coin
 	paramSpace.Get(ctx, types.KeyConsumerRewardDenomRegistrationFee, &c)
@@ -89,7 +81,6 @@ func GetParamsLegacy(ctx sdk.Context, paramspace paramtypes.Subspace) types.Para
 		getVscTimeoutPeriod(ctx, paramspace),
 		getSlashMeterReplenishPeriod(ctx, paramspace),
 		getSlashMeterReplenishFraction(ctx, paramspace),
-		getMaxThrottledPackets(ctx, paramspace),
 		getConsumerRewardDenomRegistrationFee(ctx, paramspace),
 	)
 }

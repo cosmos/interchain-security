@@ -9,8 +9,6 @@ import (
 
 	"cosmossdk.io/math"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"

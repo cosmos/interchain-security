@@ -67,7 +67,7 @@ func NewKeeper(
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper,
 	distributionKeeper ccv.DistributionKeeper, bankKeeper ccv.BankKeeper,
-	feeCollectorName, authority string,
+	authority string,
 	validatorAddressCodec, consensusAddressCodec addresscodec.Codec,
 	govKeeper ccv.GovKeeper, feeCollectorName string,
 ) Keeper {
@@ -245,7 +245,7 @@ func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID u
 // GetAllProposedConsumerChainIDs returns the proposed chainID of all gov consumerAddition proposals that are still in the voting period.
 func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
 	defer iterator.Close()
 
 	proposedChains := []types.ProposedChain{}

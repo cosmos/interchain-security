@@ -672,10 +672,10 @@ func (k Keeper) IsConsumerProposedOrRegistered(ctx sdk.Context, chainID string) 
 // In case it panics, the TX aborts and thus, the validator is not created. See AfterValidatorCreated hook.
 func (k Keeper) ValidatorConsensusKeyInUse(ctx sdk.Context, valAddr sdk.ValAddress) bool {
 	// Get the validator being added in the staking module.
-	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
 		// Abort TX, do NOT allow validator to be created
-		panic("did not find newly created validator in staking module")
+		panic(fmt.Errorf("error finding newly created validator in staking module: %s", err))
 	}
 
 	// Get the consensus address of the validator being added

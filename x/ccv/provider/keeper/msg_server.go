@@ -11,8 +11,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	tmtypes "github.com/cometbft/cometbft/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -165,6 +165,8 @@ func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChang
 	}
 
 	return &types.MsgChangeRewardDenomsResponse{}, nil
+}
+
 func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
