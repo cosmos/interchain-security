@@ -53,7 +53,7 @@ jobs:
         if: env.GIT_DIFF
         run: |
           make test-unit-cov
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-coverage"
@@ -84,7 +84,7 @@ jobs:
         if: env.GIT_DIFF
         run: |
           make test-integration-cov
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-integration-coverage"
@@ -120,13 +120,13 @@ jobs:
         if: env.GIT_DIFF
         run: |
           make test-mbt-cov
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-mbt-coverage"
           path: ./mbt-profile.out
       - name: Archive MBT traces
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ success() || failure() }} # to upload the traces only when the test failed
         with:
           name: mbt-traces
