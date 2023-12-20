@@ -627,7 +627,7 @@ func (s *CCVTestSuite) setupValidatorPowers() {
 // mustGetStakingValFromTmVal returns the staking validator from the current state of the staking keeper,
 // corresponding to a given tendermint validator. Note this func will fail the test if the validator is not found.
 func (s *CCVTestSuite) mustGetStakingValFromTmVal(tmVal tmtypes.Validator) (stakingVal stakingtypes.Validator) {
-	stakingVal, found := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(tmVal.Address))
-	s.Require().True(found)
+	stakingVal, err := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(tmVal.Address))
+	s.Require().NoError(err)
 	return stakingVal
 }
