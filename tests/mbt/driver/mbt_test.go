@@ -421,7 +421,7 @@ func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[st
 
 			// get the validator for that address on the provider
 			providerVal, err := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), providerConsAddr.Address)
-			require.Nil(t, err, "Error getting provider validator")
+			require.NoError(t, err, "Error getting provider validator")
 
 			// use the moniker of that validator
 			consumerCurValSet[providerVal.GetMoniker()] = val.Power
