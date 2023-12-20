@@ -114,7 +114,7 @@ func getAppBytesAndSenders(
 		bal := banktypes.Balance{
 			Address: acc.GetAddress().String(),
 			Coins: sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom,
-				sdk.NewIntFromUint64(INITIAL_ACCOUNT_BALANCE))),
+				math.NewIntFromUint64(INITIAL_ACCOUNT_BALANCE))),
 		}
 
 		accounts = append(accounts, acc)
@@ -137,21 +137,21 @@ func getAppBytesAndSenders(
 	delegations := make([]stakingtypes.Delegation, 0, len(nodes))
 
 	// Sum bonded is needed for BondedPool account
-	sumBonded := sdk.NewInt(0)
+	sumBonded := math.NewInt(0)
 	initValPowers := []abcitypes.ValidatorUpdate{}
 
 	for i, val := range nodes {
 		_, valSetVal := initialValSet.GetByAddress(val.Address.Bytes())
 		var tokens math.Int
 		if valSetVal == nil {
-			tokens = sdk.NewInt(0)
+			tokens = math.NewInt(0)
 		} else {
-			tokens = sdk.NewInt(valSetVal.VotingPower)
+			tokens = math.NewInt(valSetVal.VotingPower)
 		}
 
 		sumBonded = sumBonded.Add(tokens)
 
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(val.PubKey)
 		if err != nil {
 			log.Panicf("error getting pubkey for val %v", val)
 		}
@@ -160,7 +160,7 @@ func getAppBytesAndSenders(
 			log.Panicf("error getting pubkeyAny for val %v", val)
 		}
 
-		delShares := sdk.NewDec(tokens.Int64()) // as many shares as tokens
+		delShares := math.LegacyNewDec(tokens.Int64()) // as many shares as tokens
 
 		validator := stakingtypes.Validator{
 			OperatorAddress: sdk.ValAddress(val.Address).String(),
@@ -174,14 +174,14 @@ func getAppBytesAndSenders(
 			},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
+			MinSelfDelegation: math.ZeroInt(),
 		}
 
 		stakingValidators = append(stakingValidators, validator)
 
 		// Store delegation from the model delegator account
-		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress(), val.Address.Bytes(), delShares))
+		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress().String(), val.Address.String(), delShares))
 
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
@@ -224,7 +224,7 @@ func getAppBytesAndSenders(
 	// add unbonded amount
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.NotBondedPoolName).String(),
-		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, sdk.ZeroInt())},
+		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, math.ZeroInt())},
 	})
 
 	// update total funds supply
@@ -259,7 +259,7 @@ func newChain(
 
 	protoConsParams := CONSENSUS_PARAMS.ToProto()
 	app.InitChain(
-		abcitypes.RequestInitChain{
+		&abcitypes.RequestInitChain{
 			ChainId:         chainID,
 			Validators:      cmttypes.TM2PB.ValidatorUpdates(validators),
 			ConsensusParams: &protoConsParams,
@@ -269,20 +269,16 @@ func newChain(
 
 	app.Commit()
 
-	app.BeginBlock(
-		abcitypes.RequestBeginBlock{
-			Header: cmtproto.Header{
-				ChainID:            chainID,
-				Height:             app.LastBlockHeight() + 1,
-				AppHash:            app.LastCommitID().Hash,
-				ValidatorsHash:     validators.Hash(),
-				NextValidatorsHash: validators.Hash(),
-			},
+	app.FinalizeBlock(
+		&abcitypes.RequestFinalizeBlock{
+			Hash:               app.LastCommitID().Hash,
+			Height:             app.LastBlockHeight() + 1,
+			NextValidatorsHash: validators.Hash(),
 		},
 	)
 
 	chain := &ibctesting.TestChain{
-		T:           t,
+		TB:          t,
 		Coordinator: coord,
 		ChainID:     chainID,
 		App:         app,
@@ -379,12 +375,8 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// Commit a block on both chains, giving us two committed headers from
 	// the same time and height. This is the starting point for all our
 	// data driven testing.
-	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
-	lastProviderHeader, _ := simibc.EndBlock(providerChain, func() {})
-
-	// Get ready to update clients.
-	simibc.BeginBlock(providerChain, 5)
-	simibc.BeginBlock(consumerChain, 5)
+	lastConsumerHeader, _ := simibc.FinalizeBlock(consumerChain, 5)
+	lastProviderHeader, _ := simibc.FinalizeBlock(providerChain, 5)
 
 	// Update clients to the latest header.
 	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader, false)
@@ -420,8 +412,7 @@ func (s *Driver) setupProvider(
 	s.providerKeeper().SetParams(s.ctx("provider"), providerParams)
 
 	// produce a first block
-	simibc.EndBlock(providerChain, func() {})
-	simibc.BeginBlock(providerChain, 0)
+	simibc.FinalizeBlock(providerChain, 0)
 }
 
 func (s *Driver) setupConsumer(

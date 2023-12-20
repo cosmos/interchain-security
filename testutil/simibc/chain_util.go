@@ -6,6 +6,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -13,59 +14,52 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
-// BeginBlock updates the current header and calls the app.BeginBlock method.
-// The new block height is the previous block height + 1.
-// The new block time is the previous block time + dt.
+// FinalizeBlock calls app.FinalizeBlock and app.Commit.
+// It sets the next block time to currentBlockTime + dt.
+// This function returns the TMHeader of the block that was just ended,
 //
 // NOTE: this method may be used independently of the rest of simibc.
-func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
+func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Header, []channeltypes.Packet) {
+	res, err := c.App.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height:             c.CurrentHeader.Height,
+		Time:               c.CurrentHeader.GetTime(),
+		NextValidatorsHash: c.NextVals.Hash(),
+	})
+	require.NoError(c.TB, err)
+
+	_, err = c.App.Commit()
+	require.NoError(c.TB, err)
+
+	// set the last header to the current header
+	// use nil trusted fields
+	c.LastHeader = c.CurrentTMClientHeader()
+
+	// val set changes returned from previous block get applied to the next validators
+	// of this block. See tendermint spec for details.
+	c.Vals = c.NextVals
+	c.NextVals = ibctesting.ApplyValSetChanges(c, c.Vals, res.ValidatorUpdates)
+
+	// increment the current header
 	c.CurrentHeader = tmproto.Header{
 		ChainID:            c.ChainID,
 		Height:             c.App.LastBlockHeight() + 1,
 		AppHash:            c.App.LastCommitID().Hash,
-		Time:               c.CurrentHeader.Time.Add(dt),
+		Time:               c.CurrentHeader.Time,
 		ValidatorsHash:     c.Vals.Hash(),
 		NextValidatorsHash: c.NextVals.Hash(),
+		ProposerAddress:    c.CurrentHeader.ProposerAddress,
 	}
 
-	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-}
+	// set the new time
+	c.CurrentHeader.Time = c.CurrentHeader.Time.Add(dt)
 
-// EndBlock calls app.EndBlock and executes preCommitCallback BEFORE calling app.Commit
-// The callback is useful for testing purposes to execute arbitrary code before the
-// chain sdk context is cleared in .Commit().
-// For example, app.EndBlock may lead to a new state, which you would like to query
-// to check that it is correct. However, the sdk context is cleared after .Commit(),
-// so you can query the state inside the callback.
-//
-// NOTE: this method may be used independently of the rest of simibc.
-func EndBlock(
-	c *ibctesting.TestChain,
-	preCommitCallback func(),
-) (*ibctmtypes.Header, []channeltypes.Packet) {
-	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
-
-	/*
-		It is useful to call arbitrary code after ending the block but before
-		committing the block because the sdk.Context is cleared after committing.
-	*/
-
-	c.App.Commit()
-
-	c.Vals = c.NextVals
-
-	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
-
-	c.LastHeader = c.CurrentTMClientHeader()
-
-	sdkEvts := ABCIToSDKEvents(ebRes.Events)
-	packets := ParsePacketsFromEvents(sdkEvts)
+	packets := ParsePacketsFromEvents(res.Events)
 
 	return c.LastHeader, packets
 }
 
 // ParsePacketsFromEvents returns all packets found in events.
-func ParsePacketsFromEvents(events []sdk.Event) (packets []channeltypes.Packet) {
+func ParsePacketsFromEvents(events []abci.Event) (packets []channeltypes.Packet) {
 	for i, ev := range events {
 		if ev.Type == channeltypes.EventTypeSendPacket {
 			packet, err := ibctesting.ParsePacketFromEvents(events[i:])
