@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"reflect"
@@ -598,22 +597,6 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	}
 
 	return validators
-}
-
-// Implement from stakingkeeper interface
-func (k Keeper) GetAllValidators(ctx context.Context) (validators []stakingtypes.Validator, err error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	store := sdkCtx.KVStore(k.storeKey)
-
-	iterator := storetypes.KVStorePrefixIterator(store, stakingtypes.ValidatorsKey)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		validator := stakingtypes.MustUnmarshalValidator(k.cdc, iterator.Value())
-		validators = append(validators, validator)
-	}
-
-	return validators, err
 }
 
 // getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.

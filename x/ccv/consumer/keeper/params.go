@@ -13,16 +13,16 @@ import (
 
 // GetParams returns the params for the consumer ccv module
 // NOTE: it is different from the GetParams method which is required to implement StakingKeeper interface
-func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.Params {
+func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.ConsumerParams {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ParametersKey())
-	var params ccvtypes.Params
+	var params ccvtypes.ConsumerParams
 	k.cdc.MustUnmarshal(bz, &params)
 	return params
 }
 
 // SetParams sets the paramset for the consumer module
-func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.Params) {
+func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.ConsumerParams) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&params)
 	store.Set(types.ParametersKey(), bz)
@@ -131,7 +131,6 @@ func (k Keeper) GetProviderRewardDenoms(ctx sdk.Context) []string {
 }
 
 func (k Keeper) GetRetryDelayPeriod(ctx sdk.Context) time.Duration {
-	var period time.Duration
-	k.paramStore.Get(ctx, ccvtypes.KeyRetryDelayPeriod, &period)
-	return period
+	params := k.GetConsumerParams(ctx)
+	return params.RetryDelayPeriod
 }

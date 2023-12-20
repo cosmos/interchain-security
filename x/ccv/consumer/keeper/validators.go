@@ -332,6 +332,6 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(context.Context) (updates []ab
 
 // GetAllValidators is needed to implement StakingKeeper as expected by the Slashing module since cosmos-sdk/v0.47.x.
 // Use GetAllCCValidator in places where access to all cross-chain validators is needed.
-func (k Keeper) GetAllValidators(ctx sdk.Context) []stakingtypes.Validator {
-	return []stakingtypes.Validator{}
+func (k Keeper) GetAllValidators(ctx context.Context) ([]stakingtypes.Validator, error) {
+	return []stakingtypes.Validator{}, nil
 }

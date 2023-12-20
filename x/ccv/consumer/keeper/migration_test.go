@@ -74,7 +74,7 @@ func TestMigrateParams(t *testing.T) {
 	testCases := []struct {
 		name          string
 		legacyParams  func() paramtypes.Subspace
-		expetedParams ccvtypes.Params
+		expetedParams ccvtypes.ConsumerParams
 	}{
 		{
 			"default params",

@@ -12,7 +12,7 @@ import (
 // Legacy: used for migration only!
 // GetConsumerParamsLegacy returns the params for the consumer ccv module from x/param subspace
 // which will be deprecated soon
-func (k Keeper) GetConsumerParamsLegacy(ctx sdk.Context, paramSpace paramtypes.Subspace) ccvtypes.Params {
+func (k Keeper) GetConsumerParamsLegacy(ctx sdk.Context, paramSpace paramtypes.Subspace) ccvtypes.ConsumerParams {
 	return ccvtypes.NewParams(
 		getEnabled(ctx, paramSpace),
 		getBlocksPerDistributionTransmission(ctx, paramSpace),
@@ -26,6 +26,7 @@ func (k Keeper) GetConsumerParamsLegacy(ctx sdk.Context, paramSpace paramtypes.S
 		getSoftOptOutThreshold(ctx, paramSpace),
 		getRewardDenoms(ctx, paramSpace),
 		getProviderRewardDenoms(ctx, paramSpace),
+		getRetryDelayPeriod(ctx, paramSpace),
 	)
 }
 
@@ -108,4 +109,10 @@ func getProviderRewardDenoms(ctx sdk.Context, paramStore paramtypes.Subspace) []
 	var denoms []string
 	paramStore.Get(ctx, ccvtypes.KeyProviderRewardDenoms, &denoms)
 	return denoms
+}
+
+func getRetryDelayPeriod(ctx sdk.Context, paramStore paramtypes.Subspace) time.Duration {
+	var period time.Duration
+	paramStore.Get(ctx, ccvtypes.KeyRetryDelayPeriod, &period)
+	return period
 }
