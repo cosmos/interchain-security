@@ -38,6 +38,7 @@ Then, whenever the `Slash()` interface is executed on the consumer, if the votin
 
 * The bottom `x%` is still part of the total voting power of the consumer chain. This means that if the soft opt-out threshold is set to `10%` for example, and every validator in the bottom `10%` opts out from validating the consumer, then a `24%` downtime of the remaining voting power would halt the chain. This may be especially problematic during consumer upgrades.
 * In nominal scenarios, consumers with soft opt out enabled will be constructing slash packets for small vals, which may be dropped. This is wasted computation, but necessary to keep implementation simple. Note that the sdk's [full downtime logic](https://github.com/cosmos/cosmos-sdk/blob/d3f09c222243bb3da3464969f0366330dcb977a8/x/slashing/keeper/infractions.go#L75) is always executed on the consumer, which can be computationally expensive and slow down certain blocks.
+* In a consumer chain, when a validator that has opted out becomes the proposer, there will naturally be no proposal made and validators would need to move to the next consensus round for the same height to reach a decision. As a result, we would need more time to finalize blocks on a consumer chain.
 
 ### Neutral
 
