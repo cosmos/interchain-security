@@ -387,7 +387,8 @@ func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[st
 	t.Helper()
 	modelValSet := ValidatorSet(currentModelState, "provider")
 
-	rawActualValSet := driver.providerValidatorSet()
+	rawActualValSet, err := driver.providerValidatorSet()
+	require.NoError(t, err, "Error getting provider validator set")
 
 	actualValSet := make(map[string]int64, len(rawActualValSet))
 
@@ -419,8 +420,8 @@ func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[st
 			}
 
 			// get the validator for that address on the provider
-			providerVal, found := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), providerConsAddr.Address)
-			require.True(t, found, "Error getting provider validator")
+			providerVal, err := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), providerConsAddr.Address)
+			require.Nil(t, err, "Error getting provider validator")
 
 			// use the moniker of that validator
 			consumerCurValSet[providerVal.GetMoniker()] = val.Power
@@ -571,7 +572,11 @@ func CompareSentPacketsOnProvider(driver *Driver, currentModelState map[string]i
 
 func (s *Stats) EnterStats(driver *Driver) {
 	// highest observed voting power
-	for _, val := range driver.providerValidatorSet() {
+	valSet, err := driver.providerValidatorSet()
+	if err != nil {
+		log.Fatalf("error getting validator set on provider: %v", err)
+	}
+	for _, val := range valSet {
 		if val.Tokens.Int64() > s.highestObservedValPower {
 			s.highestObservedValPower = val.Tokens.Int64()
 		}

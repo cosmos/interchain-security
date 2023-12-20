@@ -37,16 +37,18 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		return err
 	}
 
-	_, _, err = simapp.SignAndDeliver(
-		receiver.Chain.T,
+	_, err = simapp.SignAndDeliver(
+		receiver.Chain.TB,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
-		receiver.Chain.GetContext().BlockHeader(),
 		[]sdk.Msg{msg},
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-		true, !expectExpiration, receiver.Chain.SenderPrivKey,
+		!expectExpiration,
+		receiver.Chain.GetContext().BlockHeader().Time,
+		receiver.Chain.GetContext().BlockHeader().NextValidatorsHash,
+		receiver.Chain.SenderPrivKey,
 	)
 
 	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
@@ -73,16 +75,18 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 
 	RPmsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
-	_, resWithAck, err := simapp.SignAndDeliver(
-		receiver.Chain.T,
+	resWithAck, err := simapp.SignAndDeliver(
+		receiver.Chain.TB,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
-		receiver.Chain.GetContext().BlockHeader(),
 		[]sdk.Msg{RPmsg},
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-		true, !expectError, receiver.Chain.SenderPrivKey,
+		!expectError,
+		receiver.Chain.GetContext().BlockHeader().Time,
+		receiver.Chain.GetContext().BlockHeader().NextValidatorsHash,
+		receiver.Chain.SenderPrivKey,
 	)
 	// need to set the sequence even if there was an error in delivery
 	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
@@ -116,16 +120,18 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
 
 	ackMsg := channeltypes.NewMsgAcknowledgement(p, ack, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
-	_, _, err = simapp.SignAndDeliver(
-		receiver.Chain.T,
+	_, err = simapp.SignAndDeliver(
+		receiver.Chain.TB,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
-		receiver.Chain.GetContext().BlockHeader(),
 		[]sdk.Msg{ackMsg},
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-		true, true, receiver.Chain.SenderPrivKey,
+		true,
+		receiver.Chain.GetContext().BlockHeader().Time,
+		receiver.Chain.GetContext().BlockHeader().NextValidatorsHash,
+		receiver.Chain.SenderPrivKey,
 	)
 
 	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
