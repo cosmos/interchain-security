@@ -410,7 +410,7 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
 		chainId := rawContent.Get("chain_id").String()
-		spawnTime := rawContent.Get("spawn_time").Time().Sub(tr.containerConfig.now)
+		spawnTime := rawContent.Get("spawn_time").Time().Sub(tr.containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {
@@ -442,7 +442,7 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
 		chainId := rawContent.Get("chain_id").String()
-		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.now)
+		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {

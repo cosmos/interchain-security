@@ -1614,10 +1614,10 @@ func (tr TestConfig) unjailValidator(action UnjailValidatorAction, verbose bool)
 		tr.chainConfigs[action.Provider].BinaryName,
 		"tx", "slashing", "unjail",
 		// Validator is sender here
-		`--from`, `validator`+fmt.Sprint(action.validator),
+		`--from`, `validator`+fmt.Sprint(action.Validator),
 		`--keyring-backend`, `test`,
-		`--keyring-dir`, tr.getValidatorHome(action.provider, action.Validator),
-		`--chain-id`, string(tr.chainConfigs[action.provider].ChainID),
+		`--keyring-dir`, tr.getValidatorHome(action.Provider, action.Validator),
+		`--chain-id`, string(tr.chainConfigs[action.Provider].ChainId),
 		`--node`, tr.getValidatorNode(action.Provider, action.Validator),
 		`--gas`, "900000",
 		`-y`,
