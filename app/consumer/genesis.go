@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -146,7 +147,8 @@ func transformToV33(jsonRaw []byte, ctx client.Context) ([]byte, error) {
 
 // Transformation of consumer genesis content as it is exported from current provider version
 // to a format readable by consumer implementation of version v2.x
-func transformToV2(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
+// Use removePreHashKey to remove prehash_key_before_comparison from result.
+func transformToV2(jsonRaw []byte, ctx client.Context, removePreHashKey bool) (json.RawMessage, error) {
 
 	// populate deprecated fields of GenesisState used by version v2.x
 	srcConGen := consumerTypes.GenesisState{}
@@ -218,7 +220,7 @@ func transformToV2(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) 
 	}
 
 	// patch .provider_client_state from provider.client_state if needed
-	if srcConGen.Provider.ConsensusState != nil {
+	if srcConGen.Provider.ClientState != nil {
 		clientState, exists := providerMap["client_state"]
 		if !exists {
 			return nil, fmt.Errorf("'client_state' not found in provider data")
@@ -237,6 +239,12 @@ func transformToV2(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) 
 	if err != nil {
 		return nil, fmt.Errorf("marshalling transformation result failed: %v", err)
 	}
+
+	if removePreHashKey {
+		// remove all `prehash_key_before_comparison` entries not supported in v2.x (see ics23)
+		re := regexp.MustCompile(`,\s*"prehash_key_before_comparison"\s*:\s*(false|true)`)
+		result = re.ReplaceAll(result, []byte{})
+	}
 	return result, nil
 }
 
@@ -247,8 +255,12 @@ func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []by
 	var err error = nil
 
 	switch targetVersion {
-	case v2_x, v3_0_x, v3_1_x:
-		newConsumerGenesis, err = transformToV2(jsonRaw, ctx)
+	// v2.x, v3.0-v3.2 share same consumer genesis type
+	case v2_x:
+		newConsumerGenesis, err = transformToV2(jsonRaw, ctx, true)
+	case v3_0_x, v3_1_x, v3_2_x:
+		// same as v2 replacement without need of `prehash_key_before_comparison` removal
+		newConsumerGenesis, err = transformToV2(jsonRaw, ctx, false)
 	case v3_3_x:
 		newConsumerGenesis, err = transformToV33(jsonRaw, ctx)
 	case v4_x_x:
