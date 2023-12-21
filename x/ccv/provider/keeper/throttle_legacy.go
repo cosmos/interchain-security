@@ -4,41 +4,10 @@ import (
 	"fmt"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
-
-// Migrator is a struct for handling in-place store migrations.
-type Migrator struct {
-	providerKeeper Keeper
-	paramSpace     paramtypes.Subspace
-}
-
-// NewMigrator returns a new Migrator.
-func NewMigrator(providerKeeper Keeper, paramSpace paramtypes.Subspace) Migrator {
-	return Migrator{providerKeeper: providerKeeper, paramSpace: paramSpace}
-}
-
-// Migrate2to3 migrates x/ccvprovider state from consensus version 2 to 3.
-func (m Migrator) Migrate2to3(ctx sdktypes.Context) error {
-	return m.providerKeeper.MigrateQueuedPackets(ctx)
-}
-
-func (k Keeper) MigrateQueuedPackets(ctx sdktypes.Context) error {
-	for _, consumer := range k.GetAllConsumerChains(ctx) {
-		slashData, vscmData := k.GetAllThrottledPacketData(ctx, consumer.ChainId)
-		if len(slashData) > 0 {
-			k.Logger(ctx).Error(fmt.Sprintf("slash data being dropped: %v", slashData))
-		}
-		for _, data := range vscmData {
-			k.HandleVSCMaturedPacket(ctx, consumer.ChainId, data)
-		}
-		k.DeleteThrottledPacketDataForConsumer(ctx, consumer.ChainId)
-	}
-	return nil
-}
 
 // Pending packet data type enum, used to encode the type of packet data stored at each entry in the mutual queue.
 // Note this type is copy/pasted from throttle v1 code.
@@ -47,9 +16,9 @@ const (
 	vscMaturedPacketData
 )
 
-// GetAllThrottledPacketData returns all throttled packet data for a given consumer chain, only used for 2 -> 3 migration.
-// Note this method is adapted from throttle v1 code.
-func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
+// Deprecated: LegacyGetAllThrottledPacketData is deprecated for ICS >= v4.0.0.
+// LegacyGetAllThrottledPacketData returns all throttled packet data that was queued on the provider for a given consumer chain.
+func (k Keeper) LegacyGetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
 	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
 ) {
 	slashData = []ccvtypes.SlashPacketData{}
@@ -86,8 +55,9 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 	return slashData, vscMaturedData
 }
 
-// Note this method is copy/pasted from throttle v1 code.
-func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
+// Deprecated: LegacyDeleteThrottledPacketDataForConsumer is deprecated for ICS >= v4.0.0.
+// LegacyDeleteThrottledPacketDataForConsumer removes all throttled packet data that was queued on the provider for a given consumer chain.
+func (k Keeper) LegacyDeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
@@ -106,8 +76,10 @@ func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consu
 	store.Delete(providertypes.ThrottledPacketDataSizeKey(consumerChainID))
 }
 
-// Note this method is adapted from throttle v1 code.
-func (k Keeper) QueueThrottledPacketDataOnlyForTesting(
+// Deprecated: LegacyQueueThrottledPacketData is deprecated for ICS >= v4.0.0.
+// LegacyQueueThrottledPacketData queues throttled packet data for a given consumer chain on the provider.
+// The method should not be used becase the provider does not process throttled packet data anymore.
+func (k Keeper) LegacyQueueThrottledPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{},
 ) error {
 	store := ctx.KVStore(k.storeKey)
