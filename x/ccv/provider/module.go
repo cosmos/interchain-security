@@ -21,6 +21,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client/cli"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/migrations"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
@@ -107,7 +108,7 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
-	m := keeper.NewMigrator(*am.keeper, am.paramSpace)
+	m := migrations.NewMigrator(*am.keeper, am.paramSpace)
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 2, m.Migrate2to3); err != nil {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
 	}
