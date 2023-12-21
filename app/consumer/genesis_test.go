@@ -446,7 +446,7 @@ func transformConsumerGenesis(filePath string, version *string) ([]byte, error) 
 	cmd.SetOutput(result)
 	_, err = cmd.ExecuteC()
 	if err != nil {
-		return nil, fmt.Errorf("Error runnning transformation command: %v", err)
+		return nil, fmt.Errorf("Error running transformation command: %v", err)
 	}
 	return result.Bytes(), nil
 }

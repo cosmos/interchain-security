@@ -27,6 +27,10 @@ gaiad q provider consumer-genesis stride-1 -o json > ccv-state.json
 jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' genesis.json ccv-state.json > ccv.json
 ```
 
+Transformation of the exported consumer genesis state to the target version of the consumer might be needed in case the provider and consumer formats are incompatible.
+Refer to the compatibility notes [here](../../../RELEASES.md#backwards-compatibility) to check if data transformation is needed for your case.
+Instructions on how to transform the exported CCV genesis state (`ccv-state.json` in the example above) to the required target version can be found [here](../consumer-development/consumer-genesis-transformation.md)
+
 ### 2. `SoftwareUpgradeProposal` on the standalone/consumer chain
 
 This upgrade proposal will introduce ICS to the standalone chain, making it a consumer.
@@ -37,7 +41,7 @@ After `spawn_time`, make sure to assign a consumer key if you intend to use one.
 
 Instructions are available [here](../features/key-assignment.md)
 
-### 4. Perform the software ugprade on standalone chain
+### 4. Perform the software upgrade on standalone chain
 
 Please use instructions provided by the standalone chain team and make sure to reach out if you are facing issues.
 The upgrade preparation depends on your setup, so please make sure you prepare ahead of time.

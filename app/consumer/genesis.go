@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -25,6 +26,27 @@ import (
 // the ModuleBasicManager which populates json from each BasicModule
 // object provided to it during init.
 type GenesisState map[string]json.RawMessage
+
+// Map of supported versions for consumer genesis transformation
+type IcsVersion string
+
+const (
+	v2_x   IcsVersion = "v2.x"
+	v3_0_x IcsVersion = "v3.0.x"
+	v3_1_x IcsVersion = "v3.1.x"
+	v3_2_x IcsVersion = "v3.2.x"
+	v3_3_x IcsVersion = "v3.3.x"
+	v4_x_x IcsVersion = "v4.x"
+)
+
+var TransformationVersions map[string]IcsVersion = map[string]IcsVersion{
+	"v2.x":   v2_x,
+	"v3.0.x": v3_0_x,
+	"v3.1.x": v3_1_x,
+	"v3.2.x": v3_2_x,
+	"v3.3.x": v3_3_x,
+	"v4.x":   v4_x_x,
+}
 
 // Transformation of consumer genesis content as it is exported from a provider version v1,2,3
 // to a format readable by current consumer implementation.
@@ -218,19 +240,18 @@ func transformToV2(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) 
 	return result, nil
 }
 
-// transformGenesis tries to transform provided data to ccv consumer genesis data
-// either to a format supported by current consumer impelementation or to the format
-// supported by consumer of version v2.x
-func transformGenesis(ctx client.Context, targetVersion string, jsonRaw []byte) (json.RawMessage, error) {
+// transformGenesis transforms ccv consumer genesis data to the specified target version
+// Returns the transformed data or an error in case the transformation failed or the format is not supported by current implementation
+func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []byte) (json.RawMessage, error) {
 	var newConsumerGenesis json.RawMessage = nil
 	var err error = nil
 
 	switch targetVersion {
-	case "v2.x":
+	case v2_x, v3_0_x, v3_1_x:
 		newConsumerGenesis, err = transformToV2(jsonRaw, ctx)
-	case "v3.3.x":
+	case v3_3_x:
 		newConsumerGenesis, err = transformToV33(jsonRaw, ctx)
-	case "v4.x":
+	case v4_x_x:
 		newConsumerGenesis, err = transformToNew(jsonRaw, ctx)
 	default:
 		err = fmt.Errorf("unsupported target version '%s'. Run %s --help",
@@ -259,10 +280,15 @@ func TransformConsumerGenesis(cmd *cobra.Command, args []string) error {
 	}
 
 	clientCtx := client.GetClientContextFromCmd(cmd)
-	targetVersion, err := cmd.Flags().GetString("to")
+	version, err := cmd.Flags().GetString("to")
 	if err != nil {
-		cmd.PrintErrf("Error getting targetVersion %v", err)
+		return fmt.Errorf("error getting targetVersion %v", err)
 	}
+	targetVersion, exists := TransformationVersions[version]
+	if !exists {
+		return fmt.Errorf("unsupported target version '%s'", version)
+	}
+
 	// try to transform data to target format
 	newConsumerGenesis, err := transformGenesis(clientCtx, targetVersion, jsonRaw)
 	if err != nil {
@@ -293,7 +319,7 @@ func NewDefaultGenesisState(cdc codec.JSONCodec) GenesisState {
 func GetConsumerGenesisTransformCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "transform [-to version] genesis-file",
-		Short: "Transform CCV consumer genesis data exported to a specific target format v2.x, v3.3.x, v4.x",
+		Short: "Transform CCV consumer genesis data exported to a specific target format",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`
 Transform the consumer genesis data exported from a provider version v1,v2, v3, v4 to a specified consumer target version.
@@ -309,6 +335,8 @@ $ %s --to v2.x transform /path/to/ccv_consumer_genesis.json
 		Args: cobra.RangeArgs(1, 2),
 		RunE: TransformConsumerGenesis,
 	}
-	cmd.Flags().String("to", "v4.x", "target version for consumer genesis. Supported versions [v2.x, v3.3.x, v4.x] default=v4.x")
+	cmd.Flags().String("to", string(v4_x_x),
+		fmt.Sprintf("target version for consumer genesis. Supported versions %s",
+			maps.Keys(TransformationVersions)))
 	return cmd
 }
