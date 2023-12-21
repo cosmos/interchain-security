@@ -16,7 +16,7 @@ const (
 	vscMaturedPacketData
 )
 
-// Deprecated: LegacyGetAllThrottledPacketData is deprecated is deprecated for ICS >= v4.0.0.
+// Deprecated: LegacyGetAllThrottledPacketData is deprecated for ICS >= v4.0.0.
 // LegacyGetAllThrottledPacketData returns all throttled packet data that was queued on the provider for a given consumer chain.
 func (k Keeper) LegacyGetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
 	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,

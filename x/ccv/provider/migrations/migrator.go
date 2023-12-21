@@ -20,8 +20,9 @@ func NewMigrator(providerKeeper providerkeeper.Keeper, paramSpace paramtypes.Sub
 }
 
 // Migrating consensus version 1 to 2 is a no-op.
-// <igrating from v1 -> v2 -> v3  will require multiple state breaking changes and migrations.
-// First run provider@v2.x.y in production to migrate from v1 -> v2. Then use provider@v3.x.y to migrate from v2 -> v3.
+// Migrating from v1 -> v2 -> v3 will require multiple state breaking changes and migrations.
+// First run provider@v2.x.y in production to migrate from consensus version 1 to 2.
+// Then, in order to migrate to consensus version 3, first upgrade to provider@v3.x.y.
 func (m Migrator) Migrate1to2(ctx sdktypes.Context) error {
 	return nil
 }
