@@ -1,21 +1,28 @@
-package keeper_test
+package v2_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	v2 "github.com/cosmos/interchain-security/v3/x/ccv/consumer/migrations/v2"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func TestMigrateConsumerPacketData(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := testutil.GetConsumerKeeperAndCtx(t, testutil.NewInMemKeeperParams(t))
+	testingParams := testutil.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := testutil.GetConsumerKeeperAndCtx(t, testingParams)
+	testStore := ctx.KVStore(testingParams.StoreKey)
+
 	defer ctrl.Finish()
 
 	// Set some pending data packets in the old format
-	packets := types.ConsumerPacketDataList{
+	packets := consumertypes.ConsumerPacketDataList{
 		List: []ccvtypes.ConsumerPacketData{
 			{
 				Type: ccvtypes.SlashPacket,
@@ -44,15 +51,21 @@ func TestMigrateConsumerPacketData(t *testing.T) {
 		},
 	}
 
+	// assert that new storage is empty
+	storedPackets := consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, storedPackets, 0)
+
 	// Set old data
-	consumerKeeper.SetPendingPacketsOnlyForTesting(ctx, packets)
+	setPendingPackets(ctx, testStore, packets)
+	// GetPendingPackets should panic because the marshalling is different before migration
+	require.Panics(t, func() { consumerKeeper.GetPendingPackets(ctx) })
 
 	// Migrate
-	consumerKeeper.MigrateConsumerPacketData(ctx)
+	v2.MigrateConsumerPacketData(ctx, testStore)
 
 	// Check that the data is migrated properly
 	obtainedPackets := consumerKeeper.GetPendingPackets(ctx)
-	require.Len(t, packets.List, 3)
+	require.Len(t, obtainedPackets, 3)
 
 	require.Equal(t, ccvtypes.SlashPacket, obtainedPackets[0].Type)
 	require.Equal(t, ccvtypes.VscMaturedPacket, obtainedPackets[1].Type)
@@ -61,4 +74,12 @@ func TestMigrateConsumerPacketData(t *testing.T) {
 	require.Equal(t, uint64(77), obtainedPackets[0].GetSlashPacketData().ValsetUpdateId)
 	require.Equal(t, uint64(88), obtainedPackets[1].GetVscMaturedPacketData().ValsetUpdateId)
 	require.Equal(t, uint64(99), obtainedPackets[2].GetVscMaturedPacketData().ValsetUpdateId)
+}
+
+func setPendingPackets(ctx sdk.Context, store storetypes.KVStore, packets consumertypes.ConsumerPacketDataList) {
+	bz, err := packets.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
+	}
+	store.Set([]byte{consumertypes.PendingDataPacketsBytePrefix}, bz)
 }
