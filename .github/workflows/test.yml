@@ -193,6 +193,7 @@ jobs:
             **/Makefile
             Makefile
             Dockerfile
+            Dockerfile.gaia
       - name: e2e tests
         if: env.GIT_DIFF
         run: |
@@ -224,6 +225,7 @@ jobs:
             **/Makefile
             Makefile
             Dockerfile
+            Dockerfile.gaia
       - name: cometmock tests
         if: env.GIT_DIFF
         run: |
@@ -255,6 +257,7 @@ jobs:
             **/Makefile
             Makefile
             Dockerfile
+            Dockerfile.gaia
       - name: trace-e2e tests
         if: env.GIT_DIFF
         run: |
