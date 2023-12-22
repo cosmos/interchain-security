@@ -78,7 +78,7 @@ func (k Keeper) LegacyDeleteThrottledPacketDataForConsumer(ctx sdktypes.Context,
 
 // Deprecated: LegacyQueueThrottledPacketData is deprecated for ICS >= v4.0.0.
 // LegacyQueueThrottledPacketData queues throttled packet data for a given consumer chain on the provider.
-// The method should not be used becase the provider does not process throttled packet data anymore.
+// The method should not be used because the provider does not process throttled packet data anymore.
 func (k Keeper) LegacyQueueThrottledPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{},
 ) error {
