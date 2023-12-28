@@ -29,6 +29,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerStartProposals())
 	cmd.AddCommand(CmdConsumerStopProposals())
 	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
+	cmd.AddCommand(CmdConsumerAllValidatorKeysAssignment())
 	cmd.AddCommand(CmdProviderValidatorKey())
 	cmd.AddCommand(CmdThrottleState())
 	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
