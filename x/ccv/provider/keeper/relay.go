@@ -6,7 +6,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -17,12 +16,12 @@ import (
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-// OnRecvVSCMaturedPacket handles a VSCMatured packet
+// OnRecvVSCMaturedPacket handles a VSCMatured packet and returns a no-op result ack.
 func (k Keeper) OnRecvVSCMaturedPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	data ccv.VSCMaturedPacketData,
-) exported.Acknowledgement {
+) error {
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -34,47 +33,19 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	if err := k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf(
-			"failed to queue VSCMatured packet data: %s", err.Error()))
+	// validate packet data upon receiving
+	if err := data.Validate(); err != nil {
+		return errorsmod.Wrapf(err, "error validating VSCMaturedPacket data")
 	}
 
-	k.Logger(ctx).Info("VSCMaturedPacket received and enqueued",
+	k.HandleVSCMaturedPacket(ctx, chainID, data)
+
+	k.Logger(ctx).Info("VSCMaturedPacket handled",
 		"chainID", chainID,
 		"vscID", data.ValsetUpdateId,
 	)
 
-	ack := channeltypes.NewResultAcknowledgement(ccv.V1Result)
-	return ack
-}
-
-// HandleLeadingVSCMaturedPackets handles all VSCMatured packet data that has been queued this block,
-// but does not need to be throttled. The handled data is then removed from the queue.
-//
-// Note: VSC matured packet data which is queued behind slash packet data CANNOT be
-// handled until the leading slash packet data has been handled. This is to maintain
-// the "VSC Maturity and Slashing Order" CCV property. If VSC matured packet data DOES NOT
-// trail slash packet data for that consumer, it will be handled in this method,
-// bypassing HandleThrottleQueues.
-func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) (vscMaturedHandledThisBlock int) {
-	vscMaturedHandledThisBlock = 0
-	for _, chain := range k.GetAllConsumerChains(ctx) {
-		// Note: it's assumed the order of the vsc matured slice matches the order of the ibc seq nums slice,
-		// in that a vsc matured packet data at index i is associated with the ibc seq num at index i.
-		leadingVscMatured, ibcSeqNums := k.GetLeadingVSCMaturedData(ctx, chain.ChainId)
-		ibcSeqNumsHandled := []uint64{}
-		for idx, data := range leadingVscMatured {
-			if vscMaturedHandledThisBlock >= vscMaturedHandledPerBlockLimit {
-				// Break from inner for-loop, DeleteThrottledPacketData will still be called for this consumer
-				break
-			}
-			k.HandleVSCMaturedPacket(ctx, chain.ChainId, data)
-			vscMaturedHandledThisBlock++
-			ibcSeqNumsHandled = append(ibcSeqNumsHandled, ibcSeqNums[idx])
-		}
-		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNumsHandled...)
-	}
-	return vscMaturedHandledThisBlock
+	return nil
 }
 
 // HandleVSCMaturedPacket handles a VSCMatured packet.
@@ -270,18 +241,10 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	k.IncrementValidatorSetUpdateId(ctx)
 }
 
-// EndBlockCIS contains the EndBlock logic needed for
-// the Consumer Initiated Slashing sub-protocol
-func (k Keeper) EndBlockCIS(ctx sdk.Context) {
-	// set the ValsetUpdateBlockHeight
-	blockHeight := uint64(ctx.BlockHeight()) + 1
-	valUpdateID := k.GetValidatorSetUpdateId(ctx)
-	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, blockHeight)
-	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
-
-	// Replenish slash meter if necessary, BEFORE executing slash packet throttling logic.
-	// This ensures the meter value is replenished, and not greater than the allowance (max value)
-	// for the block, before the throttling logic is executed.
+// BeginBlockCIS contains the BeginBlock logic needed for the Consumer Initiated Slashing sub-protocol.
+func (k Keeper) BeginBlockCIS(ctx sdk.Context) {
+	// Replenish slash meter if necessary. This ensures the meter value is replenished before handling any slash packets,
+	// and ensures the meter value is not greater than the allowance (max value) for the block.
 	//
 	// Note: CheckForSlashMeterReplenishment contains panics for the following scenarios, any of which should never occur
 	// if the protocol is correct and external data is properly validated:
@@ -291,28 +254,25 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.CheckForSlashMeterReplenishment(ctx)
+}
 
-	// Handle leading vsc matured packets before throttling logic.
-	//
-	// Note: HandleLeadingVSCMaturedPackets contains panics for the following scenarios, any of which should never occur
-	// if the protocol is correct and external data is properly validated:
-	//
-	// - Marshaling and/or store corruption errors.
-	vscMaturedHandledThisBlock := k.HandleLeadingVSCMaturedPackets(ctx)
-	// Handle queue entries considering throttling logic.
-	//
-	// Note: HandleThrottleQueues contains panics for the following scenarios, any of which should never occur
-	// if the protocol is correct and external data is properly validated:
-	//
-	// - SlashMeter has not been set (which should be set in InitGenesis, see InitializeSlashMeter).
-	// - Marshaling and/or store corruption errors.
-	// - Setting invalid slash meter values (see SetSlashMeter).
-	k.HandleThrottleQueues(ctx, vscMaturedHandledThisBlock)
+// EndBlockCIS contains the EndBlock logic needed for
+// the Consumer Initiated Slashing sub-protocol
+func (k Keeper) EndBlockCIS(ctx sdk.Context) {
+	// set the ValsetUpdateBlockHeight
+	blockHeight := uint64(ctx.BlockHeight()) + 1
+	valUpdateID := k.GetValidatorSetUpdateId(ctx)
+	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, blockHeight)
+	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
 }
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and
 // then queues the slash packet as pending if valid.
-func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
+func (k Keeper) OnRecvSlashPacket(
+	ctx sdk.Context,
+	packet channeltypes.Packet,
+	data ccv.SlashPacketData,
+) (ccv.PacketAckResult, error) {
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -324,6 +284,11 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// validate packet data upon receiving
+	if err := data.Validate(); err != nil {
+		return nil, errorsmod.Wrapf(err, "error validating SlashPacket data")
+	}
+
 	if err := k.ValidateSlashPacket(ctx, chainID, packet, data); err != nil {
 		k.Logger(ctx).Error("invalid slash packet",
 			"error", err.Error(),
@@ -332,7 +297,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
-		return ccv.NewErrorAcknowledgementWithLog(ctx, err)
+		return nil, err
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -355,23 +320,30 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
-		return channeltypes.NewResultAcknowledgement(ccv.V1Result)
+		return ccv.V1Result, nil
 	}
 
-	// Queue a slash entry to the global queue, which will be seen by the throttling logic
-	k.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		ctx.BlockTime(),   // recv time
-		chainID,           // consumer chain id that sent the packet
-		packet.Sequence,   // IBC sequence number of the packet
-		providerConsAddr)) // Provider consensus address of val to be slashed
-
-	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
-	// to enforce order of handling between the two packet data types.
-	if err := k.QueueThrottledSlashPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
+	meter := k.GetSlashMeter(ctx)
+	// Return bounce ack if meter is negative in value
+	if meter.IsNegative() {
+		k.Logger(ctx).Info("SlashPacket received, but meter is negative. Packet will be bounced",
+			"chainID", chainID,
+			"consumer cons addr", consumerConsAddr.String(),
+			"provider cons addr", providerConsAddr.String(),
+			"vscID", data.ValsetUpdateId,
+			"infractionType", data.Infraction,
+		)
+		return ccv.SlashPacketBouncedResult, nil
 	}
 
-	k.Logger(ctx).Info("slash packet received and enqueued",
+	// Subtract voting power that will be jailed/tombstoned from the slash meter,
+	// BEFORE handling slash packet.
+	meter = meter.Sub(k.GetEffectiveValPower(ctx, providerConsAddr))
+	k.SetSlashMeter(ctx, meter)
+
+	k.HandleSlashPacket(ctx, chainID, data)
+
+	k.Logger(ctx).Info("slash packet received and handled",
 		"chainID", chainID,
 		"consumer cons addr", consumerConsAddr.String(),
 		"provider cons addr", providerConsAddr.String(),
@@ -379,7 +351,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		"infractionType", data.Infraction,
 	)
 
-	return channeltypes.NewResultAcknowledgement(ccv.V1Result)
+	// Return result ack that the packet was handled successfully
+	return ccv.SlashPacketHandledResult, nil
 }
 
 // ValidateSlashPacket validates a recv slash packet before it is
@@ -393,10 +366,6 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	if !found {
 		return fmt.Errorf("cannot find infraction height matching "+
 			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
-	}
-
-	if data.Infraction != stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN && data.Infraction != stakingtypes.Infraction_INFRACTION_DOWNTIME {
-		return fmt.Errorf("invalid infraction type: %s", data.Infraction)
 	}
 
 	return nil
@@ -465,11 +434,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeExecuteConsumerChainSlash,
+			providertypes.EventTypeExecuteConsumerChainSlash,
 			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
 			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerConsAddr.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionType, data.Infraction.String()),
-			sdk.NewAttribute(ccv.AttributeInfractionHeight, strconv.Itoa(int(infractionHeight))),
+			sdk.NewAttribute(providertypes.AttributeInfractionHeight, strconv.Itoa(int(infractionHeight))),
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
 		),
 	)
@@ -491,7 +460,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				"chainID", initTimeoutTimestamp.ChainId)
 			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
-				if ccv.ErrConsumerChainNotFound.Is(err) {
+				if providertypes.ErrConsumerChainNotFound.Is(err) {
 					// consumer chain not found
 					continue
 				}
@@ -518,7 +487,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				)
 				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
 				if err != nil {
-					if ccv.ErrConsumerChainNotFound.Is(err) {
+					if providertypes.ErrConsumerChainNotFound.Is(err) {
 						// consumer chain not found
 						continue
 					}

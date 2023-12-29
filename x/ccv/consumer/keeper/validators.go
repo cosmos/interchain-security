@@ -82,7 +82,7 @@ func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.Val
 	panic("unimplemented on CCV keeper")
 }
 
-// IsJailed returns the outstanding slashing flag for the given validator adddress
+// IsJailed returns the outstanding slashing flag for the given validator address
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
 	// if the changeover is not complete for prev standalone chain,
 	// return the standalone staking keeper's jailed status
@@ -311,4 +311,10 @@ func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.Va
 // returns empty updates and err
 func (k Keeper) ApplyAndReturnValidatorSetUpdates(sdk.Context) (updates []abci.ValidatorUpdate, err error) {
 	return
+}
+
+// GetAllValidators is needed to implement StakingKeeper as expected by the Slashing module since cosmos-sdk/v0.47.x.
+// Use GetAllCCValidator in places where access to all cross-chain validators is needed.
+func (k Keeper) GetAllValidators(ctx sdk.Context) []stakingtypes.Validator {
+	return []stakingtypes.Validator{}
 }

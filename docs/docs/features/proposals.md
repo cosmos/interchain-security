@@ -43,7 +43,7 @@ Minimal example:
     "historical_entries": 10000,
     "genesis_hash": "d86d756e10118e66e6805e9cc476949da2e750098fcc7634fd0cc77f57a0b2b0",
     "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1"
-    // relevant for chains performing a sovereign to consumer changeover
+    // relevant for chains performing a standalone to consumer changeover
     // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"
 }
@@ -74,77 +74,39 @@ Minimal example:
 }
 ```
 
-## `EquivocationProposal`
-:::tip
-`EquivocationProposal` will only be accepted on the provider chain if at least one of the consumer chains submits equivocation evidence to the provider.
-Sending equivocation evidence to the provider is handled automatically by the interchain security protocol when an equivocation infraction is detected on the consumer chain.
-:::
-
-Proposal type used to suggest slashing a validator for double signing on consumer chain.
-When proposals of this type are passed, the validator in question will be slashed for equivocation on the provider chain.
-
-:::warning
-Take note that an equivocation slash causes a validator to be tombstoned (can never re-enter the active set).
-Tombstoning a validator on the provider chain will remove the validator from the validator set of all consumer chains.
-:::
-
-Minimal example:
-```js
-{
-  "title": "Validator-1 double signed on consumerchain-1",
-  "description": "Here is more information about the infraction so you can verify it yourself",
-	// the list of equivocations that will be processed
-  "equivocations": [
-    {
-        "height": 14444680,
-        "time": "2023-02-28T20:40:00.000000Z",
-        "power": 5500000,
-        "consensus_address": "<consensus address ON THE PROVIDER>"
-    }
-  ]
-}
-```
-
 ## ChangeRewardDenomProposal
-:::tip
-`ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the denomsToAdd or denomsToRemove fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
-:::
 
 Proposal type used to mutate the set of denoms accepted by the provider as rewards.
 
+:::tip
+A `ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the `denomsToAdd` or `denomsToRemove` fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
+:::
+
 Minimal example:
 ```js
 {
-  "title": "Add untrn as a reward denom",
+  "title": "Add uatom as a reward denom",
   "description": "Here is more information about the proposal",
-  "denomsToAdd": ["untrn"],
+  "denomsToAdd": ["uatom"],
   "denomsToRemove": []
 }
 ```
 
-### Notes
-When submitting equivocation evidence through an `EquivocationProposal` please take note that you need to use the consensus address (`valcons`) of the offending validator on the **provider chain**.
-Besides that, the `height` and the `time` fields should be mapped to the **provider chain** to avoid your evidence being rejected.
-
-Before submitting the proposal please check that the evidence is not outdated by comparing the infraction height with the `max_age_duration` and `max_age_num_blocks` consensus parameters of the **provider chain**.
-
-### Gaia example:
+:::tip
+Besides native provider denoms (e.g., `uatom` for the Cosmos Hub), please use the `ibc/*` denom trace format.
+For example, for `untrn` transferred over the path `transfer/channel-569`, the denom trace 
+can be queried using the following command:
+```bash
+> gaiad query ibc-transfer denom-hash transfer/channel-569/untrn
+hash: 0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5
 ```
-➜  ~ cat genesis.json | jq ".consensus_params"
+Then use the resulting hash in the `ChangeRewardDenomProposal`, e.g., 
+```js
 {
-  "block": {
-    ...
-  },
-  "evidence": {
-    "max_age_duration": "172800000000000",
-    "max_age_num_blocks": "1000000",
-    "max_bytes": "50000"
-  },
-  "validator": {
-    ...
-  },
-  "version": {}
+  "title": "Add untrn as a reward denom",
+  "description": "Here is more information about the proposal",
+  "denomsToAdd": ["ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5"],
+  "denomsToRemove": []
 }
 ```
-
-Any `EquivocationProposal` transactions that submit evidence with `height` older than `max_age_num_blocks` and `time` older than `max_age_duration` will be considered invalid.
+:::

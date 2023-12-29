@@ -10,7 +10,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
@@ -19,12 +18,11 @@ import (
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
-// concerning creating, stopping consumer chains and submitting equivocations.
+// concerning creating, stopping consumer chains and changing reward denom.
 func TestProviderProposalHandler(t *testing.T) {
 	// Snapshot times asserted in tests
 	now := time.Now().UTC()
 	hourFromNow := now.Add(time.Hour).UTC()
-	equivocation := &evidencetypes.Equivocation{Height: 42}
 
 	testCases := []struct {
 		name                      string
@@ -32,7 +30,6 @@ func TestProviderProposalHandler(t *testing.T) {
 		blockTime                 time.Time
 		expValidConsumerAddition  bool
 		expValidConsumerRemoval   bool
-		expValidEquivocation      bool
 		expValidChangeRewardDenom bool
 	}{
 		{
@@ -57,21 +54,6 @@ func TestProviderProposalHandler(t *testing.T) {
 				"title", "description", "chainID", now),
 			blockTime:               hourFromNow,
 			expValidConsumerRemoval: true,
-		},
-		{
-			// no slash log for equivocation
-			name: "invalid equivocation proposal",
-			content: providertypes.NewEquivocationProposal(
-				"title", "description", []*evidencetypes.Equivocation{equivocation}),
-			blockTime:            hourFromNow,
-			expValidEquivocation: false,
-		},
-		{
-			name: "valid equivocation proposal",
-			content: providertypes.NewEquivocationProposal(
-				"title", "description", []*evidencetypes.Equivocation{equivocation}),
-			blockTime:            hourFromNow,
-			expValidEquivocation: true,
 		},
 		{
 			name: "valid change reward denoms proposal",
@@ -118,10 +100,6 @@ func TestProviderProposalHandler(t *testing.T) {
 
 			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
 			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
-
-		case tc.expValidEquivocation:
-			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
-			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation)
 		case tc.expValidChangeRewardDenom:
 			// Nothing to mock
 		}
@@ -131,7 +109,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		err := proposalHandler(ctx, tc.content)
 
 		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
-			tc.expValidEquivocation || tc.expValidChangeRewardDenom {
+			tc.expValidChangeRewardDenom {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)

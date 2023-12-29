@@ -1,15 +1,24 @@
-name: gosec
+name: Run Gosec
 on:
+  pull_request:
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+    branches:
+      - main
+      - feat/*
   push:
     branches:
       - main
       - feat/*
-  pull_request:
-    branches:
-      - main
-      - feat/*
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+
 jobs:
-  tests:
+  Gosec:
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on

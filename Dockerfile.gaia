@@ -29,7 +29,7 @@ RUN if [ -n "${GAIA_TAG}" ]; \
     then git checkout "${GAIA_TAG}"; \
     # if GAIA_TAG is not set, build the latest tagged version
     else \
-    git checkout $(git tag | tail -1); \
+    git checkout $(git tag | sort -Vr | head -n1); \
     fi 
 
 # Also replace sdk version in the go.mod if specified

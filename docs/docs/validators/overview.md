@@ -91,12 +91,12 @@ More information is available in [Downtime Slashing documentation](../features/s
 :::
 
 ## Double-signing Infractions
-To learn more about equivocation handling in replicated security check out the [Slashing](../features/slashing.md#double-signing-equivocation) and [EquivocationProposal](../features/proposals.md#equivocationproposal) documentation sections
+To learn more about equivocation handling in replicated security check out the [Slashing](../features/slashing.md) documentation section.
 
 ## Key assignment
 Validators can use different consensus keys on the provider and each of the consumer chains. The consumer chain consensus key must be registered on the provider before use.
 
-For more information check our the [Key assignment overview and guide](../features/key-assignment.md)
+For more information check out the [Key assignment overview and guide](../features/key-assignment.md)
 
 ## References:
 - [Cosmos Hub Validators FAQ](https://hub.cosmos.network/main/validators/validator-faq.html)

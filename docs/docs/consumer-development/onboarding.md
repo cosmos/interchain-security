@@ -21,7 +21,7 @@ To help validators and other node runners onboard onto your chain, please prepar
 This should include (at minimum):
 
 - [ ] genesis.json without CCV data (before the proposal passes)
-- [ ] genesis.json with CCV data (after spawn time passes)
+- [ ] genesis.json with CCV data (after spawn time passes). Check if CCV data needs to be transformed (see [Transform Consumer Genesis](./consumer-genesis-transformation.md))
 - [ ] information about relevant seed/peer nodes you are running
 - [ ] relayer information (compatible versions)
 - [ ] copy of your governance proposal (as JSON)
@@ -95,7 +95,7 @@ Example of a consumer chain addition proposal.
 	// sub-protocol. If DistributionTransmissionChannel == "", a new transfer
 	// channel is created on top of the same connection as the CCV channel.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
-    // it is most relevant for chains performing a sovereign to consumer changeover
+    // it is most relevant for chains performing a standalone to consumer changeover
     // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"
 }

@@ -426,38 +426,43 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 // constructSlashPacketFromConsumer constructs an IBC packet embedding
 // slash packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction,
-) ccv.ConsumerPacketData {
-	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
-		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
-
-	return ccv.ConsumerPacketData{
-		Type: ccv.SlashPacket,
-		Data: &ccv.ConsumerPacketData_SlashPacketData{
-			SlashPacketData: &ccv.SlashPacketData{
-				Validator: abci.Validator{
-					Address: tmVal.Address,
-					Power:   tmVal.VotingPower,
-				},
-				ValsetUpdateId: valsetUpdateId,
-				Infraction:     infractionType,
-			},
-		},
-	}
+	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction, ibcSeqNum uint64,
+) channeltypes.Packet {
+	packet, _ := s.constructSlashPacketFromConsumerWithData(bundle, tmVal, infractionType, ibcSeqNum)
+	return packet
 }
 
-// constructVSCMaturedPacketFromConsumer constructs an IBC packet embedding
-// VSC Matured packet data to be sent from consumer to provider
-func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle) ccv.ConsumerPacketData {
+func (s *CCVTestSuite) constructSlashPacketFromConsumerWithData(bundle icstestingutils.ConsumerBundle,
+	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction, ibcSeqNum uint64,
+) (channeltypes.Packet, ccv.SlashPacketData) {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
-	return ccv.ConsumerPacketData{
-		Type: ccv.VscMaturedPacket,
-		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
-			VscMaturedPacketData: &ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateId},
+	spdData := ccv.SlashPacketData{
+		Validator: abci.Validator{
+			Address: tmVal.Address,
+			Power:   tmVal.VotingPower,
+		},
+		ValsetUpdateId: valsetUpdateId,
+		Infraction:     infractionType,
+	}
+
+	cpdData := ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: &spdData,
 		},
 	}
+
+	return channeltypes.NewPacket(cpdData.GetBytes(),
+		ibcSeqNum,
+		ccv.ConsumerPortID,              // Src port
+		bundle.Path.EndpointA.ChannelID, // Src channel
+		ccv.ProviderPortID,              // Dst port
+		bundle.Path.EndpointB.ChannelID, // Dst channel
+		clienttypes.Height{},
+		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
+	), spdData
 }
 
 // incrementTime increments the overall time by jumpPeriod
@@ -606,4 +611,12 @@ func (s *CCVTestSuite) setupValidatorPowers() {
 		s.Require().Equal(int64(1000), power)
 	}
 	s.Require().Equal(int64(4000), stakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+}
+
+// mustGetStakingValFromTmVal returns the staking validator from the current state of the staking keeper,
+// corresponding to a given tendermint validator. Note this func will fail the test if the validator is not found.
+func (s *CCVTestSuite) mustGetStakingValFromTmVal(tmVal tmtypes.Validator) (stakingVal stakingtypes.Validator) {
+	stakingVal, found := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(tmVal.Address))
+	s.Require().True(found)
+	return stakingVal
 }

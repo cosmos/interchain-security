@@ -39,14 +39,16 @@ func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
 // so you can query the state inside the callback.
 //
 // NOTE: this method may be used independently of the rest of simibc.
-func EndBlock(c *ibctesting.TestChain, preCommitCallback func()) (*ibctmtypes.Header, []channeltypes.Packet) {
+func EndBlock(
+	c *ibctesting.TestChain,
+	preCommitCallback func(),
+) (*ibctmtypes.Header, []channeltypes.Packet) {
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
 	/*
 		It is useful to call arbitrary code after ending the block but before
 		committing the block because the sdk.Context is cleared after committing.
 	*/
-	preCommitCallback()
 
 	c.App.Commit()
 

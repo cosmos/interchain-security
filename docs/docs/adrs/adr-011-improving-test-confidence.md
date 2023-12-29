@@ -2,7 +2,7 @@
 sidebar_position: 12
 title: Improving testing and increasing confidence
 ---
-# ADR 11: Improving testing and increasing confidence
+# ADR 011: Improving testing and increasing confidence
 
 ## Changelog
 * 2023-08-11: Proposed, first draft of ADR.

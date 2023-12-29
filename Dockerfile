@@ -21,7 +21,7 @@ ADD . /interchain-security
 
 WORKDIR /interchain-security
 
-# Do not specify version here. It leads to odd replacement behavior 
+# Do not specify version here. It leads to odd replacement behavior
 RUN if [ -d "./cosmos-sdk" ]; then go mod edit -replace github.com/cosmos/cosmos-sdk=./cosmos-sdk; fi
 RUN go mod tidy
 
@@ -37,7 +37,7 @@ FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder
 # Get GoRelayer
 FROM ghcr.io/informalsystems/relayer-no-gas-sim:v2.3.0-rc4-no-gas-sim AS gorelayer-builder
 
-FROM --platform=linux/amd64 fedora:36
+FROM --platform=linux/amd64 fedora:39
 RUN dnf update -y
 RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq
 USER root

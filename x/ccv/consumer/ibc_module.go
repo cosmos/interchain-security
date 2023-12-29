@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
@@ -176,7 +177,7 @@ func (am AppModule) OnChanOpenAck(
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			types.EventTypeFeeTransferChannelOpened,
+			consumertypes.EventTypeFeeTransferChannelOpened,
 			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 			sdk.NewAttribute(channeltypes.AttributeKeyChannelID, channelID),
 			sdk.NewAttribute(channeltypes.AttributeKeyPortID, transfertypes.PortID),
@@ -225,25 +226,48 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	var (
-		ack  ibcexported.Acknowledgement
-		data types.ValidatorSetChangePacketData
-	)
+	logger := am.keeper.Logger(ctx)
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+
+	var data types.ValidatorSetChangePacketData
+	var ackErr error
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		errAck := types.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("cannot unmarshal CCV packet data"))
-		ack = &errAck
-	} else {
-		ack = am.keeper.OnRecvVSCPacket(ctx, packet, data)
+		ackErr = errorsmod.Wrapf(sdkerrors.ErrInvalidType, "cannot unmarshal VSCPacket data")
+		logger.Error(fmt.Sprintf("%s sequence %d", ackErr.Error(), packet.Sequence))
+		ack = channeltypes.NewErrorAcknowledgement(ackErr)
+	}
+
+	// only attempt the application logic if the packet data
+	// was successfully decoded
+	if ack.Success() {
+		err := am.keeper.OnRecvVSCPacket(ctx, packet, data)
+		if err != nil {
+			ack = channeltypes.NewErrorAcknowledgement(err)
+			ackErr = err
+			logger.Error(fmt.Sprintf("%s sequence %d", ackErr.Error(), packet.Sequence))
+		} else {
+			logger.Info("successfully handled VSCPacket sequence: %d", packet.Sequence)
+		}
+	}
+
+	eventAttributes := []sdk.Attribute{
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		sdk.NewAttribute(types.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
+		sdk.NewAttribute(types.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack.Success())),
+	}
+
+	if ackErr != nil {
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeKeyAckError, ackErr.Error()))
 	}
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypePacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
-			sdk.NewAttribute(types.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
+			eventAttributes...,
 		),
 	)
 
+	// NOTE: acknowledgement will be written synchronously during IBC handler execution.
 	return ack
 }
 

@@ -31,6 +31,7 @@ func TestParams(t *testing.T) {
 		ccv.DefaultSoftOptOutThreshold,
 		rewardDenoms,
 		provideRewardDenoms,
+		ccv.DefaultRetryDelayPeriod,
 	) // these are the default params, IBC suite independently sets enabled=true
 
 	params := consumerKeeper.GetConsumerParams(ctx)
@@ -38,7 +39,7 @@ func TestParams(t *testing.T) {
 
 	newParams := ccv.NewParams(false, 1000,
 		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
-		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"})
+		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"}, 2*time.Hour)
 	consumerKeeper.SetParams(ctx, newParams)
 	params = consumerKeeper.GetConsumerParams(ctx)
 	require.Equal(t, newParams, params)

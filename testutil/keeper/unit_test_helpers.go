@@ -87,8 +87,8 @@ type MockedKeepers struct {
 	*MockBankKeeper
 	*MockIBCTransferKeeper
 	*MockIBCCoreKeeper
-	*MockEvidenceKeeper
 	*MockDistributionKeeper
+	*MockGovKeeper
 }
 
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
@@ -105,8 +105,8 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 		MockBankKeeper:         NewMockBankKeeper(ctrl),
 		MockIBCTransferKeeper:  NewMockIBCTransferKeeper(ctrl),
 		MockIBCCoreKeeper:      NewMockIBCCoreKeeper(ctrl),
-		MockEvidenceKeeper:     NewMockEvidenceKeeper(ctrl),
 		MockDistributionKeeper: NewMockDistributionKeeper(ctrl),
+		MockGovKeeper:          NewMockGovKeeper(ctrl),
 	}
 }
 
@@ -124,9 +124,9 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockStakingKeeper,
 		mocks.MockSlashingKeeper,
 		mocks.MockAccountKeeper,
-		mocks.MockEvidenceKeeper,
 		mocks.MockDistributionKeeper,
 		mocks.MockBankKeeper,
+		mocks.MockGovKeeper,
 		authtypes.FeeCollectorName,
 	)
 }
@@ -254,15 +254,6 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
 	require.Empty(t, providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID))
 	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
-
-	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx)
-	for _, entry := range allGlobalEntries {
-		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
-	}
-
-	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
-	require.Empty(t, slashPacketData)
-	require.Empty(t, vscMaturedPacketData)
 }
 
 func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
