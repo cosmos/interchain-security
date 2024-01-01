@@ -19,18 +19,18 @@ please add links to any relevant follow up issues.*
 I have...
 
 * [ ] Included the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
-* [ ] Added `!` to the type prefix if state-machine breaking change (i.e., requires coordinated upgrade)
+* [ ] Added `!` to the type prefix if the change is [state-machine breaking](https://github.com/cosmos/interchain-security/blob/main/RELEASES.md#breaking-changes)
 * [ ] Confirmed this PR does not introduce changes requiring state migrations, OR migration code has been added to consumer and/or provider modules
 * [ ] Targeted the correct branch (see [PR Targeting](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
 * [ ] Provided a link to the relevant issue or specification
-* [ ] Followed the guidelines for [building SDK modules](https://github.com/cosmos/cosmos-sdk/blob/main/docs/docs/building-modules)
+* [ ] Followed the guidelines for [building SDK modules](https://github.com/cosmos/cosmos-sdk/blob/main/docs/build/building-modules/00-intro.md)
 * [ ] Included the necessary unit and integration [tests](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#testing)
 * [ ] Added a changelog entry to `CHANGELOG.md`
 * [ ] Included comments for [documenting Go code](https://blog.golang.org/godoc)
 * [ ] Updated the relevant documentation or specification
 * [ ] Reviewed "Files changed" and left comments if necessary <!-- relevant if the changes are not obvious  -->
 * [ ] Confirmed all CI checks have passed
-* [ ] If this PR is library API breaking, bump the go.mod version string of the repo, and follow through on a new major release for both the consumer and provider
+* [ ] If this PR is library API breaking, bump the go.mod version string of the repo, and follow through on a new major release
 
 ### Reviewers Checklist
 
@@ -40,7 +40,7 @@ your handle next to the items reviewed if you only reviewed selected items.*
 I have...
 
 * [ ] confirmed the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
-* [ ] confirmed `!` in the type prefix if API or client breaking change
+* [ ] confirmed `!` the type prefix if the change is state-machine breaking
 * [ ] confirmed this PR does not introduce changes requiring state migrations, OR confirmed migration code has been added to consumer and/or provider modules
 * [ ] confirmed all author checklist items have been addressed
 * [ ] reviewed state machine logic

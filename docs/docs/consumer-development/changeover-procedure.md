@@ -12,7 +12,7 @@ The relevant protocol specifications are available below:
 
 ## Overview
 
-Standalone to consumer changeover procedure can rougly be separated into 4 parts:
+Standalone to consumer changeover procedure can roughly be separated into 4 parts:
 
 ### 1. ConsumerAddition proposal submitted to the `provider` chain
 The proposal is equivalent to the "normal" ConsumerAddition proposal submitted by new consumer chains.
@@ -46,9 +46,9 @@ RevisionNumber: 0, RevisionHeight: 111
 
 * `binary_hash` may not be available ahead of time. All chains performing the changeover go through rigorous testing - if bugs are caught and fixed the hash listed in the proposal may not be the most recent one.
 
-* `spawn_time` listed in the proposal MUST be before the `upgrade_height` listed in the the upgrade proposal on the standalone chain.
+* `spawn_time` listed in the proposal MUST be before the `upgrade_height` listed in the upgrade proposal on the standalone chain.
 :::caution
-`spawn_time` must occur before the `upgrade_height` on the standalone chain is reached becasue the `provider` chain must generate the `ConsumerGenesis` that contains the **validator set** that will be used after the changeover.
+`spawn_time` must occur before the `upgrade_height` on the standalone chain is reached because the `provider` chain must generate the `ConsumerGenesis` that contains the **validator set** that will be used after the changeover.
 :::
 
 * `unbonding_period` must correspond to the value used on the standalone chain. Otherwise, the clients used for the ccv protocol may be incorrectly initialized.
@@ -56,7 +56,7 @@ RevisionNumber: 0, RevisionHeight: 111
 * `distribution_transmission_channel` **should be set**.
 
 :::note
-Populating `distribution_transmission_channel` will enable the standalone chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. This will preserve the `ibc denom` that may already be in use.
+Populating `distribution_transmission_channel` will enable the standalone chain to reuse one of the existing channels to the provider for consumer chain rewards distribution. This will preserve the `ibc denom` that may already be in use.
 
 If the parameter is not set, a new channel will be created.
 :::
@@ -84,7 +84,7 @@ Otherwise, the upgrade is indistinguishable from a regular on-chain upgrade prop
 
 ### 3. spawn time is reached
 
-When the `spawn_time` is reached on the `provider` it will generate a `ConsumerGenesis` that contains the validator set that will supercede the `standalone` validator set.
+When the `spawn_time` is reached on the `provider` it will generate a `ConsumerGenesis` that contains the validator set that will supersede the `standalone` validator set.
 
 This `ConsumerGenesis` must be available on the standalone chain during the on-chain upgrade.
 
@@ -93,7 +93,7 @@ This `ConsumerGenesis` must be available on the standalone chain during the on-c
 Performing the on-chain upgrade on the standalone chain will add the `ccv/consumer` module and allow the chain to become a `consumer` of replicated security.
 
 :::caution
-The `ConsumerGenesis` must be exported to a file and placed in the correct folder on the standalone chain before the upgade.
+The `ConsumerGenesis` must be exported to a file and placed in the correct folder on the standalone chain before the upgrade.
 
 The file must be placed at the exact specified location, otherwise the upgrade will not be executed correctly.
 
@@ -128,7 +128,7 @@ To help validators and other node runners onboard onto your chain, please prepar
 
 This should include (at minimum):
 
-- [ ] genesis.json with CCV data (after spawn time passes)
+- [ ] genesis.json with CCV data (after spawn time passes). Check if CCV data needs to be transformed (see [Transform Consumer Genesis](./consumer-genesis-transformation.md))
 - [ ] information about relevant seed/peer nodes you are running
 - [ ] relayer information (compatible versions)
 - [ ] copy of your governance proposal (as JSON)
@@ -139,7 +139,7 @@ Example of such a repository can be found [here](https://github.com/hyphacoop/ic
 
 ## 3. Submit a ConsumerChainAddition Governance Proposal to the provider
 
-Before you submit a `ConsumerChainAddition` proposal, please provide a `spawn_time` that is **before** the the `upgrade_height` of the upgrade that will introduce the `ccv module` to your chain.
+Before you submit a `ConsumerChainAddition` proposal, please provide a `spawn_time` that is **before** the `upgrade_height` of the upgrade that will introduce the `ccv module` to your chain.
 :::danger
 If the `spawn_time` happens after your `upgrade_height` the provider will not be able to communicate the new validator set to be used after the changeover.
 :::
@@ -211,7 +211,7 @@ Example of a consumer chain addition proposal.
 	// channel is created on top of the same connection as the CCV channel.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
     // it is most relevant for chains performing a standalone to consumer changeover
-    // in order to maintan the existing ibc transfer channel
+    // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"  // NOTE: use existing transfer channel if available
 }
 ```

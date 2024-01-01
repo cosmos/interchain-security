@@ -7,7 +7,6 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	simapp "github.com/cosmos/ibc-go/v7/testing/simapp"
-	"github.com/stretchr/testify/require"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -23,7 +22,7 @@ import (
 // must have a client of the sender chain that it can update.
 //
 // NOTE: this function MAY be used independently of the rest of simibc.
-func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
+func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmtypes.Header, expectExpiration bool) (err error) {
 	err = augmentHeader(sender.Chain, receiver.Chain, receiver.ClientID, header)
 
 	if err != nil {
@@ -34,8 +33,9 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		receiver.ClientID, header,
 		receiver.Chain.SenderAccount.GetAddress().String(),
 	)
-
-	require.NoError(receiver.Chain.T, err)
+	if err != nil {
+		return err
+	}
 
 	_, _, err = simapp.SignAndDeliver(
 		receiver.Chain.T,
@@ -46,17 +46,16 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-		true, true, receiver.Chain.SenderPrivKey,
+		true, !expectExpiration, receiver.Chain.SenderPrivKey,
 	)
 
+	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {
 		return err
 	}
 
-	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
-
-	if err != nil {
-		return err
+	if setSequenceErr != nil {
+		return setSequenceErr
 	}
 
 	return nil
@@ -68,7 +67,7 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 // The packet must be sent from the sender chain to the receiver chain, and the
 // receiver chain must have a client for the sender chain which has been updated
 // to a recent height of the sender chain so that it can verify the packet.
-func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
+func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packet, expectError bool) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
@@ -83,16 +82,16 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-		true, true, receiver.Chain.SenderPrivKey,
+		true, !expectError, receiver.Chain.SenderPrivKey,
 	)
+	// need to set the sequence even if there was an error in delivery
+	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {
 		return nil, err
 	}
 
-	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
-
-	if err != nil {
-		return nil, err
+	if setSequenceErr != nil {
+		return nil, setSequenceErr
 	}
 
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
@@ -129,14 +128,13 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
 		true, true, receiver.Chain.SenderPrivKey,
 	)
 
+	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {
 		return err
 	}
 
-	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
-
-	if err != nil {
-		return err
+	if setSequenceErr != nil {
+		return setSequenceErr
 	}
 
 	return nil

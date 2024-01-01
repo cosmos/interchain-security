@@ -1,5 +1,5 @@
 /*
-  Slighlty modified version of https://github.com/ignite/cli/blob/develop/docs/src/css/custom.css
+  Slightly modified version of https://github.com/ignite/cli/blob/develop/docs/src/css/custom.css
 */
 
 @import "tailwindcss/base";
@@ -38,7 +38,7 @@
   --aa-primary-color-rgb: 0, 0, 0;
 
   @media screen and (prefers-reduced-motion) {
-    transition: ;
+    transition: none;
   }
   --ifm-menu-color-background-active: none;
   --ifm-menu-color-background-hover: none;
@@ -79,10 +79,9 @@ html {
       @apply no-underline w-full text-2;
     }
   }
-
   /* MAINNAV */
   .navbar {
-    @apply py-5 h-auto border-b border-b-docusaurusColorBorder shadow-none bg-docusaurusBgColor;
+    @apply pb-2 pt-5 h-auto border-b border-b-docusaurusColorBorder shadow-none bg-docusaurusBgColor;
     &__toggle {
       @apply bg-card rounded-s h-8 w-8 flex justify-center items-center;
       @media (min-width: 997px) {
@@ -244,7 +243,7 @@ html {
       @apply m-0;
     }
   }
-  
+
   &[data-theme="dark"] .theme-doc-sidebar-menu .menu__list::before {
     @apply bg-inactiveLight;
   }
@@ -340,6 +339,10 @@ html {
   .menu__list-item--collapsed .menu__caret:before {
     transform: rotateZ(0);
   }
+  .menu__caret,
+  li li .menu__link--sublist-caret::after {
+    @apply hidden;
+  }
 
   /* TOC */
   .table-of-contents__link:hover,
@@ -360,7 +363,8 @@ html {
   .pagination-nav {
     @apply pb-7 mt-9;
     & > a {
-      @apply border-stone-200 hover:border-stone-300 hover:shadow-md rounded-sm p-6 col-span-2;
+      box-shadow: 0px 0px 80px rgba(0, 0, 0, 0.07);
+      @apply border-transparent rounded pb-8.5 col-span-2 pt-6 px-6 hover:shadow-none;
 
       @media (min-width: 997px) {
         @apply col-span-1;
@@ -375,7 +379,7 @@ html {
         }
       }
       &__sublabel {
-        @apply mb-3.5 text-slate-500 dark:text-docusaurusColorBase text-3;
+        @apply mb-3.5 text-gray-1000 dark:text-docusaurusColorBase text-3;
       }
       &__label {
         @apply text-4 font-semibold;
@@ -384,9 +388,30 @@ html {
   }
 
   /* FOOTER */
+
+  &[data-theme="light"] {
+    .footer__title, .footer__link-item, .footer__copyright {
+      @apply text-white;
+    }
+
+    .pagination-nav__sublabel {
+      @apply text-black;
+    }
+  }
+
+  &[data-theme="dark"] {
+    .footer__title, .footer__link-item, .footer__copyright {
+      @apply text-black;
+    }
+
+    .pagination-nav__sublabel {
+      @apply text-white;
+    }
+  }
+  
   .footer {
-    background-color: var(--ifm-background-color);
-    @apply border-t border-t-docusaurusColorBorder pt-10 mb-10;
+    background-color: var(--ifm-font-color-base);
+    @apply border-t border-t-docusaurusColorBorder pt-10;
     &__link-item {
       @apply hover:underline;
     }
@@ -424,8 +449,6 @@ html {
     @apply font-jetbrain mt-3;
   }
 
-
-
   .markdown {
     --ifm-heading-vertical-rhythm-bottom: 1;
     --ifm-h1-vertical-rhythm-bottom: 1;
@@ -434,10 +457,10 @@ html {
     @apply mt-7 pb-8 border-b border-b-border;
 
     h1 {
-      @apply text-7 font-bold leading-10 tracking-tight pt-5;
+      @apply text-7 font-bold leading-10 tracking-tight;
     }
     h2 {
-      @apply text-5 font-bold leading-9 tracking-tight;
+      @apply text-6 font-bold leading-9 tracking-tight;
     }
     h3 {
       @apply text-4 font-semibold leading-8 tracking-tight;
@@ -455,10 +478,10 @@ html {
     ul,
     ol,
     blockquote {
-      @apply text-[1.2rem];
+      @apply text-[1rem];
     }
     code {
-      @apply border-0 px-3;
+      @apply border-0 px-3 align-baseline;
     }
     blockquote {
       @apply my-7;
@@ -466,6 +489,7 @@ html {
     a {
       @apply underline;
       /* color: var(--ifm-color-primary ); */
+      color: var(--ifm-color-primary);
     }
     ol,
     ul {
@@ -484,7 +508,7 @@ html {
       list-style-type: none;
       counter-reset: item;
       & > li {
-        @apply relative pl-8 mb-4;
+        @apply relative pl-8 mb-5.5;
         &::before {
           counter-increment: item;
           content: counters(item, ".", decimal-leading-zero) ".";
@@ -507,11 +531,14 @@ html {
         @apply my-5;
       }
     }
+    .card-section {
+      a {
+        @apply no-underline;
+      }
+    }
   }
 
-  .card-section {
-    a {
-      @apply no-underline;
-    }
+  .main-wrapper {
+    @apply min-h-screen;
   }
 }

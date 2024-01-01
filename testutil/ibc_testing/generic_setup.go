@@ -7,6 +7,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -88,7 +89,8 @@ func AddDemocracyConsumer[T testutil.DemocConsumerApp](
 	s.T().Helper()
 
 	// generate validators private/public key
-	valSet, valUpdates, signers := testutil.CreateValidators(s.T(), 4)
+	valSet, valUpdates, signers, err := testutil.CreateValidators(4)
+	require.NoError(s.T(), err)
 
 	ibctesting.DefaultTestingAppInit = appIniter(valUpdates)
 	democConsumer := ibctesting.NewTestChainWithValSet(s.T(), coordinator, democConsumerChainID, valSet, signers)
@@ -145,7 +147,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator
-	for _, update := range consumerGenesisState.InitialValSet {
+	for _, update := range consumerGenesisState.Provider.InitialValSet {
 		// tmPubKey update.PubKey
 		tmPubKey, err := tmencoding.PubKeyFromProto(update.PubKey)
 		s.Require().NoError(err)
@@ -158,7 +160,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	}
 
 	// create and instantiate consumer chain
-	ibctesting.DefaultTestingAppInit = appIniter(consumerGenesisState.InitialValSet)
+	ibctesting.DefaultTestingAppInit = appIniter(consumerGenesisState.Provider.InitialValSet)
 	testChain := ibctesting.NewTestChainWithValSet(s.T(), coordinator, chainID,
 		tmtypes.NewValidatorSet(valz), providerChain.Signers)
 	coordinator.Chains[chainID] = testChain

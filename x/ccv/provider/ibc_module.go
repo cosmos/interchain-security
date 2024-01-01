@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"strconv"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
@@ -175,36 +176,67 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
+	logger := am.keeper.Logger(ctx)
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+
+	var ackErr error
 	consumerPacket, err := UnmarshalConsumerPacket(packet)
 	if err != nil {
-		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, err)
-		return &errAck
+		ackErr = errorsmod.Wrapf(sdkerrors.ErrInvalidType, "cannot unmarshal ConsumerPacket data")
+		logger.Error(fmt.Sprintf("%s sequence %d", ackErr.Error(), packet.Sequence))
+		ack = channeltypes.NewErrorAcknowledgement(ackErr)
 	}
 
-	// TODO: call ValidateBasic method on consumer packet data
-	// See: https://github.com/cosmos/interchain-security/issues/634
+	eventAttributes := []sdk.Attribute{
+		sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
+	}
 
-	var ack ibcexported.Acknowledgement
-	switch consumerPacket.Type {
-	case ccv.VscMaturedPacket:
-		// handle VSCMaturedPacket
-		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
-	case ccv.SlashPacket:
-		// handle SlashPacket
-		ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
-	default:
-		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
-		ack = &errAck
+	// only attempt the application logic if the packet data
+	// was successfully decoded
+	if ack.Success() {
+		var err error
+		switch consumerPacket.Type {
+		case ccv.VscMaturedPacket:
+			// handle VSCMaturedPacket
+			data := *consumerPacket.GetVscMaturedPacketData()
+			err = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, data)
+			if err == nil {
+				logger.Info("successfully handled VSCMaturedPacket sequence: %d", packet.Sequence)
+				eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
+			}
+		case ccv.SlashPacket:
+			// handle SlashPacket
+			var ackResult ccv.PacketAckResult
+			data := *consumerPacket.GetSlashPacketData()
+			ackResult, err = am.keeper.OnRecvSlashPacket(ctx, packet, data)
+			if err == nil {
+				ack = channeltypes.NewResultAcknowledgement(ackResult)
+				logger.Info("successfully handled SlashPacket sequence: %d", packet.Sequence)
+				eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
+			}
+		default:
+			err = fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type)
+		}
+		if err != nil {
+			ack = channeltypes.NewErrorAcknowledgement(err)
+			ackErr = err
+			logger.Error(fmt.Sprintf("%s sequence %d", ackErr.Error(), packet.Sequence))
+		}
+	}
+
+	eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack.Success())))
+	if ackErr != nil {
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeKeyAckError, ackErr.Error()))
 	}
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypePacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
-			sdk.NewAttribute(ccv.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
+			eventAttributes...,
 		),
 	)
 
+	// NOTE: acknowledgement will be written synchronously during IBC handler execution.
 	return ack
 }
 

@@ -4,7 +4,6 @@ package interchain_security.ccv.provider.v1;
 
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
 
-import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
@@ -82,7 +81,7 @@ message ConsumerAdditionProposal {
   // channel is created on top of the same connection as the CCV channel.
   // Note that transfer_channel_id is the ID of the channel end on the consumer
   // chain. it is most relevant for chains performing a sovereign to consumer
-  // changeover in order to maintan the existing ibc transfer channel
+  // changeover in order to maintain the existing ibc transfer channel
   string distribution_transmission_channel = 14;
 }
 
@@ -107,10 +106,13 @@ message ConsumerRemovalProposal {
 // punish a validator for equivocation on a consumer chain.
 // 
 // This type is only used internally to the consumer CCV module.  
+// WARNING: This message is deprecated now that equivocations can be submitted
+// and verified automatically on the provider. (see SubmitConsumerDoubleVoting in proto/interchain-security/ccv/provider/v1/tx.proto).
 message EquivocationProposal {
+  option deprecated = true;
   // the title of the proposal
   string title = 1;
-  // the description of the proposal
+// the description of the proposal
   string description = 2;
   // the list of equivocations that will be processed
   repeated cosmos.evidence.v1beta1.Equivocation equivocations = 3;
@@ -152,6 +154,10 @@ message GlobalSlashEntry {
 
 // Params defines the parameters for CCV Provider module
 message Params {
+
+  // Reserve 8th slot for removed max throttled packet param
+  reserved 8;
+
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
   // TrustingPeriodFraction is used to compute the consumer and provider IBC
   // client's TrustingPeriod from the chain defined UnbondingPeriod
@@ -179,10 +185,6 @@ message Params {
   // total voting power that the slash meter can hold.
   string slash_meter_replenish_fraction = 7;
 
-  // The maximum amount of throttled slash or vsc matured packets
-  // that can be queued for a single consumer before the provider chain halts.
-  int64 max_throttled_packets = 8;
-
   // The fee required to be paid to add a reward denom
   cosmos.base.v1beta1.Coin consumer_reward_denom_registration_fee = 9
       [ (gogoproto.nullable) = false ];
@@ -209,6 +211,7 @@ message ConsumerRemovalProposals {
 // AddressList contains a list of consensus addresses
 message AddressList { repeated bytes addresses = 1; }
 
+// ChannelToChain is used to map a CCV channel ID to the consumer chainID
 message ChannelToChain {
   string channel_id = 1;
   string chain_id = 2;

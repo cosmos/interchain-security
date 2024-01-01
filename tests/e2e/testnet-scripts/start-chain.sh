@@ -96,7 +96,7 @@ BRIDGE_IP="$CHAIN_IP_PREFIX.254/24"
 ip addr add $BRIDGE_IP dev virtual-bridge
 
 # first we start a genesis.json with the first validator
-# the first validator will also collect the gentx's once gnerated
+# the first validator will also collect the gentx's once generated
 FIRST_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[0].val_id")
 FIRST_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[0].ip_suffix")
 echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /$CHAIN_ID/validator$FIRST_VAL_ID --chain-id=$CHAIN_ID validator$FIRST_VAL_ID --recover > /dev/null
@@ -257,8 +257,12 @@ do
         fi
     done
 
-    # Remove leading comma and concat to flag
-    PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
+    
+    if [ "$PERSISTENT_PEERS" != "" ]; then
+        # Remove leading comma and concat to flag
+        PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
+    fi
+   
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     if [[ "$USE_COMETMOCK" == "true" ]]; then

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## Key assignment of a previosuly active validator is done as follows:
+## Key assignment of a previously active validator is done as follows:
 # - stop node
 # - replace config/node_key.json
 # - replace config/priv_validator_key.json with keys to use on consumer chain

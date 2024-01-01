@@ -2,6 +2,15 @@ package simibc
 
 import channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
+// The number of blocks to wait before a packet or ack is available for delivery
+// after it has been committed on the chain.
+// For example, if DelayPeriodBlocks is 0 and a packet p was sent at height h
+// (i.e. the chain has produced a header height h)
+// the packet can immediately be received.
+// If DelayPeriodBlocks is 1, the packet can be received
+// once the chain has produced a header for height h + 1.
+const DelayPeriodBlocks = 1
+
 // Ack represents a (sent) ack committed to block state
 type Ack struct {
 	Ack []byte
@@ -67,7 +76,7 @@ func (n OrderedOutbox) ConsumePackets(sender string, num int) []Packet {
 		num = sz
 	}
 	for _, p := range n.OutboxPackets[sender][:num] {
-		if 1 < p.Commits {
+		if DelayPeriodBlocks < p.Commits {
 			ret = append(ret, p)
 		} else {
 			break
