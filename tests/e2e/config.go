@@ -161,23 +161,14 @@ func SlashThrottleTestConfig() TestConfig {
 			Now:           time.Now(),
 		},
 		validatorConfigs: getDefaultValidators(),
-<<<<<<< HEAD
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "providerd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
+
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -187,21 +178,13 @@ func SlashThrottleTestConfig() TestConfig {
 					".app_state.provider.params.slash_meter_replenish_fraction = \"0.10\" | " +
 					".app_state.provider.params.slash_meter_replenish_period = \"20s\"",
 			},
-<<<<<<< HEAD
-			chainID("consu"): {
-				chainId:        chainID("consu"),
-				binaryName:     "consumerd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
+
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
-				BinaryName:     "interchain-security-cd",
+				BinaryName:     "consumerd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
@@ -226,23 +209,13 @@ func DefaultTestConfig() TestConfig {
 			Now:           time.Now(),
 		},
 		validatorConfigs: getDefaultValidators(),
-<<<<<<< HEAD
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "providerd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -252,21 +225,12 @@ func DefaultTestConfig() TestConfig {
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
 			},
-<<<<<<< HEAD
-			chainID("consu"): {
-				chainId:        chainID("consu"),
-				binaryName:     "consumerd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
-				BinaryName:     "interchain-security-cd",
+				BinaryName:     "consumerd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
@@ -303,23 +267,13 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 			Now:           time.Now(),
 		},
 		validatorConfigs: getDefaultValidators(),
-<<<<<<< HEAD
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "providerd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -328,21 +282,12 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
-<<<<<<< HEAD
-			chainID("democ"): {
-				chainId:        chainID("democ"),
-				binaryName:     "democracyd",
-				ipPrefix:       "7.7.9",
-				votingWaitTime: 20,
-				genesisChanges: consumerGenChanges,
-=======
 			ChainID("democ"): {
 				ChainId:        ChainID("democ"),
-				BinaryName:     "interchain-security-cdd",
+				BinaryName:     "democracyd",
 				IpPrefix:       "7.7.9",
 				VotingWaitTime: 20,
 				GenesisChanges: consumerGenChanges,
->>>>>>> origin/main
 			},
 		},
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
@@ -362,23 +307,13 @@ func MultiConsumerTestConfig() TestConfig {
 			Now:           time.Now(),
 		},
 		validatorConfigs: getDefaultValidators(),
-<<<<<<< HEAD
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "providerd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"30s\" | " +
-=======
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"30s\" | " +
->>>>>>> origin/main
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -387,41 +322,24 @@ func MultiConsumerTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
-<<<<<<< HEAD
-			chainID("consu"): {
-				chainId:        chainID("consu"),
-				binaryName:     "consumerd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
-				BinaryName:     "interchain-security-cd",
+				BinaryName:     "consumerd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
-<<<<<<< HEAD
-			chainID("densu"): {
-				chainId:        chainID("densu"),
-				binaryName:     "consumerd",
-				ipPrefix:       "7.7.9",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
+
 			ChainID("densu"): {
 				ChainId:        ChainID("densu"),
-				BinaryName:     "interchain-security-cd",
+				BinaryName:     "consumerd",
 				IpPrefix:       "7.7.9",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
@@ -445,23 +363,13 @@ func ChangeoverTestConfig() TestConfig {
 			Now:           time.Now(),
 		},
 		validatorConfigs: getDefaultValidators(),
-<<<<<<< HEAD
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "providerd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -471,23 +379,13 @@ func ChangeoverTestConfig() TestConfig {
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
 			},
-<<<<<<< HEAD
-			chainID("sover"): {
-				chainId:        chainID("sover"),
-				binaryName:     "sovereignd",
-				upgradeBinary:  "consumerd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-=======
 			ChainID("sover"): {
 				ChainId:        ChainID("sover"),
-				BinaryName:     "interchain-security-sd",
-				UpgradeBinary:  "interchain-security-cdd",
+				BinaryName:     "sovereignd",
+				UpgradeBinary:  "consumerd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
->>>>>>> origin/main
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
