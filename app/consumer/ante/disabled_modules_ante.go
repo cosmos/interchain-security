@@ -23,7 +23,7 @@ func (dmd DisabledModulesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 			return ctx, fmt.Errorf("tx contains message types from unsupported modules at height %d", currHeight)
 		}
 
-		// Check if there is an atempt to bypass disabled module msg
+		// Check if there is an attempt to bypass disabled module msg
 		// with authz MsgExec
 		if nestedAuthzMsgExecCheck(msg, dmd.prefixes...) {
 			return ctx, fmt.Errorf("tx contains message types from unsupported modules at height %d", currHeight)
