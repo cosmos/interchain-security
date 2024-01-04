@@ -38,8 +38,8 @@ make test-integration
 # run mbt tests
 make test-mbt
 
-# run unit and integration, and mbt tests - shortcut for local development
-mate test-dev
+# run unit, integration, and mbt tests - shortcut for local development
+make test-dev
 
 # run E2E tests
 make test-e2e
@@ -77,7 +77,7 @@ go test -fuzz=<regex-to-match-test-name>
 go run ./tests/e2e/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/" --verbose
 ```
 
-### Tesing with Gaia as the provider
+### Testing with Gaia as the provider
 
 Integration tests can be run with Gaia as the provider.
 By default, the latest tagged release of Gaia is used - this includes release candidates and stabile releases.
