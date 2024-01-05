@@ -28,7 +28,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 		expSlashPacket  bool
 	}{
 		{
-			"donwtime top 95%",
+			"downtime top 95%",
 			func(ck *consumerKeeper.Keeper, sk *slashingkeeper.Keeper, valAddr []byte, valIdx int) {
 				for i, voteInfo := range votes {
 					if bytes.Equal(voteInfo.Validator.Address, valAddr) {
