@@ -27,6 +27,7 @@ message CrossChainValidator {
     (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey",
     (gogoproto.moretags) = "yaml:\"consensus_pubkey\""
   ];
+  bool opted_out = 4;
 }
 
 // A record storing the state of a slash packet sent to the provider chain

@@ -15,9 +15,10 @@ func NewCCValidator(address []byte, power int64, pubKey cryptotypes.PubKey) (Cro
 	}
 
 	return CrossChainValidator{
-		Address: address,
-		Power:   power,
-		Pubkey:  pkAny,
+		Address:  address,
+		Power:    power,
+		Pubkey:   pkAny,
+		OptedOut: false,
 	}, nil
 }
 
