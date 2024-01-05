@@ -14,7 +14,7 @@ import (
 func (s *CCVTestSuite) TestSlashRetries() {
 	s.SetupAllCCVChannels()
 	s.SendEmptyVSCPacket() // Establish ccv channel
-	s.setupValidatorPowers()
+	s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
 	//
 	// Provider setup
