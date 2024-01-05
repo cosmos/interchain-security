@@ -59,6 +59,7 @@ type StakingKeeper interface {
 type SlashingKeeper interface {
 	JailUntil(sdk.Context, sdk.ConsAddress, time.Time) // called from provider keeper only
 	GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
+	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo)
 	DowntimeJailDuration(sdk.Context) time.Duration
 	SlashFractionDowntime(sdk.Context) sdk.Dec
 	SlashFractionDoubleSign(ctx sdk.Context) (res sdk.Dec)
