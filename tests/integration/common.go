@@ -596,7 +596,7 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 }
 
 // setupValidatorPowers delegates from the sender account to give all
-// validators on the provider chain 1000 power.
+// validators on the provider chain the given voting powers.
 func (s *CCVTestSuite) setupValidatorPowers(powers []int64) {
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	s.Require().Equal(len(powers), len(s.providerChain.Vals.Validators))
