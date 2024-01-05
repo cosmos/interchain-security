@@ -44,6 +44,7 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 ### Proposed
 
 - [ADR 011: Improving testing and increasing confidence](./adr-011-improving-test-confidence.md)
+- [ADR 014: Epochs](./adr-014-epochs.md)
 
 ### Rejected
 
