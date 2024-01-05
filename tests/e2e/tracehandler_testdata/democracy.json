@@ -30,6 +30,7 @@
           "bob": 9500000000,
           "carol": 9500000000
         },
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -65,6 +66,9 @@
           "alice": 9489999999,
           "bob": 9500000000
         },
+        "ProposedConsumerChains": [
+          "democ"
+        ],
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -106,6 +110,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -150,6 +155,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -192,6 +198,7 @@
           "alice": 9500000000,
           "bob": 9500000000
         },
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -251,6 +258,7 @@
           "bob": 10000000000,
           "carol": 10000000000
         },
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -270,6 +278,7 @@
           "bob": 9500000000,
           "carol": 9500000000
         },
+        "ProposedConsumerChains": [],
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -333,6 +342,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 500,
           "bob": 500,
@@ -352,6 +362,7 @@
       },
       "provi": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 500,
@@ -385,6 +396,7 @@
           "alice": 10000000000,
           "bob": 10000000000
         },
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -411,6 +423,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 500,
@@ -444,6 +457,7 @@
           "alice": 9999999999,
           "bob": 10000000001
         },
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -475,6 +489,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": {
           "alice": 100000000,
@@ -512,6 +527,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 500,
@@ -558,6 +574,7 @@
           "alice": 9889999998,
           "bob": 9960000001
         },
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": [
@@ -610,6 +627,7 @@
           "alice": 9899999999,
           "bob": 9960000001
         },
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": [
@@ -653,6 +671,7 @@
     "State": {
       "provi": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -686,6 +705,7 @@
     "State": {
       "provi": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -720,6 +740,7 @@
     "State": {
       "provi": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -748,6 +769,7 @@
     "State": {
       "provi": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
@@ -780,6 +802,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 500,
@@ -799,6 +822,7 @@
       },
       "provi": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 500,
@@ -829,6 +853,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 500,
@@ -848,6 +873,7 @@
       },
       "provi": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 0,
@@ -878,6 +904,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 0,
@@ -906,6 +933,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 0,
@@ -925,6 +953,7 @@
       },
       "provi": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 500,
@@ -955,6 +984,7 @@
     "State": {
       "democ": {
         "ValBalances": null,
+        "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
           "bob": 500,
