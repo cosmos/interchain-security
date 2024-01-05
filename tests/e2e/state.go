@@ -524,7 +524,7 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 
 			votingPower, err := strconv.Atoi(val.VotingPower)
 			if err != nil {
-				log.Fatalf("strconv.Atoi returned an error while convering validator voting power: %v, voting power string: %s, validator set: %s", err, val.VotingPower, pretty.Sprint(valset))
+				log.Fatalf("strconv.Atoi returned an error while converting validator voting power: %v, voting power string: %s, validator set: %s", err, val.VotingPower, pretty.Sprint(valset))
 			}
 
 			return uint(votingPower)

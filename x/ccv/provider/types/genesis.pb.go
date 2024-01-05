@@ -288,7 +288,7 @@ func (m *ConsumerState) GetUnbondingOpsIndex() []VscUnbondingOps {
 }
 
 // ValsetUpdateIdToHeight defines the genesis information for the mapping
-// of each valset udpate id to a block height
+// of each valset update id to a block height
 type ValsetUpdateIdToHeight struct {
 	ValsetUpdateId uint64 `protobuf:"varint,1,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
 	Height         uint64 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`

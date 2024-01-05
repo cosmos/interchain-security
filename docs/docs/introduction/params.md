@@ -9,7 +9,7 @@ The parameters necessary for Interchain Security (ICS) are defined in
 - the `Params` structure in `proto/interchain_security/ccv/provider/v1/provider.proto` for the provider;
 - the `Params` structure in `proto/interchain_security/ccv/consumer/v1/consumer.proto` for the consumer.
 
-## Time-based parameters
+## Time-Based Parameters
 
 ICS relies on the following time-based parameters.
 
@@ -85,6 +85,42 @@ If the `VscTimeoutPeriod` is ever reached for a consumer chain that chain will b
 If this timeout expires, then the transfer is attempted again after `BlocksPerDistributionTransmission` blocks.
 - `TransferPeriodTimeout` on the consumer is initial set via the `ConsumerAdditionProposal` gov proposal to add the consumer
 - `TransferPeriodTimeout` should be smaller than `BlocksPerDistributionTransmission x avg_block_time`
+
+
+## Reward Distribution Parameters
+
+:::tip
+The following chain parameters dictate consumer chain distribution amount and frequency.
+They are set at consumer genesis and `BlocksPerDistributionTransmission`, `ConsumerRedistributionFraction`
+`TransferTimeoutPeriod` must be provided in every `ConsumerChainAddition` proposal.
+:::
+
+
+### ConsumerRedistributionFraction
+
+`ConsumerRedistributionFraction` is the fraction of tokens allocated to the consumer redistribution address during distribution events. The fraction is a string representing a decimal number. For example `"0.75"` would represent `75%`.
+
+:::tip
+Example:
+
+With `ConsumerRedistributionFraction` set to `"0.75"` the consumer chain would send `75%` of its block rewards and accumulated fees to the consumer redistribution address, and the remaining `25%` to the provider chain every `BlocksPerDistributionTransmission` blocks.
+:::
+
+### BlocksPerDistributionTransmission
+
+`BlocksPerDistributionTransmission` is the number of blocks between IBC token transfers from the consumer chain to the provider chain.
+
+### TransferTimeoutPeriod
+
+`TransferTimeoutPeriod` is the timeout period for consumer chain reward distribution IBC packets.
+
+### DistributionTransmissionChannel
+
+`DistributionTransmissionChannel` is the provider chain IBC channel used for receiving consumer chain reward distribution token transfers. This is automatically set during the consumer-provider handshake procedure.
+
+### ProviderFeePoolAddrStr
+
+`ProviderFeePoolAddrStr` is the provider chain fee pool address used for receiving consumer chain reward distribution token transfers. This is automatically set during the consumer-provider handshake procedure.
 
 
 ## Slash Throttle Parameters

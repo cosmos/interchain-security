@@ -14,9 +14,9 @@ Unit tests are useful for simple standalone functionality, and CRUD operations. 
 
 To run integration tests against your own consumer/provider implementations, use [instance_test.go](tests/integration/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](testutil/integration/interfaces.go), pattern match [specific_setup.go](testutil/ibc_testing/specific_setup.go), then pass in the appropriate types and parameters to the suite, as is done in `instance_test.go` for the dummy provider/consumer implementations.
 
-## Differential Tests (WIP)
+## Model-Based Tests (MBT)
 
-[Differential tests](tests/difference/) is similar to integration tests, but they compare the system state to an expected state generated from a model implementation.
+[MBT](tests/mbt/) tests are similar to integration tests, but they compare the system state to an expected state generated from a formally verified specification written in Quint.
 
 ## End-to-End (E2E) Tests 
 
@@ -35,11 +35,11 @@ make test-unit
 # run integration tests
 make test-integration
 
-# run difference tests
-make test-difference
+# run mbt tests
+make test-mbt
 
-# run unit, integration, and difference tests - shortcut for local development
-mate test-dev
+# run unit, integration, and mbt tests - shortcut for local development
+make test-dev
 
 # run E2E tests
 make test-e2e
@@ -77,7 +77,7 @@ go test -fuzz=<regex-to-match-test-name>
 go run ./tests/e2e/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/" --verbose
 ```
 
-### Tesing with Gaia as the provider
+### Testing with Gaia as the provider
 
 Integration tests can be run with Gaia as the provider.
 By default, the latest tagged release of Gaia is used - this includes release candidates and stabile releases.
@@ -94,7 +94,7 @@ NOTE: versions < v9.0.0 are not compatible with ICS.
 
 ## Linters and Static Analysis
 
-Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs ect, but some tools are also applicable locally, and are built into golang.
+Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs etc, but some tools are also applicable locally, and are built into golang.
 
 ```bash
 # gofmt to format and simplify code (https://pkg.go.dev/cmd/gofmt)

@@ -88,7 +88,7 @@ type ConsumerAdditionProposal struct {
 	// channel is created on top of the same connection as the CCV channel.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer
 	// chain. it is most relevant for chains performing a sovereign to consumer
-	// changeover in order to maintan the existing ibc transfer channel
+	// changeover in order to maintain the existing ibc transfer channel
 	DistributionTransmissionChannel string `protobuf:"bytes,14,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`
 }
 

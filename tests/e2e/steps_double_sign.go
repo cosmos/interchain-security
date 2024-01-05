@@ -5,7 +5,7 @@ func stepsDoubleSignOnProvider(consumerName string) []Step {
 	return []Step{
 		{
 			// provider double sign
-			Action: doublesignSlashAction{
+			Action: DoublesignSlashAction{
 				Chain:     ChainID("provi"),
 				Validator: ValidatorID("carol"),
 			},
@@ -29,7 +29,7 @@ func stepsDoubleSignOnProvider(consumerName string) []Step {
 		},
 		{
 			// relay power change to consumerName
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",
@@ -59,7 +59,7 @@ func stepsDoubleSignOnProvider(consumerName string) []Step {
 func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 	return []Step{
 		{
-			Action: doublesignSlashAction{
+			Action: DoublesignSlashAction{
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 			},
@@ -88,7 +88,7 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 		// detect the double voting infraction
 		// and jail and slashing of bob on the provider
 		{
-			Action: startConsumerEvidenceDetectorAction{
+			Action: StartConsumerEvidenceDetectorAction{
 				Chain: ChainID(consumerName),
 			},
 			State: State{
@@ -117,7 +117,7 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 		},
 		// consumer learns about the jailing
 		{
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID(providerName),
 				ChainB:  ChainID(consumerName),
 				Port:    "provider",

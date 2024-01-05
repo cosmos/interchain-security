@@ -46,7 +46,7 @@
     }
   },
   {
-    "ActionType": "main.submitConsumerAdditionProposalAction",
+    "ActionType": "main.SubmitConsumerAdditionProposalAction",
     "Action": {
       "PreCCV": false,
       "Chain": "provi",
@@ -96,7 +96,7 @@
     }
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "carol",
@@ -128,7 +128,7 @@
     }
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "carol",
@@ -140,7 +140,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "bob",
@@ -173,7 +173,7 @@
     }
   },
   {
-    "ActionType": "main.voteGovProposalAction",
+    "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "provi",
       "From": [
@@ -223,7 +223,7 @@
     }
   },
   {
-    "ActionType": "main.startConsumerChainAction",
+    "ActionType": "main.StartConsumerChainAction",
     "Action": {
       "ConsumerChain": "consu",
       "ProviderChain": "provi",
@@ -288,7 +288,7 @@
     }
   },
   {
-    "ActionType": "main.addIbcConnectionAction",
+    "ActionType": "main.AddIbcConnectionAction",
     "Action": {
       "ChainA": "consu",
       "ChainB": "provi",
@@ -298,7 +298,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.addIbcChannelAction",
+    "ActionType": "main.AddIbcChannelAction",
     "Action": {
       "ChainA": "consu",
       "ChainB": "provi",
@@ -311,7 +311,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.doublesignSlashAction",
+    "ActionType": "main.DoublesignSlashAction",
     "Action": {
       "Validator": "bob",
       "Chain": "consu"
@@ -362,7 +362,7 @@
     }
   },
   {
-    "ActionType": "main.startConsumerEvidenceDetectorAction",
+    "ActionType": "main.StartConsumerEvidenceDetectorAction",
     "Action": {
       "Chain": "consu"
     },
@@ -412,7 +412,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "consu",

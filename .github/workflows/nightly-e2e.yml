@@ -22,14 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E happy-path test
@@ -38,14 +38,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E changeover test
@@ -54,14 +54,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E democracy-reward tests
@@ -70,14 +70,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E democracy tests
@@ -86,14 +86,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E slash-throttle tests
@@ -102,14 +102,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E multi-consumer tests

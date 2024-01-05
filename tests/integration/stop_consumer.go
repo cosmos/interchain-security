@@ -39,7 +39,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 
 	// populate the provider chain states to setup the test using the following operations:
 	// 	- setup CCV channel; establish CCV channel and set channelToChain, chainToChannel and initHeight mapping for the consumer chain ID
-	// 	- delegate the total bond amount to the chosed validator
+	// 	- delegate the total bond amount to the chose validator
 	// 	- undelegate the shares in four consecutive blocks evenly; create UnbondigOp and UnbondingOpIndex entries for the consumer chain ID
 	// 	- set SlashAck state for the consumer chain ID
 	setupOperations := []struct {

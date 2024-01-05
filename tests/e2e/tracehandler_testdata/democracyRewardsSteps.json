@@ -46,7 +46,7 @@
     }
   },
   {
-    "ActionType": "main.submitConsumerAdditionProposalAction",
+    "ActionType": "main.SubmitConsumerAdditionProposalAction",
     "Action": {
       "PreCCV": false,
       "Chain": "provi",
@@ -96,7 +96,7 @@
     }
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "democ",
       "Validator": "carol",
@@ -128,7 +128,7 @@
     }
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "democ",
       "Validator": "carol",
@@ -140,7 +140,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.assignConsumerPubKeyAction",
+    "ActionType": "main.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "democ",
       "Validator": "bob",
@@ -173,7 +173,7 @@
     }
   },
   {
-    "ActionType": "main.voteGovProposalAction",
+    "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "provi",
       "From": [
@@ -223,7 +223,7 @@
     }
   },
   {
-    "ActionType": "main.startConsumerChainAction",
+    "ActionType": "main.StartConsumerChainAction",
     "Action": {
       "ConsumerChain": "democ",
       "ProviderChain": "provi",
@@ -288,7 +288,7 @@
     }
   },
   {
-    "ActionType": "main.addIbcConnectionAction",
+    "ActionType": "main.AddIbcConnectionAction",
     "Action": {
       "ChainA": "democ",
       "ChainB": "provi",
@@ -298,7 +298,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.addIbcChannelAction",
+    "ActionType": "main.AddIbcChannelAction",
     "Action": {
       "ChainA": "democ",
       "ChainB": "provi",
@@ -311,7 +311,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.transferChannelCompleteAction",
+    "ActionType": "main.TransferChannelCompleteAction",
     "Action": {
       "ChainA": "democ",
       "ChainB": "provi",
@@ -325,7 +325,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.delegateTokensAction",
+    "ActionType": "main.DelegateTokensAction",
     "Action": {
       "Chain": "provi",
       "From": "alice",
@@ -403,7 +403,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "democ",
@@ -462,7 +462,7 @@
     }
   },
   {
-    "ActionType": "main.registerRepresentativeAction",
+    "ActionType": "main.RegisterRepresentativeAction",
     "Action": {
       "Chain": "democ",
       "Representatives": [
@@ -504,7 +504,7 @@
     }
   },
   {
-    "ActionType": "main.delegateTokensAction",
+    "ActionType": "main.DelegateTokensAction",
     "Action": {
       "Chain": "democ",
       "From": "carol",
@@ -545,7 +545,7 @@
     }
   },
   {
-    "ActionType": "main.submitParamChangeLegacyProposalAction",
+    "ActionType": "main.SubmitParamChangeLegacyProposalAction",
     "Action": {
       "Chain": "democ",
       "From": "alice",
@@ -593,7 +593,7 @@
     }
   },
   {
-    "ActionType": "main.voteGovProposalAction",
+    "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "democ",
       "From": [
@@ -645,7 +645,7 @@
     }
   },
   {
-    "ActionType": "main.relayRewardPacketsToProviderAction",
+    "ActionType": "main.RelayRewardPacketsToProviderAction",
     "Action": {
       "ConsumerChain": "democ",
       "ProviderChain": "provi",
@@ -679,7 +679,7 @@
     }
   },
   {
-    "ActionType": "main.submitChangeRewardDenomsProposalAction",
+    "ActionType": "main.SubmitChangeRewardDenomsProposalAction",
     "Action": {
       "Denom": "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9",
       "Deposit": 10000001,
@@ -704,7 +704,7 @@
     }
   },
   {
-    "ActionType": "main.voteGovProposalAction",
+    "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "provi",
       "From": [
@@ -740,7 +740,7 @@
     }
   },
   {
-    "ActionType": "main.relayRewardPacketsToProviderAction",
+    "ActionType": "main.RelayRewardPacketsToProviderAction",
     "Action": {
       "ConsumerChain": "democ",
       "ProviderChain": "provi",
@@ -774,7 +774,7 @@
     }
   },
   {
-    "ActionType": "main.downtimeSlashAction",
+    "ActionType": "main.DowntimeSlashAction",
     "Action": {
       "Chain": "democ",
       "Validator": "bob"
@@ -821,7 +821,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "democ",
@@ -870,7 +870,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "democ",
@@ -900,7 +900,7 @@
     }
   },
   {
-    "ActionType": "main.unjailValidatorAction",
+    "ActionType": "main.UnjailValidatorAction",
     "Action": {
       "Provider": "provi",
       "Validator": "bob"
@@ -947,7 +947,7 @@
     }
   },
   {
-    "ActionType": "main.relayPacketsAction",
+    "ActionType": "main.RelayPacketsAction",
     "Action": {
       "ChainA": "provi",
       "ChainB": "democ",

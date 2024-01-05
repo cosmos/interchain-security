@@ -5,7 +5,7 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
 			// changes not visible on any consumer
-			Action: delegateTokensAction{
+			Action: DelegateTokensAction{
 				Chain:  ChainID("provi"),
 				From:   ValidatorID("alice"),
 				To:     ValidatorID("alice"),
@@ -37,7 +37,7 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay changes to consumer1
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -69,7 +69,7 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay changes to consumer2
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",
@@ -107,7 +107,7 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			Action: unbondTokensAction{
+			Action: UnbondTokensAction{
 				Chain:      ChainID("provi"),
 				UnbondFrom: ValidatorID("alice"),
 				Sender:     ValidatorID("alice"),
@@ -139,7 +139,7 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay to consumer1
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -171,7 +171,7 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay to consumer2
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",
@@ -209,7 +209,7 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			Action: redelegateTokensAction{
+			Action: RedelegateTokensAction{
 				Chain:    ChainID("provi"),
 				Src:      ValidatorID("alice"),
 				Dst:      ValidatorID("carol"),
@@ -245,7 +245,7 @@ func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 
 		{
 			// relay to consumer1
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
@@ -277,7 +277,7 @@ func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay to consumer2
-			Action: relayPacketsAction{
+			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",

@@ -6,7 +6,7 @@ import "time"
 func stepsStartRelayer() []Step {
 	return []Step{
 		{
-			Action: startRelayerAction{},
+			Action: StartRelayerAction{},
 			State:  State{},
 		},
 	}
@@ -16,7 +16,7 @@ func stepsStartRelayer() []Step {
 func stepsStopChain(consumerName string, propNumber uint) []Step {
 	s := []Step{
 		{
-			Action: submitConsumerRemovalProposalAction{
+			Action: SubmitConsumerRemovalProposalAction{
 				Chain:          ChainID("provi"),
 				From:           ValidatorID("bob"),
 				Deposit:        10000001,
@@ -41,7 +41,7 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 			},
 		},
 		{
-			Action: voteGovProposalAction{
+			Action: VoteGovProposalAction{
 				Chain:      ChainID("provi"),
 				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
 				Vote:       []string{"yes", "yes", "yes"},
@@ -74,7 +74,7 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []Step {
 	s := []Step{
 		{
-			Action: submitConsumerRemovalProposalAction{
+			Action: SubmitConsumerRemovalProposalAction{
 				Chain:          ChainID("provi"),
 				From:           ValidatorID("bob"),
 				Deposit:        10000001,
@@ -99,7 +99,7 @@ func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []
 			},
 		},
 		{
-			Action: voteGovProposalAction{
+			Action: VoteGovProposalAction{
 				Chain:      ChainID("provi"),
 				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
 				Vote:       []string{"no", "no", "no"},

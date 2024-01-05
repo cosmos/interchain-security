@@ -29,8 +29,9 @@ Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blo
 <!-- Add any highlights of this release -->
 
 ## ❤️ Contributors
-
+<!-- markdown-link-check-disable -->
 * Informal Systems ([@informalinc](https://twitter.com/informalinc))
+<!-- markdown-link-check-enable -->
 
 This list is non-exhaustive and ordered alphabetically.  
 Thank you to everyone who contributed to this release!

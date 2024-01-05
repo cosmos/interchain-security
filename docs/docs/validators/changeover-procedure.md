@@ -2,11 +2,11 @@
 sidebar_position: 4
 ---
 
-# Validator instructions for Changeover Procedure
+# Validator Instructions for Changeover Procedure
 
 More details available in [Changeover Procedure documentation](../consumer-development/changeover-procedure.md).
 
-A major difference betwen launching a new consumer chain vs. onboarding a standalone chain to ICS is that there is no consumer genesis available for the standalone chain. Since a standalone chain already exists, its state must be preserved once it transitions to being a consumer chain.
+A major difference between launching a new consumer chain vs. onboarding a standalone chain to ICS is that there is no consumer genesis available for the standalone chain. Since a standalone chain already exists, its state must be preserved once it transitions to being a consumer chain.
 
 ## Timeline
 
@@ -27,6 +27,10 @@ gaiad q provider consumer-genesis stride-1 -o json > ccv-state.json
 jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' genesis.json ccv-state.json > ccv.json
 ```
 
+Transformation of the exported consumer genesis state to the target version of the consumer might be needed in case the provider and consumer formats are incompatible.
+Refer to the compatibility notes [here](../../../RELEASES.md#backwards-compatibility) to check if data transformation is needed for your case.
+Instructions on how to transform the exported CCV genesis state (`ccv-state.json` in the example above) to the required target version can be found [here](../consumer-development/consumer-genesis-transformation.md)
+
 ### 2. `SoftwareUpgradeProposal` on the standalone/consumer chain
 
 This upgrade proposal will introduce ICS to the standalone chain, making it a consumer.
@@ -37,7 +41,7 @@ After `spawn_time`, make sure to assign a consumer key if you intend to use one.
 
 Instructions are available [here](../features/key-assignment.md)
 
-### 4. Perform the software ugprade on standalone chain
+### 4. Perform the software upgrade on standalone chain
 
 Please use instructions provided by the standalone chain team and make sure to reach out if you are facing issues.
 The upgrade preparation depends on your setup, so please make sure you prepare ahead of time.
@@ -67,7 +71,7 @@ If you are validating both the `standalone` and the `provider`, you **can** use 
 
 Yes.
 
-Please assign your consensus key as stated aboce.
+Please assign your consensus key as stated above.
 
 ### Can I set up a new node to validate the `standalone/consumer` chain after it transitions to replicated security?
 
@@ -76,7 +80,7 @@ Yes.
 If you are planning to do this please make sure that the node is synced with `standalone` network and to submit `AssignConsumerKey` tx before `spawn_time`.
 
 
-###  What happens to the `standalone` validator set after it after it transitions to replicated security?
+###  What happens to the `standalone` validator set after it transitions to replicated security?
 
 The `standalone` chain validators will stop being validators after the first 3 blocks are created while using replicated security. The `standalone` validators will become **governors** and still can receive delegations if the `consumer` chain is using the `consumer-democracy` module.
 

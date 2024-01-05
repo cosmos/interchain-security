@@ -223,7 +223,7 @@ func HandleSlashPacket(chainID string, data ccv.SlashPacketData) (success bool, 
     providerAddr, found := GetValidatorByConsumerAddr(chainID, consumerAddr)
     if !found {
         // the validator has the same key on the consumer as on the provider
-        providerAddr = consumer
+        providerAddr = consumerAddr
     }
     // ...
 }
