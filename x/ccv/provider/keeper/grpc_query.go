@@ -182,3 +182,34 @@ func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.
 		ProposedChains: chains,
 	}, nil
 }
+
+func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, req *types.QueryAllPairsValConAddrByConsumerChainIDRequest) (*types.QueryAllPairsValConAddrByConsumerChainIDResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.ChainId == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty chainId")
+	}
+
+	// list of pairs valconsensus addr <providerValConAddrs : consumerValConAddrs>
+	pairValConAddrs := []*types.PairValConAddrProviderAndConsumer{}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	validatorConsumerPubKeys := k.GetAllValidatorConsumerPubKeys(ctx, &req.ChainId)
+	for _, data := range validatorConsumerPubKeys {
+		consumerAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(*data.ConsumerKey)
+		if err != nil {
+			return nil, err
+		}
+		pairValConAddrs = append(pairValConAddrs, &types.PairValConAddrProviderAndConsumer{
+			ProviderAddress: string(data.ProviderAddr),
+			ConsumerAddress: string(consumerAddr),
+			ConsumerKey:     data.ConsumerKey,
+		})
+	}
+
+	return &types.QueryAllPairsValConAddrByConsumerChainIDResponse{
+		PairValConAddr: pairValConAddrs,
+	}, nil
+}
