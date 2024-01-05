@@ -198,13 +198,15 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	validatorConsumerAddrs := k.GetAllValidatorsByConsumerAddr(ctx, &req.ChainId)
 	for _, data := range validatorConsumerAddrs {
-		pubKey, _, _ := k.GetKeyAssignmentReplacement(ctx, req.ChainId, types.ProviderConsAddress{Address: data.ProviderAddr})
+		providerAddr := types.NewProviderConsAddress(data.ProviderAddr)
+		pubKey, _ := k.GetValidatorConsumerPubKey(ctx, req.ChainId, providerAddr)
 		pairValConAddrs = append(pairValConAddrs, &types.PairValConAddrProviderAndConsumer{
 			ProviderAddress: string(data.ProviderAddr),
 			ConsumerAddress: string(data.ConsumerAddr),
 			ConsumerKey:     &pubKey,
 		})
 	}
+
 	return &types.QueryAllPairsValConAddrByConsumerChainIDResponse{
 		PairValConAddr: pairValConAddrs,
 	}, nil
