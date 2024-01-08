@@ -52,6 +52,8 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
+// PSS-NOTES: This will probably need to be called by a transaction handler instead of a gov proposal handler
+// Need logic to overwrite permissionless consumer chains with permissioned top-n consumer chains
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditionProposal) error {
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
@@ -618,3 +620,5 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.Chan
 	}
 	return nil
 }
+
+// PSS-NOTES: Need to bring in the fraud vote proposal, a lot like the former equivocation proposals

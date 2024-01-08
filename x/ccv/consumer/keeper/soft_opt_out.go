@@ -9,6 +9,8 @@ import (
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
+// PSS-NOTES: we can use similar logic to compute top-n
+
 // SetSmallestNonOptOutPower sets the smallest validator power that cannot soft opt out.
 func (k Keeper) SetSmallestNonOptOutPower(ctx sdk.Context, power uint64) {
 	store := ctx.KVStore(k.storeKey)

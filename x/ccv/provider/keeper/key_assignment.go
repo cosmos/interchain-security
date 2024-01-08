@@ -15,6 +15,11 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
+// PSS-NOTES: The opt-in mechanism of PSS will need to look a lot like the key assignment logic. Probably simpler though.
+// A major commonality with key assignment is that "synthetic" validator updates need to be generated when a val opts in or out.
+// We will also need to figure out how top-n works. It will be kind of an automatic opting in or out.
+// TODO: Come up with a concrete algorithm.
+
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
 func (k Keeper) GetValidatorConsumerPubKey(
 	ctx sdk.Context,

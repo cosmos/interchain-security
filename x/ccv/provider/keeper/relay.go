@@ -268,6 +268,10 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and
 // then queues the slash packet as pending if valid.
+
+// PSS-NOTES: We will need to modify the behavior of this function for PSS. If the validator is not in the top-n,
+// we will just opt it out of that consumer chain instead of jailing it. If it is in the top-n, we will jail it as normal.
+// Should also probably do kind of a cleanup and renaming now that this function never does any slashing.
 func (k Keeper) OnRecvSlashPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,

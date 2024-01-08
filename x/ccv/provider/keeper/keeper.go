@@ -286,6 +286,10 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // is stored under keys with the following format:
 // ChannelToChainBytePrefix | channelID
 // Thus, the returned array is in ascending order of channelIDs.
+
+// PSS-NOTES: IIRC this is the main record storing consumer chains. PSS needs some extra metadata like top-n, etc.
+// We may want to look at adding it here or in a separate record.
+
 func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.ChannelToChain) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
