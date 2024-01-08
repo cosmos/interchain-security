@@ -36,7 +36,7 @@ The implementation of epochs requires the following changes:
   Currently, this method is called in every block before queueing a `VSCPacket`. 
   Also, the method uses the `KeyAssignmentReplacement` state, which is pruned at the end of every block. 
   This needs to be done once per epoch instead.
-- At the end of every epoch, for every consumer chain, construct a `VSCPacket` with all the accumulated validator changes and add it to the list of `PendingVSCPackets`.
+- At the end of every epoch, if there were validator set changes on the provider, then for every consumer chain, construct a `VSCPacket` with all the accumulated validator changes and add it to the list of `PendingVSCPackets`.
 
 As an optional change, to better accommodate [the Partial Set Security design](https://informalsystems.notion.site/Partial-Set-Security-398ca9a1453740068be5c7964a4059bb), the validator changes should be accumulated per consumer chain. 
 Like this, it would make it easier to have validators opting out from certain consumer chains. 
