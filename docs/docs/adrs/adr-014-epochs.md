@@ -52,7 +52,7 @@ Like this, it would make it easier to have validators opting out from certain co
 
 - Additional logic on the provider side as valset changes need to be accumulated. 
 - The changes might impact the key-assignment logic so special care is needed to avoid introducing bugs.
-
+- Increase the delay in the propagation of validator set changes (but for reasonable epoch lengths on the order of ~hours or less, this is unlikely to be significant).
 ### Neutral
 
 N/A
