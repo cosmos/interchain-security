@@ -15,8 +15,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
-	consumerTypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v3/x/ccv/types"
+	consumerTypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // The genesis state of the blockchain is represented here as a map of raw json

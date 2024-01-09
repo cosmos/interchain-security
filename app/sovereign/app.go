@@ -79,6 +79,7 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
 	// add mint
 	mint "github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
@@ -105,8 +106,8 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appparams "github.com/cosmos/interchain-security/v3/app/params"
-	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	appparams "github.com/cosmos/interchain-security/v4/app/params"
+	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
 )
 
 const (
