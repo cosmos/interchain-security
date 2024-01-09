@@ -110,7 +110,7 @@ module ccv_types {
             keyAssignmentReplacements: Chain -> (Node -> (ConsumerAddr, Power)),
 
             // Stores the mapping from VSC ids to consumer validators addresses. Needed for pruning ValidatorByConsumerAddr.
-            consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr],
+            consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr]
         }
 
     // utility function: returns a provider state that is initialized minimally.
@@ -335,11 +335,16 @@ module ccv {
     pure def AppendConsumerAddrToPrune(currentState: ProtocolState, oldConsAddr: ConsumerAddr): ProtocolState = {
         pure val vscId = currentState.providerState.runningVscId
         pure val consumerAddrsToPrune = currentState.providerState.consumerAddrsToPrune
-        pure val prevConsAddr = consumerAddrsToPrune.get(oldConsAddr).getOrElse(vscId, [])
+        pure val prevConsAddrs = consumerAddrsToPrune.get(oldConsAddr).getOrElse(vscId, [])
 
-       pure val newConsAddrsToPrune = consumerAddrsToPrune
+        pure val newConsAddrsToPrune = consumerAddrsToPrune.put(vscId, prevConsAddrs.append(oldConsAddr))
 
-       currentState
+        currentState.with(
+            "providerState", 
+            currentState.providerState.with(
+                "consumerAddrsToPrune", newConsAddrsToPrune
+            )
+        )
     }
 
     // Delivers the next queued VscMaturedPacket from a consumer chain to the provider chain.
