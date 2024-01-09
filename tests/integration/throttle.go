@@ -64,7 +64,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		s.SetupTest()
 		s.SetupAllCCVChannels()
-		s.setupValidatorPowers()
+		s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
 		providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
@@ -186,7 +186,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	// Setup test
 	s.SetupAllCCVChannels()
-	s.setupValidatorPowers()
+	s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
 	var (
 		timeoutHeight    = clienttypes.Height{}
@@ -307,7 +307,7 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	s.SetupAllCCVChannels()
 
 	// Setup validator powers to be 25%, 25%, 25%, 25%
-	s.setupValidatorPowers()
+	s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
 	// Explicitly set params, initialize slash meter
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -373,7 +373,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	s.SetupAllCCVChannels()
 
 	// Setup validator powers to be 25%, 25%, 25%, 25%
-	s.setupValidatorPowers()
+	s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
 	// Explicitly set params, initialize slash meter
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -518,7 +518,7 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 	// At first, allowance is based on 4 vals all with 1 power, min allowance is in effect.
 	s.Require().Equal(int64(1), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
 
-	s.setupValidatorPowers()
+	s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
 	// Now all 4 validators have 1000 power (4000 total power) so allowance should be:
 	// default replenish frac * 4000 = 200
@@ -541,7 +541,7 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 	s.SetupAllCCVChannels()
 
 	// Setup 4 validators with 25% of the total power each.
-	s.setupValidatorPowers()
+	s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
 

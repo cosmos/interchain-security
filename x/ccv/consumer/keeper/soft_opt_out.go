@@ -9,6 +9,15 @@ import (
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
+// BeginBlockSoftOptOut executes BeginBlock logic for the Soft Opt-Out sub-protocol
+func (k Keeper) BeginBlockSoftOptOut(ctx sdk.Context) {
+	// Update smallest validator power that cannot opt out.
+	k.UpdateSmallestNonOptOutPower(ctx)
+
+	// Update the SigningInfo structs of the Slashing module
+	k.UpdateSlashingSigningInfo(ctx)
+}
+
 // SetSmallestNonOptOutPower sets the smallest validator power that cannot soft opt out.
 func (k Keeper) SetSmallestNonOptOutPower(ctx sdk.Context, power uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -72,4 +81,38 @@ func (k Keeper) GetSmallestNonOptOutPower(ctx sdk.Context) int64 {
 		return 0
 	}
 	return int64(binary.BigEndian.Uint64(bz))
+}
+
+func (k Keeper) UpdateSlashingSigningInfo(ctx sdk.Context) {
+	smallestNonOptOutPower := k.GetSmallestNonOptOutPower(ctx)
+
+	// Update SigningInfo for opted out validators
+	valset := k.GetAllCCValidator(ctx)
+	// Note that we don't need to sort the valset as GetAllCCValidator
+	// uses KVStorePrefixIterator that iterates over all the keys with
+	// a certain prefix in ascending order
+	for _, val := range valset {
+		consAddr := sdk.ConsAddress(val.Address)
+		signingInfo, found := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+		if !found {
+			continue
+		}
+		if val.Power < smallestNonOptOutPower {
+			// validator CAN opt-out from validating on consumer chains
+			if val.OptedOut == false {
+				// previously the validator couldn't opt-out
+				val.OptedOut = true
+			}
+		} else {
+			// validator CANNOT opt-out from validating on consumer chains
+			if val.OptedOut == true {
+				// previously the validator could opt-out
+				signingInfo.StartHeight = ctx.BlockHeight()
+				val.OptedOut = false
+			}
+		}
+
+		k.slashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signingInfo)
+		k.SetCCValidator(ctx, val)
+	}
 }

@@ -473,6 +473,18 @@ func (mr *MockSlashingKeeperMockRecorder) GetValidatorSigningInfo(ctx, address i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSigningInfo", reflect.TypeOf((*MockSlashingKeeper)(nil).GetValidatorSigningInfo), ctx, address)
 }
 
+// SetValidatorSigningInfo mocks base method.
+func (m *MockSlashingKeeper) SetValidatorSigningInfo(ctx types0.Context, address types0.ConsAddress, info types3.ValidatorSigningInfo) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetValidatorSigningInfo", ctx, address, info)
+}
+
+// SetValidatorSigningInfo indicates an expected call of SetValidatorSigningInfo.
+func (mr *MockSlashingKeeperMockRecorder) SetValidatorSigningInfo(ctx, address interface{}, info interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetValidatorSigningInfo", reflect.TypeOf((*MockSlashingKeeper)(nil).SetValidatorSigningInfo), ctx, address, info)
+}
+
 // IsTombstoned mocks base method.
 func (m *MockSlashingKeeper) IsTombstoned(arg0 types0.Context, arg1 types0.ConsAddress) bool {
 	m.ctrl.T.Helper()
