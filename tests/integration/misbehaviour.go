@@ -9,8 +9,8 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour,

@@ -87,11 +87,11 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appparams "github.com/cosmos/interchain-security/v4/app/params"
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	ibcconsumer "github.com/cosmos/interchain-security/v4/x/ccv/consumer"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	ibcconsumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	appparams "github.com/cosmos/interchain-security/v3/app/params"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	ibcconsumer "github.com/cosmos/interchain-security/v3/x/ccv/consumer"
+	ibcconsumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	ibcconsumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
 const (

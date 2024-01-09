@@ -103,14 +103,14 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appparams "github.com/cosmos/interchain-security/v4/app/params"
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	consumer "github.com/cosmos/interchain-security/v4/x/ccv/consumer"
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccvdistr "github.com/cosmos/interchain-security/v4/x/ccv/democracy/distribution"
-	ccvgov "github.com/cosmos/interchain-security/v4/x/ccv/democracy/governance"
-	ccvstaking "github.com/cosmos/interchain-security/v4/x/ccv/democracy/staking"
+	appparams "github.com/cosmos/interchain-security/v3/app/params"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	consumer "github.com/cosmos/interchain-security/v3/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvdistr "github.com/cosmos/interchain-security/v3/x/ccv/democracy/distribution"
+	ccvgov "github.com/cosmos/interchain-security/v3/x/ccv/democracy/governance"
+	ccvstaking "github.com/cosmos/interchain-security/v3/x/ccv/democracy/staking"
 )
 
 const (

@@ -6,9 +6,9 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
 
-	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer-democracy"
-	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
+	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 )
 
 func TestDemocracyGovernanceWhitelistingKeys(t *testing.T) {

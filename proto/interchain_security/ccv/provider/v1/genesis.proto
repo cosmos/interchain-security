@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v4/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
 
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/shared_consumer.proto";

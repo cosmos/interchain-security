@@ -31,8 +31,8 @@ import (
 	tmcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 
-	consumer "github.com/cosmos/interchain-security/v4/app/consumer"
-	"github.com/cosmos/interchain-security/v4/app/params"
+	consumer "github.com/cosmos/interchain-security/v3/app/consumer"
+	"github.com/cosmos/interchain-security/v3/app/params"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
