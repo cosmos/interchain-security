@@ -31,6 +31,7 @@ RUN make install
 # Get Hermes build
 FROM ghcr.io/informalsystems/hermes:v1.7.4 AS hermes-builder
 
+
 # Get CometMock
 FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder
 

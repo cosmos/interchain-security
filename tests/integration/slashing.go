@@ -443,7 +443,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 		ctx, ccv.ConsumerPortID, channelID)
 	suite.Require().True(ok)
 
-	// Sign 100 blocks
+	// Sign 100 blocks (default value for slashing.SignedBlocksWindow param).
 	valPower := int64(1)
 	height, signedBlocksWindow := int64(0), consumerSlashingKeeper.SignedBlocksWindow(ctx)
 	for ; height < signedBlocksWindow; height++ {

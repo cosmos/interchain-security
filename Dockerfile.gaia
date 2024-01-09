@@ -63,6 +63,7 @@ RUN make install
 # Get Hermes build
 FROM ghcr.io/informalsystems/hermes:v1.7.4 AS hermes-builder
 
+
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
 RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq

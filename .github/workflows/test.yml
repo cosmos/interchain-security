@@ -192,6 +192,7 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
+            Dockerfile*
       - name: e2e tests
         if: env.GIT_DIFF
         run: |
@@ -222,6 +223,7 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
+            Dockerfile*
       - name: cometmock tests
         if: env.GIT_DIFF
         run: |
@@ -252,6 +254,7 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
+            Dockerfile*
       - name: trace-e2e tests
         if: env.GIT_DIFF
         run: |
