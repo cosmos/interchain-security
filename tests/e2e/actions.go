@@ -553,6 +553,26 @@ func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID, t
 	return string(bz)
 }
 
+// getTransformParameter identifies the needed transformation parameter for current `transformGenesis` implementation
+// based on consumer and provider versions.
+func getTransformParameter(consumerVersion, providerVersion string) string {
+	var params string
+	// is consumer before v2.x
+	// -- if provider is v3.3.0 (T)
+
+	// is consumer v2.x
+
+	// is consumer v3.[0-2].x
+
+	// is consumer v3.3.x
+
+	// is consumer v4.x
+
+	// is consumer after v4.x
+	params = "--to=v3.3.x"
+	return params
+}
+
 // Transform consumer genesis content from older version
 func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []byte, target ExecutionTarget) []byte {
 	fmt.Println("Transforming consumer genesis")
@@ -580,11 +600,14 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		log.Fatal(err, "\n", string(genesis))
 	}
 
-	consumerBinaryName := tr.chainConfigs[consumerChain].BinaryName
+	//	consumerBinaryName := tr.chainConfigs[consumerChain].BinaryName
+	cfg := target.GetTargetConfig()
+	targetVersion := getTransformParameter(cfg.consumerVersion, cfg.providerVersion)
 	cmd = target.ExecCommand(
-		consumerBinaryName,
-		"genesis", "transform", targetFile)
+		"interchain-security-transformer",
+		"genesis", "transform", targetVersion, targetFile)
 	result, err := cmd.CombinedOutput()
+	fmt.Println("@@@ running transform cmd :", cmd)
 	if err != nil {
 		log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(result))
 	}

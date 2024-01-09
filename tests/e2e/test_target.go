@@ -10,7 +10,7 @@ import (
 )
 
 type ExecutionTarget interface {
-	GetTargetType() string
+	GetTargetConfig() TargetConfig
 	GetTestScriptPath(isConsumer bool, script string) string
 	// ExecCommand: when executed the command will run and return after completion
 	ExecCommand(name string, arg ...string) *exec.Cmd
@@ -29,8 +29,8 @@ type DockerContainer struct {
 	ImageName    string
 }
 
-func (dc *DockerContainer) GetTargetType() string {
-	return "docker"
+func (dc *DockerContainer) GetTargetConfig() TargetConfig {
+	return dc.targetConfig
 }
 
 func generateImageName(version string, cfg TargetConfig) (string, error) {
@@ -116,11 +116,11 @@ func (dc *DockerContainer) Delete() error {
 	for _, img := range dc.images {
 		//#nosec G204 -- Bypass linter warning for spawning subprocess with variable
 		cmd := exec.Command("docker", "image", "rm", img)
-		out, err := cmd.CombinedOutput()
-		//TODO: ignore errors related to non-existing images
-		if err != nil {
-			log.Printf("failed deleting image '%v' (%v): %v", cmd, err, string(out))
-		}
+		fmt.Println("@@@ not removing image: ", cmd.String()) // TODO: remove this when done with testing
+		/* 		out, err := cmd.CombinedOutput()
+		   		if err != nil && !strings.Contains(string(out), "No such image") {
+		   			log.Printf("failed deleting image '%v' (%v): %v", cmd, err, string(out))
+		   		} */
 	}
 	return nil
 }

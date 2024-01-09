@@ -150,6 +150,12 @@ var stepChoices = map[string]StepChoice{
 		description: "jail a validator for two (different) downtime infractions on consumer",
 		testConfig:  DefaultTestConfig(),
 	},
+	"compatibility": {
+		name:        "compatibility",
+		steps:       compatibilitySteps,
+		description: `Minimal set of test steps to perform compatibility tests`,
+		testConfig:  DefaultTestConfig(),
+	},
 }
 
 func getTestCaseUsageString() string {
@@ -317,6 +323,7 @@ func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTa
 			targetCfg.consumerVersion = consumer
 			targetCfg.providerVersion = provider
 			target := DockerContainer{targetConfig: targetCfg}
+			//TODO: parallel builds?
 			err := target.Build()
 			if err != nil {
 				log.Println("@@@ failed creating target")
