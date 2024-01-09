@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"bytes"
 	"encoding/binary"
 	"sort"
 
@@ -89,14 +88,9 @@ func (k Keeper) UpdateSlashingSigningInfo(ctx sdk.Context) {
 
 	// Update SigningInfo for opted out validators
 	valset := k.GetAllCCValidator(ctx)
-	// sort validators by power ascending
-	sort.SliceStable(valset, func(i, j int) bool {
-		if valset[i].Power != valset[j].Power {
-			return valset[i].Power < valset[j].Power
-		}
-		return bytes.Compare(valset[i].Address, valset[j].Address) < 0
-	})
-
+	// Note that we don't need to sort the valset as GetAllCCValidator
+	// uses KVStorePrefixIterator that iterates over all the keys with
+	// a certain prefix in ascending order
 	for _, val := range valset {
 		consAddr := sdk.ConsAddress(val.Address)
 		signingInfo, found := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
