@@ -18,9 +18,9 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 func TestVerifyDoubleVotingEvidence(t *testing.T) {
