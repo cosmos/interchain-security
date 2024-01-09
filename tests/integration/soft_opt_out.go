@@ -58,7 +58,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 			false,
 		},
 		{
-			"donwtime bottom 5% first and then top 95%, but not enough",
+			"downtime bottom 5% first and then top 95%, but not enough",
 			func(ck *consumerKeeper.Keeper, sk *slashingkeeper.Keeper, valAddr []byte, valIdx int) {
 				for i, voteInfo := range votes {
 					if bytes.Equal(voteInfo.Validator.Address, valAddr) {
