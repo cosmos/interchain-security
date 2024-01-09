@@ -297,7 +297,7 @@ module ccv {
         // rule 1: validator A cannot assign consumer key K to consumer chain X
         // if there is already a validator B (B!=A) using K on the provider
         pure val provCurValSet = currentState.providerState.chainState.currentValidatorSet
-        if (provCurValSet.exists(node => node != providerNode and node == consumerAddr)) {
+        if (provCurValSet.keys().exists(node => node != providerNode and node == consumerAddr)) {
             Err("validator A cannot assign consumer key K to consumer chain X
             if there is already a validator B (B!=A) using K on the provider")
         } else {
@@ -348,7 +348,21 @@ module ccv {
                         currentState.providerState.keyAssignmentReplacements
                     
                     }
-                Err(":()")
+                pure val tmpStateAfterKeyAssignmentReplacement = tmpState.with(
+                    "providerState", tmpState.providerState.with(
+                        "keyAssignmentReplacements", newKeyAssignmentReplacement
+                    )
+                )
+                
+                pure val newValidatorConsumerPubKey = currentState.providerState.validatorConsumerPubKey.get(consumer).put(
+                    consumer,
+                    currentState.providerState.validatorConsumerPubKey.get(consumer).put(
+                        providerNode,
+                        consumerAddr
+                    )
+                )
+
+                Err(":(")
             }
         }
     }
