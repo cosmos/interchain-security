@@ -11,6 +11,11 @@ module ccv_types {
     // a list of validator sets per blocks, ordered by recency
     type VotingPowerHistory = List[ValidatorSet]
 
+    // For key assignment, to differentiate Nodes
+    // (on the provider) from the assigned
+    // keys/addresses on consumers
+    type ConsumerAddr = str
+
     type VscPacket =
         {   
             // the identifier for this packet
@@ -93,6 +98,19 @@ module ccv_types {
             // a monotonic strictly increasing and positive ID that is used
             // to uniquely identify the Vscs sent to the consumer chains.
             runningVscId: int,
+
+            // For every consumer chain, stores the consumer address assigned by each validator.
+            validatorConsumerPubKey: Chain -> (Node -> ConsumerAddr),
+
+            // For every consumer chain, holds the provider validator for each assigned consumer key.
+            validatorByConsumerAddr: Chain -> (ConsumerAddr -> Node),
+
+            // Stores the key assignments that need to be replaced in the current block.
+            // Needed to apply the key assignments received in a block to the validator updates sent to the consumer chains.
+            keyAssignmentReplacements: Chain -> (Node -> (ConsumerAddr, Power)),
+
+            // Stores the mapping from VSC ids to consumer validators addresses. Needed for pruning ValidatorByConsumerAddr.
+            consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr],
         }
 
     // utility function: returns a provider state that is initialized minimally.
@@ -105,6 +123,10 @@ module ccv_types {
             providerValidatorSetChangedInThisBlock: false,
             consumerStatus: Map(),
             runningVscId: 0,
+            validatorConsumerPubKey: Map(),
+            validatorByConsumerAddr: Map(),
+            keyAssignmentReplacements: Map(),
+            consumerAddrsToPrune: Map(),
         }
         
 
@@ -268,6 +290,56 @@ module ccv {
                     Ok(newState)
                 }
             }
+    }
+
+    // // Validator providerNode assigns their address for the consumer to be the consumerAddress.
+    // pure def assignConsumerKey(currentState: ProtocolState, consumer: Chain, providerNode: Node, consumerAddr: ConsumerAddr): (Result, bool) = {
+    //     // rule 1: validator A cannot assign consumer key K to consumer chain X
+    //     // if there is already a validator B (B!=A) using K on the provider
+    //     pure val provCurValSet = currentState.providerState.chainState.currentValidatorSet
+    //     if (provCurValSet.exists(node => node != providerNode and node == consumerAddr)) {
+    //         Err("validator A cannot assign consumer key K to consumer chain X
+    //         if there is already a validator B (B!=A) using K on the provider")
+    //     } else {
+    //         // rule 2: validator A cannot assign consumer key K to consumer chain X if
+    //         // there is already a validator B using K on X
+    //         pure val valByConsAddr = currentState.providerState.ValidatorByConsumerAddr.get(consumer)
+    //         if (valByConsAddr.keys().contains(consumerAddr)) {
+    //             Err("consumer key is already in use on the consumer chain")
+    //         } else {
+    //             // this key can be assigned
+                
+    //             // get the old assigned key
+    //             pure val consKeyByVal = currentState.providerState.ValidatorConsumerPubKey.get(consumer)
+    //             pure val p = if (consKeyByVal.keys().contains(providerNode)) {
+    //                 // providerNode had previously assigned a consumer key
+    //                 (consKeyByVal.get(providerNode), true)
+    //             } else {
+    //                 (providerNode, false)
+    //             }
+    //             // the consumer address that was previously associated with the node
+    //             pure val oldConsAddr = p._1
+    //             // whether the old address was explicitly assigned, or the default key
+    //             pure val prevAssigned = p._2
+                
+    //             // set the old address for pruning, if it was assigned
+    //             pure val tmpState = if (prevAssigned) {
+    //                 AppendConsumerAddrToPrune(currentState, oldConsAddr)
+    //             } else {
+    //                 currentState
+    //             }
+    //         }
+    //     }
+    // }
+
+    pure def AppendConsumerAddrToPrune(currentState: ProtocolState, oldConsAddr: ConsumerAddr): ProtocolState = {
+        pure val vscId = currentState.providerState.runningVscId
+        pure val consumerAddrsToPrune = currentState.providerState.consumerAddrsToPrune
+        pure val prevConsAddr = consumerAddrsToPrune.get(oldConsAddr).getOrElse(vscId, [])
+
+       pure val newConsAddrsToPrune = consumerAddrsToPrune
+
+       currentState
     }
 
     // Delivers the next queued VscMaturedPacket from a consumer chain to the provider chain.

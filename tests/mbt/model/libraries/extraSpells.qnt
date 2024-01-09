@@ -79,26 +79,6 @@ module extraSpells {
     assert(not(Map(2 -> 3, 4 -> 5).has(6))),
   }
 
-  /// Get the map value associated with a key, or the default,
-  /// if the key is not present.
-  ///
-  /// - @param __map the map to query
-  /// - @param __key the key to search for
-  /// - @returns the value associated with the key, if __key is
-  ///   present in the map, and __default otherwise
-  pure def getOrElse(__map: a -> b, __key: a, __default: b): b = {
-    if (__map.has(__key)) {
-      __map.get(__key)
-    } else {
-      __default
-    }
-  }
-
-  run getOrElseTest = all {
-    assert(Map(2 -> 3, 4 -> 5).getOrElse(2, 0) == 3),
-    assert(Map(2 -> 3, 4 -> 5).getOrElse(7, 11) == 11),
-  }
-
   /// Remove a map entry.
   ///
   /// - @param __map a map to remove an entry from
@@ -185,6 +165,26 @@ module extraSpells {
         assert(transform(List(), __x => __x + 1) == List()),
         assert(transform(List(1, 2, 3), __x => __x * 2) == List(2, 4, 6)),
         assert(transform(List(1, 2, 3), __x => __x) == List(1, 2, 3)),
+    }
+
+    /// Get the map value associated with a key, or the default,
+    /// if the key is not present.
+    ///
+    /// - @param __map the map to query
+    /// - @param __key the key to search for
+    /// - @returns the value associated with the key, if __key is
+    ///   present in the map, and __default otherwise
+    pure def getOrElse(__map: a -> b, __key: a, __default: b): b = {
+      if (__map.has(__key)) {
+        __map.get(__key)
+      } else {
+        __default
+      }
+    }
+
+    run getOrElseTest = all {
+      assert(Map(2 -> 3, 4 -> 5).getOrElse(2, 0) == 3),
+      assert(Map(2 -> 3, 4 -> 5).getOrElse(7, 11) == 11),
     }
 
 
