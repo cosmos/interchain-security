@@ -1,8 +1,6 @@
 module github.com/cosmos/interchain-security/v4
 
-go 1.21.1
-
-toolchain go1.21.5
+go 1.20
 
 require (
 	cosmossdk.io/errors v1.0.0
