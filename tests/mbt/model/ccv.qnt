@@ -292,49 +292,70 @@ module ccv {
             }
     }
 
-    // // Validator providerNode assigns their address for the consumer to be the consumerAddress.
-    // pure def assignConsumerKey(currentState: ProtocolState, consumer: Chain, providerNode: Node, consumerAddr: ConsumerAddr): (Result, bool) = {
-    //     // rule 1: validator A cannot assign consumer key K to consumer chain X
-    //     // if there is already a validator B (B!=A) using K on the provider
-    //     pure val provCurValSet = currentState.providerState.chainState.currentValidatorSet
-    //     if (provCurValSet.exists(node => node != providerNode and node == consumerAddr)) {
-    //         Err("validator A cannot assign consumer key K to consumer chain X
-    //         if there is already a validator B (B!=A) using K on the provider")
-    //     } else {
-    //         // rule 2: validator A cannot assign consumer key K to consumer chain X if
-    //         // there is already a validator B using K on X
-    //         pure val valByConsAddr = currentState.providerState.ValidatorByConsumerAddr.get(consumer)
-    //         if (valByConsAddr.keys().contains(consumerAddr)) {
-    //             Err("consumer key is already in use on the consumer chain")
-    //         } else {
-    //             // this key can be assigned
+    // Validator providerNode assigns their address for the consumer to be the consumerAddress.
+    pure def assignConsumerKey(currentState: ProtocolState, consumer: Chain, providerNode: Node, consumerAddr: ConsumerAddr): Result = {
+        // rule 1: validator A cannot assign consumer key K to consumer chain X
+        // if there is already a validator B (B!=A) using K on the provider
+        pure val provCurValSet = currentState.providerState.chainState.currentValidatorSet
+        if (provCurValSet.exists(node => node != providerNode and node == consumerAddr)) {
+            Err("validator A cannot assign consumer key K to consumer chain X
+            if there is already a validator B (B!=A) using K on the provider")
+        } else {
+            // rule 2: validator A cannot assign consumer key K to consumer chain X if
+            // there is already a validator B using K on X
+            pure val valByConsAddr = currentState.providerState.validatorByConsumerAddr.get(consumer)
+            if (valByConsAddr.keys().contains(consumerAddr)) {
+                Err("consumer key is already in use on the consumer chain")
+            } else {
+                // this key can be assigned
                 
-    //             // get the old assigned key
-    //             pure val consKeyByVal = currentState.providerState.ValidatorConsumerPubKey.get(consumer)
-    //             pure val p = if (consKeyByVal.keys().contains(providerNode)) {
-    //                 // providerNode had previously assigned a consumer key
-    //                 (consKeyByVal.get(providerNode), true)
-    //             } else {
-    //                 (providerNode, false)
-    //             }
-    //             // the consumer address that was previously associated with the node
-    //             pure val oldConsAddr = p._1
-    //             // whether the old address was explicitly assigned, or the default key
-    //             pure val prevAssigned = p._2
+                // get the old assigned key
+                pure val consKeyByVal = currentState.providerState.validatorConsumerPubKey.get(consumer)
+                pure val p = if (consKeyByVal.keys().contains(providerNode)) {
+                    // providerNode had previously assigned a consumer key
+                    (consKeyByVal.get(providerNode), true)
+                } else {
+                    (providerNode, false)
+                }
+                // the consumer address that was previously associated with the node
+                pure val oldConsAddr = p._1
+                // whether the old address was explicitly assigned, or the default key
+                pure val prevAssigned = p._2
                 
-    //             // set the old address for pruning, if it was assigned
-    //             pure val tmpState = if (prevAssigned) {
-    //                 AppendConsumerAddrToPrune(currentState, oldConsAddr)
-    //             } else {
-    //                 currentState
-    //             }
-    //         }
-    //     }
-    // }
+                // set the old address for pruning, if it was assigned
+                pure val tmpState = if (prevAssigned) {
+                    AppendConsumerAddrToPrune(currentState, oldConsAddr, consumer)
+                } else {
+                    currentState
+                }
 
-    pure def AppendConsumerAddrToPrune(currentState: ProtocolState, oldConsAddr: ConsumerAddr): ProtocolState = {
+                // check whether the validator has positive power
+                pure val provValSet = currentState.providerState.chainState.currentValidatorSet
+                pure val provValPower = if (provValSet.keys().contains(providerNode)) provValSet.get(providerNode) else 0
+                pure val newKeyAssignmentReplacement = 
+                    if (provValPower > 0 and
+                        not(currentState.providerState.keyAssignmentReplacements.
+                            get(consumer).keys().contains(providerNode))) {
+                        // the validator has positive power and is not already in the key assignment replacements
+                        currentState.providerState.keyAssignmentReplacements.put(
+                            consumer,
+                            currentState.providerState.keyAssignmentReplacements.get(consumer).put(
+                                providerNode,
+                                (oldConsAddr, provValPower)
+                            )
+                        )
+                    } else {
+                        currentState.providerState.keyAssignmentReplacements
+                    
+                    }
+                Err(":()")
+            }
+        }
+    }
+
+    pure def AppendConsumerAddrToPrune(currentState: ProtocolState, oldConsAddr: ConsumerAddr, consumer: Chain): ProtocolState = {
         pure val vscId = currentState.providerState.runningVscId
-        pure val consumerAddrsToPrune = currentState.providerState.consumerAddrsToPrune
+        pure val consumerAddrsToPrune = currentState.providerState.consumerAddrsToPrune.get(consumer)
         pure val prevConsAddrs = consumerAddrsToPrune.get(oldConsAddr).getOrElse(vscId, [])
 
         pure val newConsAddrsToPrune = consumerAddrsToPrune.put(vscId, prevConsAddrs.append(oldConsAddr))
@@ -342,7 +363,8 @@ module ccv {
         currentState.with(
             "providerState", 
             currentState.providerState.with(
-                "consumerAddrsToPrune", newConsAddrsToPrune
+                "consumerAddrsToPrune",
+                currentState.providerState.consumerAddrsToPrune.put(consumer, newConsAddrsToPrune)
             )
         )
     }
