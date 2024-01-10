@@ -99,7 +99,7 @@ func (dc *DockerContainer) Build() error {
 	combinedImageName := fmt.Sprintf("cosmos-ics-combined:%s_%s",
 		strings.Split(providerImageName, ":")[1],
 		strings.Split(consumerImageName, ":")[1])
-	cmd := exec.Command("docker", "build", "-f", "Dockerfile-Combined",
+	cmd := exec.Command("docker", "build", "-f", "Dockerfile.combined",
 		"--build-arg", fmt.Sprintf("PROVIDER_IMAGE=%s", providerImageName),
 		"--build-arg", fmt.Sprintf("CONSUMER_IMAGE=%s", consumerImageName),
 		"-t", combinedImageName,
@@ -160,7 +160,7 @@ func (dc *DockerContainer) GetTestScriptPath(isConsumer bool, script string) str
 
 // Startup the container
 func (dc *DockerContainer) Start() error {
-	fmt.Println("@@@@ starting existing containers", dc.containerCfg.InstanceName)
+	fmt.Println("Starting container: ", dc.containerCfg.InstanceName)
 	// Remove existing containers from previous runs
 	dc.Stop()
 
@@ -203,7 +203,7 @@ func (dc *DockerContainer) Start() error {
 
 // Stop will stop the container and remove it
 func (dc *DockerContainer) Stop() error {
-	fmt.Println("@@@@ stopping existing containers", dc.containerCfg.InstanceName)
+	fmt.Println("Stopping existing containers: ", dc.containerCfg.InstanceName)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "stop", dc.containerCfg.InstanceName)
 	bz, err := cmd.CombinedOutput()
