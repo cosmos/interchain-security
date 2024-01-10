@@ -45,6 +45,7 @@ func (pr *DefaultDriver) Run(steps []Step, target ExecutionTarget, verbose bool)
 	return nil
 }
 
+// runStep executes an action and evaluates the result against expected state
 func (pr *DefaultDriver) runStep(step Step) error {
 	err := pr.runAction(step.Action)
 	if err != nil {
@@ -71,86 +72,86 @@ func (pr *DefaultDriver) GetState(modelState State) {
 	pr.testCfg.getState(modelState)
 }
 
-func (pr *DefaultDriver) runAction(action interface{}) error {
+func (td *DefaultDriver) runAction(action interface{}) error {
 	switch action := action.(type) {
 	case StartChainAction:
-		pr.testCfg.startChain(action, pr.target, pr.verbose)
+		td.testCfg.startChain(action, td.target, td.verbose)
 	case StartSovereignChainAction:
-		pr.testCfg.startSovereignChain(action, pr.verbose)
+		td.testCfg.startSovereignChain(action, td.target, td.verbose)
 	case LegacyUpgradeProposalAction:
-		pr.testCfg.submitLegacyUpgradeProposal(action, pr.verbose)
+		td.testCfg.submitLegacyUpgradeProposal(action, td.target, td.verbose)
 	case WaitUntilBlockAction:
-		pr.testCfg.waitUntilBlockOnChain(action)
+		td.testCfg.waitUntilBlockOnChain(action)
 	case ChangeoverChainAction:
-		pr.testCfg.changeoverChain(action, pr.verbose)
+		td.testCfg.changeoverChain(action, td.target, td.verbose)
 	case SendTokensAction:
-		pr.testCfg.sendTokens(action, pr.verbose)
+		td.testCfg.sendTokens(action, td.target, td.verbose)
 	case SubmitTextProposalAction:
-		pr.testCfg.submitTextProposal(action, pr.verbose)
+		td.testCfg.submitTextProposal(action, td.target, td.verbose)
 	case SubmitConsumerAdditionProposalAction:
-		pr.testCfg.submitConsumerAdditionProposal(action, pr.verbose)
+		td.testCfg.submitConsumerAdditionProposal(action, td.target, td.verbose)
 	case SubmitConsumerRemovalProposalAction:
-		pr.testCfg.submitConsumerRemovalProposal(action, pr.verbose)
+		td.testCfg.submitConsumerRemovalProposal(action, td.target, td.verbose)
 	case SubmitParamChangeLegacyProposalAction:
-		pr.testCfg.submitParamChangeProposal(action, pr.verbose)
+		td.testCfg.submitParamChangeProposal(action, td.target, td.verbose)
 	case VoteGovProposalAction:
-		pr.testCfg.voteGovProposal(action, pr.verbose)
+		td.testCfg.voteGovProposal(action, td.target, td.verbose)
 	case StartConsumerChainAction:
-		pr.testCfg.startConsumerChain(action, pr.target, pr.verbose)
+		td.testCfg.startConsumerChain(action, td.target, td.verbose)
 	case AddChainToRelayerAction:
-		pr.testCfg.addChainToRelayer(action, pr.verbose)
+		td.testCfg.addChainToRelayer(action, td.target, td.verbose)
 	case CreateIbcClientsAction:
-		pr.testCfg.createIbcClientsHermes(action, pr.verbose)
+		td.testCfg.createIbcClientsHermes(action, td.target, td.verbose)
 	case AddIbcConnectionAction:
-		pr.testCfg.addIbcConnection(action, pr.verbose)
+		td.testCfg.addIbcConnection(action, td.target, td.verbose)
 	case AddIbcChannelAction:
-		pr.testCfg.addIbcChannel(action, pr.verbose)
+		td.testCfg.addIbcChannel(action, td.target, td.verbose)
 	case TransferChannelCompleteAction:
-		pr.testCfg.transferChannelComplete(action, pr.verbose)
+		td.testCfg.transferChannelComplete(action, td.target, td.verbose)
 	case RelayPacketsAction:
-		pr.testCfg.relayPackets(action, pr.verbose)
+		td.testCfg.relayPackets(action, td.target, td.verbose)
 	case RelayRewardPacketsToProviderAction:
-		pr.testCfg.relayRewardPacketsToProvider(action, pr.verbose)
+		td.testCfg.relayRewardPacketsToProvider(action, td.target, td.verbose)
 	case DelegateTokensAction:
-		pr.testCfg.delegateTokens(action, pr.verbose)
+		td.testCfg.delegateTokens(action, td.target, td.verbose)
 	case UnbondTokensAction:
-		pr.testCfg.unbondTokens(action, pr.verbose)
+		td.testCfg.unbondTokens(action, td.target, td.verbose)
 	case CancelUnbondTokensAction:
-		pr.testCfg.cancelUnbondTokens(action, pr.verbose)
+		td.testCfg.cancelUnbondTokens(action, td.target, td.verbose)
 	case RedelegateTokensAction:
-		pr.testCfg.redelegateTokens(action, pr.verbose)
+		td.testCfg.redelegateTokens(action, td.target, td.verbose)
 	case DowntimeSlashAction:
-		pr.testCfg.invokeDowntimeSlash(action, pr.verbose)
+		td.testCfg.invokeDowntimeSlash(action, td.target, td.verbose)
 	case UnjailValidatorAction:
-		pr.testCfg.unjailValidator(action, pr.verbose)
+		td.testCfg.unjailValidator(action, td.target, td.verbose)
 	case DoublesignSlashAction:
-		pr.testCfg.invokeDoublesignSlash(action, pr.verbose)
+		td.testCfg.invokeDoublesignSlash(action, td.target, td.verbose)
 	case LightClientAmnesiaAttackAction:
-		pr.testCfg.lightClientAmnesiaAttack(action, pr.verbose)
+		td.testCfg.lightClientAmnesiaAttack(action, td.verbose)
 	case LightClientEquivocationAttackAction:
-		pr.testCfg.lightClientEquivocationAttack(action, pr.verbose)
+		td.testCfg.lightClientEquivocationAttack(action, td.verbose)
 	case LightClientLunaticAttackAction:
-		pr.testCfg.lightClientLunaticAttack(action, pr.verbose)
+		td.testCfg.lightClientLunaticAttack(action, td.verbose)
 	case RegisterRepresentativeAction:
-		pr.testCfg.registerRepresentative(action, pr.verbose)
+		td.testCfg.registerRepresentative(action, td.target, td.verbose)
 	case AssignConsumerPubKeyAction:
-		pr.testCfg.assignConsumerPubKey(action, pr.verbose)
+		td.testCfg.assignConsumerPubKey(action, td.target, td.verbose)
 	case SlashMeterReplenishmentAction:
-		pr.testCfg.waitForSlashMeterReplenishment(action, pr.verbose)
+		td.testCfg.waitForSlashMeterReplenishment(action, td.verbose)
 	case WaitTimeAction:
-		pr.testCfg.waitForTime(action, pr.verbose)
+		td.testCfg.waitForTime(action, td.verbose)
 	case StartRelayerAction:
-		pr.testCfg.startRelayer(action, pr.verbose)
+		td.testCfg.startRelayer(action, td.target, td.verbose)
 	case ForkConsumerChainAction:
-		pr.testCfg.forkConsumerChain(action, pr.verbose)
+		td.testCfg.forkConsumerChain(action, td.verbose)
 	case UpdateLightClientAction:
-		pr.testCfg.updateLightClient(action, pr.verbose)
+		td.testCfg.updateLightClient(action, td.verbose)
 	case StartConsumerEvidenceDetectorAction:
-		pr.testCfg.startConsumerEvidenceDetector(action, pr.verbose)
+		td.testCfg.startConsumerEvidenceDetector(action, td.target, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
-		pr.testCfg.submitChangeRewardDenomsProposal(action, pr.verbose)
+		td.testCfg.submitChangeRewardDenomsProposal(action, td.target, td.verbose)
 	default:
-		log.Fatalf("unknown action in testRun %s: %#v", pr.testCfg.name, action)
+		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}
 	return nil
 }

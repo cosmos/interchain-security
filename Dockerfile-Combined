@@ -45,8 +45,5 @@ COPY --from=consumer /testnet-scripts /consumer/testnet-scripts
 COPY --from=provider /usr/local/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
 COPY --from=provider /testnet-scripts /provider/testnet-scripts
 
-# Copy in the shell scripts that run the testnet
-ADD ./tests/e2e/testnet-scripts /testnet-scripts
-
 # Copy in the hermes config
 ADD ./tests/e2e/testnet-scripts/hermes-config.toml /root/.hermes/config.toml

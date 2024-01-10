@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -11,8 +12,9 @@ import (
 type ExecutionTarget interface {
 	GetTargetType() string
 	GetLogs(path string) []byte
-	GetStartChainScript(isProvider bool) string
+	GetTestScriptPath(isConsumer bool, script string) string
 	ExecCommand(name string, arg ...string) *exec.Cmd
+	ExecDetachedCommand(name string, args ...string) *exec.Cmd
 	Start() error
 	Stop() error
 	Build() error
@@ -132,21 +134,28 @@ func (dc *DockerContainer) ExecCommand(name string, arg ...string) *exec.Cmd {
 	return exec.Command("docker", args...)
 }
 
-// Get star-chain script to be used on target for a specific chain type
+// ExecDetachedCommand returns the command struct to execute the named program with
+// given arguments on the current target (docker container) in _detached_ mode
+func (dc *DockerContainer) ExecDetachedCommand(name string, arg ...string) *exec.Cmd {
+	args := []string{"exec", "-d", dc.containerCfg.InstanceName, name}
+	args = append(args, arg...)
+	return exec.Command("docker", args...)
+}
+
+// Get path to testnet-script on target for a specific chain type
 // Needed for different consumer/provider versions staged in one container
-func (dc *DockerContainer) GetStartChainScript(isConsumer bool) string {
-	startChainScript := "/testnet-scripts/start-chain.sh"
+func (dc *DockerContainer) GetTestScriptPath(isConsumer bool, script string) string {
+	path := "/testnet-scripts"
 	if dc.targetConfig.providerVersion != "" && !isConsumer {
-		log.Printf("Using start-chain script for provider version '%s'", dc.targetConfig.providerVersion)
-		startChainScript = "/provider/testnet-scripts/start-chain.sh"
+		log.Printf("Using script path for provider version '%s'", dc.targetConfig.providerVersion)
+		path = "/provider/testnet-scripts"
 	}
 
 	if dc.targetConfig.consumerVersion != "" && isConsumer {
-		log.Printf("Using start-chain script for consumer version '%s'", dc.targetConfig.consumerVersion)
-		startChainScript = "/consumer/testnet-scripts/start-chain.sh"
+		log.Printf("Using script path for consumer version '%s'", dc.targetConfig.consumerVersion)
+		path = "/consumer/testnet-scripts"
 	}
-	return startChainScript
-
+	return strings.Join([]string{path, script}, string(os.PathSeparator))
 }
 
 // Startup the container
@@ -158,9 +167,10 @@ func (dc *DockerContainer) Start() error {
 	// Run new test container instance with extended privileges.
 	// Extended privileges are granted to the container here to allow for network namespace manipulation (bringing a node up/down)
 	// See: https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
+	beaconScript := dc.GetTestScriptPath(false, "beacon.sh")
 	cmd := exec.Command("docker", "run", "--name", dc.containerCfg.InstanceName,
 		"--cap-add=NET_ADMIN", "--privileged", dc.ImageName,
-		"/bin/bash", "/testnet-scripts/beacon.sh")
+		"/bin/bash", beaconScript)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
