@@ -484,6 +484,53 @@ type StartConsumerChainAction struct {
 	GenesisChanges string
 }
 
+func (tr *TestConfig) startConsumerChain(
+	action StartConsumerChainAction,
+	target ExecutionTarget,
+	verbose bool,
+) {
+	fmt.Println("Starting consumer chain ", action.ConsumerChain)
+	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.ConsumerChain, target)
+	consumerGenesisChanges := tr.chainConfigs[action.ConsumerChain].GenesisChanges
+	if consumerGenesisChanges != "" {
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.GenesisChanges
+	}
+
+	tr.startChain(StartChainAction{
+		Chain:          action.ConsumerChain,
+		Validators:     action.Validators,
+		GenesisChanges: consumerGenesis,
+		IsConsumer:     true,
+	}, target, verbose)
+}
+
+// Get consumer genesis from provider
+func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID, target ExecutionTarget) string {
+	fmt.Println("Exporting consumer genesis from provider")
+	providerBinaryName := tr.chainConfigs[providerChain].BinaryName
+
+	cmd := target.ExecCommand(
+		providerBinaryName,
+
+		"query", "provider", "consumer-genesis",
+		string(tr.chainConfigs[consumerChain].ChainId),
+
+		`--node`, tr.getQueryNode(providerChain),
+		`-o`, `json`,
+	)
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// only needed when consumer is running v3.3.x and later
+	if tr.transformGenesis {
+		return string(tr.transformConsumerGenesis(consumerChain, bz, target))
+	}
+	return string(bz)
+}
+
 // Transform consumer genesis content from older version
 func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []byte, target ExecutionTarget) []byte {
 	fmt.Println("Transforming consumer genesis")
@@ -521,53 +568,6 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 	}
 	fmt.Printf("Transformed genesis is: %s\n", string(result))
 	return result
-}
-
-// Get consumer genesis from provider
-func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID, target ExecutionTarget) string {
-	fmt.Println("Exporting consumer genesis from provider")
-	providerBinaryName := tr.chainConfigs[providerChain].BinaryName
-
-	cmd := target.ExecCommand(
-		providerBinaryName,
-
-		"query", "provider", "consumer-genesis",
-		string(tr.chainConfigs[consumerChain].ChainId),
-
-		`--node`, tr.getQueryNode(providerChain),
-		`-o`, `json`,
-	)
-
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// only needed when consumer is running v3.3.x and later
-	if tr.transformGenesis {
-		return string(tr.transformConsumerGenesis(consumerChain, bz, target))
-	}
-	return string(bz)
-}
-
-func (tr *TestConfig) startConsumerChain(
-	action StartConsumerChainAction,
-	target ExecutionTarget,
-	verbose bool,
-) {
-	fmt.Println("Starting consumer chain ", action.ConsumerChain)
-	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.ConsumerChain, target)
-	consumerGenesisChanges := tr.chainConfigs[action.ConsumerChain].GenesisChanges
-	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.GenesisChanges
-	}
-
-	tr.startChain(StartChainAction{
-		Chain:          action.ConsumerChain,
-		Validators:     action.Validators,
-		GenesisChanges: consumerGenesis,
-		IsConsumer:     true,
-	}, target, verbose)
 }
 
 type ChangeoverChainAction struct {

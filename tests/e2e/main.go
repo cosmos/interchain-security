@@ -60,8 +60,6 @@ var (
 )
 
 var (
-	//useConsumerVersion = flag.String("consumer-version", "", "ICS tag to specify the consumer version to test the provider against")
-	//useProviderVersion = flag.String("provider-version", "", "ICS tag to specify the provider version to test the consumer against")
 	consumerVersions VersionSet
 	providerVersions VersionSet
 	transformGenesis = flag.Bool("transform-genesis", false, "do consumer genesis transformation for newer clients. Needed when provider chain is on an older version")
