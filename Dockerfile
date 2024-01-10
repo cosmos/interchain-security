@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 
-FROM golang:1.20-alpine AS is-builder
+FROM golang:1.21-alpine AS is-builder
 
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers
 RUN apk add --no-cache $PACKAGES
