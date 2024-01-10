@@ -359,7 +359,7 @@ func executeTests(runners []TestRunner) error {
 				runner.Run()
 			}(runner)
 		} else {
-			log.Printf("=============== running %s ===============\n", runner.config.name)
+			fmt.Printf("=============== running %s ===============\n", runner.config.name)
 			err = runner.Run()
 		}
 	}

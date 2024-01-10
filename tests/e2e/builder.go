@@ -17,13 +17,13 @@ func setupWorkSpace(revision string) (string, error) {
 		return "", fmt.Errorf("error creating temp directory %v", err)
 	}
 
-	log.Printf("Setting up worktree in '%s'", workSpace)
+	fmt.Printf("Setting up worktree in '%s'", workSpace)
 
 	cmd := exec.Command("git", "worktree", "add",
 		"--checkout", workSpace, revision)
 	var errbuf bytes.Buffer
 	cmd.Stderr = &errbuf
-	log.Printf("Running: %s", cmd.String())
+	fmt.Printf("Running: %s", cmd.String())
 	if err := cmd.Start(); err != nil {
 		return "", err
 	}
@@ -59,7 +59,7 @@ func dockerIsUp() bool {
 
 // Build docker image of ICS for a given revision
 func buildDockerImage(imageName, revision string, targetCfg TargetConfig) error {
-	log.Printf("Building ICS %s image %s", revision, imageName)
+	fmt.Printf("Building ICS %s image %s\n", revision, imageName)
 	if !dockerIsUp() {
 		return fmt.Errorf("docker engine is not running")
 	}

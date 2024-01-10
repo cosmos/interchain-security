@@ -52,10 +52,7 @@ func (pr *DefaultDriver) runStep(step Step) error {
 		return err
 	}
 	modelState := step.State
-	actualState, err := pr.getState(step.State)
-	if err != nil {
-		return err
-	}
+	actualState := pr.testCfg.getState(modelState, pr.verbose)
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
@@ -66,10 +63,6 @@ func (pr *DefaultDriver) runStep(step Step) error {
 		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
 	}
 	return nil
-}
-
-func (pr *DefaultDriver) GetState(modelState State) {
-	pr.testCfg.getState(modelState)
 }
 
 func (td *DefaultDriver) runAction(action interface{}) error {
@@ -154,9 +147,4 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}
 	return nil
-}
-
-func (pr *DefaultDriver) getState(modelState State) (State, error) {
-	// forwarding it for now
-	return pr.testCfg.getState(modelState), nil
 }

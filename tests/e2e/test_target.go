@@ -147,12 +147,12 @@ func (dc *DockerContainer) ExecDetachedCommand(name string, arg ...string) *exec
 func (dc *DockerContainer) GetTestScriptPath(isConsumer bool, script string) string {
 	path := "/testnet-scripts"
 	if dc.targetConfig.providerVersion != "" && !isConsumer {
-		log.Printf("Using script path for provider version '%s'", dc.targetConfig.providerVersion)
+		fmt.Printf("Using script path for provider version '%s'\n", dc.targetConfig.providerVersion)
 		path = "/provider/testnet-scripts"
 	}
 
 	if dc.targetConfig.consumerVersion != "" && isConsumer {
-		log.Printf("Using script path for consumer version '%s'", dc.targetConfig.consumerVersion)
+		fmt.Printf("Using script path for consumer version '%s'\n", dc.targetConfig.consumerVersion)
 		path = "/consumer/testnet-scripts"
 	}
 	return strings.Join([]string{path, script}, string(os.PathSeparator))

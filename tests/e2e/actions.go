@@ -486,8 +486,8 @@ type StartConsumerChainAction struct {
 
 // Transform consumer genesis content from older version
 func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []byte, target ExecutionTarget) []byte {
-	log.Print("Transforming consumer genesis")
-	log.Printf("Original ccv genesis: %s\n", string(genesis))
+	fmt.Println("Transforming consumer genesis")
+	fmt.Printf("Original ccv genesis: %s\n", string(genesis))
 
 	fileName := "consumer_genesis.json"
 	file, err := os.CreateTemp("", fileName)
@@ -519,13 +519,13 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 	if err != nil {
 		log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(result))
 	}
-	log.Printf("Transformed genesis is: %s", string(result))
+	fmt.Printf("Transformed genesis is: %s\n", string(result))
 	return result
 }
 
 // Get consumer genesis from provider
 func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID, target ExecutionTarget) string {
-	log.Print("Exporting consumer genesis from provider")
+	fmt.Println("Exporting consumer genesis from provider")
 	providerBinaryName := tr.chainConfigs[providerChain].BinaryName
 
 	cmd := target.ExecCommand(
@@ -555,7 +555,7 @@ func (tr *TestConfig) startConsumerChain(
 	target ExecutionTarget,
 	verbose bool,
 ) {
-	log.Printf("Starting consumer chain %s", action.ConsumerChain)
+	fmt.Println("Starting consumer chain ", action.ConsumerChain)
 	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.ConsumerChain, target)
 	consumerGenesisChanges := tr.chainConfigs[action.ConsumerChain].GenesisChanges
 	if consumerGenesisChanges != "" {
