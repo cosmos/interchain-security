@@ -29,6 +29,8 @@ import (
 // Note: This method implements SpawnConsumerChainProposalHandler in spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
 // Spec tag: [CCV-PCF-HCAPROP.1]
+// PSS-NOTES: If using "governance piggybacking" method, we will need to call gov.GetVotes here to get votes which will
+// tell us which vals have voted YES/NO/ABSTAIN to find out who to opt in.
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
 	// verify the consumer addition proposal execution
 	// in cached context and discard the cached writes
@@ -54,6 +56,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 // Spec tag: [CCV-PCF-CRCLIENT.1]
 // PSS-NOTES: This will probably need to be called by a transaction handler instead of a gov proposal handler
 // Need logic to overwrite permissionless consumer chains with permissioned top-n consumer chains
+// Unless we use the "governance piggybacking" method described in the spec
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditionProposal) error {
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
