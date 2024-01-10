@@ -53,6 +53,14 @@ There will be some tricky edge cases around preventing squatting and griefing ch
 - Governance gated top-n consumer chains should be able to overwrite the chain ID of a permissionless consumer chain.
 - We may want to think about how to clean up consumer chains, in case someone is registering hundreds of chain IDs without running any real chains.
 
+#### Alternative governance based consumer addition
+
+Another design would be to require all consumer chains to make a governance proposal. This proposal would need to pass for the chain to launch, but it would obligate all validators to run the chain like in Replicated Security (unless top n was being used etc). Instead, all validators who voted "YES" would be opted in, and validators who voted "ABSTAIN" would not be opted in.
+
+This would mean that the barrier to joining as a consumer chain would just be to pass quorum.
+
+This may also simplify implementation. We don't have to worry about chain ID squatting any more, and we can probably reuse more of the governance related logic.
+
 ### Rewards
 
 When rewards are received, they need to be allocated to the opted-in set of the consumer chain, instead of the whole Hub. Luckily this is easy with SDK 47.
