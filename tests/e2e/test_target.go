@@ -94,6 +94,7 @@ func (dc *DockerContainer) Build() error {
 	if err != nil {
 		return err
 	}
+	dc.images = append(dc.images, providerImageName)
 
 	// build combined image using provider/consumer versions from images built above
 	combinedImageName := fmt.Sprintf("cosmos-ics-combined:%s_%s",

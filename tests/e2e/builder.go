@@ -17,7 +17,7 @@ func setupWorkSpace(revision string) (string, error) {
 		return "", fmt.Errorf("error creating temp directory %v", err)
 	}
 
-	fmt.Printf("Setting up worktree in '%s'", workSpace)
+	fmt.Printf("Setting up worktree in '%s'\n", workSpace)
 
 	cmd := exec.Command("git", "worktree", "add",
 		"--checkout", workSpace, revision)
