@@ -4,10 +4,12 @@ install: go.sum
 		export GOFLAGS='-buildmode=pie'
 		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
-		go install $(BUILD_FLAGS) ./cmd/interchain-security-pd
-		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
-		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
-		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
+		go install $(BUILD_FLAGS) ./cmd/providerd
+		go install $(BUILD_FLAGS) ./cmd/consumerd
+		go install $(BUILD_FLAGS) ./cmd/democracyd
+		go install $(BUILD_FLAGS) ./cmd/sovereignd
+
+
 
 # run all tests: unit, integration, diff, and E2E
 test: test-unit test-integration test-mbt test-e2e

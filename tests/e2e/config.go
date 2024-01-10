@@ -161,10 +161,11 @@ func SlashThrottleTestConfig() TestConfig {
 			Now:           time.Now(),
 		},
 		validatorConfigs: getDefaultValidators(),
+
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -177,9 +178,10 @@ func SlashThrottleTestConfig() TestConfig {
 					".app_state.provider.params.slash_meter_replenish_fraction = \"0.10\" | " +
 					".app_state.provider.params.slash_meter_replenish_period = \"20s\"",
 			},
+
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
-				BinaryName:     "interchain-security-cd",
+				BinaryName:     "consumerd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -210,7 +212,7 @@ func DefaultTestConfig() TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -225,7 +227,7 @@ func DefaultTestConfig() TestConfig {
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
-				BinaryName:     "interchain-security-cd",
+				BinaryName:     "consumerd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -268,7 +270,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -282,7 +284,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 			},
 			ChainID("democ"): {
 				ChainId:        ChainID("democ"),
-				BinaryName:     "interchain-security-cdd",
+				BinaryName:     "democracyd",
 				IpPrefix:       "7.7.9",
 				VotingWaitTime: 20,
 				GenesisChanges: consumerGenChanges,
@@ -308,7 +310,7 @@ func MultiConsumerTestConfig() TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"30s\" | " +
@@ -322,7 +324,7 @@ func MultiConsumerTestConfig() TestConfig {
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
-				BinaryName:     "interchain-security-cd",
+				BinaryName:     "consumerd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -331,9 +333,10 @@ func MultiConsumerTestConfig() TestConfig {
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
+
 			ChainID("densu"): {
 				ChainId:        ChainID("densu"),
-				BinaryName:     "interchain-security-cd",
+				BinaryName:     "consumerd",
 				IpPrefix:       "7.7.9",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -363,7 +366,7 @@ func ChangeoverTestConfig() TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
-				BinaryName:     "interchain-security-pd",
+				BinaryName:     "providerd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -378,8 +381,8 @@ func ChangeoverTestConfig() TestConfig {
 			},
 			ChainID("sover"): {
 				ChainId:        ChainID("sover"),
-				BinaryName:     "interchain-security-sd",
-				UpgradeBinary:  "interchain-security-cdd",
+				BinaryName:     "sovereignd",
+				UpgradeBinary:  "consumerd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +

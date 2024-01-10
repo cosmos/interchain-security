@@ -10,8 +10,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 
-	democracyante "github.com/cosmos/interchain-security/v3/app/consumer-democracy/ante"
 	consumerante "github.com/cosmos/interchain-security/v3/app/consumer/ante"
+	democracyante "github.com/cosmos/interchain-security/v3/app/democracy/ante"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 )
 

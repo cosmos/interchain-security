@@ -46,10 +46,13 @@ COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
 COPY --from=cometmock-builder /usr/local/bin/cometmock /usr/local/bin/cometmock
 COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
 
-COPY --from=is-builder /go/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
-COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
-COPY --from=is-builder /go/bin/interchain-security-cdd /usr/local/bin/interchain-security-cdd
-COPY --from=is-builder /go/bin/interchain-security-sd /usr/local/bin/interchain-security-sd
+COPY --from=is-builder /go/bin/providerd /usr/local/bin/providerd
+COPY --from=is-builder /go/bin/consumerd /usr/local/bin/consumerd
+COPY --from=is-builder /go/bin/democracyd /usr/local/bin/democracyd
+COPY --from=is-builder /go/bin/sovereignd /usr/local/bin/sovereignd
+
+
+
 
 # Copy in the shell scripts that run the testnet
 ADD ./tests/e2e/testnet-scripts /testnet-scripts

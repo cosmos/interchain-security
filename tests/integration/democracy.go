@@ -19,7 +19,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
-type ConsumerDemocracyTestSuite struct {
+type DemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	consumerChain *ibctesting.TestChain
@@ -27,12 +27,12 @@ type ConsumerDemocracyTestSuite struct {
 	setupCallback DemocSetupCallback
 }
 
-// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
+// NewCCVTestSuite returns a new instance of DemocracyTestSuite,
 // ready to be tested against using suite.Run().
 func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 	democConsumerAppIniter icstestingutils.ValSetAppIniter,
-) *ConsumerDemocracyTestSuite {
-	democSuite := new(ConsumerDemocracyTestSuite)
+) *DemocracyTestSuite {
+	democSuite := new(DemocracyTestSuite)
 
 	democSuite.setupCallback = func(s *suite.Suite) (
 		*ibctesting.Coordinator,
@@ -62,13 +62,13 @@ type DemocSetupCallback func(s *suite.Suite) (
 )
 
 // SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
-func (suite *ConsumerDemocracyTestSuite) SetupTest() {
+func (suite *DemocracyTestSuite) SetupTest() {
 	// Instantiate new test utils using callback
 	suite.coordinator, suite.consumerChain,
 		suite.consumerApp = suite.setupCallback(&suite.Suite)
 }
 
-func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
+func (s *DemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	s.consumerChain.NextBlock()
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
@@ -146,7 +146,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	}
 }
 
-func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
+func (s *DemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
 	params := govKeeper.GetParams(s.consumerCtx())
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
@@ -260,6 +260,6 @@ func getAccountsBalances(ctx sdk.Context, bankKeeper testutil.TestBankKeeper, bo
 	return accountsBalances
 }
 
-func (s *ConsumerDemocracyTestSuite) consumerCtx() sdk.Context {
+func (s *DemocracyTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }

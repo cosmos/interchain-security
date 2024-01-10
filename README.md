@@ -17,7 +17,7 @@ For a list of **major ICS features** available in the currently active releases,
 
 ## Instructions
 
-**Prerequisites**
+### Prerequisites
 
 ```bash
 ## For OSX or Linux
@@ -30,15 +30,15 @@ brew install jq
 
 ```
 
-**Installing and running binaries**
+### Installing and running binaries
 
 ```bash
-# install interchain-security-pd and interchain-security-cd binaries
+# install provider and consumer binaries
 make install
 # run provider
-interchain-security-pd
+providerd
 # run consumer
-interchain-security-cd
+consumerd
 # (if the above fail, ensure ~/go/bin on $PATH)
 export PATH=$PATH:$(go env GOPATH)/bin
 ```

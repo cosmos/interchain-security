@@ -18,7 +18,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/democracy"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/democracy"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
 	integr "github.com/cosmos/interchain-security/v3/tests/integration"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
