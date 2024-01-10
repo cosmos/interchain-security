@@ -11,14 +11,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.20" # The Go version to download (if necessary) and use.
+          go-version: "1.21" # The Go version to download (if necessary) and use.
       - name: E2E happy-path test
         run: go run ./tests/e2e/... --tc happy-path
   changeover-test:
@@ -27,14 +27,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.20" # The Go version to download (if necessary) and use.
+          go-version: "1.21" # The Go version to download (if necessary) and use.
       - name: E2E changeover test
         run: go run ./tests/e2e/... --tc changeover
   democracy-reward-test:
@@ -43,14 +43,14 @@ jobs:
       steps:
         - uses: actions/setup-go@v5
           with:
-            go-version: "1.20"
+            go-version: "1.21"
         - uses: actions/checkout@v4
         - name: Checkout LFS objects
           run: git lfs checkout
         - name: Setup Go
           uses: actions/setup-go@v5
           with:
-            go-version: "1.20" # The Go version to download (if necessary) and use.
+            go-version: "1.21" # The Go version to download (if necessary) and use.
         - name: E2E democracy-reward tests
           run: go run ./tests/e2e/... --tc democracy-reward
   democracy-test:
@@ -59,14 +59,14 @@ jobs:
       steps:
         - uses: actions/setup-go@v5
           with:
-            go-version: "1.20"
+            go-version: "1.21"
         - uses: actions/checkout@v4
         - name: Checkout LFS objects
           run: git lfs checkout
         - name: Setup Go
           uses: actions/setup-go@v5
           with:
-            go-version: "1.20" # The Go version to download (if necessary) and use.
+            go-version: "1.21" # The Go version to download (if necessary) and use.
         - name: E2E democracy tests
           run: go run ./tests/e2e/... --tc democracy
   slash-throttle-test:
@@ -75,14 +75,14 @@ jobs:
       steps:
         - uses: actions/setup-go@v5
           with:
-            go-version: "1.20"
+            go-version: "1.21"
         - uses: actions/checkout@v4
         - name: Checkout LFS objects
           run: git lfs checkout
         - name: Setup Go
           uses: actions/setup-go@v5
           with:
-            go-version: "1.20" # The Go version to download (if necessary) and use.
+            go-version: "1.21" # The Go version to download (if necessary) and use.
         - name: E2E slash-throttle tests
           run: go run ./tests/e2e/... --tc slash-throttle
   multiconsumer-test:
@@ -91,13 +91,13 @@ jobs:
       steps:
         - uses: actions/setup-go@v5
           with:
-            go-version: "1.20"
+            go-version: "1.21"
         - uses: actions/checkout@v4
         - name: Checkout LFS objects
           run: git lfs checkout
         - name: Setup Go
           uses: actions/setup-go@v5
           with:
-            go-version: "1.20" # The Go version to download (if necessary) and use.
+            go-version: "1.21" # The Go version to download (if necessary) and use.
         - name: E2E multi-consumer tests
           run: go run ./tests/e2e/... --tc multiconsumer
