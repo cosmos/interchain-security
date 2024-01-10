@@ -107,6 +107,9 @@ module ccv_types {
 
             // Stores the key assignments that need to be replaced in the current block.
             // Needed to apply the key assignments received in a block to the validator updates sent to the consumer chains.
+            // This is necessary because
+            // a key assignment itself triggers validator updates
+            //(old key to 0 power, new key to current power)
             keyAssignmentReplacements: Chain -> (Node -> (ConsumerAddr, Power)),
 
             // Stores the mapping from VSC ids to consumer validators addresses. Needed for pruning ValidatorByConsumerAddr.
@@ -339,7 +342,7 @@ module ccv {
                         // the validator has positive power and is not already in the key assignment replacements
                         currentState.providerState.keyAssignmentReplacements.put(
                             consumer,
-                            currentState.providerState.keyAssignmentReplacements.get(consumer).put(
+                            currentState.providerState.keyAssignmentReplacements.getOrElse(consumer, Map()).put(
                                 providerNode,
                                 (oldConsAddr, provValPower)
                             )
@@ -362,15 +365,35 @@ module ccv {
                     )
                 )
 
-                Err(":(")
+                pure val newValidatorByConsumerAddr = currentState.providerState.validatorByConsumerAddr.get(consumer).put(
+                    consumerAddr,
+                    currentState.providerState.validatorByConsumerAddr.get(consumer).put(
+                        providerNode,
+                        consumerAddr
+                    )
+                )
+
+                pure val newProviderState = tmpStateAfterKeyAssignmentReplacement.providerState.with(
+                    "validatorConsumerPubKey", newValidatorConsumerPubKey
+                ).with(
+                    "validatorByConsumerAddr", newValidatorByConsumerAddr
+                )
+
+                Ok(
+                    tmpStateAfterKeyAssignmentReplacement.with(
+                        "providerState", newProviderState
+                    )
+                )
             }
         }
     }
 
+    // Appends the key assignment for the given oldConsAddr on the consumer by a validator
+    // to be pruned when a VscMaturedPacket for the current runningVscId is received from the consumer.
     pure def AppendConsumerAddrToPrune(currentState: ProtocolState, oldConsAddr: ConsumerAddr, consumer: Chain): ProtocolState = {
         pure val vscId = currentState.providerState.runningVscId
-        pure val consumerAddrsToPrune = currentState.providerState.consumerAddrsToPrune.get(consumer)
-        pure val prevConsAddrs = consumerAddrsToPrune.get(oldConsAddr).getOrElse(vscId, [])
+        pure val consumerAddrsToPrune = currentState.providerState.consumerAddrsToPrune.getOrElse(consumer, Map())
+        pure val prevConsAddrs = consumerAddrsToPrune.getOrElse(oldConsAddr, Map()).getOrElse(vscId, [])
 
         pure val newConsAddrsToPrune = consumerAddrsToPrune.put(vscId, prevConsAddrs.append(oldConsAddr))
 
@@ -758,7 +781,10 @@ module ccv {
                 isRunningConsumer(consumer, providerState)) {
                 List({
                         id: providerState.runningVscId,
-                        validatorSet: providerState.chainState.currentValidatorSet,
+                        validatorSet: providerState.applyKeyAssignmentToValSet(
+                            consumer, 
+                            providerState.chainState.currentValidatorSet
+                        ),
                         sendingTime: sendingTimestamp,
                         timeoutTime: sendingTimestamp + CcvTimeout.get(PROVIDER_CHAIN)
                 })
@@ -784,7 +810,58 @@ module ccv {
             sentVscPacketsToConsumer: newSentVscPackets,
             providerValidatorSetChangedInThisBlock: false,
             runningVscId: providerState.runningVscId + 1,
+            // key assignment replacements were performed, so we can clear them
+            keyAssignmentReplacements: Map(),
         }
+    }
+
+    // Takes the current provider state and validator set and returns 
+    // the validator set under the current the key assignments for the given consumer, as stored in the provider state.
+    pure def applyKeyAssignmentToValSet(
+        providerState: ProviderState,
+        consumer: Chain,
+        valSet: ValidatorSet
+    ): ValidatorSet = {
+        // map each validator in the valSet to a set of
+        // new updates. necessary to allow one validator to generate multiple updates,
+        // which in turn is needed when someone changes keys
+        // (set old key to 0, new key to current power)
+        pure val newValSet = valSet.keys().map(
+            (node) => 
+            pure val power = valSet.get(node)
+            pure val keyAssignmentReplacements = providerState.keyAssignmentReplacements.getOrElse(consumer, Map())
+            if(keyAssignmentReplacements.keys().contains(node)) {
+                // there is a KeyAssignmentReplacement
+                pure val replacement = keyAssignmentReplacements.get(node)
+                pure val oldConsAddr = replacement._1
+                // set old key to 0
+                pure val oldToZero = (oldConsAddr, 0)
+                // set new key to current power
+                pure val newToPower = (node, power)
+                Set(oldToZero, newToPower)
+            } else {
+                // no replacement
+                // check if the validator has a key assigned
+                pure val validatorConsumerPubKey = providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+                if (validatorConsumerPubKey.keys().contains(node)) {
+                    // the validator has a key assigned
+                    pure val consAddr = validatorConsumerPubKey.get(node)
+                    Set((consAddr, power))
+                } else {
+                    // the validator has no key assigned
+                    // use the default key
+                    Set((node, power))
+                }
+            }
+        )
+        // flatten the map of sets into a set
+        pure val flattened = newValSet.flatten()
+
+        // create a map from the set
+        flattened.fold(
+            Map(),
+            (acc, pair) => acc.put(pair._1, pair._2)
+        )
     }
 
     // receives a given packet (sent by the provider) on the consumer. The arguments are the consumer chain that is receiving the packet, and the packet itself.
@@ -842,7 +919,48 @@ module ccv {
                     sentVscPacketsToConsumer: currentState.providerState.sentVscPacketsToConsumer.set(sender, newSentVscPacket)
                     }
             )
-            Ok(newState)
+
+            // prune assigned keys that are no longer needed
+
+            // get the keys that should be pruned
+            pure val consumerAddrsToPrune = 
+                currentState.providerState.consumerAddrsToPrune
+                    .getOrElse(sender, Map())
+                    .getOrElse(packet.id, List()).toSet()
+
+            // actually do the pruning
+            pure val senderValByConsAddr = 
+                newState.providerState.validatorByConsumerAddr.getOrElse(sender, Map())
+            pure val newSenderValByConsAddr =
+                senderValByConsAddr.keys().filter(
+                    consAddr => not(consumerAddrsToPrune.contains(consAddr))
+                ).mapBy(
+                    consAddr => senderValByConsAddr.get(consAddr)
+                )
+
+            // update the provider state
+            pure val newProviderState2 = newState.providerState.with(
+                // update the validatorByConsumerAddr map to remove the pruned keys
+                "validatorByConsumerAddr", 
+                newState.providerState.validatorByConsumerAddr.put(sender, newSenderValByConsAddr)
+            ).with(
+                // delete the consumer addresses to prune, since they are pruned now
+                "consumerAddrsToPrune", 
+                newState.providerState.consumerAddrsToPrune.put(
+                    sender, 
+                    newState.providerState.consumerAddrsToPrune.getOrElse(sender, Map()).put(
+                        packet.id, 
+                        List()
+                    )
+                )
+            )
+
+            // update the state
+            pure val newState2 = newState.with(
+                "providerState", newProviderState2
+            )
+
+            Ok(newState2)
         }
     }
 

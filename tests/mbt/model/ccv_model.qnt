@@ -14,6 +14,8 @@ module ccv_model {
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
+    // possible consumer addresses that nodes can assign their key to
+    pure val consumerAddresses = Set("consAddr1", "consAddr2", "consAddr3", "consAddr4", "consAddr5", "consAddr6", "consAddr7", "consAddr8", "consAddr9", "consAddr10")
     pure val InitialValidatorSet = nodes.mapBy(node => 100)
 
     import ccv(
@@ -56,6 +58,7 @@ module ccv_model {
             consumersToStop: Set[Chain],
             validator: Node,
             changeAmount: int,
+            consumerAddr: ConsumerAddr,
         }
     
 
@@ -70,7 +73,7 @@ module ccv_model {
     // otherwise connections will break down.
     pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour)
 
-    pure def emptyAction =
+    pure def emptyAction: Action =
             {
                 kind: "",
                 consumerChain: "",
@@ -79,6 +82,7 @@ module ccv_model {
                 consumersToStop: Set(),
                 validator: "",
                 changeAmount: 0,
+                consumerAddr: "",
             }
 
 
@@ -179,6 +183,27 @@ module ccv_model {
             params' = params,
         }
 
+    action KeyAssignment(
+        chain: Chain,
+        validator: Node,
+        consumerAddr: ConsumerAddr
+    ): bool =
+        val result = assignConsumerKey(currentState, chain, validator, consumerAddr)
+        all {
+            result.hasError() == false,
+            currentState' = result.newState,
+            trace' = trace.append(
+                {...emptyAction,
+                kind: "KeyAssignment",
+                consumerChain: chain,
+                validator: validator,
+                consumerAddr: consumerAddr
+                }
+            ),
+            params' = params,
+        }
+
+
      // stepCommon is the core functionality of steps that does not have anything to do with time.
     action stepCommon = any {
         nondet node = oneOf(nodes)
@@ -202,6 +227,18 @@ module ccv_model {
             nondet receiver = oneOf(runningConsumers)
             DeliverVscPacket(receiver),
         },
+
+        // all {
+        //     // ensure there is a consumer that either
+        //     // runs right now or can run in the future
+        //     // (otherwise all consumers are stopped, so we don't need to assign any keys)
+        //     runningConsumers.size() + nonConsumers.size() > 0,
+        //     nondet consumer = oneOf(runningConsumers.union(nonConsumers))
+        //     nondet node = oneOf(nodes)
+        //     nondet address = oneOf(consumerAddresses)
+        //     // do a key assignment
+        //     KeyAssignment(consumer, node, address),
+        // }
     }
 
     // step allows the most generic nondeterminism, in particular it becomes relatively likely
