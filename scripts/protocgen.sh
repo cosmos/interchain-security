@@ -16,6 +16,6 @@ done
 cd ..
 
 # move proto files to the right places
-cp -r github.com/cosmos/interchain-security/v3/* ./
+cp -r github.com/cosmos/interchain-security/v4/* ./
 rm -rf github.com
 

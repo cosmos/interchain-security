@@ -7,9 +7,9 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	"github.com/cosmos/interchain-security/v4/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // Tests that UpdateSmallestNonOptOutPower updates the smallest validator power that cannot soft opt out.

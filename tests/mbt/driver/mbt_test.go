@@ -19,7 +19,7 @@ import (
 
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 const verbose = false

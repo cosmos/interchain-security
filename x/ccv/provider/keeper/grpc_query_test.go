@@ -5,10 +5,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
