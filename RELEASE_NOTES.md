@@ -1,37 +1,17 @@
-<!--
-  A release notes template that should be adapted for every release
-    - release: <v*.*.*>
-    - release branch: <v*.x>
-    - the last release: <v-last> 
-    - the last release branch: <v-last.x>
--->
-
-# Replicated Security <v*.*.*>  Release Notes
-
-<!--
-  Please indicate whether this release is relevant to consumers or providers.
--->
-❗ ***Note this release is ONLY relevant to <consumers/providers>***
+# Replicated Security v4.0.0 Release Notes
 
 ## 📝 Changelog
-** REMOVE THE LINE BELOW TO ENABLE THE MARKDOWN LINK CHECKER FOR RELEASE **
-<!-- markdown-link-check-disable -->
-
-Check out the [changelog](https://github.com/cosmos/interchain-security/blob/<v*.*.*>/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/release/<v-last>...<v*.*.*>) from last release.
+Check out the [changelog](https://github.com/cosmos/interchain-security/blob/v4.0.0/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/v3.3.0...v4.0.0) from last release.
 
 <!-- Add the following line for major releases -->
-Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/<v*.x>/UPGRADING.md) when migrating from `<v-last.x>` to `<v*.x>`.
+Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/v4.0.x/UPGRADING.md) when migrating 
+from a version `>= v3.1.x` to `v4.0.x`.
 
-** REMOVE THE LINE BELOW TO ENABLE THE MARKDOWN LINK CHECKER FOR RELEASE **
-<!-- markdown-link-check-enable -->
 ## 🚀 Highlights
 
-<!-- Add any highlights of this release -->
+This release introduces the following noteworthy changes:
 
-## ❤️ Contributors
-<!-- markdown-link-check-disable -->
-* Informal Systems ([@informalinc](https://twitter.com/informalinc))
-<!-- markdown-link-check-enable -->
+- It sets the minimum required version of Go to `1.21`.
+- It adds the provider-side changes for jail throttling with retries and, as a result, it fully enables the jail throttling with retries feature (cf. [ADR 008](https://github.com/cosmos/interchain-security/blob/release/v3.2.x/docs/docs/adrs/adr-008-throttle-retries.md)).
+- Fixes a bug in the soft opt-out protocol -- it avoids jailing validators immediately once they can no longer opt-out from validating consumer chains.
 
-This list is non-exhaustive and ordered alphabetically.  
-Thank you to everyone who contributed to this release!
