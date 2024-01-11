@@ -544,7 +544,7 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 	}
 	defer file.Close()
-	err = os.WriteFile(file.Name(), genesis, 0644)
+	err = os.WriteFile(file.Name(), genesis, 0600)
 	if err != nil {
 		log.Fatalf("Failed writing consumer genesis to file: %v", err)
 	}

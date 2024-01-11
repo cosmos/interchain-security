@@ -284,10 +284,15 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []t
 }
 
 func deleteTargets(targets []ExecutionTarget) error {
+	var rc error = nil
 	for _, target := range targets {
-		target.Delete()
+		if err := target.Delete(); err != nil {
+			rc = err
+			log.Println("error deleting target: ", err)
+		}
+
 	}
-	return nil
+	return rc
 }
 
 // Create targets where test cases should be executed on
@@ -311,7 +316,7 @@ func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTa
 			target := DockerContainer{targetConfig: targetCfg}
 			err := target.Build()
 			if err != nil {
-				deleteTargets(targets)
+				_ = deleteTargets(targets)
 				return nil, err
 			}
 			targets = append(targets, &target)
@@ -389,7 +394,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed creating test targets: ", err)
 	}
-	defer func() { deleteTargets(targets) }()
+	defer func() { _ = deleteTargets(targets) }()
 
 	testRunners := createTestRunners(targets, testCases)
 	start := time.Now()

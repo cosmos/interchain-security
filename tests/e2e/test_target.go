@@ -102,6 +102,7 @@ func (dc *DockerContainer) Build() error {
 	combinedImageName := fmt.Sprintf("cosmos-ics-combined:%s_%s",
 		strings.Split(providerImageName, ":")[1],
 		strings.Split(consumerImageName, ":")[1])
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "build", "-f", "Dockerfile.combined",
 		"--build-arg", fmt.Sprintf("PROVIDER_IMAGE=%s", providerImageName),
 		"--build-arg", fmt.Sprintf("CONSUMER_IMAGE=%s", consumerImageName),
@@ -119,6 +120,7 @@ func (dc *DockerContainer) Build() error {
 
 func (dc *DockerContainer) Delete() error {
 	for _, img := range dc.images {
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with variable
 		cmd := exec.Command("docker", "image", "rm", img)
 		out, err := cmd.CombinedOutput()
 		//TODO: ignore errors related to non-existing images
@@ -134,6 +136,7 @@ func (dc *DockerContainer) Delete() error {
 func (dc *DockerContainer) ExecCommand(name string, arg ...string) *exec.Cmd {
 	args := []string{"exec", dc.containerCfg.InstanceName, name}
 	args = append(args, arg...)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	return exec.Command("docker", args...)
 }
 
@@ -165,12 +168,15 @@ func (dc *DockerContainer) GetTestScriptPath(isConsumer bool, script string) str
 func (dc *DockerContainer) Start() error {
 	fmt.Println("Starting container: ", dc.containerCfg.InstanceName)
 	// Remove existing containers from previous runs
-	dc.Stop()
+	if err := dc.Stop(); err != nil {
+		return err
+	}
 
 	// Run new test container instance with extended privileges.
 	// Extended privileges are granted to the container here to allow for network namespace manipulation (bringing a node up/down)
 	// See: https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
 	beaconScript := dc.GetTestScriptPath(false, "beacon.sh")
+	//#nosec G204 -- subprocess launched with potential tainted input (no production code)
 	cmd := exec.Command("docker", "run", "--name", dc.containerCfg.InstanceName,
 		"--cap-add=NET_ADMIN", "--privileged", dc.ImageName,
 		"/bin/bash", beaconScript)
@@ -214,6 +220,7 @@ func (dc *DockerContainer) Stop() error {
 		return fmt.Errorf("error stopping docker container: %v, %s", err, string(bz))
 	}
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd = exec.Command("docker", "rm", dc.containerCfg.InstanceName)
 	bz, err = cmd.CombinedOutput()
 	if err != nil {

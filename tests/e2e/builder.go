@@ -10,7 +10,7 @@ import (
 )
 
 // setupWorkSpace checks out given revision in a tmp directory
-// and returns path where the workspace is located
+// and returns the path where the workspace is located
 func setupWorkSpace(revision string) (string, error) {
 	workSpace, err := os.MkdirTemp(os.TempDir(), "e2eWorkTree_")
 	if err != nil {
@@ -19,6 +19,7 @@ func setupWorkSpace(revision string) (string, error) {
 
 	fmt.Printf("Setting up worktree in '%s'\n", workSpace)
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with variable
 	cmd := exec.Command("git", "worktree", "add",
 		"--checkout", workSpace, revision)
 	out, err := cmd.CombinedOutput()
@@ -87,6 +88,7 @@ func buildDockerImage(imageName, revision string, targetCfg TargetConfig) error 
 	}
 	if targetCfg.localSdkPath != "" {
 		fmt.Printf("Using local SDK version from %s\n", targetCfg.localSdkPath)
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 		cmd := exec.Command("cp", "-n", "-r", targetCfg.localSdkPath, sdkPath)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
