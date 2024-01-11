@@ -4,7 +4,7 @@ This guide provides instructions for upgrading to specific versions of Replicate
 
 ## [v4.0.x](https://github.com/cosmos/interchain-security/tree/release/v4.0.x)
 
-`v4.0.x` sets the required minimum version of Go to `1.21`, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/go.mod#L3. 
+`v4.0.x` sets the minimum required version of Go to `1.21`, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/go.mod#L3. 
 
 ### Provider 
 
