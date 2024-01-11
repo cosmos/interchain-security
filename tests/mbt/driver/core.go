@@ -149,7 +149,10 @@ func (s *Driver) delegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
-	server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	if err != nil {
+		log.Println("error when delegating (is this expected?): ", err)
+	}
 }
 
 // undelegate undelegates amt tokens from validator val
@@ -160,7 +163,10 @@ func (s *Driver) undelegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
-	server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	if err != nil {
+		log.Println("error when undelegating (is this expected?): ", err)
+	}
 }
 
 // packetQueue returns the queued packets from sender to receiver,
