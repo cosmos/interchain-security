@@ -18,14 +18,6 @@ pull_request_rules:
       backport:
         branches:
           - release/v2.0.x
-  - name: Backport patches to the release/v2.0.x-lsm branch
-    conditions:
-      - base=main
-      - label=A:backport/v2.0.x-lsm
-    actions:
-      backport:
-        branches:
-          - release/v2.0.x-lsm
   - name: Backport patches to the release/v2.4.x-lsm branch
     conditions:
       - base=main
@@ -34,14 +26,6 @@ pull_request_rules:
       backport:
         branches:
           - release/v2.4.x-lsm
-  - name: Backport patches to the release/v3.0.x branch
-    conditions:
-      - base=main
-      - label=A:backport/v3.0.x
-    actions:
-      backport:
-        branches:
-          - release/v3.0.x
   - name: Backport patches to the release/v3.1.x branch
     conditions:
       - base=main
@@ -66,3 +50,11 @@ pull_request_rules:
       backport:
         branches:
           - release/v3.3.x
+  - name: Backport patches to the release/v4.0.x branch
+    conditions:
+      - base=main
+      - label=A:backport/v4.0.x
+    actions:
+      backport:
+        branches:
+          - release/v4.0.x
