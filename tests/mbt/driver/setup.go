@@ -28,11 +28,11 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
-	"github.com/cosmos/interchain-security/v3/testutil/integration"
-	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v4/testutil/integration"
+	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 const (
@@ -356,10 +356,11 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		NewChain: consumerGenesis.NewChain,
 	}
 
-	s.providerKeeper().SetConsumerGenesis(
+	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),
 		string(consumerChainId),
 		consumerGenesisForProvider)
+	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.

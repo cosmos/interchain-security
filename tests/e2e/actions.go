@@ -16,9 +16,9 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 type SendTokensAction struct {

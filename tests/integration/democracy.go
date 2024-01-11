@@ -14,9 +14,9 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 )
 
 type ConsumerDemocracyTestSuite struct {
