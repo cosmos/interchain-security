@@ -216,15 +216,15 @@ func (dc *DockerContainer) Stop() error {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "stop", dc.containerCfg.InstanceName)
 	bz, err := cmd.CombinedOutput()
-	if err != nil {
+	if err != nil && !strings.Contains(string(bz), "No such container") {
 		return fmt.Errorf("error stopping docker container: %v, %s", err, string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd = exec.Command("docker", "rm", dc.containerCfg.InstanceName)
 	bz, err = cmd.CombinedOutput()
-	if err != nil {
+	if err != nil && !strings.Contains(string(bz), "No such container") {
 		return fmt.Errorf("error removing docker container: %v, %s", err, string(bz))
 	}
-	return err
+	return nil
 }
