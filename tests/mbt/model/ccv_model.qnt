@@ -228,17 +228,17 @@ module ccv_model {
             DeliverVscPacket(receiver),
         },
 
-        // all {
-        //     // ensure there is a consumer that either
-        //     // runs right now or can run in the future
-        //     // (otherwise all consumers are stopped, so we don't need to assign any keys)
-        //     runningConsumers.size() + nonConsumers.size() > 0,
-        //     nondet consumer = oneOf(runningConsumers.union(nonConsumers))
-        //     nondet node = oneOf(nodes)
-        //     nondet address = oneOf(consumerAddresses)
-        //     // do a key assignment
-        //     KeyAssignment(consumer, node, address),
-        // }
+        all {
+            // ensure there is a consumer that either
+            // runs right now or can run in the future
+            // (otherwise all consumers are stopped, so we don't need to assign any keys)
+            runningConsumers.size() + nonConsumers.size() > 0,
+            nondet consumer = oneOf(runningConsumers.union(nonConsumers))
+            nondet node = oneOf(nodes)
+            nondet address = oneOf(consumerAddresses)
+            // do a key assignment
+            KeyAssignment(consumer, node, address),
+        }
     }
 
     // step allows the most generic nondeterminism, in particular it becomes relatively likely
@@ -667,6 +667,33 @@ module ccv_model {
                     chain => currentState.providerState.consumerStatus.get(chain) == TIMEDOUT
                 )),
                 VotingPowerChange("node1", 50) // action needs to be there but does not matter what it is
+            }
+        )
+
+    // == tests for key assignment ==
+    
+    run KeyAssignmentTest =
+        init
+        .then(
+            // start all consumer chains
+            EndAndBeginBlockForProvider(1 * Second, ConsumerChains, Set())
+        )
+        .then(
+            // node 1 assigns a key on consumer1
+            KeyAssignment("consumer1", "node1", "consAddr1")
+        )
+        .then(
+            // end and begin block to make sure the key assignment is processed
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        ).then(
+            all {
+                // the key should be present in the valset on the consumer, and the node itself should not
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("node1") == 0),
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
+                // try some key assignments that should fail/succeed without comitting to state
+                pure val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
+                // fail - key already assigned (even if it is the same node)
+                VotingPowerChange("node1", 50) 
             }
         )
 }
