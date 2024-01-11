@@ -28,7 +28,7 @@ func (tr *TestRunner) Run() error {
 	err = tr.testDriver.Run(tr.steps, tr.target, tr.verbose)
 	if err != nil {
 		// not tearing down environment for troubleshooting reasons on container
-		return fmt.Errorf("test run failed: %v", err)
+		return fmt.Errorf("test run '%s' failed: %v", tr.config.name, err)
 	}
 	return tr.teardownEnvironment()
 }

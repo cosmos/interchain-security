@@ -267,6 +267,7 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 		log.Fatal("prop json contains single quote")
 	}
 
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
 	).CombinedOutput()
@@ -402,6 +403,7 @@ func (tr TestConfig) submitParamChangeProposal(
 		log.Fatal("prop json contains single quote")
 	}
 
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json"),
 	).CombinedOutput()
@@ -1814,8 +1816,7 @@ func (tr TestConfig) invokeDoublesignSlash(
 ) {
 	if !tr.useCometmock {
 		chainConfig := tr.chainConfigs[action.Chain]
-		isConsumer := false
-		doubleSignScript := target.GetTestScriptPath(isConsumer, "cause-doublesign.sh")
+		doubleSignScript := target.GetTestScriptPath(false, "cause-doublesign.sh")
 		bz, err := target.ExecCommand("/bin/bash",
 			doubleSignScript, chainConfig.BinaryName, string(action.Validator),
 			string(chainConfig.ChainId), chainConfig.IpPrefix).CombinedOutput()

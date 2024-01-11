@@ -21,14 +21,10 @@ func setupWorkSpace(revision string) (string, error) {
 
 	cmd := exec.Command("git", "worktree", "add",
 		"--checkout", workSpace, revision)
-	var errbuf bytes.Buffer
-	cmd.Stderr = &errbuf
+	out, err := cmd.CombinedOutput()
 	fmt.Printf("Running: %s", cmd.String())
-	if err := cmd.Start(); err != nil {
-		return "", err
-	}
-	if err := cmd.Wait(); err != nil {
-		log.Printf("Error creating worktree (%v): %s", err, errbuf.String())
+	if err != nil {
+		log.Printf("Error creating worktree (%v): %s", err, string(out))
 		return "", err
 	}
 	return workSpace, nil

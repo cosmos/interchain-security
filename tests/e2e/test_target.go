@@ -13,7 +13,9 @@ type ExecutionTarget interface {
 	GetTargetType() string
 	GetLogs(path string) []byte
 	GetTestScriptPath(isConsumer bool, script string) string
+	// ExecCommand: when executed the command will run and return after completion
 	ExecCommand(name string, arg ...string) *exec.Cmd
+	// ExecDetachedCommand: when executed the command will be run in the background and call will return immediately
 	ExecDetachedCommand(name string, args ...string) *exec.Cmd
 	Start() error
 	Stop() error

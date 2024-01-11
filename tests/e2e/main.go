@@ -62,7 +62,7 @@ var (
 var (
 	consumerVersions VersionSet
 	providerVersions VersionSet
-	transformGenesis = flag.Bool("transform-genesis", false, "do consumer genesis transformation for newer clients. Needed when provider chain is on an older version")
+	transformGenesis = flag.Bool("transform-genesis", false, "enforces a consumer app to perform genesis transformation of exported ccv genesis data. For details see compatibility notes (RELEASES.md) of used versions")
 )
 
 var (
@@ -201,8 +201,8 @@ func parseArguments() (err error) {
 	flag.Var(&selectedTestfiles, "test-file",
 		getTestFileUsageString())
 
-	flag.Var(&consumerVersions, "cv", "Consumer version")
-	flag.Var(&providerVersions, "pv", "Provider version")
+	flag.Var(&consumerVersions, "cv", "Version (git tag, revison, branch) of the consumer to be tested. Tests will be run against combinations of all defined provider versions (-pv) with this consumer version. Default: consumer implementation of local workspace")
+	flag.Var(&providerVersions, "pv", "Version (git tag, revison, branch) of the provider to be tested. Tests will be run against combinations of all defined consumer versions (-cv) with this provider version. Default: provider implementation of local workspace")
 
 	flag.Parse()
 
@@ -354,7 +354,13 @@ func executeTests(runners []TestRunner) error {
 			wg.Add(1)
 			go func(runner TestRunner) {
 				defer wg.Done()
-				runner.Run()
+				result := runner.Run()
+				if result != nil {
+					log.Printf("Test '%s' failed", runner.config.name)
+				}
+				if err == nil {
+					err = result
+				}
 			}(runner)
 		} else {
 			fmt.Printf("=============== running %s ===============\n", runner.config.name)
