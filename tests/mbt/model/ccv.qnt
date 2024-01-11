@@ -306,14 +306,14 @@ module ccv {
         } else {
             // rule 2: validator A cannot assign consumer key K to consumer chain X if
             // there is already a validator B using K on X
-            pure val valByConsAddr = currentState.providerState.validatorByConsumerAddr.get(consumer)
+            pure val valByConsAddr = currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map())
             if (valByConsAddr.keys().contains(consumerAddr)) {
                 Err("consumer key is already in use on the consumer chain")
             } else {
                 // this key can be assigned
                 
                 // get the old assigned key
-                pure val consKeyByVal = currentState.providerState.validatorConsumerPubKey.get(consumer)
+                pure val consKeyByVal = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
                 pure val p = if (consKeyByVal.keys().contains(providerNode)) {
                     // providerNode had previously assigned a consumer key
                     (consKeyByVal.get(providerNode), true)
@@ -338,7 +338,7 @@ module ccv {
                 pure val newKeyAssignmentReplacement = 
                     if (provValPower > 0 and
                         not(currentState.providerState.keyAssignmentReplacements.
-                            get(consumer).keys().contains(providerNode))) {
+                            getOrElse(consumer, Map()).keys().contains(providerNode))) {
                         // the validator has positive power and is not already in the key assignment replacements
                         currentState.providerState.keyAssignmentReplacements.put(
                             consumer,
@@ -357,19 +357,19 @@ module ccv {
                     )
                 )
                 
-                pure val newValidatorConsumerPubKey = currentState.providerState.validatorConsumerPubKey.get(consumer).put(
+                pure val newValidatorConsumerPubKey = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map()).put(
                     consumer,
-                    currentState.providerState.validatorConsumerPubKey.get(consumer).put(
+                    currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map()).put(
                         providerNode,
                         consumerAddr
                     )
                 )
 
-                pure val newValidatorByConsumerAddr = currentState.providerState.validatorByConsumerAddr.get(consumer).put(
+                pure val newValidatorByConsumerAddr = currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).put(
                     consumerAddr,
-                    currentState.providerState.validatorByConsumerAddr.get(consumer).put(
-                        providerNode,
-                        consumerAddr
+                    currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).put(
+                        consumerAddr,
+                        providerNode
                     )
                 )
 
@@ -543,7 +543,9 @@ module ccv {
 
         // send vsc packets
         val providerStateAfterSending =
-            if (currentProviderState.providerValidatorSetChangedInThisBlock and 
+            if ((currentProviderState.providerValidatorSetChangedInThisBlock or 
+            currentProviderState.keyAssignmentReplacements.keys().exists(
+                consumer => currentProviderState.keyAssignmentReplacements.get(consumer).keys().size() > 0)) and 
                 // important: check this on the provider state after the consumer advancement, not on the current state.
                 getRunningConsumers(providerStateAfterTimeAdvancement).size() > 0) {
                     // need to use the old timestamp because this happens during EndBlock
@@ -776,8 +778,10 @@ module ccv {
     pure def sendVscPackets(providerState: ProviderState, sendingTimestamp: Time): ProviderState = {
         val newSentPacketsPerConsumer = ConsumerChains.mapBy(
             (consumer) => 
-            // if validator set changed and the consumer is running, send a packet
-            if (providerState.providerValidatorSetChangedInThisBlock and 
+            // if validator set changed (or a key assignment needs to be replaced) and the consumer is running, send a packet
+            if ((providerState.providerValidatorSetChangedInThisBlock or 
+                providerState.keyAssignmentReplacements.getOrElse(consumer, Map()).keys().size() > 0)
+                and 
                 isRunningConsumer(consumer, providerState)) {
                 List({
                         id: providerState.runningVscId,

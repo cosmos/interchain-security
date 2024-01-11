@@ -683,17 +683,42 @@ module ccv_model {
             KeyAssignment("consumer1", "node1", "consAddr1")
         )
         .then(
-            // end and begin block to make sure the key assignment is processed
+            // end and begin block to make sure the key assignment is processed and the packet is sent
             EndAndBeginBlockForProvider(1 * Second, Set(), Set())
-        ).then(
+        )
+        .then(
+            // receive the packet on the consumer
+            DeliverVscPacket("consumer1")
+        )
+        .then(
+            // end and begin block to make sure the packet is processed
+            EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+        )
+        .then(
             all {
                 // the key should be present in the valset on the consumer, and the node itself should not
                 assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("node1") == 0),
                 assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
                 // try some key assignments that should fail/succeed without comitting to state
-                pure val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
+                val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
                 // fail - key already assigned (even if it is the same node)
-                VotingPowerChange("node1", 50) 
+                assert(res.hasError()),
+                val res2 = assignConsumerKey(currentState, "consumer1", "node2", "consAddr1")
+                // fail - key assigned to other node
+                assert(res2.hasError()),
+                val res3 = assignConsumerKey(currentState, "consumer2", "node2", "consAddr1")
+                // fail - may not reuse the key on a different consumer
+                assert(res3.hasError()),
+                val res4 = assignConsumerKey(currentState, "consumer1", "node2", "node1")
+                // fail - may not reuse a provider key of a different val
+                assert(res4.hasError()),
+                val resSucc = assignConsumerKey(currentState, "consumer1", "node1", "consAddr2")
+                // success - assigning unused key to node
+                assert(not(resSucc.hasError())),
+                val resSucc2 = assignConsumerKey(currentState, "consumer1", "node1", "node1")
+                // success - going back to original key
+                assert(not(resSucc2.hasError())),
+                VotingPowerChange("node1", 50) // action does not matter
             }
         )
 }
