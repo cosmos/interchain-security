@@ -366,7 +366,7 @@ module ccv {
                 )
 
                 pure val newValidatorByConsumerAddr = currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).put(
-                    consumerAddr,
+                    consumer,
                     currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).put(
                         consumerAddr,
                         providerNode
@@ -841,7 +841,7 @@ module ccv {
                 // set old key to 0
                 pure val oldToZero = (oldConsAddr, 0)
                 // set new key to current power
-                pure val newToPower = (node, power)
+                pure val newToPower = (providerState.validatorConsumerPubKey.get(consumer).get(node), power)
                 Set(oldToZero, newToPower)
             } else {
                 // no replacement

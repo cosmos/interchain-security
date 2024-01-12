@@ -707,18 +707,32 @@ module ccv_model {
                 // fail - key assigned to other node
                 assert(res2.hasError()),
                 val res3 = assignConsumerKey(currentState, "consumer2", "node2", "consAddr1")
-                // fail - may not reuse the key on a different consumer
-                assert(res3.hasError()),
+                //  ok - may reuse the key on a different consumer
+                assert(not(res3.hasError())),
                 val res4 = assignConsumerKey(currentState, "consumer1", "node2", "node1")
                 // fail - may not reuse a provider key of a different val
                 assert(res4.hasError()),
-                val resSucc = assignConsumerKey(currentState, "consumer1", "node1", "consAddr2")
-                // success - assigning unused key to node
-                assert(not(resSucc.hasError())),
-                val resSucc2 = assignConsumerKey(currentState, "consumer1", "node1", "node1")
-                // success - going back to original key
-                assert(not(resSucc2.hasError())),
-                VotingPowerChange("node1", 50) // action does not matter
+                val res5 = assignConsumerKey(currentState, "consumer1", "node1", "consAddr2")
+                // ok - assigning unused key to node
+                assert(not(res5.hasError())),
+                val res6 = assignConsumerKey(currentState, "consumer1", "node1", "node1")
+                // ok - going back to original key
+                assert(not(res6.hasError())),
+                // mature the vsc packet on the consumer
+                EndAndBeginBlockForConsumer("consumer1", UnbondingPeriodPerChain.get("consumer1") + 1 * Hour)
+            }
+        )
+        .then(
+            // deliver the vsc matured packet to the provider
+            DeliverVscMaturedPacket("consumer1")
+        )
+        .then(
+            // the old key should have been pruned
+            all {
+                assert(currentState.providerState.validatorByConsumerAddr.get("consumer1").get("consAddr1") == "node1"),
+                assert(not(currentState.providerState.validatorByConsumerAddr.get("consumer1").keys().contains("node1"))),
+                // action does not matter
+                VotingPowerChange("node1", 50)
             }
         )
 }
