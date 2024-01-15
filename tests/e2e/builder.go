@@ -21,9 +21,9 @@ func setupWorkSpace(revision string) (string, error) {
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with variable
 	cmd := exec.Command("git", "worktree", "add",
-		"--checkout", workSpace, revision)
+		"--force", "--checkout", workSpace, revision)
 	out, err := cmd.CombinedOutput()
-	fmt.Printf("Running: %s", cmd.String())
+	fmt.Println("Running: ", cmd.String())
 	if err != nil {
 		log.Printf("Error creating worktree (%v): %s", err, string(out))
 		return "", err
@@ -55,7 +55,7 @@ func dockerIsUp() bool {
 }
 
 // Build docker image of ICS for a given revision
-func buildDockerImage(imageName, revision string, targetCfg TargetConfig) error {
+func buildDockerImage(imageName, revision string, targetCfg TargetConfig, noCache bool) error {
 	fmt.Printf("Building ICS %s image %s\n", revision, imageName)
 	if !dockerIsUp() {
 		return fmt.Errorf("docker engine is not running")
@@ -101,6 +101,10 @@ func buildDockerImage(imageName, revision string, targetCfg TargetConfig) error 
 
 	dockerFile := "Dockerfile"
 	args := []string{"build", "-t", imageName}
+	if noCache {
+		args = append(args, "--no-cache")
+	}
+
 	if targetCfg.useGaia && targetCfg.gaiaTag != "" {
 		dockerFile = "Dockerfile.gaia"
 		args = append(args, "--build-arg", fmt.Sprintf("USE_GAIA_TAG=%s", targetCfg.gaiaTag))
@@ -111,6 +115,11 @@ func buildDockerImage(imageName, revision string, targetCfg TargetConfig) error 
 	cmd := exec.Command("docker", args...)
 	cmd.Dir = workSpace
 	out, err := cmd.CombinedOutput()
+	if err != nil && !noCache {
+		// Retry image creation from pristine state by enforcing --no-cache
+		log.Printf("Image creation failed '%v'. Re-trying without cache!", err)
+		return buildDockerImage(imageName, revision, targetCfg, true)
+	}
 	if err != nil {
 		return fmt.Errorf("building docker image failed running '%v' (%v): %s", cmd, err, out)
 	}

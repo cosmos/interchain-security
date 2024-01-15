@@ -76,7 +76,7 @@ func (dc *DockerContainer) Build() error {
 	if err != nil {
 		return fmt.Errorf("failed building docker image: %v", err)
 	}
-	err = buildDockerImage(consumerImageName, consumerVersion, dc.targetConfig)
+	err = buildDockerImage(consumerImageName, consumerVersion, dc.targetConfig, false)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (dc *DockerContainer) Build() error {
 	if err != nil {
 		return fmt.Errorf("failed building docker image: %v", err)
 	}
-	err = buildDockerImage(providerImageName, providerVersion, dc.targetConfig)
+	err = buildDockerImage(providerImageName, providerVersion, dc.targetConfig, false)
 	if err != nil {
 		return err
 	}
@@ -145,6 +145,7 @@ func (dc *DockerContainer) ExecCommand(name string, arg ...string) *exec.Cmd {
 func (dc *DockerContainer) ExecDetachedCommand(name string, arg ...string) *exec.Cmd {
 	args := []string{"exec", "-d", dc.containerCfg.InstanceName, name}
 	args = append(args, arg...)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with variable
 	return exec.Command("docker", args...)
 }
 
