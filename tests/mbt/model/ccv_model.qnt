@@ -395,40 +395,6 @@ module ccv_model {
             }
         )
 
-    // Rules for key assignment:
-    val KeyAssignmentRulesInv =
-        NoProviderReuse and NoDuplicationOnSameConsumer
-    
-    // validator A cannot assign consumer key K to consumer chain X if there is already a validator B (B!=A) using K on the provider
-    val NoProviderReuse = 
-        ConsumerChains.forall(
-            consumer =>
-            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
-            valConsPk.keys().forall(
-                node =>
-                    val consAddr = valConsPk.get(node)
-                    // either the key is the nodes key itself (B == A)
-                    consAddr == node or
-                    // or the consAddr must not be a validator on the provider
-                    not(currentState.providerState.chainState.currentValidatorSet.keys().contains(consAddr))
-            )
-        )
-
-    // validator A cannot assign consumer key K to consumer chain X if there is already a validator B using K on X
-    val NoDuplicationOnSameConsumer =
-        ConsumerChains.forall(
-            consumer => 
-            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
-            valConsPk.keys().forall(
-                node =>
-                    val consAddr = valConsPk.get(node)
-                    // no other node may use consAddr
-                    not(valConsPk.keys().exists(
-                        otherNode => otherNode != node and valConsPk.get(otherNode) == consAddr
-                    ))
-            )
-        )
-
 
     // =================
     // SANITY CHECKS
@@ -477,20 +443,6 @@ module ccv_model {
         not(ConsumerChains.exists(
             consumer => 
                 currentState.providerState.receivedMaturations.size() > 0
-        ))
-
-    val CanAssignConsumerKey =
-        not(ConsumerChains.exists(
-            consumer => 
-                currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).keys().size() > 0
-        ))
-
-    val CanHaveConsumerAddresses =
-        not(ConsumerChains.exists(
-            consumer => 
-                currentState.consumerStates.get(consumer).chainState.currentValidatorSet.keys().exists(
-                    addr => addr.in(consumerAddresses)
-                )
         ))
 
     // ==================

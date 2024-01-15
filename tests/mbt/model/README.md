@@ -31,6 +31,7 @@ All the logic in EndBlock/BeginBlock happens here, like updating the validator s
 * `EndAndBeginBlockForConsumer(chain: Chain, timeAdvancement: Time)`: On the consumer `chain`, ends the current block, and begins a new one. Again, all the logic in EndBlock/BeginBlock happens here, like validator set change maturations.
 * `DeliverVscPacket(receiver: Chain)`: Delivers a pending VSCPacket from the provider to the consumer `receiver`.
 * `DeliverVscMaturedPacket(receiver: Chain)`: Delivers a pending VSCMaturedPacket from the consumer `receiver` to the provider.
+* `KeyAssignment(chain: Chain, validator: Node, consumerAddr: ConsumerAddr)`: Assigns the `consumerAddr` to the `validator` on the `chain`. Note that we use "key" and "consumerAddr" pretty much interchangeably, as the model makes no differentiation between private keys, public keys, addresses, etc, as it doesn't model the cryptography.
 
 ### State machines
 
@@ -114,3 +115,5 @@ The available sanity checks are:
 - CanTimeoutConsumer
 - CanSendVscPackets
 - CanSendVscMaturedPackets
+- CanAssignConsumerKey
+- CanHaveConsumerAddresses
