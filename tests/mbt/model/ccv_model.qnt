@@ -183,26 +183,6 @@ module ccv_model {
             params' = params,
         }
 
-    action KeyAssignment(
-        chain: Chain,
-        validator: Node,
-        consumerAddr: ConsumerAddr
-    ): bool =
-        val result = assignConsumerKey(currentState, chain, validator, consumerAddr)
-        all {
-            result.hasError() == false,
-            currentState' = result.newState,
-            trace' = trace.append(
-                {...emptyAction,
-                kind: "KeyAssignment",
-                consumerChain: chain,
-                validator: validator,
-                consumerAddr: consumerAddr
-                }
-            ),
-            params' = params,
-        }
-
 
      // stepCommon is the core functionality of steps that does not have anything to do with time.
     action stepCommon = any {
@@ -227,18 +207,6 @@ module ccv_model {
             nondet receiver = oneOf(runningConsumers)
             DeliverVscPacket(receiver),
         },
-
-        all {
-            // ensure there is a consumer that either
-            // runs right now or can run in the future
-            // (otherwise all consumers are stopped, so we don't need to assign any keys)
-            runningConsumers.size() + nonConsumers.size() > 0,
-            nondet consumer = oneOf(runningConsumers.union(nonConsumers))
-            nondet node = oneOf(nodes)
-            nondet address = oneOf(consumerAddresses)
-            // do a key assignment
-            KeyAssignment(consumer, node, address),
-        }
     }
 
     // step allows the most generic nondeterminism, in particular it becomes relatively likely
@@ -427,6 +395,41 @@ module ccv_model {
             }
         )
 
+    // Rules for key assignment:
+    val KeyAssignmentRulesInv =
+        NoProviderReuse and NoDuplicationOnSameConsumer
+    
+    // validator A cannot assign consumer key K to consumer chain X if there is already a validator B (B!=A) using K on the provider
+    val NoProviderReuse = 
+        ConsumerChains.forall(
+            consumer =>
+            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+            valConsPk.keys().forall(
+                node =>
+                    val consAddr = valConsPk.get(node)
+                    // either the key is the nodes key itself (B == A)
+                    consAddr == node or
+                    // or the consAddr must not be a validator on the provider
+                    not(currentState.providerState.chainState.currentValidatorSet.keys().contains(consAddr))
+            )
+        )
+
+    // validator A cannot assign consumer key K to consumer chain X if there is already a validator B using K on X
+    val NoDuplicationOnSameConsumer =
+        ConsumerChains.forall(
+            consumer => 
+            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+            valConsPk.keys().forall(
+                node =>
+                    val consAddr = valConsPk.get(node)
+                    // no other node may use consAddr
+                    not(valConsPk.keys().exists(
+                        otherNode => otherNode != node and valConsPk.get(otherNode) == consAddr
+                    ))
+            )
+        )
+
+
     // =================
     // SANITY CHECKS
     // =================
@@ -474,6 +477,20 @@ module ccv_model {
         not(ConsumerChains.exists(
             consumer => 
                 currentState.providerState.receivedMaturations.size() > 0
+        ))
+
+    val CanAssignConsumerKey =
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).keys().size() > 0
+        ))
+
+    val CanHaveConsumerAddresses =
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.consumerStates.get(consumer).chainState.currentValidatorSet.keys().exists(
+                    addr => addr.in(consumerAddresses)
+                )
         ))
 
     // ==================
@@ -667,72 +684,6 @@ module ccv_model {
                     chain => currentState.providerState.consumerStatus.get(chain) == TIMEDOUT
                 )),
                 VotingPowerChange("node1", 50) // action needs to be there but does not matter what it is
-            }
-        )
-
-    // == tests for key assignment ==
-    
-    run KeyAssignmentTest =
-        init
-        .then(
-            // start all consumer chains
-            EndAndBeginBlockForProvider(1 * Second, ConsumerChains, Set())
-        )
-        .then(
-            // node 1 assigns a key on consumer1
-            KeyAssignment("consumer1", "node1", "consAddr1")
-        )
-        .then(
-            // end and begin block to make sure the key assignment is processed and the packet is sent
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
-        )
-        .then(
-            // receive the packet on the consumer
-            DeliverVscPacket("consumer1")
-        )
-        .then(
-            // end and begin block to make sure the packet is processed
-            EndAndBeginBlockForConsumer("consumer1", 1 * Second)
-        )
-        .then(
-            all {
-                // the key should be present in the valset on the consumer, and the node itself should not
-                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("node1") == 0),
-                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
-                // try some key assignments that should fail/succeed without comitting to state
-                val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
-                // fail - key already assigned (even if it is the same node)
-                assert(res.hasError()),
-                val res2 = assignConsumerKey(currentState, "consumer1", "node2", "consAddr1")
-                // fail - key assigned to other node
-                assert(res2.hasError()),
-                val res3 = assignConsumerKey(currentState, "consumer2", "node2", "consAddr1")
-                //  ok - may reuse the key on a different consumer
-                assert(not(res3.hasError())),
-                val res4 = assignConsumerKey(currentState, "consumer1", "node2", "node1")
-                // fail - may not reuse a provider key of a different val
-                assert(res4.hasError()),
-                val res5 = assignConsumerKey(currentState, "consumer1", "node1", "consAddr2")
-                // ok - assigning unused key to node
-                assert(not(res5.hasError())),
-                val res6 = assignConsumerKey(currentState, "consumer1", "node1", "node1")
-                // ok - going back to original key
-                assert(not(res6.hasError())),
-                // mature the vsc packet on the consumer
-                EndAndBeginBlockForConsumer("consumer1", UnbondingPeriodPerChain.get("consumer1") + 1 * Hour)
-            }
-        )
-        .then(
-            // deliver the vsc matured packet to the provider
-            DeliverVscMaturedPacket("consumer1")
-        )
-        .then(
-            // the old key should have been pruned
-            all {
-                assert(currentState.providerState.validatorByConsumerAddr.get("consumer1").get("consAddr1") == "node1"),
-                assert(not(currentState.providerState.validatorByConsumerAddr.get("consumer1").keys().contains("node1"))),
-                // action does not matter
-                VotingPowerChange("node1", 50)
             }
         )
 }
