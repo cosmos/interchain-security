@@ -15,24 +15,31 @@ type (
 // Attributes that are unique to a validator. Allows us to map (part of)
 // the set of strings defined above to a set of viable validators
 type ValidatorConfig struct {
-	Mnemonic         string
-	DelAddress       string
-	ValoperAddress   string
-	ValconsAddress   string
-	PrivValidatorKey string
-	NodeKey          string
+	Mnemonic                 string
+	DelAddress               string // Provider delegator address - Bech32Prefix = "provider"
+	DelAddressOnConsumer     string // Provider delegator address - Bech32Prefix = "consumer"
+	ValoperAddress           string // Provider valoperator address - Bech32Prefix = "provider"
+	ValoperAddressOnConsumer string // Provider valoperator address - Bech32Prefix = "consumer"
+	ValconsAddress           string // Provider valconsensus address - Bech32Prefix = "provider"
+	ValconsAddressOnConsumer string // Provider valconsensus address - Bech32Prefix = "consumer"
+	PrivValidatorKey         string
+	NodeKey                  string
 	// Must be an integer greater than 0 and less than 253
 	IpSuffix string
 
 	// consumer chain key assignment data
 	// keys are used on a new node
-	ConsumerMnemonic         string
-	ConsumerDelAddress       string
-	ConsumerValoperAddress   string
-	ConsumerValconsAddress   string
-	ConsumerPrivValidatorKey string
-	ConsumerNodeKey          string
-	UseConsumerKey           bool // if true the validator node will start with consumer key
+	ConsumerMnemonic                 string
+	ConsumerDelAddress               string // Consumer delegator address - Bech32Prefix = "consumer"
+	ConsumerDelAddressOnProvider     string // Consumer delegator address - Bech32Prefix = "provider"
+	ConsumerValoperAddress           string // Consumer valoperator address - Bech32Prefix = "consumer"
+	ConsumerValoperAddressOnProvider string // Consumer valoperator address - Bech32Prefix = "provider"
+	ConsumerValconsAddress           string // Consumer valconsensus address - Bech32Prefix = "consumer"
+	ConsumerValconsAddressOnProvider string // Consumer valconsensus address - Bech32Prefix = "provider"
+	ConsumerValPubKey                string
+	ConsumerPrivValidatorKey         string
+	ConsumerNodeKey                  string
+	UseConsumerKey                   bool // if true the validator node will start with consumer key
 }
 
 // Attributes that are unique to a chain. Allows us to map (part of)
@@ -91,58 +98,79 @@ func (tr *TestConfig) Initialize() {
 func getDefaultValidators() map[ValidatorID]ValidatorConfig {
 	return map[ValidatorID]ValidatorConfig{
 		ValidatorID("alice"): {
-			Mnemonic:         "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
-			DelAddress:       "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
-			ValoperAddress:   "cosmosvaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtrgtng",
-			ValconsAddress:   "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-			PrivValidatorKey: `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
-			NodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
-			IpSuffix:         "4",
+			Mnemonic:                 "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
+			DelAddress:               "provider19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddeeglea",
+			DelAddressOnConsumer:     "consumer19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtz33vu",
+			ValoperAddress:           "providervaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7dd2ukck3",
+			ValoperAddressOnConsumer: "consumervaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddy6jwzg",
+			ValconsAddress:           "providervalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7x029tue",
+			ValconsAddressOnConsumer: "consumervalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xpvpagq",
+			PrivValidatorKey:         `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
+			NodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
+			IpSuffix:                 "4",
 
 			// consumer chain assigned key
-			ConsumerMnemonic:         "exile install vapor thing little toss immune notable lounge december final easy strike title end program interest quote cloth forget forward job october twenty",
-			ConsumerDelAddress:       "cosmos1eeeggku6dzk3mv7wph3zq035rhtd890sjswszd",
-			ConsumerValoperAddress:   "cosmosvaloper1eeeggku6dzk3mv7wph3zq035rhtd890shy69w7",
-			ConsumerValconsAddress:   "cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe",
-			ConsumerPrivValidatorKey: `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`,
-			ConsumerNodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"F966RL9pi20aXRzEBe4D0xRQJtZt696Xxz44XUON52cFc83FMn1WXJbP6arvA2JPyn2LA3DLKCFHSgALrCGXGA=="}}`,
-			UseConsumerKey:           false,
+			ConsumerMnemonic:                 "exile install vapor thing little toss immune notable lounge december final easy strike title end program interest quote cloth forget forward job october twenty",
+			ConsumerDelAddress:               "consumer1eeeggku6dzk3mv7wph3zq035rhtd890sh9rl32",
+			ConsumerDelAddressOnProvider:     "provider1eeeggku6dzk3mv7wph3zq035rhtd890s9763yt",
+			ConsumerValoperAddress:           "consumervaloper1eeeggku6dzk3mv7wph3zq035rhtd890scaqql7",
+			ConsumerValoperAddressOnProvider: "providervaloper1eeeggku6dzk3mv7wph3zq035rhtd890skmykt8",
+			ConsumerValconsAddress:           "consumervalcons1muys5jyqk4xd27e208nym85kn0t4zjcfk9q5ce",
+			ConsumerValconsAddressOnProvider: "providervalcons1muys5jyqk4xd27e208nym85kn0t4zjcfcryzvq",
+			ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="}`,
+			ConsumerPrivValidatorKey:         `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`,
+			ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"F966RL9pi20aXRzEBe4D0xRQJtZt696Xxz44XUON52cFc83FMn1WXJbP6arvA2JPyn2LA3DLKCFHSgALrCGXGA=="}}`,
+			UseConsumerKey:                   false,
 		},
 		ValidatorID("bob"): {
-			Mnemonic:         "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
-			DelAddress:       "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
-			ValoperAddress:   "cosmosvaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qakmjnw",
-			ValconsAddress:   "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
-			PrivValidatorKey: `{"address":"99BD3A72EF12CD024E7584B3AC900AE3743C6ADF","pub_key":{"type":"tendermint/PubKeyEd25519","value":"mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"QePcwfWtOavNK7pBJrtoLMzarHKn6iBWfWPFeyV+IdmYA3pFdjFIzgw0ZIiuJiJLuke7ABw4cNADL3/CeVLM4g=="}}`,
-			NodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
-			IpSuffix:         "5",
+			Mnemonic:                 "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
+			DelAddress:               "provider1dkas8mu4kyhl5jrh4nzvm65qz588hy9q0vmxem",
+			DelAddressOnConsumer:     "consumer1dkas8mu4kyhl5jrh4nzvm65qz588hy9qahzgv6",
+			ValoperAddress:           "providervaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9quf9pkh",
+			ValoperAddressOnConsumer: "consumervaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qj0phzw",
+			ValconsAddress:           "providervalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6kle6ya5u",
+			ValconsAddressOnConsumer: "consumervalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klhuqtq9",
+			PrivValidatorKey:         `{"address":"99BD3A72EF12CD024E7584B3AC900AE3743C6ADF","pub_key":{"type":"tendermint/PubKeyEd25519","value":"mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"QePcwfWtOavNK7pBJrtoLMzarHKn6iBWfWPFeyV+IdmYA3pFdjFIzgw0ZIiuJiJLuke7ABw4cNADL3/CeVLM4g=="}}`,
+			NodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
+			IpSuffix:                 "5",
 
 			// consumer chain assigned key
-			ConsumerMnemonic:         "grunt list hour endless observe better spoil penalty lab duck only layer vague fantasy satoshi record demise topple space shaft solar practice donor sphere",
-			ConsumerDelAddress:       "cosmos1q90l6j6lzzgt460ehjj56azknlt5yrd4s38n97",
-			ConsumerValoperAddress:   "cosmosvaloper1q90l6j6lzzgt460ehjj56azknlt5yrd449nxfd",
-			ConsumerValconsAddress:   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
-			ConsumerPrivValidatorKey: `{"address":"E73388E246EC9945E5E70A94FE4072BD937415C4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"OFR4w+FC6EMw5fAGTrHVexyPrjzQ7QfqgZOMgVf0izlCUb6Jh7oDJim9jXP1E0koJWUfXhD+pLPgSMZ0YKu7eg=="}}`,
-			ConsumerNodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uhPCqnL2KE8m/8OFNLQ5bN3CJr6mds+xfBi0E4umT/s2uWiJhet+vbYx88DHSdof3gGFNTIzAIxSppscBKX96w=="}}`,
-			UseConsumerKey:           false,
+			ConsumerMnemonic:                 "grunt list hour endless observe better spoil penalty lab duck only layer vague fantasy satoshi record demise topple space shaft solar practice donor sphere",
+			ConsumerDelAddress:               "consumer1q90l6j6lzzgt460ehjj56azknlt5yrd44y2uke",
+			ConsumerDelAddressOnProvider:     "provider1q90l6j6lzzgt460ehjj56azknlt5yrd48lnjrc",
+			ConsumerValoperAddress:           "consumervaloper1q90l6j6lzzgt460ehjj56azknlt5yrd46ufrcd",
+			ConsumerValoperAddressOnProvider: "providervaloper1q90l6j6lzzgt460ehjj56azknlt5yrd456d4v5",
+			ConsumerValconsAddress:           "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
+			ConsumerValconsAddressOnProvider: "providervalcons1uuec3cjxajv5te08p220usrjhkfhg9wydlduwz",
+			ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
+			ConsumerPrivValidatorKey:         `{"address":"E73388E246EC9945E5E70A94FE4072BD937415C4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"OFR4w+FC6EMw5fAGTrHVexyPrjzQ7QfqgZOMgVf0izlCUb6Jh7oDJim9jXP1E0koJWUfXhD+pLPgSMZ0YKu7eg=="}}`,
+			ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uhPCqnL2KE8m/8OFNLQ5bN3CJr6mds+xfBi0E4umT/s2uWiJhet+vbYx88DHSdof3gGFNTIzAIxSppscBKX96w=="}}`,
+			UseConsumerKey:                   false,
 		},
 		ValidatorID("carol"): {
-			Mnemonic:         "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
-			DelAddress:       "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
-			ValoperAddress:   "cosmosvaloper19hz4m226ztankqramvt4a7t0shejv4dcm3u5f0",
-			ValconsAddress:   "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
-			PrivValidatorKey: `{"address":"C888306A908A217B9A943D1DAD8790044D0947A4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"IHo4QEikWZfIKmM0X+N+BjKttz8HOzGs2npyjiba3Xk="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"z08bmSB91uFVpVmR3t2ewd/bDjZ/AzwQpe5rKjWiPG0gejhASKRZl8gqYzRf434GMq23Pwc7MazaenKOJtrdeQ=="}}`,
-			NodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"WLTcHEjbwB24Wp3z5oBSYTvtGQonz/7IQabOFw85BN0UkkyY5HDf38o8oHlFxVI26f+DFVeICuLbe9aXKGnUeg=="}}`,
-			IpSuffix:         "6",
+			Mnemonic:                 "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
+			DelAddress:               "provider19hz4m226ztankqramvt4a7t0shejv4dcftuqr6",
+			DelAddressOnConsumer:     "consumer19hz4m226ztankqramvt4a7t0shejv4dcms9wkm",
+			ValoperAddress:           "providervaloper19hz4m226ztankqramvt4a7t0shejv4dc6wz8vk",
+			ValoperAddressOnConsumer: "consumervaloper19hz4m226ztankqramvt4a7t0shejv4dc5gx3c0",
+			ValconsAddress:           "providervalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayrkt0fr",
+			ValconsAddressOnConsumer: "consumervalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayds0ea6",
+			PrivValidatorKey:         `{"address":"C888306A908A217B9A943D1DAD8790044D0947A4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"IHo4QEikWZfIKmM0X+N+BjKttz8HOzGs2npyjiba3Xk="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"z08bmSB91uFVpVmR3t2ewd/bDjZ/AzwQpe5rKjWiPG0gejhASKRZl8gqYzRf434GMq23Pwc7MazaenKOJtrdeQ=="}}`,
+			NodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"WLTcHEjbwB24Wp3z5oBSYTvtGQonz/7IQabOFw85BN0UkkyY5HDf38o8oHlFxVI26f+DFVeICuLbe9aXKGnUeg=="}}`,
+			IpSuffix:                 "6",
 
 			// consumer chain assigned key
-			ConsumerMnemonic:         "clip choose cake west range gun slam cry village receive juice galaxy lend ritual range provide ritual can since verify breeze vacant play dragon",
-			ConsumerDelAddress:       "cosmos1sx6j9g2rh324a342a5f0rnx7me34r9nwgf0mc7",
-			ConsumerValoperAddress:   "cosmosvaloper1sx6j9g2rh324a342a5f0rnx7me34r9nwdamw5d",
-			ConsumerValconsAddress:   "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
-			ConsumerPrivValidatorKey: `{"address":"B41C3A40142963AA5B12DDD1C4E5890C0B3926B1","pub_key":{"type":"tendermint/PubKeyEd25519","value":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"3YaBAZLA+sl/E73lLfbFbG0u6DYm33ayr/0UpCt/vFBSLkZ/X6a1ZR0fy7fGWbN0ogP4Xc8rSx9dnvcZnqrqKw=="}}`,
-			ConsumerNodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"rxBzFedtD3pqgfJQblbxGusKOr47oBfr8ba0Iz14gobtDRZQZlSZ/UGP4pSHkVf+4vtkrkO1vRHBYJobuiP+7A=="}}`,
-			UseConsumerKey:           true,
+			ConsumerMnemonic:                 "clip choose cake west range gun slam cry village receive juice galaxy lend ritual range provide ritual can since verify breeze vacant play dragon",
+			ConsumerDelAddress:               "consumer1sx6j9g2rh324a342a5f0rnx7me34r9nwduz5te",
+			ConsumerDelAddressOnProvider:     "provider1sx6j9g2rh324a342a5f0rnx7me34r9nwl8m67c",
+			ConsumerValoperAddress:           "consumervaloper1sx6j9g2rh324a342a5f0rnx7me34r9nwzypt9d",
+			ConsumerValoperAddressOnProvider: "providervaloper1sx6j9g2rh324a342a5f0rnx7me34r9nwvz9a35",
+			ConsumerValconsAddress:           "consumervalcons1kswr5sq599365kcjmhgufevfps9njf43kv9tuk",
+			ConsumerValconsAddressOnProvider: "providervalcons1kswr5sq599365kcjmhgufevfps9njf43c2pag0",
+			ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
+			ConsumerPrivValidatorKey:         `{"address":"B41C3A40142963AA5B12DDD1C4E5890C0B3926B1","pub_key":{"type":"tendermint/PubKeyEd25519","value":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"3YaBAZLA+sl/E73lLfbFbG0u6DYm33ayr/0UpCt/vFBSLkZ/X6a1ZR0fy7fGWbN0ogP4Xc8rSx9dnvcZnqrqKw=="}}`,
+			ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"rxBzFedtD3pqgfJQblbxGusKOr47oBfr8ba0Iz14gobtDRZQZlSZ/UGP4pSHkVf+4vtkrkO1vRHBYJobuiP+7A=="}}`,
+			UseConsumerKey:                   true,
 		},
 	}
 }
@@ -404,40 +432,54 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 		},
 		validatorConfigs: map[ValidatorID]ValidatorConfig{
 			ValidatorID("alice"): {
-				Mnemonic:         "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
-				DelAddress:       "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
-				ValoperAddress:   "providervaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7dd2ukck3",
-				ValconsAddress:   "providervalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7x029tue",
-				PrivValidatorKey: `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
-				NodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
-				IpSuffix:         "4",
+				Mnemonic:                 "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
+				DelAddress:               "provider19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddeeglea",
+				DelAddressOnConsumer:     "consumer19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtz33vu",
+				ValoperAddress:           "providervaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7dd2ukck3",
+				ValoperAddressOnConsumer: "consumervaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddy6jwzg",
+				ValconsAddress:           "providervalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7x029tue",
+				ValconsAddressOnConsumer: "consumervalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xpvpagq",
+				PrivValidatorKey:         `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
+				NodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
+				IpSuffix:                 "4",
 
 				// consumer chain assigned key
-				ConsumerMnemonic:         "exile install vapor thing little toss immune notable lounge december final easy strike title end program interest quote cloth forget forward job october twenty",
-				ConsumerDelAddress:       "cosmos1eeeggku6dzk3mv7wph3zq035rhtd890sjswszd",
-				ConsumerValoperAddress:   "cosmosvaloper1eeeggku6dzk3mv7wph3zq035rhtd890shy69w7",
-				ConsumerValconsAddress:   "cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe",
-				ConsumerPrivValidatorKey: `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`,
-				ConsumerNodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"F966RL9pi20aXRzEBe4D0xRQJtZt696Xxz44XUON52cFc83FMn1WXJbP6arvA2JPyn2LA3DLKCFHSgALrCGXGA=="}}`,
-				UseConsumerKey:           true,
+				ConsumerMnemonic:                 "exile install vapor thing little toss immune notable lounge december final easy strike title end program interest quote cloth forget forward job october twenty",
+				ConsumerDelAddress:               "consumer1eeeggku6dzk3mv7wph3zq035rhtd890sh9rl32",
+				ConsumerDelAddressOnProvider:     "provider1eeeggku6dzk3mv7wph3zq035rhtd890s9763yt",
+				ConsumerValoperAddress:           "consumervaloper1eeeggku6dzk3mv7wph3zq035rhtd890scaqql7",
+				ConsumerValoperAddressOnProvider: "providervaloper1eeeggku6dzk3mv7wph3zq035rhtd890skmykt8",
+				ConsumerValconsAddress:           "consumervalcons1muys5jyqk4xd27e208nym85kn0t4zjcfk9q5ce",
+				ConsumerValconsAddressOnProvider: "providervalcons1muys5jyqk4xd27e208nym85kn0t4zjcfcryzvq",
+				ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="}`,
+				ConsumerPrivValidatorKey:         `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`,
+				ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"F966RL9pi20aXRzEBe4D0xRQJtZt696Xxz44XUON52cFc83FMn1WXJbP6arvA2JPyn2LA3DLKCFHSgALrCGXGA=="}}`,
+				UseConsumerKey:                   true,
 			},
 			ValidatorID("bob"): {
-				Mnemonic:         "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
-				DelAddress:       "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
-				ValoperAddress:   "cosmosvaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qakmjnw",
-				ValconsAddress:   "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
-				PrivValidatorKey: `{"address":"99BD3A72EF12CD024E7584B3AC900AE3743C6ADF","pub_key":{"type":"tendermint/PubKeyEd25519","value":"mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"QePcwfWtOavNK7pBJrtoLMzarHKn6iBWfWPFeyV+IdmYA3pFdjFIzgw0ZIiuJiJLuke7ABw4cNADL3/CeVLM4g=="}}`,
-				NodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
-				IpSuffix:         "5",
+				Mnemonic:                 "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
+				DelAddress:               "provider1dkas8mu4kyhl5jrh4nzvm65qz588hy9q0vmxem",
+				DelAddressOnConsumer:     "consumer1dkas8mu4kyhl5jrh4nzvm65qz588hy9qahzgv6",
+				ValoperAddress:           "providervaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9quf9pkh",
+				ValoperAddressOnConsumer: "consumervaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qj0phzw",
+				ValconsAddress:           "providervalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6kle6ya5u",
+				ValconsAddressOnConsumer: "consumervalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klhuqtq9",
+				PrivValidatorKey:         `{"address":"99BD3A72EF12CD024E7584B3AC900AE3743C6ADF","pub_key":{"type":"tendermint/PubKeyEd25519","value":"mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"QePcwfWtOavNK7pBJrtoLMzarHKn6iBWfWPFeyV+IdmYA3pFdjFIzgw0ZIiuJiJLuke7ABw4cNADL3/CeVLM4g=="}}`,
+				NodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
+				IpSuffix:                 "5",
 
 				// consumer chain assigned key
-				ConsumerMnemonic:         "grunt list hour endless observe better spoil penalty lab duck only layer vague fantasy satoshi record demise topple space shaft solar practice donor sphere",
-				ConsumerDelAddress:       "cosmos1q90l6j6lzzgt460ehjj56azknlt5yrd4s38n97",
-				ConsumerValoperAddress:   "cosmosvaloper1q90l6j6lzzgt460ehjj56azknlt5yrd449nxfd",
-				ConsumerValconsAddress:   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
-				ConsumerPrivValidatorKey: `{"address":"E73388E246EC9945E5E70A94FE4072BD937415C4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"OFR4w+FC6EMw5fAGTrHVexyPrjzQ7QfqgZOMgVf0izlCUb6Jh7oDJim9jXP1E0koJWUfXhD+pLPgSMZ0YKu7eg=="}}`,
-				ConsumerNodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uhPCqnL2KE8m/8OFNLQ5bN3CJr6mds+xfBi0E4umT/s2uWiJhet+vbYx88DHSdof3gGFNTIzAIxSppscBKX96w=="}}`,
-				UseConsumerKey:           false,
+				ConsumerMnemonic:                 "grunt list hour endless observe better spoil penalty lab duck only layer vague fantasy satoshi record demise topple space shaft solar practice donor sphere",
+				ConsumerDelAddress:               "consumer1q90l6j6lzzgt460ehjj56azknlt5yrd44y2uke",
+				ConsumerDelAddressOnProvider:     "provider1q90l6j6lzzgt460ehjj56azknlt5yrd48lnjrc",
+				ConsumerValoperAddress:           "consumervaloper1q90l6j6lzzgt460ehjj56azknlt5yrd46ufrcd",
+				ConsumerValoperAddressOnProvider: "providervaloper1q90l6j6lzzgt460ehjj56azknlt5yrd456d4v5",
+				ConsumerValconsAddress:           "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
+				ConsumerValconsAddressOnProvider: "providervalcons1uuec3cjxajv5te08p220usrjhkfhg9wydlduwz",
+				ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
+				ConsumerPrivValidatorKey:         `{"address":"E73388E246EC9945E5E70A94FE4072BD937415C4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"OFR4w+FC6EMw5fAGTrHVexyPrjzQ7QfqgZOMgVf0izlCUb6Jh7oDJim9jXP1E0koJWUfXhD+pLPgSMZ0YKu7eg=="}}`,
+				ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uhPCqnL2KE8m/8OFNLQ5bN3CJr6mds+xfBi0E4umT/s2uWiJhet+vbYx88DHSdof3gGFNTIzAIxSppscBKX96w=="}}`,
+				UseConsumerKey:                   false,
 			},
 		},
 		chainConfigs: map[ChainID]ChainConfig{

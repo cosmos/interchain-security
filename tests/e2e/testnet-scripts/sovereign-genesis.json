@@ -35,7 +35,7 @@
       "accounts": [
         {
           "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
+          "address": "consumer19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtz33vu",
           "pub_key": null,
           "account_number": "0",
           "sequence": "0"
@@ -52,7 +52,7 @@
       },
       "balances": [
         {
-          "address": "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
+          "address": "consumer19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtz33vu",
           "coins": [
             {
               "denom": "stake",
@@ -125,8 +125,8 @@
                   "max_change_rate": "0.010000000000000000"
                 },
                 "min_self_delegation": "1",
-                "delegator_address": "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
-                "validator_address": "cosmosvaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtrgtng",
+                "delegator_address": "consumer19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtz33vu",
+                "validator_address": "consumervaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddy6jwzg",
                 "pubkey": {
                   "@type": "/cosmos.crypto.ed25519.PubKey",
                   "key": "RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="

@@ -115,10 +115,10 @@
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": {
-          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
+          "carol": "providervalcons1kswr5sq599365kcjmhgufevfps9njf43c2pag0"
         },
         "ProviderKeys": {
-          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+          "carol": "providervalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayrkt0fr"
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
@@ -160,10 +160,10 @@
         "ConsumerChains": null,
         "AssignedKeys": {
           "bob": "",
-          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
+          "carol": "providervalcons1kswr5sq599365kcjmhgufevfps9njf43c2pag0"
         },
         "ProviderKeys": {
-          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+          "carol": "providervalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayrkt0fr"
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
