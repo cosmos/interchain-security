@@ -110,6 +110,8 @@ module ccv_model {
             ).with(
                 "currentValidatorSet", InitialValidatorSet
             )
+        ).with(
+            "keyAssignedValSetHistory", ConsumerChains.mapBy(chain => List(InitialValidatorSet))
         )
         currentState' = {
             providerState: providerStateWithConsumers,

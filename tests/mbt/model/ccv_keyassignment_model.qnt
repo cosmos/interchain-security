@@ -55,7 +55,7 @@ module ccv_keyassignment_model {
     // a validator set on the provider chain, under the key assignment at the time.
     val providerKeyAssignedValSetHistory = b::currentState.providerState.keyAssignedValSetHistory
 
-    val ValidatorSetHasExistedUnderKeyAssignmentInv =
+    val ValidatorSetHasExistedKeyAssignmentInv =
         b::runningConsumers.forall(chain =>
             b::currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
                 validatorSet => providerKeyAssignedValSetHistory.getOrElse(chain, List()).toSet().contains(validatorSet)
@@ -92,7 +92,7 @@ module ccv_keyassignment_model {
     // we need a slightly weaker invariant:
     // For consumer chains c1, c2, if both c1 and c2 received a packet p1 sent at t1 and a packet p2 sent at t2,
     // then both have received ALL packets that were sent between t1 and t2.
-    val SameVscPacketsInv =
+    val SameVscPacketsKeyAssignmentInv =
         b::runningConsumers.forall(
             consumer1 => b::runningConsumers.forall(
                 consumer2 => {
@@ -111,25 +111,29 @@ module ccv_keyassignment_model {
                         val packetsBetween2 = packets2.select(
                             packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime
                         )
+                        
                         // revert key assignments
-                        val packetsBetween1noKeyAssignment = packetsBetween1.map(
-                            packet => 
-                            {...packet,
-                                b::currentState.providerState.keyAssignmentsForVSCPackets
-                                    .getOrElse(packet.VscId, Map)
-                                    .getOrElse(consumer1)
-                                validatorSet: Ccvt::revertKeyAssignment(packet.validatorSet)
-                            }
+                        val packetsBetween1noKeyAssignment = packetsBetween1.foldl(
+                            List(),
+                            (acc, packet) => 
+                            acc.concat(List({...packet,
+                                validatorSet: Ccvt::revertKeyAssignment(
+                                    b::currentState.providerState.keyAssignmentsForVSCPackets
+                                        .getOrElse(packet.id, Map())
+                                        .getOrElse(consumer1, Map()),
+                                    packet.validatorSet)
+                            }))
                         )
 
-                        val packetsBetween2noKeyAssignment = packetsBetween2.map(
-                            packet =>
-                            {...packet,
-                                b::currentState.providerState.keyAssignmentsForVSCPackets
-                                    .getOrElse(packet.VscId, Map)
-                                    .getOrElse(consumer2)
-                                validatorSet: Ccvt::revertKeyAssignment(packet.validatorSet)
-                            }
+                        val packetsBetween2noKeyAssignment = packetsBetween2.foldl(
+                            List(), (acc, packet) => 
+                            acc.concat(List({...packet,
+                                validatorSet: Ccvt::revertKeyAssignment(
+                                    b::currentState.providerState.keyAssignmentsForVSCPackets
+                                        .getOrElse(packet.id, Map())
+                                        .getOrElse(consumer2, Map()),
+                                    packet.validatorSet)
+                            }))
                         )
                         packetsBetween1noKeyAssignment == packetsBetween2noKeyAssignment
                     }
@@ -257,6 +261,4 @@ module ccv_keyassignment_model {
                 b::VotingPowerChange("node1", 50)
             }
         )
-
-
 }
