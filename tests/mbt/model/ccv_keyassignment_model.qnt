@@ -49,24 +49,22 @@ module ccv_keyassignment_model {
             b::params' = b::params,
         }
 
-    action step_keyassignment =
-        any {
-            b::step,
-
-        }
-
     // invariants for key assignment - some invariants are in addition, some need to be adjusted from the original model
+
     // Every validator set on any consumer chain MUST either be or have been 
-    // a validator set on the provider chain.
-    val ValidatorSetHasExistedInv =
+    // a validator set on the provider chain, under the key assignment at the time.
+    val providerKeyAssignedValSetHistory = b::currentState.providerState.keyAssignedValSetHistory
+
+    val ValidatorSetHasExistedUnderKeyAssignmentInv =
         b::runningConsumers.forall(chain =>
             b::currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
-                validatorSet => b::providerValidatorHistory.toSet().contains(validatorSet)
+                validatorSet => providerKeyAssignedValSetHistory.getOrElse(chain, List()).toSet().contains(validatorSet)
             )
         )
 
     // Any update in the power of a validator on the provider
-    // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
+    // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains,
+    // and the key assignment of each validator should be applied in that VSCPacket.
     val ValUpdatePrecondition = b::trace[b::trace.length()-1].kind == "EndAndBeginBlockForProvider"
     val ValidatorUpdatesArePropagatedInv = 
         // when the provider has just entered a validator set into a block...
@@ -75,9 +73,12 @@ module ccv_keyassignment_model {
         val providerValSetInCurBlock = b::providerValidatorHistory.head()
         // ... for each consumer that is running then ...
         b::runningConsumers.forall(
-            // ...the validator set is in a sent packet...
-            consumer => b::currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
-                packet => packet.validatorSet == providerValSetInCurBlock
+            // ...the validator set under key assignment is in a sent packet...
+            val providerState = b::currentState.providerState
+            consumer => providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
+                packet => 
+                    packet.validatorSet == 
+                    Ccvt::applyKeyAssignmentToValSet(providerState, consumer, providerValSetInCurBlock)
             )
             // or the consumer was just started, which we detect by the consumer having a timestamp of 0
             // and the consumer having the validator set that was just sent in the block
@@ -110,8 +111,27 @@ module ccv_keyassignment_model {
                         val packetsBetween2 = packets2.select(
                             packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime
                         )
-                        // these should be the same on both chains
-                        packetsBetween1 == packetsBetween2
+                        // revert key assignments
+                        val packetsBetween1noKeyAssignment = packetsBetween1.map(
+                            packet => 
+                            {...packet,
+                                b::currentState.providerState.keyAssignmentsForVSCPackets
+                                    .getOrElse(packet.VscId, Map)
+                                    .getOrElse(consumer1)
+                                validatorSet: Ccvt::revertKeyAssignment(packet.validatorSet)
+                            }
+                        )
+
+                        val packetsBetween2noKeyAssignment = packetsBetween2.map(
+                            packet =>
+                            {...packet,
+                                b::currentState.providerState.keyAssignmentsForVSCPackets
+                                    .getOrElse(packet.VscId, Map)
+                                    .getOrElse(consumer2)
+                                validatorSet: Ccvt::revertKeyAssignment(packet.validatorSet)
+                            }
+                        )
+                        packetsBetween1noKeyAssignment == packetsBetween2noKeyAssignment
                     }
                 }
             )

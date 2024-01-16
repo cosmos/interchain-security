@@ -1,6 +1,7 @@
 // -*- mode: Bluespec; -*-
 module ccv_types {
     import Time.* from "./libraries/Time"
+    import extraSpells.* from "./libraries/extraSpells"
 
     type Node = str
     type Chain = str
@@ -117,7 +118,10 @@ module ccv_types {
             keyAssignmentReplacements: Chain -> (Node -> (ConsumerAddr, Power)),
 
             // Stores the mapping from VSC ids to consumer validators addresses. Needed for pruning ValidatorByConsumerAddr.
-            consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr]
+            consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr],
+
+            // For every sent VSCPacket, stores the key assignments that were applied to send it.
+            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr))
         }
 
     // utility function: returns a provider state that is initialized minimally.
@@ -131,9 +135,11 @@ module ccv_types {
             consumerStatus: Map(),
             runningVscId: 0,
             validatorConsumerPubKey: Map(),
+            keyAssignedValSetHistory: Map(),
             validatorByConsumerAddr: Map(),
             keyAssignmentReplacements: Map(),
             consumerAddrsToPrune: Map(),
+            keyAssignmentsForVSCPackets: Map()
         }
         
 
@@ -221,6 +227,87 @@ module ccv_types {
     // given as a pure val so that we can switch cases based on
     // whether a chain is the provider or not
     pure val PROVIDER_CHAIN = "provider"
+
+    // Takes the current provider state and validator set and returns 
+    // the validator set under the current the key assignments for the given consumer, as stored in the provider state.
+    pure def applyKeyAssignmentToValSet(
+        providerState: ProviderState,
+        consumer: Chain,
+        valSet: ValidatorSet
+    ): ValidatorSet = {
+        // map each validator in the valSet to a set of
+        // new updates. necessary to allow one validator to generate multiple updates,
+        // which in turn is needed when someone changes keys
+        // (set old key to 0, new key to current power)
+        pure val newValSet = valSet.keys().map(
+            (node) => 
+            pure val power = valSet.get(node)
+            pure val keyAssignmentReplacements = providerState.keyAssignmentReplacements.getOrElse(consumer, Map())
+            if(keyAssignmentReplacements.keys().contains(node)) {
+                // there is a KeyAssignmentReplacement
+                pure val replacement = keyAssignmentReplacements.get(node)
+                pure val oldConsAddr = replacement._1
+                // set old key to 0
+                pure val oldToZero = (oldConsAddr, 0)
+                // set new key to current power
+                pure val newToPower = (providerState.validatorConsumerPubKey.get(consumer).get(node), power)
+                Set(oldToZero, newToPower)
+            } else {
+                // no replacement
+                // check if the validator has a key assigned
+                pure val validatorConsumerPubKey = providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+                if (validatorConsumerPubKey.keys().contains(node)) {
+                    // the validator has a key assigned
+                    pure val consAddr = validatorConsumerPubKey.get(node)
+                    Set((consAddr, power))
+                } else {
+                    // the validator has no key assigned
+                    // use the default key
+                    Set((node, power))
+                }
+            }
+        )
+        // flatten the map of sets into a set
+        pure val flattened = newValSet.flatten()
+
+        // create a map from the set
+        flattened.fold(
+            Map(),
+            (acc, pair) => acc.put(pair._1, pair._2)
+        )
+    }
+
+    // Takes a validator set, to which a key assignment has been applied, and reverts it,
+    // i.e. returns the original validator set.
+    // This also filters out validators that are assigned 0 power.
+    pure def revertKeyAssignment(
+        keyAssignment: Node -> ConsumerAddr,
+        valSetWithAssignment: ValidatorSet
+    ): ValidatorSet = {
+        // get an assignment from consumer addr to nodes
+        pure val reverseAssignment = keyAssignment.keys().map(
+            (consAddr) => 
+            (keyAssignment.get(consAddr), consAddr)
+        ).fold(
+            Map(),
+            (acc, pair) => acc.put(pair._1, pair._2)
+        )
+
+        // for each node in the valset, reverse its key assignment
+        valSetWithAssignment.keys().map(
+            (node) => 
+            pure val power = valSetWithAssignment.get(node)
+            pure val consAddr = reverseAssignment.getOrElse(node, node)
+            (consAddr, power)
+        ).filter(
+            pair => pair._2 > 0
+        ).fold(
+            Map(),
+            (acc, pair) => acc.put(pair._1, pair._2)
+        )
+    }
+
+    
 }
 
 module ccv {
@@ -429,8 +516,25 @@ module ccv {
             "chainState", newChainState
         )
 
+        // store the valSet under the current key assignments
+        val currentValSets = ConsumerChains.mapBy(
+            (consumer) => 
+            providerStateAfterTimeAdvancement.applyKeyAssignmentToValSet(
+                consumer, 
+                providerStateAfterTimeAdvancement.chainState.currentValidatorSet
+            )
+        )
+        val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
+            (consumer) => 
+            providerStateAfterTimeAdvancement.keyAssignedValSetHistory.getOrElse(consumer, List()).prepend(
+                currentValSets.get(consumer)
+            )
+        )
+
         val tmpState = currentState.with(
-            "providerState", providerStateAfterTimeAdvancement
+            "providerState", providerStateAfterTimeAdvancement.with(
+                "keyAssignedValSetHistory", newKeyAssignedValSetHistory
+            )
         )
         
 
@@ -709,56 +813,12 @@ module ccv {
             runningVscId: providerState.runningVscId + 1,
             // key assignment replacements were performed, so we can clear them
             keyAssignmentReplacements: Map(),
+            // remember the key assignments that were applied to send the packets
+            keyAssignmentsForVSCPackets: providerState.keyAssignmentsForVSCPackets.put(
+                providerState.runningVscId,
+                providerState.validatorConsumerPubKey
+            )
         }
-    }
-
-    // Takes the current provider state and validator set and returns 
-    // the validator set under the current the key assignments for the given consumer, as stored in the provider state.
-    pure def applyKeyAssignmentToValSet(
-        providerState: ProviderState,
-        consumer: Chain,
-        valSet: ValidatorSet
-    ): ValidatorSet = {
-        // map each validator in the valSet to a set of
-        // new updates. necessary to allow one validator to generate multiple updates,
-        // which in turn is needed when someone changes keys
-        // (set old key to 0, new key to current power)
-        pure val newValSet = valSet.keys().map(
-            (node) => 
-            pure val power = valSet.get(node)
-            pure val keyAssignmentReplacements = providerState.keyAssignmentReplacements.getOrElse(consumer, Map())
-            if(keyAssignmentReplacements.keys().contains(node)) {
-                // there is a KeyAssignmentReplacement
-                pure val replacement = keyAssignmentReplacements.get(node)
-                pure val oldConsAddr = replacement._1
-                // set old key to 0
-                pure val oldToZero = (oldConsAddr, 0)
-                // set new key to current power
-                pure val newToPower = (providerState.validatorConsumerPubKey.get(consumer).get(node), power)
-                Set(oldToZero, newToPower)
-            } else {
-                // no replacement
-                // check if the validator has a key assigned
-                pure val validatorConsumerPubKey = providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
-                if (validatorConsumerPubKey.keys().contains(node)) {
-                    // the validator has a key assigned
-                    pure val consAddr = validatorConsumerPubKey.get(node)
-                    Set((consAddr, power))
-                } else {
-                    // the validator has no key assigned
-                    // use the default key
-                    Set((node, power))
-                }
-            }
-        )
-        // flatten the map of sets into a set
-        pure val flattened = newValSet.flatten()
-
-        // create a map from the set
-        flattened.fold(
-            Map(),
-            (acc, pair) => acc.put(pair._1, pair._2)
-        )
     }
 
     // receives a given packet (sent by the provider) on the consumer. The arguments are the consumer chain that is receiving the packet, and the packet itself.
