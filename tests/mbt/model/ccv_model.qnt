@@ -640,4 +640,271 @@ module ccv_model {
                 VotingPowerChange("node1", 50) // action needs to be there but does not matter what it is
             }
         )
+
+
+    // ===== KEY ASSIGNMENT =======
+    action stepKeyAssignment = 
+        any {
+            step,
+
+            all {
+                // ensure there is a consumer that either
+                // runs right now or can run in the future
+                // (otherwise all consumers are stopped, so we don't need to assign any keys)
+                runningConsumers.size() + nonConsumers.size() > 0,
+                nondet consumer = oneOf(runningConsumers.union(nonConsumers))
+                nondet node = oneOf(nodes)
+                nondet address = oneOf(consumerAddresses)
+                // do a key assignment
+                KeyAssignment(consumer, node, address),
+            }
+        }
+
+    action KeyAssignment(
+        chain: Chain,
+        validator: Node,
+        consumerAddr: ConsumerAddr
+    ): bool =
+        val result = assignConsumerKey(currentState, chain, validator, consumerAddr)
+        all {
+            hasError(result) == false,
+            currentState' = result.newState,
+            trace' = trace.append(
+                {...emptyAction,
+                kind: "KeyAssignment",
+                consumerChain: chain,
+                validator: validator,
+                consumerAddr: consumerAddr
+                }
+            ),
+            params' = params,
+        }
+
+    // invariants for key assignment - some invariants are in addition, some need to be adjusted from the original model
+
+    // Every validator set on any consumer chain MUST either be or have been 
+    // a validator set on the provider chain, under the key assignment at the time.
+    val providerKeyAssignedValSetHistory = currentState.providerState.keyAssignedValSetHistory
+
+    val ValidatorSetHasExistedKeyAssignmentInv =
+        runningConsumers.forall(chain =>
+            currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
+                validatorSet => providerKeyAssignedValSetHistory.getOrElse(chain, List()).toSet().contains(validatorSet)
+            )
+        )
+
+    // Any update in the power of a validator on the provider
+    // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains,
+    // and the key assignment of each validator should be applied in that VSCPacket.
+    val ValidatorUpdatesArePropagatedKeyAssignmentInv = 
+        // when the provider has just entered a validator set into a block...
+        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock
+            implies
+        val providerValSetInCurBlock = providerValidatorHistory.head()
+        // ... for each consumer that is running then ...
+        runningConsumers.forall(
+            // ...the validator set under key assignment is in a sent packet...
+            val providerState = currentState.providerState
+            consumer => providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
+                packet => 
+                    packet.validatorSet == 
+                    applyKeyAssignmentToValSet(providerState, consumer, providerValSetInCurBlock)
+            )
+            // or the consumer was just started, which we detect by the consumer having a timestamp of 0
+            // and the consumer having the validator set that was just sent in the block
+            or 
+            (currentState.consumerStates.get(consumer).chainState.lastTimestamp == 0 and currentState.consumerStates.get(consumer).chainState.currentValidatorSet == providerValSetInCurBlock)
+        )
+
+    // Every consumer chain receives the same sequence of 
+    // ValidatorSetChangePackets in the same order.
+    // NOTE: since not all consumer chains are running all the time,
+    // we need a slightly weaker invariant:
+    // For consumer chains c1, c2, if both c1 and c2 received a packet p1 sent at t1 and a packet p2 sent at t2,
+    // then both have received ALL packets that were sent between t1 and t2.
+    val SameVscPacketsKeyAssignmentInv =
+        runningConsumers.forall(
+            consumer1 => runningConsumers.forall(
+                consumer2 => {
+                    val packets1 = currentState.consumerStates.get(consumer1).receivedVscPackets
+                    val packets2 = currentState.consumerStates.get(consumer2).receivedVscPackets
+                    val commonPackets = packets1.toSet().intersect(packets2.toSet())
+                    if (commonPackets.size() == 0) {
+                        true // they don't share any packets, so nothing to check
+                    } else {
+                        val newestCommonPacket = newest(commonPackets)
+                        val oldestCommonPacket = oldest(commonPackets)
+                        // get all packets sent between the oldest and newest common packet
+                        val packetsBetween1 = packets1.select(
+                            packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime
+                        )
+                        val packetsBetween2 = packets2.select(
+                            packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime
+                        )
+                        
+                        // revert key assignments
+                        val packetsBetween1noKeyAssignment = packetsBetween1.foldl(
+                            List(),
+                            (acc, packet) => 
+                            acc.concat(List({...packet,
+                                validatorSet: revertKeyAssignment(
+                                    currentState.providerState.keyAssignmentsForVSCPackets
+                                        .getOrElse(packet.id, Map())
+                                        .getOrElse(consumer1, Map()),
+                                    packet.validatorSet)
+                            }))
+                        )
+
+                        val packetsBetween2noKeyAssignment = packetsBetween2.foldl(
+                            List(), (acc, packet) => 
+                            acc.concat(List({...packet,
+                                validatorSet: revertKeyAssignment(
+                                    currentState.providerState.keyAssignmentsForVSCPackets
+                                        .getOrElse(packet.id, Map())
+                                        .getOrElse(consumer2, Map()),
+                                    packet.validatorSet)
+                            }))
+                        )
+                        packetsBetween1noKeyAssignment == packetsBetween2noKeyAssignment
+                    }
+                }
+            )
+        )
+
+
+    // Rules for key assignment:
+    val KeyAssignmentRulesInv =
+        NoProviderReuse and NoDuplicationOnSameConsumer
+    
+    // validator A cannot assign consumer key K to consumer chain X if there is already a validator B (B!=A) using K on the provider
+    val NoProviderReuse = 
+        consumerChains.forall(
+            consumer =>
+            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+            valConsPk.keys().forall(
+                node =>
+                    val consAddr = valConsPk.get(node)
+                    // either the key is the nodes key itself (B == A)
+                    consAddr == node or
+                    // or the consAddr must not be a validator on the provider
+                    not(currentState.providerState.chainState.currentValidatorSet.keys().contains(consAddr))
+            )
+        )
+
+    // validator A cannot assign consumer key K to consumer chain X if there is already a validator B using K on X
+    val NoDuplicationOnSameConsumer =
+        consumerChains.forall(
+            consumer => 
+            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+            valConsPk.keys().forall(
+                node =>
+                    val consAddr = valConsPk.get(node)
+                    // no other node may use consAddr
+                    not(valConsPk.keys().exists(
+                        otherNode => otherNode != node and valConsPk.get(otherNode) == consAddr
+                    ))
+            )
+        )
+
+    // sanity checks
+    val CanAssignConsumerKey =
+        not(consumerChains.exists(
+            consumer => 
+                currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).keys().size() > 0
+        ))
+
+    val CanHaveConsumerAddresses =
+        not(consumerChains.exists(
+            consumer => 
+                currentState.consumerStates.get(consumer).chainState.currentValidatorSet.keys().exists(
+                    addr => addr.in(consumerAddresses)
+                )
+        ))
+
+    // == tests for key assignment ==
+    run KeyAssignmentTest =
+        init
+        .then(
+            // start all consumer chains
+            EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
+        )
+        .then(
+            // node 1 assigns a key on consumer1
+            KeyAssignment("consumer1", "node1", "consAddr1")
+        )
+        .then(
+            // end and begin block to make sure the key assignment is processed and the packet is sent
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        )
+        .then(
+            // receive the packet on the consumer
+            DeliverVscPacket("consumer1")
+        )
+        .then(
+            // end and begin block to make sure the packet is processed
+            EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+        )
+        .then(
+            all {
+                // the key should be present in the valset on the consumer, and the node itself should not
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("node1") == 0),
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
+                // try some key assignments that should fail/succeed without comitting to state
+                val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
+                // fail - key already assigned (even if it is the same node)
+                assert(hasError(res)),
+                val res2 = assignConsumerKey(currentState, "consumer1", "node2", "consAddr1")
+                // fail - key assigned to other node
+                assert(hasError(res2)),
+                val res3 = assignConsumerKey(currentState, "consumer2", "node2", "consAddr1")
+                //  ok - may reuse the key on a different consumer
+                assert(not(hasError(res3))),
+                val res4 = assignConsumerKey(currentState, "consumer1", "node2", "node1")
+                // fail - may not reuse a provider key of a different val
+                assert(hasError(res4)),
+                val res5 = assignConsumerKey(currentState, "consumer1", "node1", "consAddr2")
+                // ok - assigning unused key to node
+                assert(not(hasError(res5))),
+                val res6 = assignConsumerKey(currentState, "consumer1", "node1", "node1")
+                // ok - going back to original key
+                assert(not(hasError(res6))),
+                // mature the vsc packet on the consumer
+                EndAndBeginBlockForConsumer("consumer1", unbondingPeriods.get("consumer1") + 1 * Hour)
+            }
+        )
+        .then(
+            // End a block to send the maturation
+            EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+        )
+        .then(
+            // deliver the vsc matured packet to the provider
+            DeliverVscMaturedPacket("consumer1")
+        )
+        .then(
+            // the old key should have been pruned
+            all {
+                // check that pruning has been performed nicely
+                assert(currentState.providerState.validatorByConsumerAddr.get("consumer1").get("consAddr1") == "node1"),
+                assert(currentState.providerState.consumerAddrsToPrune.get("consumer1").get(0).length() == 0),
+                assert(currentState.providerState.keyAssignmentReplacements.getOrElse("consumer1", Map()).keys().size() == 0),
+                // action does not matter
+                VotingPowerChange("node1", 50)
+            }
+        )
+
+    run KeyAssignmentInvTest =
+        init.then(
+            KeyAssignment("consumer3", "node3", "consAddr6")
+        ).then(
+            VotingPowerChange("node1", 50)
+        )
+        .then(
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer1", "consumer2"), Set())
+        ).then(
+            all {
+                ValidatorSetHasExistedKeyAssignmentInv,
+                // action doesn't matter
+                VotingPowerChange("node1", 50)
+            }
+        )
 }
