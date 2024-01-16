@@ -106,7 +106,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appparams "github.com/cosmos/interchain-security/v4/app/consumerparams"
+	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
 	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
 )
 
@@ -864,8 +864,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // 	return encodingConfig
 // }
 
-func MakeTestEncodingConfig() appparams.EncodingConfig {
-	encodingConfig := appparams.MakeTestEncodingConfig()
+func MakeTestEncodingConfig() appencoding.EncodingConfig {
+	encodingConfig := appencoding.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
@@ -873,8 +873,8 @@ func MakeTestEncodingConfig() appparams.EncodingConfig {
 	return encodingConfig
 }
 
-func makeEncodingConfig() appparams.EncodingConfig {
-	encodingConfig := appparams.MakeTestEncodingConfig()
+func makeEncodingConfig() appencoding.EncodingConfig {
+	encodingConfig := appencoding.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)

@@ -6,13 +6,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
+	appparams "github.com/cosmos/interchain-security/v4/app/params"
 	app "github.com/cosmos/interchain-security/v4/app/provider"
 	"github.com/cosmos/interchain-security/v4/cmd/interchain-security-pd/cmd"
 )
 
 func main() {
+	appparams.SetAddressPrefixes("provider")
 	rootCmd := cmd.NewRootCmd()
-
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
