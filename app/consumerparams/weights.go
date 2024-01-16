@@ -1,4 +1,4 @@
-package params
+package consumerparams
 
 // Default simulation operation weights for messages and gov proposals
 const (

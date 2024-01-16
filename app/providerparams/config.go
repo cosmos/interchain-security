@@ -1,11 +1,11 @@
-package params
+package providerparams
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (
-	Bech32Prefix = "cosmos"
+	Bech32Prefix = "provider"
 
 	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
 	Bech32PrefixAccAddr = Bech32Prefix

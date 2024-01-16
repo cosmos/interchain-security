@@ -13,11 +13,11 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	"github.com/cosmos/interchain-security/v4/app/consumer/ante"
-	"github.com/cosmos/interchain-security/v4/app/params"
+	appparams "github.com/cosmos/interchain-security/v4/app/consumerparams"
 )
 
 func TestDisabledModulesDecorator(t *testing.T) {
-	txCfg := params.MakeTestEncodingConfig().TxConfig
+	txCfg := appparams.MakeTestEncodingConfig().TxConfig
 	authzMsgExecSlashing := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&slashingtypes.MsgUnjail{}})
 	authzMsgExecEvidence := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&evidencetypes.MsgSubmitEvidence{}})
 	nestedAuthzMsgExecSlashing := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&authzMsgExecSlashing})

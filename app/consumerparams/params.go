@@ -1,4 +1,4 @@
-package params
+package consumerparams
 
 // Simulation parameter constants
 const (

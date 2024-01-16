@@ -1,4 +1,4 @@
-package params
+package providerparams
 
 import (
 	"github.com/cosmos/cosmos-sdk/client"

@@ -100,7 +100,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appparams "github.com/cosmos/interchain-security/v4/app/params"
+	appparams "github.com/cosmos/interchain-security/v4/app/providerparams"
 	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
 	ibcprovider "github.com/cosmos/interchain-security/v4/x/ccv/provider"
 	ibcproviderclient "github.com/cosmos/interchain-security/v4/x/ccv/provider/client"
