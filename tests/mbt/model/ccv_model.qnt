@@ -236,6 +236,17 @@ module ccv_model {
     // UTILITY FUNCTIONS
     // ==================
 
+    pure def removeZeroPowers(valSet: Node -> int): Node -> int =
+        valSet.keys().fold(
+            Map(),
+            (acc, node) => 
+                if (valSet.get(node) == 0) {
+                    acc
+                } else {
+                    acc.put(node, valSet.get(node))
+                }
+        )
+
     pure def oldest(packets: Set[VscPacket]): VscPacket =
         val newestPossiblePacket: VscPacket = {
             id: 0,
@@ -689,7 +700,9 @@ module ccv_model {
     val ValidatorSetHasExistedKeyAssignmentInv =
         runningConsumers.forall(chain =>
             currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
-                validatorSet => providerKeyAssignedValSetHistory.getOrElse(chain, List()).toSet().contains(validatorSet)
+                validatorSet => providerKeyAssignedValSetHistory.getOrElse(chain, List()).toSet().exists(
+                    provValSet => removeZeroPowers(provValSet) == removeZeroPowers(validatorSet)
+                )
             )
         )
 
