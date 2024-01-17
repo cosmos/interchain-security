@@ -128,6 +128,12 @@ var stepChoices = map[string]StepChoice{
 		description: "consumer double signing tests",
 		testConfig:  DefaultTestConfig(),
 	},
+	"consumer-double-downtime": {
+		name:        "consumer-double-downtime",
+		steps:       consumerDoubleDowntimeSteps,
+		description: "jail a validator for two (different) downtime infractions on consumer",
+		testConfig:  DefaultTestConfig(),
+	},
 }
 
 func executeTests(tests []testStepsWithConfig) (err error) {
