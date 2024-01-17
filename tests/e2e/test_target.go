@@ -11,7 +11,6 @@ import (
 
 type ExecutionTarget interface {
 	GetTargetType() string
-	GetLogs(path string) []byte
 	GetTestScriptPath(isConsumer bool, script string) string
 	// ExecCommand: when executed the command will run and return after completion
 	ExecCommand(name string, arg ...string) *exec.Cmd
@@ -32,11 +31,6 @@ type DockerContainer struct {
 
 func (dc *DockerContainer) GetTargetType() string {
 	return "docker"
-}
-
-func (dc *DockerContainer) GetLogs(path string) []byte {
-	logs := []byte{}
-	return logs
 }
 
 func generateImageName(version string, cfg TargetConfig) (string, error) {

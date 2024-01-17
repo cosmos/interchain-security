@@ -1,8 +1,12 @@
 # syntax=docker/dockerfile:1
 
-# Consumer image to be used for compatibility tests with provider from workspace
-# use docker's build argument --build-arg to overwrite the defaults
-# e.g. docker build --build-arg CONSUMER_TAG=v3.1.0
+# Dockerfile.combined defines a docker image using different provider/consumer versions
+# originated from other docker images.
+# This image is used to test different versions of provider and consumer together.
+#
+# Use docker's build argument --build-arg to specify the consumer/provider image to be used
+# e.g. docker build --build-arg CONSUMER_IMAGE=v3.1.0 --build-arg PROVIDER_IMAGE=v3.1.0
+
 ARG PROVIDER_IMAGE
 ARG CONSUMER_IMAGE
 

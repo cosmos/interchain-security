@@ -27,21 +27,19 @@ func (t *TestSet) String() string {
 	return fmt.Sprint(*t)
 }
 
-type VersionSet []string
+type VersionSet map[string]bool
 
-func (c *VersionSet) Set(value string) error {
-	// Check and skip duplicates
-	for _, v := range *c {
-		if v == value {
-			return nil
-		}
-	}
-	*c = append(*c, value)
+func (vs *VersionSet) Set(value string) error {
+	(*vs)[value] = true
 	return nil
 }
 
-func (t *VersionSet) String() string {
-	return fmt.Sprint(*t)
+func (vs *VersionSet) String() string {
+	keys := []string{}
+	for k, _ := range *vs {
+		keys = append(keys, k)
+	}
+	return fmt.Sprint(keys)
 }
 
 var (
@@ -60,9 +58,9 @@ var (
 )
 
 var (
-	consumerVersions VersionSet
-	providerVersions VersionSet
-	transformGenesis = flag.Bool("transform-genesis", false, "enforces a consumer app to perform genesis transformation of exported ccv genesis data. For details see compatibility notes (RELEASES.md) of used versions")
+	consumerVersions VersionSet = VersionSet{}
+	providerVersions VersionSet = VersionSet{}
+	transformGenesis            = flag.Bool("transform-genesis", false, "enforces a consumer app to perform genesis transformation of exported ccv genesis data. For details see compatibility notes (RELEASES.md) of used versions")
 )
 
 var (
@@ -283,16 +281,13 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []t
 	return tests
 }
 
-func deleteTargets(targets []ExecutionTarget) error {
-	var rc error = nil
+// delete all test targets
+func deleteTargets(targets []ExecutionTarget) {
 	for _, target := range targets {
 		if err := target.Delete(); err != nil {
-			rc = err
 			log.Println("error deleting target: ", err)
 		}
-
 	}
-	return rc
 }
 
 // Create targets where test cases should be executed on
@@ -303,20 +298,21 @@ func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTa
 	var targets []ExecutionTarget
 
 	if len(consumerVersions) == 0 {
-		consumerVersions = append(consumerVersions, "")
+		consumerVersions[""] = true
 	}
 	if len(providerVersions) == 0 {
-		providerVersions = append(providerVersions, "")
+		providerVersions[""] = true
 	}
 
-	for _, provider := range providerVersions {
-		for _, consumer := range consumerVersions {
+	for provider, _ := range providerVersions {
+		for consumer, _ := range consumerVersions {
 			targetCfg.consumerVersion = consumer
 			targetCfg.providerVersion = provider
 			target := DockerContainer{targetConfig: targetCfg}
 			err := target.Build()
 			if err != nil {
-				_ = deleteTargets(targets)
+				log.Println("@@@ failed creating target")
+				deleteTargets(targets)
 				return nil, err
 			}
 			targets = append(targets, &target)
@@ -362,8 +358,6 @@ func executeTests(runners []TestRunner) error {
 				result := runner.Run()
 				if result != nil {
 					log.Printf("Test '%s' failed", runner.config.name)
-				}
-				if err == nil {
 					err = result
 				}
 			}(runner)
@@ -394,7 +388,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed creating test targets: ", err)
 	}
-	defer func() { _ = deleteTargets(targets) }()
+	defer func() { deleteTargets(targets) }()
 
 	testRunners := createTestRunners(targets, testCases)
 	start := time.Now()

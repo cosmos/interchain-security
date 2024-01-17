@@ -25,38 +25,38 @@ type DefaultDriver struct {
 }
 
 // Execute tests
-func (pr *DefaultDriver) Run(steps []Step, target ExecutionTarget, verbose bool) error {
-	pr.target = target
-	pr.verbose = verbose
+func (td *DefaultDriver) Run(steps []Step, target ExecutionTarget, verbose bool) error {
+	td.target = target
+	td.verbose = verbose
 
-	fmt.Printf("=============== started %s tests ===============\n", pr.testCfg.name)
+	fmt.Printf("=============== started %s tests ===============\n", td.testCfg.name)
 
 	start := time.Now()
 	for i, step := range steps {
 		fmt.Printf("running %s: step %d/%d == %s \n",
-			pr.testCfg.name, i+1, len(steps), reflect.TypeOf(step.Action).Name())
+			td.testCfg.name, i+1, len(steps), reflect.TypeOf(step.Action).Name())
 
-		err := pr.runStep(step)
+		err := td.runStep(step)
 		if err != nil {
 			return err
 		}
 	}
-	fmt.Printf("=============== finished %s tests in %v ===============\n", pr.testCfg.name, time.Since(start))
+	fmt.Printf("=============== finished %s tests in %v ===============\n", td.testCfg.name, time.Since(start))
 	return nil
 }
 
 // runStep executes an action and evaluates the result against expected state
-func (pr *DefaultDriver) runStep(step Step) error {
-	err := pr.runAction(step.Action)
+func (td *DefaultDriver) runStep(step Step) error {
+	err := td.runAction(step.Action)
 	if err != nil {
 		return err
 	}
 	modelState := step.State
-	actualState := pr.testCfg.getState(modelState, pr.verbose)
+	actualState := td.testCfg.getState(modelState, td.verbose)
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
-		fmt.Printf("=============== %s FAILED ===============\n", pr.testCfg.name)
+		fmt.Printf("=============== %s FAILED ===============\n", td.testCfg.name)
 		fmt.Println("FAILED action", reflect.TypeOf(step.Action).Name())
 		pretty.Print("actual state", actualState)
 		pretty.Print("model state", modelState)
