@@ -107,10 +107,10 @@
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": {
-          "alice": "consumervalcons1muys5jyqk4xd27e208nym85kn0t4zjcfk9q5ce"
+          "alice": "providervalcons1muys5jyqk4xd27e208nym85kn0t4zjcfcryzvq"
         },
         "ProviderKeys": {
-          "alice": "consumervalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xpvpagq"
+          "alice": "providervalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7x029tue"
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
