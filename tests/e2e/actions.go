@@ -739,7 +739,7 @@ func (tr TestConfig) addChainToGorelayer(
 
 	var accountPrefix string
 	if ChainId == ChainID("provi") {
-		accountPrefix = "provider"
+		accountPrefix = "cosmos"
 	} else {
 		accountPrefix = "consumer"
 	}
@@ -788,7 +788,7 @@ func (tr TestConfig) addChainToHermes(
 
 	var accountPrefix string
 	if ChainId == ChainID("provi") {
-		accountPrefix = "provider"
+		accountPrefix = "cosmos"
 	} else {
 		accountPrefix = "consumer"
 	}

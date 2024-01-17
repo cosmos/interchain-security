@@ -75,7 +75,7 @@ event_source = { mode = 'push', url = 'ws://$CONS_CHAIN_PREFIX.252:26658/websock
 
 [[chains]]
 id = "provi"
-account_prefix = "provider"
+account_prefix = "cosmos"
 clock_drift = "5s"
 gas_multiplier = 1.1
 grpc_addr = "tcp://$PROV_CHAIN_PREFIX.4:9091"

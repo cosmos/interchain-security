@@ -38,7 +38,7 @@ func TestParams(t *testing.T) {
 	require.Equal(t, expParams, params)
 
 	newParams := ccv.NewParams(false, 1000,
-		"channel-2", "provider19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddeeglea",
+		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"}, 2*time.Hour)
 	consumerKeeper.SetParams(ctx, newParams)
 	params = consumerKeeper.GetConsumerParams(ctx)
@@ -52,10 +52,10 @@ func TestParams(t *testing.T) {
 	gotChan := consumerKeeper.GetDistributionTransmissionChannel(ctx)
 	require.Equal(t, gotChan, "channel-7")
 
-	consumerKeeper.SetProviderFeePoolAddrStr(ctx, "provider1dkas8mu4kyhl5jrh4nzvm65qz588hy9q0vmxem")
+	consumerKeeper.SetProviderFeePoolAddrStr(ctx, "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la")
 	gotAddr := consumerKeeper.
 		GetProviderFeePoolAddrStr(ctx)
-	require.Equal(t, gotAddr, "provider1dkas8mu4kyhl5jrh4nzvm65qz588hy9q0vmxem")
+	require.Equal(t, gotAddr, "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la")
 
 	consumerKeeper.SetUnbondingPeriod(ctx, time.Hour*24*10)
 	storedUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(ctx)

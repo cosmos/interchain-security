@@ -115,10 +115,10 @@
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": {
-          "carol": "providervalcons1kswr5sq599365kcjmhgufevfps9njf43c2pag0"
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
         },
         "ProviderKeys": {
-          "carol": "providervalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayrkt0fr"
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
@@ -160,10 +160,10 @@
         "ConsumerChains": null,
         "AssignedKeys": {
           "bob": "",
-          "carol": "providervalcons1kswr5sq599365kcjmhgufevfps9njf43c2pag0"
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
         },
         "ProviderKeys": {
-          "carol": "providervalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayrkt0fr"
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
@@ -472,11 +472,11 @@
         "ConsumerChains": null,
         "AssignedKeys": {
           "bob": "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
-          "carol": "providervalcons1kswr5sq599365kcjmhgufevfps9njf43c2pag0"
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
         },
         "ProviderKeys": {
-          "bob": "providervalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6kle6ya5u",
-          "carol": "providervalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayrkt0fr"
+          "bob": "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
@@ -527,11 +527,11 @@
         "ConsumerChains": null,
         "AssignedKeys": {
           "bob": "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
-          "carol": "providervalcons1kswr5sq599365kcjmhgufevfps9njf43c2pag0"
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
         },
         "ProviderKeys": {
-          "bob": "providervalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6kle6ya5u",
-          "carol": "providervalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayrkt0fr"
+          "bob": "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,

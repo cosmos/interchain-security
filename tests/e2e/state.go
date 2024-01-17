@@ -535,7 +535,7 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 
 	for _, val := range valset.Validators {
 		if chain == ChainID("provi") {
-			// use binary with Bech32Prefix set to "provider"
+			// use binary with Bech32Prefix set to "cosmos"
 			if val.Address != tr.validatorConfigs[validator].ValconsAddress {
 				continue
 			}
