@@ -15,31 +15,60 @@ type (
 // Attributes that are unique to a validator. Allows us to map (part of)
 // the set of strings defined above to a set of viable validators
 type ValidatorConfig struct {
-	Mnemonic                 string
-	DelAddress               string // Provider delegator address - Bech32Prefix = "provider"
-	DelAddressOnConsumer     string // Provider delegator address - Bech32Prefix = "consumer"
-	ValoperAddress           string // Provider valoperator address - Bech32Prefix = "provider"
-	ValoperAddressOnConsumer string // Provider valoperator address - Bech32Prefix = "consumer"
-	ValconsAddress           string // Provider valconsensus address - Bech32Prefix = "provider"
-	ValconsAddressOnConsumer string // Provider valconsensus address - Bech32Prefix = "consumer"
-	PrivValidatorKey         string
-	NodeKey                  string
+	// Seed phrase to generate a secp256k1 key used by the validator on the provider
+	Mnemonic string
+	// Validator account address on provider marshaled to string using Bech32
+	// with Bech32Prefix = "provider"
+	DelAddress string
+	// Validator account address on provider marshaled to string using Bech32
+	// with Bech32Prefix = "consumer"
+	DelAddressOnConsumer string
+	// Validator operator address on provider marshaled to string using Bech32
+	// with Bech32Prefix = "provider"
+	ValoperAddress string
+	// Validator operator address on provider marshaled to string using Bech32
+	// with Bech32Prefix = "consumer"
+	ValoperAddressOnConsumer string
+	// Validator consensus address on provider marshaled to string using Bech32
+	// with Bech32Prefix = "provider". It matches the PrivValidatorKey bellow.
+	ValconsAddress string
+	// Validator consensus address on provider marshaled to string using Bech32
+	// with Bech32Prefix = "consumer".
+	ValconsAddressOnConsumer string
+	// Key used for consensus on provider
+	PrivValidatorKey string
+	NodeKey          string
 	// Must be an integer greater than 0 and less than 253
 	IpSuffix string
 
 	// consumer chain key assignment data
 	// keys are used on a new node
-	ConsumerMnemonic                 string
-	ConsumerDelAddress               string // Consumer delegator address - Bech32Prefix = "consumer"
-	ConsumerDelAddressOnProvider     string // Consumer delegator address - Bech32Prefix = "provider"
-	ConsumerValoperAddress           string // Consumer valoperator address - Bech32Prefix = "consumer"
-	ConsumerValoperAddressOnProvider string // Consumer valoperator address - Bech32Prefix = "provider"
-	ConsumerValconsAddress           string // Consumer valconsensus address - Bech32Prefix = "consumer"
-	ConsumerValconsAddressOnProvider string // Consumer valconsensus address - Bech32Prefix = "provider"
+
+	// Seed phrase to generate a secp256k1 key used by the validator on the consumer
+	ConsumerMnemonic string
+	// Validator account address on consumer marshaled to string using Bech32
+	// with Bech32Prefix = "consumer"
+	ConsumerDelAddress string // Consumer delegator address - Bech32Prefix = "consumer"
+	// Validator account address on consumer marshaled to string using Bech32
+	// with Bech32Prefix = "provider"
+	ConsumerDelAddressOnProvider string
+	// Validator operator address on consumer marshaled to string using Bech32
+	// with Bech32Prefix = "consumer"
+	ConsumerValoperAddress string
+	// Validator operator address on consumer marshaled to string using Bech32
+	// with Bech32Prefix = "provider"
+	ConsumerValoperAddressOnProvider string
+	// Validator consensus address on consumer marshaled to string using Bech32
+	// with Bech32Prefix = "consumer". It matches the PrivValidatorKey bellow.
+	ConsumerValconsAddress string
+	// Validator consensus address on consumer marshaled to string using Bech32
+	// with Bech32Prefix = "provider".
+	ConsumerValconsAddressOnProvider string
 	ConsumerValPubKey                string
-	ConsumerPrivValidatorKey         string
-	ConsumerNodeKey                  string
-	UseConsumerKey                   bool // if true the validator node will start with consumer key
+	// Key used for consensus on consumer
+	ConsumerPrivValidatorKey string
+	ConsumerNodeKey          string
+	UseConsumerKey           bool // if true the validator node will start with consumer key
 }
 
 // Attributes that are unique to a chain. Allows us to map (part of)
