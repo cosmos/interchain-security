@@ -250,7 +250,7 @@ module ccv_types {
                 // set old key to 0
                 pure val oldToZero = (oldConsAddr, 0)
                 // set new key to current power
-                pure val newToPower = (providerState.validatorConsumerPubKey.get(consumer).get(node), power)
+                pure val newToPower = (providerState.validatorConsumerPubKey.getOrElse(consumer, Map()).getOrElse(node, node), power)
                 Set(oldToZero, newToPower)
             } else {
                 // no replacement
@@ -568,19 +568,21 @@ module ccv {
         if (err != "") {
             Err(err)
         } else {
-            // for each consumer we just set to running, set its initial validator set to be the current one on the provider.
+            // for each consumer we just set to running, set its initial validator set to be the current one on the provider...
             val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
             val newConsumerStateMap =
                 tmpState.consumerStates.keys().mapBy(
                     (consumer) => 
                     if (consumersToStart.contains(consumer)) {
+                        // modified by the key assignments for the consumer
+                        val consValSet = applyKeyAssignmentToValSet(providerStateAfterConsumerAdvancement, consumer, valSet)
                         val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
                         val newConsumerState: ConsumerState = currentConsumerState.with(
                             "chainState", currentConsumerState.chainState.with(
-                                "currentValidatorSet", valSet
+                                "currentValidatorSet", consValSet
                             ).with(
                                 "votingPowerHistory",
-                                List(valSet)
+                                List(consValSet)
                             ).with(
                                 "lastTimestamp", 
                                 providerStateAfterConsumerAdvancement.chainState.lastTimestamp
@@ -719,7 +721,7 @@ module ccv {
                     )
                 )
                 
-                pure val newValidatorConsumerPubKey = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map()).put(
+                pure val newValidatorConsumerPubKey = currentState.providerState.validatorConsumerPubKey.put(
                     consumer,
                     currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map()).put(
                         providerNode,
