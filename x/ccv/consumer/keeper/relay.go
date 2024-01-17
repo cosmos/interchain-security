@@ -82,7 +82,9 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 
 	// remove outstanding slashing flags of the validators
 	// for which the slashing was acknowledged by the provider chain
-	for _, addr := range newChanges.GetSlashAcks() {
+	for _, ack := range newChanges.GetSlashAcks() {
+		// note that the error was already checked when the packet data was validated
+		addr, _ := sdk.ConsAddressFromHex(ack)
 		k.DeleteOutstandingDowntime(ctx, addr)
 	}
 

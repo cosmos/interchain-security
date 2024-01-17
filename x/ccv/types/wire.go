@@ -32,7 +32,7 @@ func (vsc ValidatorSetChangePacketData) Validate() error {
 	}
 	// Validate the slash acks - must be consensus addresses
 	for _, ack := range vsc.SlashAcks {
-		_, err := sdk.ConsAddressFromBech32(ack)
+		_, err := sdk.ConsAddressFromHex(ack)
 		if err != nil {
 			return err
 		}

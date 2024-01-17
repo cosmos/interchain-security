@@ -501,13 +501,9 @@ func (k Keeper) SetOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress)
 }
 
 // DeleteOutstandingDowntime deletes the outstanding downtime flag for the given validator consensus address
-func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
-	consAddr, err := sdk.ConsAddressFromBech32(consAddress)
-	if err != nil {
-		return // TODO: this should panic with appropriate tests to validate the panic won't happen in normal cases.
-	}
+func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.OutstandingDowntimeKey(consAddr))
+	store.Delete(types.OutstandingDowntimeKey(address))
 }
 
 // GetAllOutstandingDowntimes gets an array of the validator addresses of outstanding downtime flags

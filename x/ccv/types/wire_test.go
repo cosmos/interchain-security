@@ -1,6 +1,7 @@
 package types_test
 
 import (
+	"encoding/hex"
 	"strings"
 	"testing"
 
@@ -23,8 +24,8 @@ func TestPacketDataValidateBasic(t *testing.T) {
 	require.NoError(t, err)
 
 	cId := crypto.NewCryptoIdentityFromIntSeed(4732894342)
-	validSlashAck := cId.SDKValConsAddress().String()
-	tooLongSlashAck := string(make([]byte, 1024))
+	validSlashAck := hex.EncodeToString(cId.ConsumerConsAddress().Address)
+	invalidSlashAck := "invalidAddress"
 
 	cases := []struct {
 		name       string
@@ -74,7 +75,7 @@ func TestPacketDataValidateBasic(t *testing.T) {
 			),
 		},
 		{
-			"invalid: slash ack is too long",
+			"invalid: slash ack is not an hex address",
 			true,
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
@@ -85,7 +86,7 @@ func TestPacketDataValidateBasic(t *testing.T) {
 				},
 				5,
 				[]string{
-					tooLongSlashAck,
+					invalidSlashAck,
 				},
 			),
 		},
