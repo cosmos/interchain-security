@@ -471,7 +471,7 @@
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": {
-          "bob": "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
+          "bob": "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
           "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
         },
         "ProviderKeys": {
@@ -526,7 +526,7 @@
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": {
-          "bob": "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
+          "bob": "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
           "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
         },
         "ProviderKeys": {
