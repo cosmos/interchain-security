@@ -745,9 +745,9 @@ func (tr TestConfig) addChainToGorelayer(
 	}
 
 	chainConfig := fmt.Sprintf(gorelayerChainConfigTemplate,
-		accountPrefix,
 		ChainId,
 		rpcAddr,
+		accountPrefix,
 	)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
