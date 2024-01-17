@@ -729,7 +729,7 @@ module ccv {
                     )
                 )
 
-                pure val newValidatorByConsumerAddr = currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).put(
+                pure val newValidatorByConsumerAddr = currentState.providerState.validatorByConsumerAddr.put(
                     consumer,
                     currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).put(
                         consumerAddr,
