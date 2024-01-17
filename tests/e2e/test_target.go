@@ -153,15 +153,18 @@ func (dc *DockerContainer) ExecDetachedCommand(name string, arg ...string) *exec
 // Needed for different consumer/provider versions staged in one container
 func (dc *DockerContainer) GetTestScriptPath(isConsumer bool, script string) string {
 	path := "/testnet-scripts"
-	if dc.targetConfig.providerVersion != "" && !isConsumer {
-		fmt.Printf("Using script path for provider version '%s'\n", dc.targetConfig.providerVersion)
-		path = "/provider/testnet-scripts"
+	// in case the provider and consumer version differ the test-scripts are in dedicated directories on the target
+	// for each of them (see Docker.combined)
+	if dc.targetConfig.providerVersion != dc.targetConfig.consumerVersion {
+		if !isConsumer {
+			fmt.Printf("Using script path for provider version '%s'\n", dc.targetConfig.providerVersion)
+			path = "/provider/testnet-scripts"
+		} else {
+			fmt.Printf("Using script path for consumer version '%s'\n", dc.targetConfig.consumerVersion)
+			path = "/consumer/testnet-scripts"
+		}
 	}
-
-	if dc.targetConfig.consumerVersion != "" && isConsumer {
-		fmt.Printf("Using script path for consumer version '%s'\n", dc.targetConfig.consumerVersion)
-		path = "/consumer/testnet-scripts"
-	}
+	// no combined image (see Dockerfile)
 	return strings.Join([]string{path, script}, string(os.PathSeparator))
 }
 
