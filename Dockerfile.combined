@@ -18,8 +18,6 @@ FROM --platform=linux/amd64 ${CONSUMER_IMAGE} AS consumer
 # Get Hermes build
 FROM --platform=linux/amd64 otacrew/hermes-ics:evidence-cmd AS hermes-builder
 
-# Get CometMock
-FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder
 
 # Get GoRelayer
 FROM ghcr.io/informalsystems/relayer-no-gas-sim:v2.3.0-rc4-no-gas-sim AS gorelayer-builder
@@ -31,7 +29,6 @@ RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools ht
 USER root
 
 COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
-COPY --from=cometmock-builder /usr/local/bin/cometmock /usr/local/bin/cometmock
 COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
 
 # Copy consumer from specified image
@@ -44,6 +41,9 @@ COPY --from=consumer /testnet-scripts /consumer/testnet-scripts
 # Copy provider from specified image
 COPY --from=provider /usr/local/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
 COPY --from=provider /testnet-scripts /provider/testnet-scripts
+
+#Copy cometmock from provider image
+COPY --from=provider /usr/local/bin/cometmock /usr/local/bin
 
 # Copy in the hermes config
 ADD ./tests/e2e/testnet-scripts/hermes-config.toml /root/.hermes/config.toml
