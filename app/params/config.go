@@ -25,4 +25,6 @@ func SetAddressPrefixes(bech32Prefix string) {
 	cfg.SetBech32PrefixForAccount(bech32PrefixAccAddr, bech32PrefixAccPub)
 	cfg.SetBech32PrefixForValidator(bech32PrefixValAddr, bech32PrefixValPub)
 	cfg.SetBech32PrefixForConsensusNode(bech32PrefixConsAddr, bech32PrefixConsPub)
+
+	cfg.Seal()
 }
