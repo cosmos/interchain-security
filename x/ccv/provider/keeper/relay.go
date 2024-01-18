@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strconv"
 
@@ -422,8 +421,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// for double-signing infractions are already dropped when received
 
 	// append the validator address to the slash ack for its chain id
-	// Note: do not use consumerConsAddr.String() as it converts it to Bech32
-	k.AppendSlashAck(ctx, chainID, hex.EncodeToString(consumerConsAddr.Address))
+	// TODO: consumer cons address should be accepted here
+	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 
 	// jail validator
 	if !validator.IsJailed() {

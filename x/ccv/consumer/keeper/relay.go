@@ -83,9 +83,17 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	// remove outstanding slashing flags of the validators
 	// for which the slashing was acknowledged by the provider chain
 	for _, ack := range newChanges.GetSlashAcks() {
-		// note that the error was already checked when the packet data was validated
-		addr, _ := sdk.ConsAddressFromHex(ack)
-		k.DeleteOutstandingDowntime(ctx, addr)
+		// get consensus address from bech32 address
+		consAddr, err := ccv.GetConsAddrFromBech32(ack)
+		if err != nil {
+			// Do not return an error as it would lead to the consumer being
+			// removed by the provider
+			k.Logger(ctx).Error("invalid consensus address in VSCPacket.SlashAcks",
+				"vscID", newChanges.ValsetUpdateId,
+				"SlashAck", ack,
+				"error", err)
+		}
+		k.DeleteOutstandingDowntime(ctx, consAddr)
 	}
 
 	k.Logger(ctx).Info("finished receiving/handling VSCPacket",

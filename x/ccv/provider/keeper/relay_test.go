@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"encoding/hex"
 	"strings"
 	"testing"
 
@@ -434,8 +433,8 @@ func TestHandleSlashPacket(t *testing.T) {
 
 		if tc.expectedSlashAcksLen == 1 {
 			// must match the consumer address
-			require.Equal(t, hex.EncodeToString(consumerConsAddr.Address), providerKeeper.GetSlashAcks(ctx, chainId)[0])
-			require.NotEqual(t, hex.EncodeToString(providerConsAddr.Address), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+			require.Equal(t, consumerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+			require.NotEqual(t, providerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
 			require.NotEqual(t, providerConsAddr.String(), consumerConsAddr.String())
 		}
 
