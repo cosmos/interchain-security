@@ -20,6 +20,8 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+
+	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 )
 
 const verbose = false
@@ -155,6 +157,17 @@ func RunItfTrace(t *testing.T, path string) {
 	driver.DriverStats = &stats
 
 	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
+
+	// generate keys that can be assigned on consumers, according to the ConsumerAddresses in the trace
+	consumerAddressesExpr := params["ConsumerAddresses"].Value.(itf.ListExprType)
+
+	assignableIdentities := make(map[string]*cryptotestutil.CryptoIdentity, 0)
+	i := 0
+	for _, consumerAddr := range consumerAddressesExpr {
+		// future TOOD: does this need logic to avoid doubling on keys with the validators? probably so statistically unlikely that it's fine
+		assignableIdentities[consumerAddr.Value.(string)] = cryptotestutil.NewCryptoIdentityFromIntSeed(i)
+		i++
+	}
 
 	// remember the time offsets to be able to compare times to the model
 	// this is necessary because the system needs to do many steps to initialize the chains,
@@ -328,8 +341,20 @@ func RunItfTrace(t *testing.T, path string) {
 				expectError = false
 				driver.DeliverPacketFromConsumer(ChainId(consumerChain), expectError)
 			}
-		default:
+		case "KeyAssignment":
+			consumerChain := lastAction["consumerChain"].Value.(string)
+			node := lastAction["validator"].Value.(string)
+			consumerAddr := lastAction["consumerAddr"].Value.(string)
 
+			t.Log("KeyAssignment", consumerChain, node, consumerAddr)
+
+			valIndex := getIndexOfString(node, valNames)
+			assignedKey := assignableIdentities[consumerAddr].TMProtoCryptoPublicKey()
+
+			error := driver.AssignKey(ChainId(consumerChain), int64(valIndex), assignedKey)
+			require.NoError(t, error, "Error assigning key")
+
+		default:
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
 				path, index, actionKind)
 		}
