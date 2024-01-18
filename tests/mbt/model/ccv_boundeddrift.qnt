@@ -87,6 +87,11 @@ module ccv_boundeddrift {
         }
     }
 
+    action stepBoundedDriftKeyAssignment = any {
+        stepBoundedDrift,
+        nondetKeyAssignment,
+    }
+
     // INVARIANT
     // The maxDrift between chains is never exceeded.
     // This *should* be ensured by the step function.

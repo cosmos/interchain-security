@@ -33,6 +33,7 @@ module ccv_model {
         TrustingPeriodPerChain: Chain -> Time,
         ConsumerChains: Set[Chain],
         Nodes: Set[Node],
+        ConsumerAddresses: Set[ConsumerAddr],
         InitialValidatorSet: Node -> int,
     }
 
@@ -126,6 +127,7 @@ module ccv_model {
             Nodes: nodes,
             InitialValidatorSet: InitialValidatorSet,
             TrustingPeriodPerChain: TrustingPeriodPerChain,
+            ConsumerAddresses: consumerAddresses,
         }
     }
 
@@ -657,18 +659,13 @@ module ccv_model {
     action stepKeyAssignment = 
         any {
             step,
+        }
 
-            all {
-                // ensure there is a consumer that either
-                // runs right now or can run in the future
-                // (otherwise all consumers are stopped, so we don't need to assign any keys)
-                runningConsumers.size() + nonConsumers.size() > 0,
-                nondet consumer = oneOf(runningConsumers.union(nonConsumers))
-                nondet node = oneOf(nodes)
-                nondet address = oneOf(consumerAddresses)
-                // do a key assignment
-                KeyAssignment(consumer, node, address),
-            }
+    action nondetKeyAssignment = 
+        any {
+            nondet node = oneOf(nodes)
+            nondet consumerAddr = oneOf(consumerAddresses)
+            KeyAssignment("consumer1", node, consumerAddr),
         }
 
     action KeyAssignment(
