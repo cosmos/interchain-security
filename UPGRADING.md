@@ -12,9 +12,45 @@ Upgrading a provider from `v3.3.0` to `v4.0.0` will require state migrations, se
 
 ### Consumer 
 
+***Note that consumer chains can upgrade directly from `v3.1.0` to `v4.0.0`.*** 
+
 Upgrading a consumer from `v3.2.0` to `v4.0.0` will not require state migration, however, upgrading directly from `v3.1.0` to `v4.0.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/x/ccv/consumer/keeper/migrations.go#L22. 
 
-Note that consumer chains can upgrade directly from `v3.1.0` to `v4.0.0`. 
+In addition, the following migration needs to be added to the upgrade handler of the consumer chain:
+```golang
+func migrateICSOutstandingDowntime(ctx sdk.Context, keepers *upgrades.UpgradeKeepers) error {
+	ctx.Logger().Info("Migrating ICS oustanding downtime...")
+
+	downtimes := keepers.ConsumerKeeper.GetAllOutstandingDowntimes(ctx)
+	for _, od := range downtimes {
+		consAddr, err := sdk.ConsAddressFromBech32(od.ValidatorConsensusAddress)
+		if err != nil {
+			return err
+		}
+		// Remove outstanding downtime flags for validators that have the
+		// signingInfo.JailedUntil zero (the initial value when a new signing
+		// info is created).
+		// The reasoning is that when a validator gets jailed on the consumer,
+		// signingInfo.JailedUntil is updated and the outstanding downtime flag
+		// is set. This flag is usually cleared when the consumer receives a
+		// VSCPacket with the validator's consensus address in the list of
+		// SlashAcks. Due to a bug, this mechanism was not working in versions
+		// <v4.0.0 (see https://github.com/cosmos/interchain-security/issues/1569).
+		// When a validator unjails itself, signingInfo.JailedUntil is reset to
+		// zero.
+		signingInfo, found := keepers.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+		if found && signingInfo.JailedUntil == time.Unix(0, 0) {
+			keepers.ConsumerKeeper.DeleteOutstandingDowntime(ctx, consAddr)
+		}
+	}
+
+	ctx.Logger().Info("Finished ICS oustanding downtime")
+
+	return nil
+}
+```
+
+
 
 ## [v3.3.x](https://github.com/cosmos/interchain-security/tree/release/v3.2.x)
 
