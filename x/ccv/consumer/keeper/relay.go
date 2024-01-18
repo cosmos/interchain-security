@@ -92,6 +92,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 				"vscID", newChanges.ValsetUpdateId,
 				"SlashAck", ack,
 				"error", err)
+			continue
 		}
 		k.DeleteOutstandingDowntime(ctx, consAddr)
 	}
