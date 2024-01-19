@@ -548,6 +548,7 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
+				AccountPrefix:  ConsumerAccountPrefix,
 				BinaryName:     "interchain-security-cd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
