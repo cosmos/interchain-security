@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+var (
+	ProviderAccountPrefix = "cosmos"
+	ConsumerAccountPrefix = "consumer"
+)
+
 // TODO: Determine if user defined type (wrapping a primitive string) is desired in long run
 type (
 	ChainID     string
@@ -18,22 +23,22 @@ type ValidatorConfig struct {
 	// Seed phrase to generate a secp256k1 key used by the validator on the provider
 	Mnemonic string
 	// Validator account address on provider marshaled to string using Bech32
-	// with Bech32Prefix = "cosmos"
+	// with Bech32Prefix = ProviderAccountPrefix
 	DelAddress string
 	// Validator account address on provider marshaled to string using Bech32
-	// with Bech32Prefix = "consumer"
+	// with Bech32Prefix = ConsumerAccountPrefix
 	DelAddressOnConsumer string
 	// Validator operator address on provider marshaled to string using Bech32
-	// with Bech32Prefix = "cosmos"
+	// with Bech32Prefix = ProviderAccountPrefix
 	ValoperAddress string
 	// Validator operator address on provider marshaled to string using Bech32
-	// with Bech32Prefix = "consumer"
+	// with Bech32Prefix = ConsumerAccountPrefix
 	ValoperAddressOnConsumer string
 	// Validator consensus address on provider marshaled to string using Bech32
-	// with Bech32Prefix = "cosmos". It matches the PrivValidatorKey below.
+	// with Bech32Prefix = ProviderAccountPrefix. It matches the PrivValidatorKey below.
 	ValconsAddress string
 	// Validator consensus address on provider marshaled to string using Bech32
-	// with Bech32Prefix = "consumer".
+	// with Bech32Prefix = ConsumerAccountPrefix.
 	ValconsAddressOnConsumer string
 	// Key used for consensus on provider
 	PrivValidatorKey string
@@ -47,22 +52,22 @@ type ValidatorConfig struct {
 	// Seed phrase to generate a secp256k1 key used by the validator on the consumer
 	ConsumerMnemonic string
 	// Validator account address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = "consumer"
-	ConsumerDelAddress string // Consumer delegator address - Bech32Prefix = "consumer"
+	// with Bech32Prefix = ConsumerAccountPrefix
+	ConsumerDelAddress string
 	// Validator account address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = "cosmos"
+	// with Bech32Prefix = ProviderAccountPrefix
 	ConsumerDelAddressOnProvider string
 	// Validator operator address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = "consumer"
+	// with Bech32Prefix = ConsumerAccountPrefix
 	ConsumerValoperAddress string
 	// Validator operator address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = "cosmos"
+	// with Bech32Prefix = ProviderAccountPrefix
 	ConsumerValoperAddressOnProvider string
 	// Validator consensus address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = "consumer". It matches the PrivValidatorKey below.
+	// with Bech32Prefix = ConsumerAccountPrefix. It matches the PrivValidatorKey below.
 	ConsumerValconsAddress string
 	// Validator consensus address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = "cosmos".
+	// with Bech32Prefix = ProviderAccountPrefix.
 	ConsumerValconsAddressOnProvider string
 	ConsumerValPubKey                string
 	// Key used for consensus on consumer
@@ -75,6 +80,8 @@ type ValidatorConfig struct {
 // the set of strings defined above to a set of viable chains
 type ChainConfig struct {
 	ChainId ChainID
+	// The account prefix configured on the chain. For example, on the Hub, this is "cosmos"
+	AccountPrefix string
 	// Must be unique per chain
 	IpPrefix       string
 	VotingWaitTime uint
@@ -217,6 +224,7 @@ func SlashThrottleTestConfig() TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
+				AccountPrefix:  ProviderAccountPrefix,
 				BinaryName:     "interchain-security-pd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
@@ -232,6 +240,7 @@ func SlashThrottleTestConfig() TestConfig {
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
+				AccountPrefix:  ConsumerAccountPrefix,
 				BinaryName:     "interchain-security-cd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
@@ -263,6 +272,7 @@ func DefaultTestConfig() TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
+				AccountPrefix:  ProviderAccountPrefix,
 				BinaryName:     "interchain-security-pd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
@@ -278,6 +288,7 @@ func DefaultTestConfig() TestConfig {
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
+				AccountPrefix:  ConsumerAccountPrefix,
 				BinaryName:     "interchain-security-cd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
@@ -321,6 +332,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
+				AccountPrefix:  ProviderAccountPrefix,
 				BinaryName:     "interchain-security-pd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
@@ -335,6 +347,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 			},
 			ChainID("democ"): {
 				ChainId:        ChainID("democ"),
+				AccountPrefix:  ConsumerAccountPrefix,
 				BinaryName:     "interchain-security-cdd",
 				IpPrefix:       "7.7.9",
 				VotingWaitTime: 20,
@@ -361,6 +374,7 @@ func MultiConsumerTestConfig() TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
+				AccountPrefix:  ProviderAccountPrefix,
 				BinaryName:     "interchain-security-pd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
@@ -375,6 +389,7 @@ func MultiConsumerTestConfig() TestConfig {
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
+				AccountPrefix:  ConsumerAccountPrefix,
 				BinaryName:     "interchain-security-cd",
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
@@ -386,6 +401,7 @@ func MultiConsumerTestConfig() TestConfig {
 			},
 			ChainID("densu"): {
 				ChainId:        ChainID("densu"),
+				AccountPrefix:  ConsumerAccountPrefix,
 				BinaryName:     "interchain-security-cd",
 				IpPrefix:       "7.7.9",
 				VotingWaitTime: 20,
@@ -416,6 +432,7 @@ func ChangeoverTestConfig() TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
+				AccountPrefix:  ProviderAccountPrefix,
 				BinaryName:     "interchain-security-pd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
@@ -431,6 +448,7 @@ func ChangeoverTestConfig() TestConfig {
 			},
 			ChainID("sover"): {
 				ChainId:        ChainID("sover"),
+				AccountPrefix:  ConsumerAccountPrefix,
 				BinaryName:     "interchain-security-sd",
 				UpgradeBinary:  "interchain-security-cdd",
 				IpPrefix:       "7.7.8",
@@ -514,6 +532,7 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 		chainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
+				AccountPrefix:  ProviderAccountPrefix,
 				BinaryName:     "interchain-security-pd",
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,

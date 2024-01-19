@@ -737,17 +737,10 @@ func (tr TestConfig) addChainToGorelayer(
 	ChainId := tr.chainConfigs[action.Chain].ChainId
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 
-	var accountPrefix string
-	if ChainId == ChainID("provi") {
-		accountPrefix = "cosmos"
-	} else {
-		accountPrefix = "consumer"
-	}
-
 	chainConfig := fmt.Sprintf(gorelayerChainConfigTemplate,
 		ChainId,
 		rpcAddr,
-		accountPrefix,
+		tr.chainConfigs[action.Chain].AccountPrefix,
 	)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -786,15 +779,8 @@ func (tr TestConfig) addChainToHermes(
 	grpcAddr := "tcp://" + queryNodeIP + ":9091"
 	wsAddr := "ws://" + queryNodeIP + ":26658/websocket"
 
-	var accountPrefix string
-	if ChainId == ChainID("provi") {
-		accountPrefix = "cosmos"
-	} else {
-		accountPrefix = "consumer"
-	}
-
 	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
-		accountPrefix,
+		tr.chainConfigs[action.Chain].AccountPrefix,
 		grpcAddr,
 		ChainId,
 		keyName,
