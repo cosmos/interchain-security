@@ -239,6 +239,10 @@ func RunItfTrace(t *testing.T, path string) {
 			// and then increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
 			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+			for _, consumer := range driver.runningConsumers() {
+				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
+			}
+
 			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
 			runningConsumersAfter := driver.runningConsumers()
 
@@ -296,11 +300,8 @@ func RunItfTrace(t *testing.T, path string) {
 				if len(consumersToStart) > 0 && consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(string) {
 					continue
 				}
-				consumerChainId := consumer.ChainId
 
-				driver.path(ChainId(consumerChainId)).AddClientHeader(PROVIDER, driver.providerHeader())
-				err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
-				require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
+				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
 			}
 
 		case "EndAndBeginBlockForConsumer":
@@ -314,13 +315,12 @@ func RunItfTrace(t *testing.T, path string) {
 			_ = headerBefore
 
 			driver.endAndBeginBlock(ChainId(consumerChain), 1*time.Nanosecond)
+			UpdateConsumerClientOnProvider(t, driver, consumerChain)
+
 			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
 
 			// update the client on the provider
-			consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
-			driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
-			err := driver.path(ChainId(consumerChain)).UpdateClient(PROVIDER, false)
-			require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChain, err)
+			UpdateConsumerClientOnProvider(t, driver, consumerChain)
 
 		case "DeliverVscPacket":
 			consumerChain := lastAction["consumerChain"].Value.(string)
@@ -427,6 +427,19 @@ func RunItfTrace(t *testing.T, path string) {
 		t.Logf("State %v of trace %v is ok!", index, path)
 	}
 	t.Log("🟢 Trace is ok!")
+}
+
+func UpdateProviderClientOnConsumer(t *testing.T, driver *Driver, consumerChainId string) {
+	driver.path(ChainId(consumerChainId)).AddClientHeader(PROVIDER, driver.providerHeader())
+	err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
+	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
+}
+
+func UpdateConsumerClientOnProvider(t *testing.T, driver *Driver, consumerChain string) {
+	consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
+	driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
+	err := driver.path(ChainId(consumerChain)).UpdateClient(PROVIDER, false)
+	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChain, err)
 }
 
 func CompareValidatorSets(
