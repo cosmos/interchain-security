@@ -38,7 +38,7 @@ func (tr TestConfig) sendTokens(
 	fromAddress := fromValCfg.DelAddress
 	toAddress := toValCfg.DelAddress
 	if action.Chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to "consumer"
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if fromValCfg.UseConsumerKey {
 			fromAddress = fromValCfg.ConsumerDelAddress
 		} else {
@@ -1335,7 +1335,7 @@ func (tr TestConfig) delegateTokens(
 	toValCfg := tr.validatorConfigs[action.To]
 	validatorAddress := toValCfg.ValoperAddress
 	if action.Chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to "consumer"
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if toValCfg.UseConsumerKey {
 			validatorAddress = toValCfg.ConsumerValoperAddress
 		} else {
@@ -1386,7 +1386,7 @@ func (tr TestConfig) unbondTokens(
 	unbondFromValCfg := tr.validatorConfigs[action.UnbondFrom]
 	validatorAddress := unbondFromValCfg.ValoperAddress
 	if action.Chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to "consumer"
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if unbondFromValCfg.UseConsumerKey {
 			validatorAddress = unbondFromValCfg.ConsumerValoperAddress
 		} else {
@@ -1440,7 +1440,7 @@ func (tr TestConfig) cancelUnbondTokens(
 	validatorAddress := valCfg.ValoperAddress
 	delegatorAddress := delCfg.DelAddress
 	if action.Chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to "consumer"
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if valCfg.UseConsumerKey {
 			validatorAddress = valCfg.ConsumerValoperAddress
 		} else {
@@ -1521,7 +1521,7 @@ func (tr TestConfig) redelegateTokens(action RedelegateTokensAction, verbose boo
 	redelegateSrc := srcCfg.ValoperAddress
 	redelegateDst := dstCfg.ValoperAddress
 	if action.Chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to "consumer"
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if srcCfg.UseConsumerKey {
 			redelegateSrc = srcCfg.ConsumerValoperAddress
 		} else {

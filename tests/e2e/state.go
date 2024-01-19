@@ -319,7 +319,7 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 	valCfg := tr.validatorConfigs[validator]
 	delAddresss := valCfg.DelAddress
 	if chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to "consumer"
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if valCfg.UseConsumerKey {
 			delAddresss = valCfg.ConsumerDelAddress
 		} else {
@@ -355,7 +355,7 @@ func (tr TestConfig) getBalance(chain ChainID, validator ValidatorID) uint {
 	valCfg := tr.validatorConfigs[validator]
 	valDelAddress := valCfg.DelAddress
 	if chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to "consumer"
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if valCfg.UseConsumerKey {
 			valDelAddress = valCfg.ConsumerDelAddress
 		} else {
@@ -535,12 +535,12 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 
 	for _, val := range valset.Validators {
 		if chain == ChainID("provi") {
-			// use binary with Bech32Prefix set to "cosmos"
+			// use binary with Bech32Prefix set to ProviderAccountPrefix
 			if val.Address != tr.validatorConfigs[validator].ValconsAddress {
 				continue
 			}
 		} else {
-			// use binary with Bech32Prefix set to "consumer"
+			// use binary with Bech32Prefix set to ConsumerAccountPrefix
 			if val.Address != tr.validatorConfigs[validator].ValconsAddressOnConsumer &&
 				val.Address != tr.validatorConfigs[validator].ConsumerValconsAddress {
 				continue
@@ -562,7 +562,7 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 func (tr TestConfig) getValStakedTokens(chain ChainID, validator ValidatorID) uint {
 	valoperAddress := tr.validatorConfigs[validator].ValoperAddress
 	if chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to "consumer"
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if tr.validatorConfigs[validator].UseConsumerKey {
 			valoperAddress = tr.validatorConfigs[validator].ConsumerValoperAddress
 		} else {
