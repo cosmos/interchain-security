@@ -1,13 +1,33 @@
 #!/usr/bin/make -f
 
+BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+COMMIT := $(shell git log -1 --format='%H')
+
+# don't override user values
+ifeq (,$(VERSION))
+  VERSION := $(shell git describe --exact-match 2>/dev/null)
+  # if VERSION is empty, then populate it with branch's name and raw commit hash
+  ifeq (,$(VERSION))
+    VERSION := $(BRANCH)-$(COMMIT)
+  endif
+endif
+
+sharedFlags = -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
+
+providerFlags := $(sharedFlags) -X github.com/cosmos/cosmos-sdk/version.AppName=interchain-security-pd -X github.com/cosmos/cosmos-sdk/version.Name=interchain-security-pd
+consumerFlags := $(sharedFlags) -X github.com/cosmos/cosmos-sdk/version.AppName=interchain-security-cd -X github.com/cosmos/cosmos-sdk/version.Name=interchain-security-cd
+democracyFlags := $(sharedFlags) -X github.com/cosmos/cosmos-sdk/version.AppName=interchain-security-cdd -X github.com/cosmos/cosmos-sdk/version.Name=interchain-security-cdd
+standaloneFlags := $(sharedFlags) -X github.com/cosmos/cosmos-sdk/version.AppName=interchain-security-sd -X github.com/cosmos/cosmos-sdk/version.Name=interchain-security-sd
+
 install: go.sum
 		export GOFLAGS='-buildmode=pie'
 		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
-		go install $(BUILD_FLAGS) ./cmd/interchain-security-pd
-		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
-		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
-		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
+		go install -ldflags "$(providerFlags)" ./cmd/interchain-security-pd
+		go install -ldflags "$(consumerFlags)" ./cmd/interchain-security-cd
+		go install -ldflags "$(democracyFlags)" ./cmd/interchain-security-cdd
+		go install -ldflags "$(standaloneFlags)" ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
 test: test-unit test-integration test-mbt test-e2e
