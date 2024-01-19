@@ -8,6 +8,12 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 )
 
+// creates n signers. does not return a validator set, just only the PrivValidators by their addresses
+func CreateSigners(n int) (map[string]tmtypes.PrivValidator, error) {
+	_, _, signersByAddress, err := CreateValidators(n)
+	return signersByAddress, err
+}
+
 func CreateValidators(n int) (
 	*tmtypes.ValidatorSet, []types.ValidatorUpdate, map[string]tmtypes.PrivValidator, error,
 ) {

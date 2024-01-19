@@ -665,7 +665,8 @@ module ccv_model {
         any {
             nondet node = oneOf(nodes)
             nondet consumerAddr = oneOf(consumerAddresses)
-            KeyAssignment("consumer1", node, consumerAddr),
+            nondet consumer = oneOf(runningConsumers)
+            KeyAssignment(consumer, node, consumerAddr),
         }
 
     action KeyAssignment(
