@@ -30,7 +30,7 @@ func migrateICSOutstandingDowntime(ctx sdk.Context, keepers *upgrades.UpgradeKee
 		keepers.ConsumerKeeper.DeleteOutstandingDowntime(ctx, consAddr)
 	}
 
-	ctx.Logger().Info("Finished ICS outstanding downtime")
+	ctx.Logger().Info("Finished ICS oustanding downtime")
 
 	return nil
 }
