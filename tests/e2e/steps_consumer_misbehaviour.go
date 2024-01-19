@@ -61,7 +61,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			Action: AssignConsumerPubKeyAction{
 				Chain:          ChainID(consumerName),
 				Validator:      ValidatorID("alice"),
-				ConsumerPubkey: `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="}`,
+				ConsumerPubkey: getDefaultValidators()[ValidatorID("alice")].ConsumerValPubKey,
 				// consumer chain has not started
 				// we don't need to reconfigure the node
 				// since it will start with consumer key
@@ -70,10 +70,10 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					AssignedKeys: &map[ValidatorID]string{
-						ValidatorID("alice"): "cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe",
+						ValidatorID("alice"): getDefaultValidators()[ValidatorID("alice")].ConsumerValconsAddressOnProvider,
 					},
 					ProviderKeys: &map[ValidatorID]string{
-						ValidatorID("alice"): "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+						ValidatorID("alice"): getDefaultValidators()[ValidatorID("alice")].ValconsAddress,
 					},
 				},
 			},

@@ -114,3 +114,11 @@ var consumerDoubleSignSteps = concatSteps(
 	// make a consumer validator double sign and get jailed
 	stepsCauseDoubleSignOnConsumer("consu", "provi"),
 )
+
+var consumerDoubleDowntimeSteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegateShort("consu"),
+	stepsDoubleDowntime("consu"),
+)

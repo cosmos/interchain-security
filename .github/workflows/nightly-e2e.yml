@@ -1,9 +1,7 @@
 # Run integration tests nightly on main
-
-# !! Relevant changes to this file should be propagated manual-integration.yml
-
 name: nightly-e2e-main
 on:
+  workflow_dispatch:
   schedule:
     # run every day at 03:00 UTC
     #        ┌───────────── minute (0 - 59)
@@ -114,6 +112,54 @@ jobs:
           go-version: "1.21" # The Go version to download (if necessary) and use.
       - name: E2E multi-consumer tests
         run: go run ./tests/e2e/... --tc multiconsumer
+  consumer-misbehaviour-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E consumer-misbehaviour tests
+        run: go run ./tests/e2e/... --tc consumer-misbehaviour
+  consumer-double-sign-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E consumer-double-sign tests
+        run: go run ./tests/e2e/... --tc consumer-double-sign
+  consumer-double-downtime-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E consumer-double-downtime tests
+        run: go run ./tests/e2e/... --tc consumer-double-downtime
 
   nightly-test-fail:
     needs:
@@ -123,6 +169,9 @@ jobs:
       - democracy-test
       - slash-throttle-test
       - multiconsumer-test
+      - consumer-misbehaviour-test
+      - consumer-double-sign-test
+      - consumer-double-downtime-test
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     steps:
