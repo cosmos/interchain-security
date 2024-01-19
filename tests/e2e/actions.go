@@ -1724,7 +1724,6 @@ func (tr TestConfig) redelegateTokens(action RedelegateTokensAction, target Exec
 
 	cmd := target.ExecCommand(
 		tr.chainConfigs[action.Chain].BinaryName,
-
 		"tx", "staking", "redelegate",
 		redelegateSrc,
 		redelegateDst,
