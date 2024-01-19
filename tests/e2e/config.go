@@ -30,7 +30,7 @@ type ValidatorConfig struct {
 	// with Bech32Prefix = "consumer"
 	ValoperAddressOnConsumer string
 	// Validator consensus address on provider marshaled to string using Bech32
-	// with Bech32Prefix = "cosmos". It matches the PrivValidatorKey bellow.
+	// with Bech32Prefix = "cosmos". It matches the PrivValidatorKey below.
 	ValconsAddress string
 	// Validator consensus address on provider marshaled to string using Bech32
 	// with Bech32Prefix = "consumer".
