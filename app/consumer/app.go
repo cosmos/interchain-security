@@ -97,7 +97,7 @@ import (
 const (
 	AppName              = "interchain-security-c"
 	upgradeName          = "ics-v1-to-v2"
-	AccountAddressPrefix = "cosmos"
+	AccountAddressPrefix = "consumer"
 )
 
 var (
