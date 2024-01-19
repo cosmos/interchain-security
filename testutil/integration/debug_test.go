@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
-	integr "github.com/cosmos/interchain-security/v3/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v4/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
+	integr "github.com/cosmos/interchain-security/v4/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite
@@ -147,6 +147,14 @@ func TestQueueAndSendSlashPacket(t *testing.T) {
 
 func TestCISBeforeCCVEstablished(t *testing.T) {
 	runCCVTestByName(t, "TestCISBeforeCCVEstablished")
+}
+
+//
+// Soft opt out tests
+//
+
+func TestSoftOptOut(t *testing.T) {
+	runCCVTestByName(t, "TestSoftOptOut")
 }
 
 //

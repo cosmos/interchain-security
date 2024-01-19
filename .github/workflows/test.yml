@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -39,7 +39,7 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
-      - uses: actions/cache@v3.3.2
+      - uses: actions/cache@v3.3.3
         with:
           path: |
             ~/.cache/go-build
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -177,7 +177,7 @@ jobs:
         run: git lfs checkout
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -192,6 +192,7 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
+            Dockerfile*
       - name: e2e tests
         if: env.GIT_DIFF
         run: |
@@ -207,7 +208,7 @@ jobs:
         run: git lfs checkout
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -222,6 +223,7 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
+            Dockerfile*
       - name: cometmock tests
         if: env.GIT_DIFF
         run: |
@@ -237,7 +239,7 @@ jobs:
         run: git lfs checkout
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -252,6 +254,7 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
+            Dockerfile*
       - name: trace-e2e tests
         if: env.GIT_DIFF
         run: |

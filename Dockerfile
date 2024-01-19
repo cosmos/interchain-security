@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 
-FROM golang:1.20-alpine AS is-builder
+FROM golang:1.21-alpine AS is-builder
 
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers
 RUN apk add --no-cache $PACKAGES
@@ -29,7 +29,7 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-FROM otacrew/hermes-ics:evidence-cmd AS hermes-builder
+FROM --platform=linux/amd64 otacrew/hermes-ics:evidence-cmd AS hermes-builder
 
 # Get CometMock
 FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder

@@ -2,6 +2,34 @@
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
+## [v4.0.x](https://github.com/cosmos/interchain-security/tree/release/v4.0.x)
+
+`v4.0.x` sets the minimum required version of Go to `1.21`, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/go.mod#L3. 
+
+### Provider 
+
+Upgrading a provider from `v3.3.0` to `v4.0.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/x/ccv/provider/migrations/migrator.go#L31. 
+
+### Consumer 
+
+Upgrading a consumer from `v3.2.0` to `v4.0.0` will not require state migration, however, upgrading directly from `v3.1.0` to `v4.0.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/x/ccv/consumer/keeper/migrations.go#L22. 
+
+Note that consumer chains can upgrade directly from `v3.1.0` to `v4.0.0`. 
+
+## [v3.3.x](https://github.com/cosmos/interchain-security/tree/release/v3.2.x)
+
+### Provider 
+
+Upgrading the provider from `v2.x.y` to `v3.3.0` will not require state migration. 
+
+## [v3.2.x](https://github.com/cosmos/interchain-security/tree/release/v3.2.x)
+
+`v3.2.0` bumps IBC to `v7.3`. As a result, `legacy_ibc_testing` is not longer required and was removed, see https://github.com/cosmos/interchain-security/pull/1185. This means that when upgrading to `v3.2.0`, any customized tests relying on `legacy_ibc_testing` need to be updated.
+
+### Consumer 
+
+Upgrading the consumer from either `v3.0.0` or `v3.1.0` to `v3.2.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v3.2.x/x/ccv/consumer/keeper/migration.go#L25.
+
 ## [v3.0.x](https://github.com/cosmos/interchain-security/releases/tag/v3.0.0-rc0)
 
 ### Upgrading to Cosmos SDK 0.47
@@ -66,8 +94,8 @@ import (
 
 ### Provider 
 
-Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](x/ccv/provider/keeper/migration.go). See the provider module's `ConsensusVersion` in [module](x/ccv/provider/module.go).
+Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](https://github.com/cosmos/interchain-security/blob/v2.0.0/x/ccv/provider/keeper/migration.go).
 
 ### Consumer
 
-Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. See the consumer module's `ConsensusVersion` in [module](x/ccv/consumer/module.go).
+Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. 

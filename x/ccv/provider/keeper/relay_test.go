@@ -18,11 +18,11 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // TestQueueVSCPackets tests queueing validator set updates.

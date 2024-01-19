@@ -1,5 +1,77 @@
 # CHANGELOG
 
+## v3.3.0
+
+*January 5, 2024*
+
+### API BREAKING
+
+- [Provider](x/ccv/provider)
+  - Deprecate equivocation proposals.
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+### DEPENDENCIES
+
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v7.3.1](https://github.com/cosmos/ibc-go/releases/tag/v7.3.1).
+  ([\#1373](https://github.com/cosmos/interchain-security/pull/1373))
+
+### FEATURES
+
+- General
+  - Add Quint model of Replicated Security.
+    ([\#1336](https://github.com/cosmos/interchain-security/pull/1336))
+- [Provider](x/ccv/provider)
+  - Update how consumer-assigned keys are checked when a validator is
+    created on the provider.
+    ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
+  - Introduce the cryptographic verification of equivocation feature to the provider
+    (cf. [ADR-005](docs/docs/adrs/adr-005-cryptographic-equivocation-verification.md)
+    & [ADR-013](docs/docs/adrs/adr-013-equivocation-slashing.md)).
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+### IMPROVEMENTS
+
+- General
+  - Split out consumer genesis state to reduce shared data between provider and
+    consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
+  - Note: This breaks json format used by augmenting Genesis files of consumer
+    chains with consumer genesis content exported from provider chain. Consumer
+    Genesis content exported from a provider chain using major version 1, 2 or 3
+    of the provider module needs to be transformed with the transformation command
+    introduced by this PR:
+    ```
+    Transform the consumer genesis file from a provider version v1, v2 or v3 to a version supported by this consumer. Result is printed to STDOUT.
+    
+    Example:
+    $ <appd> transform /path/to/ccv_consumer_genesis.json
+    
+    Usage:
+    interchain-security-cd genesis transform [genesis-file] [flags]
+    ```
+  - Refactor shared events, codecs and errors assign to
+    consumer and provider dedicated types where possible.
+    ([\#1350](https://github.com/cosmos/interchain-security/pull/1350))
+- [Provider](x/ccv/provider)
+  - Add `QueryAllPairsValConAddrByConsumerChainID` method to get list of all pairs `valConsensus` address by `Consummer chainID`. ([\#1503](https://github.com/cosmos/interchain-security/pull/1503))
+
+### STATE BREAKING
+
+- General
+  - Split out consumer genesis state to reduce shared data between provider and
+    consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
+  - Improve validation of IBC packet data and provider messages. Also,
+    enable the provider to validate consumer packets before handling them.
+    ([\#1460](https://github.com/cosmos/interchain-security/pull/1460))
+- [Provider](x/ccv/provider)
+  - Change the states by adding a consumer key for each chain that is
+    not yet registered meaning for which the gov proposal has not passed.
+    ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
+  - Introduce the cryptographic verification of equivocation feature to the provider
+    (cf. [ADR-005](docs/docs/adrs/adr-005-cryptographic-equivocation-verification.md)
+    & [ADR-013](docs/docs/adrs/adr-013-equivocation-slashing.md)).
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
 ## v3.2.0
 
 *November 24, 2023*
@@ -161,9 +233,9 @@ Date: June 1st, 2023
 
 Unlike prior releases, the ICS `v2.0.0` release will be based on the main branch. `v2.0.0` will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After `v2.0.0`, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
 
-Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](./x/ccv/provider/keeper/migration.go). See the provider module's `ConsensusVersion` in [module](./x/ccv/provider/module.go)
+Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](https://github.com/cosmos/interchain-security/blob/v2.0.0/x/ccv/provider/keeper/migration.go).
 
-Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. See the consumer module's `ConsensusVersion` in [module](./x/ccv/consumer/module.go)
+Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. 
 
 Some PRs from v2.0.0 may reappear from other releases below. This is due to the fact that ICS v1.1.0 deviates from the commit ordering of the main branch, and other releases thereafter are based on v1.1.0.
 

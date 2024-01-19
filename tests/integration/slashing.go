@@ -18,9 +18,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	keepertestutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	keepertestutil "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed
@@ -443,7 +443,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 		ctx, ccv.ConsumerPortID, channelID)
 	suite.Require().True(ok)
 
-	// Sign 100 blocks
+	// Sign 100 blocks (default value for slashing.SignedBlocksWindow param).
 	valPower := int64(1)
 	height, signedBlocksWindow := int64(0), consumerSlashingKeeper.SignedBlocksWindow(ctx)
 	for ; height < signedBlocksWindow; height++ {

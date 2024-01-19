@@ -7,14 +7,14 @@ import (
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // TestSlashRetries tests the throttling v2 retry logic at an integration level.
 func (s *CCVTestSuite) TestSlashRetries() {
 	s.SetupAllCCVChannels()
 	s.SendEmptyVSCPacket() // Establish ccv channel
-	s.setupValidatorPowers()
+	s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
 	//
 	// Provider setup

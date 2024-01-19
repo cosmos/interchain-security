@@ -21,13 +21,13 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
-	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
+	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -154,7 +154,10 @@ func (s *Driver) delegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
-	server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	if err != nil {
+		log.Println("error when delegating (is this expected?): ", err)
+	}
 }
 
 // undelegate undelegates amt tokens from validator val
@@ -165,7 +168,10 @@ func (s *Driver) undelegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
-	server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	if err != nil {
+		log.Println("error when undelegating (is this expected?): ", err)
+	}
 }
 
 // packetQueue returns the queued packets from sender to receiver,

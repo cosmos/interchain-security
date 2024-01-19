@@ -22,10 +22,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -596,21 +596,26 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 }
 
 // setupValidatorPowers delegates from the sender account to give all
-// validators on the provider chain 1000 power.
-func (s *CCVTestSuite) setupValidatorPowers() {
+// validators on the provider chain the given voting powers.
+func (s *CCVTestSuite) setupValidatorPowers(powers []int64) {
 	delAddr := s.providerChain.SenderAccount.GetAddress()
+	s.Require().Equal(len(powers), len(s.providerChain.Vals.Validators))
 	for idx := range s.providerChain.Vals.Validators {
-		delegateByIdx(s, delAddr, sdk.NewInt(999999999), idx)
+		bondAmt := sdk.NewInt(powers[idx]).Mul(sdk.DefaultPowerReduction)
+		bondAmt = bondAmt.Sub(sdk.NewInt(1)) // 1 token is bonded during the initial setup
+		delegateByIdx(s, delAddr, bondAmt, idx)
 	}
 
 	s.providerChain.NextBlock()
 
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
-	for _, val := range s.providerChain.Vals.Validators {
-		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
-		s.Require().Equal(int64(1000), power)
+	expectedTotalPower := int64(0)
+	for idx, val := range s.providerChain.Vals.Validators {
+		actualPower := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().Equal(powers[idx], actualPower)
+		expectedTotalPower += powers[idx]
 	}
-	s.Require().Equal(int64(4000), stakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+	s.Require().Equal(expectedTotalPower, stakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 }
 
 // mustGetStakingValFromTmVal returns the staking validator from the current state of the staking keeper,
