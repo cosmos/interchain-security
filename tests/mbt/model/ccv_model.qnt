@@ -659,6 +659,7 @@ module ccv_model {
     action stepKeyAssignment = 
         any {
             step,
+            nondetKeyAssignment,
         }
 
     action nondetKeyAssignment = 
