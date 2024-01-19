@@ -32,7 +32,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 
 	cdd "github.com/cosmos/interchain-security/v4/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/v4/app/params"
+	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
@@ -40,7 +40,7 @@ import (
 func NewRootCmd() *cobra.Command {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	tempApp := cdd.New(log.NewNopLogger(), dbm.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(cdd.DefaultNodeHome))
-	encodingConfig := params.EncodingConfig{
+	encodingConfig := appencoding.EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
 		TxConfig:          tempApp.TxConfig(),
@@ -186,7 +186,7 @@ lru_size = 0`
 	return customAppTemplate, customAppConfig
 }
 
-func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
+func initRootCmd(rootCmd *cobra.Command, encodingConfig appencoding.EncodingConfig) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
@@ -276,7 +276,7 @@ func addModuleInitFlags(startCmd *cobra.Command) {
 }
 
 // genesisCommand builds genesis-related `simd genesis` command. Users may provide application specific commands as a parameter
-func genesisCommand(encodingConfig params.EncodingConfig, cmds ...*cobra.Command) *cobra.Command {
+func genesisCommand(encodingConfig appencoding.EncodingConfig, cmds ...*cobra.Command) *cobra.Command {
 	cmd := genutilcli.GenesisCoreCommand(encodingConfig.TxConfig, cdd.ModuleBasics, cdd.DefaultNodeHome)
 
 	for _, sub_cmd := range cmds {

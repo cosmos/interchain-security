@@ -211,6 +211,204 @@ func stepsDowntime(consumerName string) []Step {
 	}
 }
 
+// stepsDowstepsDoubleDowntime time tests that a validator can get jailed twice
+// on a consumer.
+// These are the steps:
+// - a validator is down on a consumer
+// - the validator gets jailed on the provider (when the SlashPacket is received)
+// - the validator gets removed from the consumer (when the VSCPacket is received)
+// - the validator gets unjailed on the provider
+// - the validator is added to the consumer (when the VSCPacket is received)
+// - the validator is down again on the consumer
+// - the validator gets jailed on the provider (when the SlashPacket is received)
+// - the validator gets removed from the consumer (when the VSCPacket is received)
+func stepsDoubleDowntime(consumerName string) []Step {
+	return []Step{
+		{
+			Action: DowntimeSlashAction{
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("bob"),
+			},
+			State: State{
+				// validator should be slashed on consumer, powers not affected on either chain yet
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// Downtime jailing and corresponding voting power change are processed by provider
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 501,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
+						// See https://github.com/cosmos/interchain-security/issues/1304
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+		// A block is incremented each action, hence why VSC is committed on provider,
+		// and can now be relayed as packet to consumer
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// VSC now seen on consumer
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+		{
+			Action: UnjailValidatorAction{
+				Provider:  ChainID("provi"),
+				Validator: ValidatorID("bob"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// bob's stake should not be slashed
+						// since the slash was initiated from consumer
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// bob's stake should not be slashed
+						// since the slash was initiated from consumer
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+		// Try to jail bob again on the consumer
+		{
+			Action: DowntimeSlashAction{
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("bob"),
+			},
+			State: State{
+				// validator should be slashed on consumer, powers not affected on either chain yet
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// Downtime jailing and corresponding voting power change are processed by provider
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 501,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
+						// See https://github.com/cosmos/interchain-security/issues/1304
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+		// A block is incremented each action, hence why VSC is committed on provider,
+		// and can now be relayed as packet to consumer
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// VSC now seen on consumer
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+	}
+}
+
 // stepsDowntimeWithOptOut returns steps validating that alice can incur downtime
 // and not be slashed/jailed, since her voting power is less than 5% of the total.
 //

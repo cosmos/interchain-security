@@ -59,6 +59,10 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 				// AfterValidatorBonded is called by the Slashing module and should not return an error.
 				panic(err)
 			}
+			// Sanity check: making sure the outstanding downtime flag is not
+			// set for this new validator. This is especially useful to deal with
+			// https://github.com/cosmos/interchain-security/issues/1569.
+			k.DeleteOutstandingDowntime(ctx, consAddr)
 		} else {
 			// edge case: we received an update for 0 power
 			// but the validator is already deleted. Do not forward
