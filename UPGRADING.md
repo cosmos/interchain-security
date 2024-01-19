@@ -12,9 +12,29 @@ Upgrading a provider from `v3.3.0` to `v4.0.0` will require state migrations, se
 
 ### Consumer 
 
+***Note that consumer chains can upgrade directly from `v3.1.0` to `v4.0.0`.*** 
+
 Upgrading a consumer from `v3.2.0` to `v4.0.0` will not require state migration, however, upgrading directly from `v3.1.0` to `v4.0.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/x/ccv/consumer/keeper/migrations.go#L22. 
 
-Note that consumer chains can upgrade directly from `v3.1.0` to `v4.0.0`. 
+In addition, the following migration needs to be added to the upgrade handler of the consumer chain:
+```golang
+func migrateICSOutstandingDowntime(ctx sdk.Context, keepers *upgrades.UpgradeKeepers) error {
+	ctx.Logger().Info("Migrating ICS oustanding downtime...")
+
+	downtimes := keepers.ConsumerKeeper.GetAllOutstandingDowntimes(ctx)
+	for _, od := range downtimes {
+		consAddr, err := sdk.ConsAddressFromBech32(od.ValidatorConsensusAddress)
+		if err != nil {
+			return err
+		}
+		keepers.ConsumerKeeper.DeleteOutstandingDowntime(ctx, consAddr)
+	}
+
+	ctx.Logger().Info("Finished ICS oustanding downtime")
+
+	return nil
+}
+```
 
 ## [v3.3.x](https://github.com/cosmos/interchain-security/tree/release/v3.2.x)
 

@@ -54,14 +54,15 @@ var (
 	// map the test config names to their structs to allow for easy selection of test configs,
 	// and also to programmatically set parameters, i.e. see DemocracyTestConfig
 	testConfigs = map[string]TestConfig{
-		"default":               DefaultTestConfig(),
-		"changeover":            ChangeoverTestConfig(),
-		"democracy":             DemocracyTestConfig(false),
-		"democracy-reward":      DemocracyTestConfig(true),
-		"slash-throttle":        SlashThrottleTestConfig(),
-		"multiconsumer":         MultiConsumerTestConfig(),
-		"consumer-misbehaviour": ConsumerMisbehaviourTestConfig(),
-		"consumer-double-sign":  DefaultTestConfig(),
+		"default":                  DefaultTestConfig(),
+		"changeover":               ChangeoverTestConfig(),
+		"democracy":                DemocracyTestConfig(false),
+		"democracy-reward":         DemocracyTestConfig(true),
+		"slash-throttle":           SlashThrottleTestConfig(),
+		"multiconsumer":            MultiConsumerTestConfig(),
+		"consumer-misbehaviour":    ConsumerMisbehaviourTestConfig(),
+		"consumer-double-sign":     DefaultTestConfig(),
+		"consumer-double-downtime": DefaultTestConfig(),
 	}
 )
 
@@ -126,6 +127,12 @@ var stepChoices = map[string]StepChoice{
 		name:        "consumer-double-sign",
 		steps:       consumerDoubleSignSteps,
 		description: "consumer double signing tests",
+		testConfig:  DefaultTestConfig(),
+	},
+	"consumer-double-downtime": {
+		name:        "consumer-double-downtime",
+		steps:       consumerDoubleDowntimeSteps,
+		description: "jail a validator for two (different) downtime infractions on consumer",
 		testConfig:  DefaultTestConfig(),
 	},
 }
@@ -232,6 +239,7 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []t
 			"changeover", "happy-path",
 			"democracy-reward", "democracy",
 			"slash-throttle", "consumer-double-sign", "consumer-misbehaviour",
+			"consumer-double-downtime",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

@@ -53,7 +53,7 @@ enabled = true
 [[chains]]
 id = "consu"
 ccv_consumer_chain = true
-account_prefix = "cosmos"
+account_prefix = "consumer"
 clock_drift = "5s"
 gas_multiplier = 1.1
 grpc_addr = "tcp://$CONS_CHAIN_PREFIX.252:9091"
