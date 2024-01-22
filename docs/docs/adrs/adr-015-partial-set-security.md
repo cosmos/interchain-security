@@ -228,7 +228,17 @@ Note that we use `0` to remove validators that are not opted in as described [he
 ### How do we distribute rewards?
 Currently, rewards are distributed as follows: The consumer [periodically sends rewards](https://github.com/cosmos/interchain-security/blob/v3.3.0/x/ccv/consumer/keeper/distribution.go#L148) on the provider `ConsumerRewardsPool` address. The provider then [transfers those rewards to the fee collector address](https://github.com/cosmos/interchain-security/blob/v3.3.0/x/ccv/provider/keeper/distribution.go#L77) and those transferred rewards are distributed to validators and delegators.
 
-We could use something like `AllocateTokenRewards` but still needs a lot of work because we need to deduce tokens beforehand and so on … Probably doesn’t have to be exact science .. since we already do not distribute exactly.
+In PSS, we distribute rewards only to validators that actually validated the consumer chain. To do this we generate a slice with bogus `VoteInfo` that contains the opted in (or Top N) validators and call [AllocateTokens](https://github.com/cosmos/cosmos-sdk/blob/v0.47.7/x/distribution/keeper/allocation.go#L14).
+
+```
+totalPower := 0
+var []abci.VoteInfo votes
+for _, val := range validators {
+    votes = append(votes, []abci.VoteInfo{{Validator: val, SignedLastBlock: true}})
+}
+
+k.AllocateTokens(ctx, totalPower, votes)
+```
 
 ### Misbehaviour
 
