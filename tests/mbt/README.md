@@ -4,7 +4,7 @@ This folder contains the model-based testing (MBT) framework that we use to test
 
 The basic idea is that it is hard to test that protocols make sense and fulfill desired properties just by
 looking at them hard. Typically, we give these requirements as
-*invariants* should hold for the protocol. For example, a property of the CCV protocol is
+*invariants* that should hold for the protocol. For example, a property of the CCV protocol is
 that the validator set on the consumer chains should always be or have been a validator set on the provider chain.
 This is a property that we can express as an invariant.
 However, it is pretty hard to check that this invariant holds just by looking at the protocol.
@@ -30,6 +30,11 @@ The way we gain confidence is then:
 * We model-check the Quint model to ensure it satisfies desirable properties...
 * ...and we run the model against the actual implementation to ensure the actual implementation behaves like the model...
 * ...so the actual implementation also satisfies the desirable properties.
+
+## Setup
+
+To use this MBT framework, you need to have some prerequisites installed, namely...
+* [Quint](https://github.com/informalsystems/quint#installation) > v0.18.0.
 
 ## Limitations
 
