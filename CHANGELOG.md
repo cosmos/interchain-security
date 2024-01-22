@@ -2,7 +2,7 @@
 
 ## v4.0.0
 
-*January 11, 2024*
+*January 22, 2024*
 
 ### API BREAKING
 
