@@ -17,28 +17,37 @@ module ccv_types {
     // keys/addresses on consumers
     type ConsumerAddr = str
 
-    type VscPacket =
-        {   
-            // the identifier for this packet
-            id: VscId,
-            // the new validator set. in the implementation, this would be a list of validator updates
-            validatorSet: ValidatorSet,
-            // the time at which the packet was sent.
-            sendingTime: Time,
-            // the time (on the receiver) at which the packet will time out
-            timeoutTime: Time
+    type VscPacket = {
+        // the identifier for this packet
+        id: VscId,
+        // the new validator set. in the implementation, this would be a list of validator updates
+        validatorSet: ValidatorSet,
+        // the time at which the packet was sent.
+        sendingTime: Time,
+        // the time (on the receiver) at which the packet will time out
+        timeoutTime: Time
+    }
 
-        }
-
-    type VscMaturedPacket = 
-        {
+    type Packet = 
+        VscPacket(id, validatorSet, sendingTime, timeoutTime) | 
+        VscMaturedPacket({
             // the id of the VscPacket that matured
             id: VscId,
             // the time at which the packet was sent.
             sendingTime: Time,
             // the time (on the receiver) at which the packet will time out
             timeoutTime: Time
-        }
+        }) |
+        SlashPacket({
+            // the validator that performed the infraction
+            validator: Node,
+            // the id of the vsc update at the time the infraction was performed
+            id: VscId,
+            // true if the packet is a downtime slash, false if it is a different type (e.g. double sign)
+            downtime: bool
+        })
+
+    
 
 
     // state that each chain needs to store, whether consumer or provider.
@@ -78,13 +87,13 @@ module ccv_types {
             // Stores, for each consumer chain, the list of packets that have been sent to the consumer chain
             // and *have not been received yet*.
             // In the implementation, this would roughly be the unacknowledged packets on an ibc channel.
-            outstandingPacketsToConsumer: Chain -> List[VscPacket],
+            outstandingPacketsToConsumer: Chain -> List[Packet],
 
             // the set of received VscMaturedPackets
             receivedMaturations: Set[VscMaturedPacket],
 
             // Stores VscPackets which have been sent but where the provider has *not received a response yet*.
-            sentVscPacketsToConsumer: Chain -> List[VscPacket],
+            sentVscPacketsToConsumer: Chain -> List[Packet],
 
             // stores whether, in this block, the validator set has changed.
             // this is needed because the validator set might be considered to have changed, even though
@@ -121,7 +130,15 @@ module ccv_types {
             consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr],
 
             // For every sent VSCPacket, stores the key assignments that were applied to send it.
-            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr))
+            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr)),
+
+            // outstandingDowntime[valAddr] == TRUE entails that the consumer chain sent a request to slash for
+            // downtime for the validator with address valAddr.
+            // outstandingDowntime[valAddr] is set to false once the consumer chain receives a confirmation
+            // that the downtime slash request was received by the provider chain, i.e., a VSCPacket that contains valAddr in downtimeSlashAcks.
+            // The mapping enables the consumer CCV module to avoid sending to the provider chain multiple
+            // slashing requests for the same downtime infraction.
+            outstandingDowntime: Node -> bool,
         }
 
     // utility function: returns a provider state that is initialized minimally.
@@ -160,7 +177,7 @@ module ccv_types {
         // and have not been received yet.
         // ordered by recency, so the head is the oldest packet.
         // In the implementation, essentially unacknowledged IBC packets.
-        outstandingPacketsToProvider: List[VscMaturedPacket],
+        outstandingPacketsToProvider: List[VscMaturedPacket | SlashPacket],
     }
 
     // utility function: returns a consumer state that is initialized minimally.
@@ -621,42 +638,55 @@ module ccv {
                 val newConsumerState: ConsumerState = currentConsumerState.with(
                     "chainState", newChainState
                 )
-                val maturedPackets = newConsumerState.maturationTimes.select(
-                    pair =>
-                    val packet = pair._1 
-                    val maturationTime: Time = pair._2
-                    // important: this uses the last committed timestamp, not the running timestamp!
-                    maturationTime <= newChainState.lastTimestamp
-                ).transform(pair => pair._1)
-                val newMaturationTimes = newConsumerState.maturationTimes.select(
-                    pair =>
-                    val packet = pair._1 
-                    val maturationTime: Time = pair._2
-                    // important: this uses the last committed timestamp, not the running timestamp!
-
-                    maturationTime > newChainState.lastTimestamp
+                val stateBeforeVSCMaturations: ProtocolState = currentState.with(
+                    "consumerStates", currentState.consumerStates.put(chain, newConsumerState)
                 )
-                val newOutstandingPackets = newConsumerState.outstandingPacketsToProvider.concat(
-                    maturedPackets.transform(
-                        packet => {
-                            id: packet.id, 
-                            // it is important to use the oldChainState here, since this happens during EndBlock
-                            sendingTime: oldChainState.runningTimestamp,
-                            timeoutTime: oldChainState.runningTimestamp + CcvTimeout.get(chain)
-                        }
-                    )
-                )
-                val newConsumerState2: ConsumerState = newConsumerState.with(
-                    "maturationTimes", newMaturationTimes
-                ).with(
-                    "outstandingPacketsToProvider", newOutstandingPackets
-                )
-                val newConsumerStates = currentState.consumerStates.set(chain, newConsumerState2)
-                val newState: ProtocolState = currentState.with(
-                    "consumerStates", newConsumerStates
-                )
-                Ok(newState)
+                val stateAfterVSCMaturations = endBlockVSCMaturations(stateBeforeVSCMaturations, chain)
+                Ok(stateAfterVSCMaturations)
             }
+    }
+
+    // Runs the endblock logic for vsc maturations on the given consumer.
+    // The given consumer should be an active, running consumer chain.
+    pure def endBlockVSCMaturations(currentState: ProtocolState, consumer: Chain): ProtocolState = {
+        val consumerState = currentState.consumerStates.get(consumer)
+        val consChainState = consumerState.chainState
+        val maturedPackets = consumerState.maturationTimes.select(
+            pair =>
+            val packet = pair._1 
+            val maturationTime: Time = pair._2
+            // important: this uses the last committed timestamp, not the running timestamp!
+            maturationTime <= consChainState.lastTimestamp
+        ).transform(pair => pair._1)
+        val newMaturationTimes = consumerState.maturationTimes.select(
+            pair =>
+            val packet = pair._1 
+            val maturationTime: Time = pair._2
+            // important: this uses the last committed timestamp, not the running timestamp!
+
+            maturationTime > consChainState.lastTimestamp
+        )
+        val newOutstandingPackets = consumerState.outstandingPacketsToProvider.concat(
+            maturedPackets.transform(
+                packet => {
+                    id: packet.id, 
+                    // it is important to use the lastTimestamp here, since this happens 
+                    // after the time has been advanced
+                    sendingTime: consChainState.lastTimestamp,
+                    timeoutTime: consChainState.lastTimestamp + CcvTimeout.get(consumer)
+                }
+            )
+        )
+
+        val newConsumerState2: ConsumerState = consumerState.with(
+            "maturationTimes", newMaturationTimes
+        ).with(
+            "outstandingPacketsToProvider", newOutstandingPackets
+        )
+        val newConsumerStates = currentState.consumerStates.set(consumer, newConsumerState2)
+        currentState.with(
+            "consumerStates", newConsumerStates
+        )
     }
 
     // Validator providerNode assigns their address for the consumer to be the consumerAddress.
