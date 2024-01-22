@@ -19,7 +19,7 @@ Upgrading a consumer from `v3.2.0` to `v4.0.0` will not require state migration,
 In addition, the following migration needs to be added to the upgrade handler of the consumer chain:
 ```golang
 func migrateICSOutstandingDowntime(ctx sdk.Context, keepers *upgrades.UpgradeKeepers) error {
-	ctx.Logger().Info("Migrating ICS oustanding downtime...")
+	ctx.Logger().Info("Migrating ICS outstanding downtime...")
 
 	downtimes := keepers.ConsumerKeeper.GetAllOutstandingDowntimes(ctx)
 	for _, od := range downtimes {
@@ -30,7 +30,7 @@ func migrateICSOutstandingDowntime(ctx sdk.Context, keepers *upgrades.UpgradeKee
 		keepers.ConsumerKeeper.DeleteOutstandingDowntime(ctx, consAddr)
 	}
 
-	ctx.Logger().Info("Finished ICS oustanding downtime")
+	ctx.Logger().Info("Finished ICS outstanding downtime")
 
 	return nil
 }
