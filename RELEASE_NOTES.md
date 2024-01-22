@@ -14,4 +14,5 @@ This release introduces the following noteworthy changes:
 - It sets the minimum required version of Go to `1.21`.
 - It adds the provider-side changes for jail throttling with retries and, as a result, it fully enables the jail throttling with retries feature (cf. [ADR 008](https://github.com/cosmos/interchain-security/blob/release/v3.2.x/docs/docs/adrs/adr-008-throttle-retries.md)).
 - Fixes a bug in the soft opt-out protocol -- it avoids jailing validators immediately once they can no longer opt-out from validating consumer chains.
+- Fixes a bug the validation of VSCPackets caused by marshaling to string using Bech32.
 
