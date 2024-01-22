@@ -35,12 +35,32 @@ func (tr TestConfig) sendTokens(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	fromValCfg := tr.validatorConfigs[action.From]
+	toValCfg := tr.validatorConfigs[action.To]
+	fromAddress := fromValCfg.DelAddress
+	toAddress := toValCfg.DelAddress
+	if action.Chain != ChainID("provi") {
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
+		if fromValCfg.UseConsumerKey {
+			fromAddress = fromValCfg.ConsumerDelAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			fromAddress = fromValCfg.DelAddressOnConsumer
+		}
+		if toValCfg.UseConsumerKey {
+			toAddress = toValCfg.ConsumerDelAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			toAddress = toValCfg.DelAddressOnConsumer
+		}
+	}
+
 	binaryName := tr.chainConfigs[action.Chain].BinaryName
 	cmd := target.ExecCommand(binaryName,
 
 		"tx", "bank", "send",
-		tr.validatorConfigs[action.From].DelAddress,
-		tr.validatorConfigs[action.To].DelAddress,
+		fromAddress,
+		toAddress,
 		fmt.Sprint(action.Amount)+`stake`,
 
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
@@ -712,7 +732,7 @@ type AddChainToRelayerAction struct {
 const hermesChainConfigTemplate = `
 
 [[chains]]
-account_prefix = "cosmos"
+account_prefix = "%s"
 clock_drift = "5s"
 gas_multiplier = 1.1
 grpc_addr = "%s"
@@ -746,7 +766,7 @@ const gorelayerChainConfigTemplate = `
 		"key": "default",
 		"chain-id": "%s",
 		"rpc-addr": "%s",
-		"account-prefix": "cosmos",
+		"account-prefix": "%s",
 		"keyring-backend": "test",
 		"gas-adjustment": 1.2,
 		"gas-prices": "0.00stake",
@@ -781,6 +801,7 @@ func (tr TestConfig) addChainToGorelayer(
 	chainConfig := fmt.Sprintf(gorelayerChainConfigTemplate,
 		ChainId,
 		rpcAddr,
+		tr.chainConfigs[action.Chain].AccountPrefix,
 	)
 
 	bz, err := target.ExecCommand(
@@ -818,6 +839,7 @@ func (tr TestConfig) addChainToHermes(
 	wsAddr := "ws://" + queryNodeIP + ":26658/websocket"
 
 	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
+		tr.chainConfigs[action.Chain].AccountPrefix,
 		grpcAddr,
 		ChainId,
 		keyName,
@@ -1363,15 +1385,21 @@ func (tr TestConfig) delegateTokens(
 	verbose bool,
 ) {
 	toValCfg := tr.validatorConfigs[action.To]
-	delegateAddr := toValCfg.ValoperAddress
-	if action.Chain != ChainID("provi") && toValCfg.UseConsumerKey {
-		delegateAddr = toValCfg.ConsumerValoperAddress
+	validatorAddress := toValCfg.ValoperAddress
+	if action.Chain != ChainID("provi") {
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
+		if toValCfg.UseConsumerKey {
+			validatorAddress = toValCfg.ConsumerValoperAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			validatorAddress = toValCfg.ValoperAddressOnConsumer
+		}
 	}
 
 	cmd := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
 
 		"tx", "staking", "delegate",
-		delegateAddr,
+		validatorAddress,
 		fmt.Sprint(action.Amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.From),
@@ -1407,15 +1435,22 @@ func (tr TestConfig) unbondTokens(
 	target ExecutionTarget,
 	verbose bool,
 ) {
-	unbondFrom := tr.validatorConfigs[action.UnbondFrom].ValoperAddress
-	if tr.validatorConfigs[action.UnbondFrom].UseConsumerKey {
-		unbondFrom = tr.validatorConfigs[action.UnbondFrom].ConsumerValoperAddress
+	unbondFromValCfg := tr.validatorConfigs[action.UnbondFrom]
+	validatorAddress := unbondFromValCfg.ValoperAddress
+	if action.Chain != ChainID("provi") {
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
+		if unbondFromValCfg.UseConsumerKey {
+			validatorAddress = unbondFromValCfg.ConsumerValoperAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			validatorAddress = unbondFromValCfg.ValoperAddressOnConsumer
+		}
 	}
 
 	cmd := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
 
 		"tx", "staking", "unbond",
-		unbondFrom,
+		validatorAddress,
 		fmt.Sprint(action.Amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.Sender),
@@ -1452,16 +1487,31 @@ func (tr TestConfig) cancelUnbondTokens(
 	target ExecutionTarget,
 	verbose bool,
 ) {
-	validator := tr.validatorConfigs[action.Validator].ValoperAddress
-	if tr.validatorConfigs[action.Validator].UseConsumerKey {
-		validator = tr.validatorConfigs[action.Validator].ConsumerValoperAddress
+	valCfg := tr.validatorConfigs[action.Validator]
+	delCfg := tr.validatorConfigs[action.Delegator]
+	validatorAddress := valCfg.ValoperAddress
+	delegatorAddress := delCfg.DelAddress
+	if action.Chain != ChainID("provi") {
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
+		if valCfg.UseConsumerKey {
+			validatorAddress = valCfg.ConsumerValoperAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			validatorAddress = valCfg.ValoperAddressOnConsumer
+		}
+		if delCfg.UseConsumerKey {
+			delegatorAddress = delCfg.ConsumerDelAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			delegatorAddress = delCfg.DelAddressOnConsumer
+		}
 	}
 
 	// get creation-height from state
 	cmd := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
 		"q", "staking", "unbonding-delegation",
-		tr.validatorConfigs[action.Delegator].DelAddress,
-		validator,
+		delegatorAddress,
+		validatorAddress,
 		`--home`, tr.getValidatorHome(action.Chain, action.Delegator),
 		`--node`, tr.getValidatorNode(action.Chain, action.Delegator),
 		`-o`, `json`,
@@ -1481,7 +1531,7 @@ func (tr TestConfig) cancelUnbondTokens(
 
 	cmd = target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
 		"tx", "staking", "cancel-unbond",
-		validator,
+		validatorAddress,
 		fmt.Sprint(action.Amount)+`stake`,
 		fmt.Sprint(creationHeight),
 		`--from`, `validator`+fmt.Sprint(action.Delegator),
@@ -1518,15 +1568,22 @@ type RedelegateTokensAction struct {
 func (tr TestConfig) redelegateTokens(action RedelegateTokensAction, target ExecutionTarget, verbose bool) {
 	srcCfg := tr.validatorConfigs[action.Src]
 	dstCfg := tr.validatorConfigs[action.Dst]
-
 	redelegateSrc := srcCfg.ValoperAddress
-	if action.Chain != ChainID("provi") && srcCfg.UseConsumerKey {
-		redelegateSrc = srcCfg.ConsumerValoperAddress
-	}
-
 	redelegateDst := dstCfg.ValoperAddress
-	if action.Chain != ChainID("provi") && dstCfg.UseConsumerKey {
-		redelegateDst = dstCfg.ConsumerValoperAddress
+	if action.Chain != ChainID("provi") {
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
+		if srcCfg.UseConsumerKey {
+			redelegateSrc = srcCfg.ConsumerValoperAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			redelegateSrc = srcCfg.ValoperAddressOnConsumer
+		}
+		if dstCfg.UseConsumerKey {
+			redelegateDst = dstCfg.ConsumerValoperAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			redelegateDst = dstCfg.ValoperAddressOnConsumer
+		}
 	}
 
 	cmd := target.ExecCommand(

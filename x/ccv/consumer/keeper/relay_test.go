@@ -123,8 +123,8 @@ func TestOnRecvVSCPacket(t *testing.T) {
 			}},
 		},
 		{
-			"failure on packet with invalid slash acks",
-			true,
+			"success on packet with invalid slash acks",
+			false,
 			channeltypes.NewPacket(pd3.GetBytes(), 4, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{

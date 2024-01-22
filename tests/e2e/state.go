@@ -318,9 +318,16 @@ func (tr TestConfig) getRewards(chain ChainID, modelState Rewards) Rewards {
 }
 
 func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
-	delAddresss := tr.validatorConfigs[validator].DelAddress
-	if chain != ChainID("provi") && tr.validatorConfigs[validator].UseConsumerKey {
-		delAddresss = tr.validatorConfigs[validator].ConsumerDelAddress
+	valCfg := tr.validatorConfigs[validator]
+	delAddresss := valCfg.DelAddress
+	if chain != ChainID("provi") {
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
+		if valCfg.UseConsumerKey {
+			delAddresss = valCfg.ConsumerDelAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			delAddresss = valCfg.DelAddressOnConsumer
+		}
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -347,9 +354,16 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 
 func (tr TestConfig) getBalance(chain ChainID, validator ValidatorID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	valDelAddress := tr.validatorConfigs[validator].DelAddress
-	if chain != ChainID("provi") && tr.validatorConfigs[validator].UseConsumerKey {
-		valDelAddress = tr.validatorConfigs[validator].ConsumerDelAddress
+	valCfg := tr.validatorConfigs[validator]
+	valDelAddress := valCfg.DelAddress
+	if chain != ChainID("provi") {
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
+		if valCfg.UseConsumerKey {
+			valDelAddress = valCfg.ConsumerDelAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			valDelAddress = valCfg.DelAddressOnConsumer
+		}
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -487,6 +501,7 @@ type ValPubKey struct {
 	Value string `yaml:"value"`
 }
 
+// TODO (mpoke) Return powers for multiple validators
 func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 	if *verbose {
 		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
@@ -521,16 +536,25 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 	}
 
 	for _, val := range valset.Validators {
-		if val.Address == tr.validatorConfigs[validator].ValconsAddress ||
-			val.Address == tr.validatorConfigs[validator].ConsumerValconsAddress {
-
-			votingPower, err := strconv.Atoi(val.VotingPower)
-			if err != nil {
-				log.Fatalf("strconv.Atoi returned an error while converting validator voting power: %v, voting power string: %s, validator set: %s", err, val.VotingPower, pretty.Sprint(valset))
+		if chain == ChainID("provi") {
+			// use binary with Bech32Prefix set to ProviderAccountPrefix
+			if val.Address != tr.validatorConfigs[validator].ValconsAddress {
+				continue
 			}
-
-			return uint(votingPower)
+		} else {
+			// use binary with Bech32Prefix set to ConsumerAccountPrefix
+			if val.Address != tr.validatorConfigs[validator].ValconsAddressOnConsumer &&
+				val.Address != tr.validatorConfigs[validator].ConsumerValconsAddress {
+				continue
+			}
 		}
+
+		votingPower, err := strconv.Atoi(val.VotingPower)
+		if err != nil {
+			log.Fatalf("strconv.Atoi returned an error while converting validator voting power: %v, voting power string: %s, validator set: %s", err, val.VotingPower, pretty.Sprint(valset))
+		}
+
+		return uint(votingPower)
 	}
 
 	// Validator not in set, its validator power is zero.
@@ -538,11 +562,22 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 }
 
 func (tr TestConfig) getValStakedTokens(chain ChainID, validator ValidatorID) uint {
+	valoperAddress := tr.validatorConfigs[validator].ValoperAddress
+	if chain != ChainID("provi") {
+		// use binary with Bech32Prefix set to ConsumerAccountPrefix
+		if tr.validatorConfigs[validator].UseConsumerKey {
+			valoperAddress = tr.validatorConfigs[validator].ConsumerValoperAddress
+		} else {
+			// use the same address as on the provider but with different prefix
+			valoperAddress = tr.validatorConfigs[validator].ValoperAddressOnConsumer
+		}
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 
 		"query", "staking", "validator",
-		tr.validatorConfigs[validator].ValoperAddress,
+		valoperAddress,
 
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
@@ -643,7 +678,7 @@ func (tr TestConfig) getProviderAddressFromConsumer(consumerChain ChainID, valid
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 
 		"query", "provider", "validator-provider-key",
-		string(consumerChain), tr.validatorConfigs[validator].ConsumerValconsAddress,
+		string(consumerChain), tr.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
 		`--node`, tr.getQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
