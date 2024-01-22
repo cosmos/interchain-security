@@ -45,6 +45,7 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 
 - [ADR 011: Improving testing and increasing confidence](./adr-011-improving-test-confidence.md)
 - [ADR 014: Epochs](./adr-014-epochs.md)
+- [ADR 015: Partial Set Security](./adr-015-partial-set-security.md)
 
 ### Rejected
 
