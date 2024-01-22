@@ -22,6 +22,8 @@
   - Avoid jailing validators immediately once they can no longer opt-out from
     validating consumer chains.
     ([\#1549](https://github.com/cosmos/interchain-security/pull/1549))
+  - Fix the validation of VSCPackets to not fail due to marshaling to string using Bech32.
+    ([\#1570](https://github.com/cosmos/interchain-security/pull/1570))
 
 ### DEPENDENCIES
 
@@ -46,6 +48,8 @@
   - Avoid jailing validators immediately once they can no longer opt-out from
     validating consumer chains.
     ([\#1549](https://github.com/cosmos/interchain-security/pull/1549))
+  - Fix the validation of VSCPackets to not fail due to marshaling to string using Bech32.
+    ([\#1570](https://github.com/cosmos/interchain-security/pull/1570))
 - [Provider](x/ccv/provider)
   - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
     ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
