@@ -266,20 +266,18 @@ We do not change the way downtime jailing functions. If a validator is down on a
 ## Consequences
 
 ### Positive
-Easier for new consumer chains to consume Cosmos Hub security because proposals are more likely to pass if not everyone is forced to validate.
-Small validators are not forced to validate chains anymore if they do not want to.
+- Easier for new consumer chains to consume Cosmos Hub security because proposals are more likely to pass if not everyone is forced to validate.
+- Small validators are not forced to validate chains anymore if they do not want to.
 
 ### Negative
-Fraud votes introduce one more way to slash validators.
-Depending on whether a consumer chain is Top N or Opt In, a consumer chain might not be as secure as with Replicated Security.
+- Fraud votes introduce one more way to slash validators.
+- Depending on whether a consumer chain is Top N or Opt In, a consumer chain might not be as secure as with Replicated Security.
 
 
 ## References
 
-> Are there any relevant PR comments, issues that led up to this, or articles referenced for why we made the given design choice? If so link them here!
-
-[PSS: Permissionless vs premissioned-lite opt-in consumer chains](https://forum.cosmos.network/t/pss-permissionless-vs-premissioned-lite-opt-in-consumer-chains/12984)
-[CHIPs discussion phase: Partial Set Security (updated)](https://forum.cosmos.network/t/chips-discussion-phase-partial-set-security-updated/11775)
-[PSS: Exclusive vs Inclusive Top-N](https://forum.cosmos.network/t/pss-exclusive-vs-inclusive-top-n/13058)
-[Initial PSS ADR and notes #1518](https://github.com/cosmos/interchain-security/pull/1518)
-[Replicated vs. Mesh Security](https://informal.systems/blog/replicated-vs-mesh-security) 
+- [PSS: Permissionless vs premissioned-lite opt-in consumer chains](https://forum.cosmos.network/t/pss-permissionless-vs-premissioned-lite-opt-in-consumer-chains/12984)
+- [CHIPs discussion phase: Partial Set Security (updated)](https://forum.cosmos.network/t/chips-discussion-phase-partial-set-security-updated/11775)
+- [PSS: Exclusive vs Inclusive Top-N](https://forum.cosmos.network/t/pss-exclusive-vs-inclusive-top-n/13058)
+- [Initial PSS ADR and notes #1518](https://github.com/cosmos/interchain-security/pull/1518)
+- [Replicated vs. Mesh Security](https://informal.systems/blog/replicated-vs-mesh-security) 
