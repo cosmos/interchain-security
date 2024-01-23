@@ -86,7 +86,7 @@ Note that a validator can send a `MsgOptIn` message even if the consumer chain i
 Additionally, a validator that opts in can then use `MsgAssignConsumerKey` to change the consumer key on the consumer chain as is currently done in Replicated Security.
 
 #### State & Query
-We store the list of validators that have opted in under the key:
+We store the list of validators that have opted in and at the block height they opted it in under the key:
 ```
 ChainIdWithLenKey(OptedInByteKey, chainID)
 ```
@@ -230,7 +230,9 @@ for _, chain := range consumerChains {
     totalPower := 0
     var []abci.VoteInfo votes
     for _, val := range (validators that opted in or Top N) {
-        votes = append(votes, []abci.VoteInfo{{Validator: val, SignedLastBlock: true}})
+        if val has opted in for more than X blocks {
+            votes = append(votes, []abci.VoteInfo{{Validator: val, SignedLastBlock: true}})
+        }
     }
     
     k.AllocateTokens(ctx, pool associated with this chain, totalPower, votes)
@@ -248,6 +250,8 @@ err := k.bankKeeper.SendCoinsFromModuleToModule(
     sdk.NewCoins(balance),
 )
 ```
+
+Note that we would only distribute rewards to validators that are opted in but are opted in for some time (e.g., 10000 blocks) to avoid cases where validators opt in and out in short intervals just in order to receive rewards.
 
 ### Misbehaviour
 
