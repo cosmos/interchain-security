@@ -134,7 +134,8 @@ message MsgOptOut {
 Validators can only opt out after a consumer chain has started and hence the above message returns an error if the chain with `chain_id` is not running.
 
 #### State & Query
-We also update the state of the opted-in validators when a validator has opted out.
+We also update the state of the opted-in validators when a validator has opted out by removing it from there.
+Nevertheless, we have to keep track of all the validators that have opted in during the last `X` (to be defined) blocks to be able to jail validators for downtime.
 
 ### When does a consumer chain start?
 A Top N consumer chain starts at the specified date (`spawn_time`) if the [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v3.3.0/proto/interchain_security/ccv/provider/v1/provider.proto#L27) has passed. An Opt In consumer chain starts if at least one validator has opted in. We check this in [BeginBlockInit](https://github.com/cosmos/interchain-security/blob/v3.3.0/x/ccv/provider/keeper/proposal.go#L372):
@@ -285,7 +286,7 @@ The message includes the `vote` that was signed by the validator. Validators tha
 We do not change the way slashing for double signing and light client attacks functions. If a validator misbehaves on a consumer, then we slash that validator on the provider.
 
 #### Downtime
-We do not change the way downtime jailing functions. If a validator is down on a consumer chain for an adequate amount of time, we jail this validator on Cosmos Hub.
+We do not change the way downtime jailing functions. If a validator is down on a consumer chain for an adequate amount of time, we jail this validator on Cosmos Hub only if the validator was opted in in the recent past.
 
 ## Consequences
 
