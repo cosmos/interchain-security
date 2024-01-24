@@ -101,7 +101,14 @@ type ContainerConfig struct {
 	Now           time.Time
 }
 
-// TODO: Split out TestConfig and system wide config like localsdkpath
+type TargetConfig struct {
+	gaiaTag         string
+	localSdkPath    string
+	useGaia         bool
+	providerVersion string
+	consumerVersion string
+}
+
 type TestConfig struct {
 	// These are the non altered values during a typical test run, where multiple test runs can exist
 	// to validate different action sequences and corresponding state checks.
@@ -113,17 +120,14 @@ type TestConfig struct {
 	// having shorter timeout_commit reduces the test runtime because blocks are produced faster
 	// lengthening the timeout_commit increases the test runtime because blocks are produced slower but the test is more reliable
 	tendermintConfigOverride string
-	localSdkPath             string
-	useGaia                  bool
 	useCometmock             bool // if false, nodes run CometBFT
 	useGorelayer             bool // if false, Hermes is used as the relayer
-	gaiaTag                  string
 	// chains which are running, i.e. producing blocks, at the moment
 	runningChains map[ChainID]bool
 	// Used with CometMock. The time by which chains have been advanced. Used to keep chains in sync: when a new chain is started, advance its time by this value to keep chains in sync.
-	timeOffset time.Duration
-
-	name string
+	timeOffset       time.Duration
+	transformGenesis bool
+	name             string
 }
 
 // Initialize initializes the TestConfig instance by setting the runningChains field to an empty map.
@@ -575,10 +579,6 @@ func (s *TestConfig) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag 
 	if useGaia {
 		fmt.Println("USING GAIA INSTEAD OF ICS provider app", gaiaTag)
 	}
-
-	s.useGaia = useGaia
-	s.gaiaTag = gaiaTag
-	s.localSdkPath = localSdkPath
 }
 
 func (s *TestConfig) SetCometMockConfig(useCometmock bool) {

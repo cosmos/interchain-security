@@ -101,10 +101,12 @@ type Param struct {
 	Value    string
 }
 
-func (tr TestConfig) getState(modelState State) State {
+func (tr TestConfig) getState(modelState State, verbose bool) State {
 	systemState := State{}
 	for k, modelState := range modelState {
-		log.Println("Getting model state for chain: ", k)
+		if verbose {
+			fmt.Println("Getting model state for chain: ", k)
+		}
 		systemState[k] = tr.getChainState(k, modelState)
 	}
 
