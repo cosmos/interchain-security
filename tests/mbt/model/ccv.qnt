@@ -117,7 +117,7 @@ module ccv_types {
             //(old key to 0 power, new key to current power)
             keyAssignmentReplacements: Chain -> (Node -> (ConsumerAddr, Power)),
 
-            // Stores the mapping from VSC ids to consumer validators addresses. Needed for pruning ValidatorByConsumerAddr.
+            // Stores the mapping from VSC ids to consumer validators addresses. Needed for pruning validatorByConsumerAddr.
             consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr],
 
             // For every sent VSCPacket, stores the key assignments that were applied to send it.
