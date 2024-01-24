@@ -37,7 +37,7 @@ then
     docker build  -f Dockerfile.gaia -t "$CONTAINER_NAME" --build-arg USE_GAIA_TAG="$USE_GAIA_TAG" .
 else
     printf "\n\nUsing ICS provider app as provider\n\n\n"
-    docker build -f Dockerfile -t "$CONTAINER_NAME"  .
+    docker build --no-cache -f Dockerfile -t "$CONTAINER_NAME"  .
 fi
 
 # Remove copied sdk directory
