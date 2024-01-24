@@ -206,8 +206,8 @@ func parseArguments() (err error) {
 	flag.Var(&selectedTestfiles, "test-file",
 		getTestFileUsageString())
 
-	flag.Var(&consumerVersions, "cv", "Version (git tag, revison, branch) of the consumer to be tested. Tests will be run against combinations of all defined provider versions (-pv) with this consumer version. Default: consumer implementation of local workspace")
-	flag.Var(&providerVersions, "pv", "Version (git tag, revison, branch) of the provider to be tested. Tests will be run against combinations of all defined consumer versions (-cv) with this provider version. Default: provider implementation of local workspace")
+	flag.Var(&consumerVersions, "cv", "Version (git tag, revision, branch) of the consumer to be tested. Tests will be run against combinations of all defined provider versions (-pv) with this consumer version. Default: consumer implementation of local workspace")
+	flag.Var(&providerVersions, "pv", "Version (git tag, revision, branch) of the provider to be tested. Tests will be run against combinations of all defined consumer versions (-cv) with this provider version. Default: provider implementation of local workspace")
 
 	flag.Parse()
 
