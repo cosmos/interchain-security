@@ -121,7 +121,18 @@ module ccv_types {
             consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr],
 
             // For every sent VSCPacket, stores the key assignments that were applied to send it.
-            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr))
+            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr)),
+
+            // For each consumer chain,
+            // stores the set of validators that are opted into running the chain.
+            optedInVals: Chain -> Set[Node],
+
+            // for each consumer, stores the top N for that consumer.
+            // The top N% of the validator set by voting power
+            // is obliged to run a topN chain.
+            // If the chain is a pure opt-in chain (where noone is forced to run it),
+            // this is 0.
+            topNByConsumer: Chain -> int,
         }
 
     // utility function: returns a provider state that is initialized minimally.
@@ -139,7 +150,9 @@ module ccv_types {
             validatorByConsumerAddr: Map(),
             keyAssignmentReplacements: Map(),
             consumerAddrsToPrune: Map(),
-            keyAssignmentsForVSCPackets: Map()
+            keyAssignmentsForVSCPackets: Map(),
+            optedInVals: Map(),
+            topNByConsumer: Map(),
         }
         
 
