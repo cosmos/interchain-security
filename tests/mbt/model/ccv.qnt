@@ -229,7 +229,7 @@ module ccv_types {
     pure val PROVIDER_CHAIN = "provider"
 
     // Takes the current provider state and validator set and returns 
-    // the validator set under the current the key assignments for the given consumer, as stored in the provider state.
+    // the validator set under the current key assignments for the given consumer, as stored in the provider state.
     pure def applyKeyAssignmentToValSet(
         providerState: ProviderState,
         consumer: Chain,
