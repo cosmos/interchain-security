@@ -12,6 +12,8 @@ on:
     branches: [ "main", "release/v4.0.x", "release/v3.3.x", "release/v3.2.x", "release/v3.1.x", "release/v3.0.x"]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*', 'v*.*.*-lsm' ]
+  pull_request:
+    branches: [ "main", "release/v4.0.x", "release/v3.3.x", "release/v3.2.x", "release/v3.1.x", "release/v3.0.x"]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -67,7 +69,7 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{github.ref == 'refs/heads/main'}}
             type=semver,pattern=v{{major}}.{{minor}}
-            type=semver,pattern={{version}},value=${{ inputs.tags }},enable=${{ inputs.tags != '' }}
+            type=semver,pattern=v{{version}},value=${{ inputs.tags }},enable=${{ inputs.tags != '' }}
           flavor: |
             latest=false
 
