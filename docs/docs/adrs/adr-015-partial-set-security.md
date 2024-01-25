@@ -66,7 +66,7 @@ func (k Keeper) IsTopN(ctx sdk.Context, chainID string) bool
 func (k Keeper) GetTopN(ctx sdk.Context, chainID string) (uint8, error)
 ```
 
-In a future version of PSS, we intend to extend the `gaiad query provider list-consumer-chains` query to also return information on whether a consumer chain is an Opt In or a Top N chain and with what N. This way, block explorers like [Mintscan](https://www.mintscan.io/) would show for a chain “This chain is secured by N% of Cosmos Hub.”
+In a future version of PSS, we intend to extend the `interchain-security-pd query provider list-consumer-chains` query to also return information on whether a consumer chain is an Opt In or a Top N chain and with what N. This way, block explorers like [Mintscan](https://www.mintscan.io/) would show for a chain “This chain is secured by N% of Cosmos Hub.”
 
 ### How do validators opt in?
 A validator can opt in by sending a new type of message that we introduce in [tx.proto](https://github.com/cosmos/interchain-security/blob/v3.3.0/proto/interchain_security/ccv/provider/v1/tx.proto#L1).
