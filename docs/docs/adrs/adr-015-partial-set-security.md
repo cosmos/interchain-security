@@ -50,7 +50,7 @@ Note that we could easily distinguish whether a chain is _Top N_ or _Opt In_ by 
 In a future version of PSS, we intend to introduce a way to modify the parameters of a consumer chain, e.g, a chain that is _Opt In_ to become _Top N_, etc.
 
 #### State & Query
-We augment the provider module’s state to keep track of the `is_top_N` and `top_N` values for each consumer chain. They key to store this information would be:
+We augment the provider module’s state to keep track of the `is_top_N` and `top_N` values for each consumer chain. The key to store this information would be:
 
 ```
 ChainIdWithLenKey(IsTopNBytePrefix, chainID)
