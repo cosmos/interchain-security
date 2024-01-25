@@ -67,15 +67,32 @@ module ccv_pss {
         res._1
     }
 
+    // Opts a validator in for a consumer chain the provider.
+    // Possible before the consumer chain starts running,
+    // and will then be applied when the consumer chain starts running.
     pure def OptIn(currentState: ProtocolState, consumer: Chain, validator: Node): Result = {
         pure val optedInVals = currentState.providerState.optedInVals.get(consumer)
         pure val newOptedInVals = optedInVals.union(Set(validator))
-        {
+        Ok({
             ...currentState,
             providerState: {
                 ...currentState.providerState,
                 optedInVals: currentState.providerState.optedInVals.put(consumer, newOptedInVals)
             }
-        }
+        })
+    }
+
+    // Opts a validator out. Safe to call before the consumer chain even runs.
+    // Will not stop the validator set from being forced to validate when in the top N.
+    pure def OptOut(currentState: ProtocolState, consumer: Chain, validator: Node): Result = {
+        pure val optedInVals = currentState.providerState.optedInVals.get(consumer)
+        pure val newOptedInVals = optedInVals.exclude(Set(validator))
+        Ok({
+            ...currentState,
+            providerState: {
+                ...currentState.providerState,
+                optedInVals: currentState.providerState.optedInVals.put(consumer, newOptedInVals)
+            }
+        })
     }
 }

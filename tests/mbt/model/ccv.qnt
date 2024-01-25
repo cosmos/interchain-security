@@ -514,6 +514,7 @@ module ccv {
         // will be added automatically. 
         consumersToStop: Set[Chain]): Result = {
         val currentProviderState = currentState.providerState
+        val curValSet = currentProviderState.chainState.currentValidatorSet
         
         // check for vsc timeouts
         val timedOutConsumers = getRunningConsumers(currentProviderState).filter(
@@ -526,8 +527,8 @@ module ccv {
         val currentValSets = ConsumerChains.mapBy(
             (consumer) => 
             currentProviderState.applyKeyAssignmentToValSet(
-                consumer, 
-                currentProviderState.chainState.currentValidatorSet
+                consumer,
+                GetTopNValidatorSet(currentState, curValSet, consumer)
             )
         )
         val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
