@@ -101,14 +101,15 @@ module ccv_types {
             runningVscId: int,
 
             // For every consumer chain, stores the consumer address assigned by each validator.
-            validatorConsumerPubKey: Chain -> (Node -> ConsumerAddr),
+            validatorConsumerAddr: Chain -> (Node -> ConsumerAddr),
+
+            // For every consumer chain, holds the provider validator for each assigned consumer address.
+            validatorByConsumerAddr: Chain -> (ConsumerAddr -> Node),
 
             // the history of validator sets on the provider, but with the key assignments applied.
             // This is needed to check invariants about the validator set when key assignments are in play.
             keyAssignedValSetHistory: Chain -> VotingPowerHistory,
 
-            // For every consumer chain, holds the provider validator for each assigned consumer key.
-            validatorByConsumerAddr: Chain -> (ConsumerAddr -> Node),
 
             // Stores the key assignments that need to be replaced in the current block.
             // Needed to apply the key assignments received in a block to the validator updates sent to the consumer chains.
@@ -134,7 +135,7 @@ module ccv_types {
             providerValidatorSetChangedInThisBlock: false,
             consumerStatus: Map(),
             runningVscId: 0,
-            validatorConsumerPubKey: Map(),
+            validatorConsumerAddr: Map(),
             keyAssignedValSetHistory: Map(),
             validatorByConsumerAddr: Map(),
             keyAssignmentReplacements: Map(),
@@ -250,15 +251,15 @@ module ccv_types {
                 // set old key to 0
                 pure val oldToZero = (oldConsAddr, 0)
                 // set new key to current power
-                pure val newToPower = (providerState.validatorConsumerPubKey.getOrElse(consumer, Map()).getOrElse(node, node), power)
+                pure val newToPower = (providerState.validatorConsumerAddr.getOrElse(consumer, Map()).getOrElse(node, node), power)
                 Set(oldToZero, newToPower)
             } else {
                 // no replacement
                 // check if the validator has a key assigned
-                pure val validatorConsumerPubKey = providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
-                if (validatorConsumerPubKey.keys().contains(node)) {
+                pure val validatorConsumerAddr = providerState.validatorConsumerAddr.getOrElse(consumer, Map())
+                if (validatorConsumerAddr.keys().contains(node)) {
                     // the validator has a key assigned
-                    pure val consAddr = validatorConsumerPubKey.get(node)
+                    pure val consAddr = validatorConsumerAddr.get(node)
                     Set((consAddr, power))
                 } else {
                     // the validator has no key assigned
@@ -526,12 +527,8 @@ module ccv {
 
         // run the shared core chainState logic
         val newChainState = currentProviderState.chainState.endAndBeginBlockShared(timeAdvancement)
-        val providerStateAfterTimeAdvancement = currentProviderState.with(
-            "chainState", newChainState
-        ).with(
-            "keyAssignedValSetHistory", newKeyAssignedValSetHistory
-        )
-
+        val providerStateAfterTimeAdvancement = 
+            {...currentProviderState, chainState: newChainState, keyAssignedValSetHistory: newKeyAssignedValSetHistory}
         val tmpState = currentState.with(
             "providerState", providerStateAfterTimeAdvancement
         )
@@ -677,7 +674,7 @@ module ccv {
                 // this key can be assigned
                 
                 // get the old assigned key
-                pure val consKeyByVal = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+                pure val consKeyByVal = currentState.providerState.validatorConsumerAddr.getOrElse(consumer, Map())
                 pure val p = if (consKeyByVal.keys().contains(providerNode)) {
                     // providerNode had previously assigned a consumer key
                     (consKeyByVal.get(providerNode), true)
@@ -721,9 +718,9 @@ module ccv {
                     )
                 )
                 
-                pure val newValidatorConsumerPubKey = currentState.providerState.validatorConsumerPubKey.put(
+                pure val newvalidatorConsumerAddr = currentState.providerState.validatorConsumerAddr.put(
                     consumer,
-                    currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map()).put(
+                    currentState.providerState.validatorConsumerAddr.getOrElse(consumer, Map()).put(
                         providerNode,
                         consumerAddr
                     )
@@ -738,7 +735,7 @@ module ccv {
                 )
 
                 pure val newProviderState = tmpStateAfterKeyAssignmentReplacement.providerState.with(
-                    "validatorConsumerPubKey", newValidatorConsumerPubKey
+                    "validatorConsumerAddr", newvalidatorConsumerAddr
                 ).with(
                     "validatorByConsumerAddr", newValidatorByConsumerAddr
                 )
@@ -928,7 +925,7 @@ module ccv {
             // remember the key assignments that were applied to send the packets
             keyAssignmentsForVSCPackets: providerState.keyAssignmentsForVSCPackets.put(
                 providerState.runningVscId,
-                providerState.validatorConsumerPubKey
+                providerState.validatorConsumerAddr
             )
         }
     }

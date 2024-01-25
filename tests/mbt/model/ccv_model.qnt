@@ -238,7 +238,7 @@ module ccv_model {
     // UTILITY FUNCTIONS
     // ==================
 
-    pure def removeZeroPowers(valSet: Node -> int): Node -> int =
+    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
         valSet.keys().fold(
             Map(),
             (acc, node) => 
@@ -793,7 +793,7 @@ module ccv_model {
     val NoProviderReuse = 
         consumerChains.forall(
             consumer =>
-            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+            val valConsPk = currentState.providerState.validatorConsumerAddr.getOrElse(consumer, Map())
             valConsPk.keys().forall(
                 node =>
                     val consAddr = valConsPk.get(node)
@@ -808,7 +808,7 @@ module ccv_model {
     val NoDuplicationOnSameConsumer =
         consumerChains.forall(
             consumer => 
-            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+            val valConsPk = currentState.providerState.validatorConsumerAddr.getOrElse(consumer, Map())
             valConsPk.keys().forall(
                 node =>
                     val consAddr = valConsPk.get(node)

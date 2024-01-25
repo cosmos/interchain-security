@@ -124,7 +124,7 @@ func RunItfTrace(t *testing.T, path string) {
 	// generate keys that can be assigned on consumers, according to the ConsumerAddresses in the trace
 	consumerAddressesExpr := params["ConsumerAddresses"].Value.(itf.ListExprType)
 
-	consumerPrivVals, err := integration.CreateSigners(len(consumerAddressesExpr))
+	_, _, consumerPrivVals, err := integration.CreateValidators(len(consumerAddressesExpr))
 	require.NoError(t, err, "Error creating consumer signers")
 
 	consumerAddrNamesToPrivVals := make(map[string]cmttypes.PrivValidator, len(consumerAddressesExpr))
