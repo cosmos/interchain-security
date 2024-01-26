@@ -5,6 +5,7 @@ module ccv_test {
     import ccv_types.* from "./ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
+    import ccv_utils.* from "./ccv_utils"
 
     pure val consumerChains = Set("sender", "receiver")
     pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
