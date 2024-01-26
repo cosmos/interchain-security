@@ -157,7 +157,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 To send the validator set to a consumer chain we first have to generate the validator updates with a function similar to this one:
 
 ```
-func (k Keeper) GetPartialSetValidators(ctx types.Context, chainId string valUpdates []abci.ValidatorUpdate) (newUpdates []abci.ValidatorUpdate)
+func (k Keeper) GetPartialSetValidators(ctx types.Context, chainId string, valUpdates []abci.ValidatorUpdate) (newUpdates []abci.ValidatorUpdate)
 
     powerSum := sdk.ZeroDec()
     totalPower := k.ComputeTotalPower(ctx)
