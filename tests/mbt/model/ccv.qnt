@@ -227,6 +227,12 @@ module ccv_types {
     // whether a chain is the provider or not
     pure val PROVIDER_CHAIN = "provider"
 
+    // ===================
+    // UTILITY FUNCTIONS
+    // which do not hold the core logic of the protocol, but are invoked by it
+    // ===================
+
+
     // Takes the current provider state and validator set and returns 
     // the validator set under the current key assignments for the given consumer, as stored in the provider state.
     pure def applyKeyAssignmentToValSet(
@@ -286,11 +292,6 @@ module ccv_types {
             (acc, pair) => acc.put(pair._1, pair._2)
         )
     }
-
-    // ===================
-    // UTILITY FUNCTIONS
-    // which do not hold the core logic of the protocol, but are still part of it
-    // ===================
 
     // Appends the key assignment for the given oldConsAddr on the consumer by a validator
     // to be pruned when a VscMaturedPacket for the current runningVscId is received from the consumer.
