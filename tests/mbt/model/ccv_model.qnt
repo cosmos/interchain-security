@@ -443,7 +443,7 @@ module ccv_model {
     val CanSendVscPackets =
         not(ConsumerChains.exists(
             consumer => 
-                currentState.providerState.outstandingPacketsToConsumer.get(consumer).length() > 0
+                currentState.providerState.outstandingPacketsToConsumer.getOrElse(consumer, List()).length() > 0
         ))
 
     val CanReceiveVscPackets =

@@ -409,6 +409,9 @@ module ccv_utils {
         status == RUNNING
     }
 
+    // Returns the set of all consumer chains.
+    pure def GetConsumers(providerState: ProviderState): Set[Chain] = providerState.consumerStatus.keys()
+
     // Returns the set of all consumer chains that currently have the status RUNNING.
     pure def getRunningConsumers(providerState: ProviderState): Set[Chain] = {
         providerState.consumerStatus.keys().filter(
