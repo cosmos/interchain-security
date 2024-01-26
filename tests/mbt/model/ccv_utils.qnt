@@ -198,7 +198,7 @@ module ccv_utils {
         providerState: ProviderState,
         sendingTimestamp: Time,
         ccvTimeout: Time): ProviderState = {
-        val newSentPacketsPerConsumer = providerState.getRunningConsumers().mapBy( // compute, for each consumer, a list of new packets to be sent
+        val newSentPacketsPerConsumer = providerState.getConsumers().mapBy( // compute, for each consumer, a list of new packets to be sent
             (consumer) => 
             // if validator set changed or the key assignments for this chain changed, and the consumer is running, send a packet
             if ((providerState.providerValidatorSetChangedInThisBlock or 
@@ -221,13 +221,13 @@ module ccv_utils {
                 List()
             }
         )
-        val newOutstandingPacketsToConsumer = providerState.getRunningConsumers().mapBy(
+        val newOutstandingPacketsToConsumer = providerState.getConsumers().mapBy(
                 (consumer) => 
                 providerState.outstandingPacketsToConsumer.getOrElse(consumer, List()).concat(
                     newSentPacketsPerConsumer.get(consumer)
                 )
             )
-        val newSentVscPackets = providerState.getRunningConsumers().mapBy(
+        val newSentVscPackets = providerState.getConsumers().mapBy(
                     (consumer) => 
                     providerState.sentVscPacketsToConsumer.getOrElse(consumer, List()).concat(
                         newSentPacketsPerConsumer.get(consumer)
@@ -410,7 +410,7 @@ module ccv_utils {
     }
 
     // Returns the set of all consumer chains.
-    pure def GetConsumers(providerState: ProviderState): Set[Chain] = providerState.consumerStatus.keys()
+    pure def getConsumers(providerState: ProviderState): Set[Chain] = providerState.consumerStatus.keys()
 
     // Returns the set of all consumer chains that currently have the status RUNNING.
     pure def getRunningConsumers(providerState: ProviderState): Set[Chain] = {
