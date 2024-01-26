@@ -32,7 +32,7 @@ module ccv_boundeddrift {
 
     // Given the name of a chain, gets a set with the chain states of all other chains.
     def GetOtherChainStates(advancingChain: Ccvt::Chain): Set[Ccvt::ChainState] =
-        val runCons = ccv::getRunningConsumers(currentState.providerState)
+        val runCons = Ccvt::getRunningConsumers(currentState.providerState)
         if (advancingChain == Ccvt::PROVIDER_CHAIN) {
             runCons.map(c => currentState.consumerStates.get(c).chainState)
         } else {
@@ -48,7 +48,7 @@ module ccv_boundeddrift {
         }
 
     def GetRunningChainStates(): Set[Ccvt::ChainState] = 
-        val runCons = ccv::getRunningConsumers(currentState.providerState)
+        val runCons = Ccvt::getRunningConsumers(currentState.providerState)
         val consumerChainStates = runCons.map(c => currentState.consumerStates.get(c).chainState)
         consumerChainStates.union(Set(currentState.providerState.chainState))
 

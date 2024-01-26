@@ -898,7 +898,7 @@ module ccv {
             (consumer) => 
             currentProviderState.applyKeyAssignmentToValSet(
                 consumer,
-                GetTopNValidatorSet(currentState, curValSet, consumer)
+                GetTopNValidatorSet(currentState.providerState, curValSet, consumer)
             )
         )
         // store the current validator set with the key assignments applied in the history
