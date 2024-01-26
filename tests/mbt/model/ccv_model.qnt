@@ -399,7 +399,7 @@ module ccv_model {
     val EventuallyMatureOnProviderInv =
         runningConsumers.forall(
             consumer => {
-                val sentPackets = currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet()
+                val sentPackets = currentState.providerState.sentVscPacketsToConsumer.getOrElse(consumer, List()).toSet()
                 sentPackets.forall(
                     packet =>
                         // consumer still has time to respond
