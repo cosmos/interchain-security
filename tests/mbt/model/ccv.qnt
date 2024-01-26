@@ -273,9 +273,11 @@ module ccv_types {
 
         // for each node in the valset, reverse its key assignment
         valSetWithAssignment.keys().map(
-            (node) => 
-            pure val power = valSetWithAssignment.get(node)
-            pure val consAddr = reverseAssignment.getOrElse(node, node)
+            (addr) => 
+            pure val power = valSetWithAssignment.get(addr)
+            // if the addr has a key assigned, use that. otherwise, the addr doesn't have a key assigned,
+            // and therefore *is* the key that should be used. 
+            pure val consAddr = reverseAssignment.getOrElse(addr, addr)
             (consAddr, power)
         ).filter(
             pair => pair._2 > 0
@@ -539,7 +541,7 @@ module ccv {
                 tmpState.consumerStates.keys().mapBy(
                     (consumer) => 
                     if (consumersToStart.contains(consumer)) {
-                        // modified by the key assignments for the consumer
+                        // ...modified by the key assignments for the consumer
                         val consValSet = applyKeyAssignmentToValSet(providerStateAfterConsumerAdvancement, consumer, valSet)
                         val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
                         val newConsumerState: ConsumerState = currentConsumerState.with(
