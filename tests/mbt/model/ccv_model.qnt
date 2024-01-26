@@ -238,7 +238,7 @@ module ccv_model {
     // UTILITY FUNCTIONS
     // ==================
 
-    pure def removeZeroPowers(valSet: Node -> int): Node -> int =
+    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
         valSet.keys().fold(
             Map(),
             (acc, node) => 
@@ -793,7 +793,7 @@ module ccv_model {
     val NoProviderReuse = 
         consumerChains.forall(
             consumer =>
-            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+            val valConsPk = currentState.providerState.validatorToConsumerAddr.getOrElse(consumer, Map())
             valConsPk.keys().forall(
                 node =>
                     val consAddr = valConsPk.get(node)
@@ -808,7 +808,7 @@ module ccv_model {
     val NoDuplicationOnSameConsumer =
         consumerChains.forall(
             consumer => 
-            val valConsPk = currentState.providerState.validatorConsumerPubKey.getOrElse(consumer, Map())
+            val valConsPk = currentState.providerState.validatorToConsumerAddr.getOrElse(consumer, Map())
             valConsPk.keys().forall(
                 node =>
                     val consAddr = valConsPk.get(node)
@@ -823,7 +823,7 @@ module ccv_model {
     val CanAssignConsumerKey =
         not(consumerChains.exists(
             consumer => 
-                currentState.providerState.validatorByConsumerAddr.getOrElse(consumer, Map()).keys().size() > 0
+                currentState.providerState.consumerAddrToValidator.getOrElse(consumer, Map()).keys().size() > 0
         ))
 
     val CanHaveConsumerAddresses =
@@ -860,7 +860,7 @@ module ccv_model {
         .then(
             all {
                 // the key should be present in the valset on the consumer, and the node itself should not
-                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("node1") == 0),
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.getOrElse("node1", 0) == 0),
                 assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
                 // try some key assignments that should fail/succeed without comitting to state
                 val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
@@ -897,9 +897,8 @@ module ccv_model {
             // the old key should have been pruned
             all {
                 // check that pruning has been performed nicely
-                assert(currentState.providerState.validatorByConsumerAddr.get("consumer1").get("consAddr1") == "node1"),
-                assert(currentState.providerState.consumerAddrsToPrune.get("consumer1").get(0).length() == 0),
-                assert(currentState.providerState.keyAssignmentReplacements.getOrElse("consumer1", Map()).keys().size() == 0),
+                assert(currentState.providerState.consumerAddrToValidator.get("consumer1").get("consAddr1") == "node1"),
+                assert(currentState.providerState.consumerAddrsToPrune.get("consumer1").getOrElse(0, List()).length() == 0),
                 // action does not matter
                 VotingPowerChange("node1", 50)
             }
