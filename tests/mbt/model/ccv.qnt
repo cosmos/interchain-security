@@ -489,7 +489,7 @@ module ccv {
             res._1
         )
         
-        // store the valSet under the current key assignments
+        // for each consumer chain, apply the key assignment to the current validator set
         val currentValSets = ConsumerChains.mapBy(
             (consumer) => 
             currentProviderState.applyKeyAssignmentToValSet(
@@ -497,11 +497,12 @@ module ccv {
                 currentProviderState.chainState.currentValidatorSet
             )
         )
+        // store the current validator set with the key assignments applied in the history
         val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
             (consumer) => 
-            currentProviderState.keyAssignedValSetHistory.getOrElse(consumer, List()).prepend(
-                currentValSets.get(consumer)
-            )
+            currentProviderState.keyAssignedValSetHistory
+                .getOrElse(consumer, List()) // get the existing history (empty list if no history yet)
+                .prepend(currentValSets.get(consumer)) // prepend the current validator set with key assignments applied
         )
 
         // run the shared core chainState logic
@@ -843,15 +844,17 @@ module ccv {
     // This should only be called when the provider chain is ending a block.
     // If no vsc packets need to be sent, this will be a noop.
     pure def sendVscPackets(providerState: ProviderState, sendingTimestamp: Time): ProviderState = {
-        val newSentPacketsPerConsumer = ConsumerChains.mapBy(
+        val newSentPacketsPerConsumer = ConsumerChains.mapBy( // compute, for each consumer, a list of new packets to be sent
             (consumer) => 
             // if validator set changed or the key assignments for this chain changed, and the consumer is running, send a packet
             if ((providerState.providerValidatorSetChangedInThisBlock or 
                 providerState.consumersWithAddrAssignmentChangesInThisBlock.contains(consumer))
                 and 
                 isRunningConsumer(consumer, providerState)) {
+                    // send a packet, i.e. use a list with one element (the packet to be sent)
                 List({
                         id: providerState.runningVscId,
+                        // apply key assignment to the current validator set
                         validatorSet: providerState.applyKeyAssignmentToValSet(
                             consumer, 
                             providerState.chainState.currentValidatorSet
@@ -860,6 +863,7 @@ module ccv {
                         timeoutTime: sendingTimestamp + CcvTimeout.get(PROVIDER_CHAIN)
                 })
             } else {
+                // no packet to be sent, so empty list
                 List()
             }
         )
@@ -958,11 +962,14 @@ module ccv {
 
             // actually do the pruning
             pure val senderValByConsAddr = 
+                // for the sender chain, get the consAddrToValidator mapping
                 newState.providerState.consumerAddrToValidator.getOrElse(sender, Map())
             pure val newSenderValByConsAddr =
                 senderValByConsAddr.keys().filter(
+                    // filter out the assigned keys that should be pruned
                     consAddr => not(consumerAddrsToPrune.contains(consAddr))
                 ).mapBy(
+                    // rebuild the map with the pruned keys removed
                     consAddr => senderValByConsAddr.get(consAddr)
                 )
 
