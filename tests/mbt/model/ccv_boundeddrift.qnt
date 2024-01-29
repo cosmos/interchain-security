@@ -1,6 +1,7 @@
 module ccv_boundeddrift {
     import ccv_model.* from "ccv_model"
     import ccv_types as Ccvt from "ccv"
+    import ccv_utils.* from "ccv_utils"
     import ccv from "ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
@@ -80,8 +81,8 @@ module ccv_boundeddrift {
             val consumerStatus = currentState.providerState.consumerStatus
             nondet consumersToStart = oneOf(nonConsumers.powerset())
             // make it so we stop consumers only with small likelihood:
-            nondet stopConsumers = oneOf(1.to(100))
-            nondet consumersToStop = if (stopConsumers <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
+            nondet stopConsumersRand = oneOf(1.to(100))
+            nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
             nondet timeAdvancement = oneOf(possibleAdvancements)
             EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
         }

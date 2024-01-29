@@ -712,6 +712,8 @@ module ccv {
     import extraSpells.* from "./libraries/extraSpells"
     import ccv_types.*
     import ccv_pss.* from "./ccv_pss"
+    import ccv_utils.* from "./ccv_utils"
+  
 
     // ===================
     // PROTOCOL PARAMETERS

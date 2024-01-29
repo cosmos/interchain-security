@@ -4,6 +4,7 @@ module ccv_model {
     import ccv_types.* from "./ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
+    import ccv_utils.* from "./ccv_utils"
 
     pure val consumerChainList = List("consumer1", "consumer2", "consumer3")
     pure val consumerChains = consumerChainList.toSet()
@@ -310,9 +311,11 @@ module ccv_model {
     // Every validator set on any consumer chain MUST either be or have been 
     // a validator set on the provider chain.
     val ValidatorSetHasExistedInv =
-        runningConsumers.forall(chain =>
+        runningConsumers.forall(chain => // for all running consumers
             currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
+                // go through all its historical and current validator sets
                 validatorSet => providerValidatorHistory.toSet().contains(validatorSet)
+                // and check that they are also historical or current validator sets on the provider
             )
         )
 
@@ -330,10 +333,6 @@ module ccv_model {
             consumer => currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
                 packet => packet.validatorSet == providerValSetInCurBlock
             )
-            // or the consumer was just started, which we detect by the consumer having a timestamp of 0
-            // and the consumer having the validator set that was just sent in the block
-            or 
-            (currentState.consumerStates.get(consumer).chainState.lastTimestamp == 0 and currentState.consumerStates.get(consumer).chainState.currentValidatorSet == providerValSetInCurBlock)
         )
 
     // Every consumer chain receives the same sequence of 
@@ -380,8 +379,11 @@ module ccv_model {
     val lastTimeAdvancement = trace[trace.length()-1].timeAdvancement
     val lastBlockTime = currentState.consumerStates.get(ConsumerWithPotentialMaturations).chainState.lastTimestamp - lastTimeAdvancement
     val MatureOnTimeInv =
+        // if a consumer ended a block
         MaturationPrecondition
         implies
+        // then all matured packets need to have been processed and removed from the packets
+        // waiting to mature
         currentState.consumerStates.get(ConsumerWithPotentialMaturations).maturationTimes.toSet().forall(
             pair => 
             val maturationTime = pair._2 
@@ -398,7 +400,7 @@ module ccv_model {
     val EventuallyMatureOnProviderInv =
         runningConsumers.forall(
             consumer => {
-                val sentPackets = currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet()
+                val sentPackets = currentState.providerState.sentVscPacketsToConsumer.getOrElse(consumer, List()).toSet()
                 sentPackets.forall(
                     packet =>
                         // consumer still has time to respond
@@ -442,7 +444,7 @@ module ccv_model {
     val CanSendVscPackets =
         not(ConsumerChains.exists(
             consumer => 
-                currentState.providerState.outstandingPacketsToConsumer.get(consumer).length() > 0
+                currentState.providerState.outstandingPacketsToConsumer.getOrElse(consumer, List()).length() > 0
         ))
 
     val CanReceiveVscPackets =
@@ -510,7 +512,7 @@ module ccv_model {
                     // consumer1 was started
                     assert(currentState.providerState.consumerStatus.get("consumer1") == RUNNING),
                     // but no packet was sent to consumer 1
-                    assert(currentState.providerState.outstandingPacketsToConsumer.get("consumer1").length() == 0),
+                    assert(currentState.providerState.outstandingPacketsToConsumer.getOrElse("consumer1", List()).length() == 0),
                     // the validator set on the provider was entered into the history
                     assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 150), InitialValidatorSet)),
                     // change voting power on provider again
@@ -698,9 +700,11 @@ module ccv_model {
     val providerKeyAssignedValSetHistory = currentState.providerState.keyAssignedValSetHistory
 
     val ValidatorSetHasExistedKeyAssignmentInv =
-        runningConsumers.forall(chain =>
+        runningConsumers.forall(chain => // for every running consumer
             currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
+                // for every validator set the consumer ever had
                 validatorSet => providerKeyAssignedValSetHistory.getOrElse(chain, List()).toSet().exists(
+                    // that validator set needs to also have existed on the provider
                     provValSet => removeZeroPowers(provValSet) == removeZeroPowers(validatorSet)
                 )
             )
@@ -723,10 +727,6 @@ module ccv_model {
                     packet.validatorSet == 
                     applyKeyAssignmentToValSet(providerState, consumer, providerValSetInCurBlock)
             )
-            // or the consumer was just started, which we detect by the consumer having a timestamp of 0
-            // and the consumer having the validator set that was just sent in the block
-            or 
-            (currentState.consumerStates.get(consumer).chainState.lastTimestamp == 0 and currentState.consumerStates.get(consumer).chainState.currentValidatorSet == providerValSetInCurBlock)
         )
 
     // Every consumer chain receives the same sequence of 
@@ -778,6 +778,8 @@ module ccv_model {
                                     packet.validatorSet)
                             }))
                         )
+                        // check that the packets between the common packets are equal
+                        // when key assignment is reversed
                         packetsBetween1noKeyAssignment == packetsBetween2noKeyAssignment
                     }
                 }
