@@ -138,7 +138,7 @@ either using its infraction height or its unsigned timestamp. Note that changes 
 The underlying reason is that a malicious validator could take advantage of getting tombstoned 
 to avoid being slashed on the provider ([see comment](https://github.com/cosmos/interchain-security/pull/1232#issuecomment-1693127641)). 
 
-- Currently, the endpoint can only handle _equivocation_ light client attacks. This is because the _lunatic_ attacks require the endpoint to possess the ability to dissociate which header is conflicted or trusted upon receiving a misbehavior message. Without this information, it's not possible to extract the Byzantine validators from the conflicting headers (see [comment](https://github.com/cosmos/interchain-security/pull/826#discussion_r1268668684)). In addition, "amnesia" attacks are ignored, similar to CometBFT (see [ADR-056](https://github.com/cometbft/cometbft/blob/main/docs/architecture/tendermint-core/adr-056-light-client-amnesia-attacks.md#decision)).
+- Currently, the endpoint can only handle _equivocation_ light client attacks. This is because the _lunatic_ attacks require the endpoint to possess the ability to dissociate which header is conflicted or trusted upon receiving a misbehavior message. Without this information, it's not possible to extract the Byzantine validators from the conflicting headers (see [comment](https://github.com/cosmos/interchain-security/pull/826#discussion_r1268668684)). In addition, "amnesia" attacks are ignored, similar to CometBFT (see [ADR-056](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-047-handling-evidence-from-light-client.md#negative)).
 
 
 ## Consequences
