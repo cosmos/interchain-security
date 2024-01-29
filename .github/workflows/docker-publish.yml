@@ -10,14 +10,12 @@ name: Docker Publish
 # documentation.
 
 on:
-  release:
-    types: [published]
   push:
-    branches: [ "main", "release/v4.0.x", "release/v3.3.x", "release/v3.2.x", "release/v3.1.x", "release/v3.0.x"]
-    # Publish semver tags as releases.
-    tags: [ 'v*.*.*', 'v*.*.*-lsm' ]
-  pull_request:
-    branches: [ "main", "release/v4.0.x", "release/v3.3.x", "release/v3.2.x", "release/v3.1.x", "release/v3.0.x"]
+    branches:
+      - main
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+" # Push events matching tag versions as v3.0.0
+      - "v[0-9]+.[0-9]+.[0-9]+-lsm" # Push events matching '-lsm' postfix tags
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -74,12 +72,10 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable=${{github.ref == 'refs/heads/main'}}
-            type=semver,pattern=v{{major}}.{{minor}}
             type=semver,pattern=v{{version}},value=${{ inputs.tags }},enable=${{ inputs.tags != '' }}
-            type=match,pattern=v\d+.\d+.\d+-lsm,group=0
+            type=match,pattern=v\d+.\d+.\d+(-lsm)?,group=0
           flavor: |
             latest=false
-
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
