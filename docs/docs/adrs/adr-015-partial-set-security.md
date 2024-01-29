@@ -268,30 +268,10 @@ Note that we would only distribute rewards to validators that are opted in but a
 ### Misbehaviour
 
 #### Fraud votes
-For fraud votes, we add a new type `FraudVoteProposal` similar to [EquivocationProposal](https://github.com/cosmos/interchain-security/pull/703). The time to detect incorrect execution evidence is 7 days (the same time as that of detecting a light client attack on a client with a `trustingPeriod` of 14 days); We have 7 days to detect an incorrect execution and then 14 days for the proposal to be accepted.
+In an Opt In chain, a set of validators might attempt to perform an invalid-execution attack. To deter such potential attacks, PSS allows for the use of fraud votes.
+A _fraud vote_ is a governance proposal that enables the slashing of validators that performed an invalid-execution attack.
+Due to their inherent complexity, we intend to introduce fraud votes in a different ADR and at a future iteration of PSS. 
 
-##### When are fraud votes eligible?
-Because fraud votes allow the slashing of a validator through a governance proposal, we are cautious on when a fraud vote is eligible and try to restrict their eligibility as much as possible to avoid an adversary proposing a bogus fraud vote.
-As described earlier, because in Top N chains we consider that `N > 50%` we only consider validators that have opted in an Opt In chain. Fraud votes are also **only** intended to be used for **malicious** behaviour, for example, in a scenario similar to what [happened to Neutron](https://blog.neutron.org/neutron-halt-post-mortem-927dbe4540c8), validators should vote against slashing those validators.
-
-#### Message
-```protobuf
-message FraudVoteProposal {
-    string title = 1;
-    string description = 2;
-    
-    // validator that performed incorrect execution (consensus address on consumer chain)
-    Validator validator = 3;
-    
-    // validator's vote contains BlockId on what was signed
-    Vote vote = 4;
-    
-    // header for which the hash led to the blockId in the vote
-    Header header = 5;
-}
-```
-
-The message includes the `vote` that was signed by the validator. Validators that vote on a fraud vote can look at the `BlockID` contained in a `vote` and the `appHash`, `lastResultHash`, etc. in the `header` (that led to this `BlockID`) to conclude whether the to-be-voted validator has performed incorrect execution or not.
 
 #### Double signing
 We do not change the way slashing for double signing and light client attacks functions. If a validator misbehaves on a consumer, then we slash that validator on the provider.
