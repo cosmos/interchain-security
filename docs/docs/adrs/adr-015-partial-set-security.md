@@ -22,7 +22,8 @@ In Replicated Security, all the provider validators have to secure every consume
 In Partial Set Security (PSS), we introduce a parameter `N` for each consumer chain and require that the validators in top `N%` of the provider's voting power have to secure the consumer chain. 
 Additionally, we allow the validators outside of the top `N%` to dynamically opt in if they want to validate on the consumer chain.
 For example, if a consumer chain has `N = 95%`, then it ultimately receives the same security it receives today by Replicated Security. On the other hand, if a consumer chain has `N = 0`%, then no validator is forced to validate the chain but validators can opt in to do so instead.
-In what follows, we call a consumer chain _Top N_ if it has joined as Top N chain with `N > 0` and _Opt In_ chain otherwise.  An Opt In consumer chain is secured only by the validators that have opted in to secure that chain.
+
+For the remainder of this ADR, we call a consumer chain _Top N_ if it has joined as a Top N chain with `N > 0` and _Opt In_ chain otherwise.  An Opt In consumer chain is secured only by the validators that have opted in to secure that chain. 
 
 We intend to implement PSS using a feature branch off [v3.3.0 interchain security](https://github.com/cosmos/interchain-security/tree/v3.3.0).
 
