@@ -37,7 +37,7 @@ Consumer chains join Partial Set Security the same way chains now join Replicate
 Note that `top_N` resides between `[50, 95]`.
 Assuming that at most `1/3` of provider validators could be malicious, by having `50%` as the minimum value for `top_N` we guarantee that we cannot have a successful invalid-execution attack on a Top N consumer chain. 
 This is because, a Top N consumer chain with `N >= 50%` would have at least `1/3` honest validators, which is sufficient to stop any invalid-execution attack.
-Additionally, by having a `N >= 50%` and hence `N > 33%` we provide the ability for validators to `Veto` a `ConsumerAdditionProposal` if they do not desire to validate a consumer chain.
+Additionally, by having `N >= 50%` (and hence `N > 33%`) we enable the top N validators to `Veto` any `ConsumerAdditionProposal` for consumer chains they do not want to validate.
 
 `top_N` can be up to 95% to capture the current case of Replicated Security where we allow the bottom 5% of validators to opt out. There is no reason for `top_N` to be higher than 95%. Smaller chains that belong in the bottom 5% validators can choose to opt in if they want to validate.
 
