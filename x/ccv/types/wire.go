@@ -30,13 +30,6 @@ func (vsc ValidatorSetChangePacketData) Validate() error {
 	if vsc.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
 	}
-	// Validate the slash acks - must be consensus addresses
-	for _, ack := range vsc.SlashAcks {
-		_, err := sdk.ConsAddressFromBech32(ack)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
