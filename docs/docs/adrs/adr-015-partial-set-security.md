@@ -140,7 +140,7 @@ message MsgOptOut {
     string provider_addr = 2;
 }
 ```
-Validators can only opt out after a consumer chain has started and hence the above message returns an error if the chain with `chain_id` is not running.
+Validators can only opt out after a consumer chain has started and hence the above message returns an error if the chain with `chain_id` is not running. Additionally, a validator that belongs to the top N% validators cannot opt out from a Top N and hence a `MsgOptOut` would error in such a case.
 
 #### State & Query
 We also update the state of the opted-in validators when a validator has opted out by removing it from there.
@@ -286,7 +286,6 @@ We do not change the way downtime jailing functions. If a validator is down on a
 - Small validators are not forced to validate chains anymore if they do not want to.
 
 ### Negative
-- Fraud votes introduce one more way to slash validators.
 - Depending on whether a consumer chain is Top N or Opt In, a consumer chain might not be as secure as with Replicated Security.
 
 
