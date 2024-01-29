@@ -33,7 +33,7 @@ module ccv_boundeddrift {
 
     // Given the name of a chain, gets a set with the chain states of all other chains.
     def GetOtherChainStates(advancingChain: Ccvt::Chain): Set[Ccvt::ChainState] =
-        val runCons = Ccvt::getRunningConsumers(currentState.providerState)
+        val runCons = getRunningConsumers(currentState.providerState)
         if (advancingChain == Ccvt::PROVIDER_CHAIN) {
             runCons.map(c => currentState.consumerStates.get(c).chainState)
         } else {
@@ -49,7 +49,7 @@ module ccv_boundeddrift {
         }
 
     def GetRunningChainStates(): Set[Ccvt::ChainState] = 
-        val runCons = Ccvt::getRunningConsumers(currentState.providerState)
+        val runCons = getRunningConsumers(currentState.providerState)
         val consumerChainStates = runCons.map(c => currentState.consumerStates.get(c).chainState)
         consumerChainStates.union(Set(currentState.providerState.chainState))
 
@@ -80,11 +80,12 @@ module ccv_boundeddrift {
             // advance a block for the provider
             val consumerStatus = currentState.providerState.consumerStatus
             nondet consumersToStart = oneOf(nonConsumers.powerset())
+            nondet consumerAdditions = consumersToStart.select(c => Ccvt::NewFullConsumer(c))
             // make it so we stop consumers only with small likelihood:
             nondet stopConsumersRand = oneOf(1.to(100))
             nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
             nondet timeAdvancement = oneOf(possibleAdvancements)
-            EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
+            EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
         }
     }
 

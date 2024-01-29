@@ -21,7 +21,7 @@ module ccv_pss {
     // Assumes that the value for N is valid.
     pure def GetTopNValidatorSet(providerState: ProviderState, origValSet: ValidatorSet, consumer: Chain): ValidatorSet = {
         pure val N = providerState.topNByConsumer.get(consumer)
-        pure val optedInVals = providerState.optedInVals.get(consumer)
+        pure val optedInVals = providerState.optedInVals.getOrElse(consumer, Set())
         GetTopNValidatorSet_helper(origValSet, N, optedInVals)
     }
 
