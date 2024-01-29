@@ -18,7 +18,9 @@ As a solution, we present _Partial Set Security_ (PSS). As the name suggests, PS
 In what follows we propose the exact steps we need to take to implement PSS. This is a first iteration of Partial Set Security, and therefore we present the most minimal solution that make PSS possible.
 
 ## Decision
-In Replicated Security, 95% (see  soft opt-out) of the top Cosmos Hub validators have to secure a consumer chain. In Partial Set Security (PSS) we introduce a parameter `N` that is associated with a consumer chain and require that the top `N%` of the Cosmos Hub validators have to secure this consumer chain. Additionally, we allow validators that do not belong to the top `N%` of the Cosmos Hub validators to dynamically opt in if they want to validate on the consumer chain or not.
+In Replicated Security, all the provider validators have to secure every consumer chain (with the exception of those validators allowed to opt out through the [soft opt-out](https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-009-soft-opt-out.md) feature). 
+In Partial Set Security (PSS), we introduce a parameter `N` for each consumer chain and require that the validators in top `N%` of the provider's voting power have to secure the consumer chain. 
+Additionally, we allow the validators outside of the top `N%` to dynamically opt in if they want to validate on the consumer chain.
 For example, if a consumer chain has `N = 95%`, then it ultimately receives the same security it receives today by Replicated Security. On the other hand, if a consumer chain has `N = 0`%, then no validator is forced to validate the chain but validators can opt in to do so instead.
 In what follows, we call a consumer chain _Top N_ if it has joined as Top N chain with `N > 0` and _Opt In_ chain otherwise.  An Opt In consumer chain is secured only by the validators that have opted in to secure that chain.
 
