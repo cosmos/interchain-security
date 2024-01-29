@@ -20,6 +20,7 @@ import (
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
 	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"
@@ -123,9 +124,13 @@ func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 	return v.Power, nil
 }
 
+func (s *Driver) stakingValidator(i int64) (stakingtypes.Validator, bool) {
+	return s.providerStakingKeeper().GetValidator(s.ctx(PROVIDER), s.validator(i))
+}
+
 // providerPower returns the power(=number of bonded tokens) of the i-th validator on the provider.
 func (s *Driver) providerPower(i int64) (int64, error) {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(PROVIDER), s.validator(i))
+	v, found := s.stakingValidator(i)
 	if !found {
 		return 0, fmt.Errorf("validator with id %v not found on provider", i)
 	} else {
@@ -368,6 +373,14 @@ func (s *Driver) setTime(chain ChainId, newTime time.Time) {
 
 	testChain.CurrentHeader.Time = newTime
 	testChain.App.BeginBlock(abcitypes.RequestBeginBlock{Header: testChain.CurrentHeader})
+}
+
+func (s *Driver) AssignKey(chain ChainId, valIndex int64, value crypto.PublicKey) error {
+	stakingVal, found := s.stakingValidator(valIndex)
+	if !found {
+		return fmt.Errorf("validator with id %v not found on provider", valIndex)
+	}
+	return s.providerKeeper().AssignConsumerKey(s.providerCtx(), string(chain), stakingVal, value)
 }
 
 // DeliverPacketToConsumer delivers a packet from the provider to the given consumer recipient.
