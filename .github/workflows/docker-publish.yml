@@ -76,6 +76,7 @@ jobs:
             type=raw,value=latest,enable=${{github.ref == 'refs/heads/main'}}
             type=semver,pattern=v{{major}}.{{minor}}
             type=semver,pattern=v{{version}},value=${{ inputs.tags }},enable=${{ inputs.tags != '' }}
+            type=match,pattern=v\d+.\d+.\d+-lsm,group=0
           flavor: |
             latest=false
 
