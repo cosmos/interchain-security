@@ -144,7 +144,7 @@ Nevertheless, we have to keep track of all the validators that have opted in dur
 
 ### When does a consumer chain start?
 A Top N consumer chain starts at the specified date (`spawn_time`) if the [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v3.3.0/proto/interchain_security/ccv/provider/v1/provider.proto#L27) has passed. An Opt In consumer chain starts if at least one validator has opted in. We check this in [BeginBlockInit](https://github.com/cosmos/interchain-security/blob/v3.3.0/x/ccv/provider/keeper/proposal.go#L372):
-```
+```golang
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
     propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
