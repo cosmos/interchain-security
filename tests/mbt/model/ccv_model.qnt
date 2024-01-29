@@ -864,7 +864,7 @@ module ccv_model {
                 // the key should be present in the valset on the consumer, and the node itself should not
                 assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.getOrElse("node1", 0) == 0),
                 assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
-                // try some key assignments that should fail/succeed without comitting to state
+                // try some key assignments that should fail/succeed without committing to state
                 val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
                 // fail - key already assigned (even if it is the same node)
                 assert(hasError(res)),
