@@ -81,6 +81,8 @@ message MsgOptIn {
     string chain_id = 1;
     // the provider address of the validator
     string provider_addr = 2;
+    // (optional) the consensus public key to use on the consumer
+    optional string consumer_key = 3;
 }
 ```
 Note that in a Top N consumer chain, the top `N%` provider validators have to validate the consumer chain.
@@ -91,7 +93,7 @@ By automatically opting in validators when they enter the top `N%` of the valida
 
 Note that a validator can send a `MsgOptIn` message even if the consumer chain is not yet running. To do this we reuse the [`IsConsumerProposedOrRegistered`](https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/keeper/key_assignment.go#L644). If the `chainID` does not exist, the `MsgOptIn` should fail, as well as if the provider address does not exist.
 
-Additionally, a validator that opts in can then use `MsgAssignConsumerKey` to change the consumer key on the consumer chain as is currently done in Replicated Security.
+Optionally, a validator that opts in can provide a `consumer_key` so that it assigns a different consumer key (from the provider) to the consumer chain. Naturally, a validator that does not assign a key when opting in can always send a `MsgAssignConsumerKey` to change the consumer key on the consumer chain at a later point in time, as is done in Replicated Security.
 
 #### State & Query
 For each validator, we store on whether the validator has  opted in and at the block height they opted in under the key:
