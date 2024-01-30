@@ -39,7 +39,7 @@ We extend [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-secu
 
 `uint32 top_N_fraction`: Corresponds to the percentage of validators that join under the Top N case.
 For example, `53` corresponds to a Top 53% chain, meaning that the top `53%` provider validators have to validate the proposed consumer chain.
-`top_N_fraction`  can be `0` or include any value in `[50, 95]`. A chain can join with `top_N_fraction == 0` as an Opt In, or with `top_N_fraction ∈ [0.5, 0.95]` as a Top N chain.
+`top_N_fraction`  can be `0` or include any value in `[50, 95]`. A chain can join with `top_N_fraction == 0` as an Opt In, or with `top_N_fraction ∈ [50, 95]` as a Top N chain.
 
 In case of a Top N chain, we restrict the possible values of `top_N_fraction` from `(0, 100]` to `[50, 95]`.
 By having `top_N_fraction >= 50` we can guarantee that we cannot have a successful invalid-execution attack, assuming that at most `1/3` of provider validators can be malicious.
