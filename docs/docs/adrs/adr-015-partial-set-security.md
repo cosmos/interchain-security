@@ -37,26 +37,26 @@ As a simplification and to avoid [chain id squatting](https://forum.cosmos.netwo
 Consumer chains join PSS the same way chains now join Replicated Security, namely through a `ConsumerAdditionProposal` proposal.
 We extend [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.0.0/proto/interchain_security/ccv/provider/v1/provider.proto#L27) with one optional field:
 
-`uint32 top_N_fraction`: Corresponds to the percentage of validators that join under the Top N case.
+`uint32 top_N`: Corresponds to the percentage of validators that join under the Top N case.
 For example, `53` corresponds to a Top 53% chain, meaning that the top `53%` provider validators have to validate the proposed consumer chain.
-`top_N_fraction`  can be `0` or include any value in `[50, 95]`. A chain can join with `top_N_fraction == 0` as an Opt In, or with `top_N_fraction ∈ [50, 95]` as a Top N chain.
+`top_N`  can be `0` or include any value in `[50, 95]`. A chain can join with `top_N == 0` as an Opt In, or with `top_N ∈ [50, 95]` as a Top N chain.
 
-In case of a Top N chain, we restrict the possible values of `top_N_fraction` from `(0, 100]` to `[50, 95]`.
-By having `top_N_fraction >= 50` we can guarantee that we cannot have a successful invalid-execution attack, assuming that at most `1/3` of provider validators can be malicious.
+In case of a Top N chain, we restrict the possible values of `top_N` from `(0, 100]` to `[50, 95]`.
+By having `top_N >= 50` we can guarantee that we cannot have a successful invalid-execution attack, assuming that at most `1/3` of provider validators can be malicious.
 This is because, a Top N chain with `N >= 50%` would have at least `1/3` honest validators, which is sufficient to stop invalid-execution attacks.
 Additionally, by having `N >= 50%` (and hence `N > (VetoThreshold = 33.4%)`) we enable the top N validators to `Veto` any `ConsumerAdditionProposal` for consumer chains they do not want to validate.
 
-`top_N_fraction` can be up to `95` (`95%`) to capture how Replicated Security is currently used, where we allow the bottom `5%` of validators to soft opt out.
+`top_N` can be up to `95` (`95%`) to capture how Replicated Security is currently used, where we allow the bottom `5%` of validators to soft opt out.
 Validators that belong in the bottom `5%` of validators can choose to opt in if they want to validate.
 
 If a proposal has those arguments wrongly set, it should get rejected in [ValidateBasic](https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/types/proposal.go#L86).
 
-In the code, we distinguish whether a chain is _Top N_ or _Opt In_ by checking whether `top_N_fraction` is zero or not.
+In the code, we distinguish whether a chain is _Top N_ or _Opt In_ by checking whether `top_N` is zero or not.
 
 In a future version of PSS, we intend to introduce a `ConsumerModificationProposal` so that we can modify the parameters of a consumer chain, e.g, a chain that is _Opt In_ to become _Top N_, etc.
 
 #### State & Query
-We augment the provider module’s state to keep track of the `top_N_fraction` value for each consumer chain. The key to store this information would be:
+We augment the provider module’s state to keep track of the `top_N` value for each consumer chain. The key to store this information would be:
 
 ```
 topNFractionBytePrefix | len(chainID) | chainID
@@ -73,7 +73,8 @@ func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool
 func (k Keeper) GetTopNFraction(ctx sdk.Context, chainID string) (Dec, error)
 ```
 
-We also extend the `interchain-security-pd query provider list-consumer-chains` query to return information on whether a consumer chain is an Opt In or a Top N chain and with what fraction of N. This way, block explorers can present informative messages such as "This chain is secured by N% of the provider chain" for consumer chains.
+We also extend the `interchain-security-pd query provider list-consumer-chains` query to return information on whether a consumer chain is an Opt In or a Top N chain and with what N.
+This way, block explorers can present informative messages such as "This chain is secured by N% of the provider chain" for consumer chains.
 
 ### How do validators opt in?
 A validator can opt in by sending a new type of message that we introduce in [tx.proto](https://github.com/cosmos/interchain-security/blob/v4.0.0/proto/interchain_security/ccv/provider/v1/tx.proto#L1).
