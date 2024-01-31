@@ -151,7 +151,7 @@ Additionally, a validator that belongs to the top `N%` validators cannot opt out
 #### State & Query
 We also update the state of the opted-in validators when a validator has opted out by removing the opted-out validator.
 
-Note that we only punish validators for downtime that were  opted in on a consumer chain.
+Note that only opted-in validators can be punished for downtime on a consumer chain.
 For this, we keep historical info of all the validators that have opted in during the last `X` (to be defined) blocks.
 This way we can jail validators for downtime knowing that indeed the validators have opted in at some point in the past. 
 Otherwise, we can think of a scenario where a validator `V` is down for a period of time, but before `V` gets punished for downtime, validator `V` opts out, and then we do not know whether `V` should be punished or not.
