@@ -286,4 +286,45 @@ module extraSpells {
     assert(2.to(5).mapBy(i => i * 2).mapValuesSum() == 28),
     assert(Map(2 -> -4, 4 -> 2).mapValuesSum() == -2),
   }
+
+  /// Returns a map of a subset of keys and values from a map,
+  // where only those keys are included for which the given __f
+  // returns true.
+  pure def mapFilter(__map: a -> b, __f: a => bool): a -> b = {
+    __map.keys().filter(__f).mapBy(__k => __map.get(__k))
+  }
+
+  /// Compute the maximum of two integers.
+  ///
+  /// - @param __i first integer
+  /// - @param __j second integer
+  /// - @returns the maximum of __i and __j
+  pure def max(__i: int, __j: int): int = {
+    if (__i > __j) __i else __j
+  }
+
+  run maxTest = all {
+    assert(max(3, 4) == 4),
+    assert(max(6, 3) == 6),
+    assert(max(10, 10) == 10),
+    assert(max(-3, -5) == -3),
+    assert(max(-5, -3) == -3),
+  }
+
+  /// Compute the minimum of two integers.
+  ///
+  /// - @param __i first integer
+  /// - @param __j second integer
+  /// - @returns the minimum of __i and __j
+  pure def min(__i: int, __j: int): int = {
+    if (__i < __j) __i else __j
+  }
+
+  run minTest = all {
+    assert(min(3, 4) == 3),
+    assert(min(6, 3) == 3),
+    assert(min(10, 10) == 10),
+    assert(min(-3, -5) == -5),
+    assert(min(-5, -3) == -5),
+  }
 }

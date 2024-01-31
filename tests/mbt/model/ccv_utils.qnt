@@ -177,7 +177,7 @@ module ccv_utils {
     pure def enterCurValSetIntoBlock(chainState: ChainState): ChainState = {
         chainState.with(
             "votingPowerHistory", chainState.votingPowerHistory.prepend(
-                chainState.currentValidatorSet
+                removeZeroPowers(chainState.currentValidatorSet)
             )
         )
     }
@@ -472,4 +472,16 @@ module ccv_utils {
                 (acc, consumer) => acc.put(consumer.chain, consumer.topN)
             )
         ) 
+
+    // From a validator set, removes all validators with zero power.
+    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
+        valSet.keys().fold(
+            Map(),
+            (acc, node) => 
+                if (valSet.get(node) == 0) {
+                    acc
+                } else {
+                    acc.put(node, valSet.get(node))
+                }
+        )
 }

@@ -46,7 +46,13 @@ module ccv_model {
 
     var currentState: ProtocolState
 
-    // a type storing the parameters used in actions.
+    // a type storing the parameters used in actions,
+    // as well as return values that are not visible from the state,
+    // i.e. errors.
+    // Note that whether an error is returned,
+    // or whether the action is simply not possible when an error occurs, is
+    // a design choice that is different for each action,
+    // or can depend on the type of error.
     // this is used in the trace to store
     // the name of the last action, plus the parameters we passed to it.
     // Note: This type holds ALL parameters that are used in ANY action,
@@ -61,6 +67,7 @@ module ccv_model {
             validator: Node,
             changeAmount: int,
             consumerAddr: ConsumerAddr,
+            expectedError: str, // if the action returns an error, it goes here.
         }
     
 
@@ -85,6 +92,7 @@ module ccv_model {
                 validator: "",
                 changeAmount: 0,
                 consumerAddr: "",
+                expectedError: "",
             }
 
 
@@ -235,21 +243,6 @@ module ccv_model {
 
         stepCommon
     }
-
-    // ==================
-    // UTILITY FUNCTIONS
-    // ==================
-
-    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
-        valSet.keys().fold(
-            Map(),
-            (acc, node) => 
-                if (valSet.get(node) == 0) {
-                    acc
-                } else {
-                    acc.put(node, valSet.get(node))
-                }
-        )
 
     pure def oldest(packets: Set[VscPacket]): VscPacket =
         val newestPossiblePacket: VscPacket = {
