@@ -39,15 +39,12 @@ We extend [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-secu
 
 `uint32 top_N`: Corresponds to the percentage of validators that join under the Top N case.
 For example, `53` corresponds to a Top 53% chain, meaning that the top `53%` provider validators have to validate the proposed consumer chain.
-`top_N`  can be `0` or include any value in `[50, 95]`. A chain can join with `top_N == 0` as an Opt In, or with `top_N ∈ [50, 95]` as a Top N chain.
+`top_N`  can be `0` or include any value in `[50, 100]`. A chain can join with `top_N == 0` as an Opt In, or with `top_N ∈ [50, 100]` as a Top N chain.
 
-In case of a Top N chain, we restrict the possible values of `top_N` from `(0, 100]` to `[50, 95]`.
+In case of a Top N chain, we restrict the possible values of `top_N` from `(0, 100]` to `[50, 100]`.
 By having `top_N >= 50` we can guarantee that we cannot have a successful invalid-execution attack, assuming that at most `1/3` of provider validators can be malicious.
 This is because, a Top N chain with `N >= 50%` would have at least `1/3` honest validators, which is sufficient to stop invalid-execution attacks.
 Additionally, by having `N >= 50%` (and hence `N > (VetoThreshold = 33.4%)`) we enable the top N validators to `Veto` any `ConsumerAdditionProposal` for consumer chains they do not want to validate.
-
-`top_N` can be up to `95` (`95%`) to capture how Replicated Security is currently used, where we allow the bottom `5%` of validators to soft opt out.
-Validators that belong in the bottom `5%` of validators can choose to opt in if they want to validate.
 
 If a proposal has the `top_N` argument wrongly set, it should get rejected in [ValidateBasic](https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/types/proposal.go#L86).
 
@@ -100,10 +97,12 @@ Optionally, a validator that opts in can provide a `consumerKey` so that it assi
 Naturally, a validator can always change the consumer key on a consumer chain by sending a `MsgAssignConsumerKey` message at a later point in time, as is done in Replicated Security.
 
 #### State & Query
-For each validator, we store on whether the validator has opted in and at which block height the validator opted in under the key:
+For each validator, we store a pair `(blockHeight, isOptedIn)` that contains the block height the validator opted in and whether the validator is currently opted in or not, under the key:
+
 ```
 optedInBytePrefix | len(chainID) | chainID | addr
 ```
+
 By using a prefix iterator on `optedInBytePrefix | len(chainID) | chainID ` we retrieve all the opted in validators.
 
 We introduce the following `Keeper` methods.
@@ -152,7 +151,7 @@ Additionally, a validator that belongs to the top `N%` validators cannot opt out
 We also update the state of the opted-in validators when a validator has opted out by removing the opted-out validator.
 
 Note that only opted-in validators can be punished for downtime on a consumer chain.
-For this, we keep historical info of all the validators that have opted in during the last `X` (to be defined) blocks.
+For this, we use historical info of all the validators that have opted in; We can examine the `blockHeight` stored under the key `optedInBytePrefix | len(chainID) | chainID | addr` to see if a validator was opted in.
 This way we can jail validators for downtime knowing that indeed the validators have opted in at some point in the past. 
 Otherwise, we can think of a scenario where a validator `V` is down for a period of time, but before `V` gets punished for downtime, validator `V` opts out, and then we do not know whether `V` should be punished or not.
 
@@ -211,9 +210,10 @@ If a validator is down on a consumer chain for an adequate amount of time, we ja
 ### Positive
 - Easier for new consumer chains to consume the provider's chain economic security because proposals are more likely to pass if not everyone is forced to validate.
 - Smaller validators are not forced to validate chains anymore if they do not want to.
+- We can deprecate the soft opt-out implementation.
 
 ### Negative
-- A consumer chain does not receive the same economic security as with Replicated Security, unless it is a Top N chain with `N = 95%`.
+- A consumer chain does not receive the same economic security as with Replicated Security (assuming a value of `SoftOptOutThreshold` is `5%`), unless it is a Top N chain with `N >= 95%`.
 
 ## References
 
