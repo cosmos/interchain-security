@@ -36,13 +36,6 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 		return err
 	}
 
-	// you should not be able
-	if _, found := k.GetTopN(ctx, p.ChainId); found {
-		return errorsmod.Wrap(types.ErrDuplicateConsumerChain,
-			fmt.Sprint("cannot add a chain "))
-	}
-	k.SetTopN(ctx, p.ChainId, p.Top_N)
-
 	k.SetPendingConsumerAdditionProp(ctx, p)
 
 	k.Logger(ctx).Info("consumer addition proposal enqueued",
@@ -372,6 +365,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 			ctx.Logger().Info("consumer client could not be created: %w", err)
 			continue
 		}
+		k.SetTopN(ctx, prop.ChainId, prop.Top_N)
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())

@@ -1155,14 +1155,10 @@ func (k Keeper) SetTopN(
 func (k Keeper) GetTopN(
 	ctx sdk.Context,
 	chainID string,
-) (uint32, bool) {
+) uint32 {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.TopNKey(chainID))
-	if buf == nil {
-		return 0, false
-	} else {
-	}
-	return binary.BigEndian.Uint32(buf), true
+	return binary.BigEndian.Uint32(buf)
 }
 
 // IsTopN returns true if chain with `chainID` is a Top N chain (i.e., enforces at least one validator to validate chain `chainID`)
