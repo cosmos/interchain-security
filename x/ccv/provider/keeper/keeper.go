@@ -1136,3 +1136,41 @@ func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 
 	return allConsumerChains
 }
+
+// SetTopN stores the N value associated to chain with `chainID`
+func (k Keeper) SetTopN(
+	ctx sdk.Context,
+	chainID string,
+	N uint32,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, N)
+
+	store.Set(types.TopNKey(chainID), buf)
+}
+
+// GetTopN returns the N associated to chain with `chainID`
+func (k Keeper) GetTopN(
+	ctx sdk.Context,
+	chainID string,
+) (uint32, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.TopNKey(chainID))
+	if buf == nil {
+		return 0, false
+	} else {
+	}
+	return binary.BigEndian.Uint32(buf), true
+}
+
+// IsTopN returns true if chain with `chainID` is a Top N chain (i.e., enforces at least one validator to validate chain `chainID`)
+func (k Keeper) IsTopN(ctx sdk.Context, chainID string) bool {
+	return k.GetTopN(ctx, chainID) > 0
+}
+
+// IsOptIn returns true if chain with `chainID` is an Opt In chain (i.e., no validator is forced to validate chain `chainID`)
+func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
+	return k.GetTopN(ctx, chainID) == 0
+}
