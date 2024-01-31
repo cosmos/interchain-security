@@ -49,7 +49,7 @@ Additionally, by having `N >= 50%` (and hence `N > (VetoThreshold = 33.4%)`) we 
 `top_N` can be up to `95` (`95%`) to capture how Replicated Security is currently used, where we allow the bottom `5%` of validators to soft opt out.
 Validators that belong in the bottom `5%` of validators can choose to opt in if they want to validate.
 
-If a proposal has those arguments wrongly set, it should get rejected in [ValidateBasic](https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/types/proposal.go#L86).
+If a proposal has the `top_N` argument wrongly set, it should get rejected in [ValidateBasic](https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/types/proposal.go#L86).
 
 In the code, we distinguish whether a chain is _Top N_ or _Opt In_ by checking whether `top_N` is zero or not.
 
