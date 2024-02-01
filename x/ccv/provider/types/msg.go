@@ -22,12 +22,16 @@ const (
 	TypeMsgAssignConsumerKey          = "assign_consumer_key"
 	TypeMsgSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
 	TypeMsgSubmitConsumerDoubleVoting = "submit_consumer_double_vote"
+	TypeMsgOptIn                      = "opt_in"
+	TypeMsgOptOut                     = "opt_out"
 )
 
 var (
 	_ sdk.Msg = &MsgAssignConsumerKey{}
 	_ sdk.Msg = &MsgSubmitConsumerMisbehaviour{}
 	_ sdk.Msg = &MsgSubmitConsumerDoubleVoting{}
+	_ sdk.Msg = &MsgOptIn{}
+	_ sdk.Msg = &MsgOptOut{}
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
@@ -202,4 +206,112 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 		panic(err)
 	}
 	return []sdk.AccAddress{addr}
+}
+
+// NewMsgOptIn creates a new NewMsgOptIn instance.
+func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress) (*MsgOptIn, error) {
+	return &MsgOptIn{
+		ChainId:      chainID,
+		ProviderAddr: providerValidatorAddress.String(),
+	}, nil
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgOptIn) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface. NOT REALLY
+//func (msg MsgOptIn) Type() string {
+//	return TypeMsgOptIn
+//}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+// TODO
+// If the validator address is not same as delegator's, then the validator must
+// sign the msg as well.
+func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// GetSignBytes returns the message bytes to sign over.
+func (msg MsgOptIn) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgOptIn) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
+	}
+	// It is possible to assign keys for consumer chains that are not yet approved.
+	// This can only be done by a signing validator, but it is still sensible
+	// to limit the chainID size to prevent abuse.
+	if 128 < len(msg.ChainId) {
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	}
+	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return ErrInvalidProviderAddress
+	}
+	return nil
+}
+
+// NewMsgOptOut creates a new NewMsgOptIn instance.
+func NewMsgOptOut(chainID string, providerValidatorAddress sdk.ValAddress) (*MsgOptOut, error) {
+	return &MsgOptOut{
+		ChainId:      chainID,
+		ProviderAddr: providerValidatorAddress.String(),
+	}, nil
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgOptOut) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface. NOT REALLY
+//func (msg MsgOptIn) Type() string {
+//	return TypeMsgOptIn
+//}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+// TODO
+// If the validator address is not same as delegator's, then the validator must
+// sign the msg as well.
+func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// GetSignBytes returns the message bytes to sign over.
+func (msg MsgOptOut) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgOptOut) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
+	}
+	// It is possible to assign keys for consumer chains that are not yet approved.
+	// This can only be done by a signing validator, but it is still sensible
+	// to limit the chainID size to prevent abuse.
+	if 128 < len(msg.ChainId) {
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	}
+	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return ErrInvalidProviderAddress
+	}
+	return nil
 }

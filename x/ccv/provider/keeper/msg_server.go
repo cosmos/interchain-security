@@ -174,3 +174,39 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 
 	return &types.MsgSubmitConsumerDoubleVotingResponse{}, nil
 }
+
+func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.MsgOptInResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.Keeper.HandleOptIn(ctx, *msg); err != nil {
+		return nil, err
+	}
+
+	// add some outpout
+	//ctx.EventManager().EmitEvents(sdk.Events{
+	//	sdk.NewEvent(
+	//		ccvtypes.EventTypeSubmitConsumerMisbehaviour,
+	//		sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
+	//
+	//	),
+	//})
+
+	return &types.MsgOptInResponse{}, nil
+}
+
+func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.MsgOptOutResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.Keeper.HandleOptOut(ctx, *msg); err != nil {
+		return nil, err
+	}
+
+	// add some outpout
+	//ctx.EventManager().EmitEvents(sdk.Events{
+	//	sdk.NewEvent(
+	//		ccvtypes.EventTypeSubmitConsumerMisbehaviour,
+	//		sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
+	//
+	//	),
+	//})
+
+	return &types.MsgOptOutResponse{}, nil
+}
