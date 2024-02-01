@@ -41,6 +41,8 @@ We intend to implement PSS using a feature branch off [v4.0.0 interchain securit
 
 As a simplification and to avoid [chain id squatting](https://forum.cosmos.network/t/pss-permissionless-vs-premissioned-lite-opt-in-consumer-chains/12984/17), a consumer chain can only join PSS through a governance proposal and not in a permissionless way.
 
+However, this proposal type will be modified so that it requires a lower quorum percentage than normal proposal, and every validator who voted "YES" on the proposal will form the consumer chain's initial validator set.
+
 Consumer chains join PSS the same way chains now join Replicated Security, namely through a `ConsumerAdditionProposal` proposal.
 We extend [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.0.0/proto/interchain_security/ccv/provider/v1/provider.proto#L27) with one optional field:
 
