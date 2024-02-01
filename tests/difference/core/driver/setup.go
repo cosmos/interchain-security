@@ -433,7 +433,7 @@ func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
 		coin,
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-		sdk.ZeroInt())
+	)
 	b.suite.Require().NoError(err)
 	providerStaking := b.providerStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(&providerStaking)

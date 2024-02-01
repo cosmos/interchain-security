@@ -156,29 +156,34 @@ func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.Va
 // AfterProposalSubmission - call hook if registered
 // After a consumerAddition proposal submission, a record is created
 // that maps the proposal ID to the consumer chain ID.
-func (h Hooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
+func (h Hooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) error {
 	if p, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
 		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
 	}
+	return nil
 }
 
 // AfterProposalVotingPeriodEnded - call hook if registered
 // After proposal voting ends, the consumer chainID in store is deleted.
 // When a consumerAddition proposal passes, the consumer chainID is available in providerKeeper.GetAllPendingConsumerAdditionProps
 // or providerKeeper.GetAllConsumerChains(ctx).
-func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64) {
+func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64) error {
 	if _, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
 		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
 	}
+	return nil
 }
 
-func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
+func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) error {
+	return nil
 }
 
-func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {
+func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) error {
+	return nil
 }
 
-func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
+func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) error {
+	return nil
 }
 
 // GetConsumerAdditionLegacyPropFromProp extracts a consumer addition legacy proposal from
