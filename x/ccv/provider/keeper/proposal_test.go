@@ -555,7 +555,7 @@ func TestStopConsumerChain(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 
-			// if case the chain was successfully stopped, it should not contain a Top N associated to it
+			// in case the chain was successfully stopped, it should not contain a Top N associated to it
 			_, found := providerKeeper.GetTopN(ctx, "chainID")
 			require.False(t, found)
 		}
