@@ -1151,22 +1151,36 @@ func (k Keeper) SetTopN(
 	store.Set(types.TopNKey(chainID), buf)
 }
 
-// GetTopN returns the N associated to chain with `chainID`
+// DeleteTopN removes the N value associated to chain with `chainID`
+func (k Keeper) DeleteTopN(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.TopNKey(chainID))
+}
+
+// GetTopN returns a pair the N associated to chain with `chainID`
 func (k Keeper) GetTopN(
 	ctx sdk.Context,
 	chainID string,
-) uint32 {
+) (uint32, bool) {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.TopNKey(chainID))
-	return binary.BigEndian.Uint32(buf)
+	if buf == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint32(buf), true
 }
 
 // IsTopN returns true if chain with `chainID` is a Top N chain (i.e., enforces at least one validator to validate chain `chainID`)
 func (k Keeper) IsTopN(ctx sdk.Context, chainID string) bool {
-	return k.GetTopN(ctx, chainID) > 0
+	topN, found := k.GetTopN(ctx, chainID)
+	return found && topN > 0
 }
 
 // IsOptIn returns true if chain with `chainID` is an Opt In chain (i.e., no validator is forced to validate chain `chainID`)
 func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
-	return k.GetTopN(ctx, chainID) == 0
+	topN, found := k.GetTopN(ctx, chainID)
+	return !found || topN == 0
 }

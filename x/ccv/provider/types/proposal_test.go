@@ -36,6 +36,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				100000000000,
 				100000000000,
 				100000000000,
+				0,
 			),
 			true,
 		},
@@ -48,7 +49,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			true,
 		},
 		{
@@ -60,7 +62,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -72,7 +75,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -104,7 +108,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -116,7 +121,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -128,7 +134,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -140,7 +147,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -152,7 +160,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				100000000000,
 				10000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -164,7 +173,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -176,7 +186,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				-2,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -188,7 +199,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				0,
 				100000000000,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -200,7 +212,8 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				0,
-				100000000000),
+				100000000000,
+				0),
 			false,
 		},
 		{
@@ -212,6 +225,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
+				0,
 				0),
 			false,
 		},
@@ -236,7 +250,8 @@ func TestMarshalConsumerAdditionProposal(t *testing.T) {
 		10000,
 		100000000000,
 		100000000000,
-		100000000000)
+		100000000000,
+		0)
 
 	cccp, ok := content.(*types.ConsumerAdditionProposal)
 	require.True(t, ok)
@@ -278,7 +293,8 @@ func TestConsumerAdditionProposalString(t *testing.T) {
 		500000,
 		100000000000,
 		10000000000,
-		100000000000)
+		100000000000,
+		0)
 
 	expect := fmt.Sprintf(`CreateConsumerChain Proposal
 	Title: title

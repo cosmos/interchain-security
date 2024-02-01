@@ -635,15 +635,21 @@ func TestTopN(t *testing.T) {
 	defer ctrl.Finish()
 
 	providerKeeper.SetTopN(ctx, "TopNChainID1", 50)
-	require.Equal(t, uint32(50), providerKeeper.GetTopN(ctx, "TopNChainID1"))
+	topN, found := providerKeeper.GetTopN(ctx, "TopNChainID1")
+	require.Equal(t, uint32(50), topN)
+	require.True(t, found)
 	require.True(t, providerKeeper.IsTopN(ctx, "TopNChainID1"))
 	require.False(t, providerKeeper.IsOptIn(ctx, "TopNChainID1"))
 
 	providerKeeper.SetTopN(ctx, "TopNChainID2", 100)
-	require.Equal(t, uint32(100), providerKeeper.GetTopN(ctx, "TopNChainID2"))
+	topN, found = providerKeeper.GetTopN(ctx, "TopNChainID2")
+	require.Equal(t, uint32(100), topN)
+	require.True(t, found)
 
 	providerKeeper.SetTopN(ctx, "OptInChain", 0)
-	require.Equal(t, uint32(0), providerKeeper.GetTopN(ctx, "OptInChain"))
+	topN, found = providerKeeper.GetTopN(ctx, "OptInChain")
+	require.Equal(t, uint32(0), topN)
+	require.True(t, found)
 	require.False(t, providerKeeper.IsTopN(ctx, "OptInChain"))
 	require.True(t, providerKeeper.IsOptIn(ctx, "OptInChain"))
 }

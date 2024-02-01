@@ -64,6 +64,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				100000000000,
+				0,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -89,6 +90,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				100000000000,
+				0,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -552,6 +554,10 @@ func TestStopConsumerChain(t *testing.T) {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
+
+			// if case the chain was successfully stopped, it should not contain a Top N associated to it
+			_, found := providerKeeper.GetTopN(ctx, "chainID")
+			require.False(t, found)
 		}
 
 		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
@@ -923,6 +929,7 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			67,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -934,6 +941,7 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			0,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time not passed", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -945,6 +953,7 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			0,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "invalid proposal: chain id already exists", "chain2", clienttypes.NewHeight(4, 5), []byte{}, []byte{},
@@ -956,6 +965,7 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			0,
 		).(*providertypes.ConsumerAdditionProposal),
 	}
 
@@ -988,6 +998,13 @@ func TestBeginBlockInit(t *testing.T) {
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[3].SpawnTime, pendingProps[3].ChainId)
 	require.False(t, found)
+
+	// test that Top N is set correctly
+	require.True(t, providerKeeper.IsTopN(ctx, "chain1"))
+	topN, found := providerKeeper.GetTopN(ctx, "chain1")
+	require.Equal(t, uint32(67), topN)
+
+	require.True(t, providerKeeper.IsOptIn(ctx, "chain2"))
 }
 
 // TestBeginBlockCCR tests BeginBlockCCR against the spec.
@@ -1057,6 +1074,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	//
 	// Test execution
 	//
+
 	providerKeeper.BeginBlockCCR(ctx)
 
 	// Only the 3rd (final) proposal is still stored as pending

@@ -214,6 +214,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
 	}
 
+	k.DeleteTopN(ctx, chainID)
+
 	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
 	return nil
