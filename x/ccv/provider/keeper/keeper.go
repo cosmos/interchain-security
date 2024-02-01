@@ -1186,14 +1186,22 @@ func (k Keeper) IsOptedIn(
 
 func (k Keeper) GetOptedIn(
 	ctx sdk.Context,
-	chainID string) (addresses []types.ProviderConsAddress) {
+	chainID string) (areOptedIn []bool, blockHeights []uint64, addresses []types.ProviderConsAddress) {
 
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
+	// FIXME: probably we need to store the len of the providerAddr before storing it
+	// so we can look at the suffix
+
 	for ; iterator.Valid(); iterator.Next() {
+		isOptedIn := []byte{1}
+		blockHeightBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(blockHeightBytes, blockHeight)
+		toStore := append(isOptedIn, blockHeightBytes...)
+
 		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
 		addresses = append(addresses, providerAddr)
 	}
