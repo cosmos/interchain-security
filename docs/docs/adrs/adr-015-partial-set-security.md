@@ -56,18 +56,18 @@ In a future version of PSS, we intend to introduce a `ConsumerModificationPropos
 We augment the provider module’s state to keep track of the `top_N` value for each consumer chain. The key to store this information would be:
 
 ```
-topNFractionBytePrefix | len(chainID) | chainID
+topNBytePrefix | len(chainID) | chainID
 ```
 To create the above key, we can use [`ChainIdWithLenKey`](https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/types/keys.go#L418).
 
 Then in the [keeper](https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/keeper/keeper.go) we introduce methods as follows:
 ```golang
-func (k Keeper) SetTopNFraction(ctx sdk.Context, chainID string, topNFraction string)
+func (k Keeper) SetTopN(ctx sdk.Context, chainID string, topN uint32)
 func (k Keeper) IsTopN(ctx sdk.Context, chainID string) bool
 func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool
 
 // returns the N if Top N chain, otherwise an error
-func (k Keeper) GetTopNFraction(ctx sdk.Context, chainID string) (Dec, error)
+func (k Keeper) GetTopN(ctx sdk.Context, chainID string) (uint32, error)
 ```
 
 We also extend the `interchain-security-pd query provider list-consumer-chains` query to return information on whether a consumer chain is an Opt In or a Top N chain and with what N.
