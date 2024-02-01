@@ -209,26 +209,19 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 }
 
 // NewMsgOptIn creates a new NewMsgOptIn instance.
-func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress) (*MsgOptIn, error) {
+func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey MsgOptIn_ConsumerKey) (*MsgOptIn, error) {
 	return &MsgOptIn{
 		ChainId:      chainID,
 		ProviderAddr: providerValidatorAddress.String(),
+		XConsumerKey: &consumerConsensusPubKey,
 	}, nil
 }
 
 // Route implements the sdk.Msg interface.
 func (msg MsgOptIn) Route() string { return RouterKey }
 
-// Type implements the sdk.Msg interface. NOT REALLY
-//func (msg MsgOptIn) Type() string {
-//	return TypeMsgOptIn
-//}
-
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
-// TODO
-// If the validator address is not same as delegator's, then the validator must
-// sign the msg as well.
 func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -259,6 +252,15 @@ func (msg MsgOptIn) ValidateBasic() error {
 	if err != nil {
 		return ErrInvalidProviderAddress
 	}
+
+	consumerKey := msg.GetConsumerKey()
+	if consumerKey != "" {
+		// only parse if a non-empty key was provided
+		// FIXME: I fee there's should be a nicer way to do this ...
+		if _, _, err := ParseConsumerKeyFromJson(msg.GetConsumerKey()); err != nil {
+			return ErrInvalidConsumerConsensusPubKey
+		}
+	}
 	return nil
 }
 
@@ -273,16 +275,13 @@ func NewMsgOptOut(chainID string, providerValidatorAddress sdk.ValAddress) (*Msg
 // Route implements the sdk.Msg interface.
 func (msg MsgOptOut) Route() string { return RouterKey }
 
-// Type implements the sdk.Msg interface. NOT REALLY
-//func (msg MsgOptIn) Type() string {
-//	return TypeMsgOptIn
-//}
+// Type implements the sdk.Msg interface.
+func (msg MsgOptIn) Type() string {
+	return TypeMsgOptIn
+}
 
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
-// TODO
-// If the validator address is not same as delegator's, then the validator must
-// sign the msg as well.
 func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -314,4 +313,9 @@ func (msg MsgOptOut) ValidateBasic() error {
 		return ErrInvalidProviderAddress
 	}
 	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgOptOut) Type() string {
+	return TypeMsgOptOut
 }

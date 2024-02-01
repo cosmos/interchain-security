@@ -1136,3 +1136,146 @@ func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 
 	return allConsumerChains
 }
+
+func (k Keeper) SetOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+	blockHeight uint64,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	// validator is considered opted in
+	isOptedIn := []byte{1}
+	blockHeightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(blockHeightBytes, blockHeight)
+	toStore := append(isOptedIn, blockHeightBytes...)
+
+	store.Set(types.OptedInKey(chainID, providerAddr), toStore)
+}
+
+func (k Keeper) RemoveOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.OptedInKey(chainID, providerAddr))
+
+	buf[0] = 0 // consider it not opted in anymore
+	store.Set(types.OptedInKey(chainID, providerAddr), buf)
+}
+
+func (k Keeper) SetToBeOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ToBeOptedInKey(chainID, providerAddr), []byte{})
+}
+
+func (k Keeper) IsOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Get(types.OptedInKey(chainID, providerAddr)) != nil
+}
+
+func (k Keeper) GetOptedIn(
+	ctx sdk.Context,
+	chainID string) (addresses []types.ProviderConsAddress) {
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
+		addresses = append(addresses, providerAddr)
+	}
+
+	return addresses
+}
+
+func (k Keeper) IsToBeOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Get(types.ToBeOptedInKey(chainID, providerAddr)) != nil
+}
+
+func (k Keeper) GetToBeOptedIn(
+	ctx sdk.Context,
+	chainID string) (addresses []types.ProviderConsAddress) {
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ToBeOptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
+		addresses = append(addresses, providerAddr)
+	}
+
+	return addresses
+}
+
+func (k Keeper) RemoveToBeOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ToBeOptedOutKey(chainID, providerAddr))
+}
+
+func (k Keeper) SetToBeOptedOut(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ToBeOptedOutKey(chainID, providerAddr), []byte{})
+}
+
+func (k Keeper) IsToBeOptedOut(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Get(types.ToBeOptedOutKey(chainID, providerAddr)) != nil
+}
+
+func (k Keeper) GetToBeOptedOut(
+	ctx sdk.Context,
+	chainID string) (addresses []types.ProviderConsAddress) {
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ToBeOptedOutBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
+		addresses = append(addresses, providerAddr)
+	}
+
+	return addresses
+}
+
+func (k Keeper) RemoveToBeOptedOut(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ToBeOptedOutKey(chainID, providerAddr))
+}

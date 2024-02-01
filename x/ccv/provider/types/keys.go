@@ -145,6 +145,17 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
+	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain all the opted in validators
+	OptedInBytePrefix = 31
+
+	// ToBeOptedInBytePrefix is the byte prefix used when storing for each consumer chain the validators that
+	// are about to be opted in
+	ToBeOptedInBytePrefix = 32
+
+	// ToBeOptedOutBytePrefix is the byte prefix used when storing for each consumer chain the validators that
+	// are about to be opted out
+	ToBeOptedOutBytePrefix = 33
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -515,6 +526,24 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 	proposalID := sdk.BigEndianToUint64(bz[prefixL:])
 
 	return proposalID, nil
+}
+
+// OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// ToBeOptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func ToBeOptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	prefix := ChainIdWithLenKey(ToBeOptedInBytePrefix, chainID)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// ToBeOptedOutKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func ToBeOptedOutKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	prefix := ChainIdWithLenKey(ToBeOptedOutBytePrefix, chainID)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 //

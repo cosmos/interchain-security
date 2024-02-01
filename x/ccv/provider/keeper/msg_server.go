@@ -177,36 +177,63 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 
 func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.MsgOptInResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := k.Keeper.HandleOptIn(ctx, *msg); err != nil {
+
+	valAddress, err := sdk.ConsAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return nil, err
+	}
+	providerAddr := types.NewProviderConsAddress(valAddress)
+	if err != nil {
 		return nil, err
 	}
 
-	// add some outpout
-	//ctx.EventManager().EmitEvents(sdk.Events{
-	//	sdk.NewEvent(
-	//		ccvtypes.EventTypeSubmitConsumerMisbehaviour,
-	//		sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
-	//
-	//	),
-	//})
+	// todo also send down the consumer key ...???
+	if err := k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr); err != nil {
+		return nil, err
+	}
+
+	if msg.GetConsumerKey() != "" { // FIXME: there should be a nicer way to do this
+		ctx.EventManager().EmitEvents(sdk.Events{
+			sdk.NewEvent(
+				ccvtypes.EventTypeOptIn,
+				sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+				sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.GetConsumerKey()),
+			),
+		})
+	} else {
+		ctx.EventManager().EmitEvents(sdk.Events{
+			sdk.NewEvent(
+				ccvtypes.EventTypeOptIn,
+				sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+			),
+		})
+	}
 
 	return &types.MsgOptInResponse{}, nil
 }
 
 func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.MsgOptOutResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := k.Keeper.HandleOptOut(ctx, *msg); err != nil {
+
+	valAddress, err := sdk.ConsAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return nil, err
+	}
+	providerAddr := types.NewProviderConsAddress(valAddress)
+	if err != nil {
 		return nil, err
 	}
 
-	// add some outpout
-	//ctx.EventManager().EmitEvents(sdk.Events{
-	//	sdk.NewEvent(
-	//		ccvtypes.EventTypeSubmitConsumerMisbehaviour,
-	//		sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
-	//
-	//	),
-	//})
+	if err := k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr); err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			ccvtypes.EventTypeOptOut,
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+		),
+	})
 
 	return &types.MsgOptOutResponse{}, nil
 }
