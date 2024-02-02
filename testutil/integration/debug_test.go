@@ -77,6 +77,10 @@ func TestSendRewardsRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSendRewardsRetries")
 }
 
+func TestAllocateTokens(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokens")
+}
+
 func TestRewardsDistribution(t *testing.T) {
 	runCCVTestByName(t, "TestRewardsDistribution")
 }

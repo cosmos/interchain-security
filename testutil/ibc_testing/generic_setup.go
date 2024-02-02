@@ -135,6 +135,9 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	)
 	s.Require().NoError(err)
 
+	// assign a module account to consumer
+	providerKeeper.AssignNextRewardPoolToConsumer(providerChain.GetContext(), prop.ChainId)
+
 	// commit the state on the provider chain
 	coordinator.CommitBlock(providerChain)
 

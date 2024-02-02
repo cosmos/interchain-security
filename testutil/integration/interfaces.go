@@ -119,6 +119,7 @@ type TestBankKeeper interface {
 type TestAccountKeeper interface {
 	ccvtypes.AccountKeeper
 	GetParams(sdk.Context) authtypes.Params
+	SetModuleAccount(sdk.Context, authtypes.ModuleAccountI)
 }
 
 type TestSlashingKeeper interface {

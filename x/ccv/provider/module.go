@@ -144,6 +144,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	am.keeper.BeginBlockCCR(ctx)
 	// Check for replenishing slash meter before any slash packets are processed for this block
 	am.keeper.BeginBlockCIS(ctx)
+	// logic need for the  Reward Distribution sub-protocol
+	am.keeper.BeginBlockRD(ctx, req)
 }
 
 // EndBlock implements the AppModule interface
@@ -155,8 +157,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	am.keeper.EndBlockCCR(ctx)
 	// EndBlock logic needed for the Validator Set Update sub-protocol
 	am.keeper.EndBlockVSU(ctx)
-	// EndBlock logic need for the  Reward Distribution sub-protocol
-	am.keeper.EndBlockRD(ctx)
 
 	return []abci.ValidatorUpdate{}
 }

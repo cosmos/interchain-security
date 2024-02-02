@@ -339,28 +339,28 @@ func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
 
 // VerifyConsumerChain verifies that the chain trying to connect on the channel handshake
 // is the expected consumer chain.
-func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
+func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) (string, error) {
 	if len(connectionHops) != 1 {
-		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
+		return "", errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
 	connectionID := connectionHops[0]
 	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
-		return err
+		return "", err
 	}
 	ccvClientId, found := k.GetConsumerClientId(ctx, tmClient.ChainId)
 	if !found {
-		return errorsmod.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
+		return "", errorsmod.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
 	if ccvClientId != clientID {
-		return errorsmod.Wrapf(types.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+		return "", errorsmod.Wrapf(types.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
 	if prevChannel, ok := k.GetChainToChannel(ctx, tmClient.ChainId); ok {
-		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, tmClient.ChainId)
+		return "", errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, tmClient.ChainId)
 	}
-	return nil
+	return tmClient.ChainId, nil
 }
 
 // SetConsumerChain ensures that the consumer chain has not already been
@@ -1135,4 +1135,27 @@ func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 	allConsumerChains = append(allConsumerChains, pendingChainIDs...)
 
 	return allConsumerChains
+}
+
+func (k Keeper) GetConsumerModuleAccount(ctx sdk.Context, chainID string) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.ConsumerChainModuleAccountKey(chainID)))
+}
+
+func (k Keeper) AssignNextRewardPoolToConsumer(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	pool := types.ConsumerRewardPools[k.getAndIncrementConsumerModuleAccountIndex(ctx)]
+	store.Set(types.ConsumerChainModuleAccountKey(chainID), []byte(pool))
+}
+
+func (k Keeper) getAndIncrementConsumerModuleAccountIndex(ctx sdk.Context) (toReturn uint64) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerChainModuleAccountIndexKey())
+	if bz != nil {
+		toReturn = sdk.BigEndianToUint64(bz)
+	}
+	toStore := toReturn + 1
+	store.Set(types.ConsumerChainModuleAccountIndexKey(), sdk.Uint64ToBigEndian(toStore))
+
+	return toReturn
 }

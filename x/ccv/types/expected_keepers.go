@@ -4,6 +4,8 @@ import (
 	context "context"
 	"time"
 
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
@@ -109,6 +111,10 @@ type ClientKeeper interface {
 // DistributionKeeper defines the expected interface of the distribution keeper
 type DistributionKeeper interface {
 	FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
+	GetFeePool(ctx sdk.Context) distrtypes.FeePool
+	SetFeePool(ctx sdk.Context, feePool distrtypes.FeePool)
+	GetCommunityTax(ctx sdk.Context) math.LegacyDec
+	AllocateTokensToValidator(ctx sdk.Context, validator stakingtypes.ValidatorI, reward sdk.DecCoins)
 }
 
 // ConsumerHooks event hooks for newly bonded cross-chain validators

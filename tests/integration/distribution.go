@@ -1,8 +1,10 @@
 package integration
 
 import (
+	"fmt"
 	"strings"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,7 +13,6 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
@@ -39,7 +40,6 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.consumerChain.NextBlock()
 
 	consumerAccountKeeper := s.consumerApp.GetTestAccountKeeper()
-	providerAccountKeeper := s.providerApp.GetTestAccountKeeper()
 	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 	providerBankKeeper := s.providerApp.GetTestBankKeeper()
 
@@ -79,8 +79,8 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.providerChain.NextBlock()
 
 	// Since consumer reward denom is not yet registered, the coins never get into the fee pool, staying in the ConsumerRewardsPool
-	rewardPool := providerAccountKeeper.GetModuleAccount(s.providerCtx(), providertypes.ConsumerRewardsPool).GetAddress()
-	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	rewardPoolAddrs := s.providerApp.GetProviderKeeper().GetConsumerModuleAccountAddress(s.providerCtx(), s.consumerChain.ChainID)
+	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPoolAddrs)
 
 	ibcCoinIndex := -1
 	for i, coin := range rewardCoins {
@@ -97,7 +97,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	// Advance a block and check that the coins are still in the ConsumerRewardsPool
 	s.providerChain.NextBlock()
-	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPoolAddrs)
 	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
 
 	// Set the consumer reward denom. This would be done by a governance proposal in prod
@@ -106,7 +106,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.providerChain.NextBlock()
 
 	// Check that the reward pool has no more coins because they were transferred to the fee pool
-	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPoolAddrs)
 	s.Require().Equal(0, len(rewardCoins))
 
 	// check that the fee pool has the expected amount of coins
@@ -484,4 +484,301 @@ func (s *CCVTestSuite) prepareRewardDist() {
 	blocksSinceLastTrans := currentHeight - lastTransHeight.Height
 	blocksToGo := bpdt - blocksSinceLastTrans
 	s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
+}
+
+// This test is valid for minimal viable consumer chain
+func (s *CCVTestSuite) TestAllocateTokens() {
+	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
+	s.SetupAllCCVChannels()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	acountKeeper := s.providerApp.GetTestAccountKeeper()
+	bankKeeper := s.providerApp.GetTestBankKeeper()
+	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
+
+	// consumerkeeper := s.consumerApp.GetConsumerKeeper()
+	chainRewardPools := map[string]authtypes.AccountI{}
+	for chainID, chain := range s.consumerBundles {
+		accName := providerKeeper.GetConsumerModuleAccount(s.providerCtx(), chainID)
+		acc := acountKeeper.GetModuleAccount(s.providerCtx(), accName)
+		// verify consumer gets the expected module account address
+		// after the CCV handshake
+		s.Require().Equal(
+			acc.GetAddress().String(),
+			chain.App.GetConsumerKeeper().GetProviderFeePoolAddrStr(chain.GetCtx()),
+		)
+
+		chainRewardPools[accName] = acc
+	}
+
+	providerKeeper.SetConsumerRewardDenom(s.providerCtx(), sdk.DefaultBondDenom) // register a consumer reward denom
+
+	// TEST BEGINBLOCKRD
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	baseFee := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+
+	// fund consumer reward pools
+	for rp := range chainRewardPools {
+		bankKeeper.SendCoinsFromAccountToModule(
+			s.providerCtx(),
+			delAddr,
+			rp,
+			baseFee,
+		)
+	}
+
+	// Create vote since the ibctesting NextBlock() doesn't
+	// implement abci votes
+
+	votes := []abci.VoteInfo{}
+	for _, val := range s.providerChain.Vals.Validators {
+		votes = append(votes,
+			abci.VoteInfo{
+				Validator:       abci.Validator{Address: val.Address, Power: val.VotingPower},
+				SignedLastBlock: true,
+			},
+		)
+
+		valReward := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		fmt.Println("val outstanding reward: ", valReward.String())
+	}
+
+	for _, acc := range chainRewardPools {
+		bal := bankKeeper.GetAllBalances(
+			s.providerCtx(),
+			acc.GetAddress(),
+		)
+		fmt.Println("balance :", bal)
+	}
+
+	fmt.Println("community pool balance: ", distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx()))
+
+	fmt.Println("-----------Provider BeginBlock--------------")
+
+	providerKeeper.BeginBlockRD(
+		s.providerCtx(),
+		abci.RequestBeginBlock{
+			LastCommitInfo: abci.CommitInfo{
+				Votes: votes,
+			},
+		},
+	)
+
+	for _, acc := range chainRewardPools {
+		bal := bankKeeper.GetAllBalances(
+			s.providerCtx(),
+			acc.GetAddress(),
+		)
+		fmt.Println("balance: ", bal)
+	}
+
+	for _, val := range s.providerChain.Vals.Validators {
+
+		valReward := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		fmt.Println("val outstanding reward: ", valReward.String())
+	}
+
+	fmt.Println("community pool balance: ", distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx()))
+
+	// // // register a consumer reward denom
+	// // params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
+	// // params.RewardDenoms = []string{sdk.DefaultBondDenom}
+	// // s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
+
+	// // set module account for consumer chain 1
+	// providerKeeper := s.providerApp.GetProviderKeeper()
+	// // acountKeeper := s.providerApp.GetTestAccountKeeper()
+	// bankKeeper := s.providerApp.GetTestBankKeeper()
+
+	// // consuModAcct0 := acountKeeper.GetModuleAccount(s.providerCtx(), types.ConsumerRewardsPool0)
+	// // consuModAcct1 := acountKeeper.GetModuleAccount(s.providerCtx(), types.ConsumerRewardsPool1)
+	// // consuModAcct2 := acountKeeper.GetModuleAccount(s.providerCtx(), types.ConsumerRewardsPool2)
+
+	// consuModAcctNames := []string{
+	// 	// types.ConsumerRewardsPool0,
+	// 	// types.ConsumerRewardsPool1,
+	// 	// types.ConsumerRewardsPool2,
+	// }
+
+	// baseFee := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+	// delAddr := s.providerChain.SenderAccount.GetAddress()
+	// validators := s.providerChain.Vals.Validators
+
+	// providerKeeper.SetConsumerRewardDenom(s.providerCtx(), sdk.DefaultBondDenom) // // register a consumer reward denom
+	// // params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
+	// // params.RewardDenoms = []string{sdk.DefaultBondDenom}
+	// // s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params))
+
+	// for i := 0; i < 3; i++ {
+	// 	fee := baseFee.Add(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(int64(i))))
+
+	// 	bankKeeper.SendCoinsFromAccountToModule(
+	// 		s.providerCtx(),
+	// 		delAddr,
+	// 		consuModAcctNames[i],
+	// 		fee,
+	// 	)
+
+	// 	s.Require().True(
+	// 		fee.IsEqual(
+	// 			bankKeeper.GetAllBalances(
+	// 				s.providerCtx(),
+	// 				authtypes.NewModuleAddress(consuModAcctNames[i]),
+	// 			),
+	// 		),
+	// 	)
+
+	// 	// first consumer has all the validators optIn already (preProposalKeyAssignment)
+	// 	if i > 0 {
+	// 		val := validators[i]
+	// 		chainID := s.consumerBundles["testchain"+strconv.Itoa(i+2)].Chain.ChainID // DIRTY
+	// 		// get SDK validator
+	// 		valAddr, err := sdk.ValAddressFromHex(val.Address.String())
+	// 		s.Require().NoError(err)
+	// 		validator := s.getVal(s.providerCtx(), valAddr)
+
+	// 		// generate new PrivValidator
+	// 		privVal := mock.NewPV()
+	// 		tmPubKey, err := privVal.GetPubKey()
+	// 		s.Require().NoError(err)
+	// 		consumerKey, err := tmencoding.PubKeyToProto(tmPubKey)
+	// 		s.Require().NoError(err)
+
+	// 		// add Signer to the provider chain as there is no consumer chain to add it;
+	// 		// as a result, NewTestChainWithValSet in AddConsumer uses providerChain.Signers
+	// 		s.providerChain.Signers[tmPubKey.Address().String()] = privVal
+
+	// 		err = providerKeeper.AssignConsumerKey(s.providerCtx(), chainID, validator, consumerKey)
+	// 		s.Require().NoError(err)
+	// 	}
+
+	// 	valOldBal := map[string]sdk.DecCoins{}
+	// 	votes := []abci.VoteInfo{}
+
+	// 	for _, val := range validators {
+	// 		valAddr, err := sdk.ValAddressFromHex(val.Address.String())
+	// 		s.Require().NoError(err)
+	// 		valOldBal[valAddr.String()] = s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(s.providerCtx(), valAddr).Rewards
+	// 		votes = append(votes,
+	// 			abci.VoteInfo{
+	// 				Validator:       abci.Validator{Address: val.Address, Power: val.VotingPower},
+	// 				SignedLastBlock: true,
+	// 			},
+	// 		)
+	// 	}
+
+	// 	providerKeeper.AllocateTokens(s.providerCtx(), s.providerChain.Vals.TotalVotingPower(), votes)
+
+	// 	// s.providerChain.LastHeader.ValidatorSet.TotalVotingPower
+
+	// 	for _, val := range validators {
+	// 		valAddr, err := sdk.ValAddressFromHex(val.Address.String())
+	// 		s.Require().NoError(err)
+	// 		valOldBal[valAddr.String()] = s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(s.providerCtx(), valAddr).Rewards
+	// 	}
+
+	// }
+
+	// fmt.Println(providerKeeper.GetAllValidatorConsumerPubKeys(s.providerCtx(), &s.consumerChain.ChainID))
+	// fmt.Println(providerKeeper.GetAllValidatorConsumerPubKeys(s.providerCtx(), &(s.consumerBundles["testchain3"].Chain.ChainID)))
+	// fmt.Println(providerKeeper.GetAllValidatorConsumerPubKeys(s.providerCtx(), &(s.consumerBundles["testchain4"].Chain.ChainID)))
+
+	// ak := s.providerApp.GetTestAccountKeeper()
+	// ak.GetModuleAccount(ctx)
+	// ak := s.providerApp.GetTestAccountKeeper().SetModuleAccount(s.providerCtx(), consuModAcct)
+
+	// fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+	// err := s.providerApp.GetTestBankKeeper().SendCoinsFromAccountToModule(s.providerCtx(), delAddr, moduleName, fees)
+
+	// s.Require().NoError(err)
+
+	// delegate(s, delAddr, bondAmt)
+	// s.providerChain.NextBlock()
+
+	// // register a consumer reward denom
+	// params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
+	// params.RewardDenoms = []string{sdk.DefaultBondDenom}
+	// s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
+
+	// // relay VSC packets from provider to consumer
+	// relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+
+	// // reward for the provider chain will be sent after each 2 blocks
+	// consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
+	// consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(2))
+	// s.consumerChain.NextBlock()
+
+	// consumerAccountKeeper := s.consumerApp.GetTestAccountKeeper()
+	// providerAccountKeeper := s.providerApp.GetTestAccountKeeper()
+	// consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
+	// providerBankKeeper := s.providerApp.GetTestBankKeeper()
+
+	// // send coins to the fee pool which is used for reward distribution
+	// consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
+	// feePoolTokensOld := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
+	// fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+	// err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(), s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
+	// s.Require().NoError(err)
+	// feePoolTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
+	// s.Require().Equal(sdk.NewInt(100).Add(feePoolTokensOld.AmountOf(sdk.DefaultBondDenom)), feePoolTokens.AmountOf(sdk.DefaultBondDenom))
+
+	// // calculate the reward for consumer and provider chain. Consumer will receive ConsumerRedistributeFrac, the rest is going to provider
+	// frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
+	// s.Require().NoError(err)
+	// consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
+	// providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards...)
+	// s.consumerChain.NextBlock()
+
+	// // amount from the fee pool is divided between consumer redistribute address and address reserved for provider chain
+	// feePoolTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
+	// s.Require().Equal(0, len(feePoolTokens))
+	// consumerRedistributeAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerRedistributeName).GetAddress()
+	// consumerTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerRedistributeAddr)
+	// s.Require().Equal(consumerExpectedRewards.AmountOf(sdk.DefaultBondDenom), consumerTokens.AmountOf(sdk.DefaultBondDenom))
+	// providerRedistributeAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName).GetAddress()
+	// providerTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
+	// s.Require().Equal(providerExpectedRewards.AmountOf(sdk.DefaultBondDenom), providerTokens.AmountOf(sdk.DefaultBondDenom))
+
+	// // send the reward to provider chain after 2 blocks
+
+	// s.consumerChain.NextBlock()
+	// providerTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
+	// s.Require().Equal(0, len(providerTokens))
+
+	// relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
+	// s.providerChain.NextBlock()
+
+	// // Since consumer reward denom is not yet registered, the coins never get into the fee pool, staying in the ConsumerRewardsPool
+	// rewardPool := providerAccountKeeper.GetModuleAccount(s.providerCtx(), providertypes.ConsumerRewardsPool).GetAddress()
+	// rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+
+	// ibcCoinIndex := -1
+	// for i, coin := range rewardCoins {
+	// 	if strings.HasPrefix(coin.Denom, "ibc") {
+	// 		ibcCoinIndex = i
+	// 	}
+	// }
+
+	// // Check that we found an ibc denom in the reward pool
+	// s.Require().Greater(ibcCoinIndex, -1)
+
+	// // Check that the coins got into the ConsumerRewardsPool
+	// s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
+
+	// // Advance a block and check that the coins are still in the ConsumerRewardsPool
+	// s.providerChain.NextBlock()
+	// rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	// s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
+
+	// // Set the consumer reward denom. This would be done by a governance proposal in prod
+	// s.providerApp.GetProviderKeeper().SetConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom)
+
+	// s.providerChain.NextBlock()
+
+	// // Check that the reward pool has no more coins because they were transferred to the fee pool
+	// rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	// s.Require().Equal(0, len(rewardCoins))
+
+	// // check that the fee pool has the expected amount of coins
+	// communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
+	// s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }

@@ -12,13 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
@@ -137,20 +135,19 @@ func TestOnChanOpenTry(t *testing.T) {
 		}
 
 		// Expected mock calls
-		moduleAcct := authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{}}
-		moduleAcct.BaseAccount.Address = authtypes.NewModuleAddress(providertypes.ConsumerRewardsPool).String()
+		moduleAcct := providerKeeper.GetConsumerModuleAccountAddress(ctx, "consumerChainID")
 
 		// Number of calls is not asserted, since not all code paths are hit for failures
 		gomock.InOrder(
 			mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-				params.ctx, params.chanCap, host.ChannelCapabilityPath(params.portID, params.channelID)).AnyTimes(),
+				params.ctx, params.chanCap, host.ChannelCapabilityPath(params.portID, params.channelID),
+			).AnyTimes(),
 			mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionIDToConsumer").Return(
 				conntypes.ConnectionEnd{ClientId: "clientIDToConsumer"}, true,
 			).AnyTimes(),
 			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientIDToConsumer").Return(
 				&ibctmtypes.ClientState{ChainId: "consumerChainID"}, true,
 			).AnyTimes(),
-			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, providertypes.ConsumerRewardsPool).Return(&moduleAcct).AnyTimes(),
 		)
 
 		tc.mutateParams(&params, &providerKeeper)
@@ -171,7 +168,7 @@ func TestOnChanOpenTry(t *testing.T) {
 			md := &ccv.HandshakeMetadata{}
 			err = md.Unmarshal([]byte(metadata))
 			require.NoError(t, err)
-			require.Equal(t, moduleAcct.BaseAccount.Address, md.ProviderFeePoolAddr,
+			require.Equal(t, moduleAcct.String(), md.ProviderFeePoolAddr,
 				"returned dist account metadata must match expected")
 			require.Equal(t, ccv.Version, md.Version, "returned ccv version metadata must match expected")
 			ctrl.Finish()

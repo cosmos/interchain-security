@@ -1,22 +1,29 @@
 package keeper
 
 import (
+	"cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
-// EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.
-// Reward Distribution follows a simple model: send tokens to the ConsumerRewardsPool,
-// from where they sent to the fee collector address
-func (k Keeper) EndBlockRD(ctx sdk.Context) {
+// BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.
+func (k Keeper) BeginBlockRD(ctx sdk.Context, req abci.RequestBeginBlock) {
 	// transfers all whitelisted consumer rewards to the fee collector address
-	k.TransferRewardsToFeeCollector(ctx)
-}
 
-func (k Keeper) GetConsumerRewardsPoolAddressStr(ctx sdk.Context) string {
-	return k.accountKeeper.GetModuleAccount(
-		ctx, types.ConsumerRewardsPool).GetAddress().String()
+	// determine the total power signing the block
+	var previousTotalPower int64
+	for _, voteInfo := range req.LastCommitInfo.GetVotes() {
+		previousTotalPower += voteInfo.Validator.Power
+	}
+
+	// TODO this is Tendermint-dependent
+	// ref https://github.com/cosmos/cosmos-sdk/issues/3095
+	if ctx.BlockHeight() > 1 {
+		k.AllocateTokens(ctx, previousTotalPower, req.LastCommitInfo.GetVotes())
+	}
 }
 
 func (k Keeper) SetConsumerRewardDenom(
@@ -57,32 +64,142 @@ func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenom
 	return consumerRewardDenoms
 }
 
-// TransferRewardsToFeeCollector transfers all consumer rewards to the fee collector address
-func (k Keeper) TransferRewardsToFeeCollector(ctx sdk.Context) {
-	// 1. Get the denom whitelist from the store
+// ProviderAllocateConsumerRewards:
+
+// args (call by BeginBlock)
+//  - totalPreviousPower int64, bondedVotes []abci.VoteInfo
+
+// providers states:
+// - whitelisted denoms
+// - consumer chains
+// - Pool per
+// - validators per consumer
+
+// Naive Flow
+// For each consumer
+// 	- get ConsumerRewardsPool
+// 	- iterate over balance denoms
+// 	- if denoms is whitelisted send to validators
+// 		- distribute tokens by iterating over validators <- power fraction per validators is always the same
+
+// Opti Flow
+// 	For each pool get fee collected
+
+// 	For each bondedVotes
+// 		compute powerFraction
+// 		For each consumer the bondVote.Val OptIn
+// 			AllocateTokens of consumer.filtered pool
+
+// total remaining
+
+// AllocateTokens performs reward and fee distribution to all validators based
+// on the F1 fee distribution specification.
+func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bondedVotes []abci.VoteInfo) {
+	consuChains := k.GetAllConsumerChains(ctx)
+
+	// Allocate tokens to validator for each consumer they opted in to
+	for _, consu := range consuChains {
+
+		consuFeeCollected := k.GetConsumerFeeCollected(ctx, consu.ChainId)
+		if consuFeeCollected.IsZero() {
+			continue
+		}
+
+		// transfer collected fees to the distribution module account
+		err := k.bankKeeper.SendCoinsFromModuleToModule(
+			ctx,
+			k.GetConsumerModuleAccount(ctx, consu.ChainId),
+			distributiontypes.ModuleName,
+			consuFeeCollected,
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		feesCollected := sdk.NewDecCoinsFromCoins(consuFeeCollected...)
+
+		// temporary workaround to keep CanWithdrawInvariant happy
+		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
+		feePool := k.distributionKeeper.GetFeePool(ctx)
+		if totalPreviousPower == 0 {
+			feePool.CommunityPool = feePool.CommunityPool.Add(feesCollected...)
+			k.distributionKeeper.SetFeePool(ctx, feePool)
+			return
+		}
+
+		// calculate fraction allocated to validators
+		remaining := feesCollected
+		communityTax := k.distributionKeeper.GetCommunityTax(ctx)
+		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
+		feeMultiplier := feesCollected.MulDecTruncate(voteMultiplier)
+
+		// allocate tokens to consumer validators
+
+		feesAllocated := k.AllocateTokensToConsumerValidators(
+			ctx,
+			consu.ChainId,
+			totalPreviousPower,
+			bondedVotes,
+			feeMultiplier,
+		)
+		remaining = remaining.Sub(feesAllocated)
+
+		// allocate community funding
+		feePool.CommunityPool = feePool.CommunityPool.Add(remaining...)
+		k.distributionKeeper.SetFeePool(ctx, feePool)
+	}
+}
+
+// TODO: define which validators earned the tokens i.e. already opted in for 1000 blocks
+// rename to OptIn validators?
+func (k Keeper) AllocateTokensToConsumerValidators(
+	ctx sdk.Context,
+	chainID string,
+	totalPreviousPower int64,
+	bondedVotes []abci.VoteInfo,
+	fees sdk.DecCoins,
+) (totalReward sdk.DecCoins) {
+	for _, vote := range bondedVotes {
+		valConsAddr := vote.Validator.Address
+
+		if _, found := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(valConsAddr)); !found {
+			continue
+		}
+		// TODO: Consider micro-slashing for missing votes.
+		//
+		// Ref: https://github.com/cosmos/cosmos-sdk/issues/2525#issuecomment-430838701
+		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPreviousPower))
+		reward := fees.MulDecTruncate(powerFraction)
+
+		k.distributionKeeper.AllocateTokensToValidator(
+			ctx,
+			k.stakingKeeper.ValidatorByConsAddr(ctx, valConsAddr),
+			reward,
+		)
+		totalReward = totalReward.Add(reward...)
+	}
+
+	return
+}
+
+func (k Keeper) GetConsumerFeeCollected(ctx sdk.Context, chainID string) (feesCollected sdk.Coins) {
+	// get whitelisted denoms for consumer chain
+	// note that they may differ per consumer in the future
 	denoms := k.GetAllConsumerRewardDenoms(ctx)
 
-	// 2. Iterate over the whitelist
+	// sum the total fees collected
 	for _, denom := range denoms {
-		// 3. For each denom, retrieve the balance from the consumer rewards pool
 		balance := k.bankKeeper.GetBalance(
 			ctx,
-			k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress(),
+			k.GetConsumerModuleAccountAddress(ctx, chainID),
 			denom,
 		)
-
-		// if the balance is not zero,
-		if !balance.IsZero() {
-			// 4. Transfer the balance to the fee collector address
-			err := k.bankKeeper.SendCoinsFromModuleToModule(
-				ctx,
-				types.ConsumerRewardsPool,
-				k.feeCollectorName,
-				sdk.NewCoins(balance),
-			)
-			if err != nil {
-				k.Logger(ctx).Error("cannot sent consumer rewards to fee collector:", "reward", balance.String())
-			}
-		}
+		feesCollected = feesCollected.Add(balance)
 	}
+
+	return
+}
+
+func (k Keeper) GetConsumerModuleAccountAddress(ctx sdk.Context, chainID string) sdk.AccAddress {
+	return authtypes.NewModuleAddress(k.GetConsumerModuleAccount(ctx, chainID))
 }

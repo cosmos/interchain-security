@@ -28,9 +28,6 @@ const (
 
 	// Default validator set update ID
 	DefaultValsetUpdateID = 1
-
-	// This address receives rewards from consumer chains
-	ConsumerRewardsPool = "consumer_rewards_pool"
 )
 
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
@@ -145,8 +142,22 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
+	// ConsumerChainRewardPoolIndexByteKey
+	ConsumerChainModuleAccountIndexByteKey
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
+
+	// ConsumerChainRewardPoolBytePrefix
+	ConsumerChainModuleAccountBytePrefix
 )
+
+// ConsumerRewardPools contains the module account that receives rewards from consumer chains
+var ConsumerRewardPools = []string{
+	"consumer_rewards_pool_0",
+	"consumer_rewards_pool_1",
+	"consumer_rewards_pool_2",
+	"consumer_rewards_pool_3",
+	"consumer_rewards_pool_4",
+}
 
 //
 // Fully defined key func section
@@ -515,6 +526,16 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 	proposalID := sdk.BigEndianToUint64(bz[prefixL:])
 
 	return proposalID, nil
+}
+
+// ConsumerModuleAccount returns the module account byte prefix for a consumer chain
+func ConsumerChainModuleAccountKey(chainID string) []byte {
+	k := append([]byte{ConsumerChainModuleAccountBytePrefix}, []byte(chainID)...)
+	return k
+}
+
+func ConsumerChainModuleAccountIndexKey() []byte {
+	return []byte{ConsumerChainModuleAccountIndexByteKey}
 }
 
 //

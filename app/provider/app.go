@@ -158,14 +158,13 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:        nil,
-		distrtypes.ModuleName:             nil,
-		minttypes.ModuleName:              {authtypes.Minter},
-		stakingtypes.BondedPoolName:       {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:               {authtypes.Burner},
-		ibctransfertypes.ModuleName:       {authtypes.Minter, authtypes.Burner},
-		providertypes.ConsumerRewardsPool: nil,
+		authtypes.FeeCollectorName:     nil,
+		distrtypes.ModuleName:          nil,
+		minttypes.ModuleName:           {authtypes.Minter},
+		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:            {authtypes.Burner},
+		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -300,6 +299,10 @@ func New(
 	scopedIBCProviderKeeper := app.CapabilityKeeper.ScopeToModule(providertypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
+	// add consumer chain module accounts to module account permissions
+	// this MUST be called before the AccountKeeper initialisation
+	app.addConsumerChainAccountToMacPerms()
+
 	// add keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec,
@@ -310,12 +313,10 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// Remove the ConsumerRewardsPool from the group of blocked recipient addresses in bank
+	// Remove the consumer module accounts from the group of blocked recipient addresses in bank
 	// this is required for the provider chain to be able to receive tokens from
-	// the consumer chain
-	bankBlockedAddrs := app.ModuleAccountAddrs()
-	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
-		providertypes.ConsumerRewardsPool).String())
+	// consumer chains
+	bankBlockedAddrs := app.BlockedModuleAccountAddrs()
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
@@ -946,4 +947,18 @@ func makeEncodingConfig() appencoding.EncodingConfig {
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	return encodingConfig
+}
+
+func (app *App) addConsumerChainAccountToMacPerms() {
+	for _, c := range providertypes.ConsumerRewardPools {
+		maccPerms[c] = nil
+	}
+}
+
+func (app *App) BlockedModuleAccountAddrs() map[string]bool {
+	acctAddrs := app.ModuleAccountAddrs()
+	for _, c := range providertypes.ConsumerRewardPools {
+		delete(acctAddrs, c)
+	}
+	return acctAddrs
 }

@@ -78,9 +78,10 @@ func (am AppModule) OnChanOpenTry(
 		return "", err
 	}
 
-	if err := am.keeper.VerifyConsumerChain(
+	chainID, err := am.keeper.VerifyConsumerChain(
 		ctx, channelID, connectionHops,
-	); err != nil {
+	)
+	if err != nil {
 		return "", err
 	}
 
@@ -89,8 +90,11 @@ func (am AppModule) OnChanOpenTry(
 		// the consumer chain must be excluded from the blocked addresses
 		// blacklist or all all ibc-transfers from the consumer chain to the
 		// provider chain will fail
-		ProviderFeePoolAddr: am.keeper.GetConsumerRewardsPoolAddressStr(ctx),
-		Version:             ccv.Version,
+		ProviderFeePoolAddr: am.keeper.GetConsumerModuleAccountAddress(
+			ctx,
+			chainID,
+		).String(),
+		Version: ccv.Version,
 	}
 	mdBz, err := (&md).Marshal()
 	if err != nil {
