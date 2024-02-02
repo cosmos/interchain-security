@@ -1160,7 +1160,7 @@ func (k Keeper) DeleteTopN(
 	store.Delete(types.TopNKey(chainID))
 }
 
-// GetTopN returns a pair the N associated to chain with `chainID`
+// GetTopN returns (N, true) if chain `chainID` has a top N associated, and (0, false) otherwise. 
 func (k Keeper) GetTopN(
 	ctx sdk.Context,
 	chainID string,
