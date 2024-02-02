@@ -680,7 +680,7 @@ func TestOptedIn(t *testing.T) {
 	defer ctrl.Finish()
 
 	optedInValidator := keeper.OptedInValidator{
-		ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr"))
+		ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr")),
 		BlockHeight:  39481347,
 	}
 	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator.ProviderAddr, optedInValidator.BlockHeight)
