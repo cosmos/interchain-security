@@ -189,7 +189,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 
 	k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr)
 
-	if msg.GetConsumerKey() != "" { // FIXME: there should be a nicer way to do this
+	if _, ok := msg.XConsumerKey.(*types.MsgOptIn_ConsumerKey); ok {
 		ctx.EventManager().EmitEvents(sdk.Events{
 			sdk.NewEvent(
 				ccvtypes.EventTypeOptIn,

@@ -253,10 +253,7 @@ func (msg MsgOptIn) ValidateBasic() error {
 		return ErrInvalidProviderAddress
 	}
 
-	consumerKey := msg.GetConsumerKey()
-	if consumerKey != "" {
-		// only parse if a non-empty key was provided
-		// FIXME: I fee there's should be a nicer way to do this ...
+	if _, ok := msg.XConsumerKey.(*MsgOptIn_ConsumerKey); ok {
 		if _, _, err := ParseConsumerKeyFromJson(msg.GetConsumerKey()); err != nil {
 			return ErrInvalidConsumerConsensusPubKey
 		}
