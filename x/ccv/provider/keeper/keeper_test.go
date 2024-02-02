@@ -634,22 +634,28 @@ func TestTopN(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerKeeper.SetTopN(ctx, "TopNChainID1", 50)
-	topN, found := providerKeeper.GetTopN(ctx, "TopNChainID1")
-	require.Equal(t, uint32(50), topN)
-	require.True(t, found)
-	require.True(t, providerKeeper.IsTopN(ctx, "TopNChainID1"))
-	require.False(t, providerKeeper.IsOptIn(ctx, "TopNChainID1"))
+	tests := []struct {
+		chainID string
+		N       uint32
+		isOptIn bool
+	}{
+		{chainID: "TopNChain1", N: 50, isOptIn: false},
+		{chainID: "TopNChain2", N: 100, isOptIn: false},
+		{chainID: "OptInChain", N: 0, isOptIn: true},
+	}
 
-	providerKeeper.SetTopN(ctx, "TopNChainID2", 100)
-	topN, found = providerKeeper.GetTopN(ctx, "TopNChainID2")
-	require.Equal(t, uint32(100), topN)
-	require.True(t, found)
+	for _, test := range tests {
+		providerKeeper.SetTopN(ctx, test.chainID, test.N)
+		topN, found := providerKeeper.GetTopN(ctx, test.chainID)
+		require.Equal(t, test.N, topN)
+		require.True(t, found)
 
-	providerKeeper.SetTopN(ctx, "OptInChain", 0)
-	topN, found = providerKeeper.GetTopN(ctx, "OptInChain")
-	require.Equal(t, uint32(0), topN)
-	require.True(t, found)
-	require.False(t, providerKeeper.IsTopN(ctx, "OptInChain"))
-	require.True(t, providerKeeper.IsOptIn(ctx, "OptInChain"))
+		if test.isOptIn {
+			require.True(t, providerKeeper.IsOptIn(ctx, test.chainID))
+			require.False(t, providerKeeper.IsTopN(ctx, test.chainID))
+		} else {
+			require.False(t, providerKeeper.IsOptIn(ctx, test.chainID))
+			require.True(t, providerKeeper.IsTopN(ctx, test.chainID))
+		}
+	}
 }
