@@ -1,2 +1,2 @@
-.changelog/unreleased/features/1587-enable-opt-in-chains-throughgov-proposals.md- Enable Opt In and Top N chains through gov proposals.
+- Enable Opt In and Top N chains through gov proposals.
   ([\#1587](https://github.com/cosmos/interchain-security/pull/1587))
