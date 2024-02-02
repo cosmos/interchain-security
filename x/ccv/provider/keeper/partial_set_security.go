@@ -6,6 +6,12 @@ import (
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
+type OptedInValidator struct {
+	ProviderAddr types.ProviderConsAddress
+	// block height the validator opted in at
+	BlockHeight uint64
+}
+
 // TODO: HandleOptIn
 func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) error {
 	logger := k.Logger(ctx)
@@ -21,10 +27,6 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 	} else {
 		k.SetToBeOptedIn(ctx, chainID, providerAddr)
 	}
-
-	//if msg.GetConsumerKey() != "" {
-	//  k.AssignConsumerKey(ctx, msg.ChainId)
-	//}
 
 	return nil
 }

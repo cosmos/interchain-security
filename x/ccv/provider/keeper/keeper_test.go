@@ -1,7 +1,9 @@
 package keeper_test
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"sort"
 	"testing"
 	"time"
@@ -627,4 +629,136 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 			providerKeeper.DeleteProposedConsumerChainInStore(ctx, tc.ProposalID)
 		}
 	}
+}
+
+func TestGetOptedIn(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	optedInValidator1 := keeper.OptedInValidator{
+		ProviderAddr: types.NewProviderConsAddress([]byte{7, 24, 234, 1, 234, 83}),
+		BlockHeight:  2344,
+	}
+
+	optedInValidator2 := keeper.OptedInValidator{
+		ProviderAddr: types.NewProviderConsAddress([]byte{93, 24}),
+		BlockHeight:  34492348134,
+	}
+
+	optedInValidator3 := keeper.OptedInValidator{
+		ProviderAddr: types.NewProviderConsAddress([]byte{}),
+		BlockHeight:  9993423434498134,
+	}
+
+	expectedOptedInValidators := []keeper.OptedInValidator{optedInValidator1, optedInValidator2, optedInValidator3}
+	sort.Slice(expectedOptedInValidators, func(i int, j int) bool {
+		a := expectedOptedInValidators[i]
+		b := expectedOptedInValidators[j]
+		return a.BlockHeight < b.BlockHeight ||
+			(a.BlockHeight == b.BlockHeight && bytes.Compare(a.ProviderAddr.ToSdkConsAddr(), b.ProviderAddr.ToSdkConsAddr()) < 0)
+	})
+
+	for _, expectedOptedInValidator := range expectedOptedInValidators {
+		providerKeeper.SetOptedIn(ctx, "chainID",
+			expectedOptedInValidator.ProviderAddr, expectedOptedInValidator.BlockHeight)
+	}
+
+	actualOptedInValidators := providerKeeper.GetOptedIn(ctx, "chainID")
+	sort.Slice(actualOptedInValidators, func(i int, j int) bool {
+		a := actualOptedInValidators[i]
+		b := actualOptedInValidators[j]
+		return a.BlockHeight < b.BlockHeight ||
+			(a.BlockHeight == b.BlockHeight && bytes.Compare(a.ProviderAddr.ToSdkConsAddr(), b.ProviderAddr.ToSdkConsAddr()) < 0)
+	})
+
+	require.Equal(t, expectedOptedInValidators, actualOptedInValidators)
+}
+
+// TestOp
+func TestOptedIn(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	optedInValidator := keeper.OptedInValidator{
+		ProviderAddr: types.NewProviderConsAddress([]byte{9, 250, 134, 120, 3, 41}),
+		BlockHeight:  39481347,
+	}
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator.ProviderAddr, optedInValidator.BlockHeight)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
+	providerKeeper.RemoveOptedIn(ctx, "chainID", optedInValidator.ProviderAddr)
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
+}
+
+func TestBeOptedIn(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerAddr1 := types.NewProviderConsAddress([]byte{9, 250, 134, 120, 3, 41})
+	providerAddr2 := types.NewProviderConsAddress([]byte{89, 123, 41, 98, 77, 45, 33})
+	providerAddr3 := types.NewProviderConsAddress([]byte{91, 8, 7, 0, 0, 3, 45})
+	expectedAddresses := []types.ProviderConsAddress{providerAddr1, providerAddr2, providerAddr3}
+	sort.Slice(expectedAddresses, func(i int, j int) bool {
+		a := expectedAddresses[i]
+		b := expectedAddresses[j]
+		return bytes.Compare(a.Address.Bytes(), b.Address.Bytes()) < 0
+	})
+
+	providerKeeper.SetToBeOptedIn(ctx, "chainID", providerAddr1)
+	require.True(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr1))
+	providerKeeper.SetToBeOptedIn(ctx, "chainID", providerAddr2)
+	require.True(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr2))
+	providerKeeper.SetToBeOptedIn(ctx, "chainID", providerAddr3)
+	require.True(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr3))
+
+	actualAddresses := providerKeeper.GetToBeOptedIn(ctx, "chainID")
+	sort.Slice(actualAddresses, func(i int, j int) bool {
+		a := actualAddresses[i]
+		b := actualAddresses[j]
+		return bytes.Compare(a.Address.Bytes(), b.Address.Bytes()) < 0
+	})
+	require.Equal(t, expectedAddresses, actualAddresses)
+
+	providerKeeper.RemoveToBeOptedIn(ctx, "chainID", providerAddr1)
+	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr1))
+	providerKeeper.RemoveToBeOptedIn(ctx, "chainID", providerAddr2)
+	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr2))
+	providerKeeper.RemoveToBeOptedIn(ctx, "chainID", providerAddr3)
+	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr3))
+}
+
+func TestBeOptedOut(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerAddr1 := types.NewProviderConsAddress([]byte{9, 250, 134, 120, 3, 41})
+	providerAddr2 := types.NewProviderConsAddress([]byte{89, 123, 41, 98, 77, 45, 33})
+	providerAddr3 := types.NewProviderConsAddress([]byte{91, 8, 7, 0, 0, 3, 45})
+	expectedAddresses := []types.ProviderConsAddress{providerAddr1, providerAddr2, providerAddr3}
+	sort.Slice(expectedAddresses, func(i int, j int) bool {
+		a := expectedAddresses[i]
+		b := expectedAddresses[j]
+		return bytes.Compare(a.Address.Bytes(), b.Address.Bytes()) < 0
+	})
+
+	providerKeeper.SetToBeOptedOut(ctx, "chainID", providerAddr1)
+	require.True(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr1))
+	providerKeeper.SetToBeOptedOut(ctx, "chainID", providerAddr2)
+	require.True(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr2))
+	providerKeeper.SetToBeOptedOut(ctx, "chainID", providerAddr3)
+	require.True(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr3))
+
+	actualAddresses := providerKeeper.GetToBeOptedOut(ctx, "chainID")
+	sort.Slice(actualAddresses, func(i int, j int) bool {
+		a := actualAddresses[i]
+		b := actualAddresses[j]
+		return bytes.Compare(a.Address.Bytes(), b.Address.Bytes()) < 0
+	})
+	require.Equal(t, expectedAddresses, actualAddresses)
+
+	providerKeeper.RemoveToBeOptedOut(ctx, "chainID", providerAddr1)
+	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr1))
+	providerKeeper.RemoveToBeOptedOut(ctx, "chainID", providerAddr2)
+	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr2))
+	providerKeeper.RemoveToBeOptedOut(ctx, "chainID", providerAddr3)
+	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr3))
 }
