@@ -680,6 +680,7 @@ func TestGetOptedIn(t *testing.T) {
 			BlockHeight:  3,
 		},
 	}
+
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
 		providerKeeper.SetOptedIn(ctx, "chainID",
 			expectedOptedInValidator.ProviderAddr, expectedOptedInValidator.BlockHeight)
