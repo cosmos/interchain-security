@@ -369,7 +369,7 @@ func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 	store.Delete(types.ConsumerAddrsToPruneKey(chainID, vscID))
 }
 
-// AssignConsumerKey assigns the consumerKey to the validator with ProviderAddr
+// AssignConsumerKey assigns the consumerKey to the validator with providerAddr
 // on the consumer chain with ID chainID, if it is either registered or currently
 // voted on in a ConsumerAddition governance proposal
 func (k Keeper) AssignConsumerKey(

@@ -636,17 +636,17 @@ func TestGetOptedIn(t *testing.T) {
 	defer ctrl.Finish()
 
 	optedInValidator1 := keeper.OptedInValidator{
-		ProviderAddr: types.NewProviderConsAddress([]byte{7, 24, 234, 1, 234, 83}),
+		ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr1")),
 		BlockHeight:  2344,
 	}
 
 	optedInValidator2 := keeper.OptedInValidator{
-		ProviderAddr: types.NewProviderConsAddress([]byte{93, 24}),
+		ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr2")),
 		BlockHeight:  34492348134,
 	}
 
 	optedInValidator3 := keeper.OptedInValidator{
-		ProviderAddr: types.NewProviderConsAddress([]byte{}),
+		ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr3")),
 		BlockHeight:  9993423434498134,
 	}
 
@@ -680,7 +680,7 @@ func TestOptedIn(t *testing.T) {
 	defer ctrl.Finish()
 
 	optedInValidator := keeper.OptedInValidator{
-		ProviderAddr: types.NewProviderConsAddress([]byte{9, 250, 134, 120, 3, 41}),
+		ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr"))
 		BlockHeight:  39481347,
 	}
 	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator.ProviderAddr, optedInValidator.BlockHeight)
@@ -693,9 +693,9 @@ func TestBeOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerAddr1 := types.NewProviderConsAddress([]byte{9, 250, 134, 120, 3, 41})
-	providerAddr2 := types.NewProviderConsAddress([]byte{89, 123, 41, 98, 77, 45, 33})
-	providerAddr3 := types.NewProviderConsAddress([]byte{91, 8, 7, 0, 0, 3, 45})
+	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerAddr3 := types.NewProviderConsAddress([]byte("providerAddr3"))
 	expectedAddresses := []types.ProviderConsAddress{providerAddr1, providerAddr2, providerAddr3}
 	sort.Slice(expectedAddresses, func(i int, j int) bool {
 		a := expectedAddresses[i]
@@ -730,9 +730,9 @@ func TestBeOptedOut(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerAddr1 := types.NewProviderConsAddress([]byte{9, 250, 134, 120, 3, 41})
-	providerAddr2 := types.NewProviderConsAddress([]byte{89, 123, 41, 98, 77, 45, 33})
-	providerAddr3 := types.NewProviderConsAddress([]byte{91, 8, 7, 0, 0, 3, 45})
+	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerAddr3 := types.NewProviderConsAddress([]byte("providerAddr3"))
 	expectedAddresses := []types.ProviderConsAddress{providerAddr1, providerAddr2, providerAddr3}
 	sort.Slice(expectedAddresses, func(i int, j int) bool {
 		a := expectedAddresses[i]

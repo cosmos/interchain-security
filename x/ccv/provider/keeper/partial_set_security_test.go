@@ -11,7 +11,7 @@ func TestHandleOptIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerAddr := types.NewProviderConsAddress([]byte{1, 2, 3})
+	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
 	// if validator (`providerAddr`) is to be opted out, then we cancel that the validator is about
 	// to be opted out and do not consider the validator to opt in
@@ -31,7 +31,7 @@ func TestHandleOptOut(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerAddr := types.NewProviderConsAddress([]byte{1, 2, 3})
+	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
 	// if validator (`providerAddr`) is to be opted in, then we cancel that the validator is about
 	// to be opted out and do not consider the validator to opt out
