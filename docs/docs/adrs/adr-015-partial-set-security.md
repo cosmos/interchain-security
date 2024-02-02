@@ -244,7 +244,7 @@ If a validator is down on a consumer chain for an adequate amount of time, we ja
 
 ### Negative
 
-* A consumer chain does not receive the same economic security as with Replicated Security (assuming a value of `SoftOptOutThreshold` is `5%`), unless it is a Top N chain with `N >= 95%`.
+* A consumer chain does not receive the same economic security as with Replicated Security (assuming the value of `SoftOptOutThreshold` is `5%`), unless it is a Top N chain with `N >= 95%`.
 
 ## References
 
