@@ -187,10 +187,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 		return nil, err
 	}
 
-	// todo also send down the consumer key ...???
-	if err := k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr); err != nil {
-		return nil, err
-	}
+	k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr)
 
 	if msg.GetConsumerKey() != "" { // FIXME: there should be a nicer way to do this
 		ctx.EventManager().EmitEvents(sdk.Events{
@@ -224,9 +221,7 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 		return nil, err
 	}
 
-	if err := k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr); err != nil {
-		return nil, err
-	}
+	k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
