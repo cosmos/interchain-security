@@ -77,5 +77,37 @@ module ccv_pss_model {
                     totalPowerConsu >= totalPowerProvi * topN / 100
                 }
             )
-        })        
+        })
+
+    // SANITY CHECKS
+
+    val CanOptIn = {
+        not(
+            trace[length(trace)-1].kind == "OptIn"
+            and
+            trace[length(trace)-1].expectedError == ""
+        )
+    }
+
+    val CanOptOut = {
+        not(
+            trace[length(trace)-1].kind == "OptOut"
+            and
+            trace[length(trace)-1].expectedError == ""
+        )
+    }
+
+    val CanFailOptOut = {
+        not(
+            trace[length(trace)-1].kind == "OptOut"
+            and
+            trace[length(trace)-1].expectedError != ""
+        )
+    }
+
+    val CanHaveOptIn = {
+        currentState.providerState.topNByConsumer.keys().exists(consumer => {
+            currentState.providerState.topNByConsumer.get(consumer) != 100
+        })
+    }
 }
