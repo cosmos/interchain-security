@@ -150,15 +150,15 @@ const (
 	TopNBytePrefix
 
 	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain all the opted in validators
-	OptedInBytePrefix = 31
+	OptedInBytePrefix
 
 	// ToBeOptedInBytePrefix is the byte prefix used when storing for each consumer chain the validators that
 	// are about to be opted in
-	ToBeOptedInBytePrefix = 32
+	ToBeOptedInBytePrefix
 
 	// ToBeOptedOutBytePrefix is the byte prefix used when storing for each consumer chain the validators that
 	// are about to be opted out
-	ToBeOptedOutBytePrefix = 33
+	ToBeOptedOutBytePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )

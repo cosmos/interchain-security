@@ -225,12 +225,12 @@ func NewOptInCmd() *cobra.Command {
 
 			providerValAddr := clientCtx.GetFromAddress()
 
-			var consumerPubKey types.MsgOptIn_ConsumerKey
+			var consumerPubKey string
 			if len(args) == 2 {
 				// consumer public key was provided
-				consumerPubKey = types.MsgOptIn_ConsumerKey{ConsumerKey: args[1]}
+				consumerPubKey = args[1]
 			} else {
-				consumerPubKey = types.MsgOptIn_ConsumerKey{}
+				consumerPubKey = ""
 			}
 			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
 

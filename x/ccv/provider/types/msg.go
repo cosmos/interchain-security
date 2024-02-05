@@ -209,11 +209,11 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 }
 
 // NewMsgOptIn creates a new NewMsgOptIn instance.
-func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey MsgOptIn_ConsumerKey) (*MsgOptIn, error) {
+func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey string) (*MsgOptIn, error) {
 	return &MsgOptIn{
 		ChainId:      chainID,
 		ProviderAddr: providerValidatorAddress.String(),
-		XConsumerKey: &consumerConsensusPubKey,
+		ConsumerKey:  consumerConsensusPubKey,
 	}, nil
 }
 
@@ -253,8 +253,8 @@ func (msg MsgOptIn) ValidateBasic() error {
 		return ErrInvalidProviderAddress
 	}
 
-	if _, ok := msg.XConsumerKey.(*MsgOptIn_ConsumerKey); ok {
-		if _, _, err := ParseConsumerKeyFromJson(msg.GetConsumerKey()); err != nil {
+	if msg.ConsumerKey != "" {
+		if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
 			return ErrInvalidConsumerConsensusPubKey
 		}
 	}
