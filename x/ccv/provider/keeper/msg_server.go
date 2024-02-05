@@ -178,13 +178,17 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.MsgOptInResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	valAddress, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	valAddress, err := sdk.ConsAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return nil, err
+	}
+	providerAddr := types.NewProviderConsAddress(valAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	if msg.ConsumerKey != "" {
-		k.Keeper.HandleOptIn(ctx, msg.ChainId, valAddress, &msg.ConsumerKey)
+		k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, &msg.ConsumerKey)
 		ctx.EventManager().EmitEvents(sdk.Events{
 			sdk.NewEvent(
 				ccvtypes.EventTypeOptIn,
@@ -193,7 +197,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 			),
 		})
 	} else {
-		k.Keeper.HandleOptIn(ctx, msg.ChainId, valAddress, nil)
+		k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, nil)
 
 		ctx.EventManager().EmitEvents(sdk.Events{
 			sdk.NewEvent(
@@ -209,12 +213,16 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.MsgOptOutResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	valAddress, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	valAddress, err := sdk.ConsAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return nil, err
+	}
+	providerAddr := types.NewProviderConsAddress(valAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	k.Keeper.HandleOptOut(ctx, msg.ChainId, valAddress)
+	k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(

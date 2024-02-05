@@ -1187,7 +1187,7 @@ func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 	blockHeight uint64,
 ) {
 	store := ctx.KVStore(k.storeKey)
@@ -1196,25 +1196,25 @@ func (k Keeper) SetOptedIn(
 	blockHeightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(blockHeightBytes, blockHeight)
 
-	store.Set(types.OptedInKey(chainID, valAddress), blockHeightBytes)
+	store.Set(types.OptedInKey(chainID, providerAddr), blockHeightBytes)
 }
 
 func (k Keeper) DeleteOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.OptedInKey(chainID, valAddress))
+	store.Delete(types.OptedInKey(chainID, providerAddr))
 }
 
 func (k Keeper) IsOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.OptedInKey(chainID, valAddress)) != nil
+	return store.Get(types.OptedInKey(chainID, providerAddr)) != nil
 }
 
 func (k Keeper) GetOptedIn(
@@ -1227,8 +1227,8 @@ func (k Keeper) GetOptedIn(
 
 	for ; iterator.Valid(); iterator.Next() {
 		optedInValidators = append(optedInValidators, OptedInValidator{
-			ValAddress:  iterator.Key()[len(key):],
-			BlockHeight: binary.BigEndian.Uint64(iterator.Value()),
+			ProviderAddr: types.NewProviderConsAddress(iterator.Key()[len(key):]),
+			BlockHeight:  binary.BigEndian.Uint64(iterator.Value()),
 		})
 	}
 
@@ -1238,33 +1238,33 @@ func (k Keeper) GetOptedIn(
 func (k Keeper) SetToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ToBeOptedInKey(chainID, valAddress), []byte{})
+	store.Set(types.ToBeOptedInKey(chainID, providerAddr), []byte{})
 }
 
 func (k Keeper) DeleteToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ToBeOptedInKey(chainID, valAddress))
+	store.Delete(types.ToBeOptedInKey(chainID, providerAddr))
 }
 
 func (k Keeper) IsToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.ToBeOptedInKey(chainID, valAddress)) != nil
+	return store.Get(types.ToBeOptedInKey(chainID, providerAddr)) != nil
 }
 
 func (k Keeper) GetToBeOptedIn(
 	ctx sdk.Context,
-	chainID string) (valAddresses []sdk.ValAddress) {
+	chainID string) (addresses []types.ProviderConsAddress) {
 
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ToBeOptedInBytePrefix, chainID)
@@ -1272,42 +1272,43 @@ func (k Keeper) GetToBeOptedIn(
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		valAddresses = append(valAddresses, iterator.Key()[len(key):])
+		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
+		addresses = append(addresses, providerAddr)
 	}
 
-	return valAddresses
+	return addresses
 }
 
 func (k Keeper) SetToBeOptedOut(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ToBeOptedOutKey(chainID, valAddress), []byte{})
+	store.Set(types.ToBeOptedOutKey(chainID, providerAddr), []byte{})
 }
 
 func (k Keeper) DeleteToBeOptedOut(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ToBeOptedOutKey(chainID, valAddress))
+	store.Delete(types.ToBeOptedOutKey(chainID, providerAddr))
 }
 
 func (k Keeper) IsToBeOptedOut(
 	ctx sdk.Context,
 	chainID string,
-	valAddress sdk.ValAddress,
+	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.ToBeOptedOutKey(chainID, valAddress)) != nil
+	return store.Get(types.ToBeOptedOutKey(chainID, providerAddr)) != nil
 }
 
 func (k Keeper) GetToBeOptedOut(
 	ctx sdk.Context,
-	chainID string) (valAddresses []sdk.ValAddress) {
+	chainID string) (addresses []types.ProviderConsAddress) {
 
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ToBeOptedOutBytePrefix, chainID)
@@ -1315,8 +1316,9 @@ func (k Keeper) GetToBeOptedOut(
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		valAddresses = append(valAddresses, iterator.Key()[len(key):])
+		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
+		addresses = append(addresses, providerAddr)
 	}
 
-	return valAddresses
+	return addresses
 }

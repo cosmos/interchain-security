@@ -1272,7 +1272,7 @@ func (m *MsgAssignConsumerKey) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1840,7 +1840,7 @@ func (m *MsgOptIn) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2036,7 +2036,7 @@ func (m *MsgOptOut) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {

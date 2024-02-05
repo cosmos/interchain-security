@@ -538,21 +538,21 @@ func TopNKey(chainID string) []byte {
 }
 
 // OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func OptedInKey(chainID string, valAddress sdk.ValAddress) []byte {
+func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
-	return append(prefix, valAddress...)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // ToBeOptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func ToBeOptedInKey(chainID string, valAddress sdk.ValAddress) []byte {
+func ToBeOptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	prefix := ChainIdWithLenKey(ToBeOptedInBytePrefix, chainID)
-	return append(prefix, valAddress...)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // ToBeOptedOutKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func ToBeOptedOutKey(chainID string, valAddress sdk.ValAddress) []byte {
+func ToBeOptedOutKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	prefix := ChainIdWithLenKey(ToBeOptedOutBytePrefix, chainID)
-	return append(prefix, valAddress...)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 //
