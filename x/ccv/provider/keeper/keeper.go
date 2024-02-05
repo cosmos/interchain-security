@@ -1279,15 +1279,6 @@ func (k Keeper) GetToBeOptedIn(
 	return addresses
 }
 
-func (k Keeper) RemoveToBeOptedIn(
-	ctx sdk.Context,
-	chainID string,
-	providerAddr types.ProviderConsAddress,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ToBeOptedInKey(chainID, providerAddr))
-}
-
 func (k Keeper) SetToBeOptedOut(
 	ctx sdk.Context,
 	chainID string,
@@ -1330,13 +1321,4 @@ func (k Keeper) GetToBeOptedOut(
 	}
 
 	return addresses
-}
-
-func (k Keeper) RemoveToBeOptedOut(
-	ctx sdk.Context,
-	chainID string,
-	providerAddr types.ProviderConsAddress,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ToBeOptedOutKey(chainID, providerAddr))
 }
