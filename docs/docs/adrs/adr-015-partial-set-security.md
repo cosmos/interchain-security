@@ -55,7 +55,7 @@ By having `top_N >= 50` we can guarantee that we cannot have a successful attack
 This is because, a Top N chain with `N >= 50%` would have at least `1/3` honest validators, which is sufficient to stop attacks.
 Additionally, by having `N >= 50%` (and hence `N > (VetoThreshold = 33.4%)`) we enable the top N validators to `Veto` any `ConsumerAdditionProposal` for consumer chains they do not want to validate.
 
-If a proposal has the `top_N` argument wrongly set, it should get rejected in [ValidateBasic] (<https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/types/proposal.go#L86>).
+If a proposal has the `top_N` argument wrongly set, it should get rejected in [ValidateBasic] (https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/types/proposal.go#L86).
 
 In the code, we distinguish whether a chain is _Top N_ or _Opt In_ by checking whether `top_N` is zero or not.
 
