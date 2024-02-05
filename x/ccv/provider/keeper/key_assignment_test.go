@@ -86,7 +86,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 			expectedGetAllOneConsumerOrder = append(expectedGetAllOneConsumerOrder, assignment)
 		}
 	}
-	// sorting by ValidatorConsumerPubKey.ProviderAddr
+	// sorting by ValidatorConsumerPubKey.ValAddress
 	sort.Slice(expectedGetAllOneConsumerOrder, func(i, j int) bool {
 		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ProviderAddr, expectedGetAllOneConsumerOrder[j].ProviderAddr) == -1
 	})
@@ -228,7 +228,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 		)
 	}
 	expectedGetAllOrder := testAssignments
-	// sorting by KeyAssignmentReplacement.ProviderAddr
+	// sorting by KeyAssignmentReplacement.ValAddress
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
 		return bytes.Compare(expectedGetAllOrder[i].ProviderAddr, expectedGetAllOrder[j].ProviderAddr) == -1
 	})
