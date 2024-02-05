@@ -42,7 +42,7 @@ func TestHandleOptOut(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 
 	// if validator (`providerAddr`) is not opted in, then the validator cannot be opted out
-	providerKeeper.RemoveOptedIn(ctx, "chainID", providerAddr)
+	providerKeeper.DeleteOptedIn(ctx, "chainID", providerAddr)
 	providerKeeper.HandleOptOut(ctx, "chainID", providerAddr)
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 }

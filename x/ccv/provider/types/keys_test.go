@@ -56,6 +56,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.VSCMaturedHandledThisBlockBytePrefix,
 		providertypes.EquivocationEvidenceMinHeightBytePrefix,
 		providertypes.ProposedConsumerChainByteKey,
+		providertypes.TopNBytePrefix,
 		providertypes.OptedInBytePrefix,
 		providertypes.ToBeOptedInBytePrefix,
 		providertypes.ToBeOptedOutBytePrefix,

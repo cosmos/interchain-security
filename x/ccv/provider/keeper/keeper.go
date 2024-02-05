@@ -1137,6 +1137,54 @@ func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 	return allConsumerChains
 }
 
+// SetTopN stores the N value associated to chain with `chainID`
+func (k Keeper) SetTopN(
+	ctx sdk.Context,
+	chainID string,
+	N uint32,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, N)
+
+	store.Set(types.TopNKey(chainID), buf)
+}
+
+// DeleteTopN removes the N value associated to chain with `chainID`
+func (k Keeper) DeleteTopN(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.TopNKey(chainID))
+}
+
+// GetTopN returns (N, true) if chain `chainID` has a top N associated, and (0, false) otherwise.
+func (k Keeper) GetTopN(
+	ctx sdk.Context,
+	chainID string,
+) (uint32, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.TopNKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint32(buf), true
+}
+
+// IsTopN returns true if chain with `chainID` is a Top N chain (i.e., enforces at least one validator to validate chain `chainID`)
+func (k Keeper) IsTopN(ctx sdk.Context, chainID string) bool {
+	topN, found := k.GetTopN(ctx, chainID)
+	return found && topN > 0
+}
+
+// IsOptIn returns true if chain with `chainID` is an Opt In chain (i.e., no validator is forced to validate chain `chainID`)
+func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
+	topN, found := k.GetTopN(ctx, chainID)
+	return !found || topN == 0
+}
+
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1152,7 +1200,7 @@ func (k Keeper) SetOptedIn(
 	store.Set(types.OptedInKey(chainID, providerAddr), blockHeightBytes)
 }
 
-func (k Keeper) RemoveOptedIn(
+func (k Keeper) DeleteOptedIn(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr types.ProviderConsAddress,
@@ -1197,7 +1245,7 @@ func (k Keeper) SetToBeOptedIn(
 	store.Set(types.ToBeOptedInKey(chainID, providerAddr), []byte{})
 }
 
-func (k Keeper) RemoveToBeOptedIn(
+func (k Keeper) DeleteToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr types.ProviderConsAddress,
@@ -1241,7 +1289,7 @@ func (k Keeper) SetToBeOptedOut(
 	store.Set(types.ToBeOptedOutKey(chainID, providerAddr), []byte{})
 }
 
-func (k Keeper) RemoveToBeOptedOut(
+func (k Keeper) DeleteToBeOptedOut(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr types.ProviderConsAddress,
