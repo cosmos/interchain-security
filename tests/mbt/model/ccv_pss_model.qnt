@@ -5,9 +5,12 @@ module ccv_pss_model {
     import extraSpells.* from "./libraries/extraSpells"
 
     action StepOptIn(): bool = {
-        nondet consumer = oneOf(runningConsumers)
-        nondet validator = oneOf(nodes)
-        OptIn_Deterministic(consumer, validator)
+        all {
+            runningConsumers.size() > 0,
+            nondet consumer = oneOf(runningConsumers)
+            nondet validator = oneOf(nodes)
+            OptIn_Deterministic(consumer, validator)
+        }
     }
 
     action OptIn_Deterministic(consumer: Chain, validator: Node): bool = {
@@ -28,9 +31,12 @@ module ccv_pss_model {
     }
 
     action StepOptOut(): bool = {
-        nondet consumer = oneOf(runningConsumers)
-        nondet validator = oneOf(nodes)
-        OptOut_Deterministic(consumer, validator)
+        all {
+            runningConsumers.size() > 0,    
+            nondet consumer = oneOf(runningConsumers)
+            nondet validator = oneOf(nodes)
+            OptOut_Deterministic(consumer, validator)
+        }
     }
 
     action OptOut_Deterministic(consumer: Chain, validator: Node): bool = {
@@ -59,13 +65,17 @@ module ccv_pss_model {
     // INVARIANTS
 
     // For a consumer chain with a given top N value,
-    // the total VP on the consumer is at least N% of the total VP on the provider.
+    // the total VP on the consumer is at least N% of the total VP of some historical val set on the provider.
     val AtLeastTopNPower: bool = 
         runningConsumers.forall(consumer => {
             val topN = currentState.providerState.topNByConsumer.get(consumer)
-            val totalPowerProvi = currentState.providerState.chainState.currentValidatorSet.mapValuesSum()
             val totalPowerConsu = currentState.consumerStates.get(consumer).chainState.currentValidatorSet.mapValuesSum()
+            currentState.providerState.chainState.votingPowerHistory.toSet().exists(
+                valSet => {
+                    val totalPowerProvi = valSet.mapValuesSum()
 
-            totalPowerConsu >= totalPowerProvi * topN / 100
+                    totalPowerConsu >= totalPowerProvi * topN / 100
+                }
+            )
         })        
 }
