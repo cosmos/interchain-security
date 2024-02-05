@@ -64,7 +64,8 @@ Where proposal.json contains:
     "transfer_timeout_period": 3600000000000,
     "ccv_timeout_period": 2419200000000000,
     "unbonding_period": 1728000000000000,
-    "deposit": "10000stake"
+    "deposit": "10000stake",
+	"top_n": 0,
 }
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +87,7 @@ Where proposal.json contains:
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
 				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission,
 				proposal.DistributionTransmissionChannel, proposal.HistoricalEntries,
-				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
+				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod, proposal.TopN)
 
 			from := clientCtx.GetFromAddress()
 
@@ -241,6 +242,7 @@ type ConsumerAdditionProposalJSON struct {
 	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
 
 	Deposit string `json:"deposit"`
+	TopN    uint32 `json:"top_N"`
 }
 
 type ConsumerAdditionProposalReq struct {
