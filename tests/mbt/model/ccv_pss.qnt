@@ -23,6 +23,8 @@ module ccv_pss {
     }
 
     // Given a validator set and N, returns the top N% of validators by power.
+    // Note that in the edge case of multiple validators having the same power,
+    // all validators with the lowest voting power that is forced to validate are included.
     pure def GetTopNVals(origValSet: ValidatorSet, N: int): Set[Node] = {
         // == sort validators by power ==
         // define a comparator that compares validators by power
@@ -40,19 +42,35 @@ module ccv_pss {
         
         // == construct the validator set by going through the sorted vals ==
         pure val res = sortedVals.foldl(
-            // fold carries two values: current validator set and total power added so far
-            (Set(), 0),
+            // accumulator carries 4 values:
+            // * set of vals in top N (starts with empty set)
+            // * total power added so far (starts with 0)
+            // * whether we should add the next validator if it has the same power as the previous one,
+            // regardless of total power (starts with false)
+            // * the power of the last validator added (starts with 0)
+            (Set(), 0, false, 0),
             (acc, validator) =>
                 pure val curValSet = acc._1
                 pure val accPower = acc._2
+                pure val shouldAddSamePow = acc._3
+                pure val lastPow = acc._4
+
                 pure val validatorPower = origValSet.get(validator)
-                if (validatorPower > 0 and accPower < topNPower) {
+                if (validatorPower == lastPow and shouldAddSamePow) {
+                    // we should add the validator because it has the same power as the previous one,
+                    // and we add regardless of total power because we need to include all
+                    // vals with the same power if we include one of them
+                    pure val newAccPower = accPower + validatorPower
+                    (curValSet.union(Set(validator)), newAccPower, true, validatorPower)
+                } else if (validatorPower > 0 and accPower < topNPower) {
                     // if we don't have enough power yet, add the validator to the set
                     pure val newAccPower = accPower + validatorPower
-                    (curValSet.union(Set(validator)), newAccPower)
+                    (curValSet.union(Set(validator)), newAccPower, true, validatorPower)
                 } else {
-                    // if we have enough power, don't add them
-                    (curValSet, accPower)
+                    // if we have enough power and we also are done adding
+                    // all validators with the same power as the lowest top N validator,
+                    // don't add them
+                    (curValSet, accPower, false, 0)
                 }
         )
         res._1

@@ -50,21 +50,22 @@ module ccv_pss_model {
         }
     }
 
-    // Functions that, given a random number from 1 to 100,
-    // returns a top N value to be set for a new consumer chain to start.
-    // Used to decide on the distribution of top N values.
-    pure def allFullConsumers(): int = 100
+    // Different sets of possible values for the topN parameter.
+    val allFullConsumers: Set[int] = Set(100)
+    val allOptIn: Set[int] = Set(0)
+    // only choose a few values for top N here to not make the "edge cases" of 0 and 100 too unlikely
+    val randomTopN: Set[int] = Set(0, 50, 70, 80, 90, 100)
 
-    pure def allOptIn(): int = 0
+    // INVARIANTS
 
-    // 30% are opt in, rest are random between
-    // 50 and 95, with a slight bias towards
-    // 95 
-    pure def biasLargeTopN(): int =
-    nondet x = oneOf(1.to(100))
-    if(x <= 30) {
-        0
-    } else {
-        min(95, x+19)
-    }
+    // For a consumer chain with a given top N value,
+    // the total VP on the consumer is at least N% of the total VP on the provider.
+    val AtLeastTopNPower: bool = 
+        runningConsumers.forall(consumer => {
+            val topN = currentState.providerState.topNByConsumer.get(consumer)
+            val totalPowerProvi = currentState.providerState.chainState.currentValidatorSet.mapValuesSum()
+            val totalPowerConsu = currentState.consumerStates.get(consumer).chainState.currentValidatorSet.mapValuesSum()
+
+            totalPowerConsu >= totalPowerProvi * topN / 100
+        })        
 }

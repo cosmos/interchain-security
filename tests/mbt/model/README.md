@@ -75,10 +75,7 @@ traces are not very useful for testing.
 
 To run unit tests, run 
 ```
-quint test ccv_test.qnt
-```
-and 
-```
+quint test ccv_test.qnt;
 quint test ccv_model.qnt
 ```
 

@@ -291,7 +291,7 @@ module extraSpells {
   // where only those keys are included for which the given __f
   // returns true.
   pure def mapFilter(__map: a -> b, __f: a => bool): a -> b = {
-    __map.keys().filter(__f).mapBy(__k => __map.get(__k))
+    __map.keys().filter(e => __f(e)).mapBy(__k => __map.get(__k))
   }
 
   /// Compute the maximum of two integers.
