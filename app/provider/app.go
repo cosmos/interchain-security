@@ -958,7 +958,7 @@ func (app *App) addConsumerChainAccountToMacPerms() {
 func (app *App) BlockedModuleAccountAddrs() map[string]bool {
 	acctAddrs := app.ModuleAccountAddrs()
 	for _, c := range providertypes.ConsumerRewardPools {
-		delete(acctAddrs, c)
+		delete(acctAddrs, authtypes.NewModuleAddress(c).String())
 	}
 	return acctAddrs
 }
