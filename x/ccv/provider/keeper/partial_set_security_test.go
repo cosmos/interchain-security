@@ -17,13 +17,13 @@ func TestHandleOptIn(t *testing.T) {
 	// to be opted out and do not consider the validator to opt in
 	providerKeeper.SetToBeOptedOut(ctx, "chainID", providerAddr)
 	require.True(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
-	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr)
+	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, nil)
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 
 	// if validator (`providerAddr`) is already opted in, then the validator cannot be opted in
 	providerKeeper.SetOptedIn(ctx, "chainID", providerAddr, 1)
-	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr)
+	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, nil)
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 }
 

@@ -187,26 +187,22 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 		return nil, err
 	}
 
-<<<<<<< HEAD
-	k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr)
-
 	if _, ok := msg.XConsumerKey.(*types.MsgOptIn_ConsumerKey); ok {
-=======
-	// todo also send down the consumer key ...???
-	if err := k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr); err != nil {
-		return nil, err
-	}
+		key := msg.GetConsumerKey()
+		consumerKey := &key
 
-	if msg.GetConsumerKey() != "" { // FIXME: there should be a nicer way to do this
->>>>>>> defd7cc6 (store opted in and opted out validators)
+		k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, consumerKey)
+
 		ctx.EventManager().EmitEvents(sdk.Events{
 			sdk.NewEvent(
 				ccvtypes.EventTypeOptIn,
 				sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
-				sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.GetConsumerKey()),
+				sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, key),
 			),
 		})
 	} else {
+		k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, nil)
+
 		ctx.EventManager().EmitEvents(sdk.Events{
 			sdk.NewEvent(
 				ccvtypes.EventTypeOptIn,
@@ -230,13 +226,7 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 		return nil, err
 	}
 
-<<<<<<< HEAD
 	k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr)
-=======
-	if err := k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr); err != nil {
-		return nil, err
-	}
->>>>>>> defd7cc6 (store opted in and opted out validators)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(

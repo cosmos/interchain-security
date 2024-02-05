@@ -702,11 +702,7 @@ func TestGetOptedIn(t *testing.T) {
 	require.Equal(t, expectedOptedInValidators, actualOptedInValidators)
 }
 
-<<<<<<< HEAD
-// TestOptedIn tests the `SetOptedIn`, `IsOptedIn`, and `DeleteOptedIn` methods
-=======
 // TestOptedIn tests the `SetOptedIn`, `IsOptedIn`, and `RemoveOptedIn` methods
->>>>>>> d8d7531f (cleaned up tests)
 func TestOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -752,20 +748,12 @@ func TestGetToBeOptedIn(t *testing.T) {
 
 	for _, addr := range expectedAddresses {
 		require.True(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", addr))
-<<<<<<< HEAD
 		providerKeeper.DeleteToBeOptedIn(ctx, "chainID", addr)
-=======
-		providerKeeper.RemoveToBeOptedIn(ctx, "chainID", addr)
->>>>>>> d8d7531f (cleaned up tests)
 		require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", addr))
 	}
 }
 
-<<<<<<< HEAD
 // TestToBeOptedIn tests the `SetToBeOptedIn`, `IsToBeOptedIn`, and `DeleteToBeOptedIn` methods
-=======
-// TestToBeOptedIn tests the `SetToBeOptedIn`, `IsToBeOptedIn`, and `RemoveToBeOptedIn` methods
->>>>>>> d8d7531f (cleaned up tests)
 func TestToBeOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -775,11 +763,7 @@ func TestToBeOptedIn(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 	providerKeeper.SetToBeOptedIn(ctx, "chainID", providerAddr)
 	require.True(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
-<<<<<<< HEAD
 	providerKeeper.DeleteToBeOptedIn(ctx, "chainID", providerAddr)
-=======
-	providerKeeper.RemoveToBeOptedIn(ctx, "chainID", providerAddr)
->>>>>>> d8d7531f (cleaned up tests)
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 }
 
@@ -812,20 +796,12 @@ func TestGetToBeOptedOut(t *testing.T) {
 
 	for _, addr := range expectedAddresses {
 		require.True(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", addr))
-<<<<<<< HEAD
 		providerKeeper.DeleteToBeOptedOut(ctx, "chainID", addr)
-=======
-		providerKeeper.RemoveToBeOptedOut(ctx, "chainID", addr)
->>>>>>> d8d7531f (cleaned up tests)
 		require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", addr))
 	}
 }
 
-<<<<<<< HEAD
 // TestToBeOptedOut tests the `SetToBeOptedOut`, `IsToBeOptedOut`, and `DeleteToBeOptedOut` methods
-=======
-// TestToBeOptedOut tests the `SetToBeOptedOut`, `IsToBeOptedOut`, and `RemoveToBeOptedOut` methods
->>>>>>> d8d7531f (cleaned up tests)
 func TestToBeOptedOut(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -835,10 +811,6 @@ func TestToBeOptedOut(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 	providerKeeper.SetToBeOptedOut(ctx, "chainID", providerAddr)
 	require.True(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
-<<<<<<< HEAD
 	providerKeeper.DeleteToBeOptedOut(ctx, "chainID", providerAddr)
-=======
-	providerKeeper.RemoveToBeOptedOut(ctx, "chainID", providerAddr)
->>>>>>> d8d7531f (cleaned up tests)
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 }
