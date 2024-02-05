@@ -51,6 +51,12 @@ To run with key assignment, specify the step flag: `--step stepKeyAssignment`.
 
 KeyAssignment also needs some different invariants, see below.
 
+#### Partial Set Security
+
+To run with Partial Set Security, specify the step flag `--step stepBoundedDriftKeyAndPSS`.
+This runs both PSS and Key Assignment.
+It also requires running with `ccv_boundeddrift.qnt`, see below.
+
 #### ccv_boundeddrift.qnt
 This state machine layer is more restricted to generate more interesting traces:
 * It never allows consumer chains to drift more than `MaxDrift` time apart from each other.
@@ -129,3 +135,7 @@ The available sanity checks are:
 - CanSendVscMaturedPackets
 - CanAssignConsumerKey (only with `--step stepKeyAssignment`)
 - CanHaveConsumerAddresses (only with `--step stepKeyAssignment`)
+- CanOptIn (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
+- CanOptOut (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
+- CanFailOptOut (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
+- CanHaveOptIn (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
