@@ -628,3 +628,34 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 		}
 	}
 }
+
+// TestTopN tests `SetTopN`, `GetTopN`, `IsTopN`, and `IsOptIn` methods
+func TestTopN(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	tests := []struct {
+		chainID string
+		N       uint32
+		isOptIn bool
+	}{
+		{chainID: "TopNChain1", N: 50, isOptIn: false},
+		{chainID: "TopNChain2", N: 100, isOptIn: false},
+		{chainID: "OptInChain", N: 0, isOptIn: true},
+	}
+
+	for _, test := range tests {
+		providerKeeper.SetTopN(ctx, test.chainID, test.N)
+		topN, found := providerKeeper.GetTopN(ctx, test.chainID)
+		require.Equal(t, test.N, topN)
+		require.True(t, found)
+
+		if test.isOptIn {
+			require.True(t, providerKeeper.IsOptIn(ctx, test.chainID))
+			require.False(t, providerKeeper.IsTopN(ctx, test.chainID))
+		} else {
+			require.False(t, providerKeeper.IsOptIn(ctx, test.chainID))
+			require.True(t, providerKeeper.IsTopN(ctx, test.chainID))
+		}
+	}
+}

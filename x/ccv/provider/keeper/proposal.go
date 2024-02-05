@@ -214,6 +214,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
 	}
 
+	k.DeleteTopN(ctx, chainID)
+
 	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
 	return nil
@@ -373,6 +375,11 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 			ctx.Logger().Info("consumer client could not be created: %w", err)
 			continue
 		}
+
+		// Only set Top N at the moment a chain starts. If we were to do this earlier (e.g., during the proposal),
+		// then someone could create a bogus ConsumerAdditionProposal to override the Top N for a specific chain.
+		k.SetTopN(ctx, prop.ChainId, prop.Top_N)
+
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())

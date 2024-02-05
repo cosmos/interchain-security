@@ -57,6 +57,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.EquivocationEvidenceMinHeightBytePrefix,
 		providertypes.ProposedConsumerChainByteKey,
 		providertypes.ConsumerValidatorBytePrefix,
+		providertypes.TopNBytePrefix,
 	}
 }
 

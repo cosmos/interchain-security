@@ -271,6 +271,7 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		types.DefaultCCVTimeoutPeriod,
 		types.DefaultTransferTimeoutPeriod,
 		types.DefaultConsumerUnbondingPeriod,
+		0,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop

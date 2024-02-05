@@ -150,6 +150,9 @@ const (
 	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer validators in this epoch
 	ConsumerValidatorBytePrefix
 
+	// TopNBytePrefix is the byte prefix storing the mapping from a consumer chain to the N value of this chain,
+	// that corresponds to the N% of the top validators that have to validate this consumer chain
+	TopNBytePrefix
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -520,6 +523,11 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
 	prefix := ChainIdWithLenKey(ConsumerValidatorBytePrefix, chainID)
 	return append(prefix, providerAddr...)
+}
+
+// TopNKey returns the key of consumer chain `chainID`
+func TopNKey(chainID string) []byte {
+	return ChainIdWithLenKey(TopNBytePrefix, chainID)
 }
 
 //
