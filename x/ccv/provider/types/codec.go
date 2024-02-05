@@ -11,7 +11,7 @@ import (
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/ibc transfer interfaces and concrete types
-// on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
+// on the provided `LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 }
 
@@ -44,6 +44,14 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgSubmitConsumerDoubleVoting{},
+	)
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgOptIn{},
+	)
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgOptOut{},
 	)
 	registry.RegisterImplementations(
 		(*exported.ClientMessage)(nil),
