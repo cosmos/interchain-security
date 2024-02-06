@@ -1184,6 +1184,7 @@ func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
 	topN, found := k.GetTopN(ctx, chainID)
 	return !found || topN == 0
 }
+
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	chainID string,
