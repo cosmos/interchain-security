@@ -18,17 +18,17 @@ module ccv_pss_test {
         all
         {
             assert(GetTopNVals(valSet, 0) == Set()),
-            assert(GetTopNVals(valSet, 1) == Set("e")),
-            assert(GetTopNVals(valSet, 10) == Set("e")),
-            assert(GetTopNVals(valSet, 25) == Set("e")),
+            assert(GetTopNVals(valSet, 1) == Set("d")),
+            assert(GetTopNVals(valSet, 10) == Set("d")),
+            assert(GetTopNVals(valSet, 25) == Set("d")),
             // if one validator with a power is included, all validators with that power need to be included
-            assert(GetTopNVals(valSet, 26) == Set("e", "c1", "c")),
-            assert(GetTopNVals(valSet, 45) == Set("e", "c1", "c")),
-            assert(GetTopNVals(valSet, 55) == Set("e", "c1", "c")),
-            assert(GetTopNVals(valSet, 56) == Set("e", "c1", "c", "b2", "b1", "b")),
-            assert(GetTopNVals(valSet, 85) == Set("e", "c1", "c", "b2", "b1", "b")),
-            assert(GetTopNVals(valSet, 86) == Set("e", "c1", "c", "b2", "b1", "b", "a2", "a1", "a")),
-            assert(GetTopNVals(valSet, 95) == Set("e", "c1", "c", "b2", "b1", "b", "a2", "a1", "a")),
-            assert(GetTopNVals(valSet, 100) == Set("e", "c1", "c", "b2", "b1", "b", "a2", "a1", "a")),
+            assert(GetTopNVals(valSet, 26) == Set("d", "c1", "c")),
+            assert(GetTopNVals(valSet, 45) == Set("d", "c1", "c")),
+            assert(GetTopNVals(valSet, 55) == Set("d", "c1", "c")),
+            assert(GetTopNVals(valSet, 56) == Set("d", "c1", "c", "b2", "b1", "b")),
+            assert(GetTopNVals(valSet, 85) == Set("d", "c1", "c", "b2", "b1", "b")),
+            assert(GetTopNVals(valSet, 86) == valSet.keys()),
+            assert(GetTopNVals(valSet, 95) == valSet.keys()),
+            assert(GetTopNVals(valSet, 100) == valSet.keys()),
         }
 }
