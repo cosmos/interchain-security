@@ -72,7 +72,7 @@ module ccv_boundeddrift {
     }
 
     action stepBoundedDriftProviderPSS: bool = {
-        stepBoundedDriftProvider_helper(randomTopN)
+        stepBoundedDriftProvider_helper(variousPossibleTopN)
     }
 
     // As an argument, takes a function that, when invoked, gives a top N value to use for a new consumer chain.

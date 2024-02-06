@@ -60,7 +60,7 @@ module ccv_pss_model {
     val allFullConsumers: Set[int] = Set(100)
     val allOptIn: Set[int] = Set(0)
     // only choose a few values for top N here to not make the "edge cases" of 0 and 100 too unlikely
-    val randomTopN: Set[int] = Set(0, 50, 70, 80, 90, 100)
+    val variousPossibleTopN: Set[int] = Set(0, 50, 70, 80, 90, 100)
 
     // INVARIANTS
 
