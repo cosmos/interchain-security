@@ -24,7 +24,7 @@ module ccv_pss {
 
     // Given a validator set and N, returns the top N% of validators by power.
     // Note that in the edge case of multiple validators having the same power,
-    // all validators with the lowest voting power that is forced to validate are included.
+    // this will always include all validators with the same power as the lowest top N validator.
     pure def GetTopNVals(origValSet: ValidatorSet, N: int): Set[Node] = {
         // == sort validators by power ==
         // define a comparator that compares validators by power
