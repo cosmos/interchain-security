@@ -199,7 +199,7 @@ module extraSpells {
   //// The ordering will be arbitrary.
   ////
   //// - @param __set a set
-  //// - @param __cmp an ordering over the elements of the set
+  //// - @param  __cmp an operator defining an `Ordering` of the elemnts of type `a`
   //// - @returns a sorted list of all elements of __set
   pure def toSortedList(__set: Set[a], __cmp: (a, a) => Ordering): List[a] = {
       __set.fold(List(), (__l, __e) => __l.sortedListInsert(__e, __cmp))
