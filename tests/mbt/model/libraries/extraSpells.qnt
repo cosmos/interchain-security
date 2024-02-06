@@ -159,7 +159,7 @@ module extraSpells {
   }
 
   /// Assuming `__l` is sorted according to `__cmp`, returns a list with the element `__x`
-  /// insterted in order.
+  /// inserted in order.
   ///
   /// If `__l` is not sorted, `__x` will be inserted after the first element less than
   /// or equal to it.
