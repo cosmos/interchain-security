@@ -192,6 +192,7 @@ module extraSpells {
     assert(List().sortedListInsert(3, intCompare) == List(3)),
     assert(List(1,2,4).sortedListInsert(3, intCompare) == List(1,2,3,4)),
     assert(List(4,1,2).sortedListInsert(3, intCompare) == List(3,4,1,2)),
+    assert(List(1,2,3).sortedListInsert(4, intCompare) == List(1,2,3,4)),
   }
 
   //// Returns a list of all elements of a set.
