@@ -188,24 +188,22 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 	}
 
 	if msg.ConsumerKey != "" {
-		k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, &msg.ConsumerKey)
-		ctx.EventManager().EmitEvents(sdk.Events{
-			sdk.NewEvent(
-				ccvtypes.EventTypeOptIn,
-				sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
-				sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
-			),
-		})
+		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, &msg.ConsumerKey)
 	} else {
-		k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, nil)
-
-		ctx.EventManager().EmitEvents(sdk.Events{
-			sdk.NewEvent(
-				ccvtypes.EventTypeOptIn,
-				sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
-			),
-		})
+		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, nil)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			ccvtypes.EventTypeOptIn,
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
+		),
+	})
 
 	return &types.MsgOptInResponse{}, nil
 }
@@ -222,7 +220,10 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 		return nil, err
 	}
 
-	k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr)
+	err = k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr)
+	if err != nil {
+		return nil, err
+	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
