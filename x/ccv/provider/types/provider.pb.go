@@ -90,10 +90,10 @@ type ConsumerAdditionProposal struct {
 	// chain. it is most relevant for chains performing a sovereign to consumer
 	// changeover in order to maintain the existing ibc transfer channel
 	DistributionTransmissionChannel string `protobuf:"bytes,14,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`
-	// Corresponds to the percentage of validators that join under the Top N case.
-	// For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators
-	// have to validate the proposed consumer chain. top_N can be 0 or include any value in [50, 100].
-	// A chain can join with top_N == 0 as an Opt In, or with top_N ∈ [50, 100] as a Top N chain.
+	// Corresponds to the percentage of validators that have to validate the chain under the Top N case.
+	// For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
+	// have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
+	// A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
 	Top_N uint32 `protobuf:"varint,15,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
 }
 

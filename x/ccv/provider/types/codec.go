@@ -46,6 +46,14 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&MsgSubmitConsumerDoubleVoting{},
 	)
 	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgOptIn{},
+	)
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgOptOut{},
+	)
+	registry.RegisterImplementations(
 		(*exported.ClientMessage)(nil),
 		&tendermint.Misbehaviour{},
 	)
