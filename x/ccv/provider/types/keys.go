@@ -153,6 +153,18 @@ const (
 	// TopNBytePrefix is the byte prefix storing the mapping from a consumer chain to the N value of this chain,
 	// that corresponds to the N% of the top validators that have to validate this consumer chain
 	TopNBytePrefix
+
+	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain all the opted in validators
+	OptedInBytePrefix
+
+	// ToBeOptedInBytePrefix is the byte prefix used when storing for each consumer chain the validators that
+	// are about to be opted in
+	ToBeOptedInBytePrefix
+
+	// ToBeOptedOutBytePrefix is the byte prefix used when storing for each consumer chain the validators that
+	// are about to be opted out
+	ToBeOptedOutBytePrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -528,6 +540,24 @@ func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
 // TopNKey returns the key of consumer chain `chainID`
 func TopNKey(chainID string) []byte {
 	return ChainIdWithLenKey(TopNBytePrefix, chainID)
+}
+
+// OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// ToBeOptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func ToBeOptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	prefix := ChainIdWithLenKey(ToBeOptedInBytePrefix, chainID)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// ToBeOptedOutKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func ToBeOptedOutKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	prefix := ChainIdWithLenKey(ToBeOptedOutBytePrefix, chainID)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 //
