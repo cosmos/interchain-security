@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
@@ -14,6 +15,53 @@ import (
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
+
+// ParseConsumerKey parses the ED25519 PubKey`consumerKey` from a JSON string
+// and constructs its corresponding `tmprotocrypto.PublicKey`
+func (k Keeper) ParseConsumerKey(consumerKey string) (tmprotocrypto.PublicKey, error) {
+	// parse consumer key as long as it's in the right format
+	pkType, keyStr, err := types.ParseConsumerKeyFromJson(consumerKey)
+	if err != nil {
+		return tmprotocrypto.PublicKey{}, err
+	}
+
+	// Note: the correct way to decide if a key type is supported is to check the
+	// consensus params. However this functionality was disabled in https://github.com/cosmos/interchain-security/pull/916
+	// as a quick way to get ed25519 working, avoiding amino/proto-any marshalling issues.
+
+	// make sure the consumer key type is supported
+	// cp := ctx.ConsensusParams()
+	// if cp != nil && cp.Validator != nil {
+	// 	if !tmstrings.StringInSlice(pkType, cp.Validator.PubKeyTypes) {
+	// 		return nil, errorsmod.Wrapf(
+	// 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
+	// 			"got: %s, expected one of: %s", pkType, cp.Validator.PubKeyTypes,
+	// 		)
+	// 	}
+	// }
+
+	// For now, only accept ed25519.
+	// TODO: decide what types should be supported.
+	if pkType != "/cosmos.crypto.ed25519.PubKey" {
+		return tmprotocrypto.PublicKey{}, errorsmod.Wrapf(
+			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
+			"got: %s, expected: %s", pkType, "/cosmos.crypto.ed25519.PubKey",
+		)
+	}
+
+	pubKeyBytes, err := base64.StdEncoding.DecodeString(keyStr)
+	if err != nil {
+		return tmprotocrypto.PublicKey{}, err
+	}
+
+	consumerTMPublicKey := tmprotocrypto.PublicKey{
+		Sum: &tmprotocrypto.PublicKey_Ed25519{
+			Ed25519: pubKeyBytes,
+		},
+	}
+
+	return consumerTMPublicKey, nil
+}
 
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
 func (k Keeper) GetValidatorConsumerPubKey(

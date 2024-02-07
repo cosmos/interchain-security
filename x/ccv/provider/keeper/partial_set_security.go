@@ -3,6 +3,7 @@ package keeper
 import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
@@ -28,7 +29,20 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 	}
 
 	if consumerKey != nil {
-		// TODO (PR 1586): assign consumer key in this case
+		consumerTMPublicKey, err := k.ParseConsumerKey(*consumerKey)
+		if err != nil {
+			return err
+		}
+
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.Address)
+		if !found {
+			return stakingtypes.ErrNoValidatorFound
+		}
+
+		err = k.AssignConsumerKey(ctx, chainID, validator, consumerTMPublicKey)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
