@@ -17,7 +17,7 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerChainId,
-			"opting in to an unknown consumer chain id: %s", chainID)
+			"opting in to an unknown consumer chain, with id: %s", chainID)
 	}
 
 	if k.IsToBeOptedOut(ctx, chainID, providerAddr) {
@@ -49,10 +49,12 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 }
 
 func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) error {
-	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
+	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+		// A validator can only opt out from a running chain. We check this by checking the consumer client id, because
+		// `SetConsumerClientId` is set when the chain starts in `CreateConsumerClientInCachedCtx` of `BeginBlockInit`.
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerChainId,
-			"opting out of an unknown consumer chain id: %s", chainID)
+			"opting out of an unknown or not running consumer chain, with id: %s", chainID)
 	}
 
 	if k.IsToBeOptedIn(ctx, chainID, providerAddr) {

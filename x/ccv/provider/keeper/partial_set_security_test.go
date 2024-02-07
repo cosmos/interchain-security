@@ -90,13 +90,13 @@ func TestHandleOptOut(t *testing.T) {
 
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
-	// trying to opt out from a non-proposed and non-registered chain returns an error
+	// trying to opt out from a not running chain returns an error
 	require.Error(t, providerKeeper.HandleOptOut(ctx, "unknownChainID", providerAddr))
 
 	// if validator (`providerAddr`) is to be opted in, then we cancel that the validator is about
 	// to be opted out and do not consider the validator to opt out
 	providerKeeper.SetToBeOptedIn(ctx, "chainID", providerAddr)
-	providerKeeper.SetProposedConsumerChain(ctx, "chainID", 1)
+	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 	require.True(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 	err := providerKeeper.HandleOptOut(ctx, "chainID", providerAddr)
 	require.NoError(t, err)
