@@ -433,6 +433,7 @@ func (s *Driver) setupConsumer(
 	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
 	valNames []string,
 	providerChain *ibctesting.TestChain,
+	topN int64,
 ) {
 	s.t.Logf("Starting consumer %v", chain)
 

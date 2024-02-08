@@ -271,14 +271,17 @@ func RunItfTrace(t *testing.T, path string) {
 			driver.coordinator.CurrentTime = driver.runningTime("provider")
 			// start consumers
 			for _, consumer := range consumersToStart {
+				chainId := consumer.Value.(itf.MapExprType)["chain"].Value.(string)
+				topN := consumer.Value.(itf.MapExprType)["topN"].Value.(int64)
 				driver.setupConsumer(
-					consumer.Value.(string),
+					chainId,
 					modelParams,
 					driver.providerChain().Vals,
 					consumerSigners,
 					nodes,
 					valNames,
 					driver.providerChain(),
+					topN,
 				)
 			}
 
