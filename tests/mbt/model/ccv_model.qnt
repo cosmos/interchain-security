@@ -740,11 +740,11 @@ module ccv_model {
     // and the key assignment of each validator should be applied in that VSCPacket.
     val ValidatorUpdatesArePropagatedKeyAssignmentInv = 
         // when the provider has just entered a validator set into a block...
-        ValUpdatePrecondition and CurrentBlockEndsEpoch
+        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
-        currentState.providerState.consumersWithPowerChangesInThisEpoch.forall(
+        runningConsumers.forall(
             // ...the validator set under key assignment is in a sent packet...
             val providerState = currentState.providerState
             consumer => providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
