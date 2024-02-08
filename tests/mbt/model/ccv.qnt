@@ -89,6 +89,12 @@ module ccv_types {
             // Stores VscPackets which have been sent but where the provider has *not received a response yet*.
             sentVscPacketsToConsumer: Chain -> List[VscPacket],
 
+            // stores whether, in this block, the validator set has changed.
+            // this is needed because the validator set might be considered to have changed, even though
+            // it is still technically identical at our level of abstraction, e.g. a validator power change on the provider
+            // might leave the validator set the same because a delegation and undelegation cancel each other out.
+            providerValidatorSetChangedInThisBlock: bool,
+
             // stores for which consumer chains, in this epoch, the validator set is considered to have changed and we thus need to send a VscPacket to the consumer chains.
             consumersWithPowerChangesInThisEpoch: Set[Chain],
 
@@ -120,7 +126,18 @@ module ccv_types {
             consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr],
 
             // For every sent VSCPacket, stores the key assignments that were applied to send it.
-            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr))
+            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr)),
+
+            // For each consumer chain,
+            // stores the set of validators that are opted into running the chain.
+            optedInVals: Chain -> Set[Node],
+
+            // for each consumer, stores the top N for that consumer.
+            // The top N% of the validator set by voting power
+            // is obliged to run a topN chain.
+            // If the chain is a pure opt-in chain (where noone is forced to run it),
+            // this is 0.
+            topNByConsumer: Chain -> int,
         }
 
     // utility function: returns a provider state that is initialized minimally.
@@ -130,6 +147,7 @@ module ccv_types {
             outstandingPacketsToConsumer: Map(),
             receivedMaturations: Set(),
             sentVscPacketsToConsumer: Map(),
+            providerValidatorSetChangedInThisBlock: false,
             consumersWithPowerChangesInThisEpoch: Set(),
             consumerStatus: Map(),
             runningVscId: 0,
@@ -138,7 +156,9 @@ module ccv_types {
             consumerAddrToValidator: Map(),
             consumerAddrsToPrune: Map(),
             keyAssignmentsForVSCPackets: Map(),
-            consumersWithAddrAssignmentChangesInThisEpoch: Set()
+            consumersWithAddrAssignmentChangesInThisEpoch: Set(),
+            optedInVals: Map(),
+            topNByConsumer: Map(),
         }
         
 
@@ -226,6 +246,33 @@ module ccv_types {
     // given as a pure val so that we can switch cases based on
     // whether a chain is the provider or not
     pure val PROVIDER_CHAIN = "provider"
+
+    // A record that keeps the information needed to add a new consumer.
+    // In particular, holds:
+    // the chain name/identifier,
+    // and the top N factor for the chain.
+    type ConsumerAdditionMsg = {
+        chain: Chain,
+        topN: int
+    }
+
+    // Creates a new ConsumerAdditionMsg with a given top N.
+    pure def NewTopNConsumer(chain: Chain, topN: int): ConsumerAdditionMsg = {
+        {
+            chain: chain,
+            topN: topN
+        }
+    }
+
+    // Creates a new ConsumerAdditionMsg with topN = 0.
+    pure def NewOptInConsumer(chain: Chain): ConsumerAdditionMsg = {
+        NewTopNConsumer(chain, 0)
+    }
+
+    // Creates a new ConsumerAdditionMsg with top N = 100%.
+    pure def NewFullConsumer(chain: Chain): ConsumerAdditionMsg = {
+        NewTopNConsumer(chain, 100)
+    }
 }
 
 module ccv {
@@ -246,6 +293,7 @@ module ccv {
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
     import ccv_types.*
+    import ccv_pss.* from "./ccv_pss"
     import ccv_utils.* from "./ccv_utils"
   
 
@@ -417,13 +465,14 @@ module ccv {
         // i.e. the timestamp for the next block is oldTimestamp + timeAdvancement
         timeAdvancement: Time,
         // a set of consumers that were not consumers before, but should be set to running now.
-        consumersToStart: Set[Chain],
+        consumersToStart: Set[ConsumerAdditionMsg],
         // a set of consumers that were running before, but should be set to stopped now.
         // This argument only needs to contain "voluntary" stops -
         // forced stops, e.g. because a consumer timed out,
         // will be added automatically. 
         consumersToStop: Set[Chain]): Result = {
         val currentProviderState = currentState.providerState
+        val curValSet = currentProviderState.chainState.currentValidatorSet
         
         // check for vsc timeouts
         val timedOutConsumers = getRunningConsumers(currentProviderState).filter(
@@ -431,27 +480,11 @@ module ccv {
             val res = TimeoutDueToVscTimeout(currentState, consumer, VscTimeout)
             res._1
         )
-        
-        // for each consumer chain, apply the key assignment to the current validator set
-        val currentValSets = ConsumerChains.mapBy(
-            (consumer) => 
-            currentProviderState.applyKeyAssignmentToValSet(
-                consumer, 
-                currentProviderState.chainState.currentValidatorSet
-            )
-        )
-        // store the current validator set with the key assignments applied in the history
-        val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
-            (consumer) => 
-            currentProviderState.keyAssignedValSetHistory
-                .getOrElse(consumer, List()) // get the existing history (empty list if no history yet)
-                .prepend(currentValSets.get(consumer)) // prepend the current validator set with key assignments applied
-        )
 
         // run the shared core chainState logic
         val newChainState = currentProviderState.chainState.endAndBeginBlockShared(timeAdvancement)
         val providerStateAfterTimeAdvancement = 
-            {...currentProviderState, chainState: newChainState, keyAssignedValSetHistory: newKeyAssignedValSetHistory}
+            {...currentProviderState, chainState: newChainState}
         val tmpState = currentState.with(
             "providerState", providerStateAfterTimeAdvancement
         )
@@ -472,41 +505,62 @@ module ccv {
 
 
         // start/stop chains
-        val res = providerStateAfterSending.consumerStatus.StartStopConsumers(
+        val res = providerStateAfterSending.StartStopConsumers(
             consumersToStart,
             consumersToStop,
             timedOutConsumers
         )
-        val newConsumerStatus = res._1
+        val providerStateAfterConsumerAdvancement = res._1.with("providerValidatorSetChangedInThisBlock", false)
         val err = res._2
-        val providerStateAfterConsumerAdvancement = providerStateAfterSending.with(
-            "consumerStatus", newConsumerStatus
-        )
+
+        val consumerAdditions = consumersToStart.map(consumer => consumer.chain)
+
+        // for each running consumer chain, opt in validators that are in the top N
+        val providerStateAfterPSS = providerStateAfterConsumerAdvancement.endBlockPSS()
 
         if (err != "") {
             Err(err)
         } else {
-            // for each consumer we just set to running, set its initial validator set to be the current one on the provider...
-            val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
+            // for each consumer chain, apply the key assignment to the current validator set
+            val currentValSets = getRunningConsumers(providerStateAfterPSS).mapBy(
+                (consumer) => 
+                providerStateAfterPSS.applyKeyAssignmentToValSet(
+                    consumer,
+                    // get the validator set after partial set security has been applied
+                    GetPSSValidatorSet(providerStateAfterPSS, curValSet, consumer)
+                )
+            )
+
+            // store the current validator set with the key assignments applied in the history
+            val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
+                (consumer) => 
+                providerStateAfterPSS.keyAssignedValSetHistory
+                    .getOrElse(consumer, List()) // get the existing history (empty list if no history yet)
+                    .prepend(currentValSets.get(consumer)) // prepend the current validator set with key assignments applied
+            )
+
+            val providerStateAfterStoringValSets = providerStateAfterPSS.with(
+                "keyAssignedValSetHistory", newKeyAssignedValSetHistory
+            )
+
             val newConsumerStateMap =
                 tmpState.consumerStates.keys().mapBy(
                     (consumer) => 
-                    if (consumersToStart.contains(consumer)) {
-                        // ...modified by the key assignments for the consumer
-                        val consValSet = applyKeyAssignmentToValSet(providerStateAfterConsumerAdvancement, consumer, valSet)
+                    if (consumerAdditions.contains(consumer)) {
                         val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
+                        // correctly set the state for the new consumer
                         val newConsumerState: ConsumerState = currentConsumerState.with(
                             "chainState", currentConsumerState.chainState.with(
-                                "currentValidatorSet", consValSet
+                                "currentValidatorSet", currentValSets.get(consumer)
                             ).with(
                                 "votingPowerHistory",
-                                List(consValSet)
+                                List(currentValSets.get(consumer))
                             ).with(
                                 "lastTimestamp", 
-                                providerStateAfterConsumerAdvancement.chainState.lastTimestamp
+                                providerStateAfterStoringValSets.chainState.lastTimestamp
                             ).with(
                                 "runningTimestamp", 
-                                providerStateAfterConsumerAdvancement.chainState.runningTimestamp
+                                providerStateAfterStoringValSets.chainState.runningTimestamp
                             )
                         )
                         newConsumerState
@@ -515,7 +569,7 @@ module ccv {
                     }
                 )
             val newState = tmpState.with(
-                "providerState", providerStateAfterConsumerAdvancement
+                "providerState", providerStateAfterStoringValSets
             ).with(
                 "consumerStates", newConsumerStateMap
             )

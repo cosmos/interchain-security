@@ -49,7 +49,13 @@ module ccv_model {
 
     var currentState: ProtocolState
 
-    // a type storing the parameters used in actions.
+    // a type storing the parameters used in actions,
+    // as well as return values that are not visible from the state,
+    // i.e. errors.
+    // Note that whether an error is returned,
+    // or whether the action is simply not possible when an error occurs, is
+    // a design choice that is different for each action,
+    // or can depend on the type of error.
     // this is used in the trace to store
     // the name of the last action, plus the parameters we passed to it.
     // Note: This type holds ALL parameters that are used in ANY action,
@@ -59,11 +65,12 @@ module ccv_model {
             kind: str,
             consumerChain: Chain,
             timeAdvancement: Time,
-            consumersToStart: Set[Chain],
+            consumersToStart: Set[ConsumerAdditionMsg],
             consumersToStop: Set[Chain],
             validator: Node,
             changeAmount: int,
             consumerAddr: ConsumerAddr,
+            expectedError: str, // if the action returns an error, it goes here.
         }
     
 
@@ -88,6 +95,7 @@ module ccv_model {
                 validator: "",
                 changeAmount: 0,
                 consumerAddr: "",
+                expectedError: "",
             }
 
 
@@ -101,7 +109,7 @@ module ccv_model {
         val consumerStates = ConsumerChains.mapBy(chain => GetEmptyConsumerState)
         val providerStateWithConsumers = providerState.with(
             "consumerStatus", 
-            ConsumerChains.mapBy(chain => NOT_CONSUMER)
+            ConsumerChains.mapBy(chain =>  NOT_CONSUMER)
         ).with(
             "outstandingPacketsToConsumer", 
             ConsumerChains.mapBy(chain => List())
@@ -171,7 +179,7 @@ module ccv_model {
 
     action EndAndBeginBlockForProvider(
         timeAdvancement: Time,
-        consumersToStart: Set[Chain],
+        consumersToStart: Set[ConsumerAdditionMsg],
         consumersToStop: Set[Chain]): bool = 
         val result = endAndBeginBlockForProvider(currentState, timeAdvancement, consumersToStart, consumersToStop)
         all {
@@ -232,9 +240,10 @@ module ccv_model {
 
         val consumerStatus = currentState.providerState.consumerStatus
         nondet consumersToStart = oneOf(nonConsumers.powerset())
+        val consumerAdditions = consumersToStart.map(chain => NewFullConsumer(chain))
         nondet consumersToStop = oneOf(runningConsumers.powerset())
         nondet timeAdvancement = oneOf(timeAdvancements)
-        EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
+        EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
 
         stepCommon
     }
@@ -261,17 +270,6 @@ module ccv_model {
     // ==================
     // UTILITY FUNCTIONS
     // ==================
-
-    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
-        valSet.keys().fold(
-            Map(),
-            (acc, node) => 
-                if (valSet.get(node) == 0) {
-                    acc
-                } else {
-                    acc.put(node, valSet.get(node))
-                }
-        )
 
     pure def oldest(packets: Set[VscPacket]): VscPacket =
         val newestPossiblePacket: VscPacket = {
@@ -531,7 +529,7 @@ module ccv_model {
                 // the validator set has changed
                 assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet.put("node1", 150)),
                 // start consumer1
-                EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+                EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1")), Set())
             })
             .then(
                 all {
@@ -609,7 +607,7 @@ module ccv_model {
     run SameVscPacketsManualTest =
         init.then(
             // start all consumers except for consumer3
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer1", "consumer2"), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1"), NewFullConsumer("consumer2")), Set())
         ).then(
             // change voting power
             VotingPowerChange("node1", 50)
@@ -624,7 +622,7 @@ module ccv_model {
             DeliverVscPacket("consumer2")
         ).then(
             // start consumer3
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer3")), Set())
         ).then(
             // do another voting power change
             VotingPowerChange("node2", 50)
@@ -655,7 +653,7 @@ module ccv_model {
         init
         .then(
             // start all consumer chains
-            EndAndBeginBlockForProvider(1 * Second, ConsumerChains, Set())
+            EndAndBeginBlockForProvider(1 * Second, ConsumerChains.map(c => NewFullConsumer(c)), Set())
         )
         .then(
             // change voting power
@@ -868,7 +866,7 @@ module ccv_model {
         init
         .then(
             // start all consumer chains
-            EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
+            EndAndBeginBlockForProvider(1 * Second, consumerChains.map(c => NewFullConsumer(c)), Set())
         )
         .then(
             // node 1 assigns a key on consumer1
@@ -891,7 +889,7 @@ module ccv_model {
                 // the key should be present in the valset on the consumer, and the node itself should not
                 assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.getOrElse("node1", 0) == 0),
                 assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
-                // try some key assignments that should fail/succeed without committing to state
+                // try some key assignments that should fail/succeed without comitting to state
                 val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
                 // fail - key already assigned (even if it is the same node)
                 assert(hasError(res)),
@@ -940,7 +938,7 @@ module ccv_model {
             VotingPowerChange("node1", 50)
         )
         .then(
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer1", "consumer2"), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1"), NewFullConsumer("consumer2")), Set())
         ).then(
             all {
                 ValidatorSetHasExistedKeyAssignmentInv,

@@ -141,26 +141,33 @@ module ccv_utils {
         }
 
     pure def StartStopConsumers(
-        currentConsumerStatusMap: Chain -> str,
-        consumersToStart: Set[Chain],
+        currentProviderState: ProviderState,
+        consumersToStart: Set[ConsumerAdditionMsg],
         consumersToStop: Set[Chain],
         consumersToTimeout: Set[Chain]
-    ): (Chain -> str, str) = {
+    ): (ProviderState, str) = {
+        val consumerAdditions = consumersToStart.map(
+                msg => msg.chain
+        )
         // check if any consumer is both started and stopped
-        if (consumersToStart.intersect(consumersToStop).size() > 0) {
-            (currentConsumerStatusMap, "Cannot start and stop a consumer at the same time")
+        if (consumerAdditions.intersect(consumersToStop).size() > 0) {
+            (currentProviderState, "Cannot start and stop a consumer at the same time")
         } else {
-            val res1 = currentConsumerStatusMap.startConsumers(consumersToStart)
+            val res1 = currentProviderState.consumerStatus.startConsumers(consumerAdditions)
             val newConsumerStatus = res1._1
             val err1 = res1._2
             val res2 = newConsumerStatus.stopConsumers(consumersToStop, consumersToTimeout)
             val err2 = res2._2
+            // set the top N values in the provider correctly
+
             if (err1 != "") {
-                (currentConsumerStatusMap, err1)
+                (currentProviderState, err1)
             } else if (err2 != "") {
-                (currentConsumerStatusMap, err2)
+                (currentProviderState, err2)
             } else {
-                (res2._1, "")
+                (currentProviderState
+                    .with("consumerStatus", res2._1)
+                    .SetTopNValues(consumersToStart), "")
             }
         }
     }
@@ -170,7 +177,7 @@ module ccv_utils {
     pure def enterCurValSetIntoBlock(chainState: ChainState): ChainState = {
         chainState.with(
             "votingPowerHistory", chainState.votingPowerHistory.prepend(
-                chainState.currentValidatorSet
+                removeZeroPowers(chainState.currentValidatorSet)
             )
         )
     }
@@ -460,4 +467,28 @@ module ccv_utils {
                 (false, "")
             }
         }
+
+    // Sets the top N values on the provider chain for the given consumer chains,
+    // taken as consumerAdditionMsgs = chains with the top N values.
+    // If a chain in the set is already present, the old value will be overwritten.
+    pure def SetTopNValues(providerState: ProviderState, consumers: Set[ConsumerAdditionMsg]): ProviderState =
+        providerState.with(
+            "topNByConsumer",
+            consumers.fold(
+                providerState.topNByConsumer,
+                (acc, consumer) => acc.put(consumer.chain, consumer.topN)
+            )
+        ) 
+
+    // From a validator set, removes all validators with zero power.
+    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
+        valSet.keys().fold(
+            Map(),
+            (acc, node) => 
+                if (valSet.get(node) == 0) {
+                    acc
+                } else {
+                    acc.put(node, valSet.get(node))
+                }
+        )
 }

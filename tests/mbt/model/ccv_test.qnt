@@ -247,15 +247,15 @@ module ccv_test {
             "chain3" -> STOPPED
         )
         val res = StartStopConsumers(
-            currentConsumerStatusMap,
-            Set("chain1"),
+            GetEmptyProviderState.with("consumerStatus", currentConsumerStatusMap),
+            Set(NewOptInConsumer("chain1")),
             Set("chain2"),
             Set()
         )
         res._2 == "" and
-        res._1.get("chain1") == RUNNING and
-        res._1.get("chain2") == STOPPED and
-        res._1.get("chain3") == STOPPED
+        res._1.consumerStatus.get("chain1") == RUNNING and
+        res._1.consumerStatus.get("chain2") == STOPPED and
+        res._1.consumerStatus.get("chain3") == STOPPED
     }
 
     run ConsumerStatusMapAlreadyRunningTest =
@@ -266,8 +266,8 @@ module ccv_test {
             "chain3" -> STOPPED
         )
         val res = StartStopConsumers(
-            currentConsumerStatusMap,
-            Set("chain2"),
+            GetEmptyProviderState.with("consumerStatus", currentConsumerStatusMap),
+            Set(NewOptInConsumer("chain2")),
             Set("chain3"),
             Set()
         )
@@ -282,8 +282,8 @@ module ccv_test {
             "chain3" -> STOPPED
         )
         val res = StartStopConsumers(
-            currentConsumerStatusMap,
-            Set("chain1"),
+            GetEmptyProviderState.with("consumerStatus", currentConsumerStatusMap),
+            Set(NewOptInConsumer("chain1")),
             Set("chain3"),
             Set()
         )
@@ -298,8 +298,8 @@ module ccv_test {
             "chain3" -> STOPPED
         )
         val res = StartStopConsumers(
-            currentConsumerStatusMap,
-            Set("chain1"),
+            GetEmptyProviderState.with("consumerStatus", currentConsumerStatusMap),
+            Set(NewOptInConsumer("chain1")),
             Set("chain1"),
             Set()
         )
