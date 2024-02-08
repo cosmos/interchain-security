@@ -473,18 +473,6 @@ func (mr *MockSlashingKeeperMockRecorder) GetValidatorSigningInfo(ctx, address i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSigningInfo", reflect.TypeOf((*MockSlashingKeeper)(nil).GetValidatorSigningInfo), ctx, address)
 }
 
-// SetValidatorSigningInfo mocks base method.
-func (m *MockSlashingKeeper) SetValidatorSigningInfo(ctx types0.Context, address types0.ConsAddress, info types3.ValidatorSigningInfo) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetValidatorSigningInfo", ctx, address, info)
-}
-
-// SetValidatorSigningInfo indicates an expected call of SetValidatorSigningInfo.
-func (mr *MockSlashingKeeperMockRecorder) SetValidatorSigningInfo(ctx, address interface{}, info interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetValidatorSigningInfo", reflect.TypeOf((*MockSlashingKeeper)(nil).SetValidatorSigningInfo), ctx, address, info)
-}
-
 // IsTombstoned mocks base method.
 func (m *MockSlashingKeeper) IsTombstoned(arg0 types0.Context, arg1 types0.ConsAddress) bool {
 	m.ctrl.T.Helper()
@@ -509,6 +497,18 @@ func (m *MockSlashingKeeper) JailUntil(arg0 types0.Context, arg1 types0.ConsAddr
 func (mr *MockSlashingKeeperMockRecorder) JailUntil(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JailUntil", reflect.TypeOf((*MockSlashingKeeper)(nil).JailUntil), arg0, arg1, arg2)
+}
+
+// SetValidatorSigningInfo mocks base method.
+func (m *MockSlashingKeeper) SetValidatorSigningInfo(ctx types0.Context, address types0.ConsAddress, info types3.ValidatorSigningInfo) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetValidatorSigningInfo", ctx, address, info)
+}
+
+// SetValidatorSigningInfo indicates an expected call of SetValidatorSigningInfo.
+func (mr *MockSlashingKeeperMockRecorder) SetValidatorSigningInfo(ctx, address, info interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetValidatorSigningInfo", reflect.TypeOf((*MockSlashingKeeper)(nil).SetValidatorSigningInfo), ctx, address, info)
 }
 
 // SlashFractionDoubleSign mocks base method.
@@ -1216,4 +1216,33 @@ func (m *MockGovKeeper) GetProposal(ctx types0.Context, proposalID uint64) (v1.P
 func (mr *MockGovKeeperMockRecorder) GetProposal(ctx, proposalID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProposal", reflect.TypeOf((*MockGovKeeper)(nil).GetProposal), ctx, proposalID)
+}
+
+// GetProposals mocks base method.
+func (m *MockGovKeeper) GetProposals(ctx types0.Context) v1.Proposals {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProposals", ctx)
+	ret0, _ := ret[0].(v1.Proposals)
+	return ret0
+}
+
+// GetProposals indicates an expected call of GetProposals.
+func (mr *MockGovKeeperMockRecorder) GetProposals(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProposals", reflect.TypeOf((*MockGovKeeper)(nil).GetProposals), ctx)
+}
+
+// GetVote mocks base method.
+func (m *MockGovKeeper) GetVote(ctx types0.Context, proposalID uint64, voterAddr types0.AccAddress) (v1.Vote, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVote", ctx, proposalID, voterAddr)
+	ret0, _ := ret[0].(v1.Vote)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetVote indicates an expected call of GetVote.
+func (mr *MockGovKeeperMockRecorder) GetVote(ctx, proposalID, voterAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVote", reflect.TypeOf((*MockGovKeeper)(nil).GetVote), ctx, proposalID, voterAddr)
 }
