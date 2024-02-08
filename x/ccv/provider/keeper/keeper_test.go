@@ -552,7 +552,7 @@ func TestSetProposedConsumerChains(t *testing.T) {
 
 	for _, test := range tests {
 		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
-		cID := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
+		cID, _ := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
 		require.Equal(t, cID, test.chainID)
 	}
 }
@@ -574,9 +574,9 @@ func TestDeleteProposedConsumerChainInStore(t *testing.T) {
 	for _, test := range tests {
 		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
 		providerKeeper.DeleteProposedConsumerChainInStore(ctx, test.deleteProposalID)
-		cID := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
+		cID, found := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
 		if test.ok {
-			require.Equal(t, cID, "")
+			require.False(t, found)
 		} else {
 			require.Equal(t, cID, test.chainID)
 		}

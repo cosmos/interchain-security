@@ -175,6 +175,8 @@ func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64
 func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
 }
 
+// AfterProposalVote opts in validators that vote YES (with 100% weight) on a `ConsumerAdditionProposal`. If a
+// validator votes multiple times, only the last vote would be considered on whether the validator is opted in or not.
 func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {
 	validator, found := h.k.stakingKeeper.GetValidator(ctx, voterAddr.Bytes())
 	if !found {
@@ -186,7 +188,10 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 		return
 	}
 
-	chainID := h.k.GetProposedConsumerChain(ctx, proposalID)
+	chainID, found := h.k.GetProposedConsumerChain(ctx, proposalID)
+	if !found {
+		return
+	}
 
 	vote, found := h.k.govKeeper.GetVote(ctx, proposalID, voterAddr)
 	if !found {

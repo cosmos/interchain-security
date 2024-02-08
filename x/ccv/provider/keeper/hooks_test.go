@@ -127,11 +127,13 @@ func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
 
 	k.Hooks().AfterProposalSubmission(ctx, prop.Id)
 	// verify that the proposal ID is created
-	require.NotEmpty(t, k.GetProposedConsumerChain(ctx, prop.Id))
+	_, found := k.GetProposedConsumerChain(ctx, prop.Id)
+	require.True(t, found)
 
 	k.Hooks().AfterProposalVotingPeriodEnded(ctx, prop.Id)
 	// verify that the proposal ID is deleted
-	require.Empty(t, k.GetProposedConsumerChain(ctx, prop.Id))
+	_, found = k.GetProposedConsumerChain(ctx, prop.Id)
+	require.False(t, found)
 }
 
 func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
