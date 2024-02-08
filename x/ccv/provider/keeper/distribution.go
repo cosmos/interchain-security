@@ -11,7 +11,6 @@ import (
 
 // BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.
 func (k Keeper) BeginBlockRD(ctx sdk.Context, req abci.RequestBeginBlock) {
-	// transfers all whitelisted consumer rewards to the fee collector address
 
 	// determine the total power signing the block
 	var previousTotalPower int64
@@ -125,34 +124,43 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 }
 
 // TODO: define which validators earned the tokens, i.e. already opted in for 1000 blocks
+// AllocateTokensToConsumerValidators allocates the consumer rewards pool to validator
+// according to their voting power
 func (k Keeper) AllocateTokensToConsumerValidators(
 	ctx sdk.Context,
 	chainID string,
 	totalPreviousPower int64,
 	bondedVotes []abci.VoteInfo,
-	fees sdk.DecCoins,
-) (totalReward sdk.DecCoins) {
-	for _, vote := range bondedVotes {
-		valConsAddr := vote.Validator.Address
+	tokens sdk.DecCoins,
+) sdk.DecCoins {
+	optedInVals := map[string]struct{}{}
+	for _, val := range k.GetOptedIn(ctx, chainID) {
+		optedInVals[val.ProviderAddr.Address.String()] = struct{}{}
+	}
 
-		if _, found := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(valConsAddr)); !found {
+	totalReward := sdk.DecCoins{}
+
+	for _, vote := range bondedVotes {
+		consAddr := sdk.ConsAddress(vote.Validator.Address)
+		if _, ok := optedInVals[consAddr.String()]; !ok {
 			continue
 		}
+
 		// TODO: Consider micro-slashing for missing votes.
 		//
 		// Ref: https://github.com/cosmos/cosmos-sdk/issues/2525#issuecomment-430838701
 		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPreviousPower))
-		feeFraction := fees.MulDecTruncate(powerFraction)
+		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
 		k.distributionKeeper.AllocateTokensToValidator(
 			ctx,
-			k.stakingKeeper.ValidatorByConsAddr(ctx, valConsAddr),
-			feeFraction,
+			k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr),
+			tokensFraction,
 		)
-		totalReward = totalReward.Add(feeFraction...)
+		totalReward = totalReward.Add(tokensFraction...)
 	}
 
-	return
+	return totalReward
 }
 
 // TransferConsumerRewardsToDistributionModule transfers the collected rewards of the given consumer chain
@@ -161,7 +169,6 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	ctx sdk.Context,
 	chainID string,
 ) (sdk.Coins, error) {
-
 	// Get coins of the consumer reward pool
 	pool := k.GetConsumerRewardsAllocation(ctx, chainID)
 
@@ -200,7 +207,7 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 
 // consumer reward pools getter and setter
 
-// get the consumer reward pool distribution info
+// GetConsumerRewardsAllocation the onsumer rewards allocation for the given chain ID
 func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, chainID string) (pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
 	b := store.Get(types.ConsumerRewardPoolKey(chainID))
@@ -208,7 +215,7 @@ func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, chainID string) (p
 	return
 }
 
-// set the consumer reward pool distribution info
+// SetConsumerRewardsAllocation sets the consumer rewards allocation for the given chain ID
 func (k Keeper) SetConsumerRewardsAllocation(ctx sdk.Context, chainID string, pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
 	b := k.cdc.MustMarshal(&pool)

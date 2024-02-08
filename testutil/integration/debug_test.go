@@ -287,3 +287,7 @@ func TestSlashRetries(t *testing.T) {
 func TestIBCTransferMiddleware(t *testing.T) {
 	runCCVTestByName(t, "TestIBCTransferMiddleware")
 }
+
+func TestAllocateTokens(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokens")
+}

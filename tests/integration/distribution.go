@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -599,6 +600,105 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			}
 		})
 	}
+}
+
+// TestAllocateTokens is a happy-path test of the consumer rewards pool allocation
+// to opted-in validators and the community pool
+func (s *CCVTestSuite) TestAllocateTokens() {
+	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
+	s.SetupAllCCVChannels()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	bankKeeper := s.providerApp.GetTestBankKeeper()
+	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
+
+	totalRewards := sdk.Coins{sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))}
+	providerKeeper.SetConsumerRewardDenom(s.providerCtx(), sdk.DefaultBondDenom) // register a consumer reward denom
+
+	// fund consumer rewards pool
+	bankKeeper.SendCoinsFromAccountToModule(
+		s.providerCtx(),
+		s.providerChain.SenderAccount.GetAddress(),
+		providertypes.ConsumerRewardsPool,
+		totalRewards,
+	)
+
+	// Allocate rewards evenly between consumers
+	rewardsPerConsumer := totalRewards.QuoInt(math.NewInt(int64(len(s.consumerBundles))))
+	for chainID := range s.consumerBundles {
+		// update consumer allocation
+		providerKeeper.SetConsumerRewardsAllocation(
+			s.providerCtx(),
+			chainID,
+			providertypes.ConsumerRewardsAllocation{
+				Rewards: sdk.NewDecCoinsFromCoins(rewardsPerConsumer...),
+			},
+		)
+
+		// opt in all validators for the chain
+		for _, val := range s.providerChain.Vals.Validators {
+			providerKeeper.SetOptedIn(
+				s.providerCtx(),
+				chainID,
+				providertypes.NewProviderConsAddress(sdk.ConsAddress(val.Address)),
+				uint64(s.providerCtx().BlockHeight()),
+			)
+		}
+	}
+
+	// Iterate over the validators and
+	// store their current voting power and outstanding rewards
+	lastValOutRewards := map[string]sdk.DecCoins{}
+	votes := []abci.VoteInfo{}
+	for _, val := range s.providerChain.Vals.Validators {
+		votes = append(votes,
+			abci.VoteInfo{
+				Validator:       abci.Validator{Address: val.Address, Power: val.VotingPower},
+				SignedLastBlock: true,
+			},
+		)
+
+		valRewards := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		lastValOutRewards[sdk.ValAddress(val.Address).String()] = valRewards.Rewards
+	}
+
+	// store community pool balance
+	lastCommPool := distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx())
+
+	// execute BeginBlock to trigger the token allocation
+	providerKeeper.BeginBlockRD(
+		s.providerCtx(),
+		abci.RequestBeginBlock{
+			LastCommitInfo: abci.CommitInfo{
+				Votes: votes,
+			},
+		},
+	)
+
+	valNum := len(s.providerChain.Vals.Validators)
+	consuNum := len(s.consumerBundles)
+
+	// compute the expected validators token allocation by subtracting the community tax
+	rewardsPerConsumerDec := sdk.NewDecCoinsFromCoins(rewardsPerConsumer...)
+	communityTax := distributionKeeper.GetCommunityTax(s.providerCtx())
+	validatorsExpRewards := rewardsPerConsumerDec.
+		MulDecTruncate(math.LegacyOneDec().Sub(communityTax)).
+		// multiply by the number of consumers since all the validators opted in
+		MulDec(sdk.NewDec(int64(consuNum)))
+	perValExpReward := validatorsExpRewards.QuoDec(sdk.NewDec(int64(valNum)))
+
+	// verify the validator tokens allocation
+	// note all validators have the same voting power to keep things simple
+	for _, val := range s.providerChain.Vals.Validators {
+		valReward := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().True(valReward.Rewards.IsEqual(
+			lastValOutRewards[sdk.ValAddress(val.Address).String()].Add(perValExpReward...),
+		))
+	}
+
+	commPoolExpRewards := sdk.NewDecCoinsFromCoins(totalRewards...).Sub(validatorsExpRewards)
+	currCommPool := distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx())
+
+	s.Require().True(currCommPool.IsEqual(lastCommPool.Add(commPoolExpRewards...)))
 }
 
 // getEscrowBalance gets the current balances in the escrow account holding the transferred tokens to the provider
