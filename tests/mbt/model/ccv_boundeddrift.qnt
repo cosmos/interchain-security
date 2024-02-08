@@ -1,9 +1,11 @@
 module ccv_boundeddrift {
     import ccv_model.* from "ccv_model"
     import ccv_types as Ccvt from "ccv"
+    import ccv_utils.* from "ccv_utils"
     import ccv from "ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
+    import ccv_pss_model.* from "ccv_pss_model"
 
 
     // The boundeddrift module has its own step function.
@@ -32,7 +34,7 @@ module ccv_boundeddrift {
 
     // Given the name of a chain, gets a set with the chain states of all other chains.
     def GetOtherChainStates(advancingChain: Ccvt::Chain): Set[Ccvt::ChainState] =
-        val runCons = ccv::getRunningConsumers(currentState.providerState)
+        val runCons = getRunningConsumers(currentState.providerState)
         if (advancingChain == Ccvt::PROVIDER_CHAIN) {
             runCons.map(c => currentState.consumerStates.get(c).chainState)
         } else {
@@ -48,7 +50,7 @@ module ccv_boundeddrift {
         }
 
     def GetRunningChainStates(): Set[Ccvt::ChainState] = 
-        val runCons = ccv::getRunningConsumers(currentState.providerState)
+        val runCons = getRunningConsumers(currentState.providerState)
         val consumerChainStates = runCons.map(c => currentState.consumerStates.get(c).chainState)
         consumerChainStates.union(Set(currentState.providerState.chainState))
 
@@ -59,8 +61,41 @@ module ccv_boundeddrift {
         stepCommon, // allow actions that do not influence time
 
         // advance a block for a consumer
+        stepBoundedDriftConsumer,
+        
+        // advance a block for the provider
+        stepBoundedDriftProvider
+    }
+
+    action stepBoundedDriftProvider: bool = {
+        stepBoundedDriftProvider_helper(allFullConsumers)
+    }
+
+    action stepBoundedDriftProviderPSS: bool = {
+        stepBoundedDriftProvider_helper(variousPossibleTopN)
+    }
+
+    // As an argument, takes a function that, when invoked, gives a top N value to use for a new consumer chain.
+    action stepBoundedDriftProvider_helper(topNOracle: Set[int]): bool = {
+        val maxAdv = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
+        val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
         all {
-            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            possibleAdvancements.size() > 0, // ensure there is a possible advancement, otherwise this action does not make sense
+            // advance a block for the provider
+            val consumerStatus = currentState.providerState.consumerStatus
+            nondet consumersToStart = oneOf(nonConsumers.powerset())
+            nondet topN = oneOf(topNOracle)
+            nondet consumerAdditions = consumersToStart.map(c => Ccvt::NewTopNConsumer(c, topN))
+            // make it so we stop consumers only with small likelihood:
+            nondet stopConsumersRand = oneOf(1.to(100))
+            nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
+            nondet timeAdvancement = oneOf(possibleAdvancements)
+            EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
+        }
+    }
+
+    action stepBoundedDriftConsumer = all {
+        runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
             nondet chain = runningConsumers.oneOf()
             val maxAdv = findMaxTimeAdvancement(GetChainState(chain), GetOtherChainStates(chain), maxDrift)
             val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
@@ -69,22 +104,20 @@ module ccv_boundeddrift {
                 nondet timeAdvancement = possibleAdvancements.oneOf()
                 EndAndBeginBlockForConsumer(chain, timeAdvancement),
             }
-        },
-        
-        // advance a block for the provider
-        val maxAdv = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
-        val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
-        all {
-            possibleAdvancements.size() > 0, // ensure there is a possible advancement, otherwise this action does not make sense
-            // advance a block for the provider
-            val consumerStatus = currentState.providerState.consumerStatus
-            nondet consumersToStart = oneOf(nonConsumers.powerset())
-            // make it so we stop consumers only with small likelihood:
-            nondet stopConsumers = oneOf(1.to(100))
-            nondet consumersToStop = if (stopConsumers <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
-            nondet timeAdvancement = oneOf(possibleAdvancements)
-            EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
-        }
+    }
+
+    action stepBoundedDriftKeyAssignment = any {
+        stepBoundedDrift,
+        nondetKeyAssignment,
+    }
+
+    action stepBoundedDriftKeyAndPSS = any {
+        stepCommon,
+        stepBoundedDriftProviderPSS,
+        stepBoundedDriftConsumer,
+        nondetKeyAssignment,
+        StepOptIn,
+        StepOptOut,
     }
 
     // INVARIANT
