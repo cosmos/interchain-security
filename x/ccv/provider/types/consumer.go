@@ -1,6 +1,7 @@
 package types
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
@@ -23,5 +24,12 @@ func NewConsumerStates(
 		PendingValsetChanges: pendingValsetChanges,
 		ConsumerGenesis:      genesis,
 		SlashDowntimeAck:     slashDowntimeAck,
+	}
+}
+
+// zero consumer rewards allocation
+func InitialConsumerRewardsAllocation() ConsumerRewardsAllocation {
+	return ConsumerRewardsAllocation{
+		Rewards: sdk.DecCoins{},
 	}
 }

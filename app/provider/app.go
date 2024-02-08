@@ -102,6 +102,7 @@ import (
 
 	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
 	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
 	ibcprovider "github.com/cosmos/interchain-security/v4/x/ccv/provider"
 	ibcproviderclient "github.com/cosmos/interchain-security/v4/x/ccv/provider/client"
 	ibcproviderkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
@@ -470,12 +471,15 @@ func New(
 		app.BankKeeper,
 		scopedTransferKeeper,
 	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	ibcmodule := transfer.NewIBCModule(app.TransferKeeper)
+
+	// Add a IBC middleware callback to track the consumer rewards
+	var transferStack porttypes.IBCModule
+	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = provider.NewIBCMiddleware(transferStack, app.ProviderKeeper)
 
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
 	ibcRouter.AddRoute(providertypes.ModuleName, providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -514,7 +518,7 @@ func New(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		transferModule,
+		transfer.NewAppModule(app.TransferKeeper),
 		providerModule,
 	)
 
@@ -610,7 +614,7 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
-		transferModule,
+		transfer.NewAppModule(app.TransferKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()

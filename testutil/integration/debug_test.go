@@ -283,3 +283,7 @@ func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing
 func TestSlashRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSlashRetries")
 }
+
+func TestIBCTransferMiddleware(t *testing.T) {
+	runCCVTestByName(t, "TestIBCTransferMiddleware")
+}

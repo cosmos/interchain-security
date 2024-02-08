@@ -161,6 +161,7 @@ const (
 	ToBeOptedOutBytePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
+	ConsumerRewardPoolByteBytePrefix
 )
 
 //
@@ -553,6 +554,11 @@ func ToBeOptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
 func ToBeOptedOutKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	prefix := ChainIdWithLenKey(ToBeOptedOutBytePrefix, chainID)
 	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// ConsumerModuleAccount returns the module account byte prefix for a consumer chain
+func ConsumerRewardPoolKey(chainID string) []byte {
+	return append([]byte{ConsumerRewardPoolByteBytePrefix}, []byte(chainID)...)
 }
 
 //

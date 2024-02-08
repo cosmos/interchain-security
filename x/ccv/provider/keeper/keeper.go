@@ -1324,3 +1324,20 @@ func (k Keeper) GetToBeOptedOut(
 
 	return addresses
 }
+
+func (k Keeper) GetPacketSourceChain(ctx sdk.Context, packet channeltypes.Packet) (string, error) {
+	channel, ok := k.channelKeeper.GetChannel(ctx, packet.DestinationPort, packet.DestinationChannel)
+	if !ok {
+		return "", errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", packet.DestinationChannel)
+	}
+	if len(channel.ConnectionHops) != 1 {
+		return "", errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
+	}
+	connectionID := channel.ConnectionHops[0]
+	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	if err != nil {
+		return "", err
+	}
+
+	return tmClient.ChainId, nil
+}
