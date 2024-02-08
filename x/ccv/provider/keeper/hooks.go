@@ -223,7 +223,7 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 			return
 		}
 
-		// in case validator is already to-be-opted in, we just overwrite
+		// in the validator is already to-be-opted in, the `SetToBeOptedIn` is a no-op
 		h.k.SetToBeOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
 	} else {
 		// if vote is not a YES vote with 100% weight, we delete the validator from to-be-opted in
