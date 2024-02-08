@@ -217,6 +217,9 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 			return
 		}
 		if !weight.Equal(math.LegacyNewDec(1)) {
+			h.k.Logger(ctx).Error("single vote does not have a weight of 1",
+				"vote", vote,
+			)
 			return
 		}
 
