@@ -1,8 +1,8 @@
 package keeper
 
 import (
+	"cosmossdk.io/math"
 	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -176,6 +176,40 @@ func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, deposito
 }
 
 func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {
+	validator, found := h.k.stakingKeeper.GetValidator(ctx, voterAddr.Bytes())
+	if !found {
+		return
+	}
+
+	consAddr, err := validator.GetConsAddr()
+	if err != nil {
+		return
+	}
+
+	chainID := h.k.GetProposedConsumerChain(ctx, proposalID)
+
+	vote, found := h.k.govKeeper.GetVote(ctx, proposalID, voterAddr)
+	if !found {
+		return
+	}
+
+	if len(vote.Options) == 1 && vote.Options[0].Option == v1.VoteOption_VOTE_OPTION_YES {
+		// only consider votes that vote YES with 100% weight
+		weight, err := sdk.NewDecFromStr(vote.Options[0].Weight)
+		if err != nil {
+			return
+		}
+		if !weight.Equal(math.LegacyNewDec(1)) {
+			return
+		}
+
+		// in case validator is already to-be-opted in, we just overwrite
+		h.k.SetToBeOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
+	} else {
+		// if vote is not a YES vote with 100% weight, we delete the validator from to-be-opted in
+		// if the validator is not to-be-opted in, the `DeleteToBeOptedIn` is a no-op
+		h.k.DeleteToBeOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
+	}
 }
 
 func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
