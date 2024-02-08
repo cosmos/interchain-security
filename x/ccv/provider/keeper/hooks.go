@@ -185,6 +185,10 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
+		h.k.Logger(ctx).Error("could not extract validator's consensus address",
+			"error", err.Error(),
+			"validator acc addr", voterAddr,
+		)
 		return
 	}
 
@@ -195,6 +199,10 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 
 	vote, found := h.k.govKeeper.GetVote(ctx, proposalID, voterAddr)
 	if !found {
+		h.k.Logger(ctx).Error("could not find vote for validator",
+			"validator acc addr", voterAddr,
+			"proposalID", proposalID,
+		)
 		return
 	}
 
@@ -202,6 +210,10 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 		// only consider votes that vote YES with 100% weight
 		weight, err := sdk.NewDecFromStr(vote.Options[0].Weight)
 		if err != nil {
+			h.k.Logger(ctx).Error("could not extract decimal value from vote's weight",
+				"vote", vote,
+				"error", err.Error(),
+			)
 			return
 		}
 		if !weight.Equal(math.LegacyNewDec(1)) {
