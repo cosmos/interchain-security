@@ -17,7 +17,7 @@ Key assignment is handled only by the provider chain - the consumer chains are n
 
 ## Rules
 
-- a key can be assigned before the consumer addition proposal passes on the provider
+- a key can be assigned as soon as the consumer addition proposal is submitted to the provider
 - validator A cannot assign consumer key K to consumer chain X if there is already a validator B (B!=A) using K on the provider
 - validator A cannot assign consumer key K to consumer chain X if there is already a validator B using K on X
 - a new validator on the provider cannot use a consensus key K if K is already used by any validator on any consumer chain
@@ -80,3 +80,13 @@ To change your key, simply repeat all of the steps listed above. Take note that 
 ## Removing a key
 
 To remove a key, simply switch it back to the consensus key you have assigned on the provider chain by following steps in the `Adding a key` section and using your provider consensus key.
+
+## Querying proposed consumer chains
+
+To query the consumer addition proposals that are in the voting period, you can use the following command on the provider:
+
+```bash
+gaiad query provider list-proposed-consumer-chains
+```
+
+This query is valuable for staying informed about when keys can be assigned to newly proposed consumer chains.  
