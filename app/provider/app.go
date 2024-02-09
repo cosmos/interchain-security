@@ -472,7 +472,7 @@ func New(
 		scopedTransferKeeper,
 	)
 
-	// Add a IBC middleware callback to track the consumer rewards
+	// Add an IBC middleware callback to track the consumer rewards
 	var transferStack porttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
 	transferStack = provider.NewIBCMiddleware(transferStack, app.ProviderKeeper)
