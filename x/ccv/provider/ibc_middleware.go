@@ -105,6 +105,7 @@ func (im IBCMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
+	// TODO: ensure it's for the consumer rewards pool
 	// TODO: ensure it's a consumer chain!
 	chainID, err := im.keeper.GetPacketSourceChain(ctx, packet)
 	if err != nil {
