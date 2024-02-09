@@ -304,7 +304,8 @@ func RunItfTrace(t *testing.T, path string) {
 			// unless it was the last consumer to be started, in which case it already has the header
 			// as we called driver.setupConsumer
 			for _, consumer := range driver.runningConsumers() {
-				if len(consumersToStart) > 0 && consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(string) {
+				if len(consumersToStart) > 0 &&
+					consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(itf.MapExprType)["chain"].Value.(string) {
 					continue
 				}
 
@@ -379,8 +380,33 @@ func RunItfTrace(t *testing.T, path string) {
 			protoPubKey, err := tmencoding.PubKeyToProto(assignedKey)
 			require.NoError(t, err, "Error converting pubkey to proto")
 
-			error := driver.AssignKey(ChainId(consumerChain), int64(valIndex), protoPubKey)
-			require.NoError(t, error, "Error assigning key")
+			err = driver.AssignKey(ChainId(consumerChain), int64(valIndex), protoPubKey)
+			require.NoError(t, err, "Error assigning key")
+		case "OptIn":
+			consumerChain := lastAction["consumerChain"].Value.(string)
+			validator := lastAction["validator"].Value.(string)
+			t.Log("OptIn", consumerChain, validator)
+
+			valIndex := getIndexOfString(validator, valNames)
+
+			err := driver.OptIn(ChainId(consumerChain), int64(valIndex))
+			require.NoError(t, err, "Error opting in")
+
+		case "OptOut":
+			consumerChain := lastAction["consumerChain"].Value.(string)
+			validator := lastAction["validator"].Value.(string)
+			expectedError := lastAction["expectedError"].Value.(string)
+			t.Log("OptOut", consumerChain, validator, expectedError)
+
+			valIndex := getIndexOfString(validator, valNames)
+
+			err := driver.OptOut(ChainId(consumerChain), int64(valIndex))
+
+			if expectedError != "" {
+				require.Error(t, err, "Expected an error: %v", expectedError)
+			} else {
+				require.NoError(t, err, "Error opting out, but expected no error")
+			}
 
 		default:
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
