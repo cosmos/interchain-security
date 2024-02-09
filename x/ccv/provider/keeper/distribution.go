@@ -68,8 +68,8 @@ func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenom
 	return consumerRewardDenoms
 }
 
-// AllocateTokens performs reward and fee distribution to all validators based
-// on the Partial Set Security distribution specification.
+// AllocateTokens performs rewards distribution to the community pool and validators
+// based on the Partial Set Security distribution specification.
 func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bondedVotes []abci.VoteInfo) {
 	// return if there is no coins in the consumer rewards pool
 	if k.GetConsumerRewardsPool(ctx).IsZero() {
@@ -123,7 +123,9 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 	}
 }
 
-// TODO: define which validators earned the tokens, i.e. already opted in for 1000 blocks
+// TODO: allocate tokens to validators that opted-in and for long enough e.g. 1000 blocks
+// once the opt-in logic is integrated QueueVSCPackets()
+//
 // AllocateTokensToConsumerValidators allocates the consumer rewards pool to validator
 // according to their voting power
 func (k Keeper) AllocateTokensToConsumerValidators(
@@ -133,18 +135,10 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	bondedVotes []abci.VoteInfo,
 	tokens sdk.DecCoins,
 ) sdk.DecCoins {
-	optedInVals := map[string]struct{}{}
-	for _, val := range k.GetOptedIn(ctx, chainID) {
-		optedInVals[val.ProviderAddr.Address.String()] = struct{}{}
-	}
-
 	totalReward := sdk.DecCoins{}
-
 	for _, vote := range bondedVotes {
+		// TODO: should check if validator IsOptIn or continue here
 		consAddr := sdk.ConsAddress(vote.Validator.Address)
-		if _, ok := optedInVals[consAddr.String()]; !ok {
-			continue
-		}
 
 		// TODO: Consider micro-slashing for missing votes.
 		//
@@ -210,7 +204,7 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 // GetConsumerRewardsAllocation the onsumer rewards allocation for the given chain ID
 func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, chainID string) (pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
-	b := store.Get(types.ConsumerRewardPoolKey(chainID))
+	b := store.Get(types.ConsumerRewardsAllocationKey(chainID))
 	k.cdc.MustUnmarshal(b, &pool)
 	return
 }
@@ -219,7 +213,7 @@ func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, chainID string) (p
 func (k Keeper) SetConsumerRewardsAllocation(ctx sdk.Context, chainID string, pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
 	b := k.cdc.MustMarshal(&pool)
-	store.Set(types.ConsumerRewardPoolKey(chainID), b)
+	store.Set(types.ConsumerRewardsAllocationKey(chainID), b)
 }
 
 // GetConsumerRewardsPool returns the balance

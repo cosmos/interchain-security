@@ -303,7 +303,9 @@ message ConsumerAddrsToPrune {
   AddressList consumer_addrs = 3;
 }
 
-// ConsumerRewardsAllocation is used to serialize the allocation of consumer chain rewards
+// ConsumerRewardsAllocation stores the rewards allocated by a consumer chain
+// to the consumer rewards pool. It is used to allocate the tokens to the consumer 
+// opted-in validators and the community pool during BeginBlock.
 message ConsumerRewardsAllocation {
   repeated cosmos.base.v1beta1.DecCoin rewards = 1 [
     (gogoproto.nullable)     = false,

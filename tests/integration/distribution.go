@@ -633,16 +633,6 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 				Rewards: sdk.NewDecCoinsFromCoins(rewardsPerConsumer...),
 			},
 		)
-
-		// opt in all validators for the chain
-		for _, val := range s.providerChain.Vals.Validators {
-			providerKeeper.SetOptedIn(
-				s.providerCtx(),
-				chainID,
-				providertypes.NewProviderConsAddress(sdk.ConsAddress(val.Address)),
-				uint64(s.providerCtx().BlockHeight()),
-			)
-		}
 	}
 
 	// Iterate over the validators and

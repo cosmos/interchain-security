@@ -13,8 +13,8 @@ import (
 
 var _ porttypes.Middleware = &IBCMiddleware{}
 
-// IBCMiddleware implements the ICS26 callbacks for the fee middleware given the
-// fee keeper and the underlying application.
+// IBCMiddleware implements the callbacks for the transfer middleware given the
+// provider keeper and the underlying application.
 type IBCMiddleware struct {
 	app    porttypes.IBCModule
 	keeper keeper.Keeper
@@ -44,8 +44,6 @@ func (im IBCMiddleware) OnChanOpenInit(
 }
 
 // OnChanOpenTry implements the IBCMiddleware interface
-// If the channel is not fee enabled the underlying application version will be returned
-// If the channel is fee enabled we merge the underlying application version with the ics29 version
 func (im IBCMiddleware) OnChanOpenTry(
 	ctx sdk.Context,
 	order channeltypes.Order,
@@ -100,13 +98,14 @@ func (im IBCMiddleware) OnChanCloseConfirm(
 	return im.app.OnChanCloseConfirm(ctx, portID, channelID)
 }
 
-// OnRecvPacket implements the IBCMiddleware interface.
-// If fees are not enabled, this callback will default to the ibc-core packet callback
+// OnRecvPacket executes the IBC transfer and records the coins received
+// from a consumer chain by updating its consumer rewards states
 func (im IBCMiddleware) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
+	// TODO: ensure it's a consumer chain!
 	chainID, err := im.keeper.GetPacketSourceChain(ctx, packet)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
