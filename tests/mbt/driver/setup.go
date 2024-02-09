@@ -363,6 +363,8 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
 
 	// set the top N percentage
+	// needs to be done before the provider queues the first vsc packet to the consumer
+	// TODO: might be able to move this into setupConsumer, need to test once more logic is here
 	s.providerKeeper().SetTopN(providerChain.GetContext(), consumerChain.ChainID, topN)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
