@@ -375,20 +375,12 @@ func (s *Driver) setTime(chain ChainId, newTime time.Time) {
 	testChain.App.BeginBlock(abcitypes.RequestBeginBlock{Header: testChain.CurrentHeader})
 }
 
-<<<<<<< HEAD
-func (s *Driver) AssignKey(chain ChainId, valIndex int64, value crypto.PublicKey) error {
-=======
 func (s *Driver) AssignKey(chain ChainId, valIndex int64, key crypto.PublicKey) error {
->>>>>>> feat/partial-set-security
 	stakingVal, found := s.stakingValidator(valIndex)
 	if !found {
 		return fmt.Errorf("validator with id %v not found on provider", valIndex)
 	}
-<<<<<<< HEAD
-	return s.providerKeeper().AssignConsumerKey(s.providerCtx(), string(chain), stakingVal, value)
-=======
 	return s.providerKeeper().AssignConsumerKey(s.providerCtx(), string(chain), stakingVal, key)
->>>>>>> feat/partial-set-security
 }
 
 // DeliverPacketToConsumer delivers a packet from the provider to the given consumer recipient.
