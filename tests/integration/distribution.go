@@ -619,24 +619,29 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			// execute middleware OnRecvPacket logic
 			ack := cbs.OnRecvPacket(s.providerCtx(), packet, sdk.AccAddress{})
 
-			ibcDenom := getIBCDenom(packet.DestinationPort, packet.DestinationChannel)
-			fmt.Println("ibcDenom", ibcDenom)
+			// compute expected rewards with provider denom
+			expRewards := sdk.Coin{
+				Amount: amount,
+				Denom:  getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
+			}
 
 			// compute the balance and allocation difference
-			rewardsTransferred := bankkeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver)).Sub(rewardsPoolBalance...)
+			rewardsTransferred := bankkeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver)).
+				Sub(rewardsPoolBalance...)
 			rewardsAllocated := providerkeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID).
 				Rewards.Sub(consumerRewardsAllocations.Rewards)
-
-			fmt.Println("rewards", rewardsTransferred)
 
 			if !tc.expErr {
 				s.Require().True(ack.Success())
 				// verify that the consumer rewards pool received the IBC coins
-				s.Require().True(rewardsTransferred[0].Amount.Equal(amount))
+				s.Require().True(rewardsTransferred.IsEqual(sdk.Coins{expRewards}))
 
 				if tc.rewardsAllocated {
+					// check the data receiver address is set to the consumer rewards pool address
+					s.Require().Equal(data.GetReceiver(), providerkeeper.GetConsumerRewardsPoolAddressStr(s.providerCtx()))
+
 					// verify that consumer rewards allocation is updated
-					s.Require().True(rewardsAllocated[0].Amount.Equal(math.LegacyNewDec(amount.Int64())))
+					s.Require().True(rewardsAllocated.IsEqual(sdk.NewDecCoinsFromCoins(expRewards)))
 				}
 			} else {
 				s.Require().False(ack.Success())
