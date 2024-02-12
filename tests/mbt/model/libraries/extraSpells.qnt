@@ -207,4 +207,27 @@ module extraSpells {
         assert(not(listForAll(List(1, 2, 3), __x => __x > 1))),
         assert(listForAll(List(), __x => __x > 0)),
     }
+
+    /// listMap takes a list __list and a function __f returns a new list R, where
+    /// R.length() == __list.length() and
+    /// R[i] == __f(__list[i]) for all 0 <= i < __list.length()
+    ///
+    /// Parameters:
+    /// - __list: The list to check.
+    /// - __f: The transformation function to apply to each element in the list.
+    ///
+    /// Returns:
+    /// - the resulting list R
+    pure def listMap(__list: List[a], __f: a => b): List[b] = {
+      __list.foldl(List(), (acc, x) => acc.append(__f(x)))
+    }
+
+    run listMapTest = 
+    all {
+      assert(listMap(List(1, 2, 3), __x => __x + 1) == List(2, 3, 4)),
+      assert(listMap(List(5, 2, 3), __x => __x * __x) == List(25, 4, 9)),
+      assert(listMap(List(1, 2, 3), __x => "a") == List("a", "a", "a")),
+      assert(listMap(List("a", "b", "c"), __x => __x) == List("a", "b", "c")),
+      assert(listMap(List(), __x => __x * __x) == List()),
+    }
 }
