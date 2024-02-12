@@ -130,5 +130,6 @@ The available sanity checks are:
 - CanTimeoutConsumer
 - CanSendVscPackets
 - CanSendVscMaturedPackets
+- CanReceiveMaturations
 - CanAssignConsumerKey (only with `--step stepKeyAssignment`)
 - CanHaveConsumerAddresses (only with `--step stepKeyAssignment`)
