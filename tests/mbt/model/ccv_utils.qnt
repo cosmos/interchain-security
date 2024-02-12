@@ -224,7 +224,7 @@ module ccv_utils {
         val newOutstandingPacketsToConsumer = providerState.getConsumers().mapBy(
                 (consumer) => 
                 providerState.outstandingPacketsToConsumer.getOrElse(consumer, List()).concat(
-                    newSentPacketsPerConsumer.get(consumer)
+                    newSentPacketsPerConsumer.get(consumer).VscPacketListToPacketList()
                 )
             )
         val newSentVscPackets = providerState.getConsumers().mapBy(
@@ -250,12 +250,27 @@ module ccv_utils {
         }
     }
 
+    pure def recvPacketOnConsumer(
+        currentState: ProtocolState,
+        sender: Chain,
+        packet: Packet,
+        receiverUnbondingPeriod: Time): Result = {
+        if (not(isRunningConsumer(sender, currentState.providerState))) {
+            Err("Sender is not currently a consumer - must have 'running' status!")
+        } else {
+            match packet {
+                | Vsc(p) => recvVscPacketOnConsumer(currentState, sender, p, receiverUnbondingPeriod)
+                | _ => Err("Do not know how to handle this packet type")
+            }
+        }
+    }
+
     // receives a given packet (sent by the provider) on the consumer. The arguments are the consumer chain that is receiving the packet, and the packet itself,
     // as well as the unbonding period for the consumer chain.
     // To receive a packet, modify the running validator set (not the one entered into the block yet,
     // but the candidate that would be put into the block if it ended now)
     // and store the maturation time for the packet.
-    pure def recvPacketOnConsumer(
+    pure def recvVscPacketOnConsumer(
         currentState: ProtocolState,
         receiver: Chain,
         packet: VscPacket,
@@ -289,14 +304,29 @@ module ccv_utils {
     }
 
     // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
-    // To receive a packet, add it to the list of received maturations.
-    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
+    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: Packet): Result = {
         if (not(isRunningConsumer(sender, currentState.providerState))) {
             Err("Sender is not currently a consumer - must have 'running' status!")
-        } else if (currentState.providerState.sentVscPacketsToConsumer.get(sender).head().id != packet.id) {
+        } else {
+            match packet {
+                | VscMatured(p) => recvVscMaturedPacketOnProvider(currentState, sender, p)
+                | Slash(p) => recvSlashPacketOnProvider(currentState, sender, p)
+                | _ => Err("Do not know how to handle this packet type")
+            }
+        }
+    }
+
+    pure def recvSlashPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: SlashPacket): Result = {
+        // TODO
+        Err("Not implemented yet")
+    }
+
+    pure def recvVscMaturedPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
+        if (currentState.providerState.sentVscPacketsToConsumer.get(sender).head().id != packet.id) {
             // the packet is not the oldest sentVscPacket, something went wrong
             Err("Received maturation is not for the oldest sentVscPacket")
         } else {
+            // add the packet to the list of received maturations.
             val currentReceivedMaturations = currentState.providerState.receivedMaturations
             val newReceivedMaturations = currentReceivedMaturations.union(Set(packet))
             val newProviderState = currentState.providerState.with(
@@ -453,4 +483,29 @@ module ccv_utils {
                 (false, "")
             }
         }
+
+    // Transforms a list of VscPackets into a list of the generic
+    // "packet" type.
+    pure def VscPacketListToPacketList(original: List[VscPacket]): List[Packet] =
+        original.listMap(
+            elem => Vsc(elem)
+        )
+
+    pure def GetPacketTimeout(packet: Packet): Time = {
+        match packet {
+            | Vsc(p) => p.timeoutTime
+            | Slash(p) => p.timeoutTime
+            | VscMatured(p) => p.timeoutTime
+            | _ => 0
+        }
+    }
+
+    pure def GetPacketSendingTime(packet: Packet): Time = {
+        match packet {
+            | Vsc(p) => p.sendingTime
+            | Slash(p) => p.sendingTime
+            | VscMatured(p) => p.sendingTime
+            | _ => 0
+        }
+    }
 }

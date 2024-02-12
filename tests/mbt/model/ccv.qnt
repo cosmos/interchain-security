@@ -27,7 +27,6 @@ module ccv_types {
             sendingTime: Time,
             // the time (on the receiver) at which the packet will time out
             timeoutTime: Time
-
         }
 
     type VscMaturedPacket = 
@@ -40,6 +39,25 @@ module ccv_types {
             timeoutTime: Time
         }
 
+    type SlashPacket = {
+            // the validator that performed the infraction
+            validator: Node,
+            // the id of the vsc update at the time the infraction was performed
+            id: VscId,
+            // true if the packet is a downtime slash, false if it is a different type (e.g. double sign)
+            downtime: bool,
+            // the time at which the packet was sent.
+            sendingTime: Time,
+            // the time (on the receiver) at which the packet will time out
+            timeoutTime: Time
+        }
+
+    // A sum type containing all types of packets that can be sent between
+    // provider and consumers.
+    type Packet =
+        | Vsc(VscPacket) 
+        | VscMatured(VscMaturedPacket)
+        | Slash(SlashPacket) 
 
     // state that each chain needs to store, whether consumer or provider.
     type ChainState = {
@@ -78,7 +96,7 @@ module ccv_types {
             // Stores, for each consumer chain, the list of packets that have been sent to the consumer chain
             // and *have not been received yet*.
             // In the implementation, this would roughly be the unacknowledged packets on an ibc channel.
-            outstandingPacketsToConsumer: Chain -> List[VscPacket],
+            outstandingPacketsToConsumer: Chain -> List[Packet],
 
             // the set of received VscMaturedPackets
             receivedMaturations: Set[VscMaturedPacket],
@@ -159,7 +177,7 @@ module ccv_types {
         // and have not been received yet.
         // ordered by recency, so the head is the oldest packet.
         // In the implementation, essentially unacknowledged IBC packets.
-        outstandingPacketsToProvider: List[VscMaturedPacket],
+        outstandingPacketsToProvider: List[Packet],
     }
 
     // utility function: returns a consumer state that is initialized minimally.
@@ -319,7 +337,7 @@ module ccv {
             (Err("No outstanding packets to deliver"), false)
         } else {
             val packet = currentState.consumerStates.get(sender).outstandingPacketsToProvider.head()
-            if(packet.timeoutTime <= currentState.providerState.chainState.runningTimestamp) {
+            if(packet.GetPacketTimeout() <= currentState.providerState.chainState.runningTimestamp) {
                 // drop consumer
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
@@ -368,7 +386,7 @@ module ccv {
         } else {
             val packet = currentState.providerState.outstandingPacketsToConsumer.get(receiver).head()
             // check if the consumer timed out
-            if (packet.timeoutTime <= currentState.consumerStates.get(receiver).chainState.runningTimestamp) {
+            if (packet.GetPacketTimeout() <= currentState.consumerStates.get(receiver).chainState.runningTimestamp) {
                 // drop consumer
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
@@ -548,12 +566,12 @@ module ccv {
                 )
                 val newOutstandingPackets = newConsumerState.outstandingPacketsToProvider.concat(
                     maturedPackets.transform(
-                        packet => {
+                        packet => VscMatured({
                             id: packet.id, 
                             // it is important to use the oldChainState here, since this happens during EndBlock
                             sendingTime: oldChainState.runningTimestamp,
                             timeoutTime: oldChainState.runningTimestamp + CcvTimeout.get(chain)
-                        }
+                        })
                     )
                 )
                 val newConsumerState2: ConsumerState = newConsumerState.with(

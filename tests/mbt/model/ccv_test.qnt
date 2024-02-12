@@ -143,12 +143,14 @@ module ccv_test {
             "consumerStatus", providerState.consumerStatus.put(sender, RUNNING)
         )
         val providerState3 = providerState2.with(
-            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List({
+            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List(
+                Vsc({
                 id: 0,
                 validatorSet: Map(),
                 sendingTime: 0,
                 timeoutTime: CcvTimeout.get(sender)
-            }))
+                })
+            ))
         )
         currentState.with(
             "providerState", providerState3
@@ -160,11 +162,11 @@ module ccv_test {
     pure val DeliverPacketToProviderHappyPathTest_testState = _DeliverPacketToProvider_TestState.with(
         "consumerStates", _DeliverPacketToProvider_TestState.consumerStates.put(
             "sender", _DeliverPacketToProvider_TestState.consumerStates.get("sender").with(
-                "outstandingPacketsToProvider", List({
+                "outstandingPacketsToProvider", List(VscMatured({
                     id: 0,
                     sendingTime: 0,
                     timeoutTime: CcvTimeout.get("sender")
-                })
+                }))
             )
         )
     ).with(
