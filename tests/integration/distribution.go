@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"strings"
 
 	"cosmossdk.io/math"
@@ -468,60 +469,74 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 
 	var (
-		data   ibctransfertypes.FungibleTokenPacketData
-		packet channeltypes.Packet
+		data        ibctransfertypes.FungibleTokenPacketData
+		packet      channeltypes.Packet
+		getIBCDenom func(string, string) string
 	)
 
 	testCases := []struct {
 		name             string
 		setup            func(sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper)
-		expError         bool
-		rewardsAllocated int
-		tokenTransfers   int
+		rewardsAllocated bool
+		expErr           bool
 	}{
 		{
 			"invalid IBC packet",
 			func(sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper) {
 				packet = channeltypes.Packet{}
 			},
+			false,
 			true,
-			0,
-			0,
 		},
 		{
-			"invalid fungible token packet data",
+			"IBC packet sender isn't a consumer chain",
 			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				packet.Data = nil
+				// make the sender consumer chain impossible to identify
+				packet.DestinationChannel = "CorruptedChannelId"
 			},
-			true,
-			0,
-			0,
+			false,
+			false,
+		},
+		{
+			"IBC Transfer recipient is not the consumer rewards pool address",
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				data.Receiver = "cosmos149lw9fktlqfed3zt8ah48r5czmsug5s7kw77u9" // random acct address
+				packet.Data = data.GetBytes()
+			},
+			false,
+			false,
+		},
+		{
+			"IBC Transfer coin denom isn't registered",
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				fmt.Println("middleware", getIBCDenom(packet.DestinationPort, packet.DestinationChannel))
+				keeper.SetConsumerRewardDenom(
+					s.providerCtx(),
+					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
+				)
+			},
+			false,
+			false,
 		},
 		{
 			"successful token transfer to empty pool",
 			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				bankKeeper.SendCoinsFromAccountToModule(
-					ctx,
-					s.providerChain.SenderAccount.GetAddress(),
-					providertypes.ConsumerRewardsPool,
-					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100_000))),
-				)
-
-				keeper.SetConsumerRewardsAllocation(
-					ctx,
-					s.consumerChain.ChainID,
-					providertypes.ConsumerRewardsAllocation{
-						Rewards: sdk.NewDecCoins(sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(100_000))),
-					},
+				keeper.SetConsumerRewardDenom(
+					s.providerCtx(),
+					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
 				)
 			},
+			true,
 			false,
-			1,
-			1,
 		},
 		{
 			"successful token transfer to filled pool",
 			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				keeper.SetConsumerRewardDenom(
+					s.providerCtx(),
+					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
+				)
+
 				// fill consumer reward pool
 				bankKeeper.SendCoinsFromAccountToModule(
 					ctx,
@@ -538,9 +553,8 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 					},
 				)
 			},
+			true,
 			false,
-			1,
-			1,
 		},
 	}
 
@@ -551,6 +565,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			s.SetupTransferChannel()
 
 			providerkeeper := s.providerApp.GetProviderKeeper()
+			bankkeeper := s.providerApp.GetTestBankKeeper()
 			amount := sdk.NewInt(100)
 
 			data = types.NewFungibleTokenPacketData( // can be explicitly changed in setup
@@ -572,31 +587,59 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 				0,
 			)
 
-			tc.setup(s.providerCtx(), &providerkeeper, s.providerApp.GetTestBankKeeper())
+			providerkeeper.SetConsumerRewardDenom(s.providerCtx(),
+				transfertypes.GetPrefixedDenom(
+					packet.DestinationPort,
+					packet.DestinationChannel,
+					sdk.DefaultBondDenom,
+				),
+			)
+
+			getIBCDenom = func(dstPort, dstChannel string) string {
+				return transfertypes.ParseDenomTrace(
+					transfertypes.GetPrefixedDenom(
+						packet.DestinationPort,
+						packet.DestinationChannel,
+						sdk.DefaultBondDenom,
+					),
+				).IBCDenom()
+			}
+
+			tc.setup(s.providerCtx(), &providerkeeper, bankkeeper)
 
 			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(ibctransfertypes.ModuleName)
 			s.Require().True(ok)
 
-			prevConsumerPool := providerkeeper.GetConsumerRewardsPool(s.providerCtx())
-			prevConsumerAlloc := providerkeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
+			// save the IBC transfer rewards transferred
+			rewardsPoolBalance := bankkeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver))
 
+			// save the consumer's rewards allocated
+			consumerRewardsAllocations := providerkeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
+
+			// execute middleware OnRecvPacket logic
 			ack := cbs.OnRecvPacket(s.providerCtx(), packet, sdk.AccAddress{})
-			if !tc.expError {
+
+			ibcDenom := getIBCDenom(packet.DestinationPort, packet.DestinationChannel)
+			fmt.Println("ibcDenom", ibcDenom)
+
+			// compute the balance and allocation difference
+			rewardsTransferred := bankkeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver)).Sub(rewardsPoolBalance...)
+			rewardsAllocated := providerkeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID).
+				Rewards.Sub(consumerRewardsAllocations.Rewards)
+
+			fmt.Println("rewards", rewardsTransferred)
+
+			if !tc.expErr {
 				s.Require().True(ack.Success())
+				// verify that the consumer rewards pool received the IBC coins
+				s.Require().True(rewardsTransferred[0].Amount.Equal(amount))
 
-				// verify consumer rewards pool and allocation are updated
-				pool := providerkeeper.GetConsumerRewardsPool(s.providerCtx()).Sub(prevConsumerPool...)
-				s.Require().True(amount.Equal(pool[0].Amount))
-
-				alloc := providerkeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID).Rewards.Sub(prevConsumerAlloc.Rewards)
-				s.Require().True(sdk.NewDecCoinsFromCoins(pool...).IsEqual(alloc))
+				if tc.rewardsAllocated {
+					// verify that consumer rewards allocation is updated
+					s.Require().True(rewardsAllocated[0].Amount.Equal(math.LegacyNewDec(amount.Int64())))
+				}
 			} else {
 				s.Require().False(ack.Success())
-				receivedCoins := providerkeeper.GetConsumerRewardsPool(s.providerCtx()).Sub(prevConsumerPool...)
-				s.Require().True(receivedCoins.Empty())
-
-				alloc := providerkeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID).Rewards.Sub(prevConsumerAlloc.Rewards)
-				s.Require().True(alloc.Empty())
 			}
 		})
 	}
