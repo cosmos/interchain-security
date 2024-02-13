@@ -517,7 +517,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	}
 }
 
-// getMappedInfractionHeight gets the infraction height mapped from validator set ID for the given chain ID
+// getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
 func (k Keeper) getMappedInfractionHeight(ctx sdk.Context,
 	chainID string, valsetUpdateID uint64,
 ) (height uint64, found bool) {

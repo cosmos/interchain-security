@@ -17,7 +17,7 @@ import (
 func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 	valConsAddr providertypes.ProviderConsAddress,
 ) math.Int {
-	// Obtain staking module validator object from the provider's consensus address.
+	// Obtain staking module val object from the provider's consensus address.
 	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
 	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr.ToSdkConsAddr())
 

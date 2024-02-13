@@ -372,7 +372,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		// then someone could create a bogus ConsumerAdditionProposal to override the Top N for a specific chain.
 		k.SetTopN(ctx, prop.ChainId, prop.Top_N)
 
-		if !k.IsTopN(ctx, prop.ChainId) && len(k.GetToBeOptedIn(ctx, prop.ChainId)) == 0 {
+		if k.IsOptIn(ctx, prop.ChainId) && len(k.GetToBeOptedIn(ctx, prop.ChainId)) == 0 {
 			// drop the proposal
 			ctx.Logger().Info("could not start Opt In consumer chain (%s) because no validator has opted in",
 				prop.ChainId)
