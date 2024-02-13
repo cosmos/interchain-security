@@ -1209,6 +1209,19 @@ func (k Keeper) DeleteOptedIn(
 	store.Delete(types.OptedInKey(chainID, providerAddr))
 }
 
+func (k Keeper) DeleteAllOptedIn(
+	ctx sdk.Context,
+	chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		store.Delete(iterator.Key())
+	}
+}
+
 func (k Keeper) IsOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1254,6 +1267,19 @@ func (k Keeper) DeleteToBeOptedIn(
 	store.Delete(types.ToBeOptedInKey(chainID, providerAddr))
 }
 
+func (k Keeper) DeleteAllToBeOptedIn(
+	ctx sdk.Context,
+	chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ToBeOptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		store.Delete(iterator.Key())
+	}
+}
+
 func (k Keeper) IsToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1296,6 +1322,19 @@ func (k Keeper) DeleteToBeOptedOut(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ToBeOptedOutKey(chainID, providerAddr))
+}
+
+func (k Keeper) DeleteAllToBeOptedOut(
+	ctx sdk.Context,
+	chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ToBeOptedOutBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		store.Delete(iterator.Key())
+	}
 }
 
 func (k Keeper) IsToBeOptedOut(

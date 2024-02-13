@@ -385,7 +385,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks,
 					providerConsAddr,                      // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
-					stakingtypes.Validator{Jailed: false}, // staking keeper val to return
+					stakingtypes.Validator{Jailed: false}, // staking keeper validator to return
 					true)                                  // expectJailing = true
 			},
 			1,
@@ -402,7 +402,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks,
 					providerConsAddr,                     // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
-					stakingtypes.Validator{Jailed: true}, // staking keeper val to return
+					stakingtypes.Validator{Jailed: true}, // staking keeper validator to return
 					false)                                // expectJailing = false, validator is already jailed.
 			},
 			1,

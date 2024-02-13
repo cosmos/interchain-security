@@ -255,31 +255,38 @@ func (k Keeper) MakeConsumerGenesis(
 		return false
 	})
 
-	initialUpdates := []abci.ValidatorUpdate{}
-	for _, p := range lastPowers {
-		addr, err := sdk.ValAddressFromBech32(p.Address)
-		if err != nil {
-			return gen, nil, err
-		}
+	// at this initial state, no validator is yet opted in ... but a validator is to be opted in
+	initialUpdates := k.ComputePartialSetValUpdates(ctx, chainID, []abci.ValidatorUpdate{})
 
-		val, found := k.stakingKeeper.GetValidator(ctx, addr)
-		if !found {
-			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
-		}
-
-		tmProtoPk, err := val.TmConsPublicKey()
-		if err != nil {
-			return gen, nil, err
-		}
-
-		initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
-			PubKey: tmProtoPk,
-			Power:  p.Power,
-		})
-	}
+	//
+	//initialUpdates := []abci.ValidatorUpdate{}
+	//for _, p := range lastPowers {
+	//	addr, err := sdk.ValAddressFromBech32(p.Address)
+	//	if err != nil {
+	//		return gen, nil, err
+	//	}
+	//
+	//	validator, found := k.stakingKeeper.GetValidator(ctx, addr)
+	//	if !found {
+	//		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
+	//	}
+	//
+	//	tmProtoPk, err := validator.TmConsPublicKey()
+	//	if err != nil {
+	//		return gen, nil, err
+	//	}
+	//
+	//	initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
+	//		PubKey: tmProtoPk,
+	//		Power:  p.Power,
+	//	})
+	//}
 
 	// Apply key assignments to the initial valset.
-	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
+	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates,
+		func(address types.ProviderConsAddress) bool { return k.IsToBeOptedIn(ctx, chainID, address) })
+
+	k.ResetPartialSet(ctx, chainID)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
@@ -360,6 +367,17 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
+		// Only set Top N at the moment a chain starts. If we were to do this earlier (e.g., during the proposal),
+		// then someone could create a bogus ConsumerAdditionProposal to override the Top N for a specific chain.
+		k.SetTopN(ctx, prop.ChainId, prop.Top_N)
+
+		if !k.IsTopN(ctx, prop.ChainId) && len(k.GetToBeOptedIn(ctx, prop.ChainId)) == 0 {
+			// drop the proposal
+			ctx.Logger().Info("could not start Opt In consumer chain (%s) because no validator has opted in",
+				prop.ChainId)
+			continue
+		}
+
 		// create consumer client in a cached context to handle errors
 		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
 		if err != nil {
@@ -367,10 +385,6 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 			ctx.Logger().Info("consumer client could not be created: %w", err)
 			continue
 		}
-
-		// Only set Top N at the moment a chain starts. If we were to do this earlier (e.g., during the proposal),
-		// then someone could create a bogus ConsumerAdditionProposal to override the Top N for a specific chain.
-		k.SetTopN(ctx, prop.ChainId, prop.Top_N)
 
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context

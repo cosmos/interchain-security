@@ -218,8 +218,16 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
+		partialSetUpdates := k.ComputePartialSetValUpdates(ctx, chain.ChainId, valUpdates)
+
+		// FIXME: staking updtes contain ... ARE only for active set ...
 		// Apply the key assignment to the validator updates.
-		valUpdates := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates)
+		valUpdates := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, partialSetUpdates,
+			func(address providertypes.ProviderConsAddress) bool {
+				return k.IsOptedIn(ctx, chain.ChainId, address)
+			})
+
+		k.ResetPartialSet(ctx, chain.ChainId)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
@@ -498,7 +506,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	}
 }
 
-// getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
+// getMappedInfractionHeight gets the infraction height mapped from validator set ID for the given chain ID
 func (k Keeper) getMappedInfractionHeight(ctx sdk.Context,
 	chainID string, valsetUpdateID uint64,
 ) (height uint64, found bool) {

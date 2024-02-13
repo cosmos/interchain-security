@@ -143,6 +143,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 	if err != nil {
 		return nil, err
 	}
+	// FIXME: something is off here .. val to cons ...
 	providerAddr := types.NewProviderConsAddress(valAddress)
 	if err != nil {
 		return nil, err
