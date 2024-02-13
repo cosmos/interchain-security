@@ -205,9 +205,12 @@ func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string)
 	return "", false
 }
 
-// getProviderDenom returns the provider denom for the given denom received
-// in an fungible token packet
+// getProviderDenom returns the updated given denom according to the given IBC packet
+// It follows the same logic than the OnRecvPacket method of the IBC transfer module
+// see https://github.com/cosmos/ibc-go/blob/v7.3.2/modules/apps/transfer/keeper/relay.go#L162
 func getProviderDenom(denom string, packet channeltypes.Packet) (providerDenom string) {
+	// If the the prefix denom corresponds to the provider transfer channel info,
+	// returns the base denom
 	if ibctransfertypes.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), denom) {
 		voucherPrefix := ibctransfertypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())
 		unprefixedDenom := denom[len(voucherPrefix):]
@@ -221,6 +224,7 @@ func getProviderDenom(denom string, packet channeltypes.Packet) (providerDenom s
 		if denomTrace.Path != "" {
 			providerDenom = denomTrace.IBCDenom()
 		}
+		// update the prefix denom according to the packet info
 	} else {
 		prefixedDenom := ibctransfertypes.GetPrefixedDenom(
 			packet.GetDestPort(),

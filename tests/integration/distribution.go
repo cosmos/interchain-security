@@ -751,6 +751,8 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	s.Require().True(currCommPool.IsEqual(lastCommPool.Add(commPoolExpRewards...)))
 }
 
+// TestAllocateTokens is a unit-test for TransferConsumerRewardsToDistributionModule()
+// but is written as an integration test to avoid excessive mocking.
 func (s *CCVTestSuite) TransferConsumerRewardsToDistributionModule() {
 	testCases := []struct {
 		name         string
