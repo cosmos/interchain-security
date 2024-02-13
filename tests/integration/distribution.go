@@ -111,11 +111,24 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// Set the consumer reward denom. This would be done by a governance proposal in prod
 	s.providerApp.GetProviderKeeper().SetConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom)
 
-	s.providerChain.NextBlock()
+	// Refill the consumer fee pool
+	err = consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(), s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
+	s.Require().NoError(err)
 
-	// Check that the reward pool has no more coins because they were transferred to the fee pool
+	// pass two blocks
+	s.consumerChain.NextBlock()
+	s.consumerChain.NextBlock()
+
+	// transfer rewards from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
+
+	// check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlock
+	rewardsAlloc := s.providerApp.GetProviderKeeper().GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().True(rewardsAlloc.Rewards.Empty())
+
+	// Check that the reward pool still have the first coins transferred that were never allocated
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
-	s.Require().Equal(0, len(rewardCoins))
+	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
 
 	// check that the fee pool has the expected amount of coins
 	// Note that all rewards are allocated to the community pool since

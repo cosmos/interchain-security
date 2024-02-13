@@ -163,40 +163,31 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	ctx sdk.Context,
 	chainID string,
 ) (sdk.Coins, error) {
-	// Get coins of the consumer reward pool
-	pool := k.GetConsumerRewardsAllocation(ctx, chainID)
+	// Get coins of the consumer rewards allocation
+	allocation := k.GetConsumerRewardsAllocation(ctx, chainID)
 
 	// Truncate coin rewards
-	rewards, _ := pool.Rewards.TruncateDecimal()
-
-	// Extract the whitelisted denoms
-	coinsToSend := sdk.Coins{}
-	denoms := k.GetAllConsumerRewardDenoms(ctx)
-	for _, denom := range denoms {
-		if found, coin := rewards.Find(denom); found {
-			coinsToSend = coinsToSend.Add(coin)
-		}
-	}
+	rewardsToSend, _ := allocation.Rewards.TruncateDecimal()
 
 	// NOTE the consumer isn't a module account, however its coins
 	// are held in the consumer reward pool module account. Thus the reward
 	// must be reduced separately from the SendCoinsFromModuleToAccount call
-	remainingDec, negative := pool.Rewards.SafeSub(sdk.NewDecCoinsFromCoins(coinsToSend...))
+	remainingDec, negative := allocation.Rewards.SafeSub(sdk.NewDecCoinsFromCoins(rewardsToSend...))
 	if negative {
 		return sdk.Coins{}, distrtypes.ErrBadDistribution
 	}
 
-	// Update consumer reward pool with the remaining decimal coins
-	pool.Rewards = remainingDec
+	// Update consumer rewards allocation with the remaining decimal coins
+	allocation.Rewards = remainingDec
 
 	// Send coins to distribution module account
-	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, coinsToSend)
+	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, rewardsToSend)
 	if err != nil {
 		return sdk.Coins{}, err
 	}
 
-	k.SetConsumerRewardsAllocation(ctx, chainID, pool)
-	return coinsToSend, nil
+	k.SetConsumerRewardsAllocation(ctx, chainID, allocation)
+	return rewardsToSend, nil
 }
 
 // consumer reward pools getter and setter
