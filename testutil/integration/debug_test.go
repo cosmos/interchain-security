@@ -291,3 +291,7 @@ func TestIBCTransferMiddleware(t *testing.T) {
 func TestAllocateTokens(t *testing.T) {
 	runCCVTestByName(t, "TestAllocateTokens")
 }
+
+func TestTransferConsumerRewardsToDistributionModule(t *testing.T) {
+	runCCVTestByName(t, "TransferConsumerRewardsToDistributionModule")
+}

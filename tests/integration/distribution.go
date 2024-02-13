@@ -673,7 +673,6 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
 
 	totalRewards := sdk.Coins{sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))}
-	providerKeeper.SetConsumerRewardDenom(s.providerCtx(), sdk.DefaultBondDenom) // register a consumer reward denom
 
 	// fund consumer rewards pool
 	bankKeeper.SendCoinsFromAccountToModule(
@@ -750,6 +749,123 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	currCommPool := distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx())
 
 	s.Require().True(currCommPool.IsEqual(lastCommPool.Add(commPoolExpRewards...)))
+}
+
+func (s *CCVTestSuite) TransferConsumerRewardsToDistributionModule() {
+	testCases := []struct {
+		name         string
+		rewardsPool  sdk.Coins
+		rewardsAlloc sdk.DecCoins
+		expErr       bool
+	}{
+		{
+			"empty consumer rewards pool",
+			sdk.Coins{},
+			sdk.DecCoins{},
+			false,
+		},
+		{
+			"empty consumer allocation",
+			sdk.Coins{
+				sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			sdk.DecCoins{},
+			false,
+		},
+		{
+			"equal consumer rewards pool and allocation",
+			sdk.Coins{
+				sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			sdk.DecCoins{
+				sdk.NewDecCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			false,
+		},
+		{
+			"less consumer rewards than allocation",
+			sdk.Coins{
+				sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(90)),
+			},
+			sdk.DecCoins{
+				sdk.NewDecCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			true,
+		},
+		{
+			"remaining consumer rewards allocation",
+			sdk.Coins{
+				sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			sdk.DecCoins{
+				sdk.DecCoin{
+					Denom:  sdk.DefaultBondDenom,
+					Amount: sdk.NewDecWithPrec(995, 1),
+				},
+			},
+			false,
+		},
+	}
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	bankKeeper := s.providerApp.GetTestBankKeeper()
+	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
+
+	chainID := s.consumerChain.ChainID
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			ctx, _ := s.providerCtx().CacheContext()
+			// fund consumer rewards pool
+			bankKeeper.SendCoinsFromAccountToModule(
+				ctx,
+				s.providerChain.SenderAccount.GetAddress(),
+				providertypes.ConsumerRewardsPool,
+				tc.rewardsPool,
+			)
+
+			// update consumer rewars allocation
+			providerKeeper.SetConsumerRewardsAllocation(
+				ctx,
+				chainID,
+				providertypes.ConsumerRewardsAllocation{
+					Rewards: tc.rewardsAlloc,
+				},
+			)
+
+			// store pool balance
+			oldPool := bankKeeper.GetAllBalances(
+				ctx,
+				distributionKeeper.GetDistributionAccount(ctx).GetAddress(),
+			)
+
+			// transfer consumer rewars to distribution module
+			coinsTransferred, err := providerKeeper.TransferConsumerRewardsToDistributionModule(
+				ctx,
+				chainID,
+			)
+			if tc.expErr {
+				s.Require().Error(err)
+				return
+			}
+
+			// check remaining consumer rewards allocation
+			expCoinTransferred, expRemaining := tc.rewardsAlloc.TruncateDecimal()
+			s.Require().True(expCoinTransferred.IsEqual(coinsTransferred))
+
+			s.Require().True(
+				expRemaining.IsEqual(providerKeeper.GetConsumerRewardsAllocation(ctx, chainID).Rewards),
+			)
+
+			// check updated consuemer rewards pool balance
+			newPool := bankKeeper.GetAllBalances(
+				ctx,
+				distributionKeeper.GetDistributionAccount(ctx).GetAddress(),
+			)
+
+			s.Require().True(newPool.Sub(oldPool...).IsEqual(coinsTransferred))
+		})
+	}
 }
 
 // getEscrowBalance gets the current balances in the escrow account holding the transferred tokens to the provider

@@ -165,20 +165,19 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 ) (sdk.Coins, error) {
 	// Get coins of the consumer rewards allocation
 	allocation := k.GetConsumerRewardsAllocation(ctx, chainID)
+	if allocation.Rewards.IsZero() {
+		return sdk.Coins{}, nil
+	}
 
 	// Truncate coin rewards
 	rewardsToSend, _ := allocation.Rewards.TruncateDecimal()
 
 	// NOTE the consumer isn't a module account, however its coins
-	// are held in the consumer reward pool module account. Thus the reward
-	// must be reduced separately from the SendCoinsFromModuleToAccount call
-	remainingDec, negative := allocation.Rewards.SafeSub(sdk.NewDecCoinsFromCoins(rewardsToSend...))
-	if negative {
-		return sdk.Coins{}, distrtypes.ErrBadDistribution
-	}
+	// are held in the consumer reward pool module account. Thus the consumer
+	// rewards allocation must be reduced separately from the SendCoinsFromModuleToAccount call
 
 	// Update consumer rewards allocation with the remaining decimal coins
-	allocation.Rewards = remainingDec
+	allocation.Rewards = allocation.Rewards.Sub(sdk.NewDecCoinsFromCoins(rewardsToSend...))
 
 	// Send coins to distribution module account
 	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, rewardsToSend)
