@@ -120,8 +120,8 @@ func (im IBCMiddleware) OnRecvPacket(
 			return ack
 		}
 
-		// since the transfer succeed, the IBC transfer packet
-		// can be safely deserialized
+		// At this point the transfer was successful,
+		// so the IBC packet can be safely deserialized
 		var data ibctransfertypes.FungibleTokenPacketData
 		_ = types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
 
@@ -131,49 +131,24 @@ func (im IBCMiddleware) OnRecvPacket(
 			return ack
 		}
 
-		// parse denom
-		var coinDenom string
-		if ibctransfertypes.ReceiverChainIsSource(packet.SourcePort, packet.SourceChannel, data.Denom) {
-			voucherPrefix := ibctransfertypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())
-			unprefixedDenom := data.Denom[len(voucherPrefix):]
-
-			// coin denomination used in sending from the escrow address
-			coinDenom = unprefixedDenom
-
-			// The denomination used to send the coins is either the native denom or the hash of the path
-			// if the denomination is not native.
-			denomTrace := ibctransfertypes.ParseDenomTrace(unprefixedDenom)
-			if denomTrace.Path != "" {
-				coinDenom = denomTrace.IBCDenom()
-			}
-		} else {
-			coinDenom = ibctransfertypes.ParseDenomTrace(
-				ibctransfertypes.GetPrefixedDenom(
-					packet.DestinationPort,
-					packet.DestinationChannel,
-					data.Denom,
-				),
-			).IBCDenom()
-		}
-
+		coinDenom := getProviderDenom(data.Denom, packet)
 		coinAmt, _ := math.NewIntFromString(data.Amount)
 
 		// Iterate over the whitelisted consumer denoms
 		for _, denom := range im.keeper.GetAllConsumerRewardDenoms(ctx) {
-			if denom != coinDenom {
-				continue
+			// if the coin's denom is found,
+			// update the consumer chain rewards allocation
+			if denom == coinDenom {
+				alloc := im.keeper.GetConsumerRewardsAllocation(ctx, chainID)
+				alloc.Rewards = alloc.Rewards.Add(
+					sdk.NewDecCoinsFromCoins(sdk.Coin{
+						Denom:  coinDenom,
+						Amount: coinAmt,
+					})...)
+				im.keeper.SetConsumerRewardsAllocation(ctx, chainID, alloc)
+
+				break
 			}
-
-			// if there is match, update the consumer chain rewards allocation
-			alloc := im.keeper.GetConsumerRewardsAllocation(ctx, chainID)
-			alloc.Rewards = alloc.Rewards.Add(
-				sdk.NewDecCoinsFromCoins(sdk.Coin{
-					Denom:  coinDenom,
-					Amount: coinAmt,
-				})...)
-			im.keeper.SetConsumerRewardsAllocation(ctx, chainID, alloc)
-
-			break
 		}
 	}
 
@@ -228,4 +203,33 @@ func (im IBCMiddleware) WriteAcknowledgement(
 // GetAppVersion returns the application version of the underlying application
 func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
 	return "", false
+}
+
+// getProviderDenom returns the provider denom for the given denom received
+// in an fungible token packet
+func getProviderDenom(denom string, packet channeltypes.Packet) (providerDenom string) {
+	if ibctransfertypes.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), denom) {
+		voucherPrefix := ibctransfertypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())
+		unprefixedDenom := denom[len(voucherPrefix):]
+
+		// coin denomination used in sending from the escrow address
+		providerDenom = unprefixedDenom
+
+		// The denomination used to send the coins is either the native denom or the hash of the path
+		// if the denomination is not native.
+		denomTrace := ibctransfertypes.ParseDenomTrace(unprefixedDenom)
+		if denomTrace.Path != "" {
+			providerDenom = denomTrace.IBCDenom()
+		}
+	} else {
+		prefixedDenom := ibctransfertypes.GetPrefixedDenom(
+			packet.GetDestPort(),
+			packet.GetDestChannel(),
+			denom,
+		)
+
+		providerDenom = ibctransfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
+	}
+
+	return providerDenom
 }
