@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -9,11 +8,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -23,24 +24,12 @@ func TestHandleOptIn(t *testing.T) {
 
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
-	// mock `GetValidatorByConsAddr` that returns a `Bonded` validator for the `providerAddr` address and
-	// an `Unbonding` validator for any  other address
 	mocks.MockStakingKeeper.EXPECT().
 		GetValidatorByConsAddr(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx sdk.Context, addr sdk.ConsAddress) (stakingtypes.Validator, bool) {
-			if addr.Equals(providerAddr.Address) {
-				pkAny, _ := codectypes.NewAnyWithValue(ed25519.GenPrivKeyFromSecret([]byte{1}).PubKey())
-				return stakingtypes.Validator{ConsensusPubkey: pkAny, Status: stakingtypes.Bonded}, true
-			} else {
-				pkAny, _ := codectypes.NewAnyWithValue(ed25519.GenPrivKeyFromSecret([]byte{2}).PubKey())
-				return stakingtypes.Validator{ConsensusPubkey: pkAny, Status: stakingtypes.Unbonding}, true
-			}
+			pkAny, _ := codectypes.NewAnyWithValue(ed25519.GenPrivKeyFromSecret([]byte{1}).PubKey())
+			return stakingtypes.Validator{ConsensusPubkey: pkAny}, true
 		}).AnyTimes()
-
-	// verify that a non-`Bonded` validator cannot opt in
-	unbondedProviderAddr := types.NewProviderConsAddress([]byte("unbondedProviderAddr"))
-	providerKeeper.SetProposedConsumerChain(ctx, "someChainID", 1)
-	require.Error(t, providerKeeper.HandleOptIn(ctx, "someChainID", unbondedProviderAddr, nil))
 
 	// trying to opt in to a non-proposed and non-registered chain returns an error
 	require.Error(t, providerKeeper.HandleOptIn(ctx, "unknownChainID", providerAddr, nil))
@@ -55,7 +44,7 @@ func TestHandleOptIn(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 
 	// if validator (`providerAddr`) is already opted in, then the validator cannot be opted in
-	providerKeeper.SetOptedIn(ctx, "chainID", providerAddr, 1)
+	providerKeeper.SetOptedIn(ctx, "chainID", providerAddr, 1, 2)
 	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, nil)
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 }
@@ -82,7 +71,7 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 					// for any other consensus address, we cannot find a validator
 					return stakingtypes.Validator{}, false
 				}
-			}).Times(3),
+			}).Times(2),
 	}
 
 	gomock.InOrder(calls...)
@@ -133,34 +122,30 @@ func TestHandleOptOut(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 }
 
-func TestGetToBeOptedInValidatorUpdates(t *testing.T) {
+func TestGetToBeOptedInValidators(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	type TestValidator struct {
-		validator         stakingtypes.Validator
-		power             int64
-		expectedValUpdate abci.ValidatorUpdate
-	}
-
 	chainID := "chainID"
 
-	var testValidators []TestValidator
+	var expectedAddresses []types.ProviderConsAddress
+	// set 10 validators as to-be-opted-in, but only 3 (= 10/3) of those are `Bonded`
 	for i := int64(0); i < 10; i++ {
 		// generate a consensus public key for the provider
 		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{uint8(i)}).PubKey()
 		consAddr := sdk.ConsAddress(providerConsPubKey.Address())
 		providerAddr := types.NewProviderConsAddress(consAddr)
 
-		foo := providerAddr.Address.Bytes()
 		var providerValidatorAddr sdk.ValAddress
-		providerValidatorAddr = foo
+		providerValidatorAddr = providerAddr.Address.Bytes()
 
 		var status stakingtypes.BondStatus
 		if i%3 == 0 {
 			status = stakingtypes.Unbonded
 		} else if i%3 == 1 {
 			status = stakingtypes.Bonded
+			// we only expect bonded validators to be returned by `GetToBeOptedInValidators`
+			expectedAddresses = append(expectedAddresses, providerAddr)
 		} else {
 			status = stakingtypes.Unbonding
 		}
@@ -172,146 +157,38 @@ func TestGetToBeOptedInValidatorUpdates(t *testing.T) {
 			Status:          status,
 		}
 
-		consumerTMPublicKey := tmprotocrypto.PublicKey{
-			Sum: &tmprotocrypto.PublicKey_Ed25519{
-				Ed25519: consAddr.Bytes(),
-			},
-		}
-
-		expectedValUpdate := abci.ValidatorUpdate{PubKey: consumerTMPublicKey, Power: i}
-
-		testValidators = append(testValidators,
-			TestValidator{validator: validator, power: i, expectedValUpdate: expectedValUpdate})
+		mocks.MockStakingKeeper.EXPECT().
+			GetValidatorByConsAddr(ctx, consAddr).Return(validator, true).AnyTimes()
 
 		providerKeeper.SetToBeOptedIn(ctx, chainID, providerAddr)
 	}
 
-	for _, val := range testValidators {
-		consAddr, _ := val.validator.GetConsAddr()
-		mocks.MockStakingKeeper.EXPECT().
-			GetValidatorByConsAddr(ctx, consAddr).Return(val.validator, true).AnyTimes()
-		mocks.MockStakingKeeper.EXPECT().
-			GetLastValidatorPower(ctx, val.validator.GetOperator()).Return(val.power).AnyTimes()
-	}
-
-	var expectedValUpdates []abci.ValidatorUpdate
-	for _, val := range testValidators {
-		if !val.validator.IsBonded() {
-			continue
-		}
-		expectedValUpdates = append(expectedValUpdates, val.expectedValUpdate)
-	}
-
-	actualValUpdates := providerKeeper.GetToBeOptedInValidatorUpdates(ctx, chainID)
+	actualAddresses := providerKeeper.GetToBeOptedInValidators(ctx, chainID)
 
 	// sort before comparing
-	sort.Slice(expectedValUpdates, func(i int, j int) bool {
-		if expectedValUpdates[i].PubKey.Compare(expectedValUpdates[j].PubKey) < 0 {
-			return true
-		} else if expectedValUpdates[i].PubKey.Compare(expectedValUpdates[j].PubKey) == 0 {
-			return expectedValUpdates[i].Power < expectedValUpdates[j].Power
-		}
-		return false
+	sort.Slice(expectedAddresses, func(i int, j int) bool {
+		return strings.Compare(expectedAddresses[i].String(), expectedAddresses[j].String()) < 0
 	})
-	sort.Slice(actualValUpdates, func(i int, j int) bool {
-		if actualValUpdates[i].PubKey.Compare(actualValUpdates[j].PubKey) < 0 {
-			return true
-		} else if actualValUpdates[i].PubKey.Compare(actualValUpdates[j].PubKey) == 0 {
-			return actualValUpdates[i].Power < actualValUpdates[j].Power
-		}
-		return false
+	sort.Slice(actualAddresses, func(i int, j int) bool {
+		return strings.Compare(actualAddresses[i].String(), actualAddresses[j].String()) < 0
 	})
-
-	require.Equal(t, expectedValUpdates, actualValUpdates)
+	require.Equal(t, expectedAddresses, actualAddresses)
 }
 
-func TestGetToBeOptedOutValidatorUpdates(t *testing.T) {
+func TestGetNextOptedInValidators(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	type TestValidator struct {
-		validator         stakingtypes.Validator
-		power             int64
-		expectedValUpdate abci.ValidatorUpdate
-	}
-
 	chainID := "chainID"
 
-	var testValidators []TestValidator
-	for i := int64(0); i < 10; i++ {
+	// create 10 validators
+	var providerAddresses []types.ProviderConsAddress
+	for i := 0; i < 10; i++ {
 		// generate a consensus public key for the provider
 		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{uint8(i)}).PubKey()
 		consAddr := sdk.ConsAddress(providerConsPubKey.Address())
 		providerAddr := types.NewProviderConsAddress(consAddr)
-
-		foo := providerAddr.Address.Bytes()
-		var providerValidatorAddr sdk.ValAddress
-		providerValidatorAddr = foo
-
-		pkAny, _ := codectypes.NewAnyWithValue(providerConsPubKey)
-		validator := stakingtypes.Validator{
-			OperatorAddress: providerValidatorAddr.String(),
-			ConsensusPubkey: pkAny,
-		}
-
-		consumerTMPublicKey := tmprotocrypto.PublicKey{
-			Sum: &tmprotocrypto.PublicKey_Ed25519{
-				Ed25519: consAddr.Bytes(),
-			},
-		}
-
-		expectedValUpdate := abci.ValidatorUpdate{PubKey: consumerTMPublicKey, Power: 0}
-
-		testValidators = append(testValidators,
-			TestValidator{validator: validator, power: i, expectedValUpdate: expectedValUpdate})
-
-		providerKeeper.SetToBeOptedOut(ctx, chainID, providerAddr)
-	}
-
-	for _, val := range testValidators {
-		consAddr, _ := val.validator.GetConsAddr()
-		mocks.MockStakingKeeper.EXPECT().
-			GetValidatorByConsAddr(ctx, consAddr).Return(val.validator, true).AnyTimes()
-	}
-
-	var expectedValUpdates []abci.ValidatorUpdate
-	for _, val := range testValidators {
-		expectedValUpdates = append(expectedValUpdates, val.expectedValUpdate)
-	}
-
-	actualValUpdates := providerKeeper.GetToBeOptedOutValidatorUpdates(ctx, chainID)
-
-	// sort before comparing
-	sort.Slice(expectedValUpdates, func(i int, j int) bool {
-		if expectedValUpdates[i].PubKey.Compare(expectedValUpdates[j].PubKey) < 0 {
-			return true
-		} else if expectedValUpdates[i].PubKey.Compare(expectedValUpdates[j].PubKey) == 0 {
-			return expectedValUpdates[i].Power < expectedValUpdates[j].Power
-		}
-		return false
-	})
-	sort.Slice(actualValUpdates, func(i int, j int) bool {
-		if actualValUpdates[i].PubKey.Compare(actualValUpdates[j].PubKey) < 0 {
-			return true
-		} else if actualValUpdates[i].PubKey.Compare(actualValUpdates[j].PubKey) == 0 {
-			return actualValUpdates[i].Power < actualValUpdates[j].Power
-		}
-		return false
-	})
-
-	require.Equal(t, expectedValUpdates, actualValUpdates)
-}
-
-func createValidators(bondStatutes []stakingtypes.BondStatus, powers []int64) (validators []stakingtypes.Validator,
-	valUpdates []abci.ValidatorUpdate) {
-	if len(bondStatutes) != len(powers) {
-		return
-	}
-
-	for i := 0; i < len(bondStatutes); i++ {
-		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{uint8(i)}).PubKey()
-		consAddr := sdk.ConsAddress(providerConsPubKey.Address())
-		providerAddr := types.NewProviderConsAddress(consAddr)
+		providerAddresses = append(providerAddresses, providerAddr)
 
 		var providerValidatorAddr sdk.ValAddress
 		providerValidatorAddr = providerAddr.Address.Bytes()
@@ -320,75 +197,230 @@ func createValidators(bondStatutes []stakingtypes.BondStatus, powers []int64) (v
 		validator := stakingtypes.Validator{
 			OperatorAddress: providerValidatorAddr.String(),
 			ConsensusPubkey: pkAny,
-			Status:          bondStatutes[i],
+			Status:          stakingtypes.Bonded,
 		}
-		validators = append(validators, validator)
 
-		consumerTMPublicKey := tmprotocrypto.PublicKey{
+		mocks.MockStakingKeeper.EXPECT().
+			GetValidatorByConsAddr(ctx, consAddr).Return(validator, true).AnyTimes()
+
+		mocks.MockStakingKeeper.EXPECT().
+			GetLastValidatorPower(ctx, providerValidatorAddr).Return(int64(i)).AnyTimes()
+	}
+
+	// first 3 validators (i.e., 0, 1, and 2) are already opted in but with the same power as they currently have
+	// and therefore should not be returned by `GetNextOptedInValidators`
+	for i := 0; i < 3; i++ {
+		providerKeeper.SetOptedIn(ctx, chainID, providerAddresses[i], 1, uint64(i))
+
+	}
+
+	// validators 3, 4, 5 and 6 are already opted in but with a different voting power
+	// and therefore should be returned by `GetNextOptedInValidators` (unless opted out -- see below)
+	for i := 3; i < 7; i++ {
+		providerKeeper.SetOptedIn(ctx, chainID, providerAddresses[i], 1, uint64(i+1))
+	}
+
+	// validators 8 and 9 are to be opted in
+	for i := 8; i < 10; i++ {
+		providerKeeper.SetToBeOptedIn(ctx, chainID, providerAddresses[i])
+	}
+
+	// first 5 validators are to be opted out and hence validators 3 and 4 won't be returned
+	// by `GetNextOptedInValidators`
+	for i := 0; i < 5; i++ {
+		providerKeeper.SetToBeOptedOut(ctx, chainID, providerAddresses[i])
+	}
+
+	expectedAddresses := []types.ProviderConsAddress{
+		providerAddresses[5],
+		providerAddresses[6],
+		providerAddresses[8],
+		providerAddresses[9],
+	}
+	actualAddresses := providerKeeper.GetNextOptedInValidators(ctx, chainID)
+
+	// sort before comparing
+	sort.Slice(expectedAddresses, func(i int, j int) bool {
+		return strings.Compare(expectedAddresses[i].String(), expectedAddresses[j].String()) < 0
+	})
+	sort.Slice(actualAddresses, func(i int, j int) bool {
+		return strings.Compare(actualAddresses[i].String(), actualAddresses[j].String()) < 0
+	})
+	require.Equal(t, expectedAddresses, actualAddresses)
+}
+
+func TestComputePartialSetValidatorUpdates(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// create 10 validators
+	var providerAddresses []types.ProviderConsAddress
+	var pubKeys []tmprotocrypto.PublicKey
+	for i := 0; i < 10; i++ {
+		// generate a consensus public key for the provider
+		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{uint8(i)}).PubKey()
+		consAddr := sdk.ConsAddress(providerConsPubKey.Address())
+		providerAddr := types.NewProviderConsAddress(consAddr)
+		providerAddresses = append(providerAddresses, providerAddr)
+
+		var providerValidatorAddr sdk.ValAddress
+		providerValidatorAddr = providerAddr.Address.Bytes()
+
+		pkAny, _ := codectypes.NewAnyWithValue(providerConsPubKey)
+		validator := stakingtypes.Validator{
+			OperatorAddress: providerValidatorAddr.String(),
+			ConsensusPubkey: pkAny,
+			Status:          stakingtypes.Bonded,
+		}
+
+		pubKey := tmprotocrypto.PublicKey{
 			Sum: &tmprotocrypto.PublicKey_Ed25519{
 				Ed25519: consAddr.Bytes(),
 			},
 		}
+		pubKeys = append(pubKeys, pubKey)
 
-		valUpdate := abci.ValidatorUpdate{PubKey: consumerTMPublicKey, Power: powers[i]}
-		valUpdates = append(valUpdates, valUpdate)
+		mocks.MockStakingKeeper.EXPECT().
+			GetValidatorByConsAddr(ctx, consAddr).Return(validator, true).AnyTimes()
+
+		mocks.MockStakingKeeper.EXPECT().
+			GetLastValidatorPower(ctx, providerValidatorAddr).Return(int64(i)).AnyTimes()
 	}
-	return
+
+	// first 6 validators to opt in
+	var nextOptedIn []types.ProviderConsAddress
+	for i := 0; i < 6; i++ {
+		nextOptedIn = append(nextOptedIn, providerAddresses[i])
+	}
+
+	var optedOut []types.ProviderConsAddress
+	for i := 6; i < 10; i++ {
+		optedOut = append(optedOut, providerAddresses[i])
+	}
+
+	expectedValUpdates := []abci.ValidatorUpdate{
+		{PubKey: pubKeys[0], Power: 0},
+		{PubKey: pubKeys[1], Power: 1},
+		{PubKey: pubKeys[2], Power: 2},
+		{PubKey: pubKeys[3], Power: 3},
+		{PubKey: pubKeys[4], Power: 4},
+		{PubKey: pubKeys[5], Power: 5},
+		{PubKey: pubKeys[6], Power: 0},
+		{PubKey: pubKeys[7], Power: 0},
+		{PubKey: pubKeys[8], Power: 0},
+		{PubKey: pubKeys[9], Power: 0},
+	}
+
+	actualValUpdates := providerKeeper.ComputePartialSetValidatorUpdates(ctx, nextOptedIn, optedOut)
+
+	sort.Slice(expectedValUpdates, func(i int, j int) bool {
+		if expectedValUpdates[i].PubKey.Compare(expectedValUpdates[j].PubKey) < 0 {
+			return true
+		} else if expectedValUpdates[i].PubKey.Compare(expectedValUpdates[j].PubKey) == 0 {
+			return expectedValUpdates[i].Power < expectedValUpdates[j].Power
+		}
+		return false
+	})
+	sort.Slice(actualValUpdates, func(i int, j int) bool {
+		if actualValUpdates[i].PubKey.Compare(actualValUpdates[j].PubKey) < 0 {
+			return true
+		} else if actualValUpdates[i].PubKey.Compare(actualValUpdates[j].PubKey) == 0 {
+			return actualValUpdates[i].Power < actualValUpdates[j].Power
+		}
+		return false
+	})
+
+	require.Equal(t, expectedValUpdates, actualValUpdates)
+
 }
 
-func TestComputePartialValidatorUpdateSet(t *testing.T) {
+func TestResetOptedInSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	type TestValidator struct {
-		validator         stakingtypes.Validator
-		power             int64
-		expectedValUpdate abci.ValidatorUpdate
-	}
-
 	chainID := "chainID"
 
-	// create 10 validator updates
-	//var updates []abci.ValidatorUpdate
-	powers := []int64{1, 2, 3, 4, 5, 6}
-	vals, updates := createValidators(
-		[]stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Unbonding, stakingtypes.Bonded, stakingtypes.Unbonded,
-			stakingtypes.Unbonded, stakingtypes.Bonded}, powers)
+	// create 10 validators
+	var providerAddresses []types.ProviderConsAddress
+	var pubKeys []tmprotocrypto.PublicKey
+	for i := 0; i < 10; i++ {
+		// generate a consensus public key for the provider
+		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{uint8(i)}).PubKey()
+		consAddr := sdk.ConsAddress(providerConsPubKey.Address())
+		providerAddr := types.NewProviderConsAddress(consAddr)
+		providerAddresses = append(providerAddresses, providerAddr)
 
-	addr0, _ := vals[0].GetConsAddr()
-	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(addr0), uint64(1))
-	addr1, _ := vals[1].GetConsAddr()
-	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(addr1), uint64(2))
-	addr2, _ := vals[2].GetConsAddr()
-	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(addr2), uint64(3))
-	addr3, _ := vals[3].GetConsAddr()
-	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(addr3), uint64(4))
+		var providerValidatorAddr sdk.ValAddress
+		providerValidatorAddr = providerAddr.Address.Bytes()
 
-	// set to be opted out
-	providerKeeper.SetToBeOptedOut(ctx, chainID, types.NewProviderConsAddress(addr2))
-	providerKeeper.SetToBeOptedOut(ctx, chainID, types.NewProviderConsAddress(addr3))
+		pkAny, _ := codectypes.NewAnyWithValue(providerConsPubKey)
+		validator := stakingtypes.Validator{
+			OperatorAddress: providerValidatorAddr.String(),
+			ConsensusPubkey: pkAny,
+			Status:          stakingtypes.Bonded,
+		}
 
-	// make all the validators at once ...  kane to stakingUpdates based on the publickeys of those validators and then get the result
-	addr4, _ := vals[4].GetConsAddr()
-	providerKeeper.SetToBeOptedIn(ctx, chainID, types.NewProviderConsAddress(addr4))
-	addr5, _ := vals[5].GetConsAddr()
-	providerKeeper.SetToBeOptedIn(ctx, chainID, types.NewProviderConsAddress(addr5))
+		pubKey := tmprotocrypto.PublicKey{
+			Sum: &tmprotocrypto.PublicKey_Ed25519{
+				Ed25519: consAddr.Bytes(),
+			},
+		}
+		pubKeys = append(pubKeys, pubKey)
 
-	for i, val := range vals {
-		consAddr, _ := val.GetConsAddr()
 		mocks.MockStakingKeeper.EXPECT().
-			GetValidatorByConsAddr(ctx, consAddr).Return(val, true).AnyTimes()
-		mocks.MockStakingKeeper.EXPECT().
-			GetLastValidatorPower(ctx, val.GetOperator()).Return(powers[i]).AnyTimes()
+			GetValidatorByConsAddr(ctx, consAddr).Return(validator, true).AnyTimes()
+
+		if i != 1 {
+			mocks.MockStakingKeeper.EXPECT().
+				GetLastValidatorPower(ctx, providerValidatorAddr).Return(int64(i + 1)).AnyTimes()
+		} else {
+			mocks.MockStakingKeeper.EXPECT().
+				GetLastValidatorPower(ctx, providerValidatorAddr).Return(int64(0)).AnyTimes()
+		}
 	}
 
-	actualValUpdates := providerKeeper.ComputePartialSetValUpdates(ctx, chainID, []abci.ValidatorUpdate{})
+	// first 6 validators to opt in
+	var toBeOptedIn []types.ProviderConsAddress
 
-	fmt.Println(updates)
-	fmt.Println(actualValUpdates)
-	//require.Equal(t, expectedValUpdates, actualValUpdates)
-}
+	providerKeeper.SetOptedIn(ctx, chainID, providerAddresses[0], 1, uint64(1))
 
-func TestResetPartialSet(t *testing.T) {
-	// s
+	// this validator won't be added because it has a power of 0 .. .see above mock .. not here
+	providerKeeper.SetOptedIn(ctx, chainID, providerAddresses[1], 1, uint64(3))
+
+	for i := 2; i < 6; i++ {
+		providerKeeper.SetToBeOptedIn(ctx, chainID, providerAddresses[i])
+		toBeOptedIn = append(toBeOptedIn, providerAddresses[i])
+	}
+
+	var optedOut []types.ProviderConsAddress
+	for i := 6; i < 10; i++ {
+		providerKeeper.SetToBeOptedOut(ctx, chainID, providerAddresses[i])
+		optedOut = append(optedOut, providerAddresses[i])
+	}
+
+	require.NotEmpty(t, providerKeeper.GetToBeOptedIn(ctx, chainID))
+	require.NotEmpty(t, providerKeeper.GetToBeOptedOut(ctx, chainID))
+
+	providerKeeper.ResetOptedInSet(ctx, chainID)
+
+	require.Empty(t, providerKeeper.GetToBeOptedIn(ctx, chainID))
+	require.Empty(t, providerKeeper.GetToBeOptedOut(ctx, chainID))
+
+	actualOptedInValidators := providerKeeper.GetOptedIn(ctx, chainID)
+	expectedOptedInValidators := []keeper.OptedInValidator{
+		{ProviderAddr: providerAddresses[0], BlockHeight: 1, Power: 1},
+		{ProviderAddr: providerAddresses[2], BlockHeight: uint64(ctx.BlockHeight()), Power: 3},
+		{ProviderAddr: providerAddresses[3], BlockHeight: uint64(ctx.BlockHeight()), Power: 4},
+		{ProviderAddr: providerAddresses[4], BlockHeight: uint64(ctx.BlockHeight()), Power: 5},
+		{ProviderAddr: providerAddresses[5], BlockHeight: uint64(ctx.BlockHeight()), Power: 6},
+	}
+
+	sort.Slice(expectedOptedInValidators, func(i int, j int) bool {
+		return strings.Compare(expectedOptedInValidators[i].ProviderAddr.String(), expectedOptedInValidators[j].ProviderAddr.String()) < 0
+	})
+
+	sort.Slice(actualOptedInValidators, func(i int, j int) bool {
+		return strings.Compare(actualOptedInValidators[i].ProviderAddr.String(), actualOptedInValidators[j].ProviderAddr.String()) < 0
+	})
+	require.Equal(t, expectedOptedInValidators, actualOptedInValidators)
 }

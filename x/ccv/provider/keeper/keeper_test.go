@@ -670,20 +670,24 @@ func TestGetOptedIn(t *testing.T) {
 		{
 			ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr1")),
 			BlockHeight:  1,
+			Power:        2,
 		},
 		{
 			ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr2")),
 			BlockHeight:  2,
+			Power:        3,
 		},
 		{
 			ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr3")),
 			BlockHeight:  3,
+			Power:        4,
 		},
 	}
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
 		providerKeeper.SetOptedIn(ctx, "chainID",
-			expectedOptedInValidator.ProviderAddr, expectedOptedInValidator.BlockHeight)
+			expectedOptedInValidator.ProviderAddr, expectedOptedInValidator.BlockHeight,
+			expectedOptedInValidator.Power)
 	}
 
 	actualOptedInValidators := providerKeeper.GetOptedIn(ctx, "chainID")
@@ -710,10 +714,11 @@ func TestOptedIn(t *testing.T) {
 	optedInValidator := keeper.OptedInValidator{
 		ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr")),
 		BlockHeight:  1,
+		Power:        2,
 	}
 
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator.ProviderAddr, optedInValidator.BlockHeight)
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator.ProviderAddr, optedInValidator.BlockHeight, optedInValidator.Power)
 	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
 	providerKeeper.DeleteOptedIn(ctx, "chainID", optedInValidator.ProviderAddr)
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))

@@ -1190,14 +1190,17 @@ func (k Keeper) SetOptedIn(
 	chainID string,
 	providerAddr types.ProviderConsAddress,
 	blockHeight uint64,
+	power uint64,
 ) {
 	store := ctx.KVStore(k.storeKey)
 
-	// validator is considered opted in
 	blockHeightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(blockHeightBytes, blockHeight)
 
-	store.Set(types.OptedInKey(chainID, providerAddr), blockHeightBytes)
+	powerBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(powerBytes, power)
+
+	store.Set(types.OptedInKey(chainID, providerAddr), append(blockHeightBytes, powerBytes...))
 }
 
 func (k Keeper) DeleteOptedIn(
@@ -1242,7 +1245,8 @@ func (k Keeper) GetOptedIn(
 	for ; iterator.Valid(); iterator.Next() {
 		optedInValidators = append(optedInValidators, OptedInValidator{
 			ProviderAddr: types.NewProviderConsAddress(iterator.Key()[len(key):]),
-			BlockHeight:  binary.BigEndian.Uint64(iterator.Value()),
+			BlockHeight:  binary.BigEndian.Uint64(iterator.Value()[0:8]),
+			Power:        binary.BigEndian.Uint64(iterator.Value()[8:]),
 		})
 	}
 

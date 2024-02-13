@@ -16,7 +16,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -256,7 +255,9 @@ func (k Keeper) MakeConsumerGenesis(
 	})
 
 	// at this initial state, no validator is yet opted in ... but a validator is to be opted in
-	initialUpdates := k.ComputePartialSetValUpdates(ctx, chainID, []abci.ValidatorUpdate{})
+	initialUpdates := k.ComputePartialSetValidatorUpdates(ctx,
+		k.GetNextOptedInValidators(ctx, chainID),
+		k.GetToBeOptedOut(ctx, chainID))
 
 	//
 	//initialUpdates := []abci.ValidatorUpdate{}
@@ -286,7 +287,7 @@ func (k Keeper) MakeConsumerGenesis(
 	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates,
 		func(address types.ProviderConsAddress) bool { return k.IsToBeOptedIn(ctx, chainID, address) })
 
-	k.ResetPartialSet(ctx, chainID)
+	k.ResetOptedInSet(ctx, chainID)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)

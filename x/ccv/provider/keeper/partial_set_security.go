@@ -13,6 +13,8 @@ type OptedInValidator struct {
 	ProviderAddr types.ProviderConsAddress
 	// block height the validator opted in at
 	BlockHeight uint64
+	// power the validator had when it opted in
+	Power uint64
 }
 
 func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, consumerKey *string) error {
@@ -22,20 +24,11 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 			"opting in to an unknown consumer chain, with id: %s", chainID)
 	}
 
-	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if !found {
 		return errorsmod.Wrapf(
 			types.ErrNoValidatorProviderAddress,
 			"could not find validator with consensus address: %s", providerAddr.ToSdkConsAddr().Bytes())
-	} else if !val.IsBonded() {
-		// FIXME: problematic ...
-		// Only active validators are allowed to opt in. Note that the fact that a validator is bonded when sending
-		// a `MsgOptIn` message does not guarantee that the validator would still be bonded when the validator actually
-		// opts in (e.g., at the end of a block or of an epoch). We recheck if validators are bonded in
-		// `GetToBeOptedInValidatorUpdates` before sending the partial set to a consumer chain.
-		return errorsmod.Wrapf(
-			types.ErrValidatorNotBonded,
-			"validator with consensus address: %s is not bonded", providerAddr.ToSdkConsAddr().Bytes())
 	}
 
 	if k.IsToBeOptedOut(ctx, chainID, providerAddr) {
@@ -50,11 +43,6 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 		consumerTMPublicKey, err := k.ParseConsumerKey(*consumerKey)
 		if err != nil {
 			return err
-		}
-
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.Address)
-		if !found {
-			return stakingtypes.ErrNoValidatorFound
 		}
 
 		err = k.AssignConsumerKey(ctx, chainID, validator, consumerTMPublicKey)
@@ -86,6 +74,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 	return nil
 }
 
+// getValidatorsPublicKey is a helper function that returns the public key of the validator
 func (k Keeper) getValidatorsPublicKey(validator stakingtypes.Validator) (tmprotocrypto.PublicKey, error) {
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
@@ -98,163 +87,171 @@ func (k Keeper) getValidatorsPublicKey(validator stakingtypes.Validator) (tmprot
 	}, nil
 }
 
-// GetToBeOptedInValidatorUpdates returns all the needed `ValidatorUpdate`s for validators that are to be opted in
-// on consumer chain with `chainID`
-func (k Keeper) GetToBeOptedInValidatorUpdates(ctx sdk.Context, chainID string) []abci.ValidatorUpdate {
-	var updates []abci.ValidatorUpdate
-	for _, val := range k.GetToBeOptedIn(ctx, chainID) {
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, val.ToSdkConsAddr())
+// GetToBeOptedInValidators returns all the needed  validators that are to be opted in
+// on consumer chain with `chainID` and that are still bonded
+func (k Keeper) GetToBeOptedInValidators(ctx sdk.Context, chainID string) []types.ProviderConsAddress {
+	var consAddresses []types.ProviderConsAddress
+	for _, addr := range k.GetToBeOptedIn(ctx, chainID) {
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
 		if !found {
 			// a validator was successfully set to be opted in, but we cannot find this validator anymore
-			k.Logger(ctx).Error("could not find validator with consensus address: %s", val.ToSdkConsAddr().Bytes())
+			k.Logger(ctx).Error("could not find to-be-opted-in invalidator with consensus address: %s", addr.ToSdkConsAddr().Bytes())
+			continue
 		}
 
-		// FIXME: bonded means in the active ...
 		if !validator.IsBonded() {
-			// a validator might have started unbonding or unbonded since it asked to be opted in
+			// only consider validators that are in the active set
 			continue
 		}
-
-		pubKey, err := k.getValidatorsPublicKey(validator)
-		if err != nil {
-			k.Logger(ctx).Error("could not find validator with consensus address: %s", val.ToSdkConsAddr().Bytes())
-			continue
-		}
-
-		updates = append(updates, abci.ValidatorUpdate{
-			PubKey: pubKey,
-			Power:  k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator()),
-		})
+		consAddresses = append(consAddresses, addr)
 	}
 
-	return updates
+	return consAddresses
 }
 
-// GetToBeOptedOutValidatorUpdates returns all the needed `ValidatorUpdate`s for validators that are to be opted out
-// of the consumer chain with `chainID`
-func (k Keeper) GetToBeOptedOutValidatorUpdates(ctx sdk.Context, chainID string) []abci.ValidatorUpdate {
-	var updates []abci.ValidatorUpdate
-	for _, val := range k.GetToBeOptedOut(ctx, chainID) {
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, val.ToSdkConsAddr())
-		if !found {
-			// a validator was successfully set to be opted in, but we cannot find this validator anymore
-			k.Logger(ctx).Error("could not find validator with consensus address: %s", val.ToSdkConsAddr().Bytes())
-			continue
-		}
-
-		pubKey, err := k.getValidatorsPublicKey(validator)
-		if err != nil {
-			continue
-		}
-
-		updates = append(updates, abci.ValidatorUpdate{
-			PubKey: pubKey,
-			Power:  0,
-		})
-	}
-	return updates
-}
-
-// ComputePartialSetValUpdates computes and returns the partial set `ValidatorUpdate`s for given chain with `chainID`
-// and provided the `stakingUpdates` stemming from the staking module
-func (k Keeper) ComputePartialSetValUpdates(ctx sdk.Context, chainID string, stakingUpdates []abci.ValidatorUpdate) []abci.ValidatorUpdate {
-	var partialSetUpdates []abci.ValidatorUpdate
-
-	toBeOptedInValidatorUpdates := k.GetToBeOptedInValidatorUpdates(ctx, chainID)
-	toBeOptedOutValidatorUpdates := k.GetToBeOptedOutValidatorUpdates(ctx, chainID)
-
-	partialSetUpdates = append(partialSetUpdates, toBeOptedInValidatorUpdates...)
-	partialSetUpdates = append(partialSetUpdates, toBeOptedOutValidatorUpdates...)
+// GetNextOptedInValidators returns all the addresses of validators that are going to be opted in
+// next on the consumer chain with `chainID` and a validator update would need to be sent for them
+func (k Keeper) GetNextOptedInValidators(ctx sdk.Context, chainID string) []types.ProviderConsAddress {
+	var consAddresses []types.ProviderConsAddress
 
 	// Create set that contains all the validators that are to be opted out so that we do not reintroduce opted-out
-	// validators when going through the already opted in validators. Opted out validators are already included
-	// in the partial set updates through `toBeOptedOutValidatorUpdates`.
+	// validators when going through the already opted in validators.
 	isSetToBeOptedOut := make(map[string]bool)
-	for _, val := range toBeOptedOutValidatorUpdates {
-		isSetToBeOptedOut[val.PubKey.String()] = true
-	}
-
-	// Create set that contains all the validators that stem from `stakingUpdates` changes so that we only send
-	// validator updates for validators that had a change in their voting power.
-	isStakingUpdate := make(map[string]bool)
-	for _, val := range stakingUpdates {
-		isStakingUpdate[val.PubKey.String()] = true
+	for _, addr := range k.GetToBeOptedOut(ctx, chainID) {
+		isSetToBeOptedOut[addr.ToSdkConsAddr().String()] = true
 	}
 
 	for _, val := range k.GetOptedIn(ctx, chainID) {
+		// go through all the validators that are currently opted in
 		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, val.ProviderAddr.ToSdkConsAddr())
 		if !found {
+			// a validator was opted in, but we cannot find this validator anymore
+			k.Logger(ctx).Error("could not find opted-in validator with consensus address: %s",
+				val.ProviderAddr.ToSdkConsAddr().Bytes())
 			continue
 		}
+
+		if isSetToBeOptedOut[val.ProviderAddr.ToSdkConsAddr().String()] {
+			continue
+		}
+
+		if val.Power == uint64(k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())) {
+			// Only send an update if an opted-in validator had a power change since the lat time it was sent.
+			// If an opted-in validator is not in the active set anymore, then its new power is 0 and hence we
+			// do not consider this validator in the next set of opted in validators.
+			continue
+		}
+
+		consAddresses = append(consAddresses, val.ProviderAddr)
+	}
+
+	// append all the to-be-opted-in validators
+	consAddresses = append(consAddresses, k.GetToBeOptedInValidators(ctx, chainID)...)
+	return consAddresses
+}
+
+// ComputePartialSetValidatorUpdates returns the partial set of `ValidatorUpdate`s that the provider chain sends to the
+// consumer chain. Receives `nextOptedIn` that corresponds to the validators that would be opted in next and
+// `toBeOptedOut` that contains the validators that would be opted out.
+func (k Keeper) ComputePartialSetValidatorUpdates(ctx sdk.Context, nextOptedIn []types.ProviderConsAddress,
+	toBeOptedOut []types.ProviderConsAddress) []abci.ValidatorUpdate {
+	var partialSetUpdates []abci.ValidatorUpdate
+
+	for _, val := range nextOptedIn {
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, val.ToSdkConsAddr())
+		if !found {
+			// any validator in `nextOptedIn` should be found
+			k.Logger(ctx).Error("could not find validator with consensus address: %s",
+				val.ToSdkConsAddr().Bytes())
+			continue
+		}
+
 		pubKey, err := k.getValidatorsPublicKey(validator)
 		if err != nil {
+			k.Logger(ctx).Error("could retrieve public key from validator with consensus address: %s",
+				val.ToSdkConsAddr().Bytes())
 			continue
 		}
 
-		if isSetToBeOptedOut[pubKey.String()] {
-			// do not create a `ValidatorUpdate` for validators that opt out
-			continue
-		}
-
-		if !isStakingUpdate[pubKey.String()] {
-			// only send an update if an opted in validator had a staking update from the staking module and
-			// hence a voting power change
-			continue
-		}
-
+		// if a validator that was opted in, is not in the active set anymore, then `GetLastValidatorPower` returns 0
 		partialSetUpdates = append(partialSetUpdates, abci.ValidatorUpdate{
 			PubKey: pubKey,
 			Power:  k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator()),
 		})
 	}
 
+	for _, addr := range toBeOptedOut {
+		// go through all the validators that are currently opted in
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
+		if !found {
+			// a validator was opted in, but we cannot find this validator anymore
+			k.Logger(ctx).Error("could not find opted-in validator with consensus address: %s",
+				addr.ToSdkConsAddr().Bytes())
+			continue
+		}
+		pubKey, err := k.getValidatorsPublicKey(validator)
+		if err != nil {
+			k.Logger(ctx).Error("could retrieve public key from validator with consensus address: %s",
+				addr.ToSdkConsAddr().Bytes())
+			continue
+		}
+
+		// send power 0 so the validator is removed
+		partialSetUpdates = append(partialSetUpdates, abci.ValidatorUpdate{
+			PubKey: pubKey,
+			Power:  0,
+		})
+	}
+
 	return partialSetUpdates
 }
 
-func (k Keeper) ResetPartialSet(ctx sdk.Context, chainID string) {
-	var optedOutOnes map[string]bool
-	for _, v := range k.GetToBeOptedIn(ctx, chainID) {
-		optedOutOnes[v.String()] = true
+// ResetOptedInSet resets the opted-in validators with the newest set that was computed by
+// `ComputePartialSetValidatorUpdates` and hence this method should only be called  after
+// `ComputePartialSetValidatorUpdates` has complete. Also, clears all the `ToBeOptedIn` and `ToBeOptedOut` sets.
+func (k Keeper) ResetOptedInSet(ctx sdk.Context, chainID string) {
+	// Create set that contains all the validators that are to be opted out so that we do not consider opted-out
+	// validators when going through the already opted in validators.
+	isSetToBeOptedOut := make(map[string]bool)
+	for _, val := range k.GetToBeOptedOut(ctx, chainID) {
+		isSetToBeOptedOut[val.ToSdkConsAddr().String()] = true
 	}
 
-	var allOfThem []types.ProviderConsAddress
-	for _, v := range k.GetOptedIn(ctx, chainID) {
-		// FOXME:
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, v.ProviderAddr.ToSdkConsAddr())
+	optedInValidators := k.GetOptedIn(ctx, chainID)
+	k.DeleteAllOptedIn(ctx, chainID)
+
+	for _, val := range optedInValidators {
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, val.ProviderAddr.ToSdkConsAddr())
 		if !found {
-			// probably an error
+			// any validator in `nextOptedIn` should be found
+			k.Logger(ctx).Error("could not find validator with consensus address: %s",
+				val.ProviderAddr.ToSdkConsAddr().Bytes())
 			continue
 		}
-		if !validator.IsBonded() {
+
+		if isSetToBeOptedOut[val.ProviderAddr.ToSdkConsAddr().String()] {
+			// do not create a `ValidatorUpdate` for validators that opted out
 			continue
 		}
-		// only still bonded ones ...
-		if optedOutOnes[v.ProviderAddr.String()] {
-			// here you would need ot remove
+
+		power := uint64(k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator()))
+		if power == 0 {
+			// validator has unbonded
 			continue
 		}
-		allOfThem = append(allOfThem, v.ProviderAddr)
+
+		// we only update the power of the validator, the height the validator first opted in at remains the same
+		k.SetOptedIn(ctx, chainID, val.ProviderAddr, val.BlockHeight, power)
 	}
 
-	for _, v := range k.GetToBeOptedIn(ctx, chainID) {
-		// only still bonded ones ...
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, v.ToSdkConsAddr())
+	for _, addr := range k.GetToBeOptedInValidators(ctx, chainID) {
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
 		if !found {
-			// probably an error
 			continue
 		}
-		if !validator.IsBonded() {
-			continue
-		}
-		allOfThem = append(allOfThem, types.NewProviderConsAddress(v.Address))
-	}
 
-	for _, v := range allOfThem {
-		if !k.IsOptedIn(ctx, chainID, v) {
-			k.SetOptedIn(ctx, chainID, v, uint64(ctx.BlockHeight()))
-		} else {
-			// leave the previous block height as is
-		}
+		// this validator was not in the opted-in validators before, so set its  height to be the current one
+		k.SetOptedIn(ctx, chainID, addr, uint64(ctx.BlockHeight()), uint64(k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())))
 	}
 
 	k.DeleteAllToBeOptedIn(ctx, chainID)

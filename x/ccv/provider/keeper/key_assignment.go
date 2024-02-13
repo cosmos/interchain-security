@@ -554,7 +554,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	ctx sdk.Context,
 	chainID string,
 	valUpdates []abci.ValidatorUpdate,
-	considerReplacement func(address types.ProviderConsAddress) bool,
+	considerKeyReplacement func(address types.ProviderConsAddress) bool,
 ) (newUpdates []abci.ValidatorUpdate) {
 	for _, valUpdate := range valUpdates {
 		providerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
@@ -611,7 +611,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 		providerAddr := types.NewProviderConsAddress(replacement.ProviderAddr)
 
 		// only consider updates for validators that are considered here ...
-		if !considerReplacement(providerAddr) {
+		if !considerKeyReplacement(providerAddr) {
 			return
 		}
 		k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
