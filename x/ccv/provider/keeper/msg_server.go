@@ -139,20 +139,30 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.MsgOptInResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	valAddress, err := sdk.ConsAddressFromBech32(msg.ProviderAddr)
+	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return nil, err
 	}
-	// FIXME: something is off here .. val to cons ...
-	providerAddr := types.NewProviderConsAddress(valAddress)
+
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
+	}
+
+	consAddress, err := validator.GetConsAddr()
+	if err != nil {
+		return nil, err
+	}
+	providerConsAddr := types.NewProviderConsAddress(consAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	if msg.ConsumerKey != "" {
-		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, &msg.ConsumerKey)
+		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, &msg.ConsumerKey)
 	} else {
-		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerAddr, nil)
+		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, nil)
 	}
 
 	if err != nil {
@@ -173,16 +183,27 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.MsgOptOutResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	valAddress, err := sdk.ConsAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		return nil, err
-	}
-	providerAddr := types.NewProviderConsAddress(valAddress)
+	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	err = k.Keeper.HandleOptOut(ctx, msg.ChainId, providerAddr)
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
+	}
+
+	consAddress, err := validator.GetConsAddr()
+	if err != nil {
+		return nil, err
+	}
+	providerConsAddr := types.NewProviderConsAddress(consAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	err = k.Keeper.HandleOptOut(ctx, msg.ChainId, providerConsAddr)
 	if err != nil {
 		return nil, err
 	}

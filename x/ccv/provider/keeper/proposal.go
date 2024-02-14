@@ -268,12 +268,12 @@ func (k Keeper) MakeConsumerGenesis(
 			return gen, nil, err
 		}
 
-		validator, found := k.stakingKeeper.GetValidator(ctx, addr)
+		val, found := k.stakingKeeper.GetValidator(ctx, addr)
 		if !found {
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
 		}
 
-		tmProtoPk, err := validator.TmConsPublicKey()
+		tmProtoPk, err := val.TmConsPublicKey()
 		if err != nil {
 			return gen, nil, err
 		}

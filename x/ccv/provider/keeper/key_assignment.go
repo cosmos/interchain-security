@@ -547,8 +547,9 @@ func (k Keeper) AssignConsumerKey(
 	return nil
 }
 
-// MustApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates
-// received from the staking module.
+// MustApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates received from the
+// staking module. For validators that do not have a validator update in `valUpdates`, the method also considers
+// key-assignment replacements when the `considerKeyReplacement` predicate evaluates to `true` for this validator.
 // The method panics if the key-assignment state is corrupted.
 func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	ctx sdk.Context,
@@ -610,9 +611,9 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	for _, replacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
 		providerAddr := types.NewProviderConsAddress(replacement.ProviderAddr)
 
-		// only consider updates for validators that are considered here ...
+		// filter out key-assignment replacements
 		if !considerKeyReplacement(providerAddr) {
-			return
+			continue
 		}
 		k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{
