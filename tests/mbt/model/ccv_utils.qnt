@@ -303,91 +303,6 @@ module ccv_utils {
         }
     }
 
-    // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
-    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: Packet): Result = {
-        if (not(isRunningConsumer(sender, currentState.providerState))) {
-            Err("Sender is not currently a consumer - must have 'running' status!")
-        } else {
-            match packet {
-                | VscMatured(p) => recvVscMaturedPacketOnProvider(currentState, sender, p)
-                | Slash(p) => recvSlashPacketOnProvider(currentState, sender, p)
-                | _ => Err("Do not know how to handle this packet type")
-            }
-        }
-    }
-
-    pure def recvSlashPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: SlashPacket): Result = {
-        // TODO
-        Err("Not implemented yet")
-    }
-
-    pure def recvVscMaturedPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
-        if (currentState.providerState.sentVscPacketsToConsumer.get(sender).head().id != packet.id) {
-            // the packet is not the oldest sentVscPacket, something went wrong
-            Err("Received maturation is not for the oldest sentVscPacket")
-        } else {
-            // add the packet to the list of received maturations.
-            val currentReceivedMaturations = currentState.providerState.receivedMaturations
-            val newReceivedMaturations = currentReceivedMaturations.union(Set(packet))
-            val newProviderState = currentState.providerState.with(
-                "receivedMaturations", newReceivedMaturations
-            )
-            // prune the sentVscPacket
-            val newSentVscPacket = currentState.providerState.sentVscPacketsToConsumer.get(sender).tail()
-            val newState = currentState.with(
-                "providerState", 
-                    {...newProviderState,
-                    sentVscPacketsToConsumer: currentState.providerState.sentVscPacketsToConsumer.set(sender, newSentVscPacket)
-                    }
-            )
-
-            // prune assigned keys that are no longer needed
-
-            // get the keys that should be pruned
-            pure val consumerAddrsToPrune = 
-                currentState.providerState.consumerAddrsToPrune
-                    .getOrElse(sender, Map())
-                    .getOrElse(packet.id, List()).toSet()
-
-            // actually do the pruning
-            pure val senderValByConsAddr = 
-                // for the sender chain, get the consAddrToValidator mapping
-                newState.providerState.consumerAddrToValidator.getOrElse(sender, Map())
-            pure val newSenderValByConsAddr =
-                senderValByConsAddr.keys().filter(
-                    // filter out the assigned keys that should be pruned
-                    consAddr => not(consumerAddrsToPrune.contains(consAddr))
-                ).mapBy(
-                    // rebuild the map with the pruned keys removed
-                    consAddr => senderValByConsAddr.get(consAddr)
-                )
-
-            // update the provider state
-            pure val newProviderState2 = newState.providerState.with(
-                // update the consumerAddrToValidator map to remove the pruned keys
-                "consumerAddrToValidator", 
-                newState.providerState.consumerAddrToValidator.put(sender, newSenderValByConsAddr)
-            ).with(
-                // delete the consumer addresses to prune, since they are pruned now
-                "consumerAddrsToPrune", 
-                newState.providerState.consumerAddrsToPrune.put(
-                    sender, 
-                    newState.providerState.consumerAddrsToPrune.getOrElse(sender, Map()).put(
-                        packet.id, 
-                        List()
-                    )
-                )
-            )
-
-            // update the state
-            pure val newState2 = newState.with(
-                "providerState", newProviderState2
-            )
-
-            Ok(newState2)
-        }
-    }
-
     // removes the oldest outstanding packet from the consumer. on-chain, this would happen when the packet is acknowledged.
     // only the oldest packet can be removed, since we model ordered channels.
     pure def removeOutstandingPacketFromConsumer(currentState: ProtocolState, sender: Chain): ProtocolState = {
@@ -507,5 +422,13 @@ module ccv_utils {
             | VscMatured(p) => p.sendingTime
             | _ => 0
         }
+    }
+
+    // Commits a packet on the consumer, which will then be sent when a block is ended.
+    // Internally, prepends the packet to the senders packetsToSendOnEndBlock list.
+    pure def commitPacketOnConsumer(senderState: ConsumerState, packet: Packet): ConsumerState = {
+        senderState.with(
+            "packetsToSendOnEndBlock", senderState.packetsToSendOnEndBlock.append(packet)
+        )
     }
 }

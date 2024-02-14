@@ -46,6 +46,8 @@ module ccv_types {
             id: VscId,
             // true if the packet is a downtime slash, false if it is a different type (e.g. double sign)
             downtime: bool,
+            // how much power the validator had at the time of the infraction
+            valPower: Power,
             // the time at which the packet was sent.
             sendingTime: Time,
             // the time (on the receiver) at which the packet will time out
@@ -138,7 +140,7 @@ module ccv_types {
             consumerAddrsToPrune: Chain -> VscId -> List[ConsumerAddr],
 
             // For every sent VSCPacket, stores the key assignments that were applied to send it.
-            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr))
+            keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr)),
         }
 
     // utility function: returns a provider state that is initialized minimally.
@@ -156,7 +158,7 @@ module ccv_types {
             consumerAddrToValidator: Map(),
             consumerAddrsToPrune: Map(),
             keyAssignmentsForVSCPackets: Map(),
-            consumersWithAddrAssignmentChangesInThisBlock: Set()
+            consumersWithAddrAssignmentChangesInThisBlock: Set(),
         }
         
 
@@ -178,6 +180,11 @@ module ccv_types {
         // ordered by recency, so the head is the oldest packet.
         // In the implementation, essentially unacknowledged IBC packets.
         outstandingPacketsToProvider: List[Packet],
+
+        // a list of packets that were comitted during the block,
+        // and will thus be considered "sent" when the block ends.
+        // these are moved to the outstandingPackets list when the block ends.
+        packetsToSendOnEndBlock: List[Packet],
     }
 
     // utility function: returns a consumer state that is initialized minimally.
@@ -187,6 +194,7 @@ module ccv_types {
             maturationTimes: List(),
             outstandingPacketsToProvider: List(),
             receivedVscPackets: List(),
+            packetsToSendOnEndBlock: List(),
         }
 
     // the state of the protocol consists of the composition of the state of one provider chain with potentially many consumer chains.
@@ -288,6 +296,9 @@ module ccv {
     // If headers on a channel between two chains are not updated within this period,
     // they expire and the channel will be closed.
     const TrustingPeriodPerChain: Chain -> int
+
+    // The jail time for a downtime infraction.
+    const DowntimeJailTime: int
 
     // ===================
     // PROTOCOL LOGIC contains the meat of the protocol
@@ -577,7 +588,9 @@ module ccv {
                 val newConsumerState2: ConsumerState = newConsumerState.with(
                     "maturationTimes", newMaturationTimes
                 ).with(
-                    "outstandingPacketsToProvider", newOutstandingPackets
+                    "outstandingPacketsToProvider", newOutstandingPackets.concat(newConsumerState.packetsToSendOnEndBlock)
+                ).with(
+                    "packetsToSendOnEndBlock", List()
                 )
                 val newConsumerStates = currentState.consumerStates.set(chain, newConsumerState2)
                 val newState: ProtocolState = currentState.with(
@@ -669,6 +682,141 @@ module ccv {
                     )
                 )
             }
+        }
+    }
+
+    // Makes the given consumer slash the given validator for an infraction that happened while
+    // the provided vscId was in effect.
+    // Note that the model does not model the infractions themselves yet,
+    // e.g. we do not model validators actually double-signing or going down.
+    pure def sendSlashRequest(
+        currentState: ProtocolState,
+        consumer: Chain,
+        consumerNode: Node,
+        vscId: VscId,
+        downtime: bool): Result = {
+        if (not(isRunningConsumer(consumer, currentState.providerState))) {
+            Err("Consumer is not currently a consumer - must have 'running' status!")
+        } else {
+            val consumerState = currentState.consumerStates.get(consumer)
+            val vscPacket = consumerState.receivedVscPackets.select(packet => packet.id == vscId)[0]
+            val packet = Slash({
+                validator: consumerNode,
+                id: vscId,
+                downtime: downtime,
+                sendingTime: consumerState.chainState.runningTimestamp,
+                timeoutTime: consumerState.chainState.runningTimestamp + CcvTimeout.get(consumer),
+                valPower: vscPacket.validatorSet.get(consumerNode)
+
+            })
+            if (downtime) {
+                Err("Downtime slashes are not yet implemented")
+            } else {
+                val newConsumerState = commitPacketOnConsumer(consumerState, packet)
+                Ok(currentState.with("consumerStates", currentState.consumerStates.set(consumer, newConsumerState)))
+            }
+        }
+    }
+
+    // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
+    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: Packet): Result = {
+        match packet {
+            | VscMatured(p) => recvVscMaturedPacketOnProvider(currentState, sender, p)
+            | Slash(p) => recvSlashPacketOnProvider(currentState, sender, p)
+            | _ => Err("Do not know how to handle this packet type")
+        }
+    }
+
+    // TODO: currently this only jails, but it should eventually also slash
+    pure def recvSlashPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: SlashPacket): Result = {
+        // determine the jail duration for the validator:
+        // if the packet is a downtime slash, the jail duration is DowntimeJailDuration
+        // otherwise, the validator is jailed until the DoubleSignJailTime
+        val jailEndTime = if (packet.downtime) {
+            packet.sendingTime + DowntimeJailTime
+        } else {
+            packet.sendingTime + CcvTimeout.get(sender)
+        }
+        // map the validator to its address on the provider
+        // (in general, the validator is a consumer address and could be an assigned one)
+        val providerVal = currentState.providerState.consumerAddrToValidator
+            .get(sender)
+            // if there is no entry for that validator, there is no key assignment
+            .getOrElse(packet.validator, packet.validator)
+        
+        // TODO: implement jailing
+        // val newProviderState = currentState.providerState
+        //  .jailUntil(currentState.providerState, packet.validator, jailEndTime)
+        //  .slash(currentState.providerState, packet.validator, packet.valPower, slashFactorToBeDetermined)
+
+        // Ok(currentState.with("providerState", newProviderState))
+        Err("not implemented")
+    }
+
+    pure def recvVscMaturedPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
+        if (currentState.providerState.sentVscPacketsToConsumer.get(sender).head().id != packet.id) {
+            // the packet is not the oldest sentVscPacket, something went wrong
+            Err("Received maturation is not for the oldest sentVscPacket")
+        } else {
+            // add the packet to the list of received maturations.
+            val currentReceivedMaturations = currentState.providerState.receivedMaturations
+            val newReceivedMaturations = currentReceivedMaturations.union(Set(packet))
+            val newProviderState = currentState.providerState.with(
+                "receivedMaturations", newReceivedMaturations
+            )
+            // prune the sentVscPacket
+            val newSentVscPacket = currentState.providerState.sentVscPacketsToConsumer.get(sender).tail()
+            val newState = currentState.with(
+                "providerState", 
+                    {...newProviderState,
+                    sentVscPacketsToConsumer: currentState.providerState.sentVscPacketsToConsumer.set(sender, newSentVscPacket)
+                    }
+            )
+
+            // prune assigned keys that are no longer needed
+
+            // get the keys that should be pruned
+            pure val consumerAddrsToPrune = 
+                currentState.providerState.consumerAddrsToPrune
+                    .getOrElse(sender, Map())
+                    .getOrElse(packet.id, List()).toSet()
+
+            // actually do the pruning
+            pure val senderValByConsAddr = 
+                // for the sender chain, get the consAddrToValidator mapping
+                newState.providerState.consumerAddrToValidator.getOrElse(sender, Map())
+            pure val newSenderValByConsAddr =
+                senderValByConsAddr.keys().filter(
+                    // filter out the assigned keys that should be pruned
+                    consAddr => not(consumerAddrsToPrune.contains(consAddr))
+                ).mapBy(
+                    // rebuild the map with the pruned keys removed
+                    consAddr => senderValByConsAddr.get(consAddr)
+                )
+
+            // update the provider state
+            pure val newProviderState2 = newState.providerState.with(
+                // update the consumerAddrToValidator map to remove the pruned keys
+                "consumerAddrToValidator", 
+                newState.providerState.consumerAddrToValidator.put(sender, newSenderValByConsAddr)
+            ).with(
+                // delete the consumer addresses to prune, since they are pruned now
+                "consumerAddrsToPrune", 
+                newState.providerState.consumerAddrsToPrune.put(
+                    sender, 
+                    newState.providerState.consumerAddrsToPrune.getOrElse(sender, Map()).put(
+                        packet.id, 
+                        List()
+                    )
+                )
+            )
+
+            // update the state
+            pure val newState2 = newState.with(
+                "providerState", newProviderState2
+            )
+
+            Ok(newState2)
         }
     }
 

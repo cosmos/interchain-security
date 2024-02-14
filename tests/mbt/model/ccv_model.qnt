@@ -693,6 +693,57 @@ module ccv_model {
             params' = params,
         }
 
+    // Make the consumer send a slash request for the given node
+    // (which must be the nodes address on the consumer)
+    // and a given validator set id, which indicates during which
+    // time period the infraction occurred.
+    action ConsumerInitiatedSlashDet(
+        consumer: Chain,
+        consumerNode: Node,
+        vscId: VscId
+    ): bool = {
+        // only support double-sign slashes for now, so supply 'true' for downtime
+        val result = sendSlashRequest(currentState, consumer, consumerNode, vscId, false)
+        all {
+            hasError(result) == false,
+            currentState' = result.newState,
+            trace' = trace.append(
+                {...emptyAction,
+                kind: "ConsumerInitiatedSlash",
+                consumerChain: consumer,
+                validator: consumerNode,
+                changeAmount: vscId
+                }
+            ),
+            params' = params,
+        }
+    }
+
+    // Nondeterministic version of consumer initiated slashing,
+    // which first chooses sensible arguments, and then invokes the deterministic version.
+    action ConsumerInitiatedSlash(): bool = {
+        all {
+            runningConsumers.size() > 0,
+            // pick a running consumer to slash from
+            nondet consumer = oneOf(runningConsumers)
+            // we want to be able to slash for past infractions,
+            // and we need both the validator address and the
+            // vsc id of the packet to send to the provider
+            // pick a validator to slash...
+            val consumerState = currentState.consumerStates.get(consumer)
+            // ...by getting all received vsc packets...
+            val rcvdVscPackets = consumerState.receivedVscPackets
+            // ...picking one of the packets...
+            nondet packet = oneOf(rcvdVscPackets.toSet())
+            val vscId = packet.id
+            val valSet = packet.validatorSet.keys()
+            // ...and picking one of the validators in the packet
+            nondet validator = oneOf(valSet)
+            // then we can invoke the deterministic slash
+            ConsumerInitiatedSlashDet(consumer, validator, vscId)
+        }
+    }
+
     // invariants for key assignment - some invariants are in addition, some need to be adjusted from the original model
 
     // Every validator set on any consumer chain MUST either be or have been 
