@@ -22,8 +22,7 @@ module ccv_pss_model {
                     ...emptyAction,
                     kind: "OptIn",
                     consumerChain: consumer,
-                    validator: validator,
-                    expectedError: res.error
+                    validator: validator
                 }
             ),
             params' = params,
