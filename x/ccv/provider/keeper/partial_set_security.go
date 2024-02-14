@@ -167,6 +167,7 @@ func (k Keeper) ComputeValidatorUpdates(ctx sdk.Context,
 			continue
 		}
 
+		// if the voting power did not change since the last time the validator opted in, do not create an update
 		if val.Power == uint64(k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())) {
 			continue
 		}
@@ -203,14 +204,13 @@ func (k Keeper) ComputeValidatorUpdates(ctx sdk.Context,
 	for _, addr := range validatorAddressesToRemove {
 		_, pubKey, err := k.getValAddressAndPublicKey(ctx, addr)
 		if err != nil {
-
+			continue
 		}
 
 		m[pubKey.String()] = abci.ValidatorUpdate{
 			PubKey: pubKey,
 			Power:  0,
 		}
-
 	}
 
 	var out []abci.ValidatorUpdate
