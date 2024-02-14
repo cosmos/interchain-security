@@ -310,7 +310,7 @@ func newChain(
 // Creates a path for cross-chain validation from the consumer to the provider and configures the channel config of the endpoints
 // as well as the clients.
 // this function stops when there is an initialized, ready-to-relay channel between the provider and consumer.
-func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestChain, params ModelParams) *ibctesting.Path {
+func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestChain, params ModelParams, topN uint32) *ibctesting.Path {
 	consumerChainId := ChainId(consumerChain.ChainID)
 
 	path := ibctesting.NewPath(consumerChain, providerChain)
@@ -361,6 +361,11 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		string(consumerChainId),
 		consumerGenesisForProvider)
 	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
+
+	// set the top N percentage
+	// needs to be done before the provider queues the first vsc packet to the consumer
+	// TODO: might be able to move this into setupConsumer, need to test once more logic is here
+	s.providerKeeper().SetTopN(providerChain.GetContext(), consumerChain.ChainID, topN)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.
@@ -433,9 +438,12 @@ func (s *Driver) setupConsumer(
 	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
 	valNames []string,
 	providerChain *ibctesting.TestChain,
+	topN int64,
 ) {
 	s.t.Logf("Starting consumer %v", chain)
 
+	// TODO: reuse the partial set computation logic to compute the initial validator set
+	// for top N chains
 	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
 
 	// start consumer chains
@@ -443,7 +451,7 @@ func (s *Driver) setupConsumer(
 	consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes, valNames)
 	s.coordinator.Chains[chain] = consumerChain
 
-	path := s.ConfigureNewPath(consumerChain, providerChain, params)
+	path := s.ConfigureNewPath(consumerChain, providerChain, params, uint32(topN))
 	s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
 }
 
