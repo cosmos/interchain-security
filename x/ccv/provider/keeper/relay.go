@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	abci "github.com/cometbft/cometbft/abci/types"
 	"strconv"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -213,32 +212,28 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
+	// Get the validator updates from the staking module.
+	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
+	// of cosmos-sdk is invalid.
+	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
-		var valUpdates []abci.ValidatorUpdate
-		if k.IsTopN(ctx, chain.ChainId) {
-			valUpdates = k.ComputePartialSetValidatorUpdates(ctx,
-				k.GetNextOptedInValidators(ctx, chain.ChainId),
-				k.GetToBeOptedOut(ctx, chain.ChainId))
-		} else {
-			valUpdates = k.stakingKeeper.GetValidatorUpdates(ctx)
-		}
+		currentValidators := k.GetOptedIn(ctx, chain.ChainId)
+		validatorsToAdd := k.GetToBeOptedIn(ctx, chain.ChainId)
+		validatorsToRemove := k.GetToBeOptedOut(ctx, chain.ChainId)
 
-		var considerKeyReplacement func(address providertypes.ProviderConsAddress) bool
-		if k.IsTopN(ctx, chain.ChainId) {
-			considerKeyReplacement = func(address providertypes.ProviderConsAddress) bool {
-				return k.IsOptedIn(ctx, chain.ChainId, address)
-			}
-		} else {
-			considerKeyReplacement = func(address providertypes.ProviderConsAddress) bool {
-				return true
-			}
-		}
+		// FIXME(PSS)
+		//valUpdates := k.ComputeValidatorUpdates(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
 
 		// Apply the key assignment to the validator updates.
+		considerKeyReplacement := func(address providertypes.ProviderConsAddress) bool {
+			return true
+			//return k.IsOptedIn(ctx, chain.ChainId, address)
+		}
 		valUpdates = k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates, considerKeyReplacement)
 
-		k.ResetOptedInSet(ctx, chain.ChainId)
+		nextValidators := k.ComputeNextValidators(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
+		k.ResetCurrentValidators(ctx, chain.ChainId, nextValidators)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
