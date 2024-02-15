@@ -611,8 +611,8 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	for _, replacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
 		providerAddr := types.NewProviderConsAddress(replacement.ProviderAddr)
 
-		// filter out key-assignment replacements
 		if !considerKeyReplacement(providerAddr) {
+			// filter out key-assignment replacements
 			continue
 		}
 
