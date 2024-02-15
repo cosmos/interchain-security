@@ -232,7 +232,7 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context,
 
 // ResetCurrentValidators resets the opted-in validators with the newest set that was computed by
 // `ComputePartialSetValidatorUpdates` and hence this method should only be called after
-// `ComputePartialSetValidatorUpdates` has complete. Method also clears all the `ToBeOptedIn` and `ToBeOptedOut` states.
+// `ComputePartialSetValidatorUpdates` has completed. Method also clears all the `ToBeOptedIn` and `ToBeOptedOut` states.
 func (k Keeper) ResetCurrentValidators(ctx sdk.Context, chainID string, nextValidators []OptedInValidator) {
 	k.DeleteAllOptedIn(ctx, chainID)
 	for _, val := range nextValidators {
