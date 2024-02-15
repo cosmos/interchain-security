@@ -97,56 +97,6 @@ func (k Keeper) getValAddressAndPublicKey(ctx sdk.Context, addr types.ProviderCo
 	return validator.GetOperator(), pubKey, nil
 }
 
-// ComputeNextValidators computes the next validator set that is responsible for validating on a consumer chain.
-// The returned opted-in validators by `ComputeNextValidators` constitute the next `currentValidators`.
-func (k Keeper) ComputeNextValidators(ctx sdk.Context,
-	currentValidators []OptedInValidator,
-	validatorAddressesToAdd []types.ProviderConsAddress,
-	validatorAddressesToRemove []types.ProviderConsAddress,
-) []OptedInValidator {
-	isRemoved := make(map[string]bool)
-	for _, val := range validatorAddressesToRemove {
-		isRemoved[val.ToSdkConsAddr().String()] = true
-	}
-
-	var out []OptedInValidator
-	for _, val := range currentValidators {
-		if isRemoved[val.ProviderAddr.ToSdkConsAddr().String()] {
-			continue
-		}
-		valAddress, _, err := k.getValAddressAndPublicKey(ctx, val.ProviderAddr)
-		if err != nil {
-			continue
-		}
-
-		val.Power = uint64(k.stakingKeeper.GetLastValidatorPower(ctx, valAddress))
-		if val.Power == 0 {
-			continue
-		}
-		out = append(out, val)
-	}
-
-	for _, addr := range validatorAddressesToAdd {
-		valAddress, _, err := k.getValAddressAndPublicKey(ctx, addr)
-		if err != nil {
-			continue
-		}
-
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
-		if !found {
-			continue
-		}
-		if !validator.IsBonded() {
-			continue
-		}
-		power := uint64(k.stakingKeeper.GetLastValidatorPower(ctx, valAddress))
-
-		out = append(out, OptedInValidator{ProviderAddr: addr, BlockHeight: uint64(ctx.BlockHeight()), Power: power})
-	}
-
-	return out
-}
-
 // ComputeValidatorUpdates computes the validator updates needed to be sent to the consumer chain to capture
 // the newly opted-in and opted-out validators, as well as validators that unbonded.
 func (k Keeper) ComputeValidatorUpdates(ctx sdk.Context,
@@ -172,7 +122,7 @@ func (k Keeper) ComputeValidatorUpdates(ctx sdk.Context,
 			continue
 		}
 
-		// if `val` has unbonded, its `GetLastValidatorPower` power returns 0.
+		// if `val` has unbonded, its `GetLastValidatorPower` power returns 0
 		m[pubKey.String()] = abci.ValidatorUpdate{
 			PubKey: pubKey,
 			Power:  k.stakingKeeper.GetLastValidatorPower(ctx, valAddress),
@@ -218,7 +168,7 @@ func (k Keeper) ComputeValidatorUpdates(ctx sdk.Context,
 		out = append(out, update)
 	}
 
-	// Similarly to `AccumulateChanges`, we sort validators for determinism.
+	// similarly to `AccumulateChanges`, we sort validators for determinism
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].Power != out[j].Power {
 			return out[i].Power > out[j].Power
@@ -229,9 +179,60 @@ func (k Keeper) ComputeValidatorUpdates(ctx sdk.Context,
 	return out
 }
 
+// ComputeNextValidators computes the next validator set that is responsible for validating on a consumer chain.
+// The returned opted-in validators correspond to the next `currentValidators`.
+func (k Keeper) ComputeNextValidators(ctx sdk.Context,
+	currentValidators []OptedInValidator,
+	validatorAddressesToAdd []types.ProviderConsAddress,
+	validatorAddressesToRemove []types.ProviderConsAddress,
+) []OptedInValidator {
+	isRemoved := make(map[string]bool)
+	for _, val := range validatorAddressesToRemove {
+		isRemoved[val.ToSdkConsAddr().String()] = true
+	}
+
+	var out []OptedInValidator
+	for _, val := range currentValidators {
+		if isRemoved[val.ProviderAddr.ToSdkConsAddr().String()] {
+			continue
+		}
+		valAddress, _, err := k.getValAddressAndPublicKey(ctx, val.ProviderAddr)
+		if err != nil {
+			continue
+		}
+
+		val.Power = uint64(k.stakingKeeper.GetLastValidatorPower(ctx, valAddress))
+		if val.Power == 0 {
+			continue
+		}
+		out = append(out, val)
+	}
+
+	for _, addr := range validatorAddressesToAdd {
+		valAddress, _, err := k.getValAddressAndPublicKey(ctx, addr)
+		if err != nil {
+			continue
+		}
+
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
+		if !found {
+			continue
+		}
+		if !validator.IsBonded() {
+			continue
+		}
+
+		power := uint64(k.stakingKeeper.GetLastValidatorPower(ctx, valAddress))
+		// validator just opted in and hence sets `BlockHeight` as the current height
+		out = append(out, OptedInValidator{ProviderAddr: addr, BlockHeight: uint64(ctx.BlockHeight()), Power: power})
+	}
+
+	return out
+}
+
 // ResetCurrentValidators resets the opted-in validators with the newest set that was computed by
-// `ComputePartialSetValidatorUpdates` and hence this method should only be called  after
-// `ComputePartialSetValidatorUpdates` has complete. Also, clears all the `ToBeOptedIn` and `ToBeOptedOut` sets.
+// `ComputePartialSetValidatorUpdates` and hence this method should only be called after
+// `ComputePartialSetValidatorUpdates` has complete. Method also clears all the `ToBeOptedIn` and `ToBeOptedOut` states.
 func (k Keeper) ResetCurrentValidators(ctx sdk.Context, chainID string, nextValidators []OptedInValidator) {
 	k.DeleteAllOptedIn(ctx, chainID)
 	for _, val := range nextValidators {

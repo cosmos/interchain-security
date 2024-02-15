@@ -615,6 +615,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 		if !considerKeyReplacement(providerAddr) {
 			continue
 		}
+
 		k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: *replacement.PrevCKey,

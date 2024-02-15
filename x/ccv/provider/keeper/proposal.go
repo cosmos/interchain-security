@@ -255,11 +255,11 @@ func (k Keeper) MakeConsumerGenesis(
 		return false
 	})
 
-	//currentValidators := k.GetOptedIn(ctx, chainID)
-	//validatorsToAdd := k.GetToBeOptedIn(ctx, chainID)
-	//validatorsToRemove := k.GetToBeOptedOut(ctx, chainID)
+	// currentValidators := k.GetOptedIn(ctx, chainID)
+	// validatorsToAdd := k.GetToBeOptedIn(ctx, chainID)
+	// validatorsToRemove := k.GetToBeOptedOut(ctx, chainID)
 	//
-	//initialUpdates := k.ComputeValidatorUpdates(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
+	// initialUpdates := k.ComputeValidatorUpdates(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
 
 	initialUpdates := []abci.ValidatorUpdate{}
 	for _, p := range lastPowers {
@@ -287,6 +287,7 @@ func (k Keeper) MakeConsumerGenesis(
 	// Apply key assignments to the initial valset.
 	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates,
 		func(address types.ProviderConsAddress) bool {
+			// return k.IsOptedIn(ctx, chain.ChainId, address)
 			return true
 		})
 

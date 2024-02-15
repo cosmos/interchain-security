@@ -218,22 +218,22 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
-		currentValidators := k.GetOptedIn(ctx, chain.ChainId)
-		validatorsToAdd := k.GetToBeOptedIn(ctx, chain.ChainId)
-		validatorsToRemove := k.GetToBeOptedOut(ctx, chain.ChainId)
-
 		// FIXME(PSS)
-		//valUpdates := k.ComputeValidatorUpdates(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
+		// currentValidators := k.GetOptedIn(ctx, chain.ChainId)
+		// validatorsToAdd := k.GetToBeOptedIn(ctx, chain.ChainId)
+		// validatorsToRemove := k.GetToBeOptedOut(ctx, chain.ChainId)
+
+		// valUpdates := k.ComputeValidatorUpdates(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
 
 		// Apply the key assignment to the validator updates.
-		considerKeyReplacement := func(address providertypes.ProviderConsAddress) bool {
-			return true
-			//return k.IsOptedIn(ctx, chain.ChainId, address)
-		}
-		valUpdates = k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates, considerKeyReplacement)
+		valUpdates = k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates,
+			func(address providertypes.ProviderConsAddress) bool {
+				// return k.IsOptedIn(ctx, chain.ChainId, address)
+				return true
+			})
 
-		nextValidators := k.ComputeNextValidators(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
-		k.ResetCurrentValidators(ctx, chain.ChainId, nextValidators)
+		// nextValidators := k.ComputeNextValidators(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
+		// k.ResetCurrentValidators(ctx, chain.ChainId, nextValidators)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
