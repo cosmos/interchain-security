@@ -111,7 +111,8 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 		feeAllocated := k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumer.ChainId,
-			totalPreviousPower,
+			// pass consumer opted-in vals total power
+			k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId, bondedVotes),
 			bondedVotes,
 			feeMultiplier,
 		)
@@ -172,9 +173,9 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	// Truncate coin rewards
 	rewardsToSend, _ := allocation.Rewards.TruncateDecimal()
 
-	// NOTE the consumer isn't a module account, however its coins
+	// NOTE the consumer rewards account isn't a module account, however its coins
 	// are held in the consumer reward pool module account. Thus the consumer
-	// rewards allocation must be reduced separately from the SendCoinsFromModuleToAccount call
+	// rewards allocation must be reduced separately from the SendCoinsFromModuleToAccount call.
 
 	// Update consumer rewards allocation with the remaining decimal coins
 	allocation.Rewards = allocation.Rewards.Sub(sdk.NewDecCoinsFromCoins(rewardsToSend...))
@@ -213,4 +214,26 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 		ctx,
 		k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress(),
 	)
+}
+
+// ComputeConsumerTotalVotingPower returns the total voting power
+// for the given consumer chain opted-in validators
+func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string, votes []abci.VoteInfo) int64 {
+	optedIn := map[string]struct{}{}
+
+	// create set with opted-in validators
+	for _, v := range k.GetOptedIn(ctx, chainID) {
+		optedIn[v.ProviderAddr.ToSdkConsAddr().String()] = struct{}{}
+	}
+
+	var totalPower int64
+
+	// sum the opted-in validators set voting powers
+	for _, vote := range votes {
+		if _, ok := optedIn[sdk.ConsAddress(vote.Validator.Address).String()]; ok {
+			totalPower += vote.Validator.Power
+		}
+	}
+
+	return totalPower
 }
