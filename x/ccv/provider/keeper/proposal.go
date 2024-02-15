@@ -291,8 +291,8 @@ func (k Keeper) MakeConsumerGenesis(
 			return true
 		})
 
-	//nextValidators := k.ComputeNextValidators(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
-	//k.ResetCurrentValidators(ctx, chainID, nextValidators)
+	// nextValidators := k.ComputeNextValidators(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
+	// k.ResetCurrentValidators(ctx, chainID, nextValidators)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
