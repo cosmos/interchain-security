@@ -3,9 +3,7 @@ package keeper
 import (
 	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"sort"
 )
@@ -75,28 +73,6 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 	return nil
 }
 
-// getValAddressAndPublicKey is a helper function that returns the `ValAddress` and the public key of
-// the corresponding validator
-func (k Keeper) getValAddressAndPublicKey(ctx sdk.Context, addr types.ProviderConsAddress,
-) (sdk.ValAddress, tmprotocrypto.PublicKey, error) {
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
-	if !found {
-		return sdk.ValAddress{}, tmprotocrypto.PublicKey{}, stakingtypes.ErrNoValidatorFound
-	}
-
-	consAddr, err := validator.GetConsAddr()
-	if err != nil {
-		return sdk.ValAddress{}, tmprotocrypto.PublicKey{}, err
-	}
-
-	pubKey := tmprotocrypto.PublicKey{
-		Sum: &tmprotocrypto.PublicKey_Ed25519{
-			Ed25519: consAddr.Bytes(),
-		},
-	}
-	return validator.GetOperator(), pubKey, nil
-}
-
 // ComputeValidatorUpdates computes the validator updates needed to be sent to the consumer chain to capture
 // the newly opted-in and opted-out validators, as well as validators that unbonded.
 func (k Keeper) ComputeValidatorUpdates(ctx sdk.Context,
@@ -107,52 +83,58 @@ func (k Keeper) ComputeValidatorUpdates(ctx sdk.Context,
 	var m = make(map[string]abci.ValidatorUpdate)
 
 	for _, val := range currentValidators {
-		valAddress, pubKey, err := k.getValAddressAndPublicKey(ctx, val.ProviderAddr)
-		if err != nil {
-			continue
-		}
-
 		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, val.ProviderAddr.ToSdkConsAddr())
 		if !found {
 			continue
 		}
 
+		pubKey, err := validator.TmConsPublicKey()
+		if err != nil {
+			continue
+		}
+
 		// if the voting power did not change since the last time the validator opted in, do not create an update
-		if val.Power == uint64(k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())) {
+		currentValPower := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
+		if val.Power == uint64(currentValPower) {
 			continue
 		}
 
 		// if `val` has unbonded, its `GetLastValidatorPower` power returns 0
 		m[pubKey.String()] = abci.ValidatorUpdate{
 			PubKey: pubKey,
-			Power:  k.stakingKeeper.GetLastValidatorPower(ctx, valAddress),
+			Power:  currentValPower,
 		}
 	}
 
 	for _, addr := range validatorAddressesToAdd {
-		valAddress, pubKey, err := k.getValAddressAndPublicKey(ctx, addr)
-		if err != nil {
-			continue
-		}
-
 		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
 		if !found {
 			continue
 		}
 
-		// if a validator is in the active set, we do not add it
+		pubKey, err := validator.TmConsPublicKey()
+		if err != nil {
+			continue
+		}
+
+		// if a validator is not in the active set, we do not add it
 		if !validator.IsBonded() {
 			continue
 		}
 
 		m[pubKey.String()] = abci.ValidatorUpdate{
 			PubKey: pubKey,
-			Power:  k.stakingKeeper.GetLastValidatorPower(ctx, valAddress),
+			Power:  k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator()),
 		}
 	}
 
 	for _, addr := range validatorAddressesToRemove {
-		_, pubKey, err := k.getValAddressAndPublicKey(ctx, addr)
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
+		if !found {
+			continue
+		}
+
+		pubKey, err := validator.TmConsPublicKey()
 		if err != nil {
 			continue
 		}
@@ -196,12 +178,13 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context,
 		if isRemoved[val.ProviderAddr.String()] {
 			continue
 		}
-		valAddress, _, err := k.getValAddressAndPublicKey(ctx, val.ProviderAddr)
-		if err != nil {
+
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, val.ProviderAddr.ToSdkConsAddr())
+		if !found {
 			continue
 		}
 
-		val.Power = uint64(k.stakingKeeper.GetLastValidatorPower(ctx, valAddress))
+		val.Power = uint64(k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator()))
 		if val.Power == 0 {
 			continue
 		}
@@ -209,20 +192,16 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context,
 	}
 
 	for _, addr := range validatorAddressesToAdd {
-		valAddress, _, err := k.getValAddressAndPublicKey(ctx, addr)
-		if err != nil {
-			continue
-		}
-
 		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, addr.ToSdkConsAddr())
 		if !found {
 			continue
 		}
+
 		if !validator.IsBonded() {
 			continue
 		}
 
-		power := uint64(k.stakingKeeper.GetLastValidatorPower(ctx, valAddress))
+		power := uint64(k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator()))
 		// validator just opted in and hence sets `BlockHeight` as the current height
 		out = append(out, OptedInValidator{ProviderAddr: addr, BlockHeight: uint64(ctx.BlockHeight()), Power: power})
 	}
@@ -231,8 +210,8 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context,
 }
 
 // ResetCurrentValidators resets the opted-in validators with the newest set that was computed by
-// `ComputePartialSetValidatorUpdates` and hence this method should only be called after
-// `ComputePartialSetValidatorUpdates` has completed. Method also clears all the `ToBeOptedIn` and `ToBeOptedOut` states.
+// `ComputeNextValidators` and hence this method should only be called after
+// `ComputeNextValidators` has completed. Method also clears all the `ToBeOptedIn` and `ToBeOptedOut` states.
 func (k Keeper) ResetCurrentValidators(ctx sdk.Context, chainID string, nextValidators []OptedInValidator) {
 	k.DeleteAllOptedIn(ctx, chainID)
 	for _, val := range nextValidators {

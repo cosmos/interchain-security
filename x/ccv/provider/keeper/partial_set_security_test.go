@@ -154,11 +154,7 @@ func TestComputeValidatorUpdates(t *testing.T) {
 			Status:          status,
 		}
 
-		pubKey := tmprotocrypto.PublicKey{
-			Sum: &tmprotocrypto.PublicKey_Ed25519{
-				Ed25519: consAddr.Bytes(),
-			},
-		}
+		pubKey, _ := validator.TmConsPublicKey()
 		pubKeys = append(pubKeys, pubKey)
 
 		mocks.MockStakingKeeper.EXPECT().

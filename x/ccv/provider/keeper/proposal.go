@@ -373,12 +373,13 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
-		// Only set Top N at the moment a chain starts. If we were to do this earlier (e.g., during the proposal),
-		// then someone could create a bogus ConsumerAdditionProposal to override the Top N for a specific chain.
-		k.SetTopN(ctx, prop.ChainId, prop.Top_N)
+		cachedCtx, writeFn := ctx.CacheContext()
+
+		// Set in a cached context. It would only be written if the consumer client creation is successful.
+		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 
 		// FIXME(PSS)
-		//if k.IsOptIn(ctx, prop.ChainId) && len(k.GetToBeOptedIn(ctx, prop.ChainId)) == 0 {
+		//if k.IsOptIn(cachedCtx, prop.ChainId) && len(k.GetToBeOptedIn(cachedCtx, prop.ChainId)) == 0 {
 		//	// drop the proposal
 		//	ctx.Logger().Info("could not start Opt In consumer chain (%s) because no validator has opted in",
 		//		prop.ChainId)
@@ -386,7 +387,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		//}
 
 		// create consumer client in a cached context to handle errors
-		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
+		err := k.CreateConsumerClient(cachedCtx, &prop)
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created: %w", err)

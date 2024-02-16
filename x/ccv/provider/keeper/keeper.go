@@ -1218,10 +1218,14 @@ func (k Keeper) DeleteAllOptedIn(
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
-	defer iterator.Close()
 
+	var keysToDel [][]byte
+	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		store.Delete(iterator.Key())
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
 	}
 }
 
@@ -1277,10 +1281,14 @@ func (k Keeper) DeleteAllToBeOptedIn(
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ToBeOptedInBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
-	defer iterator.Close()
 
+	var keysToDel [][]byte
+	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		store.Delete(iterator.Key())
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
 	}
 }
 
@@ -1334,10 +1342,14 @@ func (k Keeper) DeleteAllToBeOptedOut(
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ToBeOptedOutBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
-	defer iterator.Close()
 
+	var keysToDel [][]byte
+	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		store.Delete(iterator.Key())
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
 	}
 }
 
