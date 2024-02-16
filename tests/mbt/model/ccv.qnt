@@ -308,6 +308,16 @@ module ccv {
     // The jail time for a downtime infraction.
     const DowntimeJailTime: int
 
+    // The *end time* for double sign infractions.
+    // Note this is *not* the jail duration, but the *end time*.
+    // (This is because essentially double signs should jail forever.)
+    const DoubleSignJailEndTime: int
+
+    // The slash factors for downtime and double sign infractions,
+    // given as a percentage value between 0 and 100.
+    const DowntimeSlashPercentage: int
+    const DoubleSignSlashPercentage: int
+
     // ===================
     // PROTOCOL LOGIC contains the meat of the protocol
     // functions here roughly correspond to API calls that can be triggered from external sources
@@ -738,7 +748,7 @@ module ccv {
         val jailEndTime = if (packet.downtime) {
             packet.sendingTime + DowntimeJailTime
         } else {
-            packet.sendingTime + CcvTimeout.get(sender)
+            packet.sendingTime + DoubleSignJailEndTime
         }
         // map the validator to its address on the provider
         // (in general, the validator is a consumer address and could be an assigned one)
@@ -746,9 +756,16 @@ module ccv {
             .get(sender)
             // if there is no entry for that validator, there is no key assignment
             .getOrElse(packet.validator, packet.validator)
+
+        val slashFactor = if (packet.downtime) {
+            DowntimeSlashPercentage
+        } else {
+            DoubleSignSlashPercentage
+        }
         
-        val newProviderState = currentState.providerState.jailUntil(packet.validator, jailEndTime)
-        //  .slash(currentState.providerState, packet.validator, packet.valPower, slashFactorToBeDetermined)
+        val newProviderState = currentState.providerState
+            .jailUntil(packet.validator, jailEndTime)
+            .slash(packet.validator, packet.valPower, slashFactor)
 
         Ok(currentState.with("providerState", newProviderState))
     }

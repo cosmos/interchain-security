@@ -13,7 +13,17 @@ module ccv_test {
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
     pure val trustingPeriods = chains.mapBy(chain => 2 * Week - 1 * Hour)
 
-    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain=trustingPeriods).* from "./ccv"
+    import ccv(
+        VscTimeout = 5 * Week,
+        CcvTimeout = ccvTimeouts,
+        UnbondingPeriodPerChain = unbondingPeriods,
+        ConsumerChains = consumerChains,
+        TrustingPeriodPerChain=trustingPeriods,
+        DowntimeJailTime=4*Day,
+        DoubleSignJailEndTime=9999 * 50 * Week,
+        DowntimeSlashPercentage = 5,
+        DoubleSignSlashPercentage = 10    
+    ).* from "./ccv"
 
     val votingPowerTestInitState = 
             GetEmptyProtocolState.with(

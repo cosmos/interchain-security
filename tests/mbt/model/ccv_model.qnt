@@ -14,6 +14,10 @@ module ccv_model {
     pure val trustingPeriods = chains.mapBy(chain => defUnbondingPeriod - 1 * Hour)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
     pure val downtimeJailTime = 5 * Day
+    
+    // taken from the sdk, jail time ends at maximum of a certain datatype
+    // see https://github.com/cosmos/cosmos-sdk/blob/03d578b9de5136ffc658f2b0c07434373b07b7da/x/evidence/types/params.go#L11 
+    pure val doubleSignJailEndTime = 253402300799
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     // possible consumer addresses that nodes can assign their key to
@@ -26,7 +30,10 @@ module ccv_model {
         UnbondingPeriodPerChain = unbondingPeriods,
         ConsumerChains = consumerChains,
         TrustingPeriodPerChain = trustingPeriods,
-        DowntimeJailTime = downtimeJailTime
+        DowntimeJailTime = downtimeJailTime,
+        DoubleSignJailEndTime = doubleSignJailEndTime,
+        DowntimeSlashPercentage = 5,
+        DoubleSignSlashPercentage = 10
     ).* from "./ccv"
 
     type Parameters = {
@@ -456,6 +463,12 @@ module ccv_model {
         not(ConsumerChains.exists(
             consumer => 
                 currentState.consumerStates.get(consumer).outstandingPacketsToProvider.length() > 0
+        ))
+
+    val canSendSlashPacket = 
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.consumerStates.get(consumer).receivedVscPackets.size() > 0
         ))
     
     val CanReceiveMaturations =
