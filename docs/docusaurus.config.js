@@ -12,7 +12,7 @@ const config = {
   tagline:
     "Interchain Security is a project to build a security layer for the Cosmos ecosystem.",
   url: "https://cosmos.github.io",
-  baseUrl: "/interchain-security/",
+  baseUrl: "/interchain-security/legacy/",
   onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.svg",
@@ -211,7 +211,7 @@ const config = {
         toExtensions: ["html"],
         redirects: [
           {
-            from: ["/main", "/master"],
+            from: ["/main"],
             to: "/",
           },
         ],
