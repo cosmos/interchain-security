@@ -68,25 +68,33 @@ module ccv_types {
         // Voting powers should be ordered by recency in descending order.
         votingPowerHistory: VotingPowerHistory,
 
-        // the current validator set on each chain.
-        // this will be included in the next block, but might not be final yet,
-        // e.g. there may be more modifications in the current block.
-        currentValidatorSet: ValidatorSet,
+        // the current validator powers on each chain.
+        // this will typically become the next validator set
+        // that is entered on chain, but some validators
+        // might be excluded, i.e. because they are jailed.
+        currentValidatorPowers: ValidatorSet,
 
         // the latest timestamp that was committed on chain
         lastTimestamp: Time,
 
         // the running timestamp of the current block (that will be put on chain when the block is ended)
         runningTimestamp: Time,
+
+        // Stores the times at which nodes can earliest be unjailed.
+        // If a node has no entry here, it is not jailed.
+        // If a node has a time in the past, it can be unjailed.
+        // If the time is in the future, it cannot be unjailed until that time.
+        jailedUntil: Node -> Time,
     }
 
     // utility function: returns a chain state that is initialized minimally.
     pure def GetEmptyChainState(): ChainState = 
         {
             votingPowerHistory: List(),
-            currentValidatorSet: Map(),
+            currentValidatorPowers: Map(),
             lastTimestamp: -1, // last timestamp -1 means that in the model, there was no block committed on chain yet.
             runningTimestamp: 0,
+            jailedUntil: Map(),
         }
 
     // Defines the current state of the provider chain. Essentially, all information here is stored by the provider on-chain (or could be derived purely by information that is on-chain).
@@ -308,15 +316,15 @@ module ccv {
     // the power of a validator on the provider chain is changed by the given amount. We do not care how this happens,
     // e.g. via undelegations, or delegations, ...
     pure def votingPowerChange(currentState: ProtocolState, validator: Node, amount: int): Result = {
-            pure val currentValidatorSet = currentState.providerState.chainState.currentValidatorSet
-            pure val oldVotingPower = if (currentValidatorSet.keys().contains(validator)) currentValidatorSet.get(validator) else 0
+            pure val currentValidatorPowers = currentState.providerState.chainState.currentValidatorPowers
+            pure val oldVotingPower = if (currentValidatorPowers.keys().contains(validator)) currentValidatorPowers.get(validator) else 0
             if (amount == 0) {
                 Err("Voting power cannot change by zero!")
             } else if (oldVotingPower == 0) {
                 Err("Voting power cannot be changed for a validator that is not in the current validator set!")
             } else {
                 pure val newVotingPower = oldVotingPower + amount
-                pure val newValidatorSet = currentValidatorSet.put(validator, if(newVotingPower >= 0) newVotingPower else 0)
+                pure val newValidatorSet = currentValidatorPowers.put(validator, if(newVotingPower >= 0) newVotingPower else 0)
                 // if the new validator set contains no validators with positive voting power, the validator set is invalid
                 if (newValidatorSet.values().filter(votingPower => votingPower > 0).size() == 0) {
                     Err("Voting power change resulted in empty validator set!")
@@ -462,7 +470,7 @@ module ccv {
             (consumer) => 
             currentProviderState.applyKeyAssignmentToValSet(
                 consumer, 
-                currentProviderState.chainState.currentValidatorSet
+                currentProviderState.chainState.currentValidatorPowers
             )
         )
         // store the current validator set with the key assignments applied in the history
@@ -508,7 +516,7 @@ module ccv {
             Err(err)
         } else {
             // for each consumer we just set to running, set its initial validator set to be the current one on the provider...
-            val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
+            val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorPowers
             val newConsumerStateMap =
                 tmpState.consumerStates.keys().mapBy(
                     (consumer) => 
@@ -518,7 +526,7 @@ module ccv {
                         val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
                         val newConsumerState: ConsumerState = currentConsumerState.with(
                             "chainState", currentConsumerState.chainState.with(
-                                "currentValidatorSet", consValSet
+                                "currentValidatorPowers", consValSet
                             ).with(
                                 "votingPowerHistory",
                                 List(consValSet)
@@ -604,7 +612,7 @@ module ccv {
     pure def assignConsumerKey(currentState: ProtocolState, consumer: Chain, providerNode: Node, consumerAddr: ConsumerAddr): Result = {
         // rule 1: validator A cannot assign consumer key K to consumer chain X
         // if there is already a validator B (B!=A) using K on the provider
-        pure val provCurValSet = currentState.providerState.chainState.currentValidatorSet
+        pure val provCurValSet = currentState.providerState.chainState.currentValidatorPowers
         if (provCurValSet.keys().exists(node => node != providerNode and node == consumerAddr)) {
             Err("validator A cannot assign consumer key K to consumer chain X
             if there is already a validator B (B!=A) using K on the provider")
@@ -638,7 +646,7 @@ module ccv {
                 }
 
                 // check whether the validator has positive power
-                pure val provValSet = currentState.providerState.chainState.currentValidatorSet
+                pure val provValSet = currentState.providerState.chainState.currentValidatorPowers
                 pure val provValPower = if (provValSet.keys().contains(providerNode)) provValSet.get(providerNode) else 0
                 pure val consumersWithAddrAssignmentChangesInThisBlock = 
                     if (provValPower > 0) {
@@ -709,12 +717,8 @@ module ccv {
                 valPower: vscPacket.validatorSet.get(consumerNode)
 
             })
-            if (downtime) {
-                Err("Downtime slashes are not yet implemented")
-            } else {
-                val newConsumerState = commitPacketOnConsumer(consumerState, packet)
-                Ok(currentState.with("consumerStates", currentState.consumerStates.set(consumer, newConsumerState)))
-            }
+            val newConsumerState = commitPacketOnConsumer(consumerState, packet)
+            Ok(currentState.with("consumerStates", currentState.consumerStates.set(consumer, newConsumerState)))
         }
     }
 
@@ -727,10 +731,9 @@ module ccv {
         }
     }
 
-    // TODO: currently this only jails, but it should eventually also slash
     pure def recvSlashPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: SlashPacket): Result = {
         // determine the jail duration for the validator:
-        // if the packet is a downtime slash, the jail duration is DowntimeJailDuration
+        // if the packet is a downtime slash, the jail duration is DowntimeJailTime
         // otherwise, the validator is jailed until the DoubleSignJailTime
         val jailEndTime = if (packet.downtime) {
             packet.sendingTime + DowntimeJailTime
@@ -744,13 +747,10 @@ module ccv {
             // if there is no entry for that validator, there is no key assignment
             .getOrElse(packet.validator, packet.validator)
         
-        // TODO: implement jailing
-        // val newProviderState = currentState.providerState
-        //  .jailUntil(currentState.providerState, packet.validator, jailEndTime)
+        val newProviderState = currentState.providerState.jailUntil(packet.validator, jailEndTime)
         //  .slash(currentState.providerState, packet.validator, packet.valPower, slashFactorToBeDetermined)
 
-        // Ok(currentState.with("providerState", newProviderState))
-        Err("not implemented")
+        Ok(currentState.with("providerState", newProviderState))
     }
 
     pure def recvVscMaturedPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {

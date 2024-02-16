@@ -19,7 +19,7 @@ module ccv_test {
             GetEmptyProtocolState.with(
                 "providerState", GetEmptyProtocolState.providerState.with(
                     "chainState", GetEmptyProtocolState.providerState.chainState.with(
-                        "currentValidatorSet", GetEmptyProtocolState.providerState.chainState.currentValidatorSet.put(
+                        "currentValidatorPowers", GetEmptyProtocolState.providerState.chainState.currentValidatorPowers.put(
                             "validator", 5
                         ).put(
                             "validator2", 5
@@ -46,8 +46,8 @@ module ccv_test {
             5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.keys().contains("validator") and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 10
+        result.newState.providerState.chainState.currentValidatorPowers.keys().contains("validator") and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 10
     }
 
     // voting power of 0 is allowed and applied as usual
@@ -59,7 +59,7 @@ module ccv_test {
             -5
         )
         not(finalResult.hasError()) and
-        finalResult.newState.providerState.chainState.currentValidatorSet.get("validator") == 0
+        finalResult.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0
     }
 
     run VotingPowerSetsFlagTest =
@@ -109,7 +109,7 @@ module ccv_test {
             5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0 and
         result2.hasError()
     }
 
@@ -127,7 +127,7 @@ module ccv_test {
             -5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0 and
         result2.hasError()
     }
 
@@ -175,7 +175,7 @@ module ccv_test {
             "sentVscPacketsToConsumer", _DeliverPacketToProvider_TestState.providerState.sentVscPacketsToConsumer.put(
                 "sender", List({
                     id: 0,
-                    validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorSet,
+                    validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorPowers,
                     sendingTime: 0,
                     timeoutTime: CcvTimeout.get("sender")
                 })

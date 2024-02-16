@@ -13,6 +13,7 @@ module ccv_model {
     pure val unbondingPeriods = chains.mapBy(chain => defUnbondingPeriod)
     pure val trustingPeriods = chains.mapBy(chain => defUnbondingPeriod - 1 * Hour)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
+    pure val downtimeJailTime = 5 * Day
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     // possible consumer addresses that nodes can assign their key to
@@ -24,7 +25,8 @@ module ccv_model {
         CcvTimeout = ccvTimeouts,
         UnbondingPeriodPerChain = unbondingPeriods,
         ConsumerChains = consumerChains,
-        TrustingPeriodPerChain = trustingPeriods
+        TrustingPeriodPerChain = trustingPeriods,
+        DowntimeJailTime = downtimeJailTime
     ).* from "./ccv"
 
     type Parameters = {
@@ -110,7 +112,7 @@ module ccv_model {
             "chainState", providerState.chainState.with(
                 "votingPowerHistory", List(InitialValidatorSet)
             ).with(
-                "currentValidatorSet", InitialValidatorSet
+                "currentValidatorPowers", InitialValidatorSet
             )
         ).with(
             "keyAssignedValSetHistory", ConsumerChains.mapBy(chain => List(InitialValidatorSet))
@@ -495,7 +497,7 @@ module ccv_model {
                 )),
                 assert(currentState.consumerStates.keys() == consumerChains),
                 assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet)),
-                assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet),
+                assert(currentState.providerState.chainState.currentValidatorPowers == InitialValidatorSet),
                 assert(currentState.providerState.chainState.lastTimestamp == -1),
                 assert(currentState.providerState.chainState.runningTimestamp == 0),
                 VotingPowerChange("node1", 50)
@@ -503,7 +505,7 @@ module ccv_model {
             .then(
             all {
                 // the validator set has changed
-                assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet.put("node1", 150)),
+                assert(currentState.providerState.chainState.currentValidatorPowers == InitialValidatorSet.put("node1", 150)),
                 // start consumer1
                 EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
             })
@@ -532,7 +534,7 @@ module ccv_model {
                     // ensure the maturation time was entered on the consumer
                     assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 1),
                     // the validator set was put as the current validator set
-                    assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 200)),
+                    assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorPowers == InitialValidatorSet.put("node1", 200)),
                     // advance time on provider and consumer until unbonding period is over - ensure that the consumer and provider
                     // stay in sync relative to each other
                     // We want to make sure the steps we make are shorter the trusting period,
@@ -700,10 +702,10 @@ module ccv_model {
     action ConsumerInitiatedSlashDet(
         consumer: Chain,
         consumerNode: Node,
-        vscId: VscId
+        vscId: VscId,
+        isDowntime: bool
     ): bool = {
-        // only support double-sign slashes for now, so supply 'true' for downtime
-        val result = sendSlashRequest(currentState, consumer, consumerNode, vscId, false)
+        val result = sendSlashRequest(currentState, consumer, consumerNode, vscId, isDowntime)
         all {
             hasError(result) == false,
             currentState' = result.newState,
@@ -739,8 +741,10 @@ module ccv_model {
             val valSet = packet.validatorSet.keys()
             // ...and picking one of the validators in the packet
             nondet validator = oneOf(valSet)
+            // finally, choose whether to slash for downtime or double-signing
+            nondet isDowntime = oneOf(Set(true, false))
             // then we can invoke the deterministic slash
-            ConsumerInitiatedSlashDet(consumer, validator, vscId)
+            ConsumerInitiatedSlashDet(consumer, validator, vscId, isDowntime)
         }
     }
 
@@ -853,7 +857,7 @@ module ccv_model {
                     // either the key is the nodes key itself (B == A)
                     consAddr == node or
                     // or the consAddr must not be a validator on the provider
-                    not(currentState.providerState.chainState.currentValidatorSet.keys().contains(consAddr))
+                    not(currentState.providerState.chainState.currentValidatorPowers.keys().contains(consAddr))
             )
         )
 
@@ -882,7 +886,7 @@ module ccv_model {
     val CanHaveConsumerAddresses =
         not(consumerChains.exists(
             consumer => 
-                currentState.consumerStates.get(consumer).chainState.currentValidatorSet.keys().exists(
+                currentState.consumerStates.get(consumer).chainState.currentValidatorPowers.keys().exists(
                     addr => addr.in(consumerAddresses)
                 )
         ))
@@ -913,8 +917,8 @@ module ccv_model {
         .then(
             all {
                 // the key should be present in the valset on the consumer, and the node itself should not
-                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.getOrElse("node1", 0) == 0),
-                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorPowers.getOrElse("node1", 0) == 0),
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorPowers.get("consAddr1") == 100),
                 // try some key assignments that should fail/succeed without committing to state
                 val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
                 // fail - key already assigned (even if it is the same node)

@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 // This file contains utility functions for ccv.qnt
 // that are not part of the API/core logic of ccv, but still relevant
 // for the functional logic of the protocol.
@@ -166,13 +167,23 @@ module ccv_utils {
     }
 
 
-    // Takes the currentValidatorSet and puts it as the newest set of the voting history
+    // Takes the currentValidatorPowers and puts it as the newest set of the voting history,
+    // omitting any validators that are jailed.
     pure def enterCurValSetIntoBlock(chainState: ChainState): ChainState = {
         chainState.with(
             "votingPowerHistory", chainState.votingPowerHistory.prepend(
-                chainState.currentValidatorSet
+                chainState.currentValidatorPowers.filterJailedVals(
+                    chainState.jailedUntil.keys()
+                )
             )
         )
+    }
+
+    pure def filterJailedVals(
+        valSet: ValidatorSet,
+        jailedValidators: Set[Node]
+    ): ValidatorSet = {
+        valSet.mapRemoveAll(jailedValidators)
     }
 
     // Advances the timestamp in the chainState by timeAdvancement
@@ -211,7 +222,7 @@ module ccv_utils {
                         // apply key assignment to the current validator set
                         validatorSet: providerState.applyKeyAssignmentToValSet(
                             consumer, 
-                            providerState.chainState.currentValidatorSet
+                            providerState.chainState.currentValidatorPowers
                         ),
                         sendingTime: sendingTimestamp,
                         timeoutTime: sendingTimestamp + ccvTimeout
@@ -285,7 +296,7 @@ module ccv_utils {
                 {
                     ...currentConsumerState,
                     chainState: currentConsumerState.chainState.with(
-                        "currentValidatorSet", packet.validatorSet
+                        "currentValidatorPowers", packet.validatorSet
                     ),
                     maturationTimes: currentConsumerState.maturationTimes.append(
                         (
@@ -338,7 +349,7 @@ module ccv_utils {
     // newValidatorSet.
     pure def setProviderValidatorSet(currentState: ProtocolState, newValidatorSet: ValidatorSet): ProtocolState = {
         pure val newChainState = currentState.providerState.chainState.with(
-            "currentValidatorSet", newValidatorSet
+            "currentValidatorPowers", newValidatorSet
         )
         currentState.with(
             "providerState", 
@@ -429,6 +440,53 @@ module ccv_utils {
     pure def commitPacketOnConsumer(senderState: ConsumerState, packet: Packet): ConsumerState = {
         senderState.with(
             "packetsToSendOnEndBlock", senderState.packetsToSendOnEndBlock.append(packet)
+        )
+    }
+
+    // Jails a validator until the given time.
+    // Note that they are not automatically unjailed afterwards,
+    // this must be done by another action. (TODO: currently not implemented)
+    pure def jailUntil(
+        providerState: ProviderState,
+        validator: Node,
+        jailEndTime: Time
+    ): ProviderState = {
+        val newChainState = providerState.chainState.with(
+            "jailedUntil", providerState.chainState.jailedUntil.put(validator, jailEndTime)
+        )
+        providerState.with(
+            "chainState", newChainState
+        )
+    }
+
+    // Slahes a given validator by the given percentage of the given power.
+    // The provided power is typically the power of the validator
+    // at the time of the infraction for which this slashes.
+    // The slash percentage should be a number between 0 and 100.
+    // Note that nodes cannot end up with negative power,
+    // so if their voting power is smaller than power * slashPercentage / 100,
+    // they will be set to 0.
+    pure def slash(
+        providerState: ProviderState,
+        validator: Node,
+        power: int,
+        slashPercentage: int
+    ): ProviderState = {
+        val slashAmount = power * slashPercentage / 100
+        val newChainState = providerState.chainState.with(
+            "currentValidatorPowers",
+            providerState.chainState.currentValidatorPowers.keys().mapBy(
+                node =>
+                val oldPower = providerState.chainState.currentValidatorPowers.get(node) 
+                if (node == validator) {
+                    max(0, oldPower - slashAmount)
+                } else {
+                    oldPower
+                }
+            )
+        )
+        providerState.with(
+            "chainState", newChainState
         )
     }
 }

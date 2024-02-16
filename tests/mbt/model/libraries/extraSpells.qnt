@@ -230,4 +230,21 @@ module extraSpells {
       assert(listMap(List("a", "b", "c"), __x => __x) == List("a", "b", "c")),
       assert(listMap(List(), __x => __x * __x) == List()),
     }
+
+    /// Compute the maximum of two integers.
+    ///
+    /// - @param __i first integer
+    /// - @param __j second integer
+    /// - @returns the maximum of __i and __j
+    pure def max(__i: int, __j: int): int = {
+      if (__i > __j) __i else __j
+    }
+
+    run maxTest = all {
+      assert(max(3, 4) == 4),
+      assert(max(6, 3) == 6),
+      assert(max(10, 10) == 10),
+      assert(max(-3, -5) == -3),
+      assert(max(-5, -3) == -3),
+    }
 }

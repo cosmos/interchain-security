@@ -28,7 +28,7 @@ func ChainState(curStateExpr itf.MapExprType, chain string) itf.MapExprType {
 }
 
 func ValidatorSet(curStateExpr itf.MapExprType, chain string) itf.MapExprType {
-	return ChainState(curStateExpr, chain)["currentValidatorSet"].Value.(itf.MapExprType)
+	return ChainState(curStateExpr, chain)["currentValidatorPowerss"].Value.(itf.MapExprType)
 }
 
 func HistoricalValidatorSet(curStateExpr itf.MapExprType, chain string, index int) itf.MapExprType {
