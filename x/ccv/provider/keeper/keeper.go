@@ -1185,6 +1185,7 @@ func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
 	return !found || topN == 0
 }
 
+// SetOptedIn sets validator `providerAddr` as opted in with the given `blockHeight` and `power`
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1203,6 +1204,7 @@ func (k Keeper) SetOptedIn(
 	store.Set(types.OptedInKey(chainID, providerAddr), append(blockHeightBytes, powerBytes...))
 }
 
+// DeleteOptedIn deletes opted-in validator `providerAddr`
 func (k Keeper) DeleteOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1212,6 +1214,7 @@ func (k Keeper) DeleteOptedIn(
 	store.Delete(types.OptedInKey(chainID, providerAddr))
 }
 
+// DeleteAllOptedIn deletes all opted-in validators
 func (k Keeper) DeleteAllOptedIn(
 	ctx sdk.Context,
 	chainID string) {
@@ -1229,6 +1232,7 @@ func (k Keeper) DeleteAllOptedIn(
 	}
 }
 
+// IsOptedIn returns `true` if the validator with `providerAddr` is opted in and `false` otherwise
 func (k Keeper) IsOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1238,6 +1242,7 @@ func (k Keeper) IsOptedIn(
 	return store.Get(types.OptedInKey(chainID, providerAddr)) != nil
 }
 
+// GetOptedIn returns all the opted-in validators on chain `chainID`
 func (k Keeper) GetOptedIn(
 	ctx sdk.Context,
 	chainID string) (optedInValidators []OptedInValidator) {
@@ -1257,6 +1262,7 @@ func (k Keeper) GetOptedIn(
 	return optedInValidators
 }
 
+// SetToBeOptedIn sets validator `providerAddr` as to be opted in
 func (k Keeper) SetToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1266,6 +1272,7 @@ func (k Keeper) SetToBeOptedIn(
 	store.Set(types.ToBeOptedInKey(chainID, providerAddr), []byte{})
 }
 
+// DeleteToBeOptedIn deletes to-be-opted-in validator `providerAddr`
 func (k Keeper) DeleteToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1275,6 +1282,7 @@ func (k Keeper) DeleteToBeOptedIn(
 	store.Delete(types.ToBeOptedInKey(chainID, providerAddr))
 }
 
+// DeleteAllToBeOptedIn deletes all to-be-opted-in validators
 func (k Keeper) DeleteAllToBeOptedIn(
 	ctx sdk.Context,
 	chainID string) {
@@ -1292,6 +1300,7 @@ func (k Keeper) DeleteAllToBeOptedIn(
 	}
 }
 
+// IsToBeOptedIn returns `true` if the validator with `providerAddr` is to be opted in and `false` otherwise
 func (k Keeper) IsToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1301,6 +1310,7 @@ func (k Keeper) IsToBeOptedIn(
 	return store.Get(types.ToBeOptedInKey(chainID, providerAddr)) != nil
 }
 
+// GetToBeOptedIn returns all the to-be-opted-in validators on chain `chainID`
 func (k Keeper) GetToBeOptedIn(
 	ctx sdk.Context,
 	chainID string) (addresses []types.ProviderConsAddress) {
@@ -1318,6 +1328,7 @@ func (k Keeper) GetToBeOptedIn(
 	return addresses
 }
 
+// SetToBeOptedOut sets validator `providerAddr` as to be opted out
 func (k Keeper) SetToBeOptedOut(
 	ctx sdk.Context,
 	chainID string,
@@ -1327,6 +1338,7 @@ func (k Keeper) SetToBeOptedOut(
 	store.Set(types.ToBeOptedOutKey(chainID, providerAddr), []byte{})
 }
 
+// DeleteToBeOptedOut deletes to-be-opted-out validator `providerAddr`
 func (k Keeper) DeleteToBeOptedOut(
 	ctx sdk.Context,
 	chainID string,
@@ -1336,6 +1348,7 @@ func (k Keeper) DeleteToBeOptedOut(
 	store.Delete(types.ToBeOptedOutKey(chainID, providerAddr))
 }
 
+// DeleteAllToBeOptedOut deletes all to-be-opted-out validators
 func (k Keeper) DeleteAllToBeOptedOut(
 	ctx sdk.Context,
 	chainID string) {
@@ -1353,6 +1366,7 @@ func (k Keeper) DeleteAllToBeOptedOut(
 	}
 }
 
+// IsToBeOptedOut returns `true` if the validator with `providerAddr` is to be opted out and `false` otherwise
 func (k Keeper) IsToBeOptedOut(
 	ctx sdk.Context,
 	chainID string,
@@ -1362,6 +1376,7 @@ func (k Keeper) IsToBeOptedOut(
 	return store.Get(types.ToBeOptedOutKey(chainID, providerAddr)) != nil
 }
 
+// GetToBeOptedOut returns all the to-be-opted-out validators on chain `chainID`
 func (k Keeper) GetToBeOptedOut(
 	ctx sdk.Context,
 	chainID string) (addresses []types.ProviderConsAddress) {
