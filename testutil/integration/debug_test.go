@@ -295,3 +295,7 @@ func TestAllocateTokens(t *testing.T) {
 func TestTransferConsumerRewardsToDistributionModule(t *testing.T) {
 	runCCVTestByName(t, "TransferConsumerRewardsToDistributionModule")
 }
+
+func TestAllocateTokensToValidator(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokensToValidator")
+}

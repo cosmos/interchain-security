@@ -131,7 +131,7 @@ func (im IBCMiddleware) OnRecvPacket(
 			return ack
 		}
 
-		coinDenom := getProviderDenom(data.Denom, packet)
+		coinDenom := GetProviderDenom(data.Denom, packet)
 		coinAmt, _ := math.NewIntFromString(data.Amount)
 
 		// Iterate over the whitelisted consumer denoms
@@ -205,11 +205,11 @@ func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string)
 	return "", false
 }
 
-// getProviderDenom returns the updated given denom according to the given IBC packet
+// GetProviderDenom returns the updated given denom according to the given IBC packet
 // It follows the same logic than the OnRecvPacket method of the IBC transfer module
 // see https://github.com/cosmos/ibc-go/blob/v7.3.2/modules/apps/transfer/keeper/relay.go#L162
-func getProviderDenom(denom string, packet channeltypes.Packet) (providerDenom string) {
-	// If the the prefix denom corresponds to the provider transfer channel info,
+func GetProviderDenom(denom string, packet channeltypes.Packet) (providerDenom string) {
+	// If the the prefix denom corresponds to the packet's source port and channel,
 	// returns the base denom
 	if ibctransfertypes.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), denom) {
 		voucherPrefix := ibctransfertypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())

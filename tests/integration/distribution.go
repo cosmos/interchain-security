@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -900,4 +901,91 @@ func (s *CCVTestSuite) prepareRewardDist() {
 	blocksSinceLastTrans := currentHeight - lastTransHeight.Height
 	blocksToGo := bpdt - blocksSinceLastTrans
 	s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
+}
+
+func (s *CCVTestSuite) TestAllocateTokensToValidator() {
+
+	providerkeepr := s.providerApp.GetProviderKeeper()
+
+	chainID := "consumer"
+
+	validators := []bytes.HexBytes{
+		s.providerChain.Vals.Validators[0].Address,
+		s.providerChain.Vals.Validators[1].Address,
+	}
+
+	votes := []abci.VoteInfo{
+		{Validator: abci.Validator{Address: validators[0], Power: 1}},
+		{Validator: abci.Validator{Address: validators[1], Power: 1}},
+	}
+
+	testCases := []struct {
+		name               string
+		votes              []abci.VoteInfo
+		tokens             sdk.DecCoins
+		expCoinTransferred sdk.DecCoins
+	}{
+		{
+			name: "reward tokens are empty",
+		},
+		{
+			name:   "total voting power is zero",
+			tokens: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
+		},
+		{
+			name:               "expect all tokens to be allocated to a single validator",
+			votes:              []abci.VoteInfo{votes[0]},
+			tokens:             sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
+			expCoinTransferred: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
+		},
+		{
+			name:               "expect tokens to be allocated evenly between validators",
+			votes:              []abci.VoteInfo{votes[0], votes[1]},
+			tokens:             sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(555_555))},
+			expCoinTransferred: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(555_555))},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+
+			ctx, _ := s.providerCtx().CacheContext()
+
+			// opt validators in
+			// for _, v := range tc.optedIn {
+			// 	keeper.SetOptedIn(
+			// 		ctx,
+			// 		chainID,
+			// 		types.NewProviderConsAddress(sdk.ConsAddress(v)),
+			// 		0,
+			// 	)
+			// }
+
+			// allocate tokens
+			res := providerkeepr.AllocateTokensToConsumerValidators(
+				ctx,
+				chainID,
+				tc.votes,
+				tc.tokens,
+			)
+
+			// check that the expect result is returned
+			s.Require().True(tc.expCoinTransferred.IsEqual(res))
+
+			if !tc.expCoinTransferred.Empty() {
+				// rewards are expected to be allocated evenly between validators
+				rewardsPerVal := tc.expCoinTransferred.QuoDec(sdk.NewDec(int64(len(tc.votes))))
+
+				// check that the rewards are allocated to validators as expected
+				for _, v := range tc.votes {
+					rewards := s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(
+						ctx,
+						sdk.ValAddress(v.Validator.Address),
+					)
+					s.Require().True(rewardsPerVal.IsEqual(rewards.Rewards))
+				}
+			}
+
+		})
+	}
 }

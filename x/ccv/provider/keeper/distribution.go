@@ -83,7 +83,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 		// note that the rewards transferred are only consumer whitelisted denoms
 		rewardsCollected, err := k.TransferConsumerRewardsToDistributionModule(ctx, consumer.ChainId)
 		if err != nil {
-			panic(err)
+			k.Logger(ctx).Error("fail to transfer consumer rewards to distribution module: %s", err)
 		}
 
 		if rewardsCollected.IsZero() {
@@ -111,8 +111,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 		feeAllocated := k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumer.ChainId,
-			// pass consumer opted-in vals total power
-			k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId, bondedVotes),
 			bondedVotes,
 			feeMultiplier,
 		)
@@ -127,16 +125,25 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 // TODO: allocate tokens to validators that opted-in and for long enough e.g. 1000 blocks
 // once the opt-in logic is integrated QueueVSCPackets()
 //
-// AllocateTokensToConsumerValidators allocates the consumer rewards pool to validator
-// according to their voting power
+// AllocateTokensToConsumerValidators allocates the given tokens from the
+// from consumer rewards pool to validator according to their voting power
 func (k Keeper) AllocateTokensToConsumerValidators(
 	ctx sdk.Context,
 	chainID string,
-	totalPreviousPower int64,
 	bondedVotes []abci.VoteInfo,
 	tokens sdk.DecCoins,
-) sdk.DecCoins {
-	totalReward := sdk.DecCoins{}
+) (totalReward sdk.DecCoins) {
+	// return early if the tokens are empty
+	if tokens.Empty() {
+		return totalReward
+	}
+
+	// get the consumer total voting power from the votes
+	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID, bondedVotes)
+	if totalPower == 0 {
+		return totalReward
+	}
+
 	for _, vote := range bondedVotes {
 		// TODO: should check if validator IsOptIn or continue here
 		consAddr := sdk.ConsAddress(vote.Validator.Address)
@@ -144,7 +151,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		// TODO: Consider micro-slashing for missing votes.
 		//
 		// Ref: https://github.com/cosmos/cosmos-sdk/issues/2525#issuecomment-430838701
-		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPreviousPower))
+		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPower))
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
 		k.distributionKeeper.AllocateTokensToValidator(
@@ -166,6 +173,9 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 ) (sdk.Coins, error) {
 	// Get coins of the consumer rewards allocation
 	allocation := k.GetConsumerRewardsAllocation(ctx, chainID)
+
+	// TODO: check if this condition doesn't break invariant
+	// CanWithdrawInvariant
 	if allocation.Rewards.IsZero() {
 		return sdk.Coins{}, nil
 	}
@@ -216,23 +226,24 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 	)
 }
 
-// ComputeConsumerTotalVotingPower returns the total voting power
-// for the given consumer chain opted-in validators
+// ComputeConsumerTotalVotingPower returns the total voting power for a given consumer chain
+// by summing its opted-in validators votes
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string, votes []abci.VoteInfo) int64 {
-	optedIn := map[string]struct{}{}
+	// optedIn := map[string]struct{}{}
 
-	// create set with opted-in validators
-	for _, v := range k.GetOptedIn(ctx, chainID) {
-		optedIn[v.ProviderAddr.ToSdkConsAddr().String()] = struct{}{}
-	}
+	// // create set with opted-in validators
+	// for _, v := range k.GetOptedIn(ctx, chainID) {
+	// 	optedIn[v.ProviderAddr.ToSdkConsAddr().String()] = struct{}{}
+	// }
 
 	var totalPower int64
 
 	// sum the opted-in validators set voting powers
 	for _, vote := range votes {
-		if _, ok := optedIn[sdk.ConsAddress(vote.Validator.Address).String()]; ok {
-			totalPower += vote.Validator.Power
-		}
+		// if _, ok := optedIn[sdk.ConsAddress(vote.Validator.Address).String()]; ok {
+		// 	totalPower += vote.Validator.Power
+		// }
+		totalPower += vote.Validator.Power
 	}
 
 	return totalPower
