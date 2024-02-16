@@ -47,7 +47,7 @@ func TestGetProviderDenom(t *testing.T) {
 			expProviderDenom: "stake",
 		},
 		{
-			name:  "returns prefixed denom updated with destination port and channel as prefix",
+			name:  "returns prefixed denom updated with packet's port and channel destination as prefix",
 			denom: "dstPort/dstChannel/stake",
 			packet: channeltypes.NewPacket(
 				[]byte{},

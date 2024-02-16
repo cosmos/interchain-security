@@ -1341,7 +1341,7 @@ func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet cha
 
 	chainID := tmClient.ChainId
 	if _, ok := k.GetChainToChannel(ctx, chainID); !ok {
-		return "", errorsmod.Wrapf(channeltypes.ErrTooManyConnectionHops, "no CCV channel found for chain with ID: %s", chainID)
+		return "", errorsmod.Wrapf(types.ErrUnknownConsumerChannelId, "no CCV channel found for chain with ID: %s", chainID)
 	}
 
 	return chainID, nil

@@ -182,7 +182,7 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	// Truncate coin rewards
 	rewardsToSend, _ := allocation.Rewards.TruncateDecimal()
 
-	// NOTE the consumer rewards account isn't a module account, however its coins
+	// NOTE the consumer rewards allocation isn't a module account, however its coins
 	// are held in the consumer reward pool module account. Thus the consumer
 	// rewards allocation must be reduced separately from the SendCoinsFromModuleToAccount call.
 

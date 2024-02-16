@@ -57,6 +57,7 @@ func (im IBCMiddleware) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
+	// call underlying app's OnChanOpenTry callback with the appVersion
 	return im.app.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, counterpartyVersion)
 }
 
@@ -68,7 +69,6 @@ func (im IBCMiddleware) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
-
 	// call underlying app's OnChanOpenAck callback with the counterparty app version.
 	return im.app.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
 }
@@ -89,6 +89,7 @@ func (im IBCMiddleware) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
+	// call underlying app's OnChanCloseInit callback.
 	return im.app.OnChanCloseInit(ctx, portID, channelID)
 }
 
@@ -112,16 +113,19 @@ func (im IBCMiddleware) OnRecvPacket(
 ) exported.Acknowledgement {
 	// executes the IBC transfer OnRecv logic
 	ack := im.app.OnRecvPacket(ctx, packet, relayer)
+
+	// execute the middleware logic only if the sender is a consumer chain
+	consumerID, err := im.keeper.IdentifyConsumerChainIDFromIBCPacket(ctx, packet)
+	if err != nil {
+		return ack
+	}
+
+	// Note that inside the above if condition statement,
+	// we know that the IBC transfer succeeded. That entails
+	// that the packet data is valid and can be safely
+	// deserialized without checking errors.
 	if ack.Success() {
-
-		// check if the packet sender is a consumer chain
-		chainID, err := im.keeper.IdentifyConsumerChainIDFromIBCPacket(ctx, packet)
-		if err != nil {
-			return ack
-		}
-
-		// At this point the transfer was successful,
-		// so the IBC packet can be safely deserialized
+		// extract the coin info received from the packet data
 		var data ibctransfertypes.FungibleTokenPacketData
 		_ = types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
 
@@ -131,24 +135,19 @@ func (im IBCMiddleware) OnRecvPacket(
 			return ack
 		}
 
-		coinDenom := GetProviderDenom(data.Denom, packet)
 		coinAmt, _ := math.NewIntFromString(data.Amount)
+		coinDenom := GetProviderDenom(data.Denom, packet)
 
-		// Iterate over the whitelisted consumer denoms
-		for _, denom := range im.keeper.GetAllConsumerRewardDenoms(ctx) {
-			// if the coin's denom is found,
-			// update the consumer chain rewards allocation
-			if denom == coinDenom {
-				alloc := im.keeper.GetConsumerRewardsAllocation(ctx, chainID)
-				alloc.Rewards = alloc.Rewards.Add(
-					sdk.NewDecCoinsFromCoins(sdk.Coin{
-						Denom:  coinDenom,
-						Amount: coinAmt,
-					})...)
-				im.keeper.SetConsumerRewardsAllocation(ctx, chainID, alloc)
-
-				break
-			}
+		// verify that the coin's denom is a whitelisted consumer denom,
+		// and if so, adds it to the consumer chain rewards allocation
+		if im.keeper.ConsumerRewardDenomExists(ctx, coinDenom) {
+			alloc := im.keeper.GetConsumerRewardsAllocation(ctx, consumerID)
+			alloc.Rewards = alloc.Rewards.Add(
+				sdk.NewDecCoinsFromCoins(sdk.Coin{
+					Denom:  coinDenom,
+					Amount: coinAmt,
+				})...)
+			im.keeper.SetConsumerRewardsAllocation(ctx, consumerID, alloc)
 		}
 	}
 
@@ -163,6 +162,7 @@ func (im IBCMiddleware) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
+	// call underlying app's OnAcknowledgementPacket callback.
 	return im.app.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
 }
 
@@ -173,7 +173,7 @@ func (im IBCMiddleware) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	// call underlying callback
+	// call underlying app's OnTimeoutPacket callback.
 	return im.app.OnTimeoutPacket(ctx, packet, relayer)
 }
 
