@@ -188,7 +188,7 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context,
 ) []OptedInValidator {
 	isRemoved := make(map[string]bool)
 	for _, val := range validatorAddressesToRemove {
-		isRemoved[val.ToSdkConsAddr().String()] = true
+		isRemoved[val.String()] = true
 	}
 
 	var out []OptedInValidator
