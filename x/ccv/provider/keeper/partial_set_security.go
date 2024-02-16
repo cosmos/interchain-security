@@ -193,7 +193,7 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context,
 
 	var out []OptedInValidator
 	for _, val := range currentValidators {
-		if isRemoved[val.ProviderAddr.ToSdkConsAddr().String()] {
+		if isRemoved[val.ProviderAddr.String()] {
 			continue
 		}
 		valAddress, _, err := k.getValAddressAndPublicKey(ctx, val.ProviderAddr)
