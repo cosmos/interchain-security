@@ -78,12 +78,16 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 
 	// Iterate over all registered consumer chains
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
-
 		// transfer the consumer rewards to the distribution module account
 		// note that the rewards transferred are only consumer whitelisted denoms
 		rewardsCollected, err := k.TransferConsumerRewardsToDistributionModule(ctx, consumer.ChainId)
 		if err != nil {
-			k.Logger(ctx).Error("fail to transfer consumer rewards to distribution module: %s", err)
+			k.Logger(ctx).Error(
+				"fail to transfer rewards to distribution module for chain %s: %s",
+				consumer.ChainId,
+				err,
+			)
+			continue
 		}
 
 		if rewardsCollected.IsZero() {
@@ -148,9 +152,6 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		// TODO: should check if validator IsOptIn or continue here
 		consAddr := sdk.ConsAddress(vote.Validator.Address)
 
-		// TODO: Consider micro-slashing for missing votes.
-		//
-		// Ref: https://github.com/cosmos/cosmos-sdk/issues/2525#issuecomment-430838701
 		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPower))
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
@@ -174,8 +175,6 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	// Get coins of the consumer rewards allocation
 	allocation := k.GetConsumerRewardsAllocation(ctx, chainID)
 
-	// TODO: check if this condition doesn't break invariant
-	// CanWithdrawInvariant
 	if allocation.Rewards.IsZero() {
 		return sdk.Coins{}, nil
 	}
@@ -229,20 +228,15 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 // ComputeConsumerTotalVotingPower returns the total voting power for a given consumer chain
 // by summing its opted-in validators votes
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string, votes []abci.VoteInfo) int64 {
-	// optedIn := map[string]struct{}{}
-
-	// // create set with opted-in validators
-	// for _, v := range k.GetOptedIn(ctx, chainID) {
-	// 	optedIn[v.ProviderAddr.ToSdkConsAddr().String()] = struct{}{}
-	// }
+	// TODO: create a optedIn set from the OptedIn validators
+	// and sum their validator power
 
 	var totalPower int64
 
 	// sum the opted-in validators set voting powers
 	for _, vote := range votes {
-		// if _, ok := optedIn[sdk.ConsAddress(vote.Validator.Address).String()]; ok {
-		// 	totalPower += vote.Validator.Power
-		// }
+		// TODO: check that val is in the optedIn set
+
 		totalPower += vote.Validator.Power
 	}
 

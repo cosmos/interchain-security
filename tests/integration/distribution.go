@@ -948,18 +948,10 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
+			// TODO: opt validators in and verify
+			// that rewards are solely allocated to them
 
 			ctx, _ := s.providerCtx().CacheContext()
-
-			// opt validators in
-			// for _, v := range tc.optedIn {
-			// 	keeper.SetOptedIn(
-			// 		ctx,
-			// 		chainID,
-			// 		types.NewProviderConsAddress(sdk.ConsAddress(v)),
-			// 		0,
-			// 	)
-			// }
 
 			// allocate tokens
 			res := providerkeepr.AllocateTokensToConsumerValidators(
