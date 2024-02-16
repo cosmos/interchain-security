@@ -82,6 +82,10 @@ test-e2e-short:
 test-e2e-short-cometmock:
 	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer
 
+# run minimal set of traces with cometmock and gaia
+test-e2e-short-cometmock-gaia:
+	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer --use-gaia
+
 # run full E2E tests in sequence (including multiconsumer)
 test-e2e-multi-consumer:
 	go run ./tests/e2e/... --include-multi-consumer
