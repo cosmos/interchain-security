@@ -12,7 +12,7 @@ const config = {
   tagline:
     "Interchain Security is a project to build a security layer for the Cosmos ecosystem.",
   url: "https://cosmos.github.io",
-  baseUrl: "/interchain-security/legacy/",
+  baseUrl: "/interchain-security/",
   onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.svg",
@@ -92,6 +92,13 @@ const config = {
             type: "docsVersionDropdown",
             position: "left",
             dropdownActiveClassDisabled: false,
+            dropdownItemsAfter: [
+              {
+                href: "http://localhost/interchain-security/legacy/",
+                label: "<= v3.x",
+                target: "_blank",
+              },
+            ],
           },
         ],
       },
