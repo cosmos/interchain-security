@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"sort"
 	"testing"
 	"time"
@@ -662,39 +661,49 @@ func TestTopN(t *testing.T) {
 	}
 }
 
-func TestGetOptedIn(t *testing.T) {
+func TestGetAllOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	expectedOptedInValidators := []keeper.OptedInValidator{
+	expectedOptedInValidators := []types.OptedInValidator{
 		{
-			ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr1")),
+			ProviderAddr: []byte("providerAddr1"),
 			BlockHeight:  1,
+			Power:        2,
+			PublicKey:    []byte{3},
 		},
 		{
-			ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr2")),
+			ProviderAddr: []byte("providerAddr2"),
 			BlockHeight:  2,
+			Power:        3,
+			PublicKey:    []byte{4},
 		},
 		{
-			ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr3")),
+			ProviderAddr: []byte("providerAddr3"),
 			BlockHeight:  3,
+			Power:        4,
+			PublicKey:    []byte{5},
 		},
 	}
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
 		providerKeeper.SetOptedIn(ctx, "chainID",
-			expectedOptedInValidator.ProviderAddr, expectedOptedInValidator.BlockHeight)
+			types.OptedInValidator{
+				ProviderAddr: expectedOptedInValidator.ProviderAddr,
+				BlockHeight:  expectedOptedInValidator.BlockHeight,
+				Power:        expectedOptedInValidator.Power,
+				PublicKey:    expectedOptedInValidator.PublicKey})
 	}
 
-	actualOptedInValidators := providerKeeper.GetOptedIn(ctx, "chainID")
+	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "chainID")
 
 	// sort validators first to be able to compare
-	sortOptedInValidators := func(optedInValidators []keeper.OptedInValidator) {
+	sortOptedInValidators := func(optedInValidators []types.OptedInValidator) {
 		sort.Slice(optedInValidators, func(i int, j int) bool {
 			a := optedInValidators[i]
 			b := optedInValidators[j]
 			return a.BlockHeight < b.BlockHeight ||
-				(a.BlockHeight == b.BlockHeight && bytes.Compare(a.ProviderAddr.ToSdkConsAddr(), b.ProviderAddr.ToSdkConsAddr()) < 0)
+				(a.BlockHeight == b.BlockHeight && bytes.Compare(a.ProviderAddr, b.ProviderAddr) < 0)
 		})
 	}
 	sortOptedInValidators(expectedOptedInValidators)
@@ -707,19 +716,20 @@ func TestOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	optedInValidator := keeper.OptedInValidator{
-		ProviderAddr: types.NewProviderConsAddress([]byte("providerAddr")),
-		BlockHeight:  1,
+	optedInValidator := types.OptedInValidator{ProviderAddr: []byte("providerAddr"),
+		BlockHeight: 1,
+		Power:       2,
+		PublicKey:   []byte{3},
 	}
 
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator.ProviderAddr, optedInValidator.BlockHeight)
-	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
-	providerKeeper.DeleteOptedIn(ctx, "chainID", optedInValidator.ProviderAddr)
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
 }
 
-func TestGetToBeOptedIn(t *testing.T) {
+func TestGetAllToBeOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -732,7 +742,7 @@ func TestGetToBeOptedIn(t *testing.T) {
 		providerKeeper.SetToBeOptedIn(ctx, "chainID", addr)
 	}
 
-	actualAddresses := providerKeeper.GetToBeOptedIn(ctx, "chainID")
+	actualAddresses := providerKeeper.GetAllToBeOptedIn(ctx, "chainID")
 
 	// sort addresses first to be able to compare
 	sortAddresses := func(addresses []types.ProviderConsAddress) {
@@ -766,7 +776,7 @@ func TestBeOptedIn(t *testing.T) {
 		providerKeeper.SetToBeOptedIn(ctx, "chainID", addr)
 	}
 
-	actualAddresses := providerKeeper.GetToBeOptedIn(ctx, "chainID")
+	actualAddresses := providerKeeper.GetAllToBeOptedIn(ctx, "chainID")
 
 	// sort addresses first to be able to compare
 	sortAddresses := func(addresses []types.ProviderConsAddress) {
@@ -801,7 +811,7 @@ func TestToBeOptedIn(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 }
 
-func TestGetToBeOptedOut(t *testing.T) {
+func TestGetAllToBeOptedOut(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -814,7 +824,7 @@ func TestGetToBeOptedOut(t *testing.T) {
 		providerKeeper.SetToBeOptedOut(ctx, "chainID", addr)
 	}
 
-	actualAddresses := providerKeeper.GetToBeOptedOut(ctx, "chainID")
+	actualAddresses := providerKeeper.GetAllToBeOptedOut(ctx, "chainID")
 
 	// sort addresses first to be able to compare
 	sortAddresses := func(addresses []types.ProviderConsAddress) {
