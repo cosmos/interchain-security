@@ -1189,19 +1189,15 @@ func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	providerAddr types.ProviderConsAddress,
-	blockHeight uint64,
-	power uint64,
+	validator types.OptedInValidator,
 ) {
 	store := ctx.KVStore(k.storeKey)
+	bz, err := validator.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal OptedInValidator: %w", err))
+	}
 
-	blockHeightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(blockHeightBytes, blockHeight)
-
-	powerBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(powerBytes, power)
-
-	store.Set(types.OptedInKey(chainID, providerAddr), append(blockHeightBytes, powerBytes...))
+	store.Set(types.OptedInKey(chainID, validator.ProviderAddr), bz)
 }
 
 // DeleteOptedIn deletes opted-in validator `providerAddr`
@@ -1211,7 +1207,7 @@ func (k Keeper) DeleteOptedIn(
 	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.OptedInKey(chainID, providerAddr))
+	store.Delete(types.OptedInKey(chainID, providerAddr.ToSdkConsAddr()))
 }
 
 // DeleteAllOptedIn deletes all opted-in validators
@@ -1239,24 +1235,25 @@ func (k Keeper) IsOptedIn(
 	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.OptedInKey(chainID, providerAddr)) != nil
+	return store.Get(types.OptedInKey(chainID, providerAddr.ToSdkConsAddr())) != nil
 }
 
-// GetOptedIn returns all the opted-in validators on chain `chainID`
-func (k Keeper) GetOptedIn(
+// GetAllOptedIn returns all the opted-in validators on chain `chainID`
+func (k Keeper) GetAllOptedIn(
 	ctx sdk.Context,
-	chainID string) (optedInValidators []OptedInValidator) {
+	chainID string) (optedInValidators []types.OptedInValidator) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		optedInValidators = append(optedInValidators, OptedInValidator{
-			ProviderAddr: types.NewProviderConsAddress(iterator.Key()[len(key):]),
-			BlockHeight:  binary.BigEndian.Uint64(iterator.Value()[0:8]),
-			Power:        binary.BigEndian.Uint64(iterator.Value()[8:]),
-		})
+		iterator.Value()
+		var optedInValidator types.OptedInValidator
+		if err := optedInValidator.Unmarshal(iterator.Value()); err != nil {
+			panic(fmt.Errorf("failed to unmarshal OptedInValidator: %w", err))
+		}
+		optedInValidators = append(optedInValidators, optedInValidator)
 	}
 
 	return optedInValidators
@@ -1310,8 +1307,8 @@ func (k Keeper) IsToBeOptedIn(
 	return store.Get(types.ToBeOptedInKey(chainID, providerAddr)) != nil
 }
 
-// GetToBeOptedIn returns all the to-be-opted-in validators on chain `chainID`
-func (k Keeper) GetToBeOptedIn(
+// GetAllToBeOptedIn returns all the to-be-opted-in validators on chain `chainID`
+func (k Keeper) GetAllToBeOptedIn(
 	ctx sdk.Context,
 	chainID string) (addresses []types.ProviderConsAddress) {
 
@@ -1376,8 +1373,8 @@ func (k Keeper) IsToBeOptedOut(
 	return store.Get(types.ToBeOptedOutKey(chainID, providerAddr)) != nil
 }
 
-// GetToBeOptedOut returns all the to-be-opted-out validators on chain `chainID`
-func (k Keeper) GetToBeOptedOut(
+// GetAllToBeOptedOut returns all the to-be-opted-out validators on chain `chainID`
+func (k Keeper) GetAllToBeOptedOut(
 	ctx sdk.Context,
 	chainID string) (addresses []types.ProviderConsAddress) {
 

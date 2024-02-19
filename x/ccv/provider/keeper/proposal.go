@@ -255,9 +255,9 @@ func (k Keeper) MakeConsumerGenesis(
 		return false
 	})
 
-	// currentValidators := k.GetOptedIn(ctx, chainID)
-	// validatorsToAdd := k.GetToBeOptedIn(ctx, chainID)
-	// validatorsToRemove := k.GetToBeOptedOut(ctx, chainID)
+	// currentValidators := k.GetAllOptedIn(ctx, chainID)
+	// validatorsToAdd := k.GetAllToBeOptedIn(ctx, chainID)
+	// validatorsToRemove := k.GetAllToBeOptedOut(ctx, chainID)
 	//
 	// initialUpdates := k.ComputeValidatorUpdates(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
 
@@ -379,7 +379,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 
 		// FIXME(PSS)
-		//if k.IsOptIn(cachedCtx, prop.ChainId) && len(k.GetToBeOptedIn(cachedCtx, prop.ChainId)) == 0 {
+		//if k.IsOptIn(cachedCtx, prop.ChainId) && len(k.GetAllToBeOptedIn(cachedCtx, prop.ChainId)) == 0 {
 		//	// drop the proposal
 		//	ctx.Logger().Info("could not start Opt In consumer chain (%s) because no validator has opted in",
 		//		prop.ChainId)

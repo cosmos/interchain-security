@@ -300,3 +300,11 @@ message ConsumerAddrsToPrune {
   uint64 vsc_id = 2;
   AddressList consumer_addrs = 3;
 }
+
+
+message OptedInValidator {
+  bytes provider_addr = 1;
+  int64 block_height = 2;
+  int64 power = 3;
+  bytes public_key = 4;
+}

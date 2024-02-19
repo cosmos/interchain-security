@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"bytes"
 	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -9,13 +10,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"sort"
-	"strings"
 	"testing"
 )
 
@@ -45,7 +44,9 @@ func TestHandleOptIn(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 
 	// if validator (`providerAddr`) is already opted in, then the validator cannot be opted in
-	providerKeeper.SetOptedIn(ctx, "chainID", providerAddr, 1, 2)
+
+	providerKeeper.SetOptedIn(ctx, "chainID",
+		types.OptedInValidator{ProviderAddr: providerAddr.ToSdkConsAddr(), BlockHeight: 1, Power: 1, PublicKey: []byte{1}})
 	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, nil)
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 }
@@ -127,8 +128,11 @@ func TestComputeValidatorUpdates(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	chainID := "chainID"
+
 	// create 10 validators, where the first 8 are bonded and the last 2 are unbonded
 	var providerAddresses []types.ProviderConsAddress
+	var pubKeysBytes [][]byte
 	var pubKeys []tmprotocrypto.PublicKey
 	for i := 0; i < 10; i++ {
 		// generate a consensus public key for the provider
@@ -155,6 +159,8 @@ func TestComputeValidatorUpdates(t *testing.T) {
 		}
 
 		pubKey, _ := validator.TmConsPublicKey()
+		pubKeyBytes, _ := pubKey.Marshal()
+		pubKeysBytes = append(pubKeysBytes, pubKeyBytes)
 		pubKeys = append(pubKeys, pubKey)
 
 		mocks.MockStakingKeeper.EXPECT().
@@ -162,22 +168,28 @@ func TestComputeValidatorUpdates(t *testing.T) {
 
 		mocks.MockStakingKeeper.EXPECT().
 			GetLastValidatorPower(ctx, providerValidatorAddr).Return(int64(i)).AnyTimes()
+
+		providerKeeper.SetValidatorConsumerPubKey(ctx, chainID, providerAddresses[i], pubKey)
 	}
 
 	// set first 6 validators as currently opted in where validators 1, 2, and 3 have a
 	// different power now than the power they had when they opted in
-	var currentValidators []keeper.OptedInValidator
-	for i := 0; i < 6; i++ {
+	var currentValidators []types.OptedInValidator
+	for i := byte(0); i < 6; i++ {
 		if i > 0 && i < 4 {
 			currentValidators = append(currentValidators,
-				keeper.OptedInValidator{ProviderAddr: providerAddresses[i],
+				types.OptedInValidator{ProviderAddr: providerAddresses[i].ToSdkConsAddr(),
 					BlockHeight: 1,
-					Power:       uint64(i + 1)})
+					Power:       int64(i + 1),
+					PublicKey:   pubKeysBytes[i],
+				})
 		} else {
 			currentValidators = append(currentValidators,
-				keeper.OptedInValidator{ProviderAddr: providerAddresses[i],
+				types.OptedInValidator{ProviderAddr: providerAddresses[i].ToSdkConsAddr(),
 					BlockHeight: 1,
-					Power:       uint64(i)})
+					Power:       int64(i),
+					PublicKey:   pubKeysBytes[i],
+				})
 		}
 	}
 
@@ -207,7 +219,7 @@ func TestComputeValidatorUpdates(t *testing.T) {
 		// validators 8 and 9 are unbonded, so they are not added
 	}
 
-	actualValUpdates := providerKeeper.ComputeValidatorUpdates(ctx,
+	actualValUpdates, _ := providerKeeper.ComputeValidatorUpdatesAndNextValidators(ctx, chainID,
 		currentValidators, validatorsToAdd, validatorsToRemove)
 
 	sort.Slice(expectedValUpdates, func(i int, j int) bool {
@@ -235,12 +247,14 @@ func TestComputeNextValidators(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	chainID := "chainID"
+
 	// change the block height, so we can verify that newly added validators have the right height set
 	ctx = ctx.WithBlockHeight(1000)
 
 	// create 10 validators, where the first 8 are bonded and the last 2 are unbonded
 	var providerAddresses []types.ProviderConsAddress
-	var pubKeys []tmprotocrypto.PublicKey
+	var pubKeys [][]byte
 	for i := 0; i < 10; i++ {
 		// generate a consensus public key for the provider
 		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{uint8(i)}).PubKey()
@@ -270,7 +284,8 @@ func TestComputeNextValidators(t *testing.T) {
 				Ed25519: consAddr.Bytes(),
 			},
 		}
-		pubKeys = append(pubKeys, pubKey)
+		pubKeyBytes, _ := pubKey.Marshal()
+		pubKeys = append(pubKeys, pubKeyBytes)
 
 		mocks.MockStakingKeeper.EXPECT().
 			GetValidatorByConsAddr(ctx, consAddr).Return(validator, true).AnyTimes()
@@ -278,22 +293,27 @@ func TestComputeNextValidators(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().
 			GetLastValidatorPower(ctx, providerValidatorAddr).Return(int64(i)).AnyTimes()
 
+		providerKeeper.SetValidatorConsumerPubKey(ctx, chainID, providerAddresses[i], pubKey)
 	}
 
 	// set first 6 validators as currently opted in where validators 1, 2, and 3 have a
 	// different power now than the power they had when they opted in
-	var currentValidators []keeper.OptedInValidator
+	var currentValidators []types.OptedInValidator
 	for i := 0; i < 6; i++ {
 		if i > 0 && i < 4 {
 			currentValidators = append(currentValidators,
-				keeper.OptedInValidator{ProviderAddr: providerAddresses[i],
+				types.OptedInValidator{ProviderAddr: providerAddresses[i].ToSdkConsAddr(),
 					BlockHeight: 1,
-					Power:       uint64(i + 1)})
+					Power:       int64(i + 1),
+					PublicKey:   pubKeys[i],
+				})
 		} else {
 			currentValidators = append(currentValidators,
-				keeper.OptedInValidator{ProviderAddr: providerAddresses[i],
+				types.OptedInValidator{ProviderAddr: providerAddresses[i].ToSdkConsAddr(),
 					BlockHeight: 1,
-					Power:       uint64(i)})
+					Power:       int64(i),
+					PublicKey:   pubKeys[i],
+				})
 		}
 	}
 
@@ -309,40 +329,40 @@ func TestComputeNextValidators(t *testing.T) {
 		validatorsToAdd = append(validatorsToAdd, providerAddresses[i])
 	}
 
-	expectedValidators := []keeper.OptedInValidator{
+	expectedValidators := []types.OptedInValidator{
 		// validators 0 and 1 are removed
 		// validators 2 to 5 are still opted in and hence remain
-		{ProviderAddr: providerAddresses[2], BlockHeight: uint64(1), Power: uint64(2)},
-		{ProviderAddr: providerAddresses[3], BlockHeight: uint64(1), Power: uint64(3)},
-		{ProviderAddr: providerAddresses[4], BlockHeight: uint64(1), Power: uint64(4)},
-		{ProviderAddr: providerAddresses[5], BlockHeight: uint64(1), Power: uint64(5)},
+		{ProviderAddr: providerAddresses[2].ToSdkConsAddr(), BlockHeight: int64(1), Power: int64(2), PublicKey: pubKeys[2]},
+		{ProviderAddr: providerAddresses[3].ToSdkConsAddr(), BlockHeight: int64(1), Power: int64(3), PublicKey: pubKeys[3]},
+		{ProviderAddr: providerAddresses[4].ToSdkConsAddr(), BlockHeight: int64(1), Power: int64(4), PublicKey: pubKeys[4]},
+		{ProviderAddr: providerAddresses[5].ToSdkConsAddr(), BlockHeight: int64(1), Power: int64(5), PublicKey: pubKeys[5]},
 		// validators 6 and 7 are now opted in and hence have the latest `BlockHeight`
-		{ProviderAddr: providerAddresses[6], BlockHeight: uint64(1000), Power: uint64(6)},
-		{ProviderAddr: providerAddresses[7], BlockHeight: uint64(1000), Power: uint64(7)},
+		{ProviderAddr: providerAddresses[6].ToSdkConsAddr(), BlockHeight: int64(1000), Power: int64(6), PublicKey: pubKeys[6]},
+		{ProviderAddr: providerAddresses[7].ToSdkConsAddr(), BlockHeight: int64(1000), Power: int64(7), PublicKey: pubKeys[7]},
 		// validators 8 and 9 are unbonded, so they are not added
 	}
 
-	actualValidators := providerKeeper.ComputeNextValidators(ctx,
+	_, actualValidators := providerKeeper.ComputeValidatorUpdatesAndNextValidators(ctx, chainID,
 		currentValidators, validatorsToAdd, validatorsToRemove)
 
 	sort.Slice(actualValidators, func(i int, j int) bool {
-		if strings.Compare(actualValidators[i].ProviderAddr.String(), actualValidators[j].ProviderAddr.String()) == 0 {
+		if bytes.Compare(actualValidators[i].ProviderAddr, actualValidators[j].ProviderAddr) == 0 {
 			if actualValidators[i].BlockHeight == actualValidators[j].BlockHeight {
 				return actualValidators[i].Power < actualValidators[j].Power
 			}
 			return actualValidators[i].BlockHeight < actualValidators[j].BlockHeight
 		}
-		return strings.Compare(actualValidators[i].ProviderAddr.String(), actualValidators[j].ProviderAddr.String()) < 0
+		return bytes.Compare(actualValidators[i].ProviderAddr, actualValidators[j].ProviderAddr) < 0
 	})
 
 	sort.Slice(expectedValidators, func(i int, j int) bool {
-		if strings.Compare(expectedValidators[i].ProviderAddr.String(), expectedValidators[j].ProviderAddr.String()) == 0 {
+		if bytes.Compare(expectedValidators[i].ProviderAddr, expectedValidators[j].ProviderAddr) == 0 {
 			if expectedValidators[i].BlockHeight == expectedValidators[j].BlockHeight {
 				return expectedValidators[i].Power < expectedValidators[j].Power
 			}
 			return expectedValidators[i].BlockHeight < expectedValidators[j].BlockHeight
 		}
-		return strings.Compare(expectedValidators[i].ProviderAddr.String(), expectedValidators[j].ProviderAddr.String()) < 0
+		return bytes.Compare(expectedValidators[i].ProviderAddr, expectedValidators[j].ProviderAddr) < 0
 	})
 
 	require.Equal(t, expectedValidators, actualValidators)
@@ -354,52 +374,50 @@ func TestResetCurrentValidators(t *testing.T) {
 
 	chainID := "chainID"
 
-	// create 10 provider addresses
-	providerAddresses := make([]types.ProviderConsAddress, 10)
-	for i := 0; i < 10; i++ {
-		providerAddresses[i] = types.NewProviderConsAddress([]byte(fmt.Sprintf("providerAddr%d", i)))
+	// consider that 5 validators are opted in
+	for i := byte(0); i < 5; i++ {
+		optedInValidator := types.OptedInValidator{
+			ProviderAddr: []byte(fmt.Sprintf("providerAddr%d", i)),
+			BlockHeight:  int64(i),
+			Power:        int64(i),
+			PublicKey:    []byte{i}}
+		providerKeeper.SetOptedIn(ctx, chainID, optedInValidator)
 	}
+	require.NotEmpty(t, providerKeeper.GetAllOptedIn(ctx, chainID))
 
-	// opt in the first 5 validators
-	for i := 0; i < 5; i++ {
-		providerKeeper.SetOptedIn(ctx, chainID, providerAddresses[i], 1, 1)
+	// consider another 5 validators that correspond to the next opted-in validators
+	nextValidators := []types.OptedInValidator{
+		{ProviderAddr: []byte(fmt.Sprintf("providerAddr6")), BlockHeight: 6, Power: 6},
+		{ProviderAddr: []byte(fmt.Sprintf("providerAddr7")), BlockHeight: 7, Power: 7},
+		{ProviderAddr: []byte(fmt.Sprintf("providerAddr8")), BlockHeight: 8, Power: 8},
+		{ProviderAddr: []byte(fmt.Sprintf("providerAddr9")), BlockHeight: 9, Power: 9},
 	}
-	require.NotEmpty(t, providerKeeper.GetOptedIn(ctx, chainID))
-
-	// set the remaining 5 validators as opted in
-	nextValidators := []keeper.OptedInValidator{
-		{ProviderAddr: providerAddresses[6], BlockHeight: uint64(6), Power: uint64(6)},
-		{ProviderAddr: providerAddresses[7], BlockHeight: uint64(7), Power: uint64(7)},
-		{ProviderAddr: providerAddresses[8], BlockHeight: uint64(8), Power: uint64(8)},
-		{ProviderAddr: providerAddresses[9], BlockHeight: uint64(9), Power: uint64(9)},
-	}
-
 	providerKeeper.ResetCurrentValidators(ctx, chainID, nextValidators)
 
-	require.Empty(t, providerKeeper.GetToBeOptedIn(ctx, chainID))
-	require.Empty(t, providerKeeper.GetToBeOptedOut(ctx, chainID))
+	require.Empty(t, providerKeeper.GetAllToBeOptedIn(ctx, chainID))
+	require.Empty(t, providerKeeper.GetAllToBeOptedOut(ctx, chainID))
 
 	// verify that the currently opted in validators (`actualValidators`) are the ones that were in `nextValidators`
-	actualValidators := providerKeeper.GetOptedIn(ctx, chainID)
+	actualValidators := providerKeeper.GetAllOptedIn(ctx, chainID)
 
 	sort.Slice(actualValidators, func(i int, j int) bool {
-		if strings.Compare(actualValidators[i].ProviderAddr.String(), actualValidators[j].ProviderAddr.String()) == 0 {
+		if bytes.Compare(actualValidators[i].ProviderAddr, actualValidators[j].ProviderAddr) == 0 {
 			if actualValidators[i].BlockHeight == actualValidators[j].BlockHeight {
 				return actualValidators[i].Power < actualValidators[j].Power
 			}
 			return actualValidators[i].BlockHeight < actualValidators[j].BlockHeight
 		}
-		return strings.Compare(actualValidators[i].ProviderAddr.String(), actualValidators[j].ProviderAddr.String()) < 0
+		return bytes.Compare(actualValidators[i].ProviderAddr, actualValidators[j].ProviderAddr) < 0
 	})
 
 	sort.Slice(nextValidators, func(i int, j int) bool {
-		if strings.Compare(nextValidators[i].ProviderAddr.String(), nextValidators[j].ProviderAddr.String()) == 0 {
+		if bytes.Compare(nextValidators[i].ProviderAddr, nextValidators[j].ProviderAddr) == 0 {
 			if nextValidators[i].BlockHeight == nextValidators[j].BlockHeight {
 				return nextValidators[i].Power < nextValidators[j].Power
 			}
 			return nextValidators[i].BlockHeight < nextValidators[j].BlockHeight
 		}
-		return strings.Compare(nextValidators[i].ProviderAddr.String(), nextValidators[j].ProviderAddr.String()) < 0
+		return bytes.Compare(nextValidators[i].ProviderAddr, nextValidators[j].ProviderAddr) < 0
 	})
 
 	require.Equal(t, nextValidators, actualValidators)

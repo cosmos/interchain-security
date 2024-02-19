@@ -219,17 +219,16 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// FIXME(PSS)
-		// currentValidators := k.GetOptedIn(ctx, chain.ChainId)
-		// validatorsToAdd := k.GetToBeOptedIn(ctx, chain.ChainId)
-		// validatorsToRemove := k.GetToBeOptedOut(ctx, chain.ChainId)
+		// currentValidators := k.GetAllOptedIn(ctx, chain.ChainId)
+		// validatorsToAdd := k.GetAllToBeOptedIn(ctx, chain.ChainId)
+		// validatorsToRemove := k.GetAllToBeOptedOut(ctx, chain.ChainId)
 
 		// valUpdates := k.ComputeValidatorUpdates(ctx, currentValidators, validatorsToAdd, validatorsToRemove)
 
 		// Apply the key assignment to the validator updates.
 		valUpdates = k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates,
 			func(address providertypes.ProviderConsAddress) bool {
-				// return k.IsOptedIn(ctx, chain.ChainId, address)
-				return true
+				return k.IsOptedIn(ctx, chain.ChainId, address)
 			})
 
 		// nextValidators := k.ComputeNextValidators(ctx, currentValidators, validatorsToAdd, validatorsToRemove)

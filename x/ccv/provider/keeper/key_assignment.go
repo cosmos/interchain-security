@@ -502,7 +502,6 @@ func (k Keeper) AssignConsumerKey(
 			oldConsumerKey = providerKey
 		}
 
-		// check whether the validator is valid, i.e., its power is positive
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
 		if 0 < power {
 			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
@@ -547,15 +546,13 @@ func (k Keeper) AssignConsumerKey(
 	return nil
 }
 
-// MustApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates received from the
-// staking module. For validators that do not have a validator update in `valUpdates`, the method also considers
-// key-assignment replacements when the `considerKeyReplacement` predicate evaluates to `true` for this validator.
-// The method panics if the key-assignment state is corrupted.
+// MustApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates and the key-assignment
+// replacements provided. The method panics if the key-assignment state is corrupted.
 func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	ctx sdk.Context,
 	chainID string,
 	valUpdates []abci.ValidatorUpdate,
-	considerKeyReplacement func(address types.ProviderConsAddress) bool,
+	isOptedIn func(address types.ProviderConsAddress) bool,
 ) (newUpdates []abci.ValidatorUpdate) {
 	for _, valUpdate := range valUpdates {
 		providerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
@@ -570,10 +567,13 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 		//  - and setting the new consumer key's power to the power in the update
 		prevConsumerKey, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		if found {
+			//if isOptedIn(providerAddr) && !isToBeOptedOut(providerAddr) {
+			// only generate a removal (i.e., power 0) if the validator was previously opted in
 			newUpdates = append(newUpdates, abci.ValidatorUpdate{
 				PubKey: prevConsumerKey,
 				Power:  0,
 			})
+			//}
 
 			newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if !found {
@@ -611,8 +611,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	for _, replacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
 		providerAddr := types.NewProviderConsAddress(replacement.ProviderAddr)
 
-		if !considerKeyReplacement(providerAddr) {
-			// filter out key-assignment replacements
+		if !isOptedIn(providerAddr) {
 			continue
 		}
 
