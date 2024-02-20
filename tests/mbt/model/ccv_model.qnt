@@ -1009,6 +1009,8 @@ module ccv_model {
             }
         )
 
+    // ======= tests for consumer initiated slashing =======
+
     run DoubleDowntimeSlashTest = 
         init.then(
             // start all consumer chains
