@@ -26,7 +26,11 @@ module ccv_types {
             // the time at which the packet was sent.
             sendingTime: Time,
             // the time (on the receiver) at which the packet will time out
-            timeoutTime: Time
+            timeoutTime: Time,
+            // acknowledged downtime slashes, i.e. validators that
+            // the provider was requested to slash for downtime, and has
+            // slashed since the last VscPacket.
+            downtimeSlashAcks: List[ConsumerAddr]
         }
 
     type VscMaturedPacket = 
@@ -149,6 +153,11 @@ module ccv_types {
 
             // For every sent VSCPacket, stores the key assignments that were applied to send it.
             keyAssignmentsForVSCPackets: VscId -> (Chain -> (Node -> ConsumerAddr)),
+
+            // downtimeSlashRequests[chainId] contains all the validator addresses for which the provider chain
+            // received slash requests for downtime from the consumer chain with chainId
+            // in this block. used to acknowledge slash requests upon EndBlock.
+            downtimeSlashRequests: Chain -> List[ConsumerAddr]
         }
 
     // utility function: returns a provider state that is initialized minimally.
@@ -167,6 +176,7 @@ module ccv_types {
             consumerAddrsToPrune: Map(),
             keyAssignmentsForVSCPackets: Map(),
             consumersWithAddrAssignmentChangesInThisBlock: Set(),
+            downtimeSlashRequests: Map(),
         }
         
 
@@ -193,6 +203,12 @@ module ccv_types {
         // and will thus be considered "sent" when the block ends.
         // these are moved to the outstandingPackets list when the block ends.
         packetsToSendOnEndBlock: List[Packet],
+
+        // Stores the validators on the consumer that the consumer has sent a downtime slash request for.
+        // These are cleared when the provider acknowledges the downtime slashes.
+        // We keep this set to disallow sending multiple downtime slashes for the same validator
+        // before the first downtime slash is acknowledged.
+        outstandingDowntime: Set[ConsumerAddr],
     }
 
     // utility function: returns a consumer state that is initialized minimally.
@@ -203,6 +219,7 @@ module ccv_types {
             outstandingPacketsToProvider: List(),
             receivedVscPackets: List(),
             packetsToSendOnEndBlock: List(),
+            outstandingDowntime: Set(),
         }
 
     // the state of the protocol consists of the composition of the state of one provider chain with potentially many consumer chains.
@@ -520,6 +537,8 @@ module ccv {
             "consumerStatus", newConsumerStatus
         ).with(
             "providerValidatorSetChangedInThisBlock", false
+        ).with(
+            "downtimeSlashRequests", Map()
         )
 
         if (err != "") {
@@ -609,7 +628,11 @@ module ccv {
                     "outstandingPacketsToProvider", newOutstandingPackets.concat(newConsumerState.packetsToSendOnEndBlock)
                 ).with(
                     "packetsToSendOnEndBlock", List()
+                ).with(
+                    // clear the list of outstanding downtime slashes
+                    "outstandingDowntime", Set()
                 )
+                
                 val newConsumerStates = currentState.consumerStates.set(chain, newConsumerState2)
                 val newState: ProtocolState = currentState.with(
                     "consumerStates", newConsumerStates
@@ -713,10 +736,12 @@ module ccv {
         consumerNode: Node,
         vscId: VscId,
         downtime: bool): Result = {
+        val consumerState = currentState.consumerStates.get(consumer)
         if (not(isRunningConsumer(consumer, currentState.providerState))) {
             Err("Consumer is not currently a consumer - must have 'running' status!")
+        } else if (downtime and consumerState.outstandingDowntime.contains(consumerNode)) {
+            Err("Consumer already has outstanding downtime for validator!")
         } else {
-            val consumerState = currentState.consumerStates.get(consumer)
             val vscPacket = consumerState.receivedVscPackets.select(packet => packet.id == vscId)[0]
             val packet = Slash({
                 validator: consumerNode,
@@ -727,7 +752,10 @@ module ccv {
                 valPower: vscPacket.validatorSet.get(consumerNode)
 
             })
-            val newConsumerState = commitPacketOnConsumer(consumerState, packet)
+            val newConsumerState = 
+                commitPacketOnConsumer(consumerState, packet)
+                // add the consumer address to the list of outstanding slashes
+                .with("outstandingDowntime", consumerState.outstandingDowntime.union(Set(consumerNode)))
             Ok(currentState.with("consumerStates", currentState.consumerStates.set(consumer, newConsumerState)))
         }
     }
@@ -767,7 +795,19 @@ module ccv {
             .jailUntil(packet.validator, jailEndTime)
             .slash(packet.validator, packet.valPower, slashFactor)
 
-        Ok(currentState.with("providerState", newProviderState))
+        if (packet.downtime) {
+            // if the packet is for downtime, add the consumer address to the list of acknowledged slashes
+            // for the sender chain of this slash packet
+            val newDowntimeSlashRequests = newProviderState.downtimeSlashRequests
+                .getOrElse(sender, List())
+                .append(packet.validator)
+            val newProviderState2 = newProviderState.with(
+                "downtimeSlashRequests", newProviderState.downtimeSlashRequests.put(sender, newDowntimeSlashRequests)
+            )
+            Ok(currentState.with("providerState", newProviderState2))
+        } else {
+            Ok(currentState.with("providerState", newProviderState))
+        }
     }
 
     pure def recvVscMaturedPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {

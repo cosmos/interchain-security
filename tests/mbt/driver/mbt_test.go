@@ -339,9 +339,9 @@ func RunItfTrace(t *testing.T, path string) {
 				expectError = false
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
 			}
-		case "DeliverVscMaturedPacket":
+		case "DeliverPacketToProvider":
 			consumerChain := lastAction["consumerChain"].Value.(string)
-			t.Log("DeliverVscMaturedPacket", consumerChain)
+			t.Log("DeliverPacketToProvider", consumerChain)
 
 			var expectError bool
 			if ConsumerStatus(currentModelState, consumerChain) == TIMEDOUT_STATUS {

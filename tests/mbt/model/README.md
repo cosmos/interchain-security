@@ -30,7 +30,7 @@ The model has these actions:
 All the logic in EndBlock/BeginBlock happens here, like updating the validator set, sending packets, etc.
 * `EndAndBeginBlockForConsumer(chain: Chain, timeAdvancement: Time)`: On the consumer `chain`, ends the current block, and begins a new one. Again, all the logic in EndBlock/BeginBlock happens here, like validator set change maturations.
 * `DeliverVscPacket(receiver: Chain)`: Delivers a pending VSCPacket from the provider to the consumer `receiver`.
-* `DeliverVscMaturedPacket(receiver: Chain)`: Delivers a pending VSCMaturedPacket from the consumer `receiver` to the provider.
+* `DeliverPacketToProvider(sender: Chain)`: Delivers a pending packet from the consumer `sender` to the provider.
 * `KeyAssignment(chain: Chain, validator: Node, consumerAddr: ConsumerAddr)` (only when running with `--step stepKeyAssignment`): Assigns the `consumerAddr` to the `validator` on the `chain`. Note that we use "key" and "consumerAddr" pretty much interchangeably, as the model makes no differentiation between private keys, public keys, addresses, etc, as it doesn't model the cryptography.
 
 ### State machines

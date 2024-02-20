@@ -225,7 +225,8 @@ module ccv_utils {
                             providerState.chainState.currentValidatorPowers
                         ),
                         sendingTime: sendingTimestamp,
-                        timeoutTime: sendingTimestamp + ccvTimeout
+                        timeoutTime: sendingTimestamp + ccvTimeout,
+                        downtimeSlashAcks: providerState.downtimeSlashRequests.getOrElse(consumer, [])
                 })
             } else {
                 // no packet to be sent, so empty list
@@ -432,6 +433,27 @@ module ccv_utils {
             | Slash(p) => p.sendingTime
             | VscMatured(p) => p.sendingTime
             | _ => 0
+        }
+    }
+
+    pure def IsVscPacket(packet: Packet): bool = {
+        match packet {
+            | Vsc(_) => true
+            | _ => false
+        }
+    }
+
+    pure def IsSlashPacket(packet: Packet): bool = {
+        match packet {
+            | Slash(_) => true
+            | _ => false
+        }
+    }
+
+    pure def IsVscMaturedPacket(packet: Packet): bool = {
+        match packet {
+            | VscMatured(_) => true
+            | _ => false
         }
     }
 

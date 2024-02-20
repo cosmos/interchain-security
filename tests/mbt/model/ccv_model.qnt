@@ -162,15 +162,15 @@ module ccv_model {
             params' = params,
         }
 
-    // The provider receives the next outstanding VscMaturedPacket from the sender.
+    // The provider receives the next outstanding packet from the sender.
     // This will time out the consumer if the packet timeout has passed on the provider.
-    action DeliverVscMaturedPacket(sender: Chain): bool =
+    action DeliverPacketToProvider(sender: Chain): bool =
         val resultAndTimeout = deliverPacketToProvider(currentState, sender)
         val result = resultAndTimeout._1
         all {
             result.hasError() == false,
             currentState' = result.newState,
-            trace' = trace.append(emptyAction.with("kind", "DeliverVscMaturedPacket").with("consumerChain", sender)),
+            trace' = trace.append(emptyAction.with("kind", "DeliverPacketToProvider").with("consumerChain", sender)),
             params' = params,
         }
 
@@ -211,7 +211,7 @@ module ccv_model {
         all {
             runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
             nondet sender = oneOf(runningConsumers)
-            DeliverVscMaturedPacket(sender),
+            DeliverPacketToProvider(sender),
         },
 
         // again, we could filter by chains that can actually receive,
@@ -221,6 +221,8 @@ module ccv_model {
             nondet receiver = oneOf(runningConsumers)
             DeliverVscPacket(receiver),
         },
+
+        ConsumerInitiatedSlash
     }
 
     // step allows the most generic nondeterminism, in particular it becomes relatively likely
@@ -265,6 +267,7 @@ module ccv_model {
             validatorSet: Map(),
             sendingTime: 9999999999999 * Second,
             timeoutTime: 9999999999999 * Second,
+            downtimeSlashAcks: List(),
         }
         packets.fold(
             newestPossiblePacket,
@@ -277,6 +280,7 @@ module ccv_model {
             validatorSet: Map(),
             sendingTime: -9999999999 * Second,
             timeoutTime: -9999999999 * Second,
+            downtimeSlashAcks: List(),
         }
         packets.fold(
             oldestPossiblePacket,
@@ -289,6 +293,7 @@ module ccv_model {
                 validatorSet: Map(),
                 sendingTime: 1 * Second,
                 timeoutTime: 1 * Second,
+                downtimeSlashAcks: List(),
             }
 
         val packet2 = {
@@ -296,6 +301,7 @@ module ccv_model {
             validatorSet: Map(),
             sendingTime: 2 * Second,
             timeoutTime: 2 * Second,
+            downtimeSlashAcks: List(),
         }
 
         val packet3 = {
@@ -303,6 +309,7 @@ module ccv_model {
             validatorSet: Map(),
             sendingTime: 3 * Second,
             timeoutTime: 3 * Second,
+            downtimeSlashAcks: List(),
         }
         all {
             assert(oldest(Set(packet1, packet2, packet3)) == packet1),
@@ -462,14 +469,23 @@ module ccv_model {
     val CanSendVscMaturedPackets =
         not(ConsumerChains.exists(
             consumer => 
-                currentState.consumerStates.get(consumer).outstandingPacketsToProvider.length() > 0
+                currentState.consumerStates.get(consumer)
+                    .outstandingPacketsToProvider
+                    .select(IsVscMaturedPacket).length() > 0
         ))
 
-    val canSendSlashPacket = 
+    val CanSendSlashPacket = 
         not(ConsumerChains.exists(
             consumer => 
-                currentState.consumerStates.get(consumer).receivedVscPackets.size() > 0
+                currentState.consumerStates.get(consumer)
+                    .outstandingPacketsToProvider
+                    .select(IsSlashPacket).length() > 0
         ))
+
+    val CanJail =
+        not(
+            currentState.providerState.chainState.jailedUntil.keys().size() > 0
+        )
     
     val CanReceiveMaturations =
         not(ConsumerChains.exists(
@@ -579,7 +595,7 @@ module ccv_model {
                     // it was removed from the maturationTimes
                     assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 0),
                     // receive the packet on the provider
-                    DeliverVscMaturedPacket("consumer1")
+                    DeliverPacketToProvider("consumer1")
                 }
             )
             .then(
@@ -748,16 +764,19 @@ module ccv_model {
             val consumerState = currentState.consumerStates.get(consumer)
             // ...by getting all received vsc packets...
             val rcvdVscPackets = consumerState.receivedVscPackets
-            // ...picking one of the packets...
-            nondet packet = oneOf(rcvdVscPackets.toSet())
-            val vscId = packet.id
-            val valSet = packet.validatorSet.keys()
-            // ...and picking one of the validators in the packet
-            nondet validator = oneOf(valSet)
-            // finally, choose whether to slash for downtime or double-signing
-            nondet isDowntime = oneOf(Set(true, false))
-            // then we can invoke the deterministic slash
-            ConsumerInitiatedSlashDet(consumer, validator, vscId, isDowntime)
+            all {
+                rcvdVscPackets.length() > 0,
+                // ...picking one of the packets...
+                nondet packet = oneOf(rcvdVscPackets.toSet())
+                val vscId = packet.id
+                val valSet = packet.validatorSet.keys()
+                // ...and picking one of the validators in the packet
+                nondet validator = oneOf(valSet)
+                // finally, choose whether to slash for downtime or double-signing
+                nondet isDowntime = oneOf(Set(true, false))
+                // then we can invoke the deterministic slash
+                ConsumerInitiatedSlashDet(consumer, validator, vscId, isDowntime)
+            }
         }
     }
 
@@ -961,7 +980,7 @@ module ccv_model {
         )
         .then(
             // deliver the vsc matured packet to the provider
-            DeliverVscMaturedPacket("consumer1")
+            DeliverPacketToProvider("consumer1")
         )
         .then(
             // the old key should have been pruned
@@ -988,5 +1007,40 @@ module ccv_model {
                 // action doesn't matter
                 VotingPowerChange("node1", 50)
             }
+        )
+
+    run DoubleDowntimeSlashTest = 
+        init.then(
+            // start all consumer chains
+            EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
+        ).then(
+            // change voting power
+            VotingPowerChange("node1", 50)
+        ).then(
+            // end a block on the provider
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        ).then(
+            val vscId = currentState.providerState.sentVscPacketsToConsumer.get("consumer1").head().id
+            // deliver the vsc packet to consumer1
+            DeliverVscPacket("consumer1").then(
+                // end a block on consumer 1
+                EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+            ).then(
+                // slash for downtime on consumer1
+                ConsumerInitiatedSlashDet("consumer1", "node1", vscId, true)
+            ).then(
+                // node1 has outstanding downtime already
+                ConsumerInitiatedSlashDet("consumer1", "node1", vscId, true).fail()
+            ).then(
+                // deliver the slash request to the provider
+                DeliverPacketToProvider("consumer1")
+            ).then(
+                // the provider should have jailed node1
+                all {
+                    assert(currentState.providerState.chainState.jailedUntil.keys().contains("node1")),
+                    // action does not matter
+                    VotingPowerChange("node1", 50)
+                }
+            )
         )
 }
