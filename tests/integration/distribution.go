@@ -127,7 +127,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	rewardsAlloc := s.providerApp.GetProviderKeeper().GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(rewardsAlloc.Rewards.Empty())
 
-	// Check that the reward pool still have the first coins transferred that were never allocated
+	// Check that the reward pool still has the first coins transferred that were never allocated
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
 	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
 
