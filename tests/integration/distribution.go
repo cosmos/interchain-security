@@ -523,7 +523,6 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		{
 			"IBC Transfer coin denom isn't registered",
 			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				fmt.Println("middleware", getIBCDenom(packet.DestinationPort, packet.DestinationChannel))
 				keeper.SetConsumerRewardDenom(
 					s.providerCtx(),
 					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
