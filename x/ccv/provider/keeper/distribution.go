@@ -201,7 +201,7 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 
 // consumer reward pools getter and setter
 
-// GetConsumerRewardsAllocation the onsumer rewards allocation for the given chain ID
+// GetConsumerRewardsAllocation returns the consumer rewards allocation for the given chain ID
 func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, chainID string) (pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
 	b := store.Get(types.ConsumerRewardsAllocationKey(chainID))
