@@ -1,9 +1,11 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -241,4 +243,28 @@ func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string,
 	}
 
 	return totalPower
+}
+
+// IdentifyConsumerChainIDFromIBCPacket checks if the packet destination matches a registered consumer chain.
+// If so, it returns the consumer chain ID, otherwise an error.
+func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet channeltypes.Packet) (string, error) {
+	channel, ok := k.channelKeeper.GetChannel(ctx, packet.DestinationPort, packet.DestinationChannel)
+	if !ok {
+		return "", errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", packet.DestinationChannel)
+	}
+	if len(channel.ConnectionHops) != 1 {
+		return "", errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
+	}
+	connectionID := channel.ConnectionHops[0]
+	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	if err != nil {
+		return "", err
+	}
+
+	chainID := tmClient.ChainId
+	if _, ok := k.GetChainToChannel(ctx, chainID); !ok {
+		return "", errorsmod.Wrapf(types.ErrUnknownConsumerChannelId, "no CCV channel found for chain with ID: %s", chainID)
+	}
+
+	return chainID, nil
 }

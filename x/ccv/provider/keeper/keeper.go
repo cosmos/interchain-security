@@ -1324,25 +1324,3 @@ func (k Keeper) GetToBeOptedOut(
 
 	return addresses
 }
-
-func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet channeltypes.Packet) (string, error) {
-	channel, ok := k.channelKeeper.GetChannel(ctx, packet.DestinationPort, packet.DestinationChannel)
-	if !ok {
-		return "", errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", packet.DestinationChannel)
-	}
-	if len(channel.ConnectionHops) != 1 {
-		return "", errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
-	}
-	connectionID := channel.ConnectionHops[0]
-	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
-	if err != nil {
-		return "", err
-	}
-
-	chainID := tmClient.ChainId
-	if _, ok := k.GetChainToChannel(ctx, chainID); !ok {
-		return "", errorsmod.Wrapf(types.ErrUnknownConsumerChannelId, "no CCV channel found for chain with ID: %s", chainID)
-	}
-
-	return chainID, nil
-}

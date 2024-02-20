@@ -63,16 +63,6 @@ func TestGetProviderDenom(t *testing.T) {
 		},
 	}
 
-	channeltypes.NewPacket(
-		[]byte{},
-		0,
-		"srcPort",
-		"srcChannel",
-		"dstPort",
-		"dstChannel",
-		clienttypes.NewHeight(1, 1),
-		0,
-	)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			res := provider.GetProviderDenom(
