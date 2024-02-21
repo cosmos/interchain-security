@@ -120,7 +120,7 @@ func (im IBCMiddleware) OnRecvPacket(
 		return ack
 	}
 
-	// Note that inside the above if condition statement,
+	// Note that inside the below if condition statement,
 	// we know that the IBC transfer succeeded. That entails
 	// that the packet data is valid and can be safely
 	// deserialized without checking errors.
