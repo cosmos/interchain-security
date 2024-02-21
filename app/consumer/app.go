@@ -87,17 +87,17 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appparams "github.com/cosmos/interchain-security/v3/app/params"
-	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-	ibcconsumer "github.com/cosmos/interchain-security/v3/x/ccv/consumer"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	ibcconsumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
+	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
+	ibcconsumer "github.com/cosmos/interchain-security/v4/x/ccv/consumer"
+	ibcconsumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	ibcconsumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 )
 
 const (
 	AppName              = "interchain-security-c"
 	upgradeName          = "ics-v1-to-v2"
-	AccountAddressPrefix = "cosmos"
+	AccountAddressPrefix = "consumer"
 )
 
 var (
@@ -830,8 +830,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // 	return encodingConfig
 // }
 
-func MakeTestEncodingConfig() appparams.EncodingConfig {
-	encodingConfig := appparams.MakeTestEncodingConfig()
+func MakeTestEncodingConfig() appencoding.EncodingConfig {
+	encodingConfig := appencoding.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
@@ -839,8 +839,8 @@ func MakeTestEncodingConfig() appparams.EncodingConfig {
 	return encodingConfig
 }
 
-func makeEncodingConfig() appparams.EncodingConfig {
-	encodingConfig := appparams.MakeTestEncodingConfig()
+func makeEncodingConfig() appencoding.EncodingConfig {
+	encodingConfig := appencoding.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)

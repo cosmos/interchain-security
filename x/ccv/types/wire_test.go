@@ -12,19 +12,13 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	"github.com/cosmos/interchain-security/v3/x/ccv/types"
+	"github.com/cosmos/interchain-security/v4/testutil/crypto"
+	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
-
-	cId := crypto.NewCryptoIdentityFromIntSeed(4732894342)
-	validSlashAck := cId.SDKValConsAddress().String()
-	tooLongSlashAck := string(make([]byte, 1024))
 
 	cases := []struct {
 		name       string
@@ -32,78 +26,31 @@ func TestPacketDataValidateBasic(t *testing.T) {
 		packetData types.ValidatorSetChangePacketData
 	}{
 		{
-			"invalid: nil packet data",
+			"invalid: zero ValsetUpdateId",
+			true,
+			types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 0, nil),
+		},
+		{
+			"invalid: nil ValidatorUpdates",
 			true,
 			types.NewValidatorSetChangePacketData(nil, 1, nil),
 		},
 		{
-			"valid: empty packet data",
+			"valid: empty ValidatorUpdates",
 			false,
 			types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 2, nil),
 		},
 		{
-			"invalid: slash ack not consensus address",
-			true,
+			"valid: one validator update",
+			false,
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
 					{
-						PubKey: pk1,
+						PubKey: pk,
 						Power:  30,
 					},
 				},
 				3,
-				[]string{
-					"some_string",
-				},
-			),
-		},
-		{
-			"valid: packet data with valid slash ack",
-			false,
-			types.NewValidatorSetChangePacketData(
-				[]abci.ValidatorUpdate{
-					{
-						PubKey: pk2,
-						Power:  20,
-					},
-				},
-				4,
-				[]string{
-					validSlashAck,
-				},
-			),
-		},
-		{
-			"invalid: slash ack is too long",
-			true,
-			types.NewValidatorSetChangePacketData(
-				[]abci.ValidatorUpdate{
-					{
-						PubKey: pk2,
-						Power:  20,
-					},
-				},
-				5,
-				[]string{
-					tooLongSlashAck,
-				},
-			),
-		},
-		{
-			"valid: packet data with nil slash ack",
-			false,
-			types.NewValidatorSetChangePacketData(
-				[]abci.ValidatorUpdate{
-					{
-						PubKey: pk1,
-						Power:  30,
-					},
-					{
-						PubKey: pk2,
-						Power:  20,
-					},
-				},
-				6,
 				nil,
 			),
 		},

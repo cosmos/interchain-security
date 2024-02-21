@@ -1,7 +1,7 @@
 syntax = "proto3";
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v4/x/ccv/provider/types";
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
@@ -91,7 +91,14 @@ service Query {
     returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
       option (google.api.http).get =
     "/interchain_security/ccv/provider/consumer_chain_id";
-    }  
+    }
+
+  // QueryParams returns all current values of provider parameters
+  rpc QueryParams(QueryParamsRequest)
+    returns (QueryParamsResponse) {
+      option (google.api.http).get =
+    "/interchain_security/ccv/provider/params";
+    }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -198,3 +205,10 @@ message PairValConAddrProviderAndConsumer {
   string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   tendermint.crypto.PublicKey consumer_key = 3;
 }
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+

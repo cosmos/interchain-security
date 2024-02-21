@@ -19,10 +19,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client/cli"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/migrations"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client/cli"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 var (

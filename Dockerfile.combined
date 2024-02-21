@@ -1,0 +1,53 @@
+# syntax=docker/dockerfile:1
+
+# Dockerfile.combined defines a docker image using different provider/consumer versions
+# originated from other docker images.
+# This image is used to test different versions of provider and consumer together.
+#
+# Use docker's build argument --build-arg to specify the consumer/provider image to be used
+# e.g. docker build --build-arg CONSUMER_IMAGE=v3.1.0 --build-arg PROVIDER_IMAGE=v3.1.0
+
+ARG PROVIDER_IMAGE
+ARG CONSUMER_IMAGE
+
+# The image from where the consumer implementation will be used
+# Defaults to
+FROM --platform=linux/amd64 ${PROVIDER_IMAGE} AS provider
+
+
+# The image from where the consumer implementation will be used
+# Defaults to
+FROM --platform=linux/amd64 ${CONSUMER_IMAGE} AS consumer
+
+# Get Hermes build
+FROM --platform=linux/amd64 otacrew/hermes-ics:evidence-cmd AS hermes-builder
+
+
+# Get GoRelayer
+FROM ghcr.io/informalsystems/relayer-no-gas-sim:v2.3.0-rc4-no-gas-sim AS gorelayer-builder
+
+
+FROM --platform=linux/amd64 fedora:39
+RUN dnf update -y
+RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq
+USER root
+
+COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
+COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
+
+# Copy consumer from specified image
+COPY --from=consumer /usr/local/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
+COPY --from=consumer /usr/local/bin/interchain-security-cdd /usr/local/bin/interchain-security-cdd
+COPY --from=consumer /usr/local/bin/interchain-security-sd /usr/local/bin/interchain-security-sd
+COPY --from=consumer /testnet-scripts /consumer/testnet-scripts
+
+
+# Copy provider from specified image
+COPY --from=provider /usr/local/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
+COPY --from=provider /testnet-scripts /provider/testnet-scripts
+
+#Copy cometmock from provider image
+COPY --from=provider /usr/local/bin/cometmock /usr/local/bin
+
+# Copy in the hermes config
+ADD ./tests/e2e/testnet-scripts/hermes-config.toml /root/.hermes/config.toml

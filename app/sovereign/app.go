@@ -79,6 +79,7 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
 	// add mint
 	mint "github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
@@ -105,14 +106,14 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appparams "github.com/cosmos/interchain-security/v3/app/params"
-	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
+	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
 )
 
 const (
 	AppName              = "interchain-security-s"
 	upgradeName          = "v07-Theta" // arbitrary name, define your own appropriately named upgrade
-	AccountAddressPrefix = "cosmos"
+	AccountAddressPrefix = "consumer"
 )
 
 var (
@@ -863,8 +864,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // 	return encodingConfig
 // }
 
-func MakeTestEncodingConfig() appparams.EncodingConfig {
-	encodingConfig := appparams.MakeTestEncodingConfig()
+func MakeTestEncodingConfig() appencoding.EncodingConfig {
+	encodingConfig := appencoding.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
@@ -872,8 +873,8 @@ func MakeTestEncodingConfig() appparams.EncodingConfig {
 	return encodingConfig
 }
 
-func makeEncodingConfig() appparams.EncodingConfig {
-	encodingConfig := appparams.MakeTestEncodingConfig()
+func makeEncodingConfig() appencoding.EncodingConfig {
+	encodingConfig := appencoding.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)

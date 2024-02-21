@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os/exec"
 	"time"
 )
 
@@ -20,6 +19,7 @@ type StartSovereignChainAction struct {
 // upgrades are simpler with a single validator node since only one node needs to be upgraded
 func (tr TestConfig) startSovereignChain(
 	action StartSovereignChainAction,
+	target ExecutionTarget,
 	verbose bool,
 ) {
 	chainConfig := tr.chainConfigs["sover"]
@@ -68,12 +68,11 @@ func (tr TestConfig) startSovereignChain(
 		genesisChanges = chainConfig.GenesisChanges
 	}
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "/bin/bash",
-		"/testnet-scripts/start-sovereign.sh", chainConfig.BinaryName, string(vals),
+	isConsumer := chainConfig.BinaryName != "interchain-security-pd"
+	testScriptPath := target.GetTestScriptPath(isConsumer, "start-sovereign.sh")
+	cmd := target.ExecCommand("/bin/bash", testScriptPath, chainConfig.BinaryName, string(vals),
 		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
-		tr.tendermintConfigOverride,
-	)
+		tr.tendermintConfigOverride)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -102,7 +101,7 @@ func (tr TestConfig) startSovereignChain(
 	tr.addChainToRelayer(AddChainToRelayerAction{
 		Chain:     action.Chain,
 		Validator: action.Validators[0].Id,
-	}, verbose)
+	}, target, verbose)
 }
 
 type LegacyUpgradeProposalAction struct {
@@ -112,7 +111,7 @@ type LegacyUpgradeProposalAction struct {
 	UpgradeHeight uint64
 }
 
-func (tr *TestConfig) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
+func (tr *TestConfig) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAction, target ExecutionTarget, verbose bool) {
 	submit := fmt.Sprintf(
 		`%s tx gov submit-legacy-proposal software-upgrade %s \
 		--title  %s \
@@ -137,12 +136,7 @@ func (tr *TestConfig) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAc
 		tr.getValidatorHome(ChainID("sover"), action.Proposer),
 		tr.getValidatorNode(ChainID("sover"), action.Proposer),
 	)
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec",
-		tr.containerConfig.InstanceName,
-		"/bin/bash", "-c",
-		submit,
-	)
+	cmd := target.ExecCommand("/bin/bash", "-c", submit)
 
 	if verbose {
 		fmt.Println("submitUpgradeProposal cmd:", cmd.String())

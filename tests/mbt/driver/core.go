@@ -20,13 +20,14 @@ import (
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
-	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
+	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -123,9 +124,13 @@ func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 	return v.Power, nil
 }
 
+func (s *Driver) stakingValidator(i int64) (stakingtypes.Validator, bool) {
+	return s.providerStakingKeeper().GetValidator(s.ctx(PROVIDER), s.validator(i))
+}
+
 // providerPower returns the power(=number of bonded tokens) of the i-th validator on the provider.
 func (s *Driver) providerPower(i int64) (int64, error) {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(PROVIDER), s.validator(i))
+	v, found := s.stakingValidator(i)
 	if !found {
 		return 0, fmt.Errorf("validator with id %v not found on provider", i)
 	} else {
@@ -149,7 +154,10 @@ func (s *Driver) delegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
-	server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	if err != nil {
+		log.Println("error when delegating (is this expected?): ", err)
+	}
 }
 
 // undelegate undelegates amt tokens from validator val
@@ -160,7 +168,10 @@ func (s *Driver) undelegate(val, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
-	server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	if err != nil {
+		log.Println("error when undelegating (is this expected?): ", err)
+	}
 }
 
 // packetQueue returns the queued packets from sender to receiver,
@@ -362,6 +373,14 @@ func (s *Driver) setTime(chain ChainId, newTime time.Time) {
 
 	testChain.CurrentHeader.Time = newTime
 	testChain.App.BeginBlock(abcitypes.RequestBeginBlock{Header: testChain.CurrentHeader})
+}
+
+func (s *Driver) AssignKey(chain ChainId, valIndex int64, value crypto.PublicKey) error {
+	stakingVal, found := s.stakingValidator(valIndex)
+	if !found {
+		return fmt.Errorf("validator with id %v not found on provider", valIndex)
+	}
+	return s.providerKeeper().AssignConsumerKey(s.providerCtx(), string(chain), stakingVal, value)
 }
 
 // DeliverPacketToConsumer delivers a packet from the provider to the given consumer recipient.

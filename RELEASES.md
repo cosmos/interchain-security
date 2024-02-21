@@ -84,7 +84,7 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 | [v3.1.0](https://github.com/cosmos/interchain-security/releases/tag/v3.1.0) | 1.20 | v7.1.0 | v0.47.3 | v0.37.2 |
 | [v3.2.0](https://github.com/cosmos/interchain-security/releases/tag/v3.2.0) | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 |
 | v3.3.0 | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 |
-| v4.0.0 | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 | Provider on >= v4.0.0 backwards compatible with consumers >= v3.2.0 |
+| v4.0.0 | 1.21 | v7.3.0 | v0.47.5 | v0.37.2 | Provider on >= v4.0.0 backwards compatible with consumers >= v3.2.0 |
 
 **Note:** For a list of major ICS features available in the currently active releases, see [FEATURES.md](./FEATURES.md).
 

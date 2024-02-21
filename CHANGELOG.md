@@ -1,5 +1,131 @@
 # CHANGELOG
 
+## v4.0.0
+
+*January 22, 2024*
+
+### API BREAKING
+
+- [Consumer](x/ccv/consumer)
+  - Fix a bug in consmer genesis file transform CLI command.
+    ([\#1458](https://github.com/cosmos/interchain-security/pull/1458))
+
+### BUG FIXES
+
+- General
+  - Fix a bug in consmer genesis file transform CLI command.
+    ([\#1458](https://github.com/cosmos/interchain-security/pull/1458))
+  - Improve validation of IBC packet data and provider messages. Also,
+    enable the provider to validate consumer packets before handling them.
+    ([\#1460](https://github.com/cosmos/interchain-security/pull/1460))
+- [Consumer](x/ccv/consumer)
+  - Avoid jailing validators immediately once they can no longer opt-out from
+    validating consumer chains.
+    ([\#1549](https://github.com/cosmos/interchain-security/pull/1549))
+  - Fix the validation of VSCPackets to not fail due to marshaling to string using Bech32.
+    ([\#1570](https://github.com/cosmos/interchain-security/pull/1570))
+
+### DEPENDENCIES
+
+- Bump Golang to v1.21 
+  ([\#1557](https://github.com/cosmos/interchain-security/pull/1557))
+- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+  [v0.47.7](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.7).
+  ([\#1558](https://github.com/cosmos/interchain-security/pull/1558))
+- Bump [CometBFT](https://github.com/cometbft/cometbft) to
+  [v0.37.4](https://github.com/cometbft/cometbft/releases/tag/v0.37.4).
+  ([\#1558](https://github.com/cosmos/interchain-security/pull/1558))
+
+### FEATURES
+
+- [Provider](x/ccv/provider)
+  - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
+    ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
+
+### STATE BREAKING
+
+- [Consumer](x/ccv/consumer)
+  - Avoid jailing validators immediately once they can no longer opt-out from
+    validating consumer chains.
+    ([\#1549](https://github.com/cosmos/interchain-security/pull/1549))
+  - Fix the validation of VSCPackets to not fail due to marshaling to string using Bech32.
+    ([\#1570](https://github.com/cosmos/interchain-security/pull/1570))
+- [Provider](x/ccv/provider)
+  - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
+    ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
+
+## v3.3.0
+
+*January 5, 2024*
+
+### API BREAKING
+
+- [Provider](x/ccv/provider)
+  - Deprecate equivocation proposals.
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+### DEPENDENCIES
+
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v7.3.1](https://github.com/cosmos/ibc-go/releases/tag/v7.3.1).
+  ([\#1373](https://github.com/cosmos/interchain-security/pull/1373))
+
+### FEATURES
+
+- General
+  - Add Quint model of Replicated Security.
+    ([\#1336](https://github.com/cosmos/interchain-security/pull/1336))
+- [Provider](x/ccv/provider)
+  - Update how consumer-assigned keys are checked when a validator is
+    created on the provider.
+    ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
+  - Introduce the cryptographic verification of equivocation feature to the provider
+    (cf. [ADR-005](docs/docs/adrs/adr-005-cryptographic-equivocation-verification.md)
+    & [ADR-013](docs/docs/adrs/adr-013-equivocation-slashing.md)).
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+### IMPROVEMENTS
+
+- General
+  - Split out consumer genesis state to reduce shared data between provider and
+    consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
+  - Note: This breaks json format used by augmenting Genesis files of consumer
+    chains with consumer genesis content exported from provider chain. Consumer
+    Genesis content exported from a provider chain using major version 1, 2 or 3
+    of the provider module needs to be transformed with the transformation command
+    introduced by this PR:
+    ```
+    Transform the consumer genesis file from a provider version v1, v2 or v3 to a version supported by this consumer. Result is printed to STDOUT.
+    
+    Example:
+    $ <appd> transform /path/to/ccv_consumer_genesis.json
+    
+    Usage:
+    interchain-security-cd genesis transform [genesis-file] [flags]
+    ```
+  - Refactor shared events, codecs and errors assign to
+    consumer and provider dedicated types where possible.
+    ([\#1350](https://github.com/cosmos/interchain-security/pull/1350))
+- [Provider](x/ccv/provider)
+  - Add `QueryAllPairsValConAddrByConsumerChainID` method to get list of all pairs `valConsensus` address by `Consummer chainID`. ([\#1503](https://github.com/cosmos/interchain-security/pull/1503))
+
+### STATE BREAKING
+
+- General
+  - Split out consumer genesis state to reduce shared data between provider and
+    consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
+  - Improve validation of IBC packet data and provider messages. Also,
+    enable the provider to validate consumer packets before handling them.
+    ([\#1460](https://github.com/cosmos/interchain-security/pull/1460))
+- [Provider](x/ccv/provider)
+  - Change the states by adding a consumer key for each chain that is
+    not yet registered meaning for which the gov proposal has not passed.
+    ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
+  - Introduce the cryptographic verification of equivocation feature to the provider
+    (cf. [ADR-005](docs/docs/adrs/adr-005-cryptographic-equivocation-verification.md)
+    & [ADR-013](docs/docs/adrs/adr-013-equivocation-slashing.md)).
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
 ## v3.2.0
 
 *November 24, 2023*

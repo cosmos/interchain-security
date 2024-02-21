@@ -29,7 +29,7 @@ type InvariantConfig struct {
 // the trace will still be stored in the folder.
 func GenerateTraces(numTraces int, modelConfig ModelConfig, invConfig InvariantConfig, traceFolder string) {
 	// make sure the folder exists
-	if err := os.MkdirAll(traceFolder, 0o755); err != nil {
+	if err := os.MkdirAll(traceFolder, 0o750); err != nil {
 		panic(err)
 	}
 
@@ -62,6 +62,7 @@ func GenerateTrace(modelConfig ModelConfig, invConfig InvariantConfig, traceName
 
 	fmt.Println(cmd)
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with variable.
 	out, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 	if err != nil {
 		if strings.Contains(string(out), "Invariant violated") {

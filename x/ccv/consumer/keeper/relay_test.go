@@ -21,11 +21,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/bytes"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v3/x/ccv/types"
+	"github.com/cosmos/interchain-security/v4/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // TestOnRecvVSCPacket tests the behavior of OnRecvVSCPacket over various packet scenarios
@@ -123,8 +123,8 @@ func TestOnRecvVSCPacket(t *testing.T) {
 			}},
 		},
 		{
-			"failure on packet with invalid slash acks",
-			true,
+			"success on packet with invalid slash acks",
+			false,
 			channeltypes.NewPacket(pd3.GetBytes(), 4, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{

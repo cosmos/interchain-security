@@ -9,8 +9,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	"github.com/cosmos/interchain-security/v3/app/consumer/ante"
-	"github.com/cosmos/interchain-security/v3/app/params"
+	"github.com/cosmos/interchain-security/v4/app/consumer/ante"
+	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
 )
 
 type consumerKeeper struct {
@@ -28,7 +28,7 @@ func noOpAnteDecorator() sdk.AnteHandler {
 }
 
 func TestMsgFilterDecorator(t *testing.T) {
-	txCfg := params.MakeTestEncodingConfig().TxConfig
+	txCfg := appencoding.MakeTestEncodingConfig().TxConfig
 
 	testCases := []struct {
 		name           string

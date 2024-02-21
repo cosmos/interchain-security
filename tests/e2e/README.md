@@ -17,7 +17,7 @@ End-to-end tests can still be useful, and we need them,
 but when possible, we should prefer more local tests.
 
 At a high-level, every test case consists of the following steps.
-* The test starts a docker container, see [the startup script](testnet-scripts/start-docker.sh)
+* The test starts a docker container, see [setupEnvironment](test_runner.go)
 * We run a defined sequence of actions and expected states, see as an example the steps for [testing the democracy module](steps_democracy.go)
     * Actions are any event that might meaningfully modify the system state, such as submitting transactions to a node, making nodes double-sign, starting a relayer, starting a new chain, etc.
     * Expected states define the state we expect after the action was taken.
@@ -35,7 +35,7 @@ At a high-level, every test case consists of the following steps.
 If you just want to run the end-to-end tests,
 see the commands in the Makefile in the repo root.
 
-If you want to run the tests with a bit more control, see the help by running 
+If you want to run the tests with a bit more control, see the help by running
 ```go run ./tests/e2e/... --help```
 in the repo root to see how to do that.
 
@@ -102,7 +102,7 @@ the actions necessary to start a provider and multiple consumer chains
 are already "packaged together" and available as
 `stepsStartChains` in [steps_start_chains.go](steps_start_chains.go).
 
-**Note:** The parts of the state that are *not* defined are just *not checked*. 
+**Note:** The parts of the state that are *not* defined are just *not checked*.
 For example, if the balance of a validator is not listed in a state, it means we
 do not care about the balance of that validator in this particular state.
 
@@ -131,7 +131,7 @@ You can see the basic template for how to do this by looking at the actions in
 The basic principle is to use `exec.Command` to execute a command inside the docker container.
 The pattern for this looks something like this:
 ```
-cmd := exec.Command("docker", "exec", 
+cmd := exec.Command("docker", "exec",
     tr.containerConfig.InstanceName,
     tr.chainConfigs[action.Chain].BinaryName,
     "the command to execute, for example tx",
@@ -145,7 +145,7 @@ if err != nil {
 // potentially check something in the output, or log something, ...
 ```
 
-Don't forget to wire your action into [main.go](main.go):runStep, where
+Don't forget to wire your action into [test_driver.go](test_driver.go):runAction, where
 the action structs and functions to run for each of them are wired together.
 
 **Note:** Actions don't need to check that the state was modified correctly,
@@ -163,7 +163,7 @@ work and sometimes fail due to gas, as can happen with `--gas=auto` and no `--ga
 Essentially, sometimes the gas estimation will underestimate gas, but not always -
 it seems to be non-deterministic, and probably depends on subtle things like
 block times, or heights, which are not finely controlled in the end-to-end tests
-and do not perfectly match each time. 
+and do not perfectly match each time.
 To be sure we don't introduce nondeterminism like this,
 we need to use a sufficient adjustment to make sure there is enough gas for transactions to pass.
 

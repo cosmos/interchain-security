@@ -11,7 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 // NewQueryCmd returns a root CLI command handler for all x/ccv/provider query commands.
@@ -34,7 +34,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
 	cmd.AddCommand(CmdProposedConsumerChains())
 	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
-
+	cmd.AddCommand(CmdProviderParameters())
 	return cmd
 }
 
@@ -374,4 +374,39 @@ func CmdAllPairsValConAddrByConsumerChainID() *cobra.Command {
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
+}
+
+// Command to query provider parameters
+func CmdProviderParameters() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Short: "Query provider parameters information",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query parameter values of provider.
+Example:
+$ %s query provider params
+		`, version.AppName),
+		),
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.QueryParams(cmd.Context(),
+				&types.QueryParamsRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(&res.Params)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+
 }

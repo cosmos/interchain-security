@@ -22,8 +22,8 @@ For a list of **major ICS features** available in the currently active releases,
 ```bash
 ## For OSX or Linux
 
-# go 1.20 (https://formulae.brew.sh/formula/go)
-brew install go@1.20
+# go 1.21 (https://formulae.brew.sh/formula/go)
+brew install go@1.21
 # jq (optional, for testnet) (https://formulae.brew.sh/formula/jq)
 brew install jq
 # docker (optional, for integration tests, testnet) (https://docs.docker.com/get-docker/)
