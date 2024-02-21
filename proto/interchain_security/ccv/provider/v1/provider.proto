@@ -295,3 +295,20 @@ message ConsumerAddrsToPrune {
   uint64 vsc_id = 2;
   AddressList consumer_addrs = 3;
 }
+
+// CurrentEpochOptedInValidator is used to facilitate epoch-based transitions. It contains relevant info for
+// a validator that is opted in, in the curren epoch, on a consumer chain.
+message CurrentEpochOptedInValidator {
+  // validator's consensus address on the provider chain
+  bytes provider_cons_addr = 1;
+  // The block height the provider chain had when the validator initially opted in. If the validator remains opted in
+  // during subsequent epochs, `start_block_height` remains unchanged.
+  int64 start_block_height = 2;
+  // The power the validator had when the validator opted in. If the validator remains opted in, `power` gets
+  // updated in subsequent epochs.
+  int64 power = 3;
+  // The consumer public key the validator had assigned for the consumer chain chain when the validator opted in.
+  // If the validator remains opted in, in subsequent epochs `consumer_public_key` gets updated if the consumer public
+  // key has been changed.
+  bytes consumer_public_key = 4;
+}
