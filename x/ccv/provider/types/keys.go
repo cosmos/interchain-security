@@ -145,6 +145,9 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
+	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain all the opted in validators
+	OptedInBytePrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -515,6 +518,12 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 	proposalID := sdk.BigEndianToUint64(bz[prefixL:])
 
 	return proposalID, nil
+}
+
+// OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func OptedInKey(chainID string, providerAddr []byte) []byte {
+	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
+	return append(prefix, providerAddr...)
 }
 
 //
