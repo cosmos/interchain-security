@@ -215,11 +215,11 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	// Get the validator updates from the staking module.
 	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
 	// of cosmos-sdk is invalid.
-	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
+	stakingValUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// Apply the key assignment to the validator updates.
-		valUpdates := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates)
+		valUpdates := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, stakingValUpdates)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
