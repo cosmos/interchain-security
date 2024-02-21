@@ -13,6 +13,8 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos/evidence/v1beta1/evidence.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "amino/amino.proto";
+
 
 //
 // Note any type defined in this file is ONLY used internally to the provider CCV module.
@@ -299,4 +301,15 @@ message ConsumerAddrsToPrune {
   string chain_id = 1;
   uint64 vsc_id = 2;
   AddressList consumer_addrs = 3;
+}
+
+// ConsumerRewardsAllocation stores the rewards allocated by a consumer chain
+// to the consumer rewards pool. It is used to allocate the tokens to the consumer 
+// opted-in validators and the community pool during BeginBlock.
+message ConsumerRewardsAllocation {
+  repeated cosmos.base.v1beta1.DecCoin rewards = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"
+  ];
 }

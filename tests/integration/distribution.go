@@ -3,14 +3,22 @@ package integration
 import (
 	"strings"
 
+	"cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -93,25 +101,41 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().Greater(ibcCoinIndex, -1)
 
 	// Check that the coins got into the ConsumerRewardsPool
-	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
+	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpectedRewards[0].Amount))
 
 	// Advance a block and check that the coins are still in the ConsumerRewardsPool
 	s.providerChain.NextBlock()
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
-	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
+	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpectedRewards[0].Amount))
 
 	// Set the consumer reward denom. This would be done by a governance proposal in prod
 	s.providerApp.GetProviderKeeper().SetConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom)
 
-	s.providerChain.NextBlock()
+	// Refill the consumer fee pool
+	err = consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(), s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
+	s.Require().NoError(err)
 
-	// Check that the reward pool has no more coins because they were transferred to the fee pool
+	// pass two blocks
+	s.consumerChain.NextBlock()
+	s.consumerChain.NextBlock()
+
+	// transfer rewards from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
+
+	// check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlock
+	rewardsAlloc := s.providerApp.GetProviderKeeper().GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().Empty(rewardsAlloc.Rewards)
+
+	// Check that the reward pool still has the first coins transferred that were never allocated
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
-	s.Require().Equal(0, len(rewardCoins))
+	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpectedRewards[0].Amount))
 
 	// check that the fee pool has the expected amount of coins
+	// Note that all rewards are allocated to the community pool since
+	// BeginBlock is called without the validators' votes in ibctesting.
+	// See NextBlock() in https://github.com/cosmos/ibc-go/blob/release/v7.3.x/testing/chain.go#L281
 	communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
-	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
+	s.Require().Equal(communityCoins[ibcCoinIndex].Amount, (sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
@@ -454,6 +478,397 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 	}
 }
 
+// TestIBCTransferMiddleware tests the logic of the IBC transfer OnRecvPacket callback
+func (s *CCVTestSuite) TestIBCTransferMiddleware() {
+
+	var (
+		data        ibctransfertypes.FungibleTokenPacketData
+		packet      channeltypes.Packet
+		getIBCDenom func(string, string) string
+	)
+
+	testCases := []struct {
+		name             string
+		setup            func(sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper)
+		rewardsAllocated bool
+		expErr           bool
+	}{
+		{
+			"invalid IBC packet",
+			func(sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper) {
+				packet = channeltypes.Packet{}
+			},
+			false,
+			true,
+		},
+		{
+			"IBC packet sender isn't a consumer chain",
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				// make the sender consumer chain impossible to identify
+				packet.DestinationChannel = "CorruptedChannelId"
+			},
+			false,
+			false,
+		},
+		{
+			"IBC Transfer recipient is not the consumer rewards pool address",
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				data.Receiver = "cosmos149lw9fktlqfed3zt8ah48r5czmsug5s7kw77u9" // random acct address
+				packet.Data = data.GetBytes()
+			},
+			false,
+			false,
+		},
+		{
+			"IBC Transfer coin denom isn't registered",
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {},
+			false,
+			false,
+		},
+		{
+			"successful token transfer to empty pool",
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				keeper.SetConsumerRewardDenom(
+					s.providerCtx(),
+					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
+				)
+			},
+			true,
+			false,
+		},
+		{
+			"successful token transfer to filled pool",
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				keeper.SetConsumerRewardDenom(
+					ctx,
+					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
+				)
+
+				// fill consumer reward pool
+				bankKeeper.SendCoinsFromAccountToModule(
+					ctx,
+					s.providerChain.SenderAccount.GetAddress(),
+					providertypes.ConsumerRewardsPool,
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100_000))),
+				)
+				// update consumer allocation
+				keeper.SetConsumerRewardsAllocation(
+					ctx,
+					s.consumerChain.ChainID,
+					providertypes.ConsumerRewardsAllocation{
+						Rewards: sdk.NewDecCoins(sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(100_000))),
+					},
+				)
+			},
+			true,
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.SetupTest()
+			s.SetupCCVChannel(s.path)
+			s.SetupTransferChannel()
+
+			providerKeeper := s.providerApp.GetProviderKeeper()
+			bankKeeper := s.providerApp.GetTestBankKeeper()
+			amount := sdk.NewInt(100)
+
+			data = types.NewFungibleTokenPacketData( // can be explicitly changed in setup
+				sdk.DefaultBondDenom,
+				amount.String(),
+				authtypes.NewModuleAddress(consumertypes.ConsumerToSendToProviderName).String(),
+				providerKeeper.GetConsumerRewardsPoolAddressStr(s.providerCtx()),
+				"",
+			)
+
+			packet = channeltypes.NewPacket( // can be explicitly changed in setup
+				data.GetBytes(),
+				uint64(1),
+				s.transferPath.EndpointA.ChannelConfig.PortID,
+				s.transferPath.EndpointA.ChannelID,
+				s.transferPath.EndpointB.ChannelConfig.PortID,
+				s.transferPath.EndpointB.ChannelID,
+				clienttypes.NewHeight(1, 100),
+				0,
+			)
+
+			providerKeeper.SetConsumerRewardDenom(s.providerCtx(),
+				transfertypes.GetPrefixedDenom(
+					packet.DestinationPort,
+					packet.DestinationChannel,
+					sdk.DefaultBondDenom,
+				),
+			)
+
+			getIBCDenom = func(dstPort, dstChannel string) string {
+				return transfertypes.ParseDenomTrace(
+					transfertypes.GetPrefixedDenom(
+						packet.DestinationPort,
+						packet.DestinationChannel,
+						sdk.DefaultBondDenom,
+					),
+				).IBCDenom()
+			}
+
+			tc.setup(s.providerCtx(), &providerKeeper, bankKeeper)
+
+			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(ibctransfertypes.ModuleName)
+			s.Require().True(ok)
+
+			// save the IBC transfer rewards transferred
+			rewardsPoolBalance := bankKeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver))
+
+			// save the consumer's rewards allocated
+			consumerRewardsAllocations := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
+
+			// execute middleware OnRecvPacket logic
+			ack := cbs.OnRecvPacket(s.providerCtx(), packet, sdk.AccAddress{})
+
+			// compute expected rewards with provider denom
+			expRewards := sdk.Coin{
+				Amount: amount,
+				Denom:  getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
+			}
+
+			// compute the balance and allocation difference
+			rewardsTransferred := bankKeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver)).
+				Sub(rewardsPoolBalance...)
+			rewardsAllocated := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID).
+				Rewards.Sub(consumerRewardsAllocations.Rewards)
+
+			if !tc.expErr {
+				s.Require().True(ack.Success())
+				// verify that the consumer rewards pool received the IBC coins
+				s.Require().Equal(rewardsTransferred, sdk.Coins{expRewards})
+
+				if tc.rewardsAllocated {
+					// check the data receiver address is set to the consumer rewards pool address
+					s.Require().Equal(data.GetReceiver(), providerKeeper.GetConsumerRewardsPoolAddressStr(s.providerCtx()))
+
+					// verify that consumer rewards allocation is updated
+					s.Require().Equal(rewardsAllocated, sdk.NewDecCoinsFromCoins(expRewards))
+				} else {
+					// verify that consumer rewards aren't allocated
+					s.Require().Empty(rewardsAllocated)
+				}
+			} else {
+				s.Require().False(ack.Success())
+			}
+		})
+	}
+}
+
+// TestAllocateTokens is a happy-path test of the consumer rewards pool allocation
+// to opted-in validators and the community pool
+func (s *CCVTestSuite) TestAllocateTokens() {
+	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
+	s.SetupAllCCVChannels()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	bankKeeper := s.providerApp.GetTestBankKeeper()
+	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
+
+	totalRewards := sdk.Coins{sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))}
+
+	// fund consumer rewards pool
+	bankKeeper.SendCoinsFromAccountToModule(
+		s.providerCtx(),
+		s.providerChain.SenderAccount.GetAddress(),
+		providertypes.ConsumerRewardsPool,
+		totalRewards,
+	)
+
+	// Allocate rewards evenly between consumers
+	rewardsPerConsumer := totalRewards.QuoInt(math.NewInt(int64(len(s.consumerBundles))))
+	for chainID := range s.consumerBundles {
+		// update consumer allocation
+		providerKeeper.SetConsumerRewardsAllocation(
+			s.providerCtx(),
+			chainID,
+			providertypes.ConsumerRewardsAllocation{
+				Rewards: sdk.NewDecCoinsFromCoins(rewardsPerConsumer...),
+			},
+		)
+	}
+
+	// Iterate over the validators and
+	// store their current voting power and outstanding rewards
+	lastValOutRewards := map[string]sdk.DecCoins{}
+	votes := []abci.VoteInfo{}
+	for _, val := range s.providerChain.Vals.Validators {
+		votes = append(votes,
+			abci.VoteInfo{
+				Validator:       abci.Validator{Address: val.Address, Power: val.VotingPower},
+				SignedLastBlock: true,
+			},
+		)
+
+		valRewards := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		lastValOutRewards[sdk.ValAddress(val.Address).String()] = valRewards.Rewards
+	}
+
+	// store community pool balance
+	lastCommPool := distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx())
+
+	// execute BeginBlock to trigger the token allocation
+	providerKeeper.BeginBlockRD(
+		s.providerCtx(),
+		abci.RequestBeginBlock{
+			LastCommitInfo: abci.CommitInfo{
+				Votes: votes,
+			},
+		},
+	)
+
+	valNum := len(s.providerChain.Vals.Validators)
+	consuNum := len(s.consumerBundles)
+
+	// compute the expected validators token allocation by subtracting the community tax
+	rewardsPerConsumerDec := sdk.NewDecCoinsFromCoins(rewardsPerConsumer...)
+	communityTax := distributionKeeper.GetCommunityTax(s.providerCtx())
+	validatorsExpRewards := rewardsPerConsumerDec.
+		MulDecTruncate(math.LegacyOneDec().Sub(communityTax)).
+		// multiply by the number of consumers since all the validators opted in
+		MulDec(sdk.NewDec(int64(consuNum)))
+	perValExpReward := validatorsExpRewards.QuoDec(sdk.NewDec(int64(valNum)))
+
+	// verify the validator tokens allocation
+	// note all validators have the same voting power to keep things simple
+	for _, val := range s.providerChain.Vals.Validators {
+		valReward := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().Equal(
+			valReward.Rewards,
+			lastValOutRewards[sdk.ValAddress(val.Address).String()].Add(perValExpReward...),
+		)
+	}
+
+	commPoolExpRewards := sdk.NewDecCoinsFromCoins(totalRewards...).Sub(validatorsExpRewards)
+	currCommPool := distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx())
+
+	s.Require().Equal(currCommPool, (lastCommPool.Add(commPoolExpRewards...)))
+}
+
+// TestAllocateTokens is a unit-test for TransferConsumerRewardsToDistributionModule()
+// but is written as an integration test to avoid excessive mocking.
+func (s *CCVTestSuite) TransferConsumerRewardsToDistributionModule() {
+	testCases := []struct {
+		name         string
+		rewardsPool  sdk.Coins
+		rewardsAlloc sdk.DecCoins
+		expErr       bool
+	}{
+		{
+			"empty consumer rewards pool",
+			sdk.Coins{},
+			sdk.DecCoins{},
+			false,
+		},
+		{
+			"empty consumer allocation",
+			sdk.Coins{
+				sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			sdk.DecCoins{},
+			false,
+		},
+		{
+			"equal consumer rewards pool and allocation",
+			sdk.Coins{
+				sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			sdk.DecCoins{
+				sdk.NewDecCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			false,
+		},
+		{
+			"less consumer rewards than allocation",
+			sdk.Coins{
+				sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(90)),
+			},
+			sdk.DecCoins{
+				sdk.NewDecCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			true,
+		},
+		{
+			"remaining consumer rewards allocation",
+			sdk.Coins{
+				sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)),
+			},
+			sdk.DecCoins{
+				sdk.DecCoin{
+					Denom:  sdk.DefaultBondDenom,
+					Amount: sdk.NewDecWithPrec(995, 1),
+				},
+			},
+			false,
+		},
+	}
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	bankKeeper := s.providerApp.GetTestBankKeeper()
+	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
+
+	chainID := s.consumerChain.ChainID
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			ctx, _ := s.providerCtx().CacheContext()
+			// fund consumer rewards pool
+			bankKeeper.SendCoinsFromAccountToModule(
+				ctx,
+				s.providerChain.SenderAccount.GetAddress(),
+				providertypes.ConsumerRewardsPool,
+				tc.rewardsPool,
+			)
+
+			// update consumer rewars allocation
+			providerKeeper.SetConsumerRewardsAllocation(
+				ctx,
+				chainID,
+				providertypes.ConsumerRewardsAllocation{
+					Rewards: tc.rewardsAlloc,
+				},
+			)
+
+			// store pool balance
+			oldPool := bankKeeper.GetAllBalances(
+				ctx,
+				distributionKeeper.GetDistributionAccount(ctx).GetAddress(),
+			)
+
+			// transfer consumer rewars to distribution module
+			coinsTransferred, err := providerKeeper.TransferConsumerRewardsToDistributionModule(
+				ctx,
+				chainID,
+			)
+			if tc.expErr {
+				s.Require().Error(err)
+				return
+			}
+
+			// check remaining consumer rewards allocation
+			expCoinTransferred, expRemaining := tc.rewardsAlloc.TruncateDecimal()
+			s.Require().Equal(expCoinTransferred, coinsTransferred)
+
+			s.Require().Equal(
+				expRemaining,
+				providerKeeper.GetConsumerRewardsAllocation(ctx, chainID).Rewards,
+			)
+
+			// check updated consuemer rewards pool balance
+			newPool := bankKeeper.GetAllBalances(
+				ctx,
+				distributionKeeper.GetDistributionAccount(ctx).GetAddress(),
+			)
+
+			s.Require().Equal(newPool.Sub(oldPool...), coinsTransferred)
+		})
+	}
+}
+
 // getEscrowBalance gets the current balances in the escrow account holding the transferred tokens to the provider
 func (s *CCVTestSuite) getEscrowBalance() sdk.Coins {
 	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
@@ -484,4 +899,83 @@ func (s *CCVTestSuite) prepareRewardDist() {
 	blocksSinceLastTrans := currentHeight - lastTransHeight.Height
 	blocksToGo := bpdt - blocksSinceLastTrans
 	s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
+}
+
+func (s *CCVTestSuite) TestAllocateTokensToValidator() {
+
+	providerkeepr := s.providerApp.GetProviderKeeper()
+
+	chainID := "consumer"
+
+	validators := []bytes.HexBytes{
+		s.providerChain.Vals.Validators[0].Address,
+		s.providerChain.Vals.Validators[1].Address,
+	}
+
+	votes := []abci.VoteInfo{
+		{Validator: abci.Validator{Address: validators[0], Power: 1}},
+		{Validator: abci.Validator{Address: validators[1], Power: 1}},
+	}
+
+	testCases := []struct {
+		name               string
+		votes              []abci.VoteInfo
+		tokens             sdk.DecCoins
+		expCoinTransferred sdk.DecCoins
+	}{
+		{
+			name: "reward tokens are empty",
+		},
+		{
+			name:   "total voting power is zero",
+			tokens: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
+		},
+		{
+			name:               "expect all tokens to be allocated to a single validator",
+			votes:              []abci.VoteInfo{votes[0]},
+			tokens:             sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
+			expCoinTransferred: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
+		},
+		{
+			name:               "expect tokens to be allocated evenly between validators",
+			votes:              []abci.VoteInfo{votes[0], votes[1]},
+			tokens:             sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(555_555))},
+			expCoinTransferred: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(555_555))},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			// TODO: opt validators in and verify
+			// that rewards are solely allocated to them
+
+			ctx, _ := s.providerCtx().CacheContext()
+
+			// allocate tokens
+			res := providerkeepr.AllocateTokensToConsumerValidators(
+				ctx,
+				chainID,
+				tc.votes,
+				tc.tokens,
+			)
+
+			// check that the expect result is returned
+			s.Require().Equal(tc.expCoinTransferred, res)
+
+			if !tc.expCoinTransferred.Empty() {
+				// rewards are expected to be allocated evenly between validators
+				rewardsPerVal := tc.expCoinTransferred.QuoDec(sdk.NewDec(int64(len(tc.votes))))
+
+				// check that the rewards are allocated to validators as expected
+				for _, v := range tc.votes {
+					rewards := s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(
+						ctx,
+						sdk.ValAddress(v.Validator.Address),
+					)
+					s.Require().Equal(rewardsPerVal, rewards.Rewards)
+				}
+			}
+
+		})
+	}
 }
