@@ -165,6 +165,10 @@ const (
 	// are about to be opted out
 	ToBeOptedOutBytePrefix
 
+	// ConsumerRewardsAllocationBytePrefix is the byte prefix used when storing for each consumer the rewards
+	// it allocated to the consumer rewards pool
+	ConsumerRewardsAllocationBytePrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -558,6 +562,11 @@ func ToBeOptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
 func ToBeOptedOutKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	prefix := ChainIdWithLenKey(ToBeOptedOutBytePrefix, chainID)
 	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// ConsumerModuleAccount returns the module account byte prefix for a consumer chain
+func ConsumerRewardsAllocationKey(chainID string) []byte {
+	return append([]byte{ConsumerRewardsAllocationBytePrefix}, []byte(chainID)...)
 }
 
 //
