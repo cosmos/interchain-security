@@ -188,7 +188,7 @@ func (im IBCMiddleware) SendPacket(
 	uint64,
 	[]byte,
 ) (uint64, error) {
-	return 0, nil
+	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
 }
 
 // WriteAcknowledgement implements the ICS4 Wrapper interface
@@ -198,12 +198,12 @@ func (im IBCMiddleware) WriteAcknowledgement(
 	packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
-	return nil
+	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
 }
 
 // GetAppVersion returns the application version of the underlying application
 func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
-	return "", false
+	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
 }
 
 // GetProviderDenom returns the updated given denom according to the given IBC packet
