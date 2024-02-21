@@ -139,7 +139,8 @@ func (im IBCMiddleware) OnRecvPacket(
 		coinDenom := GetProviderDenom(data.Denom, packet)
 
 		// verify that the coin's denom is a whitelisted consumer denom,
-		// and if so, adds it to the consumer chain rewards allocation
+		// and if so, adds it to the consumer chain rewards allocation,
+		// otherwise the prohibited coin just stays in the pool forever.
 		if im.keeper.ConsumerRewardDenomExists(ctx, coinDenom) {
 			alloc := im.keeper.GetConsumerRewardsAllocation(ctx, consumerID)
 			alloc.Rewards = alloc.Rewards.Add(
