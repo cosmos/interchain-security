@@ -736,11 +736,18 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	// verify the validator tokens allocation
 	// note all validators have the same voting power to keep things simple
 	for _, val := range s.providerChain.Vals.Validators {
-		valReward := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		valRewards := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
 		s.Require().Equal(
-			valReward.Rewards,
+			valRewards.Rewards,
 			lastValOutRewards[sdk.ValAddress(val.Address).String()].Add(perValExpReward...),
 		)
+
+		// withdraw validator rewards
+		withdrawnCoins, err := distributionKeeper.WithdrawValidatorCommission(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().NoError(err)
+
+		valRewardsTrunc, _ := valRewards.Rewards.TruncateDecimal()
+		s.Require().Equal(withdrawnCoins, valRewardsTrunc)
 	}
 
 	commPoolExpRewards := sdk.NewDecCoinsFromCoins(totalRewards...).Sub(validatorsExpRewards)

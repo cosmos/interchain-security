@@ -129,7 +129,7 @@ func (im IBCMiddleware) OnRecvPacket(
 		var data ibctransfertypes.FungibleTokenPacketData
 		_ = types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
 
-		// check if the recipient is the consumer reward's pool address
+		// check that the recipient is the consumer reward's pool address
 		receiver, _ := sdk.AccAddressFromBech32(data.Receiver)
 		if receiver.String() != im.keeper.GetConsumerRewardsPoolAddressStr(ctx) {
 			return ack

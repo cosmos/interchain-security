@@ -5,9 +5,9 @@ import (
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
@@ -157,9 +157,12 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPower))
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
+		val := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr).(stakingtypes.Validator)
+		val.Commission.Rate = math.LegacyOneDec()
+
 		k.distributionKeeper.AllocateTokensToValidator(
 			ctx,
-			k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr),
+			val,
 			tokensFraction,
 		)
 		totalReward = totalReward.Add(tokensFraction...)
@@ -168,8 +171,8 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	return totalReward
 }
 
-// TransferConsumerRewardsToDistributionModule transfers the collected rewards of the given consumer chain
-// from the consumer rewards pool module account to a the distribution module
+// TransferConsumerRewardsToDistributionModule transfers the rewards allocation of the given consumer chain
+// from the consumer rewards pool to a the distribution module
 func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	ctx sdk.Context,
 	chainID string,
