@@ -14,7 +14,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
@@ -482,7 +481,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 
 	var (
-		data        ibctransfertypes.FungibleTokenPacketData
+		data        transfertypes.FungibleTokenPacketData
 		packet      channeltypes.Packet
 		getIBCDenom func(string, string) string
 	)
@@ -614,7 +613,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 
 			tc.setup(s.providerCtx(), &providerKeeper, bankKeeper)
 
-			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(ibctransfertypes.ModuleName)
+			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(transfertypes.ModuleName)
 			s.Require().True(ok)
 
 			// save the IBC transfer rewards transferred
@@ -1108,12 +1107,12 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 		)
 
 		// construct the denom of the reward tokens for the provider
-		prefixedDenom := ibctransfertypes.GetPrefixedDenom(
+		prefixedDenom := transfertypes.GetPrefixedDenom(
 			transfertypes.PortID,
 			bundle.TransferPath.EndpointB.ChannelID,
 			rewardsPerConsumer.Denom,
 		)
-		provIBCDenom := ibctransfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
+		provIBCDenom := transfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
 
 		// sum the total rewards transferred to the provider
 		totalConsumerRewards = totalConsumerRewards.

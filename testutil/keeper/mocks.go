@@ -1114,6 +1114,134 @@ func (m *MockIBCTransferKeeper) EXPECT() *MockIBCTransferKeeperMockRecorder {
 	return m.recorder
 }
 
+// OnAcknowledgementPacket mocks base method.
+func (m *MockIBCTransferKeeper) OnAcknowledgementPacket(ctx types0.Context, packet types9.Packet, acknowledgement []byte, relayer types0.AccAddress) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnAcknowledgementPacket", ctx, packet, acknowledgement, relayer)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnAcknowledgementPacket indicates an expected call of OnAcknowledgementPacket.
+func (mr *MockIBCTransferKeeperMockRecorder) OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnAcknowledgementPacket", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnAcknowledgementPacket), ctx, packet, acknowledgement, relayer)
+}
+
+// OnChanCloseConfirm mocks base method.
+func (m *MockIBCTransferKeeper) OnChanCloseConfirm(ctx types0.Context, portID, channelID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnChanCloseConfirm", ctx, portID, channelID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnChanCloseConfirm indicates an expected call of OnChanCloseConfirm.
+func (mr *MockIBCTransferKeeperMockRecorder) OnChanCloseConfirm(ctx, portID, channelID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnChanCloseConfirm", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnChanCloseConfirm), ctx, portID, channelID)
+}
+
+// OnChanCloseInit mocks base method.
+func (m *MockIBCTransferKeeper) OnChanCloseInit(ctx types0.Context, portID, channelID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnChanCloseInit", ctx, portID, channelID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnChanCloseInit indicates an expected call of OnChanCloseInit.
+func (mr *MockIBCTransferKeeperMockRecorder) OnChanCloseInit(ctx, portID, channelID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnChanCloseInit", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnChanCloseInit), ctx, portID, channelID)
+}
+
+// OnChanOpenAck mocks base method.
+func (m *MockIBCTransferKeeper) OnChanOpenAck(ctx types0.Context, portID, channelID, counterpartyChannelID, counterpartyVersion string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnChanOpenAck", ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnChanOpenAck indicates an expected call of OnChanOpenAck.
+func (mr *MockIBCTransferKeeperMockRecorder) OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnChanOpenAck", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnChanOpenAck), ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
+}
+
+// OnChanOpenConfirm mocks base method.
+func (m *MockIBCTransferKeeper) OnChanOpenConfirm(ctx types0.Context, portID, channelID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnChanOpenConfirm", ctx, portID, channelID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnChanOpenConfirm indicates an expected call of OnChanOpenConfirm.
+func (mr *MockIBCTransferKeeperMockRecorder) OnChanOpenConfirm(ctx, portID, channelID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnChanOpenConfirm", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnChanOpenConfirm), ctx, portID, channelID)
+}
+
+// OnChanOpenInit mocks base method.
+func (m *MockIBCTransferKeeper) OnChanOpenInit(ctx types0.Context, order types9.Order, connectionHops []string, portID, channelID string, channelCap *types2.Capability, counterparty types9.Counterparty, version string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnChanOpenInit", ctx, order, connectionHops, portID, channelID, channelCap, counterparty, version)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OnChanOpenInit indicates an expected call of OnChanOpenInit.
+func (mr *MockIBCTransferKeeperMockRecorder) OnChanOpenInit(ctx, order, connectionHops, portID, channelID, channelCap, counterparty, version interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnChanOpenInit", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnChanOpenInit), ctx, order, connectionHops, portID, channelID, channelCap, counterparty, version)
+}
+
+// OnChanOpenTry mocks base method.
+func (m *MockIBCTransferKeeper) OnChanOpenTry(ctx types0.Context, order types9.Order, connectionHops []string, portID, channelID string, channelCap *types2.Capability, counterparty types9.Counterparty, counterpartyVersion string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnChanOpenTry", ctx, order, connectionHops, portID, channelID, channelCap, counterparty, counterpartyVersion)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OnChanOpenTry indicates an expected call of OnChanOpenTry.
+func (mr *MockIBCTransferKeeperMockRecorder) OnChanOpenTry(ctx, order, connectionHops, portID, channelID, channelCap, counterparty, counterpartyVersion interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnChanOpenTry", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnChanOpenTry), ctx, order, connectionHops, portID, channelID, channelCap, counterparty, counterpartyVersion)
+}
+
+// OnRecvPacket mocks base method.
+func (m *MockIBCTransferKeeper) OnRecvPacket(ctx types0.Context, packet types9.Packet, relayer types0.AccAddress) exported.Acknowledgement {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnRecvPacket", ctx, packet, relayer)
+	ret0, _ := ret[0].(exported.Acknowledgement)
+	return ret0
+}
+
+// OnRecvPacket indicates an expected call of OnRecvPacket.
+func (mr *MockIBCTransferKeeperMockRecorder) OnRecvPacket(ctx, packet, relayer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnRecvPacket", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnRecvPacket), ctx, packet, relayer)
+}
+
+// OnTimeoutPacket mocks base method.
+func (m *MockIBCTransferKeeper) OnTimeoutPacket(ctx types0.Context, packet types9.Packet, relayer types0.AccAddress) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnTimeoutPacket", ctx, packet, relayer)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnTimeoutPacket indicates an expected call of OnTimeoutPacket.
+func (mr *MockIBCTransferKeeperMockRecorder) OnTimeoutPacket(ctx, packet, relayer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnTimeoutPacket", reflect.TypeOf((*MockIBCTransferKeeper)(nil).OnTimeoutPacket), ctx, packet, relayer)
+}
+
 // Transfer mocks base method.
 func (m *MockIBCTransferKeeper) Transfer(arg0 context.Context, arg1 *types6.MsgTransfer) (*types6.MsgTransferResponse, error) {
 	m.ctrl.T.Helper()
