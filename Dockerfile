@@ -42,9 +42,9 @@ RUN dnf update -y
 RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq
 USER root
 
-COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
+COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/hermes
 COPY --from=cometmock-builder /usr/local/bin/cometmock /usr/local/bin/cometmock
-COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
+COPY --from=gorelayer-builder /bin/rly /usr/local/bin/rly
 
 COPY --from=is-builder /go/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
 COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
