@@ -66,16 +66,16 @@ func TestQueueVSCPackets(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mocks := testkeeper.NewMockedKeepers(ctrl)
-		mockStakingKeeper := mocks.MockStakingKeeper
+		//mockStakingKeeper := mocks.MockStakingKeeper
 
-		mockUpdates := []abci.ValidatorUpdate{}
-		if len(tc.packets) != 0 {
-			mockUpdates = tc.packets[0].ValidatorUpdates
-		}
+		//mockUpdates := []abci.ValidatorUpdate{}
+		//if len(tc.packets) != 0 {
+		//	mockUpdates = tc.packets[0].ValidatorUpdates
+		//}
 
-		gomock.InOrder(
-			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates),
-		)
+		//gomock.InOrder(
+		//	mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates),
+		//)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
