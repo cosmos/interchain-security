@@ -101,7 +101,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		feePool := k.distributionKeeper.GetFeePool(ctx)
-		if totalPreviousPower == 0 {
+		if k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId, bondedVotes) == 0 {
 			feePool.CommunityPool = feePool.CommunityPool.Add(rewardsCollectedDec...)
 			k.distributionKeeper.SetFeePool(ctx, feePool)
 			return
@@ -232,7 +232,6 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string, votes []abci.VoteInfo) int64 {
 	// TODO: create a optedIn set from the OptedIn validators
 	// and sum their validator power
-
 	var totalPower int64
 
 	// sum the opted-in validators set voting powers
