@@ -5,6 +5,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	types2 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
@@ -91,35 +92,29 @@ func (k Keeper) ComputeNextEpochValidators(
 	ctx sdk.Context,
 	chainID string,
 	currentValidators []types.EpochValidator,
+	stakingValidators []types2.Validator,
 ) []types.EpochValidator {
-	var nextValidators []types.EpochValidator
+	isCurrentValidator := make(map[string]types.EpochValidator)
 	for _, val := range currentValidators {
 		// `currentPublicKey` is the currently used key by validator `val` when validating on the consumer chain
-		var currentPublicKey crypto.PublicKey
-		err := currentPublicKey.Unmarshal(val.ConsumerPublicKey)
+		isCurrentValidator[string(val.ProviderConsAddr)] = val
+	}
+
+	var nextValidators []types.EpochValidator
+	for _, val := range stakingValidators {
+		// get next voting power and the next consumer public key
+		nextPower := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+		consAddr, err := val.GetConsAddr()
 		if err != nil {
 			// this should never happen but is recoverable if we exclude this validator from the `nextValidators`
-			k.Logger(ctx).Error("validator's (%+v) public key could not be unmarshalled: %w", val, err)
+			k.Logger(ctx).Error("could not get consensus address of validator (%+v): %w", val, err)
 			continue
 		}
-
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, val.ProviderConsAddr)
-		if !found {
-			// This should never happen because when `val` was added as an epoch validator it was bonded
-			// and for it not to be found it means that it fully unbonded after an unbonding period. Assuming
-			// an epoch is smaller than the unbonding period, we would have already removed this validator from
-			// being an epoch validator. In any case, we can still recover by excluding this validator
-			// from `nextValidators`.
-			k.Logger(ctx).Error("validator (%+v) could not be found: %w", val, err)
-			continue
-		}
-
-		// get next voting power and the next consumer public key
-		nextPower := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		nextConsumerPublicKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(val.ProviderConsAddr))
+		nextConsumerPublicKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
 		if !found {
 			k.Logger(ctx).Error("could not retrieve public key for validator (%+v)", val)
-			continue
+			// if no consumer key assigned then use the validator's key itself
+			nextConsumerPublicKey, err = val.TmConsPublicKey()
 		}
 		nextConsumerPublicKeyBytes, err := nextConsumerPublicKey.Marshal()
 		if err != nil {
@@ -128,9 +123,15 @@ func (k Keeper) ComputeNextEpochValidators(
 			continue
 		}
 
+		startBlockHeight := ctx.BlockHeight()
+		if v, found2 := isCurrentValidator[string(consAddr)]; found2 {
+			// remain sstable
+			startBlockHeight = v.GetStartBlockHeight()
+		}
+
 		nextValidator := types.EpochValidator{
-			ProviderConsAddr:  val.ProviderConsAddr,
-			StartBlockHeight:  val.StartBlockHeight, // remains stable
+			ProviderConsAddr:  consAddr,
+			StartBlockHeight:  startBlockHeight,
 			Power:             nextPower,
 			ConsumerPublicKey: nextConsumerPublicKeyBytes,
 		}
@@ -176,8 +177,10 @@ func (k Keeper) diff(
 
 			if !currentPublicKey.Equal(nextPublicKey) {
 				updates = append(updates, abci.ValidatorUpdate{PubKey: currentPublicKey, Power: 0})
+				updates = append(updates, abci.ValidatorUpdate{PubKey: nextPublicKey, Power: nextVal.Power})
+			} else if val.Power != nextVal.Power {
+				updates = append(updates, abci.ValidatorUpdate{PubKey: nextPublicKey, Power: nextVal.Power})
 			}
-			updates = append(updates, abci.ValidatorUpdate{PubKey: nextPublicKey, Power: nextVal.Power})
 		} else {
 			// not found in next validators and hence the validator has to be removed
 			updates = append(updates, abci.ValidatorUpdate{PubKey: currentPublicKey, Power: 0})
@@ -202,9 +205,9 @@ func (k Keeper) diff(
 	return updates
 }
 
-// ResetCurrentEpochOptedInValidators resets the opted-in validators with the newest set that was computed by
+// ResetCurrentEpochValidators resets the opted-in validators with the newest set that was computed by
 // `ComputeNextValidators` and hence this method should only be called after `ComputeNextValidators` has completed.
-func (k Keeper) ResetCurrentEpochOptedInValidators(ctx sdk.Context, chainID string,
+func (k Keeper) ResetCurrentEpochValidators(ctx sdk.Context, chainID string,
 	nextValidators []types.EpochValidator) {
 	k.DeleteAllEpochValidators(ctx, chainID)
 	for _, val := range nextValidators {

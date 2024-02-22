@@ -152,6 +152,26 @@ func (suite *CCVTestSuite) SetupTest() {
 			chainID,
 		)
 		suite.Require().True(found, "consumer genesis not found")
+
+		//// START
+		////valUpdates := consumerGenesisState.Provider.InitialValSet
+		//var stakingValidators []stakingtypes.Validator
+		//for _, val := range suite.providerApp.GetTestStakingKeeper().GetLastValidators(suite.providerCtx()) {
+		//	// pubkey to consensus address
+		//	//consAddr, err := ccv.TMCryptoPublicKeyToConsAddr(val.PubKey)
+		//	//if err != nil {
+		//	//	continue
+		//	//}
+		//	//v, found := suite.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(suite.providerCtx(), consAddr)
+		//	//if !found {
+		//	//	continue
+		//	//}
+		//	stakingValidators = append(stakingValidators, val)
+		//}
+		//nextValidators := providerKeeper.ComputeNextEpochValidators(suite.providerCtx(), chainID, []types.EpochValidator{}, stakingValidators)
+		//providerKeeper.ResetCurrentEpochValidators(suite.providerCtx(), chainID, nextValidators)
+		///// END
+
 		genesisState := consumertypes.GenesisState{
 			Params:   consumerGenesisState.Params,
 			Provider: consumerGenesisState.Provider,

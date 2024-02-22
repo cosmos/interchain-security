@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"log"
 	"testing"
 	"time"
@@ -347,7 +348,6 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	)
 
 	consumerGenesis := createConsumerGenesis(params, providerChain, consumerClientState)
-
 	s.consumerKeeper(consumerChainId).InitGenesis(s.ctx(consumerChainId), consumerGenesis)
 
 	consumerGenesisForProvider := ccvtypes.ConsumerGenesisState{
@@ -355,6 +355,25 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		Provider: consumerGenesis.Provider,
 		NewChain: consumerGenesis.NewChain,
 	}
+
+	var stakingValidators []stakingtypes.Validator
+
+	for _, val := range consumerGenesisForProvider.Provider.InitialValSet {
+		pubKey := val.PubKey
+		consAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(pubKey)
+		if err != nil {
+			continue
+		}
+
+		v, found := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		if !found {
+			continue
+		}
+		stakingValidators = append(stakingValidators, v)
+	}
+
+	nextValidators := s.providerKeeper().ComputeNextEpochValidators(s.providerCtx(), string(consumerChainId), []types.EpochValidator{}, stakingValidators)
+	s.providerKeeper().ResetCurrentEpochValidators(s.providerCtx(), string(consumerChainId), nextValidators)
 
 	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),
