@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"golang.org/x/mod/semver"
 )
 
 type ExecutionTarget interface {
@@ -20,6 +22,7 @@ type ExecutionTarget interface {
 	Stop() error
 	Build() error
 	Delete() error
+	Info() string
 }
 
 type DockerContainer struct {
@@ -33,60 +36,26 @@ func (dc *DockerContainer) GetTargetConfig() TargetConfig {
 	return dc.targetConfig
 }
 
-func generateImageName(version string, cfg TargetConfig) (string, error) {
-	// identify a tag name
-	tagName := ""
-	if version == "" {
-		tagName = "local" // this refers to build from local workspace
-	} else {
-		// use git hash of rev as docker image tag
-		//cmd := exec.Command("git", "rev-parse", "--verify", "--short", version)
-		cmd := exec.Command("git", "log", "--pretty=format:%h", "-n", "1", version)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return "", fmt.Errorf("error getting hash for revision: %v, '%s'", err, out)
-		}
-		tagName = strings.TrimSpace(string(out))
-	}
-
-	imageName := "cosmos-ics"
-	if cfg.useGaia {
-		imageName += "_gaia"
-		tagName += "-" + cfg.gaiaTag
-	}
-	if cfg.localSdkPath != "" {
-		imageName += "_sdk"
-	}
-
-	return fmt.Sprintf("%s:%s", imageName, tagName), nil
-}
-
 // Build the docker image for the target container
 func (dc *DockerContainer) Build() error {
 	consumerVersion := dc.targetConfig.consumerVersion
 	providerVersion := dc.targetConfig.providerVersion
 
-	consumerImageName, err := generateImageName(consumerVersion, dc.targetConfig)
+	consumerImageName, err := getDockerImage(consumerVersion, dc.targetConfig, false)
 	if err != nil {
 		return fmt.Errorf("failed building docker image: %v", err)
 	}
-	err = buildDockerImage(consumerImageName, consumerVersion, dc.targetConfig, false)
-	if err != nil {
-		return err
-	}
 	dc.images = append(dc.images, consumerImageName)
 
-	if consumerVersion == "" && consumerVersion == providerVersion {
+	// if consumer and provider version are identical we're done and
+	// no combined image from different versions needs to be created
+	if consumerVersion == providerVersion {
 		dc.ImageName = consumerImageName
 		return nil
 	}
 
 	// build image for provider as it's a different version to be run
-	providerImageName, err := generateImageName(providerVersion, dc.targetConfig)
-	if err != nil {
-		return fmt.Errorf("failed building docker image: %v", err)
-	}
-	err = buildDockerImage(providerImageName, providerVersion, dc.targetConfig, false)
+	providerImageName, err := getDockerImage(providerVersion, dc.targetConfig, false)
 	if err != nil {
 		return err
 	}
@@ -96,10 +65,20 @@ func (dc *DockerContainer) Build() error {
 	combinedImageName := fmt.Sprintf("cosmos-ics-combined:%s_%s",
 		strings.Split(providerImageName, ":")[1],
 		strings.Split(consumerImageName, ":")[1])
+
+	// For some version combinations the latest 'genesis transformer' does not support the required transformation
+	// transformation function of the client of the consumer version needs to be used and not the latest
+	transformerImage := "ghcr.io/cosmos/interchain-security:latest"
+	if semver.Compare(consumerVersion, "v3.3.0") <= 0 && semver.Compare(providerVersion, "v3.3.0") < 0 {
+		transformerImage = "ghcr.io/cosmos/interchain-security:v3.3.0"
+	}
+
+	fmt.Println("Transformer used:", transformerImage)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "build", "-f", "Dockerfile.combined",
 		"--build-arg", fmt.Sprintf("PROVIDER_IMAGE=%s", providerImageName),
 		"--build-arg", fmt.Sprintf("CONSUMER_IMAGE=%s", consumerImageName),
+		"--build-arg", fmt.Sprintf("TRANSFORMER_IMAGE=%s", transformerImage),
 		"-t", combinedImageName,
 		".")
 	out, err := cmd.CombinedOutput()
@@ -114,13 +93,17 @@ func (dc *DockerContainer) Build() error {
 
 func (dc *DockerContainer) Delete() error {
 	for _, img := range dc.images {
+		// Keep images from registry (but latest)
+		if !strings.HasPrefix(img, ICS_DOCKER_REGISTRY) && strings.HasSuffix(img, "latest") {
+			continue
+		}
+
 		//#nosec G204 -- Bypass linter warning for spawning subprocess with variable
 		cmd := exec.Command("docker", "image", "rm", img)
-		fmt.Println("@@@ not removing image: ", cmd.String()) // TODO: remove this when done with testing
-		/* 		out, err := cmd.CombinedOutput()
-		   		if err != nil && !strings.Contains(string(out), "No such image") {
-		   			log.Printf("failed deleting image '%v' (%v): %v", cmd, err, string(out))
-		   		} */
+		out, err := cmd.CombinedOutput()
+		if err != nil && !strings.Contains(string(out), "No such image") {
+			log.Printf("failed deleting image '%v' (%v): %v", cmd, err, string(out))
+		}
 	}
 	return nil
 }
@@ -150,12 +133,12 @@ func (dc *DockerContainer) GetTestScriptPath(isConsumer bool, script string) str
 	// in case the provider and consumer version differ the test-scripts are in dedicated directories on the target
 	// for each of them (see Docker.combined)
 	if dc.targetConfig.providerVersion != dc.targetConfig.consumerVersion {
-		if !isConsumer {
-			fmt.Printf("Using script path for provider version '%s'\n", dc.targetConfig.providerVersion)
-			path = "/provider/testnet-scripts"
-		} else {
+		if isConsumer {
 			fmt.Printf("Using script path for consumer version '%s'\n", dc.targetConfig.consumerVersion)
 			path = "/consumer/testnet-scripts"
+		} else {
+			fmt.Printf("Using script path for provider version '%s'\n", dc.targetConfig.providerVersion)
+			path = "/provider/testnet-scripts"
 		}
 	}
 	// no combined image (see Dockerfile)
@@ -225,4 +208,17 @@ func (dc *DockerContainer) Stop() error {
 		return fmt.Errorf("error removing docker container: %v, %s", err, string(bz))
 	}
 	return nil
+}
+
+// Info returns target information
+func (dc *DockerContainer) Info() string {
+	return fmt.Sprintf(`
+	Consumer version: %s
+	Provider version: %s
+	Docker image: %s
+	Docker container: %s`,
+		dc.targetConfig.consumerVersion,
+		dc.targetConfig.providerVersion,
+		dc.ImageName,
+		dc.containerCfg.InstanceName)
 }

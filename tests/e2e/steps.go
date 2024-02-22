@@ -17,14 +17,13 @@ func concatSteps(steps ...[]Step) []Step {
 var compatibilitySteps = concatSteps(
 	compstepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
-	compstepsAssignConsumerKeyOnStartedChain("consu", "bob"),
 	stepsUnbond("consu"),
 	stepsRedelegateShort("consu"),
 	stepsDowntime("consu"),
+	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
 	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 3),                     // stop chain
-
 )
 
 var happyPathSteps = concatSteps(

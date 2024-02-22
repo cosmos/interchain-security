@@ -29,7 +29,7 @@ func (td *DefaultDriver) Run(steps []Step, target ExecutionTarget, verbose bool)
 	td.target = target
 	td.verbose = verbose
 
-	fmt.Printf("=============== started %s tests ===============\n", td.testCfg.name)
+	fmt.Printf("=============== started %s tests ===============\n\n", td.testCfg.name)
 
 	start := time.Now()
 	for i, step := range steps {

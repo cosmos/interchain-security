@@ -8,6 +8,8 @@ import (
 	"math"
 	"os"
 	"os/exec"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,6 +17,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
+	"golang.org/x/mod/semver"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -546,31 +549,91 @@ func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID, t
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	// only needed when consumer is running v3.3.x and later
-	if tr.transformGenesis {
+	if tr.transformGenesis || needsGenesisTransform(target.GetTargetConfig()) {
 		return string(tr.transformConsumerGenesis(consumerChain, bz, target))
+	} else {
+		fmt.Println("No genesis transformation performed")
 	}
 	return string(bz)
 }
 
+// needsGenesisTransform tries to identify if a genesis transformation should be performed
+func needsGenesisTransform(cfg TargetConfig) bool {
+
+	if cfg.consumerVersion == cfg.providerVersion {
+		return false
+	}
+	if !semver.IsValid(cfg.consumerVersion) || !semver.IsValid(cfg.providerVersion) {
+		fmt.Println("unable to identify the need for genesis transformation: invalid sem-version", cfg.consumerVersion, cfg.providerVersion)
+		return false
+	}
+
+	if semver.Compare(cfg.consumerVersion, "v3.3.0") < 0 && semver.Compare(cfg.providerVersion, "v3.3.0") >= 0 {
+		fmt.Println("genesis transformation needed for versions:", cfg.providerVersion, cfg.consumerVersion)
+		return true
+	}
+	if semver.Compare(cfg.providerVersion, "v3.3.0") < 0 && semver.Compare(cfg.consumerVersion, "v3.3.0") >= 0 {
+		fmt.Println("genesis transformation needed for versions:", cfg.providerVersion, cfg.consumerVersion)
+		return true
+	}
+	fmt.Println("NO genesis transformation needed for versions:", cfg.providerVersion, cfg.consumerVersion)
+	return false
+}
+
 // getTransformParameter identifies the needed transformation parameter for current `transformGenesis` implementation
 // based on consumer and provider versions.
-func getTransformParameter(consumerVersion, providerVersion string) string {
-	var params string
+func getTransformParameter(consumerVersion, providerVersion string) (string, error) {
+	// Hash of breakage due to preHashKey release in version 2.x
+	// ics23/go v.0.10.0 adding 'prehash_key_before_comparison' in ProofSpec
+	breakage_prehash := "d4dde74b062c2fded0d3b3dbef4b3b0229e317f3" // first released in v3.2.0-consumer
+
+	// breakage 2: split of genesis
+	breakage_splitgenesisMain := "946f6ec626d3de3fe2e00cbb386ccf9c2f05d94d"
+	breakage_splitgenesisV33x := "1d2641a3b2ba706ae0a307d9019b48c62d86133b"
+
+	// breakage 3: split of genesis + delay_period
+	breakage_retry_delay := "88499b7c650ea0fb2c448af2b182ad5fee94d795"
 	// is consumer before v2.x
 	// -- if provider is v3.3.0 (T)
+	transformParams := map[string][]string{
+		"v2.x":   {breakage_prehash},
+		"v3.3.x": {breakage_splitgenesisMain, breakage_splitgenesisV33x},
+		"v4.x":   {breakage_retry_delay},
+	}
 
-	// is consumer v2.x
+	targetVersion := "v4.x"
+	// iterate in order of breakage history [oldest first] to identify the "--to" target for consumer
+	keys := make([]string, 0, len(transformParams))
+	for k := range transformParams {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(k, l int) bool { return keys[k] < keys[l] })
 
-	// is consumer v3.[0-2].x
+	for _, version := range keys {
+		for _, breakageHash := range transformParams[version] {
+			cmd := exec.Command("git", "merge-base", "--is-ancestor", breakageHash, consumerVersion)
+			fmt.Println("running ", cmd)
+			out, err := cmd.CombinedOutput()
+			if err == nil {
+				// breakage is already part of the consumer version  -> goto next breakage
+				fmt.Println(" consumer >= breakage ", transformParams[version], " ... going to next one")
+				targetVersion = version
+				break
+			}
 
-	// is consumer v3.3.x
-
-	// is consumer v4.x
-
-	// is consumer after v4.x
-	params = "--to=v3.3.x"
-	return params
+			if rc, ok := err.(*exec.ExitError); ok {
+				if rc.ExitCode() != 1 {
+					return "", fmt.Errorf("error identifying transform parameter '%v': %s", err, string(out))
+				}
+				// not an ancestor -- ignore this breakage a
+				fmt.Println("breakage :", transformParams[version], " is not an ancestor of version ", version)
+				continue
+			}
+			return "", fmt.Errorf("unexpected error when running '%v': %v", cmd, err) // unable to get return code
+		}
+	}
+	// consumer > latest known breakage
+	return fmt.Sprintf("--to=%s", targetVersion), nil
 }
 
 // Transform consumer genesis content from older version
@@ -600,14 +663,26 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		log.Fatal(err, "\n", string(genesis))
 	}
 
-	//	consumerBinaryName := tr.chainConfigs[consumerChain].BinaryName
-	cfg := target.GetTargetConfig()
-	targetVersion := getTransformParameter(cfg.consumerVersion, cfg.providerVersion)
-	cmd = target.ExecCommand(
+	// check if genesis transform supports --to target
+	bz, err := target.ExecCommand(
 		"interchain-security-transformer",
-		"genesis", "transform", targetVersion, targetFile)
+		"genesis", "transform", "--to").CombinedOutput()
+	if err != nil && !strings.Contains(string(bz), "unknown flag: --to") {
+		cfg := target.GetTargetConfig()
+		targetVersion, err := getTransformParameter(cfg.consumerVersion, cfg.providerVersion)
+		if err != nil {
+			log.Fatal("Failed getting genesis transformation parameter: ", err)
+		}
+		cmd = target.ExecCommand(
+			"interchain-security-transformer",
+			"genesis", "transform", targetVersion, targetFile)
+	} else {
+		cmd = target.ExecCommand(
+			"interchain-security-transformer",
+			"genesis", "transform", targetFile)
+	}
+
 	result, err := cmd.CombinedOutput()
-	fmt.Println("@@@ running transform cmd :", cmd)
 	if err != nil {
 		log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(result))
 	}
@@ -854,26 +929,27 @@ func (tr TestConfig) addChainToHermes(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+
+	bz, err := target.ExecCommand("bash", "-c", "hermes", "version").CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n error getting hermes version", string(bz))
+	}
+	re, err := regexp.Compile(`hermes\s+(\d+.\d+.\d+)`)
+	if err != nil {
+		log.Fatal(err, "error identifying hermes version")
+	}
+	match := re.FindStringSubmatch(string(bz))
+	if match == nil {
+		log.Fatalln("error identifying hermes version from", string(bz))
+	}
+
+	hermesVersion := match[1]
 	queryNodeIP := tr.getQueryNodeIP(action.Chain)
-	ChainId := tr.chainConfigs[action.Chain].ChainId
-	keyName := "query"
-	rpcAddr := "http://" + queryNodeIP + ":26658"
-	grpcAddr := "tcp://" + queryNodeIP + ":9091"
-	wsAddr := "ws://" + queryNodeIP + ":26658/websocket"
+	hermesConfig := GetHermesConfig(hermesVersion, queryNodeIP, tr.chainConfigs[action.Chain], action.IsConsumer)
 
-	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
-		tr.chainConfigs[action.Chain].AccountPrefix,
-		grpcAddr,
-		ChainId,
-		keyName,
-		rpcAddr,
-		wsAddr,
-		action.IsConsumer,
-	)
+	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, hermesConfig, "/root/.hermes/config.toml")
 
-	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
-
-	bz, err := target.ExecCommand("bash", "-c", bashCommand).CombinedOutput()
+	bz, err = target.ExecCommand("bash", "-c", bashCommand).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1049,7 +1125,7 @@ func (tr TestConfig) addIbcConnectionHermes(
 		"--a-client", "07-tendermint-"+fmt.Sprint(action.ClientA),
 		"--b-client", "07-tendermint-"+fmt.Sprint(action.ClientB),
 	)
-
+	fmt.Println("running: ", cmd)
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)

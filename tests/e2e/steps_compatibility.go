@@ -68,7 +68,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 			Action: AssignConsumerPubKeyAction{
 				Chain:          ChainID(consumerName),
 				Validator:      ValidatorID("carol"),
-				ConsumerPubkey: `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
+				ConsumerPubkey: getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
 				// consumer chain has not started
 				// we don't need to reconfigure the node
 				// since it will start with consumer key
@@ -77,10 +77,45 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 			State: State{
 				ChainID(consumerName): ChainState{
 					AssignedKeys: &map[ValidatorID]string{
-						ValidatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ConsumerValconsAddressOnProvider,
 					},
 					ProviderKeys: &map[ValidatorID]string{
-						ValidatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
+					},
+				},
+			},
+		},
+		{
+			// op should fail - key already assigned by the same validator
+			Action: AssignConsumerPubKeyAction{
+				Chain:           ChainID(consumerName),
+				Validator:       ValidatorID("carol"),
+				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
+				ReconfigureNode: false,
+				ExpectError:     true,
+				ExpectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
+			},
+			State: State{},
+		},
+		{
+			// op should fail - key already assigned by another validator
+			Action: AssignConsumerPubKeyAction{
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("bob"),
+				// same pub key as carol
+				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
+				ReconfigureNode: false,
+				ExpectError:     true,
+				ExpectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
+			},
+			State: State{
+				ChainID(consumerName): ChainState{
+					AssignedKeys: &map[ValidatorID]string{
+						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ConsumerValconsAddressOnProvider,
+						ValidatorID("bob"):   "",
+					},
+					ProviderKeys: &map[ValidatorID]string{
+						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
 					},
 				},
 			},
@@ -205,7 +240,7 @@ func compstepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []
 				Validator: ValidatorID("bob"),
 				// reconfigure the node -> validator was using provider key
 				// until this point -> key matches config.consumerValPubKey for "bob"
-				ConsumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
+				ConsumerPubkey:  getDefaultValidators()[ValidatorID("bob")].ConsumerValPubKey,
 				ReconfigureNode: true,
 			},
 			State: State{
@@ -227,12 +262,12 @@ func compstepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []
 						ValidatorID("carol"): 500,
 					},
 					AssignedKeys: &map[ValidatorID]string{
-						ValidatorID("bob"):   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
-						ValidatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+						ValidatorID("bob"):   getDefaultValidators()[ValidatorID("bob")].ConsumerValconsAddressOnProvider,
+						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ConsumerValconsAddressOnProvider,
 					},
 					ProviderKeys: &map[ValidatorID]string{
-						ValidatorID("bob"):   "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
-						ValidatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+						ValidatorID("bob"):   getDefaultValidators()[ValidatorID("bob")].ValconsAddress,
+						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
 					},
 				},
 			},
@@ -263,12 +298,12 @@ func compstepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []
 						ValidatorID("carol"): 500,
 					},
 					AssignedKeys: &map[ValidatorID]string{
-						ValidatorID("bob"):   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
-						ValidatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+						ValidatorID("bob"):   getDefaultValidators()[ValidatorID("bob")].ConsumerValconsAddressOnProvider,
+						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ConsumerValconsAddressOnProvider,
 					},
 					ProviderKeys: &map[ValidatorID]string{
-						ValidatorID("bob"):   "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
-						ValidatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+						ValidatorID("bob"):   getDefaultValidators()[ValidatorID("bob")].ValconsAddress,
+						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
 					},
 				},
 			},

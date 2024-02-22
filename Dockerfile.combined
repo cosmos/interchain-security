@@ -9,6 +9,7 @@
 
 ARG PROVIDER_IMAGE
 ARG CONSUMER_IMAGE
+ARG TRANSFORMER_IMAGE
 
 # The image from where the consumer implementation will be used
 # Defaults to
@@ -27,7 +28,7 @@ FROM --platform=linux/amd64 otacrew/hermes-ics:evidence-cmd AS hermes-builder
 FROM ghcr.io/informalsystems/relayer-no-gas-sim:v2.3.0-rc4-no-gas-sim AS gorelayer-builder
 
 # Transformer
-FROM --platform=linux/amd64 cosmos-ics:latest AS transformer
+FROM --platform=linux/amd64 ${TRANSFORMER_IMAGE} AS transformer
 
 FROM --platform=linux/amd64 fedora:39
 RUN dnf update -y
