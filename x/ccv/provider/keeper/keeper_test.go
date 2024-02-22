@@ -3,10 +3,12 @@ package keeper_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"sort"
 	"testing"
 	"time"
+
+	"cosmossdk.io/math"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
@@ -683,7 +685,7 @@ func TestGetOptedIn(t *testing.T) {
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
 		providerKeeper.SetOptedIn(ctx, "chainID",
-			expectedOptedInValidator.ProviderAddr, expectedOptedInValidator.BlockHeight)
+			expectedOptedInValidator.ProviderAddr, expectedOptedInValidator.BlockHeight, math.LegacyZeroDec())
 	}
 
 	actualOptedInValidators := providerKeeper.GetOptedIn(ctx, "chainID")
@@ -713,7 +715,7 @@ func TestOptedIn(t *testing.T) {
 	}
 
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator.ProviderAddr, optedInValidator.BlockHeight)
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator.ProviderAddr, optedInValidator.BlockHeight, math.LegacyZeroDec())
 	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))
 	providerKeeper.DeleteOptedIn(ctx, "chainID", optedInValidator.ProviderAddr)
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator.ProviderAddr))

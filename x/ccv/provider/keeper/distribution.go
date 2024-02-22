@@ -138,16 +138,25 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	chainID string,
 	bondedVotes []abci.VoteInfo,
 	tokens sdk.DecCoins,
-) (totalReward sdk.DecCoins) {
+) (allocated sdk.DecCoins) {
+
 	// return early if the tokens are empty
 	if tokens.Empty() {
-		return totalReward
+		return allocated
 	}
 
 	// get the consumer total voting power from the votes
 	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID, bondedVotes)
 	if totalPower == 0 {
-		return totalReward
+		return allocated
+	}
+
+	// get opted-in validator commission rates for the consumer chain
+	valCommissions := map[string]math.LegacyDec{}
+	for _, v := range k.GetOptedIn(ctx, chainID) {
+		if !v.CommissionRate.IsZero() {
+			valCommissions[v.ProviderAddr.ToSdkConsAddr().String()] = v.CommissionRate
+		}
 	}
 
 	for _, vote := range bondedVotes {
@@ -157,18 +166,27 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPower))
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
+		// get the validator type struct for the consensus address
 		val := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr).(stakingtypes.Validator)
-		val.Commission.Rate = math.LegacyOneDec()
 
+		// check if the validator set a custom commission rate for the consumer chain
+		if cr, ok := valCommissions[consAddr.String()]; ok {
+			// set the validator commission rate
+			val.Commission.CommissionRates.Rate = cr
+		}
+
+		// allocate the consumer reward tokens to the validator
 		k.distributionKeeper.AllocateTokensToValidator(
 			ctx,
 			val,
 			tokensFraction,
 		)
-		totalReward = totalReward.Add(tokensFraction...)
+
+		// sum the tokens allocated
+		allocated = allocated.Add(tokensFraction...)
 	}
 
-	return totalReward
+	return allocated
 }
 
 // TransferConsumerRewardsToDistributionModule transfers the rewards allocation of the given consumer chain

@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -40,6 +41,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 			chainID,
 			types.NewProviderConsAddress(sdk.ConsAddress(val.Address)),
 			0,
+			math.LegacyZeroDec(),
 		)
 
 		validatorsVotes = append(

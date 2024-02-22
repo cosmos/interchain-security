@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -14,6 +15,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -1191,14 +1193,23 @@ func (k Keeper) SetOptedIn(
 	chainID string,
 	providerAddr types.ProviderConsAddress,
 	blockHeight uint64,
+	commissionRate math.LegacyDec,
 ) {
 	store := ctx.KVStore(k.storeKey)
 
-	// validator is considered opted in
-	blockHeightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(blockHeightBytes, blockHeight)
+	// TODO: use proto message
+	v := OptedInValidator{
+		ProviderAddr:   providerAddr,
+		BlockHeight:    blockHeight,
+		CommissionRate: commissionRate,
+	}
 
-	store.Set(types.OptedInKey(chainID, providerAddr), blockHeightBytes)
+	bz, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+
+	store.Set(types.OptedInKey(chainID, providerAddr), bz)
 }
 
 func (k Keeper) DeleteOptedIn(
@@ -1228,10 +1239,15 @@ func (k Keeper) GetOptedIn(
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		optedInValidators = append(optedInValidators, OptedInValidator{
-			ProviderAddr: types.NewProviderConsAddress(iterator.Key()[len(key):]),
-			BlockHeight:  binary.BigEndian.Uint64(iterator.Value()),
-		})
+		val := &OptedInValidator{}
+
+		// TODO: use a proto message instead of json
+		err := json.Unmarshal(iterator.Value(), val)
+		if err != nil {
+			panic(err)
+		}
+
+		optedInValidators = append(optedInValidators, *val)
 	}
 
 	return optedInValidators

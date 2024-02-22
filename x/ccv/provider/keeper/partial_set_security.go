@@ -2,15 +2,20 @@ package keeper
 
 import (
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
+// TODO: move to a proto message definition
 type OptedInValidator struct {
 	ProviderAddr types.ProviderConsAddress
 	// block height the validator opted in at
 	BlockHeight uint64
+	// custom commission rate the validator charges
+	// to delegator on the consumers, as a fraction
+	CommissionRate math.LegacyDec
 }
 
 func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, consumerKey *string) error {
