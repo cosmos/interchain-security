@@ -502,7 +502,6 @@ func (k Keeper) AssignConsumerKey(
 			oldConsumerKey = providerKey
 		}
 
-		// check whether the validator is valid, i.e., its power is positive
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
 		if 0 < power {
 			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
@@ -568,10 +567,13 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 		//  - and setting the new consumer key's power to the power in the update
 		prevConsumerKey, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		if found {
+			//if isOptedIn(providerAddr) && !isToBeOptedOut(providerAddr) {
+			// only generate a removal (i.e., power 0) if the validator was previously opted in
 			newUpdates = append(newUpdates, abci.ValidatorUpdate{
 				PubKey: prevConsumerKey,
 				Power:  0,
 			})
+			//}
 
 			newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if !found {

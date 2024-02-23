@@ -38,8 +38,12 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		keeper.SetOptedIn(
 			ctx,
 			chainID,
-			types.NewProviderConsAddress(sdk.ConsAddress(val.Address)),
-			0,
+			types.OptedInValidator{
+				ProviderAddr: val.Address,
+				BlockHeight:  ctx.BlockHeight(),
+				Power:        val.VotingPower,
+				PublicKey:    val.PubKey.Bytes(),
+			},
 		)
 
 		validatorsVotes = append(
@@ -65,7 +69,6 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 }
 
 func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
-
 	var (
 		chainID    = "consumer"
 		ccvChannel = "channel-0"
