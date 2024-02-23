@@ -188,6 +188,9 @@ message Params {
   // The fee required to be paid to add a reward denom
   cosmos.base.v1beta1.Coin consumer_reward_denom_registration_fee = 9
       [ (gogoproto.nullable) = false ];
+
+  // The number of blocks that comprise an epoch.
+  uint64 blocks_per_epoch = 10;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators

@@ -184,6 +184,10 @@ func RunItfTrace(t *testing.T, path string) {
 
 	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
 
+	providerParams := driver.providerKeeper().GetParams(driver.providerCtx())
+	providerParams.BlocksPerEpoch = 10
+	driver.providerKeeper().SetParams(driver.providerCtx(), providerParams)
+
 	// remember the time offsets to be able to compare times to the model
 	// this is necessary because the system needs to do many steps to initialize the chains,
 	// which is abstracted away in the model
@@ -238,12 +242,16 @@ func RunItfTrace(t *testing.T, path string) {
 			// so we do one time advancement with a very small increment,
 			// and then increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
-			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 			for _, consumer := range driver.runningConsumers() {
 				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
 			}
 
-			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
+			blocksPerEpoch := driver.providerKeeper().GetBlocksPerEpoch(driver.providerCtx())
+			for i := uint64(0); i < blocksPerEpoch; i = i + 1 {
+				driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+			}
+			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-time.Nanosecond*time.Duration(blocksPerEpoch))
+
 			runningConsumersAfter := driver.runningConsumers()
 
 			// the consumers that were running before but not after must have timed out
@@ -314,6 +322,9 @@ func RunItfTrace(t *testing.T, path string) {
 			headerBefore := driver.chain(ChainId(consumerChain)).LastHeader
 			_ = headerBefore
 
+			providerParams := driver.providerKeeper().GetParams(driver.providerCtx())
+			providerParams.BlocksPerEpoch = 10
+			driver.providerKeeper().SetParams(driver.providerCtx(), providerParams)
 			driver.endAndBeginBlock(ChainId(consumerChain), 1*time.Nanosecond)
 			UpdateConsumerClientOnProvider(t, driver, consumerChain)
 

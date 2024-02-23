@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -33,7 +34,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	delegate(s, delAddr, bondAmt)
 
 	// try to send CCV packet to consumer
-	s.providerChain.NextBlock()
+	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
 
 	// check that the packet was added to the list of pending VSC packets
 	packets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
@@ -41,7 +42,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.Require().Equal(1, len(packets), "unexpected number of pending VSC packets")
 
 	// try again to send CCV packet to consumer
-	s.providerChain.NextBlock()
+	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
 
 	// check that the packet is still in the list of pending VSC packets
 	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
@@ -52,7 +53,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	delegate(s, delAddr, bondAmt)
 
 	// try again to send CCV packets to consumer
-	s.providerChain.NextBlock()
+	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
 
 	// check that the packets are still in the list of pending VSC packets
 	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
@@ -63,7 +64,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	upgradeExpiredClient(s, Consumer)
 
 	// go to next block
-	s.providerChain.NextBlock()
+	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
 
 	// check that the packets are not in the list of pending VSC packets
 	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
@@ -73,7 +74,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	// - bond more tokens on provider to change validator powers
 	delegate(s, delAddr, bondAmt)
 	// - send CCV packet to consumer
-	s.providerChain.NextBlock()
+	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
 	// - relay all VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 3)
 	// - increment time so that the unbonding period ends on the consumer
@@ -102,7 +103,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	delegate(s, delAddr, bondAmt)
 
 	// send CCV packets to consumer
-	s.providerChain.NextBlock()
+	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
 
 	// check that the packets are not in the list of pending VSC packets
 	providerPackets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
@@ -172,7 +173,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	// - bond more tokens on provider to change validator powers
 	delegate(s, delAddr, bondAmt)
 	// - send CCV packet to consumer
-	s.providerChain.NextBlock()
+	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
 	// - relay 1 VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 	// - increment time so that the unbonding period ends on the provider

@@ -78,6 +78,13 @@ func (k Keeper) GetConsumerRewardDenomRegistrationFee(ctx sdk.Context) sdk.Coin 
 	return c
 }
 
+// FIXME: add docstring
+func (k Keeper) GetBlocksPerEpoch(ctx sdk.Context) uint64 {
+	var b uint64
+	k.paramSpace.Get(ctx, types.KeyBlocksPerEpoch, &b)
+	return b
+}
+
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
@@ -89,6 +96,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetSlashMeterReplenishPeriod(ctx),
 		k.GetSlashMeterReplenishFraction(ctx),
 		k.GetConsumerRewardDenomRegistrationFee(ctx),
+		k.GetBlocksPerEpoch(ctx),
 	)
 }
 

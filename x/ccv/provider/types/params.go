@@ -36,6 +36,9 @@ const (
 	// that is replenished to the slash meter every replenish period. This param also serves as a maximum
 	// fraction of total voting power that the slash meter can hold.
 	DefaultSlashMeterReplenishFraction = "0.05"
+
+	//FIMXe
+	DefaultBlocksPerEpoch = 1000
 )
 
 // Reflection based keys for params subspace
@@ -47,6 +50,7 @@ var (
 	KeySlashMeterReplenishPeriod          = []byte("SlashMeterReplenishPeriod")
 	KeySlashMeterReplenishFraction        = []byte("SlashMeterReplenishFraction")
 	KeyConsumerRewardDenomRegistrationFee = []byte("ConsumerRewardDenomRegistrationFee")
+	KeyBlocksPerEpoch                     = []byte("BlocksPerEpoch")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -64,6 +68,7 @@ func NewParams(
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
 	consumerRewardDenomRegistrationFee sdk.Coin,
+	blocksPerEpoch uint64,
 ) Params {
 	return Params{
 		TemplateClient:                     cs,
@@ -74,6 +79,7 @@ func NewParams(
 		SlashMeterReplenishPeriod:          slashMeterReplenishPeriod,
 		SlashMeterReplenishFraction:        slashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: consumerRewardDenomRegistrationFee,
+		BlocksPerEpoch:                     blocksPerEpoch,
 	}
 }
 
@@ -104,6 +110,7 @@ func DefaultParams() Params {
 			Denom:  sdk.DefaultBondDenom,
 			Amount: sdk.NewInt(10000000),
 		},
+		DefaultBlocksPerEpoch,
 	)
 }
 
@@ -136,6 +143,7 @@ func (p Params) Validate() error {
 	if err := ValidateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
 		return fmt.Errorf("consumer reward denom registration fee is invalid: %s", err)
 	}
+	// FIXME: potentially add a validate that this p.BlocksPerEpoch cannot be too high
 	return nil
 }
 
@@ -150,6 +158,9 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
+
+		//FIXME: do we need this??? yes for registration .. but no validation is needed? unless we put here the max bound
+		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidateDummy),
 	}
 }
 

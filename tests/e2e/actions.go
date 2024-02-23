@@ -1307,6 +1307,8 @@ func (tr TestConfig) relayPacketsGorelayer(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	//tr.waitBlocks(action.ChainA, 10, 60*time.Second)
+
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
 
 	// rly transact relay-packets [path-name] --channel [channel-id]
@@ -1321,7 +1323,7 @@ func (tr TestConfig) relayPacketsGorelayer(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-
+	//tr.waitBlocks(action.ChainA, 10, 60*time.Second)
 	tr.waitBlocks(action.ChainA, 1, 30*time.Second)
 	tr.waitBlocks(action.ChainB, 1, 30*time.Second)
 }
@@ -1331,6 +1333,9 @@ func (tr TestConfig) relayPacketsHermes(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	// FIXME: ... can we retrieve the blocksperepoch ...
+	//tr.waitBlocks(action.ChainA, 10, 60*time.Second)
+
 	// hermes clear packets ibc0 transfer channel-13
 	cmd := target.ExecCommand("hermes", "clear", "packets",
 		"--chain", string(tr.chainConfigs[action.ChainA].ChainId),
@@ -1346,6 +1351,7 @@ func (tr TestConfig) relayPacketsHermes(
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	//tr.waitBlocks(action.ChainA, 10, 60*time.Second)
 	tr.waitBlocks(action.ChainA, 1, 30*time.Second)
 	tr.waitBlocks(action.ChainB, 1, 30*time.Second)
 }
@@ -1420,6 +1426,7 @@ func (tr TestConfig) delegateTokens(
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.Chain, 10, 60*time.Second)
 	tr.waitBlocks(action.Chain, 2, 10*time.Second)
 }
 
@@ -1472,6 +1479,7 @@ func (tr TestConfig) unbondTokens(
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.Chain, 10, 60*time.Second)
 	tr.waitBlocks(action.Chain, 2, 20*time.Second)
 }
 
@@ -1613,6 +1621,7 @@ func (tr TestConfig) redelegateTokens(action RedelegateTokensAction, target Exec
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.Chain, 10, 60*time.Second)
 	tr.waitBlocks(action.Chain, 2, 10*time.Second)
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
-const BlocksPerEpoch = 1
+const BlocksPerEpoch = 10
 const HoursPerEpoch = 1
 
 // SetEpochValidator sets provided epoch `validator` on the consumer chain with `chainID`
@@ -20,6 +20,7 @@ func (k Keeper) SetEpochValidator(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := validator.Marshal()
+	// FIXME .. .names
 	if err != nil {
 		panic(fmt.Errorf("failed to marshal CurrentEpochOptedInValidator: %w", err))
 	}
@@ -209,6 +210,7 @@ func (k Keeper) diff(
 // `ComputeNextValidators` and hence this method should only be called after `ComputeNextValidators` has completed.
 func (k Keeper) ResetCurrentEpochValidators(ctx sdk.Context, chainID string,
 	nextValidators []types.EpochValidator) {
+	// for epochs we do not need to do this ...
 	k.DeleteAllEpochValidators(ctx, chainID)
 	for _, val := range nextValidators {
 		k.SetEpochValidator(ctx, chainID, val)

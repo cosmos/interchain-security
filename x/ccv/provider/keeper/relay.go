@@ -148,15 +148,15 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
-	//if ctx.BlockHeight()%BlocksPerEpoch == 0 {
-	// collect validator updates
-	k.QueueVSCPackets(ctx)
+	if uint64(ctx.BlockHeight())%10 == 0 { //k.GetBlocksPerEpoch(ctx) == 0 {
+		// collect validator updates
+		k.QueueVSCPackets(ctx)
 
-	// try sending VSC packets to all registered consumer chains;
-	// if the CCV channel is not established for a consumer chain,
-	// the updates will remain queued until the channel is established
-	k.SendVSCPackets(ctx)
-	//}
+		// try sending VSC packets to all registered consumer chains;
+		// if the CCV channel is not established for a consumer chain,
+		// the updates will remain queued until the channel is established
+		k.SendVSCPackets(ctx)
+	}
 }
 
 // SendVSCPackets iterates over all registered consumers and sends pending
@@ -217,22 +217,21 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	// Get the validator updates from the staking module.
 	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
 	// of cosmos-sdk is invalid.
-	stakingValUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
+	// FIXME comments
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+
+	//stakingUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentEpochValidators := k.GetAllEpochValidators(ctx, chain.ChainId)
 		nextEpochValidators := k.ComputeNextEpochValidators(ctx, chain.ChainId, currentEpochValidators, bondedValidators)
 		valUpdates := k.diff(currentEpochValidators, nextEpochValidators)
-		fmt.Println(valUpdates)
 		k.ResetCurrentEpochValidators(ctx, chain.ChainId, nextEpochValidators)
 
-		// Apply the key assignment to the validator updates.
-		valUpdatesFoo := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, stakingValUpdates)
-
-		if len(valUpdates) != len(valUpdatesFoo) {
-			fmt.Println("WHAT's HAPPENING???")
-		}
+		//valUpdatesFoor := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, stakingUpdates)
+		//if len(valUpdates) != len(valUpdatesFoor) {
+		//	fmt.Println("...XXX...")
+		//}
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations

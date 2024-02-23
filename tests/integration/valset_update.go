@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -24,7 +25,7 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 	delegate(s, delAddr, bondAmt)
 
 	// Send CCV packet to consumer
-	s.providerChain.NextBlock()
+	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
 
 	// Relay 1 VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
