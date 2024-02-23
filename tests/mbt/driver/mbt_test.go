@@ -242,14 +242,14 @@ func RunItfTrace(t *testing.T, path string) {
 			// so we do one time advancement with a very small increment,
 			// and then increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
-			for _, consumer := range driver.runningConsumers() {
-				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
-			}
-
 			blocksPerEpoch := driver.providerKeeper().GetBlocksPerEpoch(driver.providerCtx())
 			for i := uint64(0); i < blocksPerEpoch; i = i + 1 {
 				driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 			}
+			for _, consumer := range driver.runningConsumers() {
+				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
+			}
+
 			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-time.Nanosecond*time.Duration(blocksPerEpoch))
 
 			runningConsumersAfter := driver.runningConsumers()
