@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"testing"
 
-	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -39,9 +38,12 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		keeper.SetOptedIn(
 			ctx,
 			chainID,
-			types.NewProviderConsAddress(sdk.ConsAddress(val.Address)),
-			0,
-			math.LegacyZeroDec(),
+			types.OptedInValidator{
+				ProviderAddr: val.Address,
+				BlockHeight:  ctx.BlockHeight(),
+				Power:        val.VotingPower,
+				PublicKey:    val.PubKey.Bytes(),
+			},
 		)
 
 		validatorsVotes = append(
@@ -67,7 +69,6 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 }
 
 func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
-
 	var (
 		chainID    = "consumer"
 		ccvChannel = "channel-0"

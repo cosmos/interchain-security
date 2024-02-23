@@ -153,9 +153,9 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 	// get opted-in validator commission rates for the consumer chain
 	valCommissions := map[string]math.LegacyDec{}
-	for _, v := range k.GetOptedIn(ctx, chainID) {
-		if !v.CommissionRate.IsZero() {
-			valCommissions[v.ProviderAddr.ToSdkConsAddr().String()] = v.CommissionRate
+	for _, v := range k.GetAllOptedIn(ctx, chainID) {
+		if v.CommissionRate != "" {
+			valCommissions[sdk.ConsAddress(v.ProviderAddr).String()] = math.LegacyMustNewDecFromStr(v.CommissionRate)
 		}
 	}
 

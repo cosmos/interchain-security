@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -15,7 +14,6 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -1191,25 +1189,15 @@ func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	providerAddr types.ProviderConsAddress,
-	blockHeight uint64,
-	commissionRate math.LegacyDec,
+	validator types.OptedInValidator,
 ) {
 	store := ctx.KVStore(k.storeKey)
-
-	// TODO: use proto message
-	v := OptedInValidator{
-		ProviderAddr:   providerAddr,
-		BlockHeight:    blockHeight,
-		CommissionRate: commissionRate,
-	}
-
-	bz, err := json.Marshal(v)
+	bz, err := validator.Marshal()
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to marshal OptedInValidator: %w", err))
 	}
 
-	store.Set(types.OptedInKey(chainID, providerAddr), bz)
+	store.Set(types.OptedInKey(chainID, validator.ProviderAddr), bz)
 }
 
 func (k Keeper) DeleteOptedIn(
@@ -1218,7 +1206,7 @@ func (k Keeper) DeleteOptedIn(
 	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.OptedInKey(chainID, providerAddr))
+	store.Delete(types.OptedInKey(chainID, providerAddr.ToSdkConsAddr()))
 }
 
 func (k Keeper) IsOptedIn(
@@ -1227,27 +1215,25 @@ func (k Keeper) IsOptedIn(
 	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.OptedInKey(chainID, providerAddr)) != nil
+	return store.Get(types.OptedInKey(chainID, providerAddr.ToSdkConsAddr())) != nil
 }
 
-func (k Keeper) GetOptedIn(
+// GetAllOptedIn returns all the opted-in validators on chain `chainID`
+func (k Keeper) GetAllOptedIn(
 	ctx sdk.Context,
-	chainID string) (optedInValidators []OptedInValidator) {
+	chainID string) (optedInValidators []types.OptedInValidator) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		val := &OptedInValidator{}
-
-		// TODO: use a proto message instead of json
-		err := json.Unmarshal(iterator.Value(), val)
-		if err != nil {
-			panic(err)
+		iterator.Value()
+		var optedInValidator types.OptedInValidator
+		if err := optedInValidator.Unmarshal(iterator.Value()); err != nil {
+			panic(fmt.Errorf("failed to unmarshal OptedInValidator: %w", err))
 		}
-
-		optedInValidators = append(optedInValidators, *val)
+		optedInValidators = append(optedInValidators, optedInValidator)
 	}
 
 	return optedInValidators
@@ -1280,7 +1266,8 @@ func (k Keeper) IsToBeOptedIn(
 	return store.Get(types.ToBeOptedInKey(chainID, providerAddr)) != nil
 }
 
-func (k Keeper) GetToBeOptedIn(
+// GetAllToBeOptedIn returns all the to-be-opted-in validators on chain `chainID`
+func (k Keeper) GetAllToBeOptedIn(
 	ctx sdk.Context,
 	chainID string) (addresses []types.ProviderConsAddress) {
 
@@ -1324,7 +1311,8 @@ func (k Keeper) IsToBeOptedOut(
 	return store.Get(types.ToBeOptedOutKey(chainID, providerAddr)) != nil
 }
 
-func (k Keeper) GetToBeOptedOut(
+// GetAllToBeOptedOut returns all the to-be-opted-out validators on chain `chainID`
+func (k Keeper) GetAllToBeOptedOut(
 	ctx sdk.Context,
 	chainID string) (addresses []types.ProviderConsAddress) {
 

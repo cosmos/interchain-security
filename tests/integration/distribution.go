@@ -19,6 +19,7 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -946,8 +947,8 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 
 	// opt the validators in to verify that they charge
 	// to their delegators the custom commission for the consumer chain
-	for _, val := range s.providerChain.Vals.Validators {
-		consAddr := sdk.ConsAddress(val.Address)
+	for _, v := range s.providerChain.Vals.Validators {
+		consAddr := sdk.ConsAddress(v.Address)
 		provAddr := providertypes.NewProviderConsAddress(consAddr)
 
 		val, found := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
@@ -960,11 +961,13 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 		providerKeeper.SetOptedIn(
 			s.providerCtx(),
 			chainID,
-			provAddr,
-			uint64(s.providerCtx().BlockHeight()),
-			math.LegacyOneDec(),
+			types.OptedInValidator{
+				ProviderAddr:   provAddr.Address,
+				BlockHeight:    s.providerCtx().BlockHeight(),
+				PublicKey:      v.PubKey.Bytes(),
+				CommissionRate: "1",
+			},
 		)
-
 	}
 
 	for _, tc := range testCases {
