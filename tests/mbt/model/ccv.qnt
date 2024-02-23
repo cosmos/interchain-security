@@ -781,7 +781,7 @@ module ccv {
         // map the validator to its address on the provider
         // (in general, the validator is a consumer address and could be an assigned one)
         val providerVal = currentState.providerState.consumerAddrToValidator
-            .get(sender)
+            .getOrElse(sender, Map())
             // if there is no entry for that validator, there is no key assignment
             .getOrElse(packet.validator, packet.validator)
 
