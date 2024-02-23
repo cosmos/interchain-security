@@ -547,9 +547,9 @@ func TopNKey(chainID string) []byte {
 }
 
 // OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
+func OptedInKey(chainID string, providerAddr []byte) []byte {
 	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
-	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+	return append(prefix, providerAddr...)
 }
 
 // ToBeOptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`

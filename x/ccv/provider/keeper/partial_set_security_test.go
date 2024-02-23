@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"testing"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,7 +12,6 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestHandleOptIn(t *testing.T) {
@@ -32,7 +33,9 @@ func TestHandleOptIn(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 
 	// if validator (`providerAddr`) is already opted in, then the validator cannot be opted in
-	providerKeeper.SetOptedIn(ctx, "chainID", providerAddr, 1)
+
+	providerKeeper.SetOptedIn(ctx, "chainID",
+		types.OptedInValidator{ProviderAddr: providerAddr.ToSdkConsAddr(), BlockHeight: 1, Power: 1, PublicKey: []byte{1}})
 	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, nil)
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 }

@@ -7,12 +7,6 @@ import (
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
-type OptedInValidator struct {
-	ProviderAddr types.ProviderConsAddress
-	// block height the validator opted in at
-	BlockHeight uint64
-}
-
 func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, consumerKey *string) error {
 	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
 		return errorsmod.Wrapf(
