@@ -148,7 +148,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
-	if uint64(ctx.BlockHeight())%2 == 0 { // k.GetBlocksPerEpoch(ctx) == 0 {
+	if uint64(ctx.BlockHeight())%k.GetBlocksPerEpoch(ctx) == 0 {
 		// collect validator updates
 		k.QueueVSCPackets(ctx)
 
