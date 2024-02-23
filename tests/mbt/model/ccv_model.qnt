@@ -1031,12 +1031,14 @@ module ccv_model {
                 // slash for downtime on consumer1
                 ConsumerInitiatedSlashDet("consumer1", "node1", vscId, true)
             ).then(
-                // node1 has outstanding downtime already
-                ConsumerInitiatedSlashDet("consumer1", "node1", vscId, true).fail()
-            ).then(
+                // end a block on the consumer
+                EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+            )
+            .then(
                 // deliver the slash request to the provider
                 DeliverPacketToProvider("consumer1")
-            ).then(
+            )
+            .then(
                 // the provider should have jailed node1
                 all {
                     assert(currentState.providerState.chainState.jailedUntil.keys().contains("node1")),
