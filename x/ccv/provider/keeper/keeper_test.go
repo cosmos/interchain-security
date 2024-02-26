@@ -689,11 +689,10 @@ func TestGetAllOptedIn(t *testing.T) {
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
 		providerKeeper.SetOptedIn(ctx, "chainID",
 			types.OptedInValidator{
-				ProviderAddr:   expectedOptedInValidator.ProviderAddr,
-				BlockHeight:    expectedOptedInValidator.BlockHeight,
-				Power:          expectedOptedInValidator.Power,
-				PublicKey:      expectedOptedInValidator.PublicKey,
-				CommissionRate: "0.5",
+				ProviderAddr: expectedOptedInValidator.ProviderAddr,
+				BlockHeight:  expectedOptedInValidator.BlockHeight,
+				Power:        expectedOptedInValidator.Power,
+				PublicKey:    expectedOptedInValidator.PublicKey,
 			})
 	}
 
@@ -719,10 +718,9 @@ func TestOptedIn(t *testing.T) {
 	defer ctrl.Finish()
 
 	optedInValidator := types.OptedInValidator{ProviderAddr: []byte("providerAddr"),
-		BlockHeight:    1,
-		Power:          2,
-		PublicKey:      []byte{3},
-		CommissionRate: "0.5",
+		BlockHeight: 1,
+		Power:       2,
+		PublicKey:   []byte{3},
 	}
 
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))

@@ -19,7 +19,6 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -957,17 +956,14 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 		// check that no commission is set for the validator
 		s.Require().Equal(val.Commission.Rate, math.LegacyZeroDec())
 
-		// opt the validators in consumer with a custom commission of 100%
-		providerKeeper.SetOptedIn(
+		// set a custom commission of 100%
+		providerKeeper.SetConsumerCommissionRate(
 			s.providerCtx(),
 			chainID,
-			types.OptedInValidator{
-				ProviderAddr:   provAddr.Address,
-				BlockHeight:    s.providerCtx().BlockHeight(),
-				PublicKey:      v.PubKey.Bytes(),
-				CommissionRate: "1",
-			},
+			provAddr,
+			sdk.OneDec(),
 		)
+
 	}
 
 	for _, tc := range testCases {

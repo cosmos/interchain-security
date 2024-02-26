@@ -1248,6 +1248,49 @@ func (k Keeper) SetToBeOptedIn(
 	store.Set(types.ToBeOptedInKey(chainID, providerAddr), []byte{})
 }
 
+func (k Keeper) SetConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+	commissionRate sdk.Dec,
+) {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := commissionRate.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("consumer commission rate marshalling failed:%s", err))
+	}
+
+	store.Set(types.ConsumerCommissionRateKey(chainID, providerAddr), bz)
+}
+
+func (k Keeper) GetConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) (sdk.Dec, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerCommissionRateKey(chainID, providerAddr))
+	if bz == nil {
+		return sdk.ZeroDec(), false
+	}
+
+	cr := sdk.Dec{}
+	if err := cr.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("consumer commission rate unmarshalling failed:%s", err))
+	}
+
+	return cr, true
+}
+
+func (k Keeper) DeleteConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerCommissionRateKey(chainID, providerAddr))
+}
+
 func (k Keeper) DeleteToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,

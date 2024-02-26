@@ -164,6 +164,9 @@ const (
 	// it allocated to the consumer rewards pool
 	ConsumerRewardsAllocationBytePrefix
 
+	// ConsumerCommissionRatePrefix is the byte prefix used when store a validator commission rate
+	ConsumerCommissionRatePrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -562,6 +565,12 @@ func ToBeOptedOutKey(chainID string, providerAddr ProviderConsAddress) []byte {
 // ConsumerModuleAccount returns the module account byte prefix for a consumer chain
 func ConsumerRewardsAllocationKey(chainID string) []byte {
 	return append([]byte{ConsumerRewardsAllocationBytePrefix}, []byte(chainID)...)
+}
+
+// ConsumerCommissionRateKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	prefix := ChainIdWithLenKey(ConsumerCommissionRatePrefix, chainID)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 //

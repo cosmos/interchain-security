@@ -151,14 +151,6 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		return allocated
 	}
 
-	// get opted-in validator commission rates for the consumer chain
-	valCommissions := map[string]math.LegacyDec{}
-	for _, v := range k.GetAllOptedIn(ctx, chainID) {
-		if v.CommissionRate != "" {
-			valCommissions[sdk.ConsAddress(v.ProviderAddr).String()] = math.LegacyMustNewDecFromStr(v.CommissionRate)
-		}
-	}
-
 	for _, vote := range bondedVotes {
 		// TODO: should check if validator IsOptIn or continue here
 		consAddr := sdk.ConsAddress(vote.Validator.Address)
@@ -170,7 +162,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		val := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr).(stakingtypes.Validator)
 
 		// check if the validator set a custom commission rate for the consumer chain
-		if cr, ok := valCommissions[consAddr.String()]; ok {
+		if cr, found := k.GetConsumerCommissionRate(ctx, chainID, types.NewProviderConsAddress(consAddr)); found {
 			// set the validator commission rate
 			val.Commission.CommissionRates.Rate = cr
 		}

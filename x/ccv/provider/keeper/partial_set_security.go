@@ -1,7 +1,10 @@
 package keeper
 
 import (
+	"fmt"
+
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -58,6 +61,46 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 		// a validator can only be set for opt out if it is opted in and not already set for opt out
 		k.SetToBeOptedOut(ctx, chainID, providerAddr)
 	}
+
+	return nil
+}
+
+func (k Keeper) HandleConsumerCommissionRate(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, commissionRate sdk.Dec) error {
+	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
+		return errorsmod.Wrapf(
+			types.ErrUnknownConsumerChainId,
+			"unknown consumer chain, with id: %s", chainID)
+	}
+
+	consAddr := providerAddr.ToSdkConsAddr()
+	if _, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()); !found {
+		return errorsmod.Wrapf(
+			types.ErrNoValidatorProviderAddress,
+			"unknown validator with address %s", consAddr.String())
+	}
+
+	if !k.IsToBeOptedIn(ctx, chainID, providerAddr) && !k.IsOptedIn(ctx, chainID, providerAddr) {
+		return fmt.Errorf(
+			"validator with address: %s isn't opted-in for the consumer chain:%s",
+			consAddr.String(),
+			chainID,
+		)
+	}
+
+	// validate that the commission rate is in the range [0, 1]
+	if commissionRate.IsNegative() || commissionRate.GT(math.LegacyOneDec()) {
+		return errorsmod.Wrapf(
+			types.ErrInvalidConsumerCommissionRate,
+			"commission commission rate should be in the range [0, 1]",
+		)
+	}
+
+	k.SetConsumerCommissionRate(
+		ctx,
+		chainID,
+		providerAddr,
+		commissionRate,
+	)
 
 	return nil
 }

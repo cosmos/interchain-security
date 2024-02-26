@@ -24,4 +24,5 @@ var (
 	ErrInvalidConsumerClient            = errorsmod.Register(ModuleName, 16, "ccv channel is not built on correct client")
 	ErrDuplicateConsumerChain           = errorsmod.Register(ModuleName, 17, "consumer chain already exists")
 	ErrConsumerChainNotFound            = errorsmod.Register(ModuleName, 18, "consumer chain not found")
+	ErrInvalidConsumerCommissionRate    = errorsmod.Register(ModuleName, 19, "consumer commission rate is invalid")
 )

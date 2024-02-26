@@ -325,8 +325,4 @@ message OptedInValidator {
   int64 power = 3;
   // public key used by the validator on the consumer
   bytes public_key = 4;
-  // custom commission rate the validator charges
-	// to delegator on the consumers, as a fraction
-  string commission_rate = 5;
 }
-
