@@ -2,6 +2,7 @@
 
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
+LATEST_RELEASE := $(shell git -c "versionsort.suffix=-lsm" tag -l --sort -v:refname "v*.?" "v*.?"-lsm "v*.??" "v*.??"-lsm | head -n 1)
 
 # don't override user values
 ifeq (,$(VERSION))
@@ -89,6 +90,10 @@ test-e2e-multi-consumer:
 # run full E2E tests in parallel (including multiconsumer)
 test-e2e-parallel:
 	go run ./tests/e2e/... --include-multi-consumer --parallel
+
+# run E2E compatibility tests against latest release
+test-e2e-compatibility-tests-latest:
+	go run ./tests/e2e/... --tc compatibility -pv $(LATEST_RELEASE)
 
 # run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
 test-gaia-e2e:

@@ -560,29 +560,54 @@ func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID, t
 // needsGenesisTransform tries to identify if a genesis transformation should be performed
 func needsGenesisTransform(cfg TargetConfig) bool {
 
+	// no genesis transformation needed for same versions
 	if cfg.consumerVersion == cfg.providerVersion {
 		return false
 	}
-	if !semver.IsValid(cfg.consumerVersion) || !semver.IsValid(cfg.providerVersion) {
-		fmt.Println("unable to identify the need for genesis transformation: invalid sem-version", cfg.consumerVersion, cfg.providerVersion)
+
+	// use v4.0.0 (after genesis transform breakages) for the checks if 'latest' is used
+	consumerVersion := cfg.consumerVersion
+	if cfg.consumerVersion == "latest" {
+		consumerVersion = "v4.0.0"
+	}
+	providerVersion := cfg.providerVersion
+	if cfg.providerVersion == "latest" {
+		providerVersion = "v4.0.0"
+	}
+
+	if !semver.IsValid(consumerVersion) || !semver.IsValid(providerVersion) {
+		fmt.Println("unable to identify the need for genesis transformation: invalid sem-version", consumerVersion, providerVersion)
 		return false
 	}
 
-	if semver.Compare(cfg.consumerVersion, "v3.3.0") < 0 && semver.Compare(cfg.providerVersion, "v3.3.0") >= 0 {
-		fmt.Println("genesis transformation needed for versions:", cfg.providerVersion, cfg.consumerVersion)
-		return true
+	breakages := []string{"v3.0.0", "v3.3.0", "v4.0.0"}
+	for _, breakage := range breakages {
+		if semver.Compare(consumerVersion, breakage) < 0 && semver.Compare(providerVersion, breakage) >= 0 {
+			fmt.Println("genesis transformation needed for versions:", providerVersion, consumerVersion)
+			return true
+		}
+		if semver.Compare(providerVersion, breakage) < 0 && semver.Compare(consumerVersion, breakage) >= 0 {
+			fmt.Println("genesis transformation needed for versions:", providerVersion, consumerVersion)
+			return true
+		}
+
 	}
-	if semver.Compare(cfg.providerVersion, "v3.3.0") < 0 && semver.Compare(cfg.consumerVersion, "v3.3.0") >= 0 {
-		fmt.Println("genesis transformation needed for versions:", cfg.providerVersion, cfg.consumerVersion)
-		return true
-	}
-	fmt.Println("NO genesis transformation needed for versions:", cfg.providerVersion, cfg.consumerVersion)
+	fmt.Println("NO genesis transformation needed for versions:", providerVersion, consumerVersion)
 	return false
 }
 
 // getTransformParameter identifies the needed transformation parameter for current `transformGenesis` implementation
 // based on consumer and provider versions.
-func getTransformParameter(consumerVersion, providerVersion string) (string, error) {
+func getTransformParameter(consumerVersion string) (string, error) {
+	switch consumerVersion {
+	case "":
+		// For "" (default: local workspace) use HEAD as reference point
+		consumerVersion = "HEAD"
+	case "latest":
+		// For 'latest' originated from latest-image use "origin/main" as ref point
+		consumerVersion = "origin/main"
+	}
+
 	// Hash of breakage due to preHashKey release in version 2.x
 	// ics23/go v.0.10.0 adding 'prehash_key_before_comparison' in ProofSpec
 	breakage_prehash := "d4dde74b062c2fded0d3b3dbef4b3b0229e317f3" // first released in v3.2.0-consumer
@@ -669,7 +694,7 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		"genesis", "transform", "--to").CombinedOutput()
 	if err != nil && !strings.Contains(string(bz), "unknown flag: --to") {
 		cfg := target.GetTargetConfig()
-		targetVersion, err := getTransformParameter(cfg.consumerVersion, cfg.providerVersion)
+		targetVersion, err := getTransformParameter(cfg.consumerVersion)
 		if err != nil {
 			log.Fatal("Failed getting genesis transformation parameter: ", err)
 		}

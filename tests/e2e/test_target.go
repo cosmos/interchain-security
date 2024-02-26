@@ -69,7 +69,8 @@ func (dc *DockerContainer) Build() error {
 	// For some version combinations the latest 'genesis transformer' does not support the required transformation
 	// transformation function of the client of the consumer version needs to be used and not the latest
 	transformerImage := "ghcr.io/cosmos/interchain-security:latest"
-	if semver.Compare(consumerVersion, "v3.3.0") <= 0 && semver.Compare(providerVersion, "v3.3.0") < 0 {
+	if semver.IsValid(consumerVersion) && semver.IsValid(providerVersion) &&
+		semver.Compare(consumerVersion, "v3.3.0") <= 0 && semver.Compare(providerVersion, "v3.3.0") < 0 {
 		transformerImage = "ghcr.io/cosmos/interchain-security:v3.3.0"
 	}
 
@@ -147,11 +148,11 @@ func (dc *DockerContainer) GetTestScriptPath(isConsumer bool, script string) str
 
 // Startup the container
 func (dc *DockerContainer) Start() error {
-	fmt.Println("Starting container: ", dc.containerCfg.InstanceName)
 	// Remove existing containers from previous runs
 	if err := dc.Stop(); err != nil {
 		return err
 	}
+	fmt.Println("Starting container: ", dc.containerCfg.InstanceName)
 
 	// Run new test container instance with extended privileges.
 	// Extended privileges are granted to the container here to allow for network namespace manipulation (bringing a node up/down)
@@ -212,13 +213,23 @@ func (dc *DockerContainer) Stop() error {
 
 // Info returns target information
 func (dc *DockerContainer) Info() string {
+	providerVersion := dc.targetConfig.providerVersion
+	consumerVersion := dc.targetConfig.consumerVersion
+	if dc.targetConfig.consumerVersion == "" {
+		consumerVersion = "default (current workspace)"
+	}
+
+	if dc.targetConfig.providerVersion == "" {
+		providerVersion = "default (current workspace)"
+	}
+
 	return fmt.Sprintf(`
 	Consumer version: %s
 	Provider version: %s
 	Docker image: %s
 	Docker container: %s`,
-		dc.targetConfig.consumerVersion,
-		dc.targetConfig.providerVersion,
+		consumerVersion,
+		providerVersion,
 		dc.ImageName,
 		dc.containerCfg.InstanceName)
 }

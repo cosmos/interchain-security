@@ -305,7 +305,7 @@ func deleteTargets(targets []ExecutionTarget) {
 	}
 }
 
-// Create targets where test cases should be executed on
+// Create targets where test cases should be executed on.
 // For each combination of provider & consumer versions an ExecutionTarget
 // is created.
 func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTarget, error) {
@@ -323,6 +323,12 @@ func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTa
 		targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag}
 		targetCfg.providerVersion = provider
 		for consumer, _ := range consumerVersions {
+			// Skip target creation for same version of provider and consumer
+			// if multiple versions need to be tested.
+			// This is to reduce the tests to be run for compatibility testing.
+			if (len(consumerVersions) > 1 || len(providerVersions) > 1) && consumer == provider {
+				continue
+			}
 			targetCfg.consumerVersion = consumer
 			target := DockerContainer{targetConfig: targetCfg}
 			targets = append(targets, &target)
@@ -338,6 +344,7 @@ func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTa
 	return targets, nil
 }
 
+// createTestRunners creates test runners to run each test case on each target
 func createTestRunners(targets []ExecutionTarget, testCases []testStepsWithConfig) []TestRunner {
 	runners := []TestRunner{}
 	for _, target := range targets {
@@ -369,19 +376,22 @@ func executeTests(runners []TestRunner) error {
 	var wg sync.WaitGroup
 	var err error = nil
 
-	for _, runner := range runners {
+	for idx, _ := range runners {
 		if parallel != nil && *parallel {
 			wg.Add(1)
-			go func(runner TestRunner) {
+			go func(runner *TestRunner) {
 				defer wg.Done()
 				result := runner.Run()
 				if result != nil {
 					log.Printf("Test '%s' failed", runner.config.name)
 					err = result
 				}
-			}(runner)
+			}(&runners[idx])
 		} else {
-			err = runner.Run()
+			rc := runners[idx].Run()
+			if rc != nil {
+				err = rc
+			}
 		}
 	}
 
@@ -390,6 +400,55 @@ func executeTests(runners []TestRunner) error {
 	}
 
 	return err
+}
+
+func printReport(runners []TestRunner, duration time.Duration) {
+	failedTests := []TestRunner{}
+	passedTests := []TestRunner{}
+	remainingTests := []TestRunner{}
+	for _, t := range runners {
+		switch t.result.Result {
+		case TEST_RESULT_PASS:
+			passedTests = append(passedTests, t)
+		case TEST_RESULT_FAIL:
+			failedTests = append(failedTests, t)
+		default:
+			remainingTests = append(remainingTests, t)
+		}
+	}
+	numTotalTests := len(runners)
+	report := fmt.Sprintf(`
+=================================================
+Summary:
+- time elapsed: %s
+- %d/%d tests passed
+- %d/%d tests failed
+- %d/%d tests with misc status (check details)
+-------------------------------------------------
+
+
+`,
+		duration,
+		len(passedTests), numTotalTests,
+		len(failedTests), numTotalTests,
+		len(remainingTests), numTotalTests,
+	)
+
+	report += fmt.Sprintln("\nFAILED TESTS:")
+	for _, t := range failedTests {
+		report += t.Report()
+	}
+	report += fmt.Sprintln("\n\nPASSED TESTS:\n")
+	for _, t := range passedTests {
+		report += t.Report()
+	}
+
+	report += fmt.Sprintln("\n\nREMAINING TESTS:\n")
+	for _, t := range remainingTests {
+		report += t.Report()
+	}
+	report += "=================================================="
+	fmt.Print(report)
 }
 
 // runs E2E tests
@@ -414,8 +473,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Test execution failed '%s'", err)
 	}
-	log.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 
+	printReport(testRunners, time.Since(start))
 }
 
 type StepChoice struct {

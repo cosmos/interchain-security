@@ -407,7 +407,10 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 	testCfg.validatorConfigs = getValidatorConfigFromVersion(providerVersion, consumerVersion)
 
 	var providerConfig, consumerConfig ChainConfig
-	if semver.Compare(consumerVersion, "v3.0.0") < 0 {
+	if !semver.IsValid(consumerVersion) {
+		fmt.Println("Using default provider chain config")
+		consumerConfig = testCfg.chainConfigs[ChainID("consu")]
+	} else if semver.Compare(consumerVersion, "v3.0.0") < 0 {
 		fmt.Println("Using consumer chain config for v2.0.0")
 		consumerConfig = ChainConfig{
 			ChainId:        ChainID("consu"),
@@ -441,7 +444,10 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 	}
 
 	// Get the provider chain config for a specific version
-	if semver.Compare(providerVersion, "v3.0.0") < 0 {
+	if !semver.IsValid(providerVersion) {
+		fmt.Println("Using default provider chain config")
+		providerConfig = testCfg.chainConfigs[ChainID("provi")]
+	} else if semver.Compare(providerVersion, "v3.0.0") < 0 {
 		fmt.Println("Using provider chain config for v2.x.x")
 		providerConfig = ChainConfig{
 			ChainId:        ChainID("provi"),
@@ -485,6 +491,9 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 	testCfg.chainConfigs[ChainID("consu")] = consumerConfig
 	testCfg.chainConfigs[ChainID("provi")] = providerConfig
 	testCfg.name = string(CompatibilityTestCfg)
+	testCfg.containerConfig.InstanceName = fmt.Sprintf("%s_%s-%s",
+		testCfg.containerConfig.InstanceName,
+		consumerVersion, providerVersion)
 	return testCfg
 }
 

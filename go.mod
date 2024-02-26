@@ -170,6 +170,7 @@ require (
 require (
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.16.0
+	golang.org/x/mod v0.15.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231120223509-83a465c0220f
 )
 
@@ -186,7 +187,6 @@ require (
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/rs/zerolog v1.30.0 // indirect
 	go.uber.org/mock v0.2.0 // indirect
-	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect
 )

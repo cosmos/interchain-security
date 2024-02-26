@@ -197,7 +197,38 @@ jobs:
         if: env.GIT_DIFF
         run: |
           make test-e2e-short
-  
+
+  test-e2e-compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: checkout LFS objects
+        run: git lfs checkout
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          check-latest: true
+          cache: true
+          cache-dependency-path: go.sum
+      - uses: technote-space/get-diff-action@v6.1.2
+        id: git_diff
+        with:
+          PATTERNS: |
+            **/*.go
+            go.mod
+            go.sum
+            **/go.mod
+            **/go.sum
+            **/Makefile
+            Makefile
+            Dockerfile*
+      - name: e2e compatibility tests
+        if: env.GIT_DIFF
+        run: |
+          make test-e2e-compatibility-tests-latest
+
   test-cometmock:
     runs-on: ubuntu-latest
     steps:
@@ -228,7 +259,7 @@ jobs:
         if: env.GIT_DIFF
         run: |
           make test-e2e-short-cometmock
-  
+
   test-trace:
     runs-on: ubuntu-latest
     steps:

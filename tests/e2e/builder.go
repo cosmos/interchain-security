@@ -30,7 +30,7 @@ type DockerImgInfo struct {
 // and returns the path where the workspace is located
 func setupWorkSpace(revision string) (string, error) {
 	workSpace := "./"
-	if revision != "" {
+	if revision == "" {
 		return workSpace, nil
 	}
 	workSpace, err := os.MkdirTemp(os.TempDir(), "e2eWorkTree_")
