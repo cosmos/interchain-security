@@ -220,18 +220,11 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	// FIXME comments
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
-	//stakingUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
-
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentEpochValidators := k.GetAllEpochValidators(ctx, chain.ChainId)
 		nextEpochValidators := k.ComputeNextEpochValidators(ctx, chain.ChainId, currentEpochValidators, bondedValidators)
-		valUpdates := k.diff(currentEpochValidators, nextEpochValidators)
+		valUpdates := Diff(currentEpochValidators, nextEpochValidators)
 		k.ResetCurrentEpochValidators(ctx, chain.ChainId, nextEpochValidators)
-
-		//valUpdatesFoor := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, stakingUpdates)
-		//if len(valUpdates) != len(valUpdatesFoor) {
-		//	fmt.Println("...XXX...")
-		//}
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations

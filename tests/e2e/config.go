@@ -241,7 +241,7 @@ func SlashThrottleTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"0.10\" | " +
 					".app_state.provider.params.slash_meter_replenish_period = \"20s\" | " +
-					".app_state.provider.params.blocks_per_epoch = 2",
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
@@ -290,7 +290,7 @@ func DefaultTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 					".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
-					".app_state.provider.params.blocks_per_epoch = 2",
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
@@ -320,7 +320,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 		".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 		".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 		".app_state.transfer.params.send_enabled = false | " +
-		".app_state.provider.params.blocks_per_epoch = 2"
+		".app_state.provider.params.blocks_per_epoch = 3"
 
 	if allowReward {
 		// This allows the consumer chain to send rewards in the stake denom
@@ -351,7 +351,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
-					".app_state.provider.params.blocks_per_epoch = 2",
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("democ"): {
 				ChainId:        ChainID("democ"),
@@ -394,7 +394,7 @@ func MultiConsumerTestConfig() TestConfig {
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
-					".app_state.provider.params.blocks_per_epoch = 2",
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
@@ -454,7 +454,7 @@ func ChangeoverTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 					".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
-					".app_state.provider.params.blocks_per_epoch = 2",
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("sover"): {
 				ChainId:        ChainID("sover"),
@@ -555,7 +555,7 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 					".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
-					".app_state.provider.params.blocks_per_epoch = 2",
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),

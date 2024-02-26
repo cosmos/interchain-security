@@ -1307,7 +1307,7 @@ func (tr TestConfig) relayPacketsGorelayer(
 	target ExecutionTarget,
 	verbose bool,
 ) {
-	tr.waitBlocks(action.ChainA, 2, time.Minute)
+	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
 
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
 
@@ -1333,7 +1333,7 @@ func (tr TestConfig) relayPacketsHermes(
 	target ExecutionTarget,
 	verbose bool,
 ) {
-	tr.waitBlocks(action.ChainA, 2, time.Minute)
+	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
 
 	// hermes clear packets ibc0 transfer channel-13
 	cmd := target.ExecCommand("hermes", "clear", "packets",

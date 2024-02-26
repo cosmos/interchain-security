@@ -113,10 +113,15 @@ func (k Keeper) ComputeNextEpochValidators(
 		}
 		nextConsumerPublicKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
 		if !found {
-			k.Logger(ctx).Error("could not retrieve public key for validator (%+v)", val)
+			// TODO: vale message oti den exei ginei assigned consumer key
+			k.Logger(ctx).Info("could not retrieve public key for validator (%+v)", val)
 			// if no consumer key assigned then use the validator's key itself
 			nextConsumerPublicKey, err = val.TmConsPublicKey()
 		}
+		if nextConsumerPublicKey.Sum == nil || nextConsumerPublicKey.Size() == 0 {
+			k.Logger(ctx).Error("THE SUM IS NIL ....")
+		}
+
 		nextConsumerPublicKeyBytes, err := nextConsumerPublicKey.Marshal()
 		if err != nil {
 			// this should never happen but is recoverable if we exclude this validator from the `nextValidators`
@@ -142,8 +147,9 @@ func (k Keeper) ComputeNextEpochValidators(
 	return nextValidators
 }
 
-// diff compares two validator sets and return sthe diff
-func (k Keeper) diff(
+// Diff compares two validator sets and return sthe Diff
+// keeper ... FIXME not neeeded
+func Diff(
 	currentValidators []types.EpochValidator,
 	nextValidators []types.EpochValidator) []abci.ValidatorUpdate {
 	var updates []abci.ValidatorUpdate
@@ -190,16 +196,16 @@ func (k Keeper) diff(
 
 	// validators to be added
 	for _, val := range nextValidators {
-		if nextVal, found := isCurrentValidator[string(val.ProviderConsAddr)]; !found {
+		if _, found := isCurrentValidator[string(val.ProviderConsAddr)]; !found {
 			var nextPublicKey crypto.PublicKey
-			err := nextPublicKey.Unmarshal(nextVal.ConsumerPublicKey)
+			err := nextPublicKey.Unmarshal(val.ConsumerPublicKey)
 			if err != nil {
 				// this should never happen and is not recoverable because without the public key
 				// we cannot generate a validator update
 				panic(fmt.Errorf("could not unmarshall validator's (%+v) public key: %w", val, err))
 			}
 
-			updates = append(updates, abci.ValidatorUpdate{PubKey: nextPublicKey, Power: nextVal.Power})
+			updates = append(updates, abci.ValidatorUpdate{PubKey: nextPublicKey, Power: val.Power})
 		}
 	}
 
