@@ -21,7 +21,7 @@ FROM --platform=linux/amd64 ${PROVIDER_IMAGE} AS provider
 FROM --platform=linux/amd64 ${CONSUMER_IMAGE} AS consumer
 
 # Get Hermes build
-FROM --platform=linux/amd64 otacrew/hermes-ics:evidence-cmd AS hermes-builder
+FROM --platform=linux/amd64 ghcr.io/informalsystems/hermes:v1.8.0 AS hermes-builder
 
 
 # Get GoRelayer

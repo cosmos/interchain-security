@@ -83,6 +83,10 @@ test-e2e-short:
 test-e2e-short-cometmock:
 	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer
 
+# run minimal set of traces with cometmock and gaia
+test-e2e-short-cometmock-gaia:
+	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer --use-gaia
+
 # run full E2E tests in sequence (including multiconsumer)
 test-e2e-multi-consumer:
 	go run ./tests/e2e/... --include-multi-consumer
@@ -136,7 +140,8 @@ test-trace:
 verify-models:
 	quint test tests/mbt/model/ccv_test.qnt;\
 	quint test tests/mbt/model/ccv_model.qnt;\
-	quint run --invariant "all{ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" tests/mbt/model/ccv_model.qnt --max-steps 200 --max-samples 200
+	quint run --invariant "all{ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" tests/mbt/model/ccv_model.qnt --max-steps 200 --max-samples 200;\
+	quint run --invariant "all{ValidatorUpdatesArePropagatedKeyAssignmentInv,ValidatorSetHasExistedKeyAssignmentInv,SameVscPacketsKeyAssignmentInv,MatureOnTimeInv,EventuallyMatureOnProviderInv,KeyAssignmentRulesInv}" tests/mbt/model/ccv_model.qnt --step stepKeyAssignment --max-steps 200 --max-samples 200
 
 
 

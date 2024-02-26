@@ -70,7 +70,7 @@ func (tr TestConfig) startSovereignChain(
 
 	isConsumer := chainConfig.BinaryName != "interchain-security-pd"
 	testScriptPath := target.GetTestScriptPath(isConsumer, "start-sovereign.sh")
-	cmd := target.ExecCommand("/bin/bash", testScriptPath, string(vals),
+	cmd := target.ExecCommand("/bin/bash", testScriptPath, chainConfig.BinaryName, string(vals),
 		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
 		tr.tendermintConfigOverride)
 

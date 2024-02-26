@@ -16,4 +16,6 @@ type Stats struct {
 	numTxs         int
 
 	totalBlockTimePassedPerTrace time.Duration
+
+	numKeyAssignments int
 }

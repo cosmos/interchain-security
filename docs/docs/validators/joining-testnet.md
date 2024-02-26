@@ -12,7 +12,7 @@ The experience gained in the testnet will prepare you for validating interchain 
 :::tip
 Provider and consumer chain represent distinct networks and infrastructures operated by the same validator set.
 
-For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/main/validators/validator-setup.html) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs
+For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/validators/validator-setup) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs
 :::
 
 ## Joining the provider chain
@@ -79,7 +79,7 @@ gaiad tx staking create-validator \
 ```
 
 :::tip
-Check this [guide](https://hub.cosmos.network/main/validators/validator-setup.html#edit-validator-description) to edit your validator.
+Check this [guide](https://hub.cosmos.network/validators/validator-setup#edit-validator-description) to edit your validator.
 :::
 
 After this step, your validator is created and you can start your node and catch up to the rest of the network. It is recommended that you use `statesync` to catch up to the rest of the network.
