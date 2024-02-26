@@ -224,6 +224,7 @@ func (dc *DockerContainer) Info() string {
 	}
 
 	return fmt.Sprintf(`
+Docker
 	Consumer version: %s
 	Provider version: %s
 	Docker image: %s

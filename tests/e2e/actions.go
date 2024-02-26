@@ -664,7 +664,6 @@ func getTransformParameter(consumerVersion string) (string, error) {
 // Transform consumer genesis content from older version
 func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []byte, target ExecutionTarget) []byte {
 	fmt.Println("Transforming consumer genesis")
-	fmt.Printf("Original ccv genesis: %s\n", string(genesis))
 
 	fileName := "consumer_genesis.json"
 	file, err := os.CreateTemp("", fileName)
@@ -711,7 +710,6 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 	if err != nil {
 		log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(result))
 	}
-	fmt.Printf("Transformed genesis is: %s\n", string(result))
 	return result
 }
 
