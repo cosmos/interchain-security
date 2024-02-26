@@ -149,6 +149,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	k.completeMaturedUnbondingOps(ctx)
 
 	if uint64(ctx.BlockHeight())%k.GetBlocksPerEpoch(ctx) == 0 {
+		k.Logger(ctx).Error(fmt.Sprintf("blocks per epoch:(%d)", k.GetBlocksPerEpoch(ctx)))
 		// collect validator updates
 		k.QueueVSCPackets(ctx)
 
