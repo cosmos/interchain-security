@@ -304,11 +304,8 @@ message ConsumerAddrsToPrune {
 message EpochValidator {
   // validator's consensus address on the provider chain
   bytes provider_cons_addr = 1;
-  // The block height the provider chain had when the validator opted in for the first time. If the validator
-  // remains opted in during subsequent epochs, `start_block_height` remains unchanged.
-  int64 start_block_height = 2;
   // voting power the validator has during this epoch
-  int64 power = 3;
+  int64 power = 2;
   // public key the validator uses on the consumer chain during this epoch
-  bytes consumer_public_key = 4;
+  bytes consumer_public_key = 3;
 }

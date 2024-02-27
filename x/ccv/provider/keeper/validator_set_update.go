@@ -84,18 +84,12 @@ func (k Keeper) GetAllEpochValidators(
 }
 
 // ComputeNextEpochValidators returns the next validator set that is responsible for validating consumer chain `chainID`,
-// based on the current epoch validators and the bonded validators.
+// based on the bonded validators.
 func (k Keeper) ComputeNextEpochValidators(
 	ctx sdk.Context,
 	chainID string,
-	currentValidators []types.EpochValidator,
 	bondedValidators []stakingtypes.Validator,
 ) []types.EpochValidator {
-	isCurrentValidator := make(map[string]types.EpochValidator)
-	for _, val := range currentValidators {
-		isCurrentValidator[string(val.ProviderConsAddr)] = val
-	}
-
 	var nextValidators []types.EpochValidator
 	for _, val := range bondedValidators {
 		// get next voting power and the next consumer public key
@@ -121,17 +115,8 @@ func (k Keeper) ComputeNextEpochValidators(
 			continue
 		}
 
-		startBlockHeight := ctx.BlockHeight()
-		if v, found := isCurrentValidator[string(consAddr)]; found {
-			// If the validator was already an epoch validator validating the consumer chain, we let
-			// `StartBlockHeight` as is. This way, by looking at `StartBlockHeight` of an epoch validator, we can
-			// infer how long has a validator been continuously validating the consumer chain.
-			startBlockHeight = v.GetStartBlockHeight()
-		}
-
 		nextValidator := types.EpochValidator{
 			ProviderConsAddr:  consAddr,
-			StartBlockHeight:  startBlockHeight,
 			Power:             nextPower,
 			ConsumerPublicKey: nextConsumerPublicKeyBytes,
 		}
@@ -141,7 +126,7 @@ func (k Keeper) ComputeNextEpochValidators(
 	return nextValidators
 }
 
-// DiffValidators compares the current and the next epoch validators and returns a `ValidatorUpdate` diff needed
+// DiffValidators compares the current and the next epoch validators and returns the `ValidatorUpdate` diff needed
 // by CometBFT to update the validator set on a chain.
 func DiffValidators(
 	currentValidators []types.EpochValidator,

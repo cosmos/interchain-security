@@ -281,7 +281,7 @@ func (k Keeper) MakeConsumerGenesis(
 		bondedValidators = append(bondedValidators, val)
 	}
 
-	nextValidators := k.ComputeNextEpochValidators(ctx, chainID, []types.EpochValidator{}, bondedValidators)
+	nextValidators := k.ComputeNextEpochValidators(ctx, chainID, bondedValidators)
 	k.ResetCurrentEpochValidators(ctx, chainID, nextValidators)
 
 	// Apply key assignments to the initial valset.

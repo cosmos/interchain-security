@@ -224,7 +224,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentEpochValidators := k.GetAllEpochValidators(ctx, chain.ChainId)
-		nextEpochValidators := k.ComputeNextEpochValidators(ctx, chain.ChainId, currentEpochValidators, bondedValidators)
+		nextEpochValidators := k.ComputeNextEpochValidators(ctx, chain.ChainId, bondedValidators)
 		valUpdates := DiffValidators(currentEpochValidators, nextEpochValidators)
 		k.ResetCurrentEpochValidators(ctx, chain.ChainId, nextEpochValidators)
 

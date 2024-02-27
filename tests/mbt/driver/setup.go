@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"log"
 	"testing"
 	"time"
@@ -374,7 +373,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	nextValidators := s.providerKeeper().ComputeNextEpochValidators(s.providerCtx(), string(consumerChainId), []types.EpochValidator{}, stakingValidators)
+	nextValidators := s.providerKeeper().ComputeNextEpochValidators(s.providerCtx(), string(consumerChainId), stakingValidators)
 	s.providerKeeper().ResetCurrentEpochValidators(s.providerCtx(), string(consumerChainId), nextValidators)
 
 	err = s.providerKeeper().SetConsumerGenesis(
