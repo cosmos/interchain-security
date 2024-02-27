@@ -106,6 +106,12 @@ func (k Keeper) ComputeNextEpochValidators(
 			k.Logger(ctx).Info("could not retrieve public key for validator (%+v) on consumer chain (%s) because"+
 				" the validator did not assign a new consumer key", val, chainID)
 			nextConsumerPublicKey, err = val.TmConsPublicKey()
+			if err != nil {
+				// this should never happen and might not be recoverable because without the public key
+				// we cannot generate a validator update
+				panic(fmt.Errorf("could not retrieve validator's (%+v) public key: %w", val, err))
+			}
+
 		}
 
 		nextConsumerPublicKeyBytes, err := nextConsumerPublicKey.Marshal()

@@ -144,7 +144,9 @@ func (p Params) Validate() error {
 	if err := ValidateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
 		return fmt.Errorf("consumer reward denom registration fee is invalid: %s", err)
 	}
-	// FIXME: potentially add a validate that this p.BlocksPerEpoch cannot be too high
+	if err := ccvtypes.ValidatePositiveUint32(p.BlocksPerEpoch); err != nil {
+		return fmt.Errorf("blocks per epoch have to be positive: %s", err)
+	}
 	return nil
 }
 
