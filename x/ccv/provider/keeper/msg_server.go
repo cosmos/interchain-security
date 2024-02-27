@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+
 	errorsmod "cosmossdk.io/errors"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -194,4 +195,30 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 	})
 
 	return &types.MsgOptOutResponse{}, nil
+}
+
+func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.MsgSetConsumerCommissionRate) (*types.MsgSetConsumerCommissionRateResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
+	}
+
+	consAddr, err := validator.GetConsAddr()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ChainId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgSetConsumerCommissionRateResponse{}, nil
 }

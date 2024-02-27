@@ -17,6 +17,7 @@ service Msg {
   rpc SubmitConsumerDoubleVoting(MsgSubmitConsumerDoubleVoting) returns (MsgSubmitConsumerDoubleVotingResponse);
   rpc OptIn(MsgOptIn) returns (MsgOptInResponse);
   rpc OptOut(MsgOptOut) returns (MsgOptOutResponse);
+  rpc SetConsumerCommissionRate(MsgSetConsumerCommissionRate) returns (MsgSetConsumerCommissionRateResponse);
 }
 
 message MsgAssignConsumerKey {
@@ -89,3 +90,23 @@ message MsgOptOut {
 }
 
 message MsgOptOutResponse {}
+
+// MsgSetConsumerCommissionRate allows validators to set 
+// a per-consumer chain commission rate
+message MsgSetConsumerCommissionRate {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  // The chain id of the consumer chain to assign a consensus public key to
+  string chain_id = 1;
+   // The validator on the provider
+   string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+   // The rate to charge delegators on the consumer chain
+   string rate = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false 
+  ];
+}
+
+
+message MsgSetConsumerCommissionRateResponse {}
