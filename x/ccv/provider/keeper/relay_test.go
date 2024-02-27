@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"strings"
 	"testing"
 
@@ -16,6 +18,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	"github.com/cosmos/interchain-security/v4/testutil/crypto"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
@@ -24,71 +27,62 @@ import (
 )
 
 // TestQueueVSCPackets tests queueing validator set updates.
-//func TestQueueVSCPackets(t *testing.T) {
-//	_, _, key := ibctesting.GenerateKeys(t, 1)
-//	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(key)
-//
-//	testCases := []struct {
-//		name                     string
-//		packets                  []ccv.ValidatorSetChangePacketData
-//		expectNextValsetUpdateId uint64
-//		expectedQueueSize        int
-//	}{
-//		{
-//			name:                     "no updates to send",
-//			packets:                  []ccv.ValidatorSetChangePacketData{},
-//			expectNextValsetUpdateId: 1,
-//			expectedQueueSize:        0,
-//		},
-//		{
-//			name: "have updates to send",
-//			packets: []ccv.ValidatorSetChangePacketData{
-//				{
-//					ValidatorUpdates: []abci.ValidatorUpdate{
-//						{PubKey: tmPubKey, Power: 1},
-//					},
-//					ValsetUpdateId: 1,
-//				},
-//			},
-//			expectNextValsetUpdateId: 1,
-//			expectedQueueSize:        1,
-//		},
-//	}
-//
-//	chainID := "consumer"
-//
-//	for _, tc := range testCases {
-//		keeperParams := testkeeper.NewInMemKeeperParams(t)
-//		ctx := keeperParams.Ctx
-//
-//		ctrl := gomock.NewController(t)
-//		defer ctrl.Finish()
-//		mocks := testkeeper.NewMockedKeepers(ctrl)
-//		//mockStakingKeeper := mocks.MockStakingKeeper
-//
-//		//mockUpdates := []abci.ValidatorUpdate{}
-//		//if len(tc.packets) != 0 {
-//		//	mockUpdates = tc.packets[0].ValidatorUpdates
-//		//}
-//
-//		//gomock.InOrder(
-//		//	mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates),
-//		//)
-//
-//		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-//		// no-op if tc.packets is empty
-//		pk.AppendPendingVSCPackets(ctx, chainID, tc.packets...)
-//
-//		pk.QueueVSCPackets(ctx)
-//		pending := pk.GetPendingVSCPackets(ctx, chainID)
-//		require.Len(t, pending, tc.expectedQueueSize, "pending vsc queue mismatch (%v != %v) in case: '%s'", tc.expectedQueueSize, len(pending), tc.name)
-//
-//		// next valset update ID -> default value in tests is 0
-//		// each call to QueueValidatorUpdates will increment the ValidatorUpdateID
-//		valUpdateID := pk.GetValidatorSetUpdateId(ctx)
-//		require.Equal(t, tc.expectNextValsetUpdateId, valUpdateID, "valUpdateID (%v != %v) mismatch in case: '%s'", tc.expectNextValsetUpdateId, valUpdateID, tc.name)
-//	}
-//}
+func TestQueueVSCPackets(t *testing.T) {
+	_, _, key := ibctesting.GenerateKeys(t, 1)
+	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(key)
+
+	testCases := []struct {
+		name                     string
+		packets                  []ccv.ValidatorSetChangePacketData
+		expectNextValsetUpdateId uint64
+		expectedQueueSize        int
+	}{
+		{
+			name:                     "no updates to send",
+			packets:                  []ccv.ValidatorSetChangePacketData{},
+			expectNextValsetUpdateId: 1,
+			expectedQueueSize:        0,
+		},
+		{
+			name: "have updates to send",
+			packets: []ccv.ValidatorSetChangePacketData{
+				{
+					ValidatorUpdates: []abci.ValidatorUpdate{
+						{PubKey: tmPubKey, Power: 1},
+					},
+					ValsetUpdateId: 1,
+				},
+			},
+			expectNextValsetUpdateId: 1,
+			expectedQueueSize:        1,
+		},
+	}
+
+	chainID := "consumer"
+
+	for _, tc := range testCases {
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		ctx := keeperParams.Ctx
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mocks := testkeeper.NewMockedKeepers(ctrl)
+		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Times(1)
+
+		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+		// no-op if tc.packets is empty
+		pk.AppendPendingVSCPackets(ctx, chainID, tc.packets...)
+
+		pk.QueueVSCPackets(ctx)
+		pending := pk.GetPendingVSCPackets(ctx, chainID)
+		require.Len(t, pending, tc.expectedQueueSize, "pending vsc queue mismatch (%v != %v) in case: '%s'", tc.expectedQueueSize, len(pending), tc.name)
+
+		// next valset update ID -> default value in tests is 0
+		// each call to QueueValidatorUpdates will increment the ValidatorUpdateID
+		valUpdateID := pk.GetValidatorSetUpdateId(ctx)
+		require.Equal(t, tc.expectNextValsetUpdateId, valUpdateID, "valUpdateID (%v != %v) mismatch in case: '%s'", tc.expectNextValsetUpdateId, valUpdateID, tc.name)
+	}
+}
 
 // TestOnRecvVSCMaturedPacket tests the OnRecvVSCMaturedPacket method of the keeper.
 //
@@ -658,4 +652,48 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 
 	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
 	require.NoError(t, err)
+}
+
+// TestEndBlockVSU tests that during `EndBlockVSU`, we only queue VSC packets at the boundaries of an epoch
+func TestEndBlockVSU(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// 10 blocks constitute an epoch
+	params := providertypes.DefaultParams()
+	params.BlocksPerEpoch = 10
+	providerKeeper.SetParams(ctx, params)
+
+	// create 4 sample lastValidators
+	var lastValidators []stakingtypes.Validator
+	for i := 0; i < 4; i++ {
+		lastValidators = append(lastValidators, crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator())
+	}
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(2)).AnyTimes()
+
+	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
+	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+
+	// with block height of 1 we do not expect any queueing of VSC packets
+	ctx = ctx.WithBlockHeight(1)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// with block height of 5 we do not expect any queueing of VSC packets
+	ctx = ctx.WithBlockHeight(5)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// with block height of 10 we expect the queueing of one VSC packet
+	ctx = ctx.WithBlockHeight(10)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// With block height of 15 we expect no additional queueing of a VSC packet.
+	// Note that the pending VSC packet is still there because `SendVSCPackets` does not send the packet. We
+	// need to mock channels, etc. for this to work, and it's out of scope for this test.
+	ctx = ctx.WithBlockHeight(15)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
 }
