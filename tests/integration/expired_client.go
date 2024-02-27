@@ -63,7 +63,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	// upgrade expired client to the consumer
 	upgradeExpiredClient(s, Consumer)
 
-	// go to next block
+	// go to next epoch
 	nextBlocks(s.providerChain, blocksPerEpoch)
 
 	// check that the packets are not in the list of pending VSC packets

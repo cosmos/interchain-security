@@ -216,10 +216,8 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
-	// Get the validator updates from the staking module.
-	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
-	// of cosmos-sdk is invalid.
-	// FIXME comments
+
+	// Get the bonded validators from the staking module.
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {

@@ -127,7 +127,6 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 	srcValTokensAfter := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
 	s.Require().Equal(srcValTokensAfter.Sub(srcValTokensBefore), amount)
 
-	s.providerChain.NextBlock()
 	nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
 
 	dstValTokensBefore := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()

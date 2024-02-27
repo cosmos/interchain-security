@@ -254,7 +254,6 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		delAddr := s.providerChain.SenderAccount.GetAddress()
 		delegate(s, delAddr, bondAmt)
 		nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
-		s.providerChain.NextBlock()
 
 		if tc.denomRegistered {
 			params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())

@@ -242,7 +242,7 @@ func RunItfTrace(t *testing.T, path string) {
 			// we need at least 2 blocks, because for a packet sent at height H, the receiving chain
 			// needs a header of height H+1 to accept the packet
 			// so, we do `blocksPerEpoch` time advancements with a very small increment,
-			// and then increment the rest of the time to take into account the case where `blocksPerEpoch = 1`
+			// and then increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
 
 			// going through `blocksPerEpoch` blocks to take into account an epoch

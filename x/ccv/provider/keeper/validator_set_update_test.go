@@ -136,7 +136,7 @@ func TestComputeNextEpochValidators(t *testing.T) {
 		ConsumerPublicKey: valAPublicKeyBytes,
 	})
 
-	// create a staking validator B that has a one of which has set a consumer public key
+	// create a staking validator B that has set a consumer public key
 	valB := createStakingValidator(ctx, mocks, 2, 2)
 	// validator B has set a consumer key, the `ConsumerPublicKey` we expect is the key set by `SetValidatorConsumerPubKey`
 	valBConsumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
@@ -164,7 +164,7 @@ func TestDiff(t *testing.T) {
 
 	var expectedUpdates []abci.ValidatorUpdate
 
-	// validator A only exists on `currentValidators` and hence an update with 0 power would be generated
+	// validator A only exists in `currentValidators` and hence an update with 0 power would be generated
 	// to remove this validator
 	currentA, currentPublicKeyA := createEpochValidator(1, 1, 1)
 	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKey: currentPublicKeyA, Power: 0})
@@ -227,10 +227,10 @@ func TestDiffEdgeCases(t *testing.T) {
 	valC, publicKeyC := createEpochValidator(3, 3, 3)
 	validators := []types.EpochValidator{valA, valB, valC}
 
-	// we do not expect any validator updates if `currentValidators` are the same with the `nextValidators`
+	// we do not expect any validator updates if the `currentValidators` are the same with the `nextValidators`
 	require.Empty(t, len(keeper.DiffValidators(validators, validators)))
 
-	// we only have `nextValidators` that would generate validator updates for those validators to be added
+	// only have `nextValidators` that would generate validator updates for the validators to be added
 	expectedUpdates := []abci.ValidatorUpdate{{publicKeyA, 1}, {publicKeyB, 2}, {publicKeyC, 3}}
 	actualUpdates := keeper.DiffValidators([]types.EpochValidator{}, validators)
 	// sort validators first to be able to compare
@@ -247,7 +247,7 @@ func TestDiffEdgeCases(t *testing.T) {
 	sortUpdates(actualUpdates)
 	require.Equal(t, expectedUpdates, actualUpdates)
 
-	// we only have `currentValidators` that would generate validator updates for those validators to be removed
+	// only have `currentValidators` that would generate validator updates for the validators to be removed
 	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 0}, {publicKeyC, 0}}
 	actualUpdates = keeper.DiffValidators(validators, []types.EpochValidator{})
 	sortUpdates(expectedUpdates)

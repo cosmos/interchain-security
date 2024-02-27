@@ -107,11 +107,10 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		s.Require().True(found)
 	}
 
-	// increase FIXME
 	nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
 
 	// Confirm the valset update Id was incremented twice on provider,
-	// since two endblockers have passed.
+	// since an epoch has passed.
 	s.Require().Equal(valsetUpdateIdN+2,
 		providerKeeper.GetValidatorSetUpdateId(s.providerCtx()))
 

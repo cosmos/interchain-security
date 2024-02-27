@@ -241,7 +241,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		// delegate again to create another VSC packet
 		delegate(s, delAddr, bondAmt)
 
-		// call NextBlock on the provider (which increments the height)
+		// call NextBlocks on the provider (which increments the height)
 		nextBlocks(s.providerChain, blocksPerEpoch)
 
 		// check that the VSC packet is stored in state as pending
