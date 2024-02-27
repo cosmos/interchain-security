@@ -78,9 +78,9 @@ func (k Keeper) GetConsumerRewardDenomRegistrationFee(ctx sdk.Context) sdk.Coin 
 	return c
 }
 
-// FIXME: add docstring
-func (k Keeper) GetBlocksPerEpoch(ctx sdk.Context) uint64 {
-	var b uint64
+// GetBlocksPerEpoch return the number of blocks that constitute an epoch
+func (k Keeper) GetBlocksPerEpoch(ctx sdk.Context) uint32 {
+	var b uint32
 	k.paramSpace.Get(ctx, types.KeyBlocksPerEpoch, &b)
 	return b
 }

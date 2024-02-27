@@ -2,7 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"sort"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -20,6 +19,8 @@ import (
 //     then it moves to the top 95% and doesn't sign one more block, a SlashPacket is NOT sent to the provider
 func (suite *CCVTestSuite) TestSoftOptOut() {
 	var votes []abci.VoteInfo
+
+	blocksPerEpoch := suite.providerApp.GetProviderKeeper().GetParams(suite.providerCtx()).BlocksPerEpoch
 
 	testCases := []struct {
 		name            string
@@ -74,7 +75,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 				bondAmt := sdk.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
-				nextBlocks(suite.providerChain, keeper.BlocksPerEpoch)
+				nextBlocks(suite.providerChain, blocksPerEpoch)
 
 				// Relay 1 VSC packet from provider to consumer
 				relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)
@@ -113,7 +114,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 				bondAmt := sdk.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
-				nextBlocks(suite.providerChain, keeper.BlocksPerEpoch)
+				nextBlocks(suite.providerChain, blocksPerEpoch)
 
 				// Relay 1 VSC packet from provider to consumer
 				relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)
@@ -150,7 +151,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 		validatorPowers := []int64{1000, 500, 50, 10}
 		suite.setupValidatorPowers(validatorPowers)
 
-		nextBlocks(suite.providerChain, keeper.BlocksPerEpoch)
+		nextBlocks(suite.providerChain, blocksPerEpoch)
 
 		// Relay 1 VSC packet from provider to consumer
 		relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)

@@ -5,12 +5,9 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	types2 "github.com/cosmos/cosmos-sdk/x/staking/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
-
-const BlocksPerEpoch = 10
-const HoursPerEpoch = 1
 
 // SetEpochValidator sets provided epoch `validator` on the consumer chain with `chainID`
 func (k Keeper) SetEpochValidator(
@@ -20,12 +17,11 @@ func (k Keeper) SetEpochValidator(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := validator.Marshal()
-	// FIXME .. .names
 	if err != nil {
-		panic(fmt.Errorf("failed to marshal CurrentEpochOptedInValidator: %w", err))
+		panic(fmt.Errorf("failed to marshal EpochValidator: %w", err))
 	}
 
-	store.Set(types.OptedInKey(chainID, validator.ProviderConsAddr), bz)
+	store.Set(types.EpochKey(chainID, validator.ProviderConsAddr), bz)
 }
 
 // DeleteEpochValidator removes epoch validator with `providerAddr` address
@@ -35,7 +31,7 @@ func (k Keeper) DeleteEpochValidator(
 	providerConsAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.OptedInKey(chainID, providerConsAddr.ToSdkConsAddr()))
+	store.Delete(types.EpochKey(chainID, providerConsAddr.ToSdkConsAddr()))
 }
 
 // DeleteAllEpochValidators deletes all the stored epoch validators
@@ -43,7 +39,7 @@ func (k Keeper) DeleteAllEpochValidators(
 	ctx sdk.Context,
 	chainID string) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	key := types.ChainIdWithLenKey(types.EpochBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
 
 	var keysToDel [][]byte
@@ -63,7 +59,7 @@ func (k Keeper) IsEpochValidator(
 	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.OptedInKey(chainID, providerAddr.ToSdkConsAddr())) != nil
+	return store.Get(types.EpochKey(chainID, providerAddr.ToSdkConsAddr())) != nil
 }
 
 // GetAllEpochValidators returns all the epoch validators on chain `chainID`
@@ -71,7 +67,7 @@ func (k Keeper) GetAllEpochValidators(
 	ctx sdk.Context,
 	chainID string) (optedInValidators []types.EpochValidator) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	key := types.ChainIdWithLenKey(types.EpochBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -79,7 +75,7 @@ func (k Keeper) GetAllEpochValidators(
 		iterator.Value()
 		var optedInValidator types.EpochValidator
 		if err := optedInValidator.Unmarshal(iterator.Value()); err != nil {
-			panic(fmt.Errorf("failed to unmarshal CurrentEpochOptedInValidator: %w", err))
+			panic(fmt.Errorf("failed to unmarshal EpochValidator: %w", err))
 		}
 		optedInValidators = append(optedInValidators, optedInValidator)
 	}
@@ -87,22 +83,21 @@ func (k Keeper) GetAllEpochValidators(
 	return optedInValidators
 }
 
-// ComputeNextEpochValidators returns the next validator set that is
-// responsible for validating on a consumer chain.
+// ComputeNextEpochValidators returns the next validator set that is responsible for validating consumer chain `chainID`,
+// based on the current epoch validators and the bonded validators.
 func (k Keeper) ComputeNextEpochValidators(
 	ctx sdk.Context,
 	chainID string,
 	currentValidators []types.EpochValidator,
-	stakingValidators []types2.Validator,
+	bondedValidators []stakingtypes.Validator,
 ) []types.EpochValidator {
 	isCurrentValidator := make(map[string]types.EpochValidator)
 	for _, val := range currentValidators {
-		// `currentPublicKey` is the currently used key by validator `val` when validating on the consumer chain
 		isCurrentValidator[string(val.ProviderConsAddr)] = val
 	}
 
 	var nextValidators []types.EpochValidator
-	for _, val := range stakingValidators {
+	for _, val := range bondedValidators {
 		// get next voting power and the next consumer public key
 		nextPower := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
 		consAddr, err := val.GetConsAddr()
@@ -111,15 +106,12 @@ func (k Keeper) ComputeNextEpochValidators(
 			k.Logger(ctx).Error("could not get consensus address of validator (%+v): %w", val, err)
 			continue
 		}
-		nextConsumerPublicKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
-		if !found {
-			// TODO: vale message oti den exei ginei assigned consumer key
-			k.Logger(ctx).Info("could not retrieve public key for validator (%+v)", val)
+		nextConsumerPublicKey, foundConsumerPublicKey := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
+		if !foundConsumerPublicKey {
 			// if no consumer key assigned then use the validator's key itself
+			k.Logger(ctx).Info("could not retrieve public key for validator (%+v) on consumer chain (%s) because"+
+				" the validator did not assign a new consumer key", val, chainID)
 			nextConsumerPublicKey, err = val.TmConsPublicKey()
-		}
-		if nextConsumerPublicKey.Sum == nil || nextConsumerPublicKey.Size() == 0 {
-			k.Logger(ctx).Error("THE SUM IS NIL ....")
 		}
 
 		nextConsumerPublicKeyBytes, err := nextConsumerPublicKey.Marshal()
@@ -130,8 +122,10 @@ func (k Keeper) ComputeNextEpochValidators(
 		}
 
 		startBlockHeight := ctx.BlockHeight()
-		if v, found2 := isCurrentValidator[string(consAddr)]; found2 {
-			// remain sstable
+		if v, found := isCurrentValidator[string(consAddr)]; found {
+			// If the validator was already an epoch validator validating the consumer chain, we let
+			// `StartBlockHeight` as is. This way, by looking at `StartBlockHeight` of an epoch validator, we can
+			// infer how long has a validator been continuously validating the consumer chain.
 			startBlockHeight = v.GetStartBlockHeight()
 		}
 
@@ -147,12 +141,13 @@ func (k Keeper) ComputeNextEpochValidators(
 	return nextValidators
 }
 
-// Diff compares two validator sets and return sthe Diff
-// keeper ... FIXME not neeeded
-func Diff(
+// DiffValidators compares the current and the next epoch validators and returns a `ValidatorUpdate` diff needed
+// by CometBFT to update the validator set on a chain.
+func DiffValidators(
 	currentValidators []types.EpochValidator,
 	nextValidators []types.EpochValidator) []abci.ValidatorUpdate {
 	var updates []abci.ValidatorUpdate
+
 	isCurrentValidator := make(map[string]types.EpochValidator)
 	for _, val := range currentValidators {
 		isCurrentValidator[string(val.ProviderConsAddr)] = val
@@ -188,15 +183,16 @@ func Diff(
 			} else if val.Power != nextVal.Power {
 				updates = append(updates, abci.ValidatorUpdate{PubKey: nextPublicKey, Power: nextVal.Power})
 			}
+			// else no update is needed because neither the consumer public key changed, nor the power of the validator
 		} else {
 			// not found in next validators and hence the validator has to be removed
 			updates = append(updates, abci.ValidatorUpdate{PubKey: currentPublicKey, Power: 0})
 		}
 	}
 
-	// validators to be added
 	for _, val := range nextValidators {
 		if _, found := isCurrentValidator[string(val.ProviderConsAddr)]; !found {
+			// validators that are about to join an epoch
 			var nextPublicKey crypto.PublicKey
 			err := nextPublicKey.Unmarshal(val.ConsumerPublicKey)
 			if err != nil {
@@ -212,11 +208,9 @@ func Diff(
 	return updates
 }
 
-// ResetCurrentEpochValidators resets the opted-in validators with the newest set that was computed by
-// `ComputeNextValidators` and hence this method should only be called after `ComputeNextValidators` has completed.
-func (k Keeper) ResetCurrentEpochValidators(ctx sdk.Context, chainID string,
-	nextValidators []types.EpochValidator) {
-	// for epochs we do not need to do this ...
+// ResetCurrentEpochValidators resets the current epoch validators with the `nextValidators` computed by
+// `ComputeNextEpochValidators` and hence this method should only be called after `ComputeNextEpochValidators` has completed.
+func (k Keeper) ResetCurrentEpochValidators(ctx sdk.Context, chainID string, nextValidators []types.EpochValidator) {
 	k.DeleteAllEpochValidators(ctx, chainID)
 	for _, val := range nextValidators {
 		k.SetEpochValidator(ctx, chainID, val)

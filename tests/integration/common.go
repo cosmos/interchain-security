@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -129,7 +128,7 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 	s.Require().Equal(srcValTokensAfter.Sub(srcValTokensBefore), amount)
 
 	s.providerChain.NextBlock()
-	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
+	nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
 
 	dstValTokensBefore := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
 
@@ -628,6 +627,7 @@ func (s *CCVTestSuite) mustGetStakingValFromTmVal(tmVal tmtypes.Validator) (stak
 	return stakingVal
 }
 
+// nextBlocks moves `chain` forward by a `numberOfBlocks` blocks
 func nextBlocks(chain *ibctesting.TestChain, numberOfBlocks uint32) {
 	for i := uint32(0); i < numberOfBlocks; i++ {
 		chain.NextBlock()

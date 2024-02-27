@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -108,8 +107,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		s.Require().True(found)
 	}
 
-	// increase
-	nextBlocks(s.providerChain, keeper.BlocksPerEpoch)
+	// increase FIXME
+	nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
 
 	// Confirm the valset update Id was incremented twice on provider,
 	// since two endblockers have passed.

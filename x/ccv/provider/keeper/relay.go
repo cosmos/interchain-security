@@ -148,8 +148,9 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
-	if uint64(ctx.BlockHeight())%k.GetBlocksPerEpoch(ctx) == 0 {
-		k.Logger(ctx).Error(fmt.Sprintf("blocks per epoch:(%d)", k.GetBlocksPerEpoch(ctx)))
+	if ctx.BlockHeight()%int64(k.GetBlocksPerEpoch(ctx)) == 0 {
+		// only queue and send VSCPackets at the boundaries of an epoch
+
 		// collect validator updates
 		k.QueueVSCPackets(ctx)
 
@@ -224,7 +225,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentEpochValidators := k.GetAllEpochValidators(ctx, chain.ChainId)
 		nextEpochValidators := k.ComputeNextEpochValidators(ctx, chain.ChainId, currentEpochValidators, bondedValidators)
-		valUpdates := Diff(currentEpochValidators, nextEpochValidators)
+		valUpdates := DiffValidators(currentEpochValidators, nextEpochValidators)
 		k.ResetCurrentEpochValidators(ctx, chain.ChainId, nextEpochValidators)
 
 		// check whether there are changes in the validator set;

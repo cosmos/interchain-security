@@ -348,6 +348,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	)
 
 	consumerGenesis := createConsumerGenesis(params, providerChain, consumerClientState)
+
 	s.consumerKeeper(consumerChainId).InitGenesis(s.ctx(consumerChainId), consumerGenesis)
 
 	consumerGenesisForProvider := ccvtypes.ConsumerGenesisState{
@@ -358,6 +359,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 
 	var stakingValidators []stakingtypes.Validator
 
+	// set up the current epoch validators by utilizing the initial validator set
 	for _, val := range consumerGenesisForProvider.Provider.InitialValSet {
 		pubKey := val.PubKey
 		consAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(pubKey)

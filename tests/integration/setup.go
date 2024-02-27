@@ -129,11 +129,11 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.registerPacketSniffer(suite.providerChain)
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
-	//FIXME
+	// set `BlocksPerEpoch` to 10: a reasonable small value greater than 1 that prevents waiting for too
+	// many blocks and slowing down the integration tests
 	params := providerKeeper.GetParams(suite.providerCtx())
 	params.BlocksPerEpoch = 10
 	providerKeeper.SetParams(suite.providerCtx(), params)
-	// FIXME
 
 	// re-assign all validator keys for the first consumer chain
 	providerKeeper.SetPendingConsumerAdditionProp(suite.providerCtx(), &types.ConsumerAdditionProposal{
@@ -158,7 +158,6 @@ func (suite *CCVTestSuite) SetupTest() {
 			chainID,
 		)
 		suite.Require().True(found, "consumer genesis not found")
-
 		genesisState := consumertypes.GenesisState{
 			Params:   consumerGenesisState.Params,
 			Provider: consumerGenesisState.Provider,

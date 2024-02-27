@@ -184,6 +184,8 @@ func RunItfTrace(t *testing.T, path string) {
 
 	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
 
+	// set `BlocksPerEpoch` to 10: a reasonable small value greater than 1 that prevents waiting for too
+	// many blocks and slowing down the tests
 	providerParams := driver.providerKeeper().GetParams(driver.providerCtx())
 	providerParams.BlocksPerEpoch = 10
 	driver.providerKeeper().SetParams(driver.providerCtx(), providerParams)
@@ -237,13 +239,15 @@ func RunItfTrace(t *testing.T, path string) {
 			stats.numStartedChains += len(consumersToStart)
 			stats.numStops += len(consumersToStop)
 
-			// we need 2 blocks, because for a packet sent at height H, the receiving chain
+			// we need at least 2 blocks, because for a packet sent at height H, the receiving chain
 			// needs a header of height H+1 to accept the packet
-			// so we do one time advancement with a very small increment,
-			// and then increment the rest of the time
+			// so, we do `blocksPerEpoch` time advancements with a very small increment,
+			// and then increment the rest of the time to take into account the case where `blocksPerEpoch = 1`
 			runningConsumersBefore := driver.runningConsumers()
+
+			// going through `blocksPerEpoch` blocks to take into account an epoch
 			blocksPerEpoch := driver.providerKeeper().GetBlocksPerEpoch(driver.providerCtx())
-			for i := uint64(0); i < blocksPerEpoch; i = i + 1 {
+			for i := uint32(0); i < blocksPerEpoch; i = i + 1 {
 				driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 			}
 			for _, consumer := range driver.runningConsumers() {
@@ -322,9 +326,6 @@ func RunItfTrace(t *testing.T, path string) {
 			headerBefore := driver.chain(ChainId(consumerChain)).LastHeader
 			_ = headerBefore
 
-			providerParams := driver.providerKeeper().GetParams(driver.providerCtx())
-			providerParams.BlocksPerEpoch = 10
-			driver.providerKeeper().SetParams(driver.providerCtx(), providerParams)
 			driver.endAndBeginBlock(ChainId(consumerChain), 1*time.Nanosecond)
 			UpdateConsumerClientOnProvider(t, driver, consumerChain)
 

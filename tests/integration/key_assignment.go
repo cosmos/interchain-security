@@ -14,6 +14,7 @@ import (
 )
 
 func (s *CCVTestSuite) TestKeyAssignment() {
+	blocksPerEpoch := s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch
 	testCases := []struct {
 		name           string
 		assignFunc     func(*providerkeeper.Keeper) error
@@ -30,7 +31,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				}
 
 				// check that a VSCPacket is queued
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 				pendingPackets := pk.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
 				s.Require().Len(pendingPackets, 1)
 
@@ -51,7 +52,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 
 				return nil
 			}, false, 2,
@@ -73,7 +74,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				delAddr := s.providerChain.SenderAccount.GetAddress()
 				delegate(s, delAddr, bondAmt)
 
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 
 				return nil
 			}, false, 2,
@@ -95,7 +96,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 
 				return nil
 			}, true, 2,
@@ -118,7 +119,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 
 				return nil
 			}, false, 2,
@@ -134,14 +135,14 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 
 				// same key assignment
 				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
 				if err != nil {
 					return err
 				}
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 
 				return nil
 			}, true, 2,
@@ -157,7 +158,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 
 				// same key assignment
 				validator, consumerKey = generateNewConsumerKey(s, 0)
@@ -165,7 +166,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				nextBlocks(s.providerChain, providerkeeper.BlocksPerEpoch)
+				nextBlocks(s.providerChain, blocksPerEpoch)
 
 				return nil
 			}, false, 3,

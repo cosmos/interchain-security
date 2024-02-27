@@ -190,7 +190,7 @@ message Params {
       [ (gogoproto.nullable) = false ];
 
   // The number of blocks that comprise an epoch.
-  uint64 blocks_per_epoch = 10;
+  uint32 blocks_per_epoch = 10;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators

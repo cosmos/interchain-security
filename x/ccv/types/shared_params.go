@@ -51,7 +51,14 @@ func ValidatePositiveInt64(i interface{}) error {
 	return nil
 }
 
-func ValidateDummy(i interface{}) error {
+func ValidatePositiveUint32(i interface{}) error {
+	if _, ok := i.(uint32); !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	// FIXME:
+	//if i.(uint32) == 0 {
+	//	return fmt.Errorf("parameter must be positive")
+	//}
 	return nil
 }
 

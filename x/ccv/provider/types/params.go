@@ -37,8 +37,9 @@ const (
 	// fraction of total voting power that the slash meter can hold.
 	DefaultSlashMeterReplenishFraction = "0.05"
 
-	//FIMXe
-	DefaultBlocksPerEpoch = 1000
+	// DefaultBlocksPerEpoch defines the default blocks that consist an epoch. Assuming we need 6 seconds per block,
+	// an epoch corresponds to 1 hour (6 * 600 = 3600 seconds).
+	DefaultBlocksPerEpoch = 600
 )
 
 // Reflection based keys for params subspace
@@ -68,7 +69,7 @@ func NewParams(
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
 	consumerRewardDenomRegistrationFee sdk.Coin,
-	blocksPerEpoch uint64,
+	blocksPerEpoch uint32,
 ) Params {
 	return Params{
 		TemplateClient:                     cs,
@@ -158,9 +159,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
-
-		//FIXME: do we need this??? yes for registration .. but no validation is needed? unless we put here the max bound
-		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidateDummy),
+		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveUint32),
 	}
 }
 
