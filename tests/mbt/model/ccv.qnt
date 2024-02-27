@@ -491,13 +491,16 @@ module ccv {
             val res = TimeoutDueToVscTimeout(currentState, consumer, VscTimeout)
             res._1
         )
-        
+
+        // run the shared core chainState logic
+        val newChainState = currentProviderState.chainState.endAndBeginBlockShared(timeAdvancement)
+
         // for each consumer chain, apply the key assignment to the current validator set
         val currentValSets = ConsumerChains.mapBy(
             (consumer) => 
             currentProviderState.applyKeyAssignmentToValSet(
                 consumer, 
-                currentProviderState.chainState.currentValidatorPowers
+                newChainState.votingPowerHistory.head()
             )
         )
         // store the current validator set with the key assignments applied in the history
@@ -508,8 +511,6 @@ module ccv {
                 .prepend(currentValSets.get(consumer)) // prepend the current validator set with key assignments applied
         )
 
-        // run the shared core chainState logic
-        val newChainState = currentProviderState.chainState.endAndBeginBlockShared(timeAdvancement)
         val providerStateAfterTimeAdvancement = 
             {...currentProviderState, chainState: newChainState, keyAssignedValSetHistory: newKeyAssignedValSetHistory}
         val tmpState = currentState.with(

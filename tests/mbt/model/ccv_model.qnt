@@ -1163,4 +1163,48 @@ module ccv_model {
                 VotingPowerChange("node1", 50)
             }
         )
+
+    run SlashValSetKeyAssignmentTest =
+        init
+        .then(
+            // start consumer 2
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer2"), Set())
+        )
+        .then(
+            // change vp of node 10 by -50
+            VotingPowerChange("node10", -50)
+        )
+        .then(
+            // end and begin a block on the provider
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        )
+        .then(
+            // deliver the vsc packet to consumer 2
+            DeliverVscPacket("consumer2")
+        )
+        .then(
+            // consumer 2 slashes validator 9
+            ConsumerInitiatedSlashDet("consumer2", "node9", 1, true )
+        )
+        .then(
+            // end and begin a block for consumer 2
+            EndAndBeginBlockForConsumer("consumer2", 1 * Second)
+        )
+        .then(
+            // deliver the slash request to the provider
+            DeliverPacketToProvider("consumer2")
+        )
+        .then(
+            // end and begin a block on the provider, starting consumer 3
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
+        )
+        .then(
+            // check the ValidatorSetHasExistedKeyAssignmentInv
+            all {
+                assert(ValidatorSetHasExistedKeyAssignmentInv),
+                // action does not matter
+                VotingPowerChange("node1", 50)
+            }
+        )
+        
 }
