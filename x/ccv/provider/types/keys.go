@@ -164,7 +164,8 @@ const (
 	// it allocated to the consumer rewards pool
 	ConsumerRewardsAllocationBytePrefix
 
-	// ConsumerCommissionRatePrefix is the byte prefix used when store a validator commission rate
+	// ConsumerCommissionRatePrefix is the byte prefix used when storing a validator a per-consumer  chain commission rate
+	// for a validator address
 	ConsumerCommissionRatePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go

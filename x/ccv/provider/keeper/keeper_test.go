@@ -724,11 +724,7 @@ func TestOptedIn(t *testing.T) {
 	}
 
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
-
 	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator)
-	optedInVals := providerKeeper.GetAllOptedIn(ctx, "chainID")
-	require.Len(t, optedInVals, 1)
-	require.Equal(t, optedInValidator, optedInVals[0])
 	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
 	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr))
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))

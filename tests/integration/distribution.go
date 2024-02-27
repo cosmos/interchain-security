@@ -945,7 +945,7 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 	}
 
 	// opt the validators in to verify that they charge
-	// to their delegators the custom commission for the consumer chain
+	// a custom commission rate on the consumer chain
 	for _, v := range s.providerChain.Vals.Validators {
 		consAddr := sdk.ConsAddress(v.Address)
 		provAddr := providertypes.NewProviderConsAddress(consAddr)
@@ -953,17 +953,16 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 		val, found := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
 		s.Require().True(found)
 
-		// check that no commission is set for the validator
+		// check that no commission rate is set for the validator
 		s.Require().Equal(val.Commission.Rate, math.LegacyZeroDec())
 
-		// set a custom commission of 100%
+		// set a custom commission rate of 100%
 		providerKeeper.SetConsumerCommissionRate(
 			s.providerCtx(),
 			chainID,
 			provAddr,
 			sdk.OneDec(),
 		)
-
 	}
 
 	for _, tc := range testCases {

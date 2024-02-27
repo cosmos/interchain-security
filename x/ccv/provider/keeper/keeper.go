@@ -1248,8 +1248,8 @@ func (k Keeper) SetToBeOptedIn(
 	store.Set(types.ToBeOptedInKey(chainID, providerAddr), []byte{})
 }
 
-// SetConsumerCommissionRate sets a commission rate for the given
-// consumer chain and validator address
+// SetConsumerCommissionRate sets a per-consumer chain commission rate
+// for the given validator address
 func (k Keeper) SetConsumerCommissionRate(
 	ctx sdk.Context,
 	chainID string,
@@ -1286,6 +1286,8 @@ func (k Keeper) GetConsumerCommissionRate(
 	return cr, true
 }
 
+// DeleteConsumerCommissionRate the per-consumer chain commission rate
+// associated to the given validator address
 func (k Keeper) DeleteConsumerCommissionRate(
 	ctx sdk.Context,
 	chainID string,
