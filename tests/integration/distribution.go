@@ -939,8 +939,8 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 		{
 			name:         "expect tokens to be allocated evenly between validators",
 			votes:        []abci.VoteInfo{votes[0], votes[1]},
-			tokens:       sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 3))},
-			expAllocated: sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 3))},
+			tokens:       sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))},
+			expAllocated: sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))},
 		},
 	}
 
@@ -996,7 +996,7 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 					)
 					s.Require().Equal(rewardsPerVal, rewards.Rewards)
 
-					// send tokens to the distribution module to allow the rewards withdrawing
+					// send rewards to the distribution module
 					valRewardsTrunc, _ := rewards.Rewards.TruncateDecimal()
 					err := bankKeeper.SendCoinsFromAccountToModule(
 						ctx,
@@ -1014,6 +1014,9 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 
 					// check that the withdrawn coins is equal to the entire reward amount
 					s.Require().Equal(withdrawnCoins, valRewardsTrunc)
+
+					// check that validators get rewards in their balance
+					s.Require().Equal(withdrawnCoins, bankKeeper.GetAllBalances(ctx, sdk.AccAddress(valAddr)))
 				}
 			} else {
 				for _, v := range tc.votes {
