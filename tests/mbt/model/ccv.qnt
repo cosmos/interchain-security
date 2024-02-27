@@ -545,7 +545,7 @@ module ccv {
             Err(err)
         } else {
             // for each consumer we just set to running, set its initial validator set to be the current one on the provider...
-            val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorPowers
+            val valSet = providerStateAfterConsumerAdvancement.chainState.votingPowerHistory.head()
             val newConsumerStateMap =
                 tmpState.consumerStates.keys().mapBy(
                     (consumer) => 

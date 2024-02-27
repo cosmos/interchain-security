@@ -222,7 +222,7 @@ module ccv_utils {
                         // apply key assignment to the current validator set
                         validatorSet: providerState.applyKeyAssignmentToValSet(
                             consumer, 
-                            providerState.chainState.currentValidatorPowers
+                            providerState.chainState.votingPowerHistory.head()
                         ),
                         sendingTime: sendingTimestamp,
                         timeoutTime: sendingTimestamp + ccvTimeout,

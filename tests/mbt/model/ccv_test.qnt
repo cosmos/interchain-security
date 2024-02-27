@@ -158,7 +158,8 @@ module ccv_test {
                 id: 0,
                 validatorSet: Map(),
                 sendingTime: 0,
-                timeoutTime: CcvTimeout.get(sender)
+                timeoutTime: CcvTimeout.get(sender),
+                downtimeSlashAcks: List(),
                 })
             ))
         )
@@ -187,7 +188,8 @@ module ccv_test {
                     id: 0,
                     validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorPowers,
                     sendingTime: 0,
-                    timeoutTime: CcvTimeout.get("sender")
+                    timeoutTime: CcvTimeout.get("sender"),
+                    downtimeSlashAcks: List()
                 })
             )
         )
