@@ -20,6 +20,7 @@ import (
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cosmos/interchain-security/v4/testutil/integration"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -147,6 +148,8 @@ func RunItfTrace(t *testing.T, path string) {
 		trustingPeriodPerChain[ChainId(consumer)] = time.Duration(params["TrustingPeriodPerChain"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 		ccvTimeoutPerChain[ChainId(consumer)] = time.Duration(params["CcvTimeout"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 	}
+	downtimeSlashPercentage := sdk.NewDec(params["DowntimeSlashPercentage"].Value.(int64))
+	doubleSignSlashPercentage := sdk.NewDec(params["DoubleSignSlashPercentage"].Value.(int64))
 
 	modelParams := ModelParams{
 		VscTimeout:              vscTimeout,
@@ -374,6 +377,28 @@ func RunItfTrace(t *testing.T, path string) {
 
 			error := driver.AssignKey(ChainId(consumerChain), int64(valIndex), protoPubKey)
 			require.NoError(t, error, "Error assigning key")
+		case "ConsumerInitiatedSlash":
+			consumerChain := lastAction["consumerChain"].Value.(string)
+			validator := lastAction["validator"].Value.(string)
+			vscId := lastAction["vscId"].Value.(int64)
+			isDowntime := lastAction["isDowntime"].Value.(bool)
+			t.Log("ConsumerInitiatedSlash", consumerChain, validator, vscId, isDowntime)
+
+			valPubKey, _ := consumerAddrNamesToPrivVals[validator].GetPubKey()
+			valConsAddr := sdktypes.ConsAddress(valPubKey.Address().Bytes())
+
+			slashFraction := doubleSignSlashPercentage
+			if isDowntime {
+				slashFraction = downtimeSlashPercentage
+			}
+
+			driver.RequestSlash(
+				ChainId(consumerChain),
+				valConsAddr,
+				isDowntime,
+				uint64(vscId),
+				slashFraction,
+			)
 
 		default:
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
