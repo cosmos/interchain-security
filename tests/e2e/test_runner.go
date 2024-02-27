@@ -12,6 +12,7 @@ const (
 	TEST_RESULT_SKIP     = "SKIP"
 	TEST_STATUS_STARTED  = "STARTED"
 	TEST_STATUS_FINISHED = "FINISHED"
+	TEST_STATUS_NOTRUN   = "NO RUN"
 )
 
 // A test runner drives the execution of test cases
@@ -47,7 +48,6 @@ func (res *TestResult) Passed() {
 	res.Duration = time.Since(res.StartTime)
 	res.Result = TEST_RESULT_PASS
 	res.Status = TEST_STATUS_FINISHED
-
 }
 
 func (res *TestResult) Error() {
@@ -116,7 +116,7 @@ func CreateTestRunner(config TestConfig, steps []Step, target ExecutionTarget, v
 		steps:   steps,
 		config:  config,
 		verbose: verbose,
-		result:  TestResult{},
+		result:  TestResult{Status: TEST_STATUS_NOTRUN},
 	}
 	return nil, tr
 }
@@ -139,12 +139,14 @@ func (tr *TestRunner) Report() string {
 ------------------------------------------
 Test name : %s
 Target: %s
+- Status: %s
 - Result: %s
 - Duration: %s
 - StartTime: %s
 ------------------------------------------`,
 		tr.config.name,
 		tr.target.Info(),
+		tr.result.Status,
 		tr.result.Result,
 		tr.result.Duration,
 		tr.result.StartTime,

@@ -166,6 +166,7 @@ func pullDockerImage(tag string, targetConfig TargetConfig) (string, error) {
 	}
 
 	fmt.Println("No matching local image found for", tag, "-> Checking registry")
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
 	cmd := exec.Command("docker", "pull", "--platform", "linux/amd64", imageURL)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

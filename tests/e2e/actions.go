@@ -636,6 +636,7 @@ func getTransformParameter(consumerVersion string) (string, error) {
 
 	for _, version := range keys {
 		for _, breakageHash := range transformParams[version] {
+			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
 			cmd := exec.Command("git", "merge-base", "--is-ancestor", breakageHash, consumerVersion)
 			fmt.Println("running ", cmd)
 			out, err := cmd.CombinedOutput()
