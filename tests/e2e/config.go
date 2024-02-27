@@ -399,7 +399,6 @@ func SlashThrottleTestConfig() TestConfig {
 }
 
 // CompatibilityTestConfig returns a test configuarion for a given version of a consumer and provider
-// The version must match
 func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig {
 	// Base configuraiton is the default
 	testCfg := DefaultTestConfig()

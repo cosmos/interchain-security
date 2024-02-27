@@ -9,6 +9,9 @@
 
 ARG PROVIDER_IMAGE
 ARG CONSUMER_IMAGE
+
+# TRANSFORMER_IMAGE is the ICS image containing the version of the consumer executable to be used
+# to perform the transformation of the consumer genesis exported from the provider.
 ARG TRANSFORMER_IMAGE
 
 # The image from where the consumer implementation will be used

@@ -576,21 +576,18 @@ func needsGenesisTransform(cfg TargetConfig) bool {
 	}
 
 	if !semver.IsValid(consumerVersion) || !semver.IsValid(providerVersion) {
-		fmt.Println("unable to identify the need for genesis transformation: invalid sem-version", consumerVersion, providerVersion)
+		fmt.Printf("unable to identify the need for genesis transformation: invalid sem-version: consumer='%s', provider='%s'",
+			consumerVersion, providerVersion)
 		return false
 	}
 
 	breakages := []string{"v3.0.0", "v3.3.0", "v4.0.0"}
 	for _, breakage := range breakages {
-		if semver.Compare(consumerVersion, breakage) < 0 && semver.Compare(providerVersion, breakage) >= 0 {
+		if (semver.Compare(consumerVersion, breakage) < 0 && semver.Compare(providerVersion, breakage) >= 0) ||
+			(semver.Compare(providerVersion, breakage) < 0 && semver.Compare(consumerVersion, breakage) >= 0) {
 			fmt.Println("genesis transformation needed for versions:", providerVersion, consumerVersion)
 			return true
 		}
-		if semver.Compare(providerVersion, breakage) < 0 && semver.Compare(consumerVersion, breakage) >= 0 {
-			fmt.Println("genesis transformation needed for versions:", providerVersion, consumerVersion)
-			return true
-		}
-
 	}
 	fmt.Println("NO genesis transformation needed for versions:", providerVersion, consumerVersion)
 	return false

@@ -33,24 +33,36 @@ type TestResult struct {
 	Result    string
 }
 
-func (result *TestResult) Started() {
-	result.StartTime = time.Now()
-	result.Status = TEST_STATUS_STARTED
+func (res *TestResult) Started() {
+	if res.Status != "" {
+		return
+	}
+	res.StartTime = time.Now()
+	res.Status = TEST_STATUS_STARTED
 }
 
 func (res *TestResult) Failed() {
+	if res.Result != "" {
+		panic("Test result already set")
+	}
 	res.Duration = time.Since(res.StartTime)
 	res.Result = TEST_RESULT_FAIL
 	res.Status = TEST_STATUS_FINISHED
 }
 
 func (res *TestResult) Passed() {
+	if res.Result != "" {
+		panic("Test result already set")
+	}
 	res.Duration = time.Since(res.StartTime)
 	res.Result = TEST_RESULT_PASS
 	res.Status = TEST_STATUS_FINISHED
 }
 
 func (res *TestResult) Error() {
+	if res.Result != "" {
+		panic("Test result already set")
+	}
 	res.Duration = time.Since(res.StartTime)
 	res.Result = TEST_RESULT_ERROR
 	res.Status = TEST_STATUS_FINISHED
