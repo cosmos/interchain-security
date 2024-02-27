@@ -2,7 +2,7 @@
 
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
-LATEST_RELEASE := $(shell git -c "versionsort.suffix=-lsm" tag -l --sort -v:refname "v*.?" "v*.?"-lsm "v*.??" "v*.??"-lsm | head -n 1)
+LATEST_RELEASE := $(shell git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm | head -n 1)
 
 # don't override user values
 ifeq (,$(VERSION))
