@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
