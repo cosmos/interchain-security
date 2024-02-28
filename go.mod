@@ -102,7 +102,7 @@ require (
 	github.com/gtank/merlin v0.1.1 // indirect
 	github.com/gtank/ristretto255 v0.1.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-getter v1.7.1 // indirect
+	github.com/hashicorp/go-getter v1.7.3 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
@@ -173,29 +173,53 @@ require (
 )
 
 require (
+	cosmossdk.io/collections v0.4.0 // indirect
 	cosmossdk.io/log v1.3.1 // indirect
+	cosmossdk.io/store v1.0.2 // indirect
+	cosmossdk.io/x/evidence v0.1.0 // indirect
+	cosmossdk.io/x/feegrant v0.1.0 // indirect
+	cosmossdk.io/x/tx v0.13.0 // indirect
+	cosmossdk.io/x/upgrade v0.1.1 // indirect
+	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/cockroachdb/errors v1.11.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v1.1.0 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
+	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
+	github.com/cosmos/cosmos-db v1.0.0 // indirect
+	github.com/cosmos/ibc-go/modules/capability v1.0.0 // indirect
 	github.com/cosmos/ibc-go/v8 v8.1.0 // indirect
+	github.com/emicklei/dot v1.6.1 // indirect
+	github.com/fatih/color v1.15.0 // indirect
 	github.com/getsentry/sentry-go v0.27.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
+	github.com/hashicorp/go-hclog v1.5.0 // indirect
+	github.com/hashicorp/go-metrics v0.5.2 // indirect
+	github.com/hashicorp/go-plugin v1.5.2 // indirect
+	github.com/hashicorp/yamux v0.1.1 // indirect
+	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a // indirect
+	github.com/oklog/run v1.1.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/rs/zerolog v1.32.0 // indirect
+	github.com/sagikazarmark/locafero v0.4.0 // indirect
+	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/sourcegraph/conc v0.3.0 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.uber.org/mock v0.2.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect
+	gotest.tools/v3 v3.5.1 // indirect
 )
 
 // following versions might cause unexpected behavior
