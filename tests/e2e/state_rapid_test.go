@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"pgregory.net/rapid"
 )
 

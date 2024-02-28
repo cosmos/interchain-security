@@ -3,7 +3,7 @@ package integration
 import (
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	"cosmossdk.io/math"
 

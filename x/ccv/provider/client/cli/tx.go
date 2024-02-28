@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"

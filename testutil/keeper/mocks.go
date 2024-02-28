@@ -17,11 +17,11 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types4 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types5 "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	types6 "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	types7 "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	types8 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	types5 "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	types6 "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	types7 "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	types8 "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	exported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
 )
 

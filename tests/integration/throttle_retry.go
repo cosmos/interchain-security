@@ -3,7 +3,7 @@ package integration
 import (
 	"time"
 
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 

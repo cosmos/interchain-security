@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 

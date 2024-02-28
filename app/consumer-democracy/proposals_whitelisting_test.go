@@ -3,7 +3,7 @@ package app_test
 import (
 	"testing"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
 
 	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer-democracy"
