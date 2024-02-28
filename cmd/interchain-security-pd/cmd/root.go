@@ -27,9 +27,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 
+	"cosmossdk.io/log"
 	dbm "github.com/cometbft/cometbft-db"
 	tmcfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/log"
 
 	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
 	providerApp "github.com/cosmos/interchain-security/v4/app/provider"

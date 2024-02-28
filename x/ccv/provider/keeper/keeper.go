@@ -15,13 +15,13 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"

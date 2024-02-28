@@ -10,8 +10,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	evidencetypes "cosmossdk.io/x/evidence/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"

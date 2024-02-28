@@ -13,8 +13,8 @@ import (
 	"github.com/cosmos/ibc-go/v8/testing/mock"
 	"github.com/stretchr/testify/suite"
 
+	store "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
