@@ -82,7 +82,6 @@ import (
 
 	// add mint
 	"cosmossdk.io/x/upgrade"
-	upgradeclient "cosmossdk.io/x/upgrade/client"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	mint "github.com/cosmos/cosmos-sdk/x/mint"
@@ -134,8 +133,6 @@ var (
 		sdkgov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
 				paramsclient.ProposalHandler,
-				upgradeclient.LegacyProposalHandler,
-				upgradeclient.LegacyCancelProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
