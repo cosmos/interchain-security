@@ -148,7 +148,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
-	if ctx.BlockHeight()%int64(k.GetBlocksPerEpoch(ctx)) == 0 {
+	if ctx.BlockHeight()%k.GetBlocksPerEpoch(ctx) == 0 {
 		// only queue and send VSCPackets at the boundaries of an epoch
 
 		// collect validator updates
@@ -217,14 +217,14 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
-	// Get the bonded validators from the staking module.
+	// get the bonded validators from the staking module
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
-		currentEpochValidators := k.GetAllEpochValidators(ctx, chain.ChainId)
-		nextEpochValidators := k.ComputeNextEpochValidators(ctx, chain.ChainId, bondedValidators)
-		valUpdates := DiffValidators(currentEpochValidators, nextEpochValidators)
-		k.ResetCurrentEpochValidators(ctx, chain.ChainId, nextEpochValidators)
+		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
+		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators)
+		valUpdates := DiffValidators(currentValidators, nextValidators)
+		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations

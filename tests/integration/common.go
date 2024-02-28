@@ -627,8 +627,8 @@ func (s *CCVTestSuite) mustGetStakingValFromTmVal(tmVal tmtypes.Validator) (stak
 }
 
 // nextBlocks moves `chain` forward by a `numberOfBlocks` blocks
-func nextBlocks(chain *ibctesting.TestChain, numberOfBlocks uint32) {
-	for i := uint32(0); i < numberOfBlocks; i++ {
+func nextBlocks(chain *ibctesting.TestChain, numberOfBlocks int64) {
+	for i := int64(0); i < numberOfBlocks; i++ {
 		chain.NextBlock()
 	}
 }

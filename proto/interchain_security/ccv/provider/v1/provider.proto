@@ -190,7 +190,7 @@ message Params {
       [ (gogoproto.nullable) = false ];
 
   // The number of blocks that comprise an epoch.
-  uint32 blocks_per_epoch = 10;
+  int64 blocks_per_epoch = 10;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators
@@ -299,13 +299,13 @@ message ConsumerAddrsToPrune {
   AddressList consumer_addrs = 3;
 }
 
-// EpochValidator is used to facilitate epoch-based transitions. It contains relevant info for
-// a validator that is opted in, in an epoch, on a consumer chain.
-message EpochValidator {
+// ConsumerValidator is used to facilitate epoch-based transitions. It contains relevant info for
+// a validator that is expected to validate on a consumer chain during an epoch.
+message ConsumerValidator {
   // validator's consensus address on the provider chain
   bytes provider_cons_addr = 1;
   // voting power the validator has during this epoch
   int64 power = 2;
   // public key the validator uses on the consumer chain during this epoch
-  bytes consumer_public_key = 3;
+  tendermint.crypto.PublicKey consumer_public_key = 3;
 }

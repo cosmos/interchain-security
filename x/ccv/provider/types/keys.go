@@ -145,8 +145,8 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
-	// EpochBytePrefix is the byte prefix used when storing for each consumer chain all the opted in validators in this epoch
-	EpochBytePrefix
+	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer validators in this epoch
+	ConsumerValidatorBytePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -520,9 +520,9 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 	return proposalID, nil
 }
 
-// EpochKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func EpochKey(chainID string, providerAddr []byte) []byte {
-	prefix := ChainIdWithLenKey(EpochBytePrefix, chainID)
+// ConsumerValidatorKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
+	prefix := ChainIdWithLenKey(ConsumerValidatorBytePrefix, chainID)
 	return append(prefix, providerAddr...)
 }
 

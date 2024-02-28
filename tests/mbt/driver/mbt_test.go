@@ -247,7 +247,7 @@ func RunItfTrace(t *testing.T, path string) {
 
 			// going through `blocksPerEpoch` blocks to take into account an epoch
 			blocksPerEpoch := driver.providerKeeper().GetBlocksPerEpoch(driver.providerCtx())
-			for i := uint32(0); i < blocksPerEpoch; i = i + 1 {
+			for i := int64(0); i < blocksPerEpoch; i = i + 1 {
 				driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 			}
 			for _, consumer := range driver.runningConsumers() {

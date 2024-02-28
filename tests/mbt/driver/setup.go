@@ -373,8 +373,8 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	nextValidators := s.providerKeeper().ComputeNextEpochValidators(s.providerCtx(), string(consumerChainId), stakingValidators)
-	s.providerKeeper().ResetCurrentEpochValidators(s.providerCtx(), string(consumerChainId), nextValidators)
+	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators)
+	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
 
 	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),

@@ -69,7 +69,7 @@ func NewParams(
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
 	consumerRewardDenomRegistrationFee sdk.Coin,
-	blocksPerEpoch uint32,
+	blocksPerEpoch int64,
 ) Params {
 	return Params{
 		TemplateClient:                     cs,
@@ -144,7 +144,7 @@ func (p Params) Validate() error {
 	if err := ValidateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
 		return fmt.Errorf("consumer reward denom registration fee is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidatePositiveUint32(p.BlocksPerEpoch); err != nil {
+	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerEpoch); err != nil {
 		return fmt.Errorf("blocks per epoch have to be positive: %s", err)
 	}
 	return nil
@@ -161,7 +161,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
-		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveUint32),
+		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

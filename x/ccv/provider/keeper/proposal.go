@@ -281,11 +281,11 @@ func (k Keeper) MakeConsumerGenesis(
 		bondedValidators = append(bondedValidators, val)
 	}
 
-	nextValidators := k.ComputeNextEpochValidators(ctx, chainID, bondedValidators)
-	k.ResetCurrentEpochValidators(ctx, chainID, nextValidators)
+	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
+	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
-	// Apply key assignments to the initial valset.
-	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
+	// get the initial updates with the latest set consumer public keys
+	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
