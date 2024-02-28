@@ -1645,7 +1645,7 @@ func (tr TestConfig) invokeDowntimeSlash(action DowntimeSlashAction, target Exec
 	// Bring validator down
 	tr.setValidatorDowntime(action.Chain, action.Validator, true, target, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.Chain, 10, 3*time.Minute)
+	tr.waitBlocks(action.Chain, 11, 3*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.Chain, action.Validator, false, target, verbose)
 }
