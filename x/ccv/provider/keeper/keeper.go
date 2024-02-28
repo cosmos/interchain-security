@@ -1259,7 +1259,7 @@ func (k Keeper) SetConsumerCommissionRate(
 	store := ctx.KVStore(k.storeKey)
 	bz, err := commissionRate.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("consumer commission rate marshalling failed:%s", err))
+		panic(fmt.Errorf("consumer commission rate marshalling failed: %s", err))
 	}
 
 	store.Set(types.ConsumerCommissionRateKey(chainID, providerAddr), bz)
