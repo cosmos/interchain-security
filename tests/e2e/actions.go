@@ -615,16 +615,19 @@ func getTransformParameter(consumerVersion string) (string, error) {
 
 	// breakage 3: split of genesis + delay_period
 	breakage_retry_delay := "88499b7c650ea0fb2c448af2b182ad5fee94d795"
-	// is consumer before v2.x
-	// -- if provider is v3.3.0 (T)
+
+	// mapping of the accepted parameter values of the `genesis transform` command
+	// to the related git refs introducing a breakage
 	transformParams := map[string][]string{
 		"v2.x":   {breakage_prehash},
 		"v3.3.x": {breakage_splitgenesisMain, breakage_splitgenesisV33x},
 		"v4.x":   {breakage_retry_delay},
 	}
 
+	// set default consumer target version to "v4.x"
+	// and iterate in order of breakage history [oldest first] to identify
+	// the "--to" target for consumer version used
 	targetVersion := "v4.x"
-	// iterate in order of breakage history [oldest first] to identify the "--to" target for consumer
 	keys := make([]string, 0, len(transformParams))
 	for k := range transformParams {
 		keys = append(keys, k)
@@ -633,12 +636,13 @@ func getTransformParameter(consumerVersion string) (string, error) {
 
 	for _, version := range keys {
 		for _, breakageHash := range transformParams[version] {
+			// Check if the 'breakage' is an ancestor of the 'consumerVersion'
 			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
 			cmd := exec.Command("git", "merge-base", "--is-ancestor", breakageHash, consumerVersion)
 			fmt.Println("running ", cmd)
 			out, err := cmd.CombinedOutput()
 			if err == nil {
-				// breakage is already part of the consumer version  -> goto next breakage
+				// breakage is already part of the consumer version -> goto next breakage
 				fmt.Println(" consumer >= breakage ", transformParams[version], " ... going to next one")
 				targetVersion = version
 				break
@@ -648,14 +652,14 @@ func getTransformParameter(consumerVersion string) (string, error) {
 				if rc.ExitCode() != 1 {
 					return "", fmt.Errorf("error identifying transform parameter '%v': %s", err, string(out))
 				}
-				// not an ancestor -- ignore this breakage a
+				// not an ancestor -- ignore this breakage
 				fmt.Println("breakage :", transformParams[version], " is not an ancestor of version ", version)
 				continue
 			}
 			return "", fmt.Errorf("unexpected error when running '%v': %v", cmd, err) // unable to get return code
 		}
 	}
-	// consumer > latest known breakage
+	// consumer > latest known breakage (use default target version 'v4.x')
 	return fmt.Sprintf("--to=%s", targetVersion), nil
 }
 
