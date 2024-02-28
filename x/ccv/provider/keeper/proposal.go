@@ -277,7 +277,7 @@ func (k Keeper) MakeConsumerGenesis(
 			Power:  p.Power,
 		})
 
-		// gather all the bonded validators in order to construct the current epoch validators for consumer chain `chainID`
+		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
 		bondedValidators = append(bondedValidators, val)
 	}
 

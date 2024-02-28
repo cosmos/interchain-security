@@ -17,7 +17,7 @@ func (k Keeper) SetConsumerValidator(
 	store := ctx.KVStore(k.storeKey)
 	bz, err := validator.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("failed to marshal EpochValidator: %w", err))
+		panic(fmt.Errorf("failed to marshal ConsumerValidator: %w", err))
 	}
 
 	store.Set(types.ConsumerValidatorKey(chainID, validator.ProviderConsAddr), bz)

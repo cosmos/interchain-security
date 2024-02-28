@@ -358,7 +358,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 
 	var stakingValidators []stakingtypes.Validator
 
-	// set up the current epoch validators by utilizing the initial validator set
+	// set up the current consumer validators by utilizing the initial validator set
 	for _, val := range consumerGenesisForProvider.Provider.InitialValSet {
 		pubKey := val.PubKey
 		consAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(pubKey)

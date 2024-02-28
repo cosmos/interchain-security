@@ -105,7 +105,7 @@ func createConsumerValidator(index int, power int64, seed int) (types.ConsumerVa
 	}, publicKey
 }
 
-func TestComputeNextEpochValidators(t *testing.T) {
+func TestComputeNextEpochConsumerValSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -265,7 +265,7 @@ func TestDiffEdgeCases(t *testing.T) {
 	require.Equal(t, expectedUpdates, actualUpdates)
 }
 
-func TestResetCurrentEpochValidators(t *testing.T) {
+func TestSetConsumerValSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
