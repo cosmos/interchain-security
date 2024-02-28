@@ -97,14 +97,18 @@ func (k Keeper) ComputeNextEpochValidators(
 		consAddr, err := val.GetConsAddr()
 		if err != nil {
 			// this should never happen but is recoverable if we exclude this validator from the `nextValidators`
-			k.Logger(ctx).Error("could not get consensus address of validator (%+v): %w", val, err)
+			k.Logger(ctx).Error("could not get consensus address of validator",
+				"validator", val.GetOperator().String(),
+				"error", err)
 			continue
 		}
 		nextConsumerPublicKey, foundConsumerPublicKey := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
 		if !foundConsumerPublicKey {
 			// if no consumer key assigned then use the validator's key itself
-			k.Logger(ctx).Info("could not retrieve public key for validator (%+v) on consumer chain (%s) because"+
-				" the validator did not assign a new consumer key", val, chainID)
+			k.Logger(ctx).Info("could not retrieve public key for validator on consumer chain because"+
+				" the validator did not assign a new consumer key",
+				"validator", val.GetOperator().String(),
+				"chainID", chainID)
 			nextConsumerPublicKey, err = val.TmConsPublicKey()
 			if err != nil {
 				// this should never happen and might not be recoverable because without the public key
@@ -117,7 +121,9 @@ func (k Keeper) ComputeNextEpochValidators(
 		nextConsumerPublicKeyBytes, err := nextConsumerPublicKey.Marshal()
 		if err != nil {
 			// this should never happen but is recoverable if we exclude this validator from the `nextValidators`
-			k.Logger(ctx).Error("could not marshal consumer public key (%+v): %w", nextConsumerPublicKey, err)
+			k.Logger(ctx).Error("could not marshal consumer public key",
+				"consumer public key", nextConsumerPublicKey,
+				"error", err)
 			continue
 		}
 
