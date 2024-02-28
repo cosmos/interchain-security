@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -75,7 +76,7 @@ func TestProviderProposalHandler(t *testing.T) {
 				Title:       "title",
 				Description: "desc",
 				Recipient:   "",
-				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10))),
+				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", math.NewInt(10))),
 			},
 		},
 	}

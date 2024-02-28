@@ -24,10 +24,10 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 	if !found || val.IsJailed() {
 		// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
 		// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
-		return sdktypes.ZeroInt()
+		return math.ZeroInt()
 	} else {
 		// Otherwise, return the staking keeper's LastValidatorPower value.
-		return sdktypes.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator()))
+		return math.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator()))
 	}
 }
 
@@ -98,19 +98,19 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) math.Int {
 	strFrac := k.GetSlashMeterReplenishFraction(ctx)
 	// MustNewDecFromStr should not panic, since the (string representation) of the slash meter replenish fraction
 	// is validated in ValidateGenesis and anytime the param is mutated.
-	decFrac := sdktypes.MustNewDecFromStr(strFrac)
+	decFrac := math.LegacyMustNewDecFromStr(strFrac)
 
 	// Compute allowance in units of tendermint voting power (integer),
 	// noting that total power changes over time
 	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
 
-	roundedInt := sdktypes.NewInt(decFrac.MulInt(totalPower).RoundInt64())
+	roundedInt := math.NewInt(decFrac.MulInt(totalPower).RoundInt64())
 	if roundedInt.IsZero() {
 		k.Logger(ctx).Info("slash meter replenish fraction is too small " +
 			"to add any allowance to the meter, considering bankers rounding")
 
 		// Return non-zero allowance to guarantee some slash packets are eventually handled
-		return sdktypes.NewInt(1)
+		return math.NewInt(1)
 	}
 	return roundedInt
 }
@@ -127,7 +127,7 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) math.Int {
 		// there is no deletion method exposed, so nil bytes would indicate something is very wrong.
 		panic("slash meter not set")
 	}
-	value := sdktypes.ZeroInt()
+	value := math.ZeroInt()
 	err := value.Unmarshal(bz)
 	if err != nil {
 		// We should have obtained value bytes that were serialized in SetSlashMeter,
@@ -147,12 +147,12 @@ func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value math.Int) {
 	//
 	// Explanation: slash meter replenish fraction is validated to be in range of [0, 1],
 	// and MaxMeterValue = MaxAllowance = MaxReplenishFrac * MaxTotalVotingPower = 1 * MaxTotalVotingPower.
-	if value.GT(sdktypes.NewInt(tmtypes.MaxTotalVotingPower)) {
+	if value.GT(math.NewInt(tmtypes.MaxTotalVotingPower)) {
 		panic("slash meter value cannot be greater than tendermint's MaxTotalVotingPower")
 	}
 	// Further, HandleThrottleQueues should never subtract more than MaxTotalVotingPower from the meter,
 	// since we cannot slash more than an entire validator set. So MinMeterValue = -1 * MaxTotalVotingPower.
-	if value.LT(sdktypes.NewInt(-tmtypes.MaxTotalVotingPower)) {
+	if value.LT(math.NewInt(-tmtypes.MaxTotalVotingPower)) {
 		panic("slash meter value cannot be less than negative tendermint's MaxTotalVotingPower")
 	}
 	store := ctx.KVStore(k.storeKey)

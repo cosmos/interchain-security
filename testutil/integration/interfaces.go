@@ -91,11 +91,11 @@ type DemocConsumerApp interface {
 type TestStakingKeeper interface {
 	ccvtypes.StakingKeeper
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc types.BondStatus,
-		validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
-	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec,
+		validator types.Validator, subtractAccount bool) (newShares math.LegacyDec, err error)
+	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount math.LegacyDec,
 	) (time.Time, error)
 	BeginRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress,
-		sharesAmount sdk.Dec) (completionTime time.Time, err error)
+		sharesAmount math.LegacyDec) (completionTime time.Time, err error)
 	GetUnbondingDelegationByUnbondingID(ctx sdk.Context, id uint64,
 	) (ubd types.UnbondingDelegation, found bool)
 	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress,
@@ -137,11 +137,11 @@ type TestEvidenceKeeper interface {
 }
 
 type TestDistributionKeeper interface {
-	GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
+	GetFeePoolCommunityCoins(ctx sdk.Context) math.LegacyDecCoins
 	GetDistributionAccount(ctx sdk.Context) authtypes.ModuleAccountI
 	GetValidatorOutstandingRewards(ctx sdk.Context,
 		val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards)
-	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
+	GetCommunityTax(ctx sdk.Context) (percent math.LegacyDec)
 }
 
 type TestMintKeeper interface {

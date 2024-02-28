@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"sort"
 
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
@@ -70,7 +71,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 
 				// Increase the power of this validator (to bring it in the top 95%)
 				delAddr := suite.providerChain.SenderAccount.GetAddress()
-				bondAmt := sdk.NewInt(100).Mul(sdk.DefaultPowerReduction)
+				bondAmt := math.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
 				suite.providerChain.NextBlock()
@@ -109,7 +110,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 
 				// Increase the power of this validator (to bring it in the top 95%)
 				delAddr := suite.providerChain.SenderAccount.GetAddress()
-				bondAmt := sdk.NewInt(100).Mul(sdk.DefaultPowerReduction)
+				bondAmt := math.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
 				suite.providerChain.NextBlock()

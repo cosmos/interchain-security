@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -30,11 +31,11 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 
 	// Setup mock account balance
 	fracParam := consumerKeeper.GetConsumerRedistributionFrac(ctx)
-	fracDec, err := sdk.NewDecFromStr(fracParam)
+	fracDec, err := math.LegacyNewDecFromStr(fracParam)
 	require.NoError(t, err)
 	feeAmount := sdk.Coin{
 		Denom:  "MOCK",
-		Amount: sdk.NewInt(100),
+		Amount: math.NewInt(100),
 	}
 	feeAmountCoins := sdk.Coins([]sdk.Coin{feeAmount})
 	feeAmountDec := sdk.NewDecCoinsFromCoins(feeAmountCoins...)

@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -58,7 +59,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 
 	// we assume that all validators have the same number of initial tokens
 	validator, _ := s.getValByIdx(0)
-	initialTokens := sdk.NewDecFromInt(validator.GetTokens())
+	initialTokens := math.LegacyNewDecFromInt(validator.GetTokens())
 
 	err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), *misb)
 	s.NoError(err)
@@ -74,7 +75,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 
 		validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
 		slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
-		actualTokens := sdk.NewDecFromInt(validator.GetTokens())
+		actualTokens := math.LegacyNewDecFromInt(validator.GetTokens())
 		s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 	}
 }

@@ -188,26 +188,26 @@ func GetMocksForSlashValidator(
 		mocks.MockStakingKeeper.EXPECT().
 			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ math.LegacyDec) math.Int {
+					sum := math.NewInt(0)
 					for _, r := range undelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
 					return sum
 				}).AnyTimes(),
 		mocks.MockStakingKeeper.EXPECT().
 			SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ math.LegacyDec) math.Int {
+					sum := math.NewInt(0)
 					for _, r := range redelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
 					return sum
 				}).AnyTimes(),

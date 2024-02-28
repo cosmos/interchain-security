@@ -71,9 +71,19 @@ cosmossdk.io/x/upgrade/client -> no longer exists and not needed
 
 
 ### Math search & replace
-* use sdk.LegacyDec instead of sdk.Dec
+* use `math.LegacyDec` instead of `sdk.Dec` and other types
+	* eg. `sdk.NewDecFromStr`, `sdktypes.NewDecFromStr`, `sdk.NewDec`
+	* `sdk.ZeroDec` -> `math.LegacyZeroDec`
+	* `sdk.NewDecFromInt` -> `math.LegacyNewDecFromInt` 
+	* `sdk.MustNewDecFromStr` -> `math.LegacyMustNewDecFromStr`
+	* `sdk.NewDecFromInt` -> `math.LegacyNewDecFromInt`
+	* `sdk.OneDec` -> `math.LegacyOneDec`
+	* `sdk.NewDecWithPrec` -> `math.LegacyNewDecWithPrec`
 	* also update all function defintions that are using them
-* use math.NewInt instead of sdk.NewInt
+
+* use `math.NewInt` instead of `sdk.NewInt`
+	* `sdktypes.NewInt`,
+	* `sdktypes.ZeroInt` -> `math.ZeroInt`
 	* also update all dunction definitions that are using them
 
 

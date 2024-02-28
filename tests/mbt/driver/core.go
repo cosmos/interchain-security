@@ -150,7 +150,7 @@ func (s *Driver) consumerValidatorSet(chain ChainId) []consumertypes.CrossChainV
 func (s *Driver) delegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
@@ -164,7 +164,7 @@ func (s *Driver) delegate(val, amt int64) {
 func (s *Driver) undelegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)

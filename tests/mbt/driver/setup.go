@@ -114,7 +114,7 @@ func getAppBytesAndSenders(
 		bal := banktypes.Balance{
 			Address: acc.GetAddress().String(),
 			Coins: sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom,
-				sdk.NewIntFromUint64(INITIAL_ACCOUNT_BALANCE))),
+				math.NewIntFromUint64(INITIAL_ACCOUNT_BALANCE))),
 		}
 
 		accounts = append(accounts, acc)
@@ -137,16 +137,16 @@ func getAppBytesAndSenders(
 	delegations := make([]stakingtypes.Delegation, 0, len(nodes))
 
 	// Sum bonded is needed for BondedPool account
-	sumBonded := sdk.NewInt(0)
+	sumBonded := math.NewInt(0)
 	initValPowers := []abcitypes.ValidatorUpdate{}
 
 	for i, val := range nodes {
 		_, valSetVal := initialValSet.GetByAddress(val.Address.Bytes())
 		var tokens math.Int
 		if valSetVal == nil {
-			tokens = sdk.NewInt(0)
+			tokens = math.NewInt(0)
 		} else {
-			tokens = sdk.NewInt(valSetVal.VotingPower)
+			tokens = math.NewInt(valSetVal.VotingPower)
 		}
 
 		sumBonded = sumBonded.Add(tokens)
@@ -160,7 +160,7 @@ func getAppBytesAndSenders(
 			log.Panicf("error getting pubkeyAny for val %v", val)
 		}
 
-		delShares := sdk.NewDec(tokens.Int64()) // as many shares as tokens
+		delShares := math.LegacyNewDec(tokens.Int64()) // as many shares as tokens
 
 		validator := stakingtypes.Validator{
 			OperatorAddress: sdk.ValAddress(val.Address).String(),
@@ -174,8 +174,8 @@ func getAppBytesAndSenders(
 			},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
+			MinSelfDelegation: math.ZeroInt(),
 		}
 
 		stakingValidators = append(stakingValidators, validator)
@@ -224,7 +224,7 @@ func getAppBytesAndSenders(
 	// add unbonded amount
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.NotBondedPoolName).String(),
-		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, sdk.ZeroInt())},
+		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, math.ZeroInt())},
 	})
 
 	// update total funds supply

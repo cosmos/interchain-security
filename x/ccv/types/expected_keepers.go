@@ -32,10 +32,10 @@ type StakingKeeper interface {
 	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
 	GetLastValidatorPower(ctx sdk.Context, operator sdk.ValAddress) (power int64)
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
-	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec) math.Int
-	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.Infraction) math.Int
-	SlashUnbondingDelegation(sdk.Context, stakingtypes.UnbondingDelegation, int64, sdk.Dec) math.Int
-	SlashRedelegation(sdk.Context, stakingtypes.Validator, stakingtypes.Redelegation, int64, sdk.Dec) math.Int
+	Slash(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec) math.Int
+	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec, stakingtypes.Infraction) math.Int
+	SlashUnbondingDelegation(sdk.Context, stakingtypes.UnbondingDelegation, int64, math.LegacyDec) math.Int
+	SlashRedelegation(sdk.Context, stakingtypes.Validator, stakingtypes.Redelegation, int64, math.LegacyDec) math.Int
 	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
@@ -61,8 +61,8 @@ type SlashingKeeper interface {
 	GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
 	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo)
 	DowntimeJailDuration(sdk.Context) time.Duration
-	SlashFractionDowntime(sdk.Context) sdk.Dec
-	SlashFractionDoubleSign(ctx sdk.Context) (res sdk.Dec)
+	SlashFractionDowntime(sdk.Context) math.LegacyDec
+	SlashFractionDoubleSign(ctx sdk.Context) (res math.LegacyDec)
 	Tombstone(sdk.Context, sdk.ConsAddress)
 	IsTombstoned(sdk.Context, sdk.ConsAddress) bool
 }

@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"cosmossdk.io/math"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -209,7 +210,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 			validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
-			initialTokens := sdk.NewDecFromInt(validator.GetTokens())
+			initialTokens := math.LegacyNewDecFromInt(validator.GetTokens())
 
 			// reset context for each run
 			provCtx, _ := s.providerCtx().CacheContext()
@@ -242,7 +243,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				// verifies that the val gets slashed and has fewer tokens after the slashing
 				val, _ := s.providerApp.GetTestStakingKeeper().GetValidator(provCtx, provAddr.ToSdkConsAddr().Bytes())
 				slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(provCtx)
-				actualTokens := sdk.NewDecFromInt(val.GetTokens())
+				actualTokens := math.LegacyNewDecFromInt(val.GetTokens())
 				s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 			} else {
 				s.Require().Error(err)
@@ -328,7 +329,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		s.Require().NoError(err)
 
 		// perform a delegation and an undelegation of the whole amount
-		bondAmt := sdk.NewInt(10000000)
+		bondAmt := math.NewInt(10000000)
 		delAddr := s.providerChain.SenderAccount.GetAddress()
 
 		// in order to perform a delegation we need to know the validator's `idx` (that might not be 0)
@@ -347,8 +348,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		s.Require().NotZero(shares)
 
 		// undelegate 1/2 of the bound amount
-		undelegate(s, delAddr, validator.GetOperator(), shares.Quo(sdk.NewDec(4)))
-		undelegate(s, delAddr, validator.GetOperator(), shares.Quo(sdk.NewDec(4)))
+		undelegate(s, delAddr, validator.GetOperator(), shares.Quo(math.LegacyNewDec(4)))
+		undelegate(s, delAddr, validator.GetOperator(), shares.Quo(math.LegacyNewDec(4)))
 
 		// check that undelegations were successful
 		ubds, _ := s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
@@ -360,8 +361,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		delShares := s.providerApp.GetTestStakingKeeper().Delegation(s.providerCtx(), delAddr, validator2.GetOperator()).GetShares()
 
 		// redelegate 1/2 of the bound amount
-		redelegate(s, delAddr, validator.GetOperator(), validator2.GetOperator(), shares.Quo(sdk.NewDec(4)))
-		redelegate(s, delAddr, validator.GetOperator(), validator2.GetOperator(), shares.Quo(sdk.NewDec(4)))
+		redelegate(s, delAddr, validator.GetOperator(), validator2.GetOperator(), shares.Quo(math.LegacyNewDec(4)))
+		redelegate(s, delAddr, validator.GetOperator(), validator2.GetOperator(), shares.Quo(math.LegacyNewDec(4)))
 
 		// check that redelegation was successful
 		rdel := s.providerApp.GetTestStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, uint16(10))
@@ -384,8 +385,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		ubds, _ = s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
 		s.Require().True(len(ubds.Entries) > 0)
 		for _, unb := range ubds.Entries {
-			initialBalance := sdk.NewDecFromInt(unb.InitialBalance)
-			currentBalance := sdk.NewDecFromInt(unb.Balance)
+			initialBalance := math.LegacyNewDecFromInt(unb.InitialBalance)
+			currentBalance := math.LegacyNewDecFromInt(unb.Balance)
 			s.Require().True(initialBalance.Sub(initialBalance.Mul(slashFraction)).Equal(currentBalance))
 		}
 		// check that redelegations are slashed

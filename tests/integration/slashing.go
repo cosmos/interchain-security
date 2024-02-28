@@ -7,6 +7,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
+	"cosmossdk.io/math"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -405,13 +406,13 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	slashPacketData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
 	// Expect the packet to bounce if the slash meter is negative
-	providerKeeper.SetSlashMeter(ctx, sdk.NewInt(-1))
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(-1))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err, "no error expected")
 	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected successful ack")
 
 	// Expect the packet to be handled if the slash meter is positive
-	providerKeeper.SetSlashMeter(ctx, sdk.NewInt(0))
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(0))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err, "no error expected")
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
@@ -695,7 +696,7 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	suite.Require().False(found)
 
 	consumerKeeper.SlashWithInfractionReason(suite.consumerCtx(), []byte{0x01, 0x02, 0x3},
-		66, 4324, sdk.MustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_DOWNTIME)
+		66, 4324, math.LegacyMustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 
 	// Check slash packet was queued
 	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())

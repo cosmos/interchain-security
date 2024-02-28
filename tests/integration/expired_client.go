@@ -3,13 +3,13 @@ package integration
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -28,7 +28,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	expireClient(s, Consumer)
 
 	// bond some tokens on provider to change validator powers
-	bondAmt := sdk.NewInt(1000000)
+	bondAmt := math.NewInt(1000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 
@@ -91,7 +91,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.SetupCCVChannel(s.path)
 
 	// bond some tokens on provider to change validator powers
-	bondAmt := sdk.NewInt(1000000)
+	bondAmt := math.NewInt(1000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 

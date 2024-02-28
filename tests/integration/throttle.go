@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -455,10 +456,10 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 	// Setup first val with 1000 power and the rest with 10 power.
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	delegateByIdx(s, delAddr, sdk.NewInt(999999999), 0)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 1)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 2)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 3)
+	delegateByIdx(s, delAddr, math.NewInt(999999999), 0)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 1)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 2)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 3)
 	s.providerChain.NextBlock()
 
 	// Initialize slash meter

@@ -390,19 +390,19 @@ func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Vali
 	redelegations []stakingtypes.Redelegation, power int64, powerReduction math.Int,
 ) int64 {
 	// compute the total numbers of tokens currently being undelegated
-	undelegationsInTokens := sdk.NewInt(0)
+	undelegationsInTokens := math.NewInt(0)
 
 	// Note that we use a **cached** context to avoid any actual slashing of undelegations or redelegations.
 	cachedCtx, _ := ctx.CacheContext()
 	for _, u := range undelegations {
-		amountSlashed := k.stakingKeeper.SlashUnbondingDelegation(cachedCtx, u, 0, sdk.NewDec(1))
+		amountSlashed := k.stakingKeeper.SlashUnbondingDelegation(cachedCtx, u, 0, math.LegacyNewDec(1))
 		undelegationsInTokens = undelegationsInTokens.Add(amountSlashed)
 	}
 
 	// compute the total numbers of tokens currently being redelegated
-	redelegationsInTokens := sdk.NewInt(0)
+	redelegationsInTokens := math.NewInt(0)
 	for _, r := range redelegations {
-		amountSlashed := k.stakingKeeper.SlashRedelegation(cachedCtx, validator, r, 0, sdk.NewDec(1))
+		amountSlashed := k.stakingKeeper.SlashRedelegation(cachedCtx, validator, r, 0, math.LegacyNewDec(1))
 		redelegationsInTokens = redelegationsInTokens.Add(amountSlashed)
 	}
 

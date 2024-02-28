@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	_go "github.com/cosmos/ics23/go"
@@ -773,7 +774,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: sdk.Coin{
 			Denom:  "stake",
-			Amount: sdk.NewInt(1000000),
+			Amount: math.NewInt(1000000),
 		},
 	}
 	providerKeeper.SetParams(ctx, moduleParams)

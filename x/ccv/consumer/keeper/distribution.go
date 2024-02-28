@@ -9,6 +9,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -56,7 +57,7 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	// split the fee pool, send the consumer's fraction to the consumer redistribution address
-	frac, err := sdk.NewDecFromStr(k.GetConsumerRedistributionFrac(ctx))
+	frac, err := math.LegacyNewDecFromStr(k.GetConsumerRedistributionFrac(ctx))
 	if err != nil {
 		// ConsumerRedistributionFrac was already validated when set as a param
 		panic(fmt.Errorf("ConsumerRedistributionFrac is invalid: %w", err))
@@ -253,7 +254,7 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) types.NextFeeDi
 	total := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	fracParam := k.GetConsumerRedistributionFrac(ctx)
-	frac, err := sdk.NewDecFromStr(fracParam)
+	frac, err := math.LegacyNewDecFromStr(fracParam)
 	if err != nil {
 		// ConsumerRedistributionFrac was already validated when set as a param
 		panic(fmt.Errorf("ConsumerRedistributionFrac is invalid: %w", err))
