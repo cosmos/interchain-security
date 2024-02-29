@@ -13,6 +13,19 @@ func concatSteps(steps ...[]Step) []Step {
 	return concat
 }
 
+// Reduced set of basic test steps suited for compatibility testing
+var compatibilitySteps = concatSteps(
+	compstepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegateShort("consu"),
+	stepsDowntime("consu"),
+	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
+	stepsStartRelayer(),
+	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 3),                     // stop chain
+)
+
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
