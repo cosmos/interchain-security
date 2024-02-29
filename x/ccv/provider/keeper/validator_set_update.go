@@ -65,7 +65,7 @@ func (k Keeper) IsConsumerValidator(
 // GetConsumerValSet returns all the consumer validators for chain `chainID`
 func (k Keeper) GetConsumerValSet(
 	ctx sdk.Context,
-	chainID string) (optedInValidators []types.ConsumerValidator) {
+	chainID string) (validators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
@@ -73,14 +73,14 @@ func (k Keeper) GetConsumerValSet(
 
 	for ; iterator.Valid(); iterator.Next() {
 		iterator.Value()
-		var optedInValidator types.ConsumerValidator
-		if err := optedInValidator.Unmarshal(iterator.Value()); err != nil {
+		var validator types.ConsumerValidator
+		if err := validator.Unmarshal(iterator.Value()); err != nil {
 			panic(fmt.Errorf("failed to unmarshal ConsumerValidator: %w", err))
 		}
-		optedInValidators = append(optedInValidators, optedInValidator)
+		validators = append(validators, validator)
 	}
 
-	return optedInValidators
+	return validators
 }
 
 // ComputeNextEpochConsumerValSet returns the next validator set that is responsible for validating consumer
@@ -137,16 +137,18 @@ func DiffValidators(
 
 	isCurrentValidator := make(map[string]types.ConsumerValidator)
 	for _, val := range currentValidators {
-		isCurrentValidator[string(val.ProviderConsAddr)] = val
+		// use Bech32 addresses as keys for the map
+		isCurrentValidator[sdk.ConsAddress(val.ProviderConsAddr).String()] = val
 	}
 
 	isNextValidator := make(map[string]types.ConsumerValidator)
 	for _, val := range nextValidators {
-		isNextValidator[string(val.ProviderConsAddr)] = val
+		// use Bech32 addresses as keys for the map
+		isNextValidator[sdk.ConsAddress(val.ProviderConsAddr).String()] = val
 	}
 
 	for _, val := range currentValidators {
-		if nextVal, found := isNextValidator[string(val.ProviderConsAddr)]; found {
+		if nextVal, found := isNextValidator[sdk.ConsAddress(val.ProviderConsAddr).String()]; found {
 			// validator remains in the next epoch
 			if !val.ConsumerPublicKey.Equal(nextVal.ConsumerPublicKey) {
 				// validator has a new consumer public key, so we introduce `nextVal` consumer key with the latest power,
@@ -166,7 +168,7 @@ func DiffValidators(
 	}
 
 	for _, val := range nextValidators {
-		if _, found := isCurrentValidator[string(val.ProviderConsAddr)]; !found {
+		if _, found := isCurrentValidator[sdk.ConsAddress(val.ProviderConsAddr).String()]; !found {
 			// validator is about to join an epoch
 			updates = append(updates, abci.ValidatorUpdate{PubKey: *val.ConsumerPublicKey, Power: val.Power})
 		}
