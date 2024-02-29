@@ -570,8 +570,11 @@ func ConsumerRewardsAllocationKey(chainID string) []byte {
 
 // ConsumerCommissionRateKey returns the key of consumer chain `chainID` and validator with `providerAddr`
 func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	prefix := ChainIdWithLenKey(ConsumerCommissionRatePrefix, chainID)
-	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+	return ChainIdAndConsAddrKey(
+		ConsumerCommissionRatePrefix,
+		chainID,
+		providerAddr.ToSdkConsAddr(),
+	)
 }
 
 //
