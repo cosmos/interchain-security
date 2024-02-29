@@ -398,9 +398,9 @@ func SlashThrottleTestConfig() TestConfig {
 	return tr
 }
 
-// CompatibilityTestConfig returns a test configuarion for a given version of a consumer and provider
+// CompatibilityTestConfig returns a test configuration for a given version of a consumer and provider
 func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig {
-	// Base configuraiton is the default
+	// Base configuration is the default
 	testCfg := DefaultTestConfig()
 
 	// get version dependent validator configs
