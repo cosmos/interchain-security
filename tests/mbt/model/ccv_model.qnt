@@ -45,6 +45,8 @@ module ccv_model {
         Nodes: Set[Node],
         ConsumerAddresses: Set[ConsumerAddr],
         InitialValidatorSet: Node -> int,
+        DowntimeSlashPercentage: int,
+        DoubleSignSlashPercentage: int,
     }
 
     // The params variable is never actually changed, and
@@ -144,6 +146,8 @@ module ccv_model {
             InitialValidatorSet: InitialValidatorSet,
             TrustingPeriodPerChain: TrustingPeriodPerChain,
             ConsumerAddresses: consumerAddresses,
+            DowntimeSlashPercentage: DowntimeSlashPercentage,
+            DoubleSignSlashPercentage: DoubleSignSlashPercentage,
         }
     }
 

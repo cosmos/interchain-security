@@ -24,6 +24,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 const verbose = false
@@ -125,14 +126,16 @@ func RunItfTrace(t *testing.T, path string) {
 	// generate keys that can be assigned on consumers, according to the ConsumerAddresses in the trace
 	consumerAddressesExpr := params["ConsumerAddresses"].Value.(itf.ListExprType)
 
-	_, _, consumerPrivVals, err := integration.CreateValidators(len(consumerAddressesExpr))
+	consumerValidators, _, consumerPrivVals, err := integration.CreateValidators(len(consumerAddressesExpr))
 	require.NoError(t, err, "Error creating consumer signers")
 
+	consumerAddrNamesToVals := make(map[string]*cmttypes.Validator, len(consumerAddressesExpr))
 	consumerAddrNamesToPrivVals := make(map[string]cmttypes.PrivValidator, len(consumerAddressesExpr))
 	realAddrsToModelConsAddrs := make(map[string]string, len(consumerAddressesExpr))
 	i := 0
 	for address, privVal := range consumerPrivVals {
 		consumerAddrNamesToPrivVals[consumerAddressesExpr[i].Value.(string)] = privVal
+		consumerAddrNamesToVals[consumerAddressesExpr[i].Value.(string)] = consumerValidators.Validators[i]
 		realAddrsToModelConsAddrs[address] = consumerAddressesExpr[i].Value.(string)
 		i++
 	}
@@ -176,6 +179,11 @@ func RunItfTrace(t *testing.T, path string) {
 		consumerSigners[consAddr] = signer
 	}
 
+	// add the consumer validators to the address map
+	for consAddr, consVal := range consumerAddrNamesToVals {
+		addressMap[consAddr] = consVal
+	}
+
 	// get a slice of validators in the right order
 	nodes := make([]*cmttypes.Validator, len(valNames))
 	for i, valName := range valNames {
@@ -186,6 +194,9 @@ func RunItfTrace(t *testing.T, path string) {
 	driver.DriverStats = &stats
 
 	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
+
+	modelVscIdsToActualPackets := make(map[uint64]types.ValidatorSetChangePacketData, 0)
+	actualPacketIdsToModelVscIds := make(map[uint64]uint64, 0)
 
 	// remember the time offsets to be able to compare times to the model
 	// this is necessary because the system needs to do many steps to initialize the chains,
@@ -375,30 +386,37 @@ func RunItfTrace(t *testing.T, path string) {
 			protoPubKey, err := tmencoding.PubKeyToProto(assignedKey)
 			require.NoError(t, err, "Error converting pubkey to proto")
 
-			error := driver.AssignKey(ChainId(consumerChain), int64(valIndex), protoPubKey)
-			require.NoError(t, error, "Error assigning key")
+			err = driver.AssignKey(ChainId(consumerChain), int64(valIndex), protoPubKey)
+			require.NoError(t, err, "Error assigning key")
 		case "ConsumerInitiatedSlash":
 			consumerChain := lastAction["consumerChain"].Value.(string)
-			validator := lastAction["validator"].Value.(string)
+			validatorName := lastAction["validator"].Value.(string)
 			vscId := lastAction["vscId"].Value.(int64)
 			isDowntime := lastAction["isDowntime"].Value.(bool)
-			t.Log("ConsumerInitiatedSlash", consumerChain, validator, vscId, isDowntime)
+			t.Log("ConsumerInitiatedSlash", consumerChain, validatorName, vscId, isDowntime)
 
-			valPubKey, _ := consumerAddrNamesToPrivVals[validator].GetPubKey()
-			valConsAddr := sdktypes.ConsAddress(valPubKey.Address().Bytes())
+			actualPacket, found := modelVscIdsToActualPackets[uint64(vscId)]
+			if !found {
+				log.Fatalf("Error loading trace file %s, step %v: could not find actual packet for vsc id %v",
+					path, index, vscId)
+			}
+
+			val := addressMap[validatorName]
+			valConsAddr := sdktypes.ConsAddress(val.Address)
 
 			slashFraction := doubleSignSlashPercentage
 			if isDowntime {
 				slashFraction = downtimeSlashPercentage
 			}
 
-			driver.RequestSlash(
+			err = driver.RequestSlash(
 				ChainId(consumerChain),
 				valConsAddr,
 				isDowntime,
-				uint64(vscId),
+				actualPacket,
 				slashFraction,
 			)
+			require.NoError(t, err, "Error requesting slash")
 
 		default:
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
@@ -446,6 +464,50 @@ func RunItfTrace(t *testing.T, path string) {
 		}
 		// compare that the sent packets on the proider match the model
 		CompareSentPacketsOnProvider(driver, currentModelState, timeOffset)
+
+		// for all newly sent vsc packets, figure out which vsc id in the model they correspond to
+		for _, consumer := range actualRunningConsumers {
+			actualPackets := driver.packetQueue(PROVIDER, ChainId(consumer))
+			actualNewPackets := make([]types.ValidatorSetChangePacketData, 0)
+			for _, packet := range actualPackets {
+
+				var packetData types.ValidatorSetChangePacketData
+				err := types.ModuleCdc.UnmarshalJSON(packet.Packet.GetData(), &packetData)
+				require.NoError(t, err, "Error unmarshalling packet data")
+
+				actualVscId := packetData.ValsetUpdateId
+				if _, ok := actualPacketIdsToModelVscIds[actualVscId]; ok {
+					// we already handled this packet previously; continue
+					continue
+				}
+				actualNewPackets = append(actualNewPackets, packetData)
+			}
+
+			modelPackets := PacketQueue(currentModelState, PROVIDER, consumer)
+			newModelVscIds := make([]uint64, 0)
+			for _, packet := range modelPackets {
+				modelVscId := uint64(packet.Value.(itf.MapExprType)["value"].Value.(itf.MapExprType)["id"].Value.(int64))
+				if _, ok := modelVscIdsToActualPackets[modelVscId]; ok {
+					// we already handled this packet previously; continue
+					continue
+				}
+				newModelVscIds = append(newModelVscIds, modelVscId)
+			}
+
+			// sort the new packets by vsc id
+			sort.Slice(actualNewPackets, func(i, j int) bool {
+				return actualNewPackets[i].ValsetUpdateId < actualNewPackets[j].ValsetUpdateId
+			})
+			sort.Slice(newModelVscIds, func(i, j int) bool {
+				return newModelVscIds[i] < newModelVscIds[j]
+			})
+
+			// map the actual packets to the model ids
+			for i, actualPacket := range actualNewPackets {
+				modelVscIdsToActualPackets[newModelVscIds[i]] = actualPacket
+				actualPacketIdsToModelVscIds[actualPacket.ValsetUpdateId] = newModelVscIds[i]
+			}
+		}
 
 		stats.EnterStats(driver)
 
@@ -556,13 +618,15 @@ func ComparePacketQueue(
 	require.Equal(t,
 		len(modelSenderQueue),
 		len(actualSenderQueue),
-		"Packet queue sizes do not match for sender %v, receiver %v",
+		"Packet queue sizes do not match for sender %v, receiver %v.\n model: %v\n actual: %v",
 		sender,
-		receiver)
+		receiver,
+		modelSenderQueue,
+		actualSenderQueue)
 
 	for i := range modelSenderQueue {
 		actualPacket := actualSenderQueue[i]
-		modelPacket := modelSenderQueue[i].Value.(itf.MapExprType)
+		modelPacket := modelSenderQueue[i].Value.(itf.MapExprType)["value"].Value.(itf.MapExprType)
 
 		actualTimeout := time.Unix(0, int64(actualPacket.Packet.TimeoutTimestamp)).Unix() - timeOffset.Unix()
 		modelTimeout := GetTimeoutForPacket(modelPacket)

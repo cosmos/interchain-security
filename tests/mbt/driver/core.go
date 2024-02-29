@@ -29,6 +29,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -406,7 +407,7 @@ func (s *Driver) RequestSlash(
 	consumer ChainId,
 	valConsAddr sdk.ConsAddress,
 	isDowntime bool,
-	vscId uint64,
+	vscPacket types.ValidatorSetChangePacketData,
 	slashPercentage sdkmath.LegacyDec,
 ) error {
 	var infractionReason stakingtypes.Infraction
@@ -416,50 +417,17 @@ func (s *Driver) RequestSlash(
 		infractionReason = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	}
 
-	var infractionHeight uint64
-	found := false
-	heightsToVscIds := s.consumerKeeper(consumer).GetAllHeightToValsetUpdateIDs(s.consumerCtx(consumer))
-	for _, tmp := range heightsToVscIds {
-		height := tmp.Height
-		valsetUpdateId := tmp.ValsetUpdateId
-		if vscId == valsetUpdateId {
-			infractionHeight = height
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("height for vscId not found")
-	}
-
-	infractionValSet, found := s.consumerKeeper(consumer).GetHistoricalInfo(s.consumerCtx(consumer), int64(infractionHeight))
-	if !found {
-		return fmt.Errorf("valset not found for height %v", infractionHeight)
-	}
-
-	// find the validator in the val set
-	var infractionPower int64
-	found = false
-	for _, val := range infractionValSet.Valset {
-		addr, _ := val.GetConsAddr()
-
-		if valConsAddr.Equals(addr) {
-			infractionPower = val.Tokens.Int64()
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("validator not found in valset")
-	}
-
-	s.consumerKeeper(consumer).SlashWithInfractionReason(
+	s.consumerKeeper(consumer).QueueSlashPacket(
 		s.consumerCtx(consumer),
-		valConsAddr,
-		int64(infractionHeight),
-		infractionPower,
-		slashPercentage,
+		abcitypes.Validator{
+			Address: valConsAddr.Bytes(),
+			// power does not matter
+			Power: 100,
+		},
+		vscPacket.ValsetUpdateId,
 		infractionReason,
 	)
+	return nil
 }
 
 // DeliverAcks delivers, for each path,
