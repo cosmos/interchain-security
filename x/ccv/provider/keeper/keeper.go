@@ -1287,9 +1287,6 @@ func (k Keeper) GetConsumerCommissionRate(
 	return cr, true
 }
 
-<<<<<<< Updated upstream
-// DeleteConsumerCommissionRate deletes the per-consumer chain commission rate
-=======
 // GetAllCommissionRateValidators returns all the validator address
 // that set a commission rate for the given chain ID
 func (k Keeper) GetAllCommissionRateValidators(
@@ -1310,7 +1307,6 @@ func (k Keeper) GetAllCommissionRateValidators(
 }
 
 // DeleteConsumerCommissionRate the per-consumer chain commission rate
->>>>>>> Stashed changes
 // associated to the given validator address
 func (k Keeper) DeleteConsumerCommissionRate(
 	ctx sdk.Context,

@@ -217,5 +217,14 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 		return nil, err
 	}
 
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeSetConsumerCommissionRate,
+			sdk.NewAttribute(types.AttributeConsumerChainID, msg.ChainId),
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
+		),
+	})
+
 	return &types.MsgSetConsumerCommissionRateResponse{}, nil
 }

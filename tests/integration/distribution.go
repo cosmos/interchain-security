@@ -1011,7 +1011,7 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 					s.Require().NoError(err)
 
 					// check that the withdrawn coins is equal to the entire reward amount
-					// times the set consumer commission
+					// times the set consumer commission rate
 					commission := rewards.Rewards.MulDec(tc.rate)
 					c, _ := commission.TruncateDecimal()
 					s.Require().Equal(withdrawnCoins, c)
