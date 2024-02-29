@@ -920,53 +920,52 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 		name         string
 		votes        []abci.VoteInfo
 		tokens       sdk.DecCoins
+		rate         sdk.Dec
 		expAllocated sdk.DecCoins
 	}{
 		{
-			name: "tokens are empty",
+			name:         "tokens are empty",
+			tokens:       sdk.DecCoins{},
+			rate:         sdk.ZeroDec(),
+			expAllocated: nil,
 		},
 		{
 			name:         "total voting power is zero",
 			tokens:       sdk.DecCoins{sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(100_000))},
+			rate:         sdk.ZeroDec(),
 			expAllocated: nil,
 		},
 		{
 			name:         "expect all tokens to be allocated to a single validator",
 			votes:        []abci.VoteInfo{votes[0]},
 			tokens:       sdk.DecCoins{sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(999))},
+			rate:         sdk.NewDecWithPrec(5, 1),
 			expAllocated: sdk.DecCoins{sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(999))},
 		},
 		{
 			name:         "expect tokens to be allocated evenly between validators",
 			votes:        []abci.VoteInfo{votes[0], votes[1]},
 			tokens:       sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))},
+			rate:         sdk.OneDec(),
 			expAllocated: sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))},
 		},
 	}
 
-	// opt the validators in to verify that they charge
-	// a custom commission rate on the consumer chain
-	for _, v := range s.providerChain.Vals.Validators {
-		consAddr := sdk.ConsAddress(v.Address)
-		provAddr := providertypes.NewProviderConsAddress(consAddr)
-
-		val, found := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
-		s.Require().True(found)
-
-		// check that no commission rate is set for the validator
-		s.Require().Equal(val.Commission.Rate, math.LegacyZeroDec())
-
-		// set a custom commission rate of 100%
-		providerKeeper.SetConsumerCommissionRate(
-			s.providerCtx(),
-			chainID,
-			provAddr,
-			sdk.OneDec(),
-		)
-	}
-
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
+
+			// set the same consumer commission rate for all validators
+			for _, v := range s.providerChain.Vals.Validators {
+				provAddr := providertypes.NewProviderConsAddress(sdk.ConsAddress(v.Address))
+
+				providerKeeper.SetConsumerCommissionRate(
+					s.providerCtx(),
+					chainID,
+					provAddr,
+					tc.rate,
+				)
+			}
+
 			// TODO: opt validators in and verify
 			// that rewards are only allocated to them
 			ctx, _ := s.providerCtx().CacheContext()
@@ -1012,7 +1011,10 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 					s.Require().NoError(err)
 
 					// check that the withdrawn coins is equal to the entire reward amount
-					s.Require().Equal(withdrawnCoins, valRewardsTrunc)
+					// times the set consumer commission
+					commission := rewards.Rewards.MulDec(tc.rate)
+					c, _ := commission.TruncateDecimal()
+					s.Require().Equal(withdrawnCoins, c)
 
 					// check that validators get rewards in their balance
 					s.Require().Equal(withdrawnCoins, bankKeeper.GetAllBalances(ctx, sdk.AccAddress(valAddr)))

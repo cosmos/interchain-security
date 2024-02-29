@@ -1280,13 +1280,37 @@ func (k Keeper) GetConsumerCommissionRate(
 
 	cr := sdk.Dec{}
 	if err := cr.Unmarshal(bz); err != nil {
-		panic(fmt.Errorf("consumer commission rate unmarshalling failed:%s", err))
+		k.Logger(ctx).Error("consumer commission rate unmarshalling failed: %s", err)
+		return sdk.ZeroDec(), false
 	}
 
 	return cr, true
 }
 
+<<<<<<< Updated upstream
 // DeleteConsumerCommissionRate deletes the per-consumer chain commission rate
+=======
+// GetAllCommissionRateValidators returns all the validator address
+// that set a commission rate for the given chain ID
+func (k Keeper) GetAllCommissionRateValidators(
+	ctx sdk.Context,
+	chainID string) (addresses []types.ProviderConsAddress) {
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ConsumerCommissionRatePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
+		addresses = append(addresses, providerAddr)
+	}
+
+	return addresses
+}
+
+// DeleteConsumerCommissionRate the per-consumer chain commission rate
+>>>>>>> Stashed changes
 // associated to the given validator address
 func (k Keeper) DeleteConsumerCommissionRate(
 	ctx sdk.Context,
