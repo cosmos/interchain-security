@@ -30,21 +30,23 @@ A `VSCPacket` contains all the validator updates that are needed by consumer cha
 The implementation of epochs requires the following changes:
 
 - For each consumer chain, we store the consumer validator set that is currently (i.e., in this epoch) validating the 
-  consumer chain. For each validator in the set we store its voting power as well as the public key that it is  
-  using on the consumer chain. Specifically, for each consumer chain, we store a list of `ConsumerValidator`s where each
-  `ConsumerValidator` contains the i) power the validator has, and ii) the public key the validator
-  uses on the consumer chain during the epoch.
+  consumer chain. For each validator in the set we store i) its voting power, and ii) the public key that it is 
+  using on the consumer chain during the current (i.e., ongoing) epoch.
   The initial consumer validator set for a chain is set during the creation of the consumer genesis.  
 - We add the `BlocksPerEpoch` param that sets the number of blocks in an epoch. In the provider `EndBlock` we check 
   `BlockHeight() % BlocksPerEpoch() == 0` to decide when an epoch has ended.
 - At the end of every epoch, if there were validator set changes on the provider, then for every consumer chain, we 
   construct a `VSCPacket` with all the validator updates and add it to the list of `PendingVSCPackets`. We compute the
-  validator updates needed by a consumer chain by comparing the stored list of `ConsumerValidator`s with the current
+  validator updates needed by a consumer chain by comparing the stored list of consumer validators with the current
   bonded validators on the provider, with something similar to this:
 ```go
+// get the valset that has been validating the consumer chain during this epoch 
 currentValidators := GetConsumerValSet(consumerChain)
+// generate the validator updates needed to be sent through a `VSCPacket` by comparing the current validators 
+// in the epoch with the latest bonded validators
 valUpdates := DiffValidators(currentValidators, stakingmodule.GetBondedValidators())
-SetConsumerValSet(consumerChain, nextValidators)
+// update the current validators set for the upcoming epoch to be the latest bonded validators instead
+SetConsumerValSet(stakingmodule.GetBondedValidators())
 ```
 
 ## Consequences
