@@ -127,7 +127,7 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 	srcValTokensAfter := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
 	s.Require().Equal(srcValTokensAfter.Sub(srcValTokensBefore), amount)
 
-	nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
+	s.nextEpoch()
 
 	dstValTokensBefore := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
 
@@ -626,9 +626,11 @@ func (s *CCVTestSuite) mustGetStakingValFromTmVal(tmVal tmtypes.Validator) (stak
 	return stakingVal
 }
 
-// nextBlocks moves `chain` forward by a `numberOfBlocks` blocks
-func nextBlocks(chain *ibctesting.TestChain, numberOfBlocks int64) {
-	for i := int64(0); i < numberOfBlocks; i++ {
-		chain.NextBlock()
+// nextEpoch moves `chain` forward by an epoch
+func (s *CCVTestSuite) nextEpoch() {
+	blocksPerEpoch := s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch
+
+	for i := int64(0); i < blocksPerEpoch; i++ {
+		s.providerChain.NextBlock()
 	}
 }

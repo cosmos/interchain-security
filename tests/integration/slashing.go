@@ -107,7 +107,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		s.Require().True(found)
 	}
 
-	nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
+	s.nextEpoch()
 
 	// Confirm the valset update Id was incremented twice on provider,
 	// since an epoch has passed.

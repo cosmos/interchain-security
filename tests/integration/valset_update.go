@@ -24,7 +24,7 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 	delegate(s, delAddr, bondAmt)
 
 	// Send CCV packet to consumer at the end of the epoch
-	nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
+	s.nextEpoch()
 
 	// Relay 1 VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)

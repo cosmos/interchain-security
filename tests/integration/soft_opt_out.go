@@ -20,8 +20,6 @@ import (
 func (suite *CCVTestSuite) TestSoftOptOut() {
 	var votes []abci.VoteInfo
 
-	blocksPerEpoch := suite.providerApp.GetProviderKeeper().GetParams(suite.providerCtx()).BlocksPerEpoch
-
 	testCases := []struct {
 		name            string
 		downtimeFunc    func(*consumerKeeper.Keeper, *slashingkeeper.Keeper, []byte, int)
@@ -75,7 +73,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 				bondAmt := sdk.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
-				nextBlocks(suite.providerChain, blocksPerEpoch)
+				suite.nextEpoch()
 
 				// Relay 1 VSC packet from provider to consumer
 				relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)
@@ -114,7 +112,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 				bondAmt := sdk.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
-				nextBlocks(suite.providerChain, blocksPerEpoch)
+				suite.nextEpoch()
 
 				// Relay 1 VSC packet from provider to consumer
 				relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)
@@ -151,7 +149,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 		validatorPowers := []int64{1000, 500, 50, 10}
 		suite.setupValidatorPowers(validatorPowers)
 
-		nextBlocks(suite.providerChain, blocksPerEpoch)
+		suite.nextEpoch()
 
 		// Relay 1 VSC packet from provider to consumer
 		relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)

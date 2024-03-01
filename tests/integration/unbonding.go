@@ -231,8 +231,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		// update init timeout timestamp
 		tc.updateInitTimeoutTimestamp(&providerKeeper, providerUnbondingPeriod)
 
-		blocksPerEpoch := s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch
-		nextBlocks(s.providerChain, blocksPerEpoch)
+		s.nextEpoch()
 
 		// check that the VSC packet is stored in state as pending
 		pendingVSCs := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
@@ -241,8 +240,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		// delegate again to create another VSC packet
 		delegate(s, delAddr, bondAmt)
 
-		// call NextBlocks on the provider (which increments the height)
-		nextBlocks(s.providerChain, blocksPerEpoch)
+		s.nextEpoch()
 
 		// check that the VSC packet is stored in state as pending
 		pendingVSCs = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
@@ -266,7 +264,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 
 			// complete CCV channel setup
 			s.SetupCCVChannel(s.path)
-			nextBlocks(s.providerChain, blocksPerEpoch)
+			s.nextEpoch()
 
 			// relay VSC packets from provider to consumer
 			relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
@@ -431,7 +429,7 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
 
 	// move forward by an epoch to be able to relay VSC packets
-	nextBlocks(s.providerChain, s.providerApp.GetProviderKeeper().GetParams(s.providerCtx()).BlocksPerEpoch)
+	s.nextEpoch()
 
 	// Relay 2 VSC packets from provider to consumer (original delegation, and redelegation)
 	relayAllCommittedPackets(s, s.providerChain, s.path,
