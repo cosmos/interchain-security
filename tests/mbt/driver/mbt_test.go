@@ -179,16 +179,22 @@ func RunItfTrace(t *testing.T, path string) {
 		nodes[i] = addressMap[valName]
 	}
 
+	// because the provider chain needs to produce 2 blocks per block in the model due to light client trust assumptions,
+	// we need to set the provider's BlocksPerEpoch to be double the value in the model
+	blocksPerEpoch := params["BlocksPerEpoch"].Value.(int64) * 2
+
 	driver := newDriver(t, nodes, valNames)
 	driver.DriverStats = &stats
 
 	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
-
-	// set `BlocksPerEpoch` to 10: a reasonable small value greater than 1 that prevents waiting for too
-	// many blocks and slowing down the tests
 	providerParams := driver.providerKeeper().GetParams(driver.providerCtx())
-	providerParams.BlocksPerEpoch = 10
+	providerParams.BlocksPerEpoch = blocksPerEpoch
 	driver.providerKeeper().SetParams(driver.providerCtx(), providerParams)
+
+	// begin enough blocks to end the first epoch
+	for i := int64(1); i < blocksPerEpoch; i++ {
+		driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+	}
 
 	// remember the time offsets to be able to compare times to the model
 	// this is necessary because the system needs to do many steps to initialize the chains,
@@ -200,6 +206,7 @@ func RunItfTrace(t *testing.T, path string) {
 	t.Log("Reading the trace...")
 
 	for index, state := range trace.States {
+		t.Log(driver.providerChain().CurrentHeader.Height % blocksPerEpoch)
 		t.Logf("Reading state %v of trace %v", index, path)
 
 		trace := state.VarValues["trace"].Value.(itf.ListExprType)
@@ -245,16 +252,11 @@ func RunItfTrace(t *testing.T, path string) {
 			// and then increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
 
-			// going through `blocksPerEpoch` blocks to take into account an epoch
-			blocksPerEpoch := driver.providerKeeper().GetBlocksPerEpoch(driver.providerCtx())
-			for i := int64(0); i < blocksPerEpoch; i = i + 1 {
-				driver.endAndBeginBlock("provider", 1*time.Nanosecond)
-			}
+			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 			for _, consumer := range driver.runningConsumers() {
 				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
 			}
-
-			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-time.Nanosecond*time.Duration(blocksPerEpoch))
+			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
 
 			runningConsumersAfter := driver.runningConsumers()
 
