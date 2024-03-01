@@ -13,6 +13,7 @@ module ccv_model {
     pure val unbondingPeriods = chains.mapBy(chain => defUnbondingPeriod)
     pure val trustingPeriods = chains.mapBy(chain => defUnbondingPeriod - 1 * Hour)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
+    pure val epochLength = 3
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     // possible consumer addresses that nodes can assign their key to
@@ -24,7 +25,8 @@ module ccv_model {
         CcvTimeout = ccvTimeouts,
         UnbondingPeriodPerChain = unbondingPeriods,
         ConsumerChains = consumerChains,
-        TrustingPeriodPerChain = trustingPeriods
+        TrustingPeriodPerChain = trustingPeriods,
+        BlocksPerEpoch = epochLength
     ).* from "./ccv"
 
     type Parameters = {
@@ -36,6 +38,7 @@ module ccv_model {
         Nodes: Set[Node],
         ConsumerAddresses: Set[ConsumerAddr],
         InitialValidatorSet: Node -> int,
+        BlocksPerEpoch: int,
     }
 
     // The params variable is never actually changed, and
@@ -129,6 +132,7 @@ module ccv_model {
             InitialValidatorSet: InitialValidatorSet,
             TrustingPeriodPerChain: TrustingPeriodPerChain,
             ConsumerAddresses: consumerAddresses,
+            BlocksPerEpoch: epochLength,
         }
     }
 
@@ -234,6 +238,23 @@ module ccv_model {
 
         stepCommon
     }
+
+    // Runs epochLength many blocks on the provider.
+    // The first block will start all consumers in consumersToStart and stop all consumers in consumersToStop,
+    // and advance time by timeAdvancement - ((epochLength-1) * Seconds).
+    // The rest of the blocks will not start or stop any consumers, and will advance time by 1 second each.
+    run EndProviderEpoch(
+        timeAdvancement: Time,
+        consumersToStart: Set[Chain],
+        consumersToStop: Set[Chain]
+    ): bool =
+        epochLength.reps(
+            i => 
+            if (i == 0)
+            EndAndBeginBlockForProvider(timeAdvancement-((epochLength-1)*Second), consumersToStart, consumersToStop)
+            else
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        )
 
     // ==================
     // UTILITY FUNCTIONS
@@ -505,7 +526,7 @@ module ccv_model {
                 // the validator set has changed
                 assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet.put("node1", 150)),
                 // start consumer1
-                EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+                EndProviderEpoch(3 * Second, Set("consumer1"), Set())
             })
             .then(
                 all {
@@ -514,11 +535,11 @@ module ccv_model {
                     // but no packet was sent to consumer 1
                     assert(currentState.providerState.outstandingPacketsToConsumer.getOrElse("consumer1", List()).length() == 0),
                     // the validator set on the provider was entered into the history
-                    assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 150), InitialValidatorSet)),
+                    assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 150)).listMul(epochLength).append(InitialValidatorSet)),
                     // change voting power on provider again
                     VotingPowerChange("node1", 50).then(
-                        // end another block
-                        EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+                        // end the epoch
+                        EndProviderEpoch(3 * Second, Set(), Set())
                     ).then(
                         // deliver packet to consumer1
                         DeliverVscPacket("consumer1")
@@ -636,7 +657,7 @@ module ccv_model {
         )
         .then(
             // send packets
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(epochLength * Second, Set(), Set())
         )
         .then(
             // advance time on provider by VscTimeout + 1 Second

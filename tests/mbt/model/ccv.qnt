@@ -58,6 +58,8 @@ module ccv_types {
 
         // the running timestamp of the current block (that will be put on chain when the block is ended)
         runningTimestamp: Time,
+
+        currentBlockHeight: int,
     }
 
     // utility function: returns a chain state that is initialized minimally.
@@ -67,6 +69,7 @@ module ccv_types {
             currentValidatorSet: Map(),
             lastTimestamp: -1, // last timestamp -1 means that in the model, there was no block committed on chain yet.
             runningTimestamp: 0,
+            currentBlockHeight: 0
         }
 
     // Defines the current state of the provider chain. Essentially, all information here is stored by the provider on-chain (or could be derived purely by information that is on-chain).
@@ -271,6 +274,10 @@ module ccv {
     // they expire and the channel will be closed.
     const TrustingPeriodPerChain: Chain -> int
 
+    // The number of blocks in an epoch.
+    // VscPackets are only sent to consumer chains at the end of every epoch.
+    const BlocksPerEpoch: int
+
     // ===================
     // PROTOCOL LOGIC contains the meat of the protocol
     // functions here roughly correspond to API calls that can be triggered from external sources
@@ -455,10 +462,16 @@ module ccv {
 
         // send vsc packets (will be a noop if no sends are necessary)
         val providerStateAfterSending =
-            providerStateAfterTimeAdvancement.sendVscPackets(
-                currentProviderState.chainState.runningTimestamp,
-                CcvTimeout.get(PROVIDER_CHAIN)
-            )
+            // if currentBlockHeight is a multiple of BlocksPerEpoch, send VscPackets
+            if (providerStateAfterTimeAdvancement.chainState.currentBlockHeight % BlocksPerEpoch == 0) {
+                providerStateAfterTimeAdvancement.sendVscPackets(
+                    currentProviderState.chainState.runningTimestamp,
+                    CcvTimeout.get(PROVIDER_CHAIN)
+                )
+            } else {
+                // otherwise, just do a noop
+                providerStateAfterTimeAdvancement
+            }
 
 
         // start/stop chains

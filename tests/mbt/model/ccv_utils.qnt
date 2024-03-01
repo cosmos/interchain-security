@@ -183,9 +183,16 @@ module ccv_utils {
         runningTimestamp: chainState.runningTimestamp + timeAdvancement,
     }
 
+    pure def incrementBlockHeight(chainState: ChainState): ChainState = 
+    {
+        chainState.with(
+            "currentBlockHeight", chainState.currentBlockHeight + 1
+        )
+    }
+
     // common logic to update the chain state, used by both provider and consumers.
     pure def endAndBeginBlockShared(chainState: ChainState, timeAdvancement: Time): ChainState = {
-        chainState.enterCurValSetIntoBlock().advanceTime(timeAdvancement)
+        chainState.enterCurValSetIntoBlock().advanceTime(timeAdvancement).incrementBlockHeight()
     }
 
     // returns the providerState with the following modifications:
