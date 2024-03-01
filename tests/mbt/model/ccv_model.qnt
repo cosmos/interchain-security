@@ -340,12 +340,15 @@ module ccv_model {
             )
         )
 
+
+    val CurrentBlockEndsEpoch = currentState.providerState.chainState.currentBlockHeight % epochLength == 0
+
     // Any update in the power of a validator on the provider
     // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
     val ValUpdatePrecondition = trace[trace.length()-1].kind == "EndAndBeginBlockForProvider"
     val ValidatorUpdatesArePropagatedInv = 
-        // when the provider has just entered a validator set into a block...
-        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock
+        // when the an epoch ends and the provider has just entered a validator set into a block...
+        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisEpoch and CurrentBlockEndsEpoch
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
@@ -526,7 +529,7 @@ module ccv_model {
                 // the validator set has changed
                 assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet.put("node1", 150)),
                 // start consumer1
-                EndProviderEpoch(3 * Second, Set("consumer1"), Set())
+                EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
             })
             .then(
                 all {
@@ -535,12 +538,13 @@ module ccv_model {
                     // but no packet was sent to consumer 1
                     assert(currentState.providerState.outstandingPacketsToConsumer.getOrElse("consumer1", List()).length() == 0),
                     // the validator set on the provider was entered into the history
-                    assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 150)).listMul(epochLength).append(InitialValidatorSet)),
+                    assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 150), InitialValidatorSet)),
                     // change voting power on provider again
                     VotingPowerChange("node1", 50).then(
                         // end the epoch
                         EndProviderEpoch(3 * Second, Set(), Set())
-                    ).then(
+                    )
+                    .then(
                         // deliver packet to consumer1
                         DeliverVscPacket("consumer1")
                     )
@@ -609,7 +613,7 @@ module ccv_model {
             VotingPowerChange("node1", 50)
         ).then(
             // send packet to consumer1 and consumer2
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(1 * Second, Set(), Set())
         ).then(
             // deliver the packets
             DeliverVscPacket("consumer1")
@@ -624,7 +628,7 @@ module ccv_model {
             VotingPowerChange("node2", 50)
         ).then(
             // send packets
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(1 * Second, Set(), Set())
         ).then(
             //deliver to consumer1
             DeliverVscPacket("consumer1")
@@ -736,7 +740,7 @@ module ccv_model {
     // and the key assignment of each validator should be applied in that VSCPacket.
     val ValidatorUpdatesArePropagatedKeyAssignmentInv = 
         // when the provider has just entered a validator set into a block...
-        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock
+        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisEpoch
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
@@ -870,7 +874,7 @@ module ccv_model {
         )
         .then(
             // end and begin block to make sure the key assignment is processed and the packet is sent
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(1 * Second, Set(), Set())
         )
         .then(
             // receive the packet on the consumer

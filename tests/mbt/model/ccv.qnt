@@ -89,11 +89,11 @@ module ccv_types {
             // Stores VscPackets which have been sent but where the provider has *not received a response yet*.
             sentVscPacketsToConsumer: Chain -> List[VscPacket],
 
-            // stores whether, in this block, the validator set has changed.
+            // stores whether, in this epoch, the validator set has changed.
             // this is needed because the validator set might be considered to have changed, even though
             // it is still technically identical at our level of abstraction, e.g. a validator power change on the provider
             // might leave the validator set the same because a delegation and undelegation cancel each other out.
-            providerValidatorSetChangedInThisBlock: bool,
+            providerValidatorSetChangedInThisEpoch: bool,
 
             // stores, for each consumer chain, its current status -
             // not consumer, running, or stopped
@@ -113,7 +113,7 @@ module ccv_types {
             consumerAddrToValidator: Chain -> (ConsumerAddr -> Node),
 
             // For every consumer chain, stores whether the key assignment for the consumer chain has changed in this block.
-            consumersWithAddrAssignmentChangesInThisBlock: Set[Chain],
+            consumersWithAddrAssignmentChangesInThisEpoch: Set[Chain],
 
             // the history of validator sets on the provider, but with the key assignments applied.
             // This is needed to check invariants about the validator set when key assignments are in play.
@@ -133,7 +133,7 @@ module ccv_types {
             outstandingPacketsToConsumer: Map(),
             receivedMaturations: Set(),
             sentVscPacketsToConsumer: Map(),
-            providerValidatorSetChangedInThisBlock: false,
+            providerValidatorSetChangedInThisEpoch: false,
             consumerStatus: Map(),
             runningVscId: 0,
             validatorToConsumerAddr: Map(),
@@ -141,7 +141,7 @@ module ccv_types {
             consumerAddrToValidator: Map(),
             consumerAddrsToPrune: Map(),
             keyAssignmentsForVSCPackets: Map(),
-            consumersWithAddrAssignmentChangesInThisBlock: Set()
+            consumersWithAddrAssignmentChangesInThisEpoch: Set()
         }
         
 
@@ -301,7 +301,7 @@ module ccv {
                 } else {
                     // set the validator set changed flag
                     val newProviderState = currentState.providerState.with(
-                        "providerValidatorSetChangedInThisBlock", true
+                        "providerValidatorSetChangedInThisEpoch", true
                     )
                     pure val tmpState = currentState.with(
                         "providerState", newProviderState
@@ -484,8 +484,6 @@ module ccv {
         val err = res._2
         val providerStateAfterConsumerAdvancement = providerStateAfterSending.with(
             "consumerStatus", newConsumerStatus
-        ).with(
-            "providerValidatorSetChangedInThisBlock", false
         )
 
         if (err != "") {
@@ -622,17 +620,17 @@ module ccv {
                 // check whether the validator has positive power
                 pure val provValSet = currentState.providerState.chainState.currentValidatorSet
                 pure val provValPower = if (provValSet.keys().contains(providerNode)) provValSet.get(providerNode) else 0
-                pure val consumersWithAddrAssignmentChangesInThisBlock = 
+                pure val consumersWithAddrAssignmentChangesInThisEpoch = 
                     if (provValPower > 0) {
                         // if the consumer has positive power, the relevant key assignment for the consumer changed
-                        currentState.providerState.consumersWithAddrAssignmentChangesInThisBlock.union(Set(consumer))
+                        currentState.providerState.consumersWithAddrAssignmentChangesInThisEpoch.union(Set(consumer))
                     } else {
                         // otherwise, the consumer doesn't need to know about the change, so no change
-                        currentState.providerState.consumersWithAddrAssignmentChangesInThisBlock
+                        currentState.providerState.consumersWithAddrAssignmentChangesInThisEpoch
                     }
                 pure val tmpStateAfterKeyAssignmentReplacement = tmpState.with(
                     "providerState", tmpState.providerState.with(
-                        "consumersWithAddrAssignmentChangesInThisBlock", consumersWithAddrAssignmentChangesInThisBlock
+                        "consumersWithAddrAssignmentChangesInThisEpoch", consumersWithAddrAssignmentChangesInThisEpoch
                     )
                 )
                 
