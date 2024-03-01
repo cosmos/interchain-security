@@ -12,7 +12,8 @@ name: Docker Publish
 on:
   push:
     branches:
-      - main
+      - 'main'
+      - 'releases/**'
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+" # Push events matching tag versions as v3.0.0
       - "v[0-9]+.[0-9]+.[0-9]+-lsm" # Push events matching '-lsm' postfix tags
