@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"time"
 
 	"github.com/kylelemons/godebug/pretty"
 )
@@ -29,9 +28,6 @@ func (td *DefaultDriver) Run(steps []Step, target ExecutionTarget, verbose bool)
 	td.target = target
 	td.verbose = verbose
 
-	fmt.Printf("=============== started %s tests ===============\n", td.testCfg.name)
-
-	start := time.Now()
 	for i, step := range steps {
 		fmt.Printf("running %s: step %d/%d == %s \n",
 			td.testCfg.name, i+1, len(steps), reflect.TypeOf(step.Action).Name())
@@ -41,7 +37,6 @@ func (td *DefaultDriver) Run(steps []Step, target ExecutionTarget, verbose bool)
 			return err
 		}
 	}
-	fmt.Printf("=============== finished %s tests in %v ===============\n", td.testCfg.name, time.Since(start))
 	return nil
 }
 

@@ -16,6 +16,25 @@ on:
     - cron: "0 3 * * *"
 
 jobs:
+  compatibility-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E compatibility test
+        # Run compatibility tests for different consumer (-cv) and provider (-pv) versions.
+        # Combination of all provider versions with consumer versions are tested.
+        # For new versions to be tested add/modify -pc/-cv parameters.
+        run: go run ./tests/e2e/... --tc compatibility -pv latest -pv v4.0.0 -pv v3.3.2-lsm -cv latest -cv v4.0.0 -cv v3.3.0
   happy-path-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
