@@ -169,8 +169,8 @@ func TestDiff(t *testing.T) {
 	// and nextValidators = {B, C, D, E, F}. For the validators {B, C, D, E} in the intersection we have:
 	// - validator B has no power or consumer key change
 	// - validator C has changed its power
-	// - validator E has no power change but has changed its consumer key
-	// - validator F has both changed its power and its consumer key
+	// - validator D has no power change but has changed its consumer key
+	// - validator E has both changed its power and its consumer key
 
 	var expectedUpdates []abci.ValidatorUpdate
 
