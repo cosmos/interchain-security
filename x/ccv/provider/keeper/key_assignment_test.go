@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"bytes"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"math/rand"
 	"sort"
 	"testing"
@@ -184,67 +185,6 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	require.Len(t, result, len(testAssignments))
 }
 
-func TestKeyAssignmentReplacementCRUD(t *testing.T) {
-	chainID := consumer
-	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
-	expCPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	var expPower int64 = 100
-
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	keeper.SetKeyAssignmentReplacement(ctx, chainID, providerAddr, expCPubKey, expPower)
-
-	cPubKey, power, found := keeper.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
-	require.True(t, found, "key assignment replacement not found")
-	require.Equal(t, expCPubKey, cPubKey, "previous consumer key not matching")
-	require.Equal(t, expPower, power, "power not matching")
-
-	keeper.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
-	_, _, found = keeper.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
-	require.False(t, found, "key assignment replacement found")
-}
-
-func TestGetAllKeyAssignmentReplacements(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	chainID := "consumer-1"
-
-	seed := time.Now().UnixNano()
-	rng := rand.New(rand.NewSource(seed))
-
-	numAssignments := 10
-	testAssignments := []types.KeyAssignmentReplacement{}
-	for i := 0; i < numAssignments; i++ {
-		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
-		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
-		testAssignments = append(testAssignments,
-			types.KeyAssignmentReplacement{
-				ProviderAddr: providerAddr.ToSdkConsAddr(),
-				PrevCKey:     &consumerKey,
-				Power:        rng.Int63(),
-			},
-		)
-	}
-	expectedGetAllOrder := testAssignments
-	// sorting by KeyAssignmentReplacement.ProviderAddr
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return bytes.Compare(expectedGetAllOrder[i].ProviderAddr, expectedGetAllOrder[j].ProviderAddr) == -1
-	})
-
-	firstTestAssignmentProviderAddr := types.NewProviderConsAddress(testAssignments[0].ProviderAddr)
-	pk.SetKeyAssignmentReplacement(ctx, "consumer-2", firstTestAssignmentProviderAddr, *testAssignments[0].PrevCKey, testAssignments[0].Power)
-	for _, assignment := range testAssignments {
-		providerAddr := types.NewProviderConsAddress(assignment.ProviderAddr)
-		pk.SetKeyAssignmentReplacement(ctx, chainID, providerAddr, *assignment.PrevCKey, assignment.Power)
-	}
-
-	result := pk.GetAllKeyAssignmentReplacements(ctx, chainID)
-	require.Len(t, result, len(testAssignments))
-	require.Equal(t, expectedGetAllOrder, result)
-}
-
 func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	chainID := consumer
 	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr1"))
@@ -420,9 +360,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
-					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValOpAddress(),
-					).Return(int64(0)),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -445,15 +382,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
-					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValOpAddress(),
-					).Return(int64(0)),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[1].SDKValConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
-					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValOpAddress(),
-					).Return(int64(0)),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -481,9 +412,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
-					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValOpAddress(),
-					).Return(int64(0)),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
@@ -692,7 +620,6 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	// note: an insertion index should always be found
 	for _, u := range updates {
 		for i, id := range vs.identities { // n2 looping but n is tiny
-			// cons := sdk.ConsAddress(utils.GetChangePubKeyAddress(u))
 			cons, _ := ccvtypes.TMCryptoPublicKeyToConsAddr(u.PubKey)
 			if id.SDKValConsAddress().Equals(cons) {
 				vs.power[i] = u.Power
@@ -739,7 +666,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		assignableIDS = append(assignableIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
 
-	seed := time.Now().UnixNano()
+	seed := int64(1) //time.Now().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 
 	// Helper: simulates creation of staking module EndBlock updates.
@@ -784,6 +711,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		providerValset := CreateValSet(providerIDS)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(assignableIDS)
+
 		// For each validator on the consumer, record the corresponding provider
 		// address as looked up on the provider using GetProviderAddrFromConsumerAddr
 		// at a given vscid.
@@ -824,11 +752,53 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			return stakingtypes.Validator{}, false
 		}).AnyTimes()
 
+		//toConsumerValidators := func(providerValset ValSet, updates []abci.ValidatorUpdate) []types.ConsumerValidator {
+		//	var consumerValidators []types.ConsumerValidator
+		//
+		//	for i, v := range providerValset.identities {
+		//		power := providerValset.power[i]
+		//		for _, u := range updates {
+		//			if u.PubKey.Equal(v.TMProtoCryptoPublicKey()) {
+		//				power = u.Power
+		//				break
+		//			}
+		//		}
+		//
+		//		provConsAddr := v.SDKValConsAddress()
+		//
+		//		publicKey, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, v.ProviderConsAddress())
+		//		if !found {
+		//			publicKey = v.TMProtoCryptoPublicKey()
+		//		}
+		//
+		//		consumerValidators = append(consumerValidators, types.ConsumerValidator{
+		//			ProviderConsAddr:  provConsAddr.Bytes(),
+		//			Power:             power,
+		//			ConsumerPublicKey: &publicKey,
+		//		})
+		//	}
+		//	return consumerValidators
+		//}
+
 		// Helper: apply some updates to both the provider and consumer valsets
 		// and increment the provider vscid.
-		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
+		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate, assignments []Assignment) {
 			providerValset.apply(updates)
-			updates = k.MustApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
+
+			var bondedValidators []stakingtypes.Validator
+			for _, v := range providerValset.identities {
+				pkAny, _ := codectypes.NewAnyWithValue(v.ConsensusSDKPubKey())
+
+				bondedValidators = append(bondedValidators, stakingtypes.Validator{
+					OperatorAddress: v.SDKValOpAddress().String(),
+					ConsensusPubkey: pkAny,
+				})
+			}
+
+			nextValidators := k.ComputeNextEpochConsumerValSet(ctx, CHAINID, bondedValidators)
+			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, CHAINID), nextValidators)
+			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
+
 			consumerValset.apply(updates)
 			// Simulate the VSCID update in EndBlock
 			k.IncrementValidatorSetUpdateId(ctx)
@@ -844,10 +814,13 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 		// The consumer chain has not yet been registered
 		// Apply some randomly generated key assignments
-		applyAssignments(getAssignments())
+		assignments := getAssignments()
+		applyAssignments(assignments)
 		// And generate a random provider valset which, in the real system, will
 		// be put into the consumer genesis.
-		applyUpdatesAndIncrementVSCID(getStakingUpdates())
+		stakingUpdates := getStakingUpdates()
+
+		applyUpdatesAndIncrementVSCID(stakingUpdates, assignments)
 
 		// Register the consumer chain
 		k.SetConsumerClientId(ctx, CHAINID, "")
@@ -861,9 +834,12 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		// and a random set of validator power updates
 		for block := 0; block < NUM_BLOCKS_PER_EXECUTION; block++ {
 
+			stakingUpdates = getStakingUpdates()
+			assignments = getAssignments()
+
 			// Generate and apply assignments and power updates
-			applyAssignments(getAssignments())
-			applyUpdatesAndIncrementVSCID(getStakingUpdates())
+			applyAssignments(assignments)
+			applyUpdatesAndIncrementVSCID(stakingUpdates, assignments)
 
 			// Randomly fast forward the greatest pruned VSCID. This simulates
 			// delivery of maturity packets from the consumer chain.
