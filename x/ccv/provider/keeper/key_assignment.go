@@ -424,13 +424,7 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 		consumerAddr := types.NewConsumerConsAddress(validatorConsumerAddr.ConsumerAddr)
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, consumerAddr)
 	}
-
-	//// delete KeyAssignmentReplacements
-	//for _, keyAssignmentReplacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
-	//	providerAddr := types.NewProviderConsAddress(keyAssignmentReplacement.ProviderAddr)
-	//	k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
-	//}
-
+	
 	// delete ValidatorConsumerPubKey
 	for _, consumerAddrsToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
 		k.DeleteConsumerAddrsToPrune(ctx, chainID, consumerAddrsToPrune.VscId)

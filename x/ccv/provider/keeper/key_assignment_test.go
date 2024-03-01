@@ -752,34 +752,6 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			return stakingtypes.Validator{}, false
 		}).AnyTimes()
 
-		//toConsumerValidators := func(providerValset ValSet, updates []abci.ValidatorUpdate) []types.ConsumerValidator {
-		//	var consumerValidators []types.ConsumerValidator
-		//
-		//	for i, v := range providerValset.identities {
-		//		power := providerValset.power[i]
-		//		for _, u := range updates {
-		//			if u.PubKey.Equal(v.TMProtoCryptoPublicKey()) {
-		//				power = u.Power
-		//				break
-		//			}
-		//		}
-		//
-		//		provConsAddr := v.SDKValConsAddress()
-		//
-		//		publicKey, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, v.ProviderConsAddress())
-		//		if !found {
-		//			publicKey = v.TMProtoCryptoPublicKey()
-		//		}
-		//
-		//		consumerValidators = append(consumerValidators, types.ConsumerValidator{
-		//			ProviderConsAddr:  provConsAddr.Bytes(),
-		//			Power:             power,
-		//			ConsumerPublicKey: &publicKey,
-		//		})
-		//	}
-		//	return consumerValidators
-		//}
-
 		// Helper: apply some updates to both the provider and consumer valsets
 		// and increment the provider vscid.
 		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate, assignments []Assignment) {
