@@ -159,7 +159,7 @@ func TestInitGenesis(t *testing.T) {
 			continue // Nothing else to verify
 		}
 
-		valUpdates := appModule.InitGenesis(ctx, cdc, jsonBytes)
+		appModule.InitGenesis(ctx, cdc, jsonBytes)
 
 		numStatesCounted := 0
 		for _, state := range tc.consumerStates {
@@ -173,8 +173,6 @@ func TestInitGenesis(t *testing.T) {
 			require.Equal(t, state.ChainId, chainID)
 		}
 		require.Equal(t, len(tc.consumerStates), numStatesCounted)
-
-		require.Empty(t, valUpdates, "InitGenesis should return no validator updates")
 
 		// Expect slash meter to be initialized to it's allowance value
 		// (replenish fraction * mocked value defined above)
