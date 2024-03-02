@@ -59,6 +59,7 @@ type StakingKeeper interface {
 type SlashingKeeper interface {
 	JailUntil(context.Context, sdk.ConsAddress, time.Time) error // called from provider keeper only
 	GetValidatorSigningInfo(context.Context, sdk.ConsAddress) (slashingtypes.ValidatorSigningInfo, error)
+	SetValidatorSigningInfo(context.Context, sdk.ConsAddress, slashingtypes.ValidatorSigningInfo) error
 	DowntimeJailDuration(context.Context) (time.Duration, error)
 	SlashFractionDowntime(context.Context) (math.LegacyDec, error)
 	SlashFractionDoubleSign(context.Context) (math.LegacyDec, error)

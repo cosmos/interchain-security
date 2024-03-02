@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sort"
 
 	"cosmossdk.io/math"
@@ -94,26 +95,28 @@ func (k Keeper) UpdateSlashingSigningInfo(ctx sdk.Context) {
 	// a certain prefix in ascending order
 	for _, val := range valset {
 		consAddr := sdk.ConsAddress(val.Address)
-		signingInfo, found := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-		if !found {
-			continue
+		signingInfo, err := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+		if err != nil {
+			panic(fmt.Errorf("validator signing info not found for validator %s", consAddr))
 		}
 		if val.Power < smallestNonOptOutPower {
 			// validator CAN opt-out from validating on consumer chains
-			if val.OptedOut == false {
+			if !val.OptedOut {
 				// previously the validator couldn't opt-out
 				val.OptedOut = true
 			}
 		} else {
 			// validator CANNOT opt-out from validating on consumer chains
-			if val.OptedOut == true {
+			if val.OptedOut {
 				// previously the validator could opt-out
 				signingInfo.StartHeight = ctx.BlockHeight()
 				val.OptedOut = false
 			}
 		}
 
-		k.slashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signingInfo)
+		if err := k.slashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signingInfo); err != nil {
+			panic(fmt.Errorf("failed to update validator signing info for validator %s", consAddr))
+		}
 		k.SetCCValidator(ctx, val)
 	}
 }

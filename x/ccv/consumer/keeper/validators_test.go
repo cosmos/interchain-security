@@ -120,13 +120,17 @@ func TestIsValidatorJailed(t *testing.T) {
 
 	// IsValidatorJailed should return false for an arbitrary consensus address
 	consAddr := []byte{0x01, 0x02, 0x03}
-	require.False(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+	isJailed1, err := consumerKeeper.IsValidatorJailed(ctx, consAddr)
+	require.NoError(t, err)
+	require.False(t, isJailed1)
 
 	// Set outstanding downtime for that addr
 	consumerKeeper.SetOutstandingDowntime(ctx, consAddr)
 
 	// Now confirm IsValidatorJailed returns true
-	require.True(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+	isJailed2, err := consumerKeeper.IsValidatorJailed(ctx, consAddr)
+	require.NoError(t, err)
+	require.True(t, isJailed2)
 
 	// Next, we set a value for the standalone staking keeper,
 	// and mark the consumer keeper as being from a previous standalone chain
@@ -141,10 +145,12 @@ func TestIsValidatorJailed(t *testing.T) {
 	// At this point, the state of the consumer keeper is s.t. IsValidatorJailed() queries the standalone staking keeper
 
 	// Now mock that a validator is jailed from the standalone staking keeper
-	mocks.MockStakingKeeper.EXPECT().IsValidatorJailed(ctx, consAddr).Return(true).Times(1)
+	mocks.MockStakingKeeper.EXPECT().IsValidatorJailed(ctx, consAddr).Return(true, nil).Times(1)
 
 	// Confirm IsValidatorJailed returns true
-	require.True(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+	isJailed3, err := consumerKeeper.IsValidatorJailed(ctx, consAddr)
+	require.NoError(t, err)
+	require.True(t, isJailed3)
 }
 
 func TestSlash(t *testing.T) {
@@ -214,7 +220,7 @@ func TestHistoricalInfo(t *testing.T) {
 		pk, err := v.ConsPubKey()
 		require.NoError(t, err)
 
-		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
+		val, err := stakingtypes.NewValidator("", pk, stakingtypes.Description{})
 		require.NoError(t, err)
 
 		// set voting power to random value
@@ -224,13 +230,17 @@ func TestHistoricalInfo(t *testing.T) {
 
 	currentHeight := ctx.BlockHeight()
 
+	validatorsWithCodec := stakingtypes.Validators{
+		Validators:     sVals,
+		ValidatorCodec: consumerKeeper.ValidatorAddressCodec(),
+	}
 	// create and store historical info
-	hi := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), sVals, sdk.DefaultPowerReduction)
+	hi := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), validatorsWithCodec, sdk.DefaultPowerReduction)
 	consumerKeeper.SetHistoricalInfo(ctx, currentHeight, &hi)
 
 	// expect to get historical info
-	recv, found := consumerKeeper.GetHistoricalInfo(ctx, currentHeight)
-	require.True(t, found, "HistoricalInfo not found after set")
+	recv, err := consumerKeeper.GetHistoricalInfo(ctx, currentHeight)
+	require.NoError(t, err, "HistoricalInfo not found after set")
 	require.Equal(t, hi, recv, "HistoricalInfo not equal")
 
 	// verify that historical info valset has validators sorted in order

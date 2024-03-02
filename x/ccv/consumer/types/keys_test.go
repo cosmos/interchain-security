@@ -43,6 +43,7 @@ func getAllKeyPrefixes() []byte {
 		PrevStandaloneChainByteKey,
 		PendingPacketsIndexByteKey,
 		SlashRecordByteKey,
+		ParametersByteKey,
 	}
 }
 

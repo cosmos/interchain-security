@@ -106,12 +106,20 @@ const (
 	// SlashRecordByteKey is the single byte key storing the consumer's slash record.
 	SlashRecordByteKey
 
+	// ParametersKey is the single byte key for storing consumer's parameters.
+	ParametersByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
 //
 // Fully defined key func section
 //
+
+// ParametersKey returns the key for the consumer parameters in the store
+func ParametersKey() []byte {
+	return []byte{ParametersByteKey}
+}
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {

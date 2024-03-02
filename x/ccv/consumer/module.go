@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
+	"cosmossdk.io/core/appmodule"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -26,9 +26,17 @@ import (
 )
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ porttypes.IBCModule   = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule           = (*AppModule)(nil)
+	_ module.AppModuleBasic      = (*AppModuleBasic)(nil)
+	_ module.AppModuleSimulation = (*AppModule)(nil)
+	_ module.HasABCIGenesis      = (*AppModule)(nil)
+	_ module.HasABCIEndBlock     = (*AppModule)(nil)
+	_ module.HasName             = (*AppModule)(nil)
+	_ module.HasConsensusVersion = (*AppModule)(nil)
+	_ module.HasInvariants       = (*AppModule)(nil)
+	_ module.HasServices         = (*AppModule)(nil)
+	_ appmodule.AppModule        = (*AppModule)(nil)
+	_ appmodule.HasBeginBlocker  = (*AppModule)(nil)
 )
 
 // AppModuleBasic is the IBC Consumer AppModuleBasic
@@ -48,6 +56,12 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	// ccv.RegisterInterfaces(registry)
 }
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (AppModule) IsAppModule() {}
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (AppModule) IsOnePerModuleType() {}
 
 // DefaultGenesis returns default genesis state as raw bytes for the ibc
 // consumer module.
@@ -137,7 +151,9 @@ func (AppModule) ConsensusVersion() uint64 {
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(goCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	// Execute BeginBlock logic for the Soft Opt-Out sub-protocol
 	am.keeper.BeginBlockSoftOptOut(ctx)
 
@@ -156,18 +172,21 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	am.keeper.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
 	am.keeper.TrackHistoricalInfo(ctx)
+	return nil
 }
 
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 //
 // TODO: e2e tests confirming behavior with and without standalone -> consumer changeover
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(goCtx context.Context) ([]abci.ValidatorUpdate, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	// If PreCCV state is active, consumer is a previously standalone chain
 	// that was just upgraded to include the consumer ccv module, execute changeover logic.
 	if am.keeper.IsPreCCV(ctx) {
 		initialValUpdates := am.keeper.ChangeoverToConsumer(ctx)
-		return initialValUpdates
+		return initialValUpdates, nil
 	}
 
 	// Execute EndBlock logic for the Reward Distribution sub-protocol
@@ -182,7 +201,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 
 	data, ok := am.keeper.GetPendingChanges(ctx)
 	if !ok {
-		return []abci.ValidatorUpdate{}
+		return []abci.ValidatorUpdate{}, nil
 	}
 	// apply changes to cross-chain validator set
 	tendermintUpdates := am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
@@ -190,7 +209,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 
 	am.keeper.Logger(ctx).Debug("sending validator updates to consensus engine", "len updates", len(tendermintUpdates))
 
-	return tendermintUpdates
+	return tendermintUpdates, nil
 }
 
 // AppModuleSimulation functions
@@ -202,7 +221,7 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // RegisterStoreDecoder registers a decoder for consumer module's types
 // TODO
-func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
 }
 
 // WeightedOperations returns the all the consumer module operations with their respective weights.

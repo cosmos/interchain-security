@@ -187,9 +187,10 @@ func TestGetLastSovereignValidators(t *testing.T) {
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{
 			val,
-		}),
+		}, nil),
 	)
-	lastSovVals := ck.GetLastStandaloneValidators(ctx)
+	lastSovVals, err := ck.GetLastStandaloneValidators(ctx)
+	require.NoError(t, err)
 	require.Equal(t, []stakingtypes.Validator{val}, lastSovVals)
 	require.Equal(t, "sanity check this is the correctly serialized val",
 		lastSovVals[0].Description.Moniker)

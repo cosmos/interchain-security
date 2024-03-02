@@ -102,7 +102,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 
 		// Setup mocked return value for stakingKeeper.GetLastValidators()
 		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return(tc.lastSovVals),
+			mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return(tc.lastSovVals, nil),
 		)
 
 		// Add ref to standalone staking keeper
