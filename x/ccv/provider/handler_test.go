@@ -134,6 +134,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 			msg, err := providertypes.NewMsgAssignConsumerKey(tc.chainID,
 				providerCryptoId.SDKValOpAddress(), consumerKey,
+				providerCryptoId.SDKStakingValidator().OperatorAddress,
 			)
 
 			require.NoError(t, err)
