@@ -63,7 +63,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		// Any ctx is accepted, and the method will be called multiple times during the tests
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).AnyTimes(),
+				gomock.Any()).Return(tc.totalPower, nil).AnyTimes(),
 		)
 
 		// Now we can initialize the slash meter (this would happen in InitGenesis)
@@ -144,7 +144,7 @@ func TestConsecutiveReplenishments(t *testing.T) {
 	// Any ctx is accepted, and the method will be called multiple times during the tests
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			gomock.Any()).Return(math.NewInt(1000)).AnyTimes(),
+			gomock.Any()).Return(math.NewInt(1000), nil).AnyTimes(),
 	)
 
 	// Now we can initialize the slash meter (this would happen in InitGenesis)
@@ -217,7 +217,7 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect two calls, once for initialization, once for allowance check
-			ctx).Return(math.NewInt(1000)).Times(2),
+			ctx).Return(math.NewInt(1000), nil).Times(2),
 	)
 
 	// Initialize the slash meter (this would happen in InitGenesis)
@@ -232,7 +232,7 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect two calls, once for replenish check, once for allowance check
-			ctx).Return(math.NewInt(500)).Times(2),
+			ctx).Return(math.NewInt(500), nil).Times(2),
 	)
 
 	// Replenishment should not happen here, but slash meter should be decremented to new allowance
@@ -247,7 +247,7 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect three calls, once for replenish check,
 			// once for replenishment, once for allowance check
-			ctx).Return(math.NewInt(100)).Times(3),
+			ctx).Return(math.NewInt(100), nil).Times(3),
 	)
 
 	// Replenishment should happen here, slash meter should be decremented to new allowance regardless
@@ -260,7 +260,7 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect two calls, once for replenish check, once for allowance check
-			ctx).Return(math.NewInt(5000)).Times(2),
+			ctx).Return(math.NewInt(5000), nil).Times(2),
 	)
 
 	//
@@ -279,7 +279,7 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect three calls, once for replenish check,
 			// once for replenishment, once for allowance check
-			ctx).Return(math.NewInt(10000)).Times(3),
+			ctx).Return(math.NewInt(10000), nil).Times(3),
 	)
 
 	// Replenishment should happen here, slash meter should be set to new allowance
@@ -347,9 +347,9 @@ func TestNegativeSlashMeter(t *testing.T) {
 		// then total power minus slashed power any amount of times
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).Times(1),
+				gomock.Any()).Return(tc.totalPower, nil).Times(1),
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower.Sub(tc.slashedPower)).AnyTimes(),
+				gomock.Any()).Return(tc.totalPower.Sub(tc.slashedPower), nil).AnyTimes(),
 		)
 
 		// Initialize the slash meter (using first mocked value)
@@ -451,7 +451,7 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).Times(1),
+				gomock.Any()).Return(tc.totalPower, nil).Times(1),
 		)
 
 		// Set desired params

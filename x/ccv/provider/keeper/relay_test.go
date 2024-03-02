@@ -74,7 +74,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		}
 
 		gomock.InOrder(
-			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates),
+			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates, nil),
 		)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
@@ -148,9 +148,9 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()).
-			Return(stakingtypes.Validator{}, true).Times(1),
+			Return(stakingtypes.Validator{}, nil).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(ctx, gomock.Any()).
-			Return(int64(2)).Times(1),
+			Return(int64(2), nil).Times(1),
 	}
 
 	// Add mocks for slash packet handling
@@ -322,7 +322,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					// Method will return once validator is not found.
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, false, // false = Not found.
+						stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound, // false = Not found.
 					).Times(1),
 				}
 			},
@@ -341,7 +341,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, true, // true = Found.
+						stakingtypes.Validator{}, nil, // true = Found.
 					).Times(1),
 					// Execution will stop after this call as validator is tombstoned.
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
@@ -364,7 +364,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, true,
+						stakingtypes.Validator{}, nil,
 					).Times(1),
 
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,

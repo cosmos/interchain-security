@@ -57,11 +57,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// Return a valid validator, found!
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerConsAddr.ToSdkConsAddr(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			expError: false,
@@ -76,7 +75,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
 						// Return a valid validator, found!
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 				)
 			},
 			expError: true,
@@ -93,8 +92,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// return false: not found!
-					).Return(stakingtypes.Validator{}, false).Times(1),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound).Times(1),
 				)
 			},
 			expError: true,
@@ -114,11 +112,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// Return a valid validator, found!
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerConsAddr.ToSdkConsAddr(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			expError: true,

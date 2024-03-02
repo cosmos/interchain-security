@@ -143,7 +143,7 @@ func TestInitGenesis(t *testing.T) {
 		if !tc.expPanic {
 			orderedCalls = append(orderedCalls,
 				mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-					ctx).Return(math.NewInt(100)).Times(1), // Return total voting power as 100
+					ctx).Return(math.NewInt(100), nil).Times(1), // Return total voting power as 100
 			)
 		}
 
