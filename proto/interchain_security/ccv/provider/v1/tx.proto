@@ -26,7 +26,10 @@ service Msg {
 
   rpc ConsumerAddition(MsgConsumerAddition)returns (MsgConsumerAdditionResponse);
   rpc ConsumerRemoval(MsgConsumerRemoval) returns (MsgConsumerRemovalResponse);
+
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
+
 
 message MsgAssignConsumerKey {
   option (gogoproto.equal) = false;
@@ -89,6 +92,9 @@ message MsgUpdateParams {
   // params defines the x/provider parameters to update.
   Params params = 2 [(gogoproto.nullable) = false];
 }
+
+message MsgUpdateParamsResponse {}
+
 
 // MsgConsumerAddition defines the message used to spawn a new consumer chain using a v1 governance proposal.
 // If it passes, then all validators on the provider chain are expected to validate
