@@ -15,8 +15,6 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 )
 
@@ -63,7 +61,7 @@ func NewAppModule(
 
 // BeginBlocker mirror functionality of cosmos-sdk/distribution BeginBlocker
 // however it allocates no proposer reward
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context) {
 	defer telemetry.ModuleMeasureSince(distrtypes.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
 	// TODO this is Tendermint-dependent
@@ -74,6 +72,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 }
 
 // AllocateTokens handles distribution of the collected fees
+// NOTE: refactored to use collections (FeePool.Get instead of GetFeePool) for v47 -> v50 migration
 func (am AppModule) AllocateTokens(
 	ctx sdk.Context,
 ) {
@@ -93,19 +92,32 @@ func (am AppModule) AllocateTokens(
 
 	// temporary workaround to keep CanWithdrawInvariant happy
 	// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
-	feePool := am.keeper.GetFeePool(ctx)
+	feePool, err := am.keeper.FeePool.Get(ctx)
+	if err != nil {
+		panic(err)
+	}
 	vs := am.stakingKeeper.GetValidatorSet()
-	totalBondedTokens := vs.TotalBondedTokens(ctx)
+	totalBondedTokens, err := vs.TotalBondedTokens(ctx)
+	if err != nil {
+		// TODO: @MSalopek - how do we handle this err correcly?
+		panic(err)
+	}
 	if totalBondedTokens.IsZero() {
 		feePool.CommunityPool = feePool.CommunityPool.Add(feesCollected...)
-		am.keeper.SetFeePool(ctx, feePool)
+		if err := am.keeper.FeePool.Set(ctx, feePool); err != nil {
+			panic(err)
+		}
 		return
 	}
 
 	// calculate the fraction allocated to representatives by subtracting the community tax.
 	// e.g. if community tax is 0.02, representatives fraction will be 0.98 (2% goes to the community pool and the rest to the representatives)
 	remaining := feesCollected
-	communityTax := am.keeper.GetCommunityTax(ctx)
+	communityTax, err := am.keeper.GetCommunityTax(ctx)
+	if err != nil {
+		// TODO: @MSalopek - how do we handle this err correcly?
+		panic(err)
+	}
 	representativesFraction := math.LegacyOneDec().Sub(communityTax)
 
 	// allocate tokens proportionally to representatives voting power
@@ -123,5 +135,7 @@ func (am AppModule) AllocateTokens(
 	// allocate community funding
 	// due to the 3 truncations above, remaining sent to the community pool will be slightly more than it should be. This is OK
 	feePool.CommunityPool = feePool.CommunityPool.Add(remaining...)
-	am.keeper.SetFeePool(ctx, feePool)
+	if err := am.keeper.FeePool.Set(ctx, feePool); err != nil {
+		panic(err)
+	}
 }
