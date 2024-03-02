@@ -157,6 +157,8 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	am.keeper.BeginBlockCCR(sdkCtx)
 	// Check for replenishing slash meter before any slash packets are processed for this block
 	am.keeper.BeginBlockCIS(sdkCtx)
+
+	return nil
 }
 
 // EndBlock implements the AppModule interface

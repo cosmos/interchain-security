@@ -19,15 +19,25 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 ) math.Int {
 	// Obtain staking module val object from the provider's consensus address.
 	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
-	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr.ToSdkConsAddr())
+	val, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr.ToSdkConsAddr())
 
-	if !found || val.IsJailed() {
+	if err != nil || val.IsJailed() {
 		// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
 		// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
 		return math.ZeroInt()
 	} else {
 		// Otherwise, return the staking keeper's LastValidatorPower value.
-		return math.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator()))
+		// NOTE: @MSalopek double check this conversion and see if it's necessary
+		valAddrBech32, err := sdktypes.ValAddressFromHex(val.GetOperator())
+		if err != nil {
+			return math.ZeroInt()
+		}
+
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddrBech32)
+		if err != nil {
+			return math.ZeroInt()
+		}
+		return math.NewInt(power)
 	}
 }
 
@@ -102,7 +112,9 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) math.Int {
 
 	// Compute allowance in units of tendermint voting power (integer),
 	// noting that total power changes over time
-	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
+	// NOTE: ignoring err seems safe here, since the func returns a default math.ZeroInt()
+	// and there are no concrete actions we can take if the err is not nil.
+	totalPower, _ := k.stakingKeeper.GetLastTotalPower(ctx)
 
 	roundedInt := math.NewInt(decFrac.MulInt(totalPower).RoundInt64())
 	if roundedInt.IsZero() {
