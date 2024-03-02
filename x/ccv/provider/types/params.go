@@ -40,6 +40,9 @@ const (
 )
 
 // Reflection based keys for params subspace
+// Legacy: usage of x/params for parameters is deprecated.
+// Use x/ccv/provider/keeper/params instead
+// [DEPRECATED]
 var (
 	KeyTemplateClient                     = []byte("TemplateClient")
 	KeyTrustingPeriodFraction             = []byte("TrustingPeriodFraction")

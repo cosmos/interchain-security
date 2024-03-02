@@ -145,12 +145,20 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
+	// ParametersKey is the is the single byte key for storing provider's parameters.
+	ParametersByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
 //
 // Fully defined key func section
 //
+
+// ParametersKey returns the key for the parameters of the provider module in the store
+func ParametersKey() []byte {
+	return []byte{ParametersByteKey}
+}
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {

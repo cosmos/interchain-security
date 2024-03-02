@@ -24,4 +24,8 @@ var (
 	ErrInvalidConsumerClient            = errorsmod.Register(ModuleName, 16, "ccv channel is not built on correct client")
 	ErrDuplicateConsumerChain           = errorsmod.Register(ModuleName, 17, "consumer chain already exists")
 	ErrConsumerChainNotFound            = errorsmod.Register(ModuleName, 18, "consumer chain not found")
+	ErrNoUnbondingTime                  = errorsmod.Register(ModuleName, 19, "provider unbonding time not found")
+	ErrInvalidAddress                   = errorsmod.Register(ModuleName, 20, "invalid address")
+	ErrUnauthorized                     = errorsmod.Register(ModuleName, 21, "unauthorized")
+	ErrBlankConsumerChainID             = errorsmod.Register(ModuleName, 22, "consumer chain id must not be blank")
 )
