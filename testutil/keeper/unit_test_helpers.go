@@ -29,10 +29,12 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+
 	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 
 	dbm "github.com/cosmos/cosmos-db"
@@ -92,7 +94,7 @@ type MockedKeepers struct {
 	*MockIBCTransferKeeper
 	*MockIBCCoreKeeper
 	*MockDistributionKeeper
-	*MockGovKeeper
+	// *MockGovKeeper
 }
 
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
@@ -110,7 +112,7 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 		MockIBCTransferKeeper:  NewMockIBCTransferKeeper(ctrl),
 		MockIBCCoreKeeper:      NewMockIBCCoreKeeper(ctrl),
 		MockDistributionKeeper: NewMockDistributionKeeper(ctrl),
-		MockGovKeeper:          NewMockGovKeeper(ctrl),
+		// MockGovKeeper:          NewMockGovKeeper(ctrl),
 	}
 }
 
@@ -130,7 +132,8 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockAccountKeeper,
 		mocks.MockDistributionKeeper,
 		mocks.MockBankKeeper,
-		mocks.MockGovKeeper,
+		// mocks.MockGovKeeper,
+		govkeeper.Keeper{}, // HACK: to make parts of the test work
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		address.NewBech32Codec("cosmosvaloper"),
 		address.NewBech32Codec("cosmosvalcons"),

@@ -436,7 +436,8 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}
 
-	valAddr, err := k.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+	// NOTE: on cosmos-sdk@v0.50 validator.GetOperator() now returns a Hex string instead of sdk.ValAddress
+	valAddr, err := sdk.ValAddressFromHex(validator.GetOperator())
 	if err != nil {
 		return err
 	}
@@ -467,7 +468,6 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 	}
 
 	_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, consAdrr, 0, totalPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
-
 	return err
 }
 

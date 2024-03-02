@@ -131,7 +131,7 @@ func (k Keeper) SlashWithInfractionReason(goCtx context.Context, addr sdk.ConsAd
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
-		return math.NewInt(0), nil
+		return math.ZeroInt(), nil
 	}
 
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
@@ -152,7 +152,7 @@ func (k Keeper) SlashWithInfractionReason(goCtx context.Context, addr sdk.ConsAd
 				"validator", addr,
 				"power", power,
 			)
-			return math.NewInt(0), nil
+			return math.ZeroInt(), nil
 		}
 	}
 	// get VSC ID for infraction height
