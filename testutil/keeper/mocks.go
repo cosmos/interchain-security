@@ -526,6 +526,20 @@ func (mr *MockSlashingKeeperMockRecorder) JailUntil(arg0, arg1, arg2 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JailUntil", reflect.TypeOf((*MockSlashingKeeper)(nil).JailUntil), arg0, arg1, arg2)
 }
 
+// SetValidatorSigningInfo mocks base method.
+func (m *MockSlashingKeeper) SetValidatorSigningInfo(arg0 context.Context, arg1 types1.ConsAddress, arg2 types2.ValidatorSigningInfo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetValidatorSigningInfo", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetValidatorSigningInfo indicates an expected call of SetValidatorSigningInfo.
+func (mr *MockSlashingKeeperMockRecorder) SetValidatorSigningInfo(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetValidatorSigningInfo", reflect.TypeOf((*MockSlashingKeeper)(nil).SetValidatorSigningInfo), arg0, arg1, arg2)
+}
+
 // SlashFractionDoubleSign mocks base method.
 func (m *MockSlashingKeeper) SlashFractionDoubleSign(arg0 context.Context) (math.LegacyDec, error) {
 	m.ctrl.T.Helper()
