@@ -83,7 +83,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 		tt.setup(ctx, k)
 
 		t.Run(tt.name, func(t *testing.T) {
-			if actual := k.ValidatorConsensusKeyInUse(ctx, newValidator.SDKStakingValidator().GetOperator()); actual != tt.expect {
+			if actual := k.ValidatorConsensusKeyInUse(ctx, newValidator.SDKValOpAddress()); actual != tt.expect {
 				t.Errorf("validatorConsensusKeyInUse() = %v, want %v", actual, tt.expect)
 			}
 		})
@@ -108,6 +108,7 @@ func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
 		"",
 		"",
 		sdk.AccAddress(acct.SDKValOpAddress()),
+		false, // proposal not expedited
 	)
 	require.NoError(t, err)
 
@@ -200,6 +201,7 @@ func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
 					"",
 					"",
 					sdk.AccAddress(acct.SDKValOpAddress()),
+					false, // proposal not expedited
 				)
 				require.NoError(t, err)
 			}
