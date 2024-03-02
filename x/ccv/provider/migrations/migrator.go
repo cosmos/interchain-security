@@ -6,6 +6,7 @@ import (
 
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	v3 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v3"
+	v4 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v4"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -30,4 +31,8 @@ func (m Migrator) Migrate1to2(ctx sdktypes.Context) error {
 // Migrate2to3 migrates x/ccvprovider state from consensus version 2 to 3.
 func (m Migrator) Migrate2to3(ctx sdktypes.Context) error {
 	return v3.MigrateQueuedPackets(ctx, m.providerKeeper)
+}
+
+func (m Migrator) Migrate3to4(ctx sdktypes.Context) error {
+	return v4.MigrateParams(ctx, m.providerKeeper, m.paramSpace)
 }

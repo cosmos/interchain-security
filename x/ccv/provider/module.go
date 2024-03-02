@@ -19,6 +19,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client/cli"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
@@ -120,7 +121,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-	migrator := keeper.NewMigrator(*am.keeper, am.paramSpace)
+	migrator := migrations.NewMigrator(*am.keeper, am.paramSpace)
 	// TODO: check/adapt 'fromVersion' once v0.50 branch merged with main
 	err := cfg.RegisterMigration(am.Name(), 2, migrator.Migrate2to3)
 	if err != nil {
@@ -146,7 +147,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 3 }
+func (AppModule) ConsensusVersion() uint64 { return 4 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx context.Context) error {
