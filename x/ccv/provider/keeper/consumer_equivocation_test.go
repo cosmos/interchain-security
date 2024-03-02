@@ -597,7 +597,7 @@ func TestComputePowerToSlash(t *testing.T) {
 	}
 
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
-	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+	validator, _ := stakingtypes.NewValidator(pubKey.Address().String(), pubKey, stakingtypes.Description{})
 
 	for _, tc := range testCases {
 		gomock.InOrder(mocks.MockStakingKeeper.EXPECT().
@@ -655,7 +655,7 @@ func TestSlashValidator(t *testing.T) {
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	validator, err := stakingtypes.NewValidator(
-		sdk.ValAddress(pubKey.Address().Bytes()),
+		pubKey.Address().String(),
 		pubKey,
 		stakingtypes.NewDescription("", "", "", "", ""),
 	)
@@ -756,7 +756,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	// validator is initially unbonded
-	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+	validator, _ := stakingtypes.NewValidator(pubKey.Address().String(), pubKey, stakingtypes.Description{})
 
 	consAddr, _ := validator.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(consAddr)
