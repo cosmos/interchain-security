@@ -43,7 +43,6 @@ type Keeper struct {
 	storeService store.KVStoreService
 
 	cdc                codec.BinaryCodec
-	paramSpace         paramtypes.Subspace
 	scopedKeeper       ccv.ScopedKeeper
 	channelKeeper      ccv.ChannelKeeper
 	portKeeper         ccv.PortKeeper

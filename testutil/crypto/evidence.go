@@ -1,12 +1,14 @@
 package crypto
 
 import (
+	"fmt"
 	"time"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/bytes"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 )
 
@@ -36,12 +38,20 @@ func MakeAndSignVote(
 	signer tmtypes.PrivValidator,
 	chainID string,
 ) *tmtypes.Vote {
+	pubKey, err := signer.GetPubKey()
+	if err != nil {
+		panic(fmt.Errorf("can't get pubkey: %w", err))
+	}
+	addr := pubKey.Address()
+	idx, _ := valSet.GetByAddress(addr)
 	vote, err := tmtypes.MakeVote(
-		blockHeight,
-		blockID,
-		valSet,
 		signer,
 		chainID,
+		idx,                   // val index
+		blockHeight,           // height
+		0,                     // round
+		tmproto.PrecommitType, // type (does not work if set to sth else)
+		blockID,
 		blockTime,
 	)
 	if err != nil {
@@ -69,13 +79,22 @@ func MakeAndSignVoteWithForgedValAddress(
 	valAddressSigner tmtypes.PrivValidator,
 	chainID string,
 ) *tmtypes.Vote {
+	pubKey, err := signer.GetPubKey()
+	if err != nil {
+		panic(fmt.Errorf("can't get pubkey: %w", err))
+	}
+	addr := pubKey.Address()
+	idx, _ := valSet.GetByAddress(addr)
+
 	// create the vote using a different key than the signing key
 	vote, err := tmtypes.MakeVote(
-		blockHeight,
-		blockID,
-		valSet,
 		valAddressSigner,
 		chainID,
+		idx,
+		blockHeight,
+		0,
+		tmproto.PrecommitType,
+		blockID,
 		blockTime,
 	)
 	if err != nil {
