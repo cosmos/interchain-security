@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -46,8 +47,7 @@ func (k Keeper) DeleteConsumerRewardDenom(
 
 func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenoms []string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerRewardDenomsBytePrefix})
-
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ConsumerRewardDenomsBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()[1:]
