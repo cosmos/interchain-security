@@ -414,31 +414,31 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				require.False(t, found)
 			},
 		},
-		// {
-		// 	name: "1",
-		// 	mockSetup: func(sdkCtx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 		gomock.InOrder(
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(sdkCtx,
-		// 				consumerIdentities[0].SDKValConsAddress(),
-		// 			).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
-		// 			mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-		// 				sdkCtx, providerIdentities[0].SDKValOpAddress(),
-		// 			).Return(int64(0), nil),
-		// 		)
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 		k.SetConsumerClientId(ctx, chainID, "")
-		// 		err := k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[0].SDKStakingValidator(),
-		// 			consumerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.NoError(t, err)
-		// 		providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-		// 			consumerIdentities[0].ConsumerConsAddress())
-		// 		require.True(t, found)
-		// 		require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
-		// 	},
-		// },
+		{
+			name: "1",
+			mockSetup: func(sdkCtx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(sdkCtx,
+						consumerIdentities[0].SDKValConsAddress(),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+						sdkCtx, providerIdentities[0].SDKValOpAddress(),
+					).Return(int64(0), nil),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+			},
+		},
 		{
 			name: "2",
 			mockSetup: func(sdkCtx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
@@ -476,157 +476,157 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
-		// {
-		// 	name: "3",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 		gomock.InOrder(
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				consumerIdentities[0].SDKValConsAddress(),
-		// 			).Return(stakingtypes.Validator{}, false),
-		// 			mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-		// 				ctx, providerIdentities[0].SDKValOpAddress(),
-		// 			).Return(int64(0)),
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				consumerIdentities[0].SDKValConsAddress(),
-		// 			).Return(stakingtypes.Validator{}, false),
-		// 		)
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 		k.SetConsumerClientId(ctx, chainID, "")
-		// 		err := k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[0].SDKStakingValidator(),
-		// 			consumerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.NoError(t, err)
-		// 		err = k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[1].SDKStakingValidator(),
-		// 			consumerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.Error(t, err)
-		// 		providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-		// 			consumerIdentities[0].ConsumerConsAddress())
-		// 		require.True(t, found)
-		// 		require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
-		// 	},
-		// },
-		// {
-		// 	name: "4",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 		gomock.InOrder(
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				providerIdentities[0].SDKValConsAddress(),
-		// 			).Return(providerIdentities[0].SDKStakingValidator(), true),
-		// 		)
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 		k.SetConsumerClientId(ctx, chainID, "")
-		// 		err := k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[1].SDKStakingValidator(),
-		// 			providerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.Error(t, err)
-		// 	},
-		// },
-		// {
-		// 	name: "5",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 		gomock.InOrder(
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				consumerIdentities[0].SDKValConsAddress(),
-		// 			).Return(stakingtypes.Validator{}, false),
-		// 		)
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 		k.SetProposedConsumerChain(ctx, chainID, 0)
-		// 		err := k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[0].SDKStakingValidator(),
-		// 			consumerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.NoError(t, err)
-		// 		providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-		// 			consumerIdentities[0].ConsumerConsAddress())
-		// 		require.True(t, found)
-		// 		require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
-		// 	},
-		// },
-		// {
-		// 	name: "6",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 		gomock.InOrder(
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				consumerIdentities[0].SDKValConsAddress(),
-		// 			).Return(stakingtypes.Validator{}, false),
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				consumerIdentities[1].SDKValConsAddress(),
-		// 			).Return(stakingtypes.Validator{}, false),
-		// 		)
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 		k.SetProposedConsumerChain(ctx, chainID, 0)
-		// 		err := k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[0].SDKStakingValidator(),
-		// 			consumerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.NoError(t, err)
-		// 		err = k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[0].SDKStakingValidator(),
-		// 			consumerIdentities[1].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.NoError(t, err)
-		// 		providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-		// 			consumerIdentities[1].ConsumerConsAddress())
-		// 		require.True(t, found)
-		// 		require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
-		// 	},
-		// },
-		// {
-		// 	name: "7",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 		gomock.InOrder(
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				consumerIdentities[0].SDKValConsAddress(),
-		// 			).Return(stakingtypes.Validator{}, false),
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				consumerIdentities[0].SDKValConsAddress(),
-		// 			).Return(stakingtypes.Validator{}, false),
-		// 		)
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 		k.SetProposedConsumerChain(ctx, chainID, 0)
-		// 		err := k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[0].SDKStakingValidator(),
-		// 			consumerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.NoError(t, err)
-		// 		err = k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[1].SDKStakingValidator(),
-		// 			consumerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.Error(t, err)
-		// 		providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-		// 			consumerIdentities[0].ConsumerConsAddress())
-		// 		require.True(t, found)
-		// 		require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
-		// 	},
-		// },
-		// {
-		// 	name: "8",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 		gomock.InOrder(
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-		// 				providerIdentities[0].SDKValConsAddress(),
-		// 			).Return(providerIdentities[0].SDKStakingValidator(), true),
-		// 		)
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 		k.SetProposedConsumerChain(ctx, chainID, 0)
-		// 		err := k.AssignConsumerKey(ctx, chainID,
-		// 			providerIdentities[1].SDKStakingValidator(),
-		// 			providerIdentities[0].TMProtoCryptoPublicKey(),
-		// 		)
-		// 		require.Error(t, err)
-		// 	},
-		// },
+		{
+			name: "3",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKValConsAddress(),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+						ctx, providerIdentities[0].SDKValOpAddress(),
+					).Return(int64(0), nil),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKValConsAddress(),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "4",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						providerIdentities[0].SDKValConsAddress(),
+					).Return(providerIdentities[0].SDKStakingValidator(), nil),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					providerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+			},
+		},
+		{
+			name: "5",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKValConsAddress(),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetProposedConsumerChain(ctx, chainID, 0)
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "6",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKValConsAddress(),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[1].SDKValConsAddress(),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetProposedConsumerChain(ctx, chainID, 0)
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[1].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[1].ConsumerConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "7",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKValConsAddress(),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKValConsAddress(),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetProposedConsumerChain(ctx, chainID, 0)
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "8",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						providerIdentities[0].SDKValConsAddress(),
+					).Return(providerIdentities[0].SDKStakingValidator(), nil),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetProposedConsumerChain(ctx, chainID, 0)
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					providerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+			},
+		},
 	}
 
 	for _, tc := range testCases {

@@ -462,7 +462,7 @@ func (k Keeper) AssignConsumerKey(
 		}
 
 		// check whether the validator is valid, i.e., its power is positive
-		power, err := k.stakingKeeper.GetLastValidatorPower(ctx.Context(), valAddrBech32)
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddrBech32)
 		if err != nil {
 			return err
 		}
