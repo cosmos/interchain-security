@@ -28,12 +28,12 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 	} else {
 		// Otherwise, return the staking keeper's LastValidatorPower value.
 		// NOTE: @MSalopek double check this conversion and see if it's necessary
-		valAddrBech32, err := sdktypes.ValAddressFromHex(val.GetOperator())
+		valAddr, err := sdktypes.ValAddressFromHex(val.GetOperator())
 		if err != nil {
 			return math.ZeroInt()
 		}
 
-		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddrBech32)
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
 		if err != nil {
 			return math.ZeroInt()
 		}

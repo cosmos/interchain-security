@@ -4,13 +4,12 @@ import (
 	"strings"
 	"testing"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-
-	"cosmossdk.io/math"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -148,7 +147,11 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()).
-			Return(stakingtypes.Validator{}, nil).Times(1),
+			Return(stakingtypes.Validator{
+				// must be a hex string so it can be properly decoded by sdktypes.ValAddressFromHex(val.GetOperator())
+				// empty string is fine, as it's not used in this test
+				OperatorAddress: "557D5BD0FA991DAB8EED2B9DCF98AC1B3200D43D",
+			}, nil).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(ctx, gomock.Any()).
 			Return(int64(2), nil).Times(1),
 	}
