@@ -60,6 +60,12 @@ func TestValidateParams(t *testing.T) {
 		{"0 blocks per epoch", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
 			"0.00", time.Hour, time.Hour, time.Hour, 30*time.Minute, "0.1", sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, 0), false},
+		{"exceeding max blocks per epoch", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+			"0.00", time.Hour, time.Hour, time.Hour, 30*time.Minute, "0.1", sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, types.MaxBlocksPerEpoch+1), false},
+		{"valid blocks per epoch", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+			"0.00", time.Hour, time.Hour, time.Hour, 30*time.Minute, "0.1", sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, types.MaxBlocksPerEpoch), true},
 	}
 
 	for _, tc := range testCases {

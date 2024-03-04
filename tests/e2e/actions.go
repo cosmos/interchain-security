@@ -1307,6 +1307,9 @@ func (tr TestConfig) relayPacketsGorelayer(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
+	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
+	// queued and are subsequently relayed.
 	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
 	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
 
@@ -1334,6 +1337,9 @@ func (tr TestConfig) relayPacketsHermes(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
+	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
+	// queued and are subsequently relayed.
 	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
 	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
 
