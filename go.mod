@@ -169,7 +169,7 @@ require (
 require (
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.16.0
-	golang.org/x/mod v0.15.0
+	golang.org/x/mod v0.16.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80
 )
 
