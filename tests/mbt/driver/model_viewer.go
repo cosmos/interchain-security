@@ -40,6 +40,10 @@ func RunningTime(curStateExpr itf.MapExprType, chain string) int64 {
 	return ChainState(curStateExpr, chain)["runningTimestamp"].Value.(int64)
 }
 
+func ProviderHeight(curStateExpr itf.MapExprType) int64 {
+	return ProviderState(curStateExpr)["chainState"].Value.(itf.MapExprType)["currentBlockHeight"].Value.(int64)
+}
+
 // PacketQueue returns the queued packets between sender and receiver.
 // Either sender or receiver need to be the provider.
 func PacketQueue(curStateExpr itf.MapExprType, sender, receiver string) itf.ListExprType {

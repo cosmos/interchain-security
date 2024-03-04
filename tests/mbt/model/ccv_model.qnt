@@ -348,11 +348,11 @@ module ccv_model {
     val ValUpdatePrecondition = trace[trace.length()-1].kind == "EndAndBeginBlockForProvider"
     val ValidatorUpdatesArePropagatedInv = 
         // when the an epoch ends and the provider has just entered a validator set into a block...
-        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisEpoch and CurrentBlockEndsEpoch
+        ValUpdatePrecondition and CurrentBlockEndsEpoch
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
-        // ... for each consumer that is running then ...
-        runningConsumers.forall(
+        // ... for each consumer for which we need to send a vsc packet ...
+        currentState.providerState.consumersWithPowerChangesInThisEpoch.forall(
             // ...the validator set is in a sent packet...
             consumer => currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
                 packet => packet.validatorSet == providerValSetInCurBlock
@@ -740,11 +740,11 @@ module ccv_model {
     // and the key assignment of each validator should be applied in that VSCPacket.
     val ValidatorUpdatesArePropagatedKeyAssignmentInv = 
         // when the provider has just entered a validator set into a block...
-        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisEpoch and CurrentBlockEndsEpoch
+        ValUpdatePrecondition and CurrentBlockEndsEpoch
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
-        runningConsumers.forall(
+        currentState.providerState.consumersWithPowerChangesInThisEpoch.forall(
             // ...the validator set under key assignment is in a sent packet...
             val providerState = currentState.providerState
             consumer => providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(

@@ -89,11 +89,8 @@ module ccv_types {
             // Stores VscPackets which have been sent but where the provider has *not received a response yet*.
             sentVscPacketsToConsumer: Chain -> List[VscPacket],
 
-            // stores whether, in this epoch, the validator set has changed.
-            // this is needed because the validator set might be considered to have changed, even though
-            // it is still technically identical at our level of abstraction, e.g. a validator power change on the provider
-            // might leave the validator set the same because a delegation and undelegation cancel each other out.
-            providerValidatorSetChangedInThisEpoch: bool,
+            // stores for which consumer chains, in this epoch, the validator set is considered to have changed and we thus need to send a vscPacket to the consumer chains.
+            consumersWithPowerChangesInThisEpoch: Set[Chain],
 
             // stores, for each consumer chain, its current status -
             // not consumer, running, or stopped
@@ -133,7 +130,7 @@ module ccv_types {
             outstandingPacketsToConsumer: Map(),
             receivedMaturations: Set(),
             sentVscPacketsToConsumer: Map(),
-            providerValidatorSetChangedInThisEpoch: false,
+            consumersWithPowerChangesInThisEpoch: Set(),
             consumerStatus: Map(),
             runningVscId: 0,
             validatorToConsumerAddr: Map(),
@@ -301,7 +298,7 @@ module ccv {
                 } else {
                     // set the validator set changed flag
                     val newProviderState = currentState.providerState.with(
-                        "providerValidatorSetChangedInThisEpoch", true
+                        "consumersWithPowerChangesInThisEpoch", getRunningConsumers(currentState.providerState)
                     )
                     pure val tmpState = currentState.with(
                         "providerState", newProviderState

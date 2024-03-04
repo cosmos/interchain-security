@@ -208,7 +208,7 @@ module ccv_utils {
         val newSentPacketsPerConsumer = providerState.getConsumers().mapBy( // compute, for each consumer, a list of new packets to be sent
             (consumer) => 
             // if validator set changed or the key assignments for this chain changed, and the consumer is running, send a packet
-            if ((providerState.providerValidatorSetChangedInThisEpoch or 
+            if ((providerState.consumersWithPowerChangesInThisEpoch.contains(consumer) or 
                 providerState.consumersWithAddrAssignmentChangesInThisEpoch.contains(consumer))
                 and 
                 isRunningConsumer(consumer, providerState)) {
@@ -247,9 +247,8 @@ module ccv_utils {
             runningVscId: providerState.runningVscId + 1,
             // we ended the block and processed that the valset or key assignments changed,
             // so reset the flags
-            providerValidatorSetChangedInThisEpoch: false,
+            consumersWithPowerChangesInThisEpoch: Set(),
             consumersWithAddrAssignmentChangesInThisEpoch: Set(),
-            providerValidatorSetChangedInThisEpoch: false,
             // remember the key assignments that were applied to send the packets
             keyAssignmentsForVSCPackets: providerState.keyAssignmentsForVSCPackets.put(
                 providerState.runningVscId,

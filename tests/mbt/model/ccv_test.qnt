@@ -26,6 +26,10 @@ module ccv_test {
                             "validator2", 5
                         )
                     )
+                ).with(
+                    "consumerStatus", Map(
+                        "consumer" -> RUNNING
+                    )
                 )
             )
 
@@ -79,7 +83,7 @@ module ccv_test {
         )
         // still should set the flag
         not(finalResult.hasError()) and
-        finalResult.newState.providerState.providerValidatorSetChangedInThisEpoch
+        finalResult.newState.providerState.consumersWithPowerChangesInThisEpoch.contains("consumer")
     }
 
 
