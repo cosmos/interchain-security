@@ -146,7 +146,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 
 	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), &prop)
 	propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(providerChain.GetContext())
-	s.Require().Len(propsToExecute, 1)
+	s.Require().Len(propsToExecute, 1, "props to execute is incorrect length")
 
 	// commit the state on the provider chain
 	coordinator.CommitBlock(providerChain)
@@ -163,7 +163,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	for _, update := range consumerGenesisState.Provider.InitialValSet {
 		// tmPubKey update.PubKey
 		tmPubKey, err := tmencoding.PubKeyFromProto(update.PubKey)
-		s.Require().NoError(err)
+		s.Require().NoError(err, "failed to convert tendermint pubkey")
 		valz = append(valz, &tmtypes.Validator{
 			PubKey:           tmPubKey,
 			VotingPower:      update.Power,

@@ -455,14 +455,13 @@ func (k Keeper) AssignConsumerKey(
 			oldConsumerKey = providerKey
 		}
 
-		// NOTE: on cosmos-sdk@v0.50 validator.GetOperator() now returns a Hex string instead of sdk.ValAddress
-		valAddrBech32, err := sdk.ValAddressFromHex(validator.GetOperator())
+		valAddr, err := k.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
 		if err != nil {
 			return err
 		}
 
 		// check whether the validator is valid, i.e., its power is positive
-		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddrBech32)
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
 		if err != nil {
 			return err
 		}

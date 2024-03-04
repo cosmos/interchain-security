@@ -30,7 +30,7 @@ func TestInvalidMsg(t *testing.T) {
 	require.True(t, strings.Contains(err.Error(), "unrecognized provider message type"))
 }
 
-func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
+func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
 	providerConsAddr := providerCryptoId.ProviderConsAddress()
 

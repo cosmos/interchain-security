@@ -85,7 +85,7 @@ func (v *CryptoIdentity) SDKStakingValidator() sdkstakingtypes.Validator {
 }
 
 func (v *CryptoIdentity) SDKValOpAddressString() string {
-	return v.OperatorSDKPubKey().Address().String()
+	return sdktypes.ValAddress(v.OperatorSDKPubKey().Address()).String()
 }
 
 func (v *CryptoIdentity) ConsensusSDKPubKey() sdkcryptotypes.PubKey {

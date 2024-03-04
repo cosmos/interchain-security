@@ -21,7 +21,6 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
@@ -126,12 +125,6 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.registerPacketSniffer(suite.providerChain)
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
-	// re-assign all validator keys for the first consumer chain
-	providerKeeper.SetPendingConsumerAdditionProp(suite.providerCtx(), &types.ConsumerAdditionProposal{
-		ChainId: icstestingutils.FirstConsumerChainID,
-	})
-	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
-
 	// start consumer chains
 	numConsumers := 5
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
@@ -139,6 +132,11 @@ func (suite *CCVTestSuite) SetupTest() {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
+
+		// re-assign all validator keys for the first consumer chain
+		if i == 0 {
+			consumerKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
+		}
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
@@ -355,10 +353,10 @@ func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestinguti
 	)
 }
 
-// preProposalKeyAssignment assigns keys to all provider validators for
+// consumerKeyAssignmentt assigns keys to all provider validators for
 // the consumer with chainID before the chain is registered, i.e.,
 // before a client to the consumer is created
-func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
+func consumerKeyAssignment(s *CCVTestSuite, chainID string) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	for _, val := range s.providerChain.Vals.Validators {

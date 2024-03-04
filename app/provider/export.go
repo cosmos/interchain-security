@@ -78,7 +78,7 @@ func (app *App) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []str
 
 	// withdraw all validator commission
 	app.StakingKeeper.IterateValidators(ctx, func(_ int64, val stakingtypes.ValidatorI) (stop bool) {
-		valAddr, err := sdk.ValAddressFromHex(val.GetOperator())
+		valAddr, err := app.StakingKeeper.ValidatorAddressCodec().StringToBytes(val.GetOperator())
 		if err != nil {
 			panic(err)
 		}
@@ -132,6 +132,9 @@ func (app *App) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []str
 		}
 
 		scraps, err := app.DistrKeeper.GetValidatorOutstandingRewardsCoins(ctx, valAddr)
+		if err != nil {
+			panic(err)
+		}
 		feePool, err := app.DistrKeeper.FeePool.Get(ctx)
 		if err != nil {
 			panic(err)

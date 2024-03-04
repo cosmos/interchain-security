@@ -649,13 +649,10 @@ func TestSlashValidator(t *testing.T) {
 	// undelegation or redelegation entries with completion time one hour in the future have not yet matured
 	nowPlus1Hour := now.Add(time.Hour)
 
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	validator, err := stakingtypes.NewValidator(
-		pubKey.Address().String(),
+		sdk.ValAddress(pubKey.Address()).String(),
 		pubKey,
 		stakingtypes.NewDescription("", "", "", "", ""),
 	)
@@ -687,7 +684,7 @@ func TestSlashValidator(t *testing.T) {
 	expectedInfractionHeight := int64(0)
 	expectedSlashPower := int64(3750)
 
-	expectedValoperAddr, err := sdk.ValAddressFromHex(validator.GetOperator())
+	expectedValoperAddr, err := keeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
 	require.NoError(t, err)
 
 	expectedCalls := []*gomock.Call{
