@@ -68,13 +68,14 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	for _, v := range clientTMValset.Validators {
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
 		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, types.NewConsumerConsAddress(consuAddr))
-		val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
-		s.Require().True(ok)
+		val, err := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
+		s.Require().NoError(err)
 		s.Require().True(val.Jailed)
 		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
 
 		validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
-		slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
+		slashFraction, err := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
+		s.Require().NoError(err)
 		actualTokens := math.LegacyNewDecFromInt(validator.GetTokens())
 		s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 	}

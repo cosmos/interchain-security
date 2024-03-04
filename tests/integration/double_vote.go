@@ -242,7 +242,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 
 				// verifies that the val gets slashed and has fewer tokens after the slashing
 				val, _ := s.providerApp.GetTestStakingKeeper().GetValidator(provCtx, provAddr.ToSdkConsAddr().Bytes())
-				slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(provCtx)
+				slashFraction, err := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(provCtx)
+				s.Require().NoError(err)
 				actualTokens := math.LegacyNewDecFromInt(val.GetTokens())
 				s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 			} else {
@@ -317,11 +318,11 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 	consuAddr2 := types.NewConsumerConsAddress(sdk.ConsAddress(consuVal2.Address.Bytes()))
 	provAddr2 := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr2)
 
-	validator, found := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
-	s.Require().True(found)
+	validator, err := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
+	s.Require().NoError(err)
 
-	validator2, found := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr2.ToSdkConsAddr().Bytes())
-	s.Require().True(found)
+	validator2, err := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr2.ToSdkConsAddr().Bytes())
+	s.Require().NoError(err)
 
 	s.Run("slash undelegations and redelegations when getting double voting evidence", func() {
 		// convert validator public key
@@ -348,24 +349,30 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		s.Require().NotZero(shares)
 
 		// undelegate 1/2 of the bound amount
-		undelegate(s, delAddr, validator.GetOperator(), shares.Quo(math.LegacyNewDec(4)))
-		undelegate(s, delAddr, validator.GetOperator(), shares.Quo(math.LegacyNewDec(4)))
+		valAddr, err := sdk.ValAddressFromHex(validator.GetOperator())
+		s.Require().NoError(err)
+		undelegate(s, delAddr, valAddr, shares.Quo(math.LegacyNewDec(4)))
+		undelegate(s, delAddr, valAddr, shares.Quo(math.LegacyNewDec(4)))
 
 		// check that undelegations were successful
-		ubds, _ := s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
+		ubds, _ := s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, valAddr)
 		// should have a single entry since undelegations are merged
 		s.Require().Len(ubds.Entries, 1)
 
 		// save the delegation shares of the validator to redelegate to
 		// Note this shares should not be slashed!
-		delShares := s.providerApp.GetTestStakingKeeper().Delegation(s.providerCtx(), delAddr, validator2.GetOperator()).GetShares()
+		valAddr2, err := sdk.ValAddressFromHex(validator2.GetOperator())
+		del, err := s.providerApp.GetTestStakingKeeper().Delegation(s.providerCtx(), delAddr, valAddr2)
+		s.Require().NoError(err)
+		delShares := del.GetShares()
 
 		// redelegate 1/2 of the bound amount
-		redelegate(s, delAddr, validator.GetOperator(), validator2.GetOperator(), shares.Quo(math.LegacyNewDec(4)))
-		redelegate(s, delAddr, validator.GetOperator(), validator2.GetOperator(), shares.Quo(math.LegacyNewDec(4)))
+		redelegate(s, delAddr, valAddr, valAddr2, shares.Quo(math.LegacyNewDec(4)))
+		redelegate(s, delAddr, valAddr, valAddr2, shares.Quo(math.LegacyNewDec(4)))
 
 		// check that redelegation was successful
-		rdel := s.providerApp.GetTestStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, uint16(10))
+		rdel, err := s.providerApp.GetTestStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, uint16(10))
+		s.Require().NoError(err)
 		s.Require().Len(rdel[0].Entries, 2)
 
 		redelShares := rdel[0].Entries[0].SharesDst.Add(rdel[0].Entries[1].SharesDst)
@@ -379,10 +386,11 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		)
 		s.Require().NoError(err)
 
-		slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
+		slashFraction, err := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
+		s.Require().NoError(err)
 
 		// check undelegations are slashed
-		ubds, _ = s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
+		ubds, _ = s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, valAddr)
 		s.Require().True(len(ubds.Entries) > 0)
 		for _, unb := range ubds.Entries {
 			initialBalance := math.LegacyNewDecFromInt(unb.InitialBalance)
@@ -390,7 +398,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 			s.Require().True(initialBalance.Sub(initialBalance.Mul(slashFraction)).Equal(currentBalance))
 		}
 		// check that redelegations are slashed
-		delegations := s.providerApp.GetTestStakingKeeper().Delegation(s.providerCtx(), delAddr, validator2.GetOperator())
+		delegations, err := s.providerApp.GetTestStakingKeeper().Delegation(s.providerCtx(), delAddr, valAddr2)
+		s.Require().NoError(err)
 		s.Require().Equal(delegations.GetShares(), delShares.Add(redelShares).Sub(redelShares.Mul(slashFraction)))
 	})
 }

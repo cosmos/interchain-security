@@ -5,6 +5,7 @@ import (
 
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
@@ -24,7 +25,8 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 	// Assert that we start out with no jailings
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
-	vals := providerStakingKeeper.GetAllValidators(s.providerCtx())
+	vals, err := providerStakingKeeper.GetAllValidators(s.providerCtx())
+	s.Require().NoError(err)
 	for _, val := range vals {
 		s.Require().False(val.IsJailed())
 	}
@@ -91,15 +93,18 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Default slash meter replenish fraction is 0.05, so packet should be handled on provider.
 	stakingVal1 := s.mustGetStakingValFromTmVal(*tmval1)
 	s.Require().True(stakingVal1.IsJailed())
-	s.Require().Equal(int64(0),
-		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), stakingVal1.GetOperator()))
+	stakingVal1Addr, err := sdk.ValAddressFromHex(stakingVal1.GetOperator())
+	s.Require().NoError(err)
+	stakingVal1LastPower, err := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), stakingVal1Addr)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), stakingVal1LastPower)
 
 	// Now slash meter should be negative on provider
 	s.Require().True(s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx()).IsNegative())
 
 	// Apply ack back on consumer
 	expectedAck := channeltypes.NewResultAcknowledgement([]byte(ccvtypes.SlashPacketHandledResult))
-	err := s.getFirstBundle().Path.EndpointA.AcknowledgePacket(packet1, expectedAck.Acknowledgement())
+	err = s.getFirstBundle().Path.EndpointA.AcknowledgePacket(packet1, expectedAck.Acknowledgement())
 	s.Require().NoError(err)
 
 	// Slash record should have been deleted, head of pending packets should have been popped,
@@ -151,8 +156,10 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Val 2 shouldn't be jailed on provider. Slash packet should have been bounced.
 	stakingVal2 := s.mustGetStakingValFromTmVal(*tmval2)
 	s.Require().False(stakingVal2.IsJailed())
-	s.Require().Equal(int64(1000),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2.GetOperator()))
+	stakingVal2Addr, err := sdk.ValAddressFromHex(stakingVal2.GetOperator())
+	s.Require().NoError(err)
+	stakingVal2LastPower, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2Addr)
+	s.Require().Equal(int64(1000), stakingVal2LastPower)
 
 	// Apply ack on consumer
 	expectedAck = channeltypes.NewResultAcknowledgement([]byte(ccvtypes.SlashPacketBouncedResult))
@@ -203,8 +210,11 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Provider should have now jailed val 2
 	stakingVal2 = s.mustGetStakingValFromTmVal(*tmval2)
 	s.Require().True(stakingVal2.IsJailed())
-	s.Require().Equal(int64(0),
-		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), stakingVal2.GetOperator()))
+	s.Require().False(stakingVal2.IsJailed())
+	stakingVal2Addr, err = sdk.ValAddressFromHex(stakingVal2.GetOperator())
+	s.Require().NoError(err)
+	stakingVal2LastPower, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2Addr)
+	s.Require().Equal(int64(0), stakingVal2LastPower)
 
 	// Apply ack on consumer
 	expectedAck = channeltypes.NewResultAcknowledgement([]byte(ccvtypes.SlashPacketHandledResult))
