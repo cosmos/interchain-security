@@ -666,7 +666,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		assignableIDS = append(assignableIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
 
-	seed := int64(1) //time.Now().UnixNano()
+	seed := time.Now().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 
 	// Helper: simulates creation of staking module EndBlock updates.
@@ -711,7 +711,6 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		providerValset := CreateValSet(providerIDS)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(assignableIDS)
-
 		// For each validator on the consumer, record the corresponding provider
 		// address as looked up on the provider using GetProviderAddrFromConsumerAddr
 		// at a given vscid.
@@ -754,7 +753,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 		// Helper: apply some updates to both the provider and consumer valsets
 		// and increment the provider vscid.
-		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate, assignments []Assignment) {
+		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
 			providerValset.apply(updates)
 
 			var bondedValidators []stakingtypes.Validator
@@ -792,7 +791,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		// be put into the consumer genesis.
 		stakingUpdates := getStakingUpdates()
 
-		applyUpdatesAndIncrementVSCID(stakingUpdates, assignments)
+		applyUpdatesAndIncrementVSCID(stakingUpdates)
 
 		// Register the consumer chain
 		k.SetConsumerClientId(ctx, CHAINID, "")
@@ -811,7 +810,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			// Generate and apply assignments and power updates
 			applyAssignments(assignments)
-			applyUpdatesAndIncrementVSCID(stakingUpdates, assignments)
+			applyUpdatesAndIncrementVSCID(stakingUpdates)
 
 			// Randomly fast forward the greatest pruned VSCID. This simulates
 			// delivery of maturity packets from the consumer chain.
