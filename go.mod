@@ -2,8 +2,6 @@ module github.com/cosmos/interchain-security/v3
 
 go 1.21
 
-toolchain go1.21.6
-
 require (
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/math v1.3.0
