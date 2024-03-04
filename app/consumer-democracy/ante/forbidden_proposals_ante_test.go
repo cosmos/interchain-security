@@ -187,11 +187,11 @@ func newLegacyParamChangeProposalMsg(changes []proposal.ParamChange) *govv1.MsgS
 	if err != nil {
 		return nil
 	}
-	msg, _ := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, sdk.NewCoins(), sdk.AccAddress{}.String(), "", "", "")
+	msg, _ := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, sdk.NewCoins(), sdk.AccAddress{}.String(), "", "", "", false)
 	return msg
 }
 
 func newParamChangeProposalMsg(msgs []sdk.Msg) *govv1.MsgSubmitProposal {
-	msg, _ := govv1.NewMsgSubmitProposal(msgs, sdk.NewCoins(), sdk.AccAddress{}.String(), "", "", "")
+	msg, _ := govv1.NewMsgSubmitProposal(msgs, sdk.NewCoins(), sdk.AccAddress{}.String(), "", "", "", false)
 	return msg
 }
