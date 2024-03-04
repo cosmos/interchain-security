@@ -181,7 +181,7 @@ func getAppBytesAndSenders(
 		stakingValidators = append(stakingValidators, validator)
 
 		// Store delegation from the model delegator account
-		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress(), val.Address.Bytes(), delShares))
+		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress().String(), val.Address.String(), delShares))
 
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
@@ -259,7 +259,7 @@ func newChain(
 
 	protoConsParams := CONSENSUS_PARAMS.ToProto()
 	app.InitChain(
-		abcitypes.RequestInitChain{
+		&abcitypes.RequestInitChain{
 			ChainId:         chainID,
 			Validators:      cmttypes.TM2PB.ValidatorUpdates(validators),
 			ConsensusParams: &protoConsParams,
@@ -269,20 +269,16 @@ func newChain(
 
 	app.Commit()
 
-	app.BeginBlock(
-		abcitypes.RequestBeginBlock{
-			Header: cmtproto.Header{
-				ChainID:            chainID,
-				Height:             app.LastBlockHeight() + 1,
-				AppHash:            app.LastCommitID().Hash,
-				ValidatorsHash:     validators.Hash(),
-				NextValidatorsHash: validators.Hash(),
-			},
+	app.FinalizeBlock(
+		&abcitypes.RequestFinalizeBlock{
+			Hash:               app.LastCommitID().Hash,
+			Height:             app.LastBlockHeight() + 1,
+			NextValidatorsHash: validators.Hash(),
 		},
 	)
 
 	chain := &ibctesting.TestChain{
-		T:           t,
+		TB:          t,
 		Coordinator: coord,
 		ChainID:     chainID,
 		App:         app,
@@ -380,12 +376,8 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// Commit a block on both chains, giving us two committed headers from
 	// the same time and height. This is the starting point for all our
 	// data driven testing.
-	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
-	lastProviderHeader, _ := simibc.EndBlock(providerChain, func() {})
-
-	// Get ready to update clients.
-	simibc.BeginBlock(providerChain, 5)
-	simibc.BeginBlock(consumerChain, 5)
+	lastConsumerHeader, _ := simibc.FinalizeBlock(consumerChain, 5)
+	lastProviderHeader, _ := simibc.FinalizeBlock(providerChain, 5)
 
 	// Update clients to the latest header.
 	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader, false)
@@ -421,8 +413,7 @@ func (s *Driver) setupProvider(
 	s.providerKeeper().SetParams(s.ctx("provider"), providerParams)
 
 	// produce a first block
-	simibc.EndBlock(providerChain, func() {})
-	simibc.BeginBlock(providerChain, 0)
+	simibc.FinalizeBlock(providerChain, 0)
 }
 
 func (s *Driver) setupConsumer(

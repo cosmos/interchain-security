@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"strings"
 	"testing"
 	"time"
+
+	gomath "math"
+
+	"cosmossdk.io/math"
 
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -17,7 +20,6 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -124,21 +126,21 @@ func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 	return v.Power, nil
 }
 
-func (s *Driver) stakingValidator(i int64) (stakingtypes.Validator, bool) {
+func (s *Driver) stakingValidator(i int64) (stakingtypes.Validator, error) {
 	return s.providerStakingKeeper().GetValidator(s.ctx(PROVIDER), s.validator(i))
 }
 
 // providerPower returns the power(=number of bonded tokens) of the i-th validator on the provider.
 func (s *Driver) providerPower(i int64) (int64, error) {
-	v, found := s.stakingValidator(i)
-	if !found {
+	v, err := s.providerStakingKeeper().GetValidator(s.ctx(PROVIDER), s.validator(i))
+	if err != nil {
 		return 0, fmt.Errorf("validator with id %v not found on provider", i)
 	} else {
 		return v.BondedTokens().Int64(), nil
 	}
 }
 
-func (s *Driver) providerValidatorSet() []stakingtypes.Validator {
+func (s *Driver) providerValidatorSet() ([]stakingtypes.Validator, error) {
 	return s.providerStakingKeeper().GetAllValidators(s.ctx(PROVIDER))
 }
 
@@ -151,8 +153,8 @@ func (s *Driver) delegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
-	d := s.delegator()
-	v := s.validator(val)
+	d := s.delegator().String()
+	v := s.validator(val).String()
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
 	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
 	if err != nil {
@@ -165,8 +167,8 @@ func (s *Driver) undelegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
-	d := s.delegator()
-	v := s.validator(val)
+	d := s.delegator().String()
+	v := s.validator(val).String()
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
 	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
 	if err != nil {
@@ -322,7 +324,7 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 	testChain, found := s.coordinator.Chains[string(chain)]
 	require.True(s.t, found, "chain %s not found", chain)
 
-	header, packets := simibc.EndBlock(testChain, func() {})
+	header, packets := simibc.FinalizeBlock(testChain, timeAdvancement)
 
 	s.DriverStats.numSentPackets += len(packets)
 	s.DriverStats.numBlocks += 1
@@ -349,7 +351,6 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 		}
 	}
 
-	simibc.BeginBlock(testChain, timeAdvancement)
 	return header
 }
 
@@ -372,13 +373,12 @@ func (s *Driver) setTime(chain ChainId, newTime time.Time) {
 	require.True(s.t, found, "chain %s not found", chain)
 
 	testChain.CurrentHeader.Time = newTime
-	testChain.App.BeginBlock(abcitypes.RequestBeginBlock{Header: testChain.CurrentHeader})
 }
 
 func (s *Driver) AssignKey(chain ChainId, valIndex int64, value crypto.PublicKey) error {
-	stakingVal, found := s.stakingValidator(valIndex)
-	if !found {
-		return fmt.Errorf("validator with id %v not found on provider", valIndex)
+	stakingVal, err := s.stakingValidator(valIndex)
+	if err != nil {
+		return fmt.Errorf("error getting validator with id %v on provider", valIndex)
 	}
 	return s.providerKeeper().AssignConsumerKey(s.providerCtx(), string(chain), stakingVal, value)
 }
@@ -402,8 +402,8 @@ func (s *Driver) DeliverPacketFromConsumer(sender ChainId, expectError bool) {
 func (s *Driver) DeliverAcks() {
 	for _, chain := range s.runningConsumers() {
 		path := s.path(ChainId(chain.ChainId))
-		path.DeliverAcks(path.Path.EndpointA.Chain.ChainID, math.MaxInt)
-		path.DeliverAcks(path.Path.EndpointB.Chain.ChainID, math.MaxInt)
+		path.DeliverAcks(path.Path.EndpointA.Chain.ChainID, gomath.MaxInt)
+		path.DeliverAcks(path.Path.EndpointB.Chain.ChainID, gomath.MaxInt)
 	}
 }
 
