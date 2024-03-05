@@ -66,6 +66,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
@@ -118,9 +119,8 @@ import (
 )
 
 const (
-	AppName              = "interchain-security-p"
-	upgradeName          = "ics-v1-to-v2"
-	AccountAddressPrefix = "cosmos"
+	AppName     = "interchain-security-p"
+	upgradeName = "ics-v1-to-v2"
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -133,13 +133,13 @@ var (
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
-		auth.AppModuleBasic{},
 		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+		auth.AppModuleBasic{},
+		vesting.AppModuleBasic{},
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
-		staking.AppModuleBasic{},
-		mint.AppModuleBasic{},
-		distr.AppModuleBasic{},
+		consensus.AppModuleBasic{},
+		crisis.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
 				paramsclient.ProposalHandler,
@@ -148,16 +148,17 @@ var (
 				ibcproviderclient.ChangeRewardDenomsProposalHandler,
 			},
 		),
-		params.AppModuleBasic{},
-		crisis.AppModuleBasic{},
+		mint.AppModuleBasic{},
 		slashing.AppModuleBasic{},
-		ibc.AppModuleBasic{},
-		ibctm.AppModuleBasic{},
+		distr.AppModuleBasic{},
+		staking.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
+
+		ibc.AppModuleBasic{},
+		ibctm.AppModuleBasic{},
+		params.AppModuleBasic{},
 		transfer.AppModuleBasic{},
-		vesting.AppModuleBasic{},
-		// router.AppModuleBasic{},
 		ibcprovider.AppModuleBasic{},
 	)
 
@@ -456,13 +457,6 @@ func New(
 	)
 
 	govConfig := govtypes.DefaultConfig()
-	// register the proposal types
-	govRouter := govv1beta1.NewRouter()
-	govRouter.
-		AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(providertypes.RouterKey, ibcprovider.NewProviderProposalHandler(app.ProviderKeeper))
-
 	app.GovKeeper = govkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
@@ -473,13 +467,6 @@ func New(
 		app.MsgServiceRouter(),
 		govConfig,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
-	// Set legacy router for backwards compatibility with gov v1beta1
-	app.GovKeeper.SetLegacyRouter(govRouter)
-
-	app.GovKeeper = app.GovKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(app.ProviderKeeper.Hooks()),
 	)
 
 	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
@@ -501,6 +488,20 @@ func New(
 		authcodec.NewBech32Codec(sdk.Bech32PrefixValAddr),
 		authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
 		authtypes.FeeCollectorName,
+	)
+
+	// gov router must be set after the provider keeper is created
+	// otherwise the provider keeper will not be able to handle proposals (will be nil)
+	govRouter := govv1beta1.NewRouter()
+	govRouter.
+		AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
+		AddRoute(providertypes.RouterKey, ibcprovider.NewProviderProposalHandler(app.ProviderKeeper))
+	// Set legacy router for backwards compatibility with gov v1beta1
+	app.GovKeeper.SetLegacyRouter(govRouter)
+
+	app.GovKeeper = app.GovKeeper.SetHooks(
+		govtypes.NewMultiGovHooks(app.ProviderKeeper.Hooks()),
 	)
 
 	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
@@ -541,6 +542,7 @@ func New(
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -550,6 +552,7 @@ func New(
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(&app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		evidence.NewAppModule(app.EvidenceKeeper),
+
 		ibc.NewAppModule(app.IBCKeeper),
 		ibctm.NewAppModule(),
 		params.NewAppModule(app.ParamsKeeper),
@@ -600,8 +603,6 @@ func New(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.MM.SetOrderBeginBlockers(
-		// upgrades should be run first
-		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
@@ -664,6 +665,7 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		providertypes.ModuleName,
+		consensusparamtypes.ModuleName,
 	)
 
 	app.MM.RegisterInvariants(&app.CrisisKeeper)
