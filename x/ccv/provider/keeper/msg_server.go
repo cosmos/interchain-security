@@ -213,9 +213,7 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 		return nil, err
 	}
 
-	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ChainId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
-		return nil, err
-	}
+	k.HandleSetConsumerCommissionRate(ctx, msg.ChainId, types.NewProviderConsAddress(consAddr), msg.Rate)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
