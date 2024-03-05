@@ -3,7 +3,8 @@
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
 # Fetch tags and get the latest ICS version by filtering tags by vX.Y.Z and vX.Y.Z-lsm
-LATEST_RELEASE := $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm | head -n 1)
+# using lazy set to only execute commands when variable is used
+LATEST_RELEASE ?= $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm | head -n 1)
 
 # don't override user values
 ifeq (,$(VERSION))
