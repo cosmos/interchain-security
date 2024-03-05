@@ -112,7 +112,6 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 		MockIBCTransferKeeper:  NewMockIBCTransferKeeper(ctrl),
 		MockIBCCoreKeeper:      NewMockIBCCoreKeeper(ctrl),
 		MockDistributionKeeper: NewMockDistributionKeeper(ctrl),
-		// MockGovKeeper:          NewMockGovKeeper(ctrl),
 	}
 }
 
