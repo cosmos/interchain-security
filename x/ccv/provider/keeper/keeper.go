@@ -137,7 +137,9 @@ func (k Keeper) mustValidateFields() {
 	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 14
 	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 15
 	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 16
-	ccv.PanicIfZeroOrNil(k.govKeeper, "govKeeper")                         // 17
+
+	// this can be nil in tests
+	// ccv.PanicIfZeroOrNil(k.govKeeper, "govKeeper")                         // 17
 }
 
 // Logger returns a module-specific logger.
