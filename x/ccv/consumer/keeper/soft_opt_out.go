@@ -2,11 +2,13 @@ package keeper
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"sort"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 )
@@ -96,8 +98,10 @@ func (k Keeper) UpdateSlashingSigningInfo(ctx sdk.Context) {
 	for _, val := range valset {
 		consAddr := sdk.ConsAddress(val.Address)
 		signingInfo, err := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-		if err != nil {
-			panic(fmt.Errorf("validator signing info not found for validator %s", consAddr))
+		if errors.Is(err, slashingtypes.ErrNoSigningInfoFound) {
+			continue
+		} else if err != nil {
+			panic(fmt.Errorf("failed to get validator signing info for validator %s", consAddr))
 		}
 		if val.Power < smallestNonOptOutPower {
 			// validator CAN opt-out from validating on consumer chains
