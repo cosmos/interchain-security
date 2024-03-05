@@ -1,5 +1,11 @@
 package main
 
+import (
+	"strconv"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+)
+
 func stepsRewardDenomConsumer(consumerName string) []Step {
 	return []Step{
 		{
@@ -80,7 +86,7 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 					Proposals: &map[uint]Proposal{
 						1: ParamsProposal{
 							Deposit:  10000001,
-							Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 							Subspace: "transfer",
 							Key:      "SendEnabled",
 							Value:    "true",
@@ -108,7 +114,7 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 					Proposals: &map[uint]Proposal{
 						1: ParamsProposal{
 							Deposit:  10000001,
-							Status:   "PROPOSAL_STATUS_PASSED",
+							Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 							Subspace: "transfer",
 							Key:      "SendEnabled",
 							Value:    "true",

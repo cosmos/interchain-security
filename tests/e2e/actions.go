@@ -300,7 +300,7 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 	}
 
 	// CONSUMER ADDITION PROPOSAL
-	bz, err = target.ExecCommand(
+	cmd := target.ExecCommand(
 		tr.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
@@ -310,10 +310,20 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
 		`-y`,
-	).CombinedOutput()
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerAdditionProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal output:", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
@@ -1648,7 +1658,7 @@ func (tr TestConfig) cancelUnbondTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-	creationHeight := gjson.Get(string(bz), "entries.0.creation_height").Int()
+	creationHeight := gjson.Get(string(bz), "unbond.entries.0.creation_height").Int()
 	if creationHeight == 0 {
 		log.Fatal("invalid creation height")
 	}
@@ -1844,6 +1854,7 @@ func (tr TestConfig) unjailValidator(action UnjailValidatorAction, target Execut
 		`--node`, tr.getValidatorNode(action.Provider, action.Validator),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
+		`--keyring-dir`, tr.getValidatorHome(action.Provider, action.Validator),
 		`-y`,
 	)
 
