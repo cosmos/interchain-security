@@ -367,12 +367,6 @@ func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byt
 	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
-// KeyAssignmentReplacementsKey returns the key under which the
-// key assignments that need to be replaced in the current block are stored
-func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
-}
-
 // ConsumerAddrsToPruneKey returns the key under which the
 // mapping from VSC ids to consumer validators addresses is stored
 func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
