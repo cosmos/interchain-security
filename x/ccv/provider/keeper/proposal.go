@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -261,7 +262,7 @@ func (k Keeper) MakeConsumerGenesis(
 		}
 
 		val, err := k.stakingKeeper.GetValidator(ctx, addr)
-		if err != nil && stakingtypes.ErrNoValidatorFound.Is(err) {
+		if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers")
 		} else if err != nil {
 			return gen, nil, errorsmod.Wrapf(err, "error getting validator from LastValidatorPowers")

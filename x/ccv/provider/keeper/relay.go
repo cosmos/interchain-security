@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -88,10 +89,10 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {
-			if stakingtypes.ErrUnbondingNotFound.Is(err) {
+			if errors.Is(err, stakingtypes.ErrNoUnbondingDelegation) {
 				// The unbonding was not found.
-				unbondingType, err := k.stakingKeeper.GetUnbondingType(ctx, id)
-				if err == nil && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
+				unbondingType, errGet := k.stakingKeeper.GetUnbondingType(ctx, id)
+				if errGet == nil && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
 					// If this is an unbonding delegation, it may have been removed
 					// after through a CancelUnbondingDelegation message
 					k.Logger(ctx).Debug("unbonding delegation was already removed:", "unbondingID", id)
@@ -185,7 +186,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 			k.GetCCVTimeoutPeriod(ctx),
 		)
 		if err != nil {
-			if clienttypes.ErrClientNotActive.Is(err) {
+			if errors.Is(err, clienttypes.ErrClientNotActive) {
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				// the client cannot expire during iteration (in the middle of a block)
@@ -393,7 +394,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// Obtain validator from staking keeper
 	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
-	if err != nil && stakingtypes.ErrNoValidatorFound.Is(err) {
+	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
 		return
 	}
@@ -474,7 +475,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				"chainID", initTimeoutTimestamp.ChainId)
 			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
-				if providertypes.ErrConsumerChainNotFound.Is(err) {
+				if errors.Is(err, providertypes.ErrConsumerChainNotFound) {
 					// consumer chain not found
 					continue
 				}
@@ -501,7 +502,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				)
 				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
 				if err != nil {
-					if providertypes.ErrConsumerChainNotFound.Is(err) {
+					if errors.Is(err, providertypes.ErrConsumerChainNotFound) {
 						// consumer chain not found
 						continue
 					}

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -217,7 +218,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			k.GetCCVTimeoutPeriod(ctx),
 		)
 		if err != nil {
-			if clienttypes.ErrClientNotActive.Is(err) {
+			if errors.Is(err, clienttypes.ErrClientNotActive) {
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				k.Logger(ctx).Info("IBC client is expired, cannot send IBC packet; leaving packet data stored:", "type", p.Type.String())

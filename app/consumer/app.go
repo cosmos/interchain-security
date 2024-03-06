@@ -101,10 +101,31 @@ import (
 )
 
 const (
-	AppName              = "interchain-security-c"
-	upgradeName          = "ics-v1-to-v2"
-	AccountAddressPrefix = "cosmos"
+	AppName     = "interchain-security-c"
+	upgradeName = "ics-v1-to-v2"
+
+	Bech32MainPrefix     = "consumer"
+	Bech32PrefixAccAddr  = Bech32MainPrefix
+	Bech32PrefixAccPub   = Bech32MainPrefix + sdk.PrefixPublic
+	Bech32PrefixValAddr  = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixOperator
+	Bech32PrefixValPub   = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixOperator + sdk.PrefixPublic
+	Bech32PrefixConsAddr = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixConsensus
+	Bech32PrefixConsPub  = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixConsensus + sdk.PrefixPublic
 )
+
+func init() {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		stdlog.Println("Failed to get home dir %2", err)
+	}
+
+	DefaultNodeHome = filepath.Join(userHomeDir, "."+AppName)
+	cfg := sdk.GetConfig()
+	cfg.SetBech32PrefixForAccount(Bech32MainPrefix, Bech32MainPrefix+"pub")
+	cfg.SetBech32PrefixForValidator(Bech32MainPrefix+"valoper", Bech32MainPrefix+"valoperpub")
+	cfg.SetBech32PrefixForConsensusNode(Bech32MainPrefix+"valcons", Bech32MainPrefix+"valconspub")
+	cfg.Seal()
+}
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -194,15 +215,6 @@ type App struct { // nolint: golint
 	configurator module.Configurator
 }
 
-func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		stdlog.Println("Failed to get home dir %2", err)
-	}
-
-	DefaultNodeHome = filepath.Join(userHomeDir, "."+AppName)
-}
-
 // New returns a reference to an initialized App.
 func New(
 	logger log.Logger,
@@ -281,8 +293,8 @@ func New(
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		authcodec.NewBech32Codec(sdk.Bech32MainPrefix),
-		sdk.Bech32MainPrefix,
+		authcodec.NewBech32Codec(Bech32MainPrefix),
+		Bech32MainPrefix,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
@@ -388,8 +400,8 @@ func New(
 		app.IBCKeeper,
 		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		authcodec.NewBech32Codec(sdk.Bech32PrefixValAddr),
-		authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
+		authcodec.NewBech32Codec(Bech32PrefixValAddr),
+		authcodec.NewBech32Codec(Bech32PrefixConsAddr),
 	)
 
 	// register slashing module Slashing hooks to the consumer keeper
@@ -799,9 +811,9 @@ func (app *App) AutoCliOpts() autocli.AppOptions {
 
 	return autocli.AppOptions{
 		Modules:               modules,
-		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
-		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
-		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		AddressCodec:          authcodec.NewBech32Codec(Bech32PrefixAccAddr),
+		ValidatorAddressCodec: authcodec.NewBech32Codec(Bech32PrefixValAddr),
+		ConsensusAddressCodec: authcodec.NewBech32Codec(Bech32PrefixConsAddr),
 	}
 }
 

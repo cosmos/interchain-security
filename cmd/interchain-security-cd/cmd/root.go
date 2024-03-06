@@ -21,7 +21,6 @@ import (
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
@@ -195,9 +194,6 @@ lru_size = 0`
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig appencoding.EncodingConfig) {
-	cfg := sdk.GetConfig()
-	cfg.Seal()
-
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(consumer.ModuleBasics, consumer.DefaultNodeHome),
 		debug.Cmd(),
