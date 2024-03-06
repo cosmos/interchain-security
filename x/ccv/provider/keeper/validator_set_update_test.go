@@ -2,6 +2,9 @@ package keeper_test
 
 import (
 	"bytes"
+	"sort"
+	"testing"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -14,8 +17,6 @@ import (
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
-	"sort"
-	"testing"
 )
 
 // TestConsumerValidator tests the `SetConsumerValidator`, `IsConsumerValidator`, and `DeleteConsumerValidator` methods
@@ -76,7 +77,8 @@ func TestGetConsumerValSet(t *testing.T) {
 			types.ConsumerValidator{
 				ProviderConsAddr:  expectedValidator.ProviderConsAddr,
 				Power:             expectedValidator.Power,
-				ConsumerPublicKey: expectedValidator.ConsumerPublicKey})
+				ConsumerPublicKey: expectedValidator.ConsumerPublicKey,
+			})
 	}
 
 	actualValidators := providerKeeper.GetConsumerValSet(ctx, "chainID")
@@ -260,6 +262,14 @@ func TestDiffEdgeCases(t *testing.T) {
 	// only have `currentValidators` that would generate validator updates for the validators to be removed
 	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 0}, {publicKeyC, 0}}
 	actualUpdates = keeper.DiffValidators(validators, []types.ConsumerValidator{})
+	sortUpdates(expectedUpdates)
+	sortUpdates(actualUpdates)
+	require.Equal(t, expectedUpdates, actualUpdates)
+
+	// have nonempty `currentValidators` and `nextValidators`, but with empty intersection
+	// all old validators should be removed, all new validators should be added
+	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 2}}
+	actualUpdates = keeper.DiffValidators(validators[0:1], validators[1:2])
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)
 	require.Equal(t, expectedUpdates, actualUpdates)
