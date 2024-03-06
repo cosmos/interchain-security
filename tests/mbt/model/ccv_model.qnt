@@ -542,7 +542,7 @@ module ccv_model {
                     // change voting power on provider again
                     VotingPowerChange("node1", 50).then(
                         // end the epoch
-                        EndProviderEpoch(3 * Second, Set(), Set())
+                        EndProviderEpoch(1 * Second, Set(), Set())
                     )
                     .then(
                         // deliver packet to consumer1

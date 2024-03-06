@@ -397,16 +397,6 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// their channel, and are ready for anything to happen.
 	s.consumerKeeper(consumerChainId).SetProviderChannel(s.ctx(consumerChainId), consumerEndPoint.ChannelID)
 
-	// Commit a block on the consumer to get a header
-	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
-
-	// Begin a block on the consumer to get it ready for testing
-	simibc.BeginBlock(consumerChain, 5)
-
-	// Update the client on the provider with the latest consumer header
-	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader, false)
-	require.NoError(s.t, err, "Error updating client on consumer for chain %v", consumerChain.ChainID)
-
 	// path is ready to go
 	return path
 }

@@ -209,11 +209,11 @@ func RunItfTrace(t *testing.T, path string) {
 
 	for index, state := range trace.States {
 		t.Log("Height modulo epoch length:", driver.providerChain().CurrentHeader.Height%blocksPerEpoch)
-		t.Log("Model height:", ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch)
+		t.Log("Model height modulo epoch length:", ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch)
 		t.Logf("Reading state %v of trace %v", index, path)
 
 		// store the height of the provider state before each step.
-		// The height should only pass an epoch when there passes an epoch in the model, too,
+		// The height should only pass an epoch when it passes an epoch in the model, too,
 		// otherwise there is an error, and blocksPerEpoch needs to be increased.
 		// See the comment for blocksPerEpoch above.
 		heightBeforeStep := driver.providerHeight()
@@ -273,8 +273,8 @@ func RunItfTrace(t *testing.T, path string) {
 
 			// we need at least 2 blocks, because for a packet sent at height H, the receiving chain
 			// needs a header of height H+1 to accept the packet
-			// so, we do `blocksPerEpoch` time advancements with a very small increment,
-			// and then increment the rest of the time
+			// so, we do two blocks, one with a very small increment,
+			// and then another to increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
 
 			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
@@ -558,9 +558,6 @@ func ComparePacketQueues(
 	consumer string,
 	timeOffset time.Time,
 ) {
-	if consumer == "consumer1" {
-		return
-	}
 	t.Helper()
 	ComparePacketQueue(t, driver, currentModelState, PROVIDER, consumer, timeOffset)
 	ComparePacketQueue(t, driver, currentModelState, consumer, PROVIDER, timeOffset)

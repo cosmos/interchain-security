@@ -89,7 +89,7 @@ module ccv_types {
             // Stores VscPackets which have been sent but where the provider has *not received a response yet*.
             sentVscPacketsToConsumer: Chain -> List[VscPacket],
 
-            // stores for which consumer chains, in this epoch, the validator set is considered to have changed and we thus need to send a vscPacket to the consumer chains.
+            // stores for which consumer chains, in this epoch, the validator set is considered to have changed and we thus need to send a VscPacket to the consumer chains.
             consumersWithPowerChangesInThisEpoch: Set[Chain],
 
             // stores, for each consumer chain, its current status -
