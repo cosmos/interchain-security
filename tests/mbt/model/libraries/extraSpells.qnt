@@ -247,4 +247,54 @@ module extraSpells {
       assert(max(-3, -5) == -3),
       assert(max(-5, -3) == -3),
     }
+
+    /// Finds the index of the first element that satisfies the given predicate function.
+    ///
+    /// Parameters:
+    /// - __list: The list to search.
+    /// - __f: The predicate function to apply to each element in the list.
+    ///
+    /// Returns:
+    /// - The index of the first element that satisfies the predicate function, or -1 if no such element exists.
+    pure def firstIndex(__list: List[a], __f: a => bool): int = {
+        range(0, __list.length()).foldl(
+            -1,
+            (acc, i) => if (acc == -1 and __f(__list[i])) i else acc
+        )
+    }
+
+    run firstIndexTest = all {
+        assert(firstIndex(List(1, 2, 3), __x => __x > 1) == 1),
+        assert(firstIndex(List(1, 2, 3), __x => __x > 3) == -1),
+        assert(firstIndex(List(1, 2, 3), __x => __x > 0) == 0),
+        assert(firstIndex(List(), __x => __x > 0) == -1),
+    }
+
+    /// Splits a list right after the first occurrence of an element that satisfies the given predicate function.
+    ///
+    /// Parameters:
+    /// - __list: The list to split.
+    /// - __f: The predicate function to apply to each element in the list.
+    ///
+    /// Returns:
+    /// - A pair of lists (l1, l2) such that l1 ++ l2 == __list and
+    ///   l1.length() == firstIndex(__list, __f) + 1 and
+    ///   l2.length() == __list.length() - l1.length()
+    pure def splitAfterFirst(__list: List[a], __f: a => bool): (List[a], List[a]) = {
+        val i = firstIndex(__list, __f)
+        if (i == -1) {
+            (__list, List())
+        } else {
+            (__list.slice(0, i + 1), __list.slice(i + 1, __list.length()))
+        }
+    }
+
+    run splitAfterFirstTest = all {
+        assert(splitAfterFirst(List(1, 2, 3), __x => __x > 1) == (List(1, 2), List(3))),
+        assert(splitAfterFirst(List(1, 2, 3), __x => __x > 3) == (List(1, 2, 3), List())),
+        assert(splitAfterFirst(List(1, 2, 3), __x => __x < -1) == (List(1, 2, 3), List())),
+        assert(splitAfterFirst(List(1, 2, 3), __x => __x > 0) == (List(1), List(2, 3))),
+        assert(splitAfterFirst(List(), __x => __x > 0) == (List(), List())),
+    }
+      
 }

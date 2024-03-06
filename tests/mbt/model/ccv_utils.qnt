@@ -305,7 +305,10 @@ module ccv_utils {
                             currentConsumerState.chainState.runningTimestamp + receiverUnbondingPeriod
                         )
                     ),
-                    receivedVscPackets: currentConsumerState.receivedVscPackets.prepend(packet)
+                    receivedVscPackets: currentConsumerState.receivedVscPackets.prepend(packet),
+                    outstandingDowntime: currentConsumerState.outstandingDowntime.filter(
+                        validator => not(packet.downtimeSlashAcks.toSet().contains(validator))
+                    )
                 }
             val newConsumerStates = currentState.consumerStates.set(receiver, newConsumerState)
             val newState = currentState.with(
@@ -461,7 +464,7 @@ module ccv_utils {
     // Internally, prepends the packet to the senders packetsToSendOnEndBlock list.
     pure def commitPacketOnConsumer(senderState: ConsumerState, packet: Packet): ConsumerState = {
         senderState.with(
-            "packetsToSendOnEndBlock", senderState.packetsToSendOnEndBlock.append(packet)
+            "queuedPackets", senderState.queuedPackets.append(packet)
         )
     }
 

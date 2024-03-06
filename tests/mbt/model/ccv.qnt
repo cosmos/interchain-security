@@ -199,10 +199,21 @@ module ccv_types {
         // In the implementation, essentially unacknowledged IBC packets.
         outstandingPacketsToProvider: List[Packet],
 
-        // a list of packets that were comitted during the block,
-        // and will thus be considered "sent" when the block ends.
-        // these are moved to the outstandingPackets list when the block ends.
-        packetsToSendOnEndBlock: List[Packet],
+        // a list of packets that are waiting to be sent.
+        // these are usually sent at the end of the next block, but some may be delayed due to slash throttling.
+        // in more detail:
+        // Slash packets will always be sent to the provider once they're at the head of the queue.
+        // However, once sent, the consumer will not send any subsequent VSCMaturedPackets from the queue
+        // until the packet is delivered to the provider.
+        // That is, SlashPackets block the sending of subsequent VSCMaturedPackets in the consumer queue.
+        // If two SlashPackets are at the head of the queue, the consumer will:
+        // 1. Send the first SlashPacket.
+        // 2. Wait for the packet to be delivered.
+        // 3. Only then send the second SlashPacket.
+        //
+        // VSCMaturedPackets at the head of the queue (i.e., NOT following a SlashPacket) can be sent immediately, 
+        // and do not block any other packets in the queue, since the provider always handles them immediately.
+        queuedPackets: List[Packet],
 
         // Stores the validators on the consumer that the consumer has sent a downtime slash request for.
         // These are cleared when the provider acknowledges the downtime slashes.
@@ -218,7 +229,7 @@ module ccv_types {
             maturationTimes: List(),
             outstandingPacketsToProvider: List(),
             receivedVscPackets: List(),
-            packetsToSendOnEndBlock: List(),
+            queuedPackets: List(),
             outstandingDowntime: Set(),
         }
 
@@ -613,7 +624,7 @@ module ccv {
 
                     maturationTime > newChainState.lastTimestamp
                 )
-                val newOutstandingPackets = newConsumerState.outstandingPacketsToProvider.concat(
+                val newQueuedPackets = newConsumerState.queuedPackets.concat(
                     maturedPackets.transform(
                         packet => VscMatured({
                             id: packet.id, 
@@ -623,15 +634,62 @@ module ccv {
                         })
                     )
                 )
+                // for each queued packet, update its sending time and timeout time to the current time (in case we send them in this block)
+                val newQueuedPackets2 = newQueuedPackets.transform(
+                    packet =>
+                    match packet {
+                        | VscMatured(p) => VscMatured({
+                            id: p.id,
+                            sendingTime: newChainState.runningTimestamp,
+                            timeoutTime: newChainState.runningTimestamp + CcvTimeout.get(chain)
+                        })
+                        | Slash(p) => Slash({
+                            validator: p.validator,
+                            id: p.id,
+                            downtime: p.downtime,
+                            valPower: p.valPower,
+                            sendingTime: newChainState.runningTimestamp,
+                            timeoutTime: newChainState.runningTimestamp + CcvTimeout.get(chain)
+                        })
+                        | _ => packet
+                    }
+                )
+                // check if there is a validator that has outstanding downtime slashes
+                // but for whom no packet is queued (meaning that we have sent the slash packet,
+                // but haven't received an acknowledgement yet)
+                val haveOutstandingSlash = newConsumerState.outstandingDowntime.filter(
+                    consumerAddr =>
+                    // check whether for this consumer address
+                    newQueuedPackets2.select(
+                        packet =>
+                        match packet {
+                            // there is a packet in the queue that is a slash packet for this validator
+                            | Slash(p) => p.validator == consumerAddr
+                            | _ => false
+                        }
+                    // if not, then the length will be 0 here
+                    // thus the consumer address will be in the result
+                    ).length() == 0
+                )
+                
+                val tmp = if (haveOutstandingSlash.size() > 0) {
+                    // if we have an outstanding slash, send nothing and keep everything queued
+                    (List(), newQueuedPackets)
+                } else {
+                    // otherwise, add all packets from the queue before the first slash packet
+                    newQueuedPackets.splitAfterFirst(
+                        packet => packet.IsSlashPacket()
+                    )
+                }
+                val packetsToSend = tmp._1
+                val packetsToKeepQueued = tmp._2
+
                 val newConsumerState2: ConsumerState = newConsumerState.with(
                     "maturationTimes", newMaturationTimes
                 ).with(
-                    "outstandingPacketsToProvider", newOutstandingPackets.concat(newConsumerState.packetsToSendOnEndBlock)
+                    "outstandingPacketsToProvider", newConsumerState.outstandingPacketsToProvider.concat(packetsToSend)
                 ).with(
-                    "packetsToSendOnEndBlock", List()
-                ).with(
-                    // clear the list of outstanding downtime slashes
-                    "outstandingDowntime", Set()
+                    "queuedPackets", packetsToKeepQueued
                 )
                 
                 val newConsumerStates = currentState.consumerStates.set(chain, newConsumerState2)
@@ -792,18 +850,26 @@ module ccv {
             DoubleSignSlashPercentage
         }
         
-        val newProviderState = currentState.providerState
+        val newProviderState = 
+            if (packet.downtime) 
+            { currentState.providerState
             .jailUntil(packet.validator, jailEndTime)
-            .slash(packet.validator, packet.valPower, slashFactor)
+            // // slashing is currently not enabled in ICS 
+            // .slash(packet.validator, packet.valPower, slashFactor)
+            } else {
+                currentState.providerState
+            }
 
         if (packet.downtime) {
             // if the packet is for downtime, add the consumer address to the list of acknowledged slashes
-            // for the sender chain of this slash packet
+            // for the sender chain of this slash packet and indicate that we need to send a packet at endblock
             val newDowntimeSlashRequests = newProviderState.downtimeSlashRequests
                 .getOrElse(sender, List())
                 .append(packet.validator)
             val newProviderState2 = newProviderState.with(
                 "downtimeSlashRequests", newProviderState.downtimeSlashRequests.put(sender, newDowntimeSlashRequests)
+            ).with(
+                "providerValidatorSetChangedInThisBlock", true
             )
             Ok(currentState.with("providerState", newProviderState2))
         } else {

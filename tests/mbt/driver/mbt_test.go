@@ -700,7 +700,7 @@ func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int6
 	}
 
 	if !reflect.DeepEqual(expectedValSet, actualValSet) {
-		return fmt.Errorf("Validator sets do not match: (+ expected, - actual): %v", pretty.Compare(expectedValSet, actualValSet))
+		return fmt.Errorf("Validator sets do not match: (- expected, + actual): %v", pretty.Compare(expectedValSet, actualValSet))
 	}
 	return nil
 }

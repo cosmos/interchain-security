@@ -18,6 +18,8 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
@@ -88,6 +90,10 @@ func (s *Driver) providerKeeper() providerkeeper.Keeper {
 
 func (b *Driver) providerStakingKeeper() stakingkeeper.Keeper {
 	return *b.providerChain().App.(*appProvider.App).StakingKeeper
+}
+
+func (b *Driver) providerSlashingKeeper() slashingkeeper.Keeper {
+	return b.providerChain().App.(*appProvider.App).SlashingKeeper
 }
 
 func (b *Driver) consumerKeeper(chain ChainId) consumerkeeper.Keeper {

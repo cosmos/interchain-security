@@ -22,6 +22,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
@@ -419,6 +420,18 @@ func (s *Driver) setupProvider(
 	providerParams := s.providerKeeper().GetParams(s.ctx("provider"))
 	providerParams.CcvTimeoutPeriod = params.CcvTimeout[ChainId(providerChain.ChainID)]
 	s.providerKeeper().SetParams(s.ctx("provider"), providerParams)
+
+	// set the signing infos
+	for _, val := range nodes {
+		s.providerSlashingKeeper().SetValidatorSigningInfo(s.ctx("provider"), val.Address.Bytes(), slashingtypes.ValidatorSigningInfo{
+			Address:             val.Address.String(),
+			StartHeight:         0,
+			IndexOffset:         0,
+			JailedUntil:         time.Time{},
+			Tombstoned:          false,
+			MissedBlocksCounter: 0,
+		})
+	}
 
 	// produce a first block
 	simibc.EndBlock(providerChain, func() {})
