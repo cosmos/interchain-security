@@ -137,40 +137,31 @@ func DiffValidators(
 
 	isCurrentValidator := make(map[string]types.ConsumerValidator)
 	for _, val := range currentValidators {
-		// use Bech32 addresses as keys for the map
-		isCurrentValidator[sdk.ConsAddress(val.ProviderConsAddr).String()] = val
+		isCurrentValidator[val.ConsumerPublicKey.String()] = val
 	}
 
 	isNextValidator := make(map[string]types.ConsumerValidator)
 	for _, val := range nextValidators {
-		// use Bech32 addresses as keys for the map
-		isNextValidator[sdk.ConsAddress(val.ProviderConsAddr).String()] = val
+		isNextValidator[val.ConsumerPublicKey.String()] = val
 	}
 
-	for _, val := range currentValidators {
-		if nextVal, found := isNextValidator[sdk.ConsAddress(val.ProviderConsAddr).String()]; found {
-			// validator remains in the next epoch
-			if !val.ConsumerPublicKey.Equal(nextVal.ConsumerPublicKey) {
-				// validator has a new consumer public key, so we introduce `nextVal` consumer key with the latest power,
-				// and we remove validator with the old `val` key by creating an update with 0 power
-				updates = append(updates, abci.ValidatorUpdate{PubKey: *val.ConsumerPublicKey, Power: 0})
-				updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.ConsumerPublicKey, Power: nextVal.Power})
-			} else if val.Power != nextVal.Power {
-				// validator did not modify its consumer public key but has changed its voting power, so we
-				// have to create an update with the new power
-				updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.ConsumerPublicKey, Power: nextVal.Power})
-			}
-			// else no update is needed because neither the consumer public key changed, nor the power of the validator
-		} else {
-			// not found in next validators and hence the validator has to be removed (i.e., update with 0 power)
-			updates = append(updates, abci.ValidatorUpdate{PubKey: *val.ConsumerPublicKey, Power: 0})
+	for _, currentVal := range currentValidators {
+		if nextVal, found := isNextValidator[currentVal.ConsumerPublicKey.String()]; !found {
+			// this consumer public key does not appear in the next validators and hence we remove the validator
+			// with that consumer public key by creating an update with 0 power
+			updates = append(updates, abci.ValidatorUpdate{PubKey: *currentVal.ConsumerPublicKey, Power: 0})
+		} else if currentVal.Power != nextVal.Power {
+			// validator did not modify its consumer public key but has changed its voting power, so we
+			// have to create an update with the new power
+			updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.ConsumerPublicKey, Power: nextVal.Power})
 		}
+		// else no update is needed because neither the consumer public key changed, nor the power of the validator
 	}
 
-	for _, val := range nextValidators {
-		if _, found := isCurrentValidator[sdk.ConsAddress(val.ProviderConsAddr).String()]; !found {
-			// validator is about to join an epoch
-			updates = append(updates, abci.ValidatorUpdate{PubKey: *val.ConsumerPublicKey, Power: val.Power})
+	for _, nextVal := range nextValidators {
+		if _, found := isCurrentValidator[nextVal.ConsumerPublicKey.String()]; !found {
+			// this consumer public key does not exist in the current validators and hence we introduce this validator
+			updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.ConsumerPublicKey, Power: nextVal.Power})
 		}
 	}
 
