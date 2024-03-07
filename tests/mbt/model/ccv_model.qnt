@@ -438,6 +438,13 @@ module ccv_model {
             }
         )
 
+    // for all consumers, waitingForSlachPacketAck is either empty or has a single element
+    val WaitingForSlashPacketAckInv = 
+        runningConsumers.forall(
+            consumer => 
+                currentState.consumerStates.get(consumer).waitingForSlashPacketAck.size() <= 1
+        )
+
 
     // =================
     // SANITY CHECKS
@@ -1100,74 +1107,7 @@ module ccv_model {
                 VotingPowerChange("node1", 50)
             }
         )
-
-    run SlashValSetInv2Test = 
-        init
-        .then(
-            // start consumer 2 and 3
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
-        )
-        .then(
-            // change voting power of node 4 by -50
-            VotingPowerChange("node4", -50)
-        )
-        .then(
-            // end a block on the provider
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
-        )
-        .then(
-            // deliver the vsc packet to consumer 3
-            DeliverVscPacket("consumer3")
-        )
-        .then(
-            // consumer 3 slashes validator 9
-            ConsumerInitiatedSlashDet("consumer3", "node9", 1, true )
-        )
-        .then(
-            // change voting power for node 9
-            VotingPowerChange("node9", -50)
-        )
-        .then(
-            // end and begin a block for consumer 3
-            EndAndBeginBlockForConsumer("consumer3", 1 * Second)
-        )
-        .then(
-            // deliver the slash request to the provider
-            DeliverPacketToProvider("consumer3")
-        )
-        .then(
-            // consumer 3 sends a slash request for node 4
-            ConsumerInitiatedSlashDet("consumer3", "node4", 1, true)
-        )
-        .then(
-            // end and begin a block for consumer 3
-            EndAndBeginBlockForConsumer("consumer3", 1 * Second)
-        )
-        .then(
-            // deliver the slash request to the provider
-            DeliverPacketToProvider("consumer3")
-        )
-        .then(
-            // end and begin a block on the provider
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
-        )
-        .then(
-            // deliver a vsc packet to consumer 3
-            DeliverVscPacket("consumer3")
-        )
-        .then(
-            // end and begin a block for consumer 3
-            EndAndBeginBlockForConsumer("consumer3", 1 * Second)
-        )
-        .then(
-            // assert that the validator set has existed
-            all {
-                assert(ValidatorSetHasExistedInv),
-                // action does not matter
-                VotingPowerChange("node1", 50)
-            }
-        )
-
+        
     run SlashValSetKeyAssignmentTest =
         init
         .then(

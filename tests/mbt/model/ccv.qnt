@@ -112,6 +112,9 @@ module ccv_types {
             // In the implementation, this would roughly be the unacknowledged packets on an ibc channel.
             outstandingPacketsToConsumer: Chain -> List[Packet],
 
+            // Stores the packets that the provider will send an ack for when it ends the current block.
+            acksToSendOnEndBlock: Chain -> List[Packet],
+
             // the set of received VscMaturedPackets
             receivedMaturations: Set[VscMaturedPacket],
 
@@ -177,6 +180,7 @@ module ccv_types {
             keyAssignmentsForVSCPackets: Map(),
             consumersWithAddrAssignmentChangesInThisBlock: Set(),
             downtimeSlashRequests: Map(),
+            acksToSendOnEndBlock: Map(),
         }
         
 
@@ -220,6 +224,12 @@ module ccv_types {
         // We keep this set to disallow sending multiple downtime slashes for the same validator
         // before the first downtime slash is acknowledged.
         outstandingDowntime: Set[ConsumerAddr],
+
+        // Stores the slash packets that the consumer has sent to the provider but has not received an ack for yet.
+        // This is used to implement slash throttling, i.e. the consumer will not send any more packets
+        // while waiting for the slash packet to be acknowledged.
+        // We use a set here to implement an option, i.e. the set can either be empty, or contain a single element.
+        waitingForSlashPacketAck: Set[SlashPacket]
     }
 
     // utility function: returns a consumer state that is initialized minimally.
@@ -231,6 +241,7 @@ module ccv_types {
             receivedVscPackets: List(),
             queuedPackets: List(),
             outstandingDowntime: Set(),
+            waitingForSlashPacketAck: Set(),
         }
 
     // the state of the protocol consists of the composition of the state of one provider chain with potentially many consumer chains.
@@ -417,6 +428,14 @@ module ccv {
                 }
             } else {
                 // the packet has not timed out, so receive it on the provider
+                
+                // store the packet, so it will be acknowledged on block end
+                val newProviderState = currentState.providerState.with(
+                    "acksToSendOnEndBlock", currentState.providerState.acksToSendOnEndBlock.put(
+                        sender,
+                        currentState.providerState.acksToSendOnEndBlock.getOrElse(sender, List()).prepend(packet)
+                    )
+                )
                 val result = recvPacketOnProvider(currentState, sender, packet)
                 val tmpState = result.newState
                 if (result.hasError()) {
@@ -478,6 +497,17 @@ module ccv {
     }
 
 
+    pure def deliverAck(receiverCurrentState: ConsumerState, packet: Packet): ConsumerState = {
+        match packet {
+            Slash(p) => 
+                // remove the packet from the waiting for ack set
+                receiverCurrentState.with(
+                    "waitingForSlashPacketAck", receiverCurrentState.waitingForSlashPacketAck.exclude(Set(p))
+                )
+            | _ => receiverCurrentState
+        }
+    }
+
 
     /// Ends a block on the provider. This means that the current validator set is committed on chain,
     /// packets are queued, and the next block is started. Also, consumers that have passed
@@ -536,6 +566,17 @@ module ccv {
                 CcvTimeout.get(PROVIDER_CHAIN)
             )
 
+        // acknowledge the packets to be acknowledged on endblock
+        val newConsumerStates = currentState.consumerStates.keys().mapBy(
+            (consumer) =>
+            val consumerState = currentState.consumerStates.get(consumer) 
+            val packetsToAck = currentProviderState.acksToSendOnEndBlock.getOrElse(consumer, List())
+            val newConsumerState = packetsToAck.foldl(consumerState,
+                (state, packet) => deliverAck(state, packet)
+            )
+            newConsumerState
+        )
+
 
         // start/stop chains
         val res = providerStateAfterSending.consumerStatus.StartStopConsumers(
@@ -551,6 +592,14 @@ module ccv {
             "providerValidatorSetChangedInThisBlock", false
         ).with(
             "downtimeSlashRequests", Map()
+        ).with(
+            "acksToSendOnEndBlock", Map()
+        )
+
+        val tmpState2 = tmpState.with(
+            "providerState", providerStateAfterConsumerAdvancement
+        ).with(
+            "consumerStates", newConsumerStates
         )
 
         if (err != "") {
@@ -559,12 +608,12 @@ module ccv {
             // for each consumer we just set to running, set its initial validator set to be the current one on the provider...
             val valSet = providerStateAfterConsumerAdvancement.chainState.votingPowerHistory.head()
             val newConsumerStateMap =
-                tmpState.consumerStates.keys().mapBy(
+                tmpState2.consumerStates.keys().mapBy(
                     (consumer) => 
                     if (consumersToStart.contains(consumer)) {
                         // ...modified by the key assignments for the consumer
                         val consValSet = applyKeyAssignmentToValSet(providerStateAfterConsumerAdvancement, consumer, valSet)
-                        val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
+                        val currentConsumerState: ConsumerState = tmpState2.consumerStates.get(consumer)
                         val newConsumerState: ConsumerState = currentConsumerState.with(
                             "chainState", currentConsumerState.chainState.with(
                                 "currentValidatorPowers", consValSet
@@ -584,7 +633,7 @@ module ccv {
                         currentState.consumerStates.get(consumer)
                     }
                 )
-            val newState = tmpState.with(
+            val newState = tmpState2.with(
                 "providerState", providerStateAfterConsumerAdvancement
             ).with(
                 "consumerStates", newConsumerStateMap
@@ -654,25 +703,10 @@ module ccv {
                         | _ => packet
                     }
                 )
-                // check if there is a validator that has outstanding downtime slashes
-                // but for whom no packet is queued (meaning that we have sent the slash packet,
-                // but haven't received an acknowledgement yet)
-                val haveOutstandingSlash = newConsumerState.outstandingDowntime.filter(
-                    consumerAddr =>
-                    // check whether for this consumer address
-                    newQueuedPackets2.select(
-                        packet =>
-                        match packet {
-                            // there is a packet in the queue that is a slash packet for this validator
-                            | Slash(p) => p.validator == consumerAddr
-                            | _ => false
-                        }
-                    // if not, then the length will be 0 here
-                    // thus the consumer address will be in the result
-                    ).length() == 0
-                )
+                // check if there is a slash packet that has not yet been acknowledged
+                val haveOutstandingSlash = newConsumerState.waitingForSlashPacketAck.size() > 0
                 
-                val tmp = if (haveOutstandingSlash.size() > 0) {
+                val tmp = if (haveOutstandingSlash) {
                     // if we have an outstanding slash, send nothing and keep everything queued
                     (List(), newQueuedPackets)
                 } else {
@@ -684,12 +718,28 @@ module ccv {
                 val packetsToSend = tmp._1
                 val packetsToKeepQueued = tmp._2
 
+                // update the "waiting for ack" set
+                val newWaitingForSlashPacketAck = if (packetsToSend.length() > 0) {
+                    val packet = packetsToSend[packetsToSend.length() - 1]
+                    match packet {
+                        // if the last packet we send is a slash packet, we need to remember to wait for an ack for this packet
+                        | Slash(p) => Set(p)
+                        // if the last packet is not a slash packet, no packet we sent can be a slash packet, so we don't wait for any acks now
+                        | _ => Set()
+                    }
+                } else {
+                    // if we don't send a packet, no need to update
+                    newConsumerState.waitingForSlashPacketAck
+                }
+
                 val newConsumerState2: ConsumerState = newConsumerState.with(
                     "maturationTimes", newMaturationTimes
                 ).with(
                     "outstandingPacketsToProvider", newConsumerState.outstandingPacketsToProvider.concat(packetsToSend)
                 ).with(
                     "queuedPackets", packetsToKeepQueued
+                ).with(
+                    "waitingForSlashPacketAck", newWaitingForSlashPacketAck
                 )
                 
                 val newConsumerStates = currentState.consumerStates.set(chain, newConsumerState2)
