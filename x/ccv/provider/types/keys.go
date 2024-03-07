@@ -121,7 +121,7 @@ const (
 	ValidatorsByConsumerAddrBytePrefix
 
 	// KeyAssignmentReplacementsBytePrefix was the byte prefix used to store the key assignments that needed to be replaced in the current block
-	// NOTE: This prefix is depreciated, but left in place to avoid consumer state migrations
+	// NOTE: This prefix is deprecated, but left in place to avoid consumer state migrations
 	// [DEPRECATED]
 	KeyAssignmentReplacementsBytePrefix
 
