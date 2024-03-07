@@ -331,37 +331,29 @@ func (k Keeper) AssignConsumerKey(
 		)
 	}
 
-	// check whether the consumer chain is already registered,
-	// i.e., a client to the consumer was already created
-	if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
-		// get the previous key assigned for this validator on this consumer chain
-		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-		if found {
-			// mark this old consumer key as prunable once the VSCMaturedPacket
+	// get the previous key assigned for this validator on this consumer chain
+	if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
+		oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+		if err != nil {
+			return err
+		}
+		oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
+
+		// check whether the consumer chain is already registered,
+		// i.e., a client to the consumer was already created
+		if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
+			// mark the old consumer address as prunable once the VSCMaturedPacket
 			// for the current VSC ID is received;
 			// note: this state is removed on receiving the VSCMaturedPacket
-			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
-			if err != nil {
-				return err
-			}
-			oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
 			k.AppendConsumerAddrsToPrune(
 				ctx,
 				chainID,
 				k.GetValidatorSetUpdateId(ctx),
 				oldConsumerAddr,
 			)
-		}
-	} else {
-		// if the consumer chain is not registered, then remove the mapping
-		// from the old consumer address to the provider address (if any)
-		// get the previous key assigned for this validator on this consumer chain
-		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
-			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
-			if err != nil {
-				return err
-			}
-			oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
+		} else {
+			// if the consumer chain is not registered, then remove the mapping
+			// from the old consumer address to the provider address
 			k.DeleteValidatorByConsumerAddr(ctx, chainID, oldConsumerAddr)
 		}
 	}
@@ -424,7 +416,7 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 		consumerAddr := types.NewConsumerConsAddress(validatorConsumerAddr.ConsumerAddr)
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, consumerAddr)
 	}
-	
+
 	// delete ValidatorConsumerPubKey
 	for _, consumerAddrsToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
 		k.DeleteConsumerAddrsToPrune(ctx, chainID, consumerAddrsToPrune.VscId)
