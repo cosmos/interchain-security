@@ -120,7 +120,9 @@ const (
 	// on consumer chains to validator addresses on the provider chain
 	ValidatorsByConsumerAddrBytePrefix
 
-	// KeyAssignmentReplacementsBytePrefix is the byte prefix that will store the key assignments that need to be replaced in the current block
+	// KeyAssignmentReplacementsBytePrefix was the byte prefix used to store the key assignments that needed to be replaced in the current block
+	// NOTE: This prefix is deprecated, but left in place to avoid consumer state migrations
+	// [DEPRECATED]
 	KeyAssignmentReplacementsBytePrefix
 
 	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
@@ -363,12 +365,6 @@ func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
 // on consumer chains to validator addresses on the provider chain is stored
 func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
 	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
-}
-
-// KeyAssignmentReplacementsKey returns the key under which the
-// key assignments that need to be replaced in the current block are stored
-func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // ConsumerAddrsToPruneKey returns the key under which the
