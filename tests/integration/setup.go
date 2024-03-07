@@ -136,12 +136,16 @@ func (suite *CCVTestSuite) SetupTest() {
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
 
 	// start consumer chains
-	numConsumers := 5
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
-	for i := 0; i < numConsumers; i++ {
+	for i := 0; i < icstestingutils.NumConsumers; i++ {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
+
+		// check that TopN was correctly set
+		topN, found := providerKeeper.GetTopN(suite.providerCtx(), bundle.Chain.ChainID)
+		suite.Require().True(found)
+		suite.Require().Equal(bundle.TopN, topN)
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
