@@ -979,3 +979,95 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 		})
 	}
 }
+
+func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
+	s.SetupAllCCVChannels()
+	s.SetupAllTransferChannels()
+
+	providerBankKeeper := s.providerApp.GetTestBankKeeper()
+	providerAccountKeeper := s.providerApp.GetTestAccountKeeper()
+
+	// check all consumer transfer channels are setup
+	for chainID := range s.consumerBundles {
+		bundle := s.consumerBundles[chainID]
+		s.Require().Equal(
+			bundle.TransferPath.EndpointA.ChannelID,
+			bundle.App.GetConsumerKeeper().GetDistributionTransmissionChannel(bundle.GetCtx()),
+		)
+	}
+
+	_, ok := s.consumerApp.GetConsumerKeeper().GetProviderChannel(s.consumerCtx())
+	s.Require().False(ok)
+
+	bondAmt := sdk.NewInt(10000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	delegate(s, delAddr, bondAmt)
+	s.providerChain.NextBlock()
+
+	// relay VSC packets from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+
+	_, ok = s.consumerApp.GetConsumerKeeper().GetProviderChannel(s.consumerCtx())
+	s.Require().True(ok)
+
+	// check that the reward provider pool is empty
+	rewardPool := providerAccountKeeper.GetModuleAccount(s.providerCtx(), providertypes.ConsumerRewardsPool).GetAddress()
+	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	s.Require().Empty(rewardCoins)
+
+	rewardPerConsumer := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+	totalConsumerRewards := sdk.Coins{}
+
+	// for each chain, fill the reward pool
+	// and transfer the rewards to the provider
+	for chainID := range s.consumerBundles {
+		bundle := s.consumerBundles[chainID]
+
+		bankKeeper := bundle.App.GetTestBankKeeper()
+		consumerKeeper := bundle.App.GetConsumerKeeper()
+
+		err := bankKeeper.SendCoinsFromAccountToModule(
+			bundle.GetCtx(),
+			bundle.Chain.SenderAccount.GetAddress(),
+			consumertypes.ConsumerToSendToProviderName,
+			rewardPerConsumer,
+		)
+		s.Require().NoError(err)
+
+		// register consumer reward denom
+		params := consumerKeeper.GetConsumerParams(bundle.GetCtx())
+		params.RewardDenoms = []string{sdk.DefaultBondDenom}
+		consumerKeeper.SetParams(bundle.GetCtx(), params)
+
+		// reward for the provider chain will be sent after each 2 blocks
+		consumerParams := bundle.App.GetSubspace(consumertypes.ModuleName)
+		consumerParams.Set(bundle.GetCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(2))
+		bundle.Chain.NextBlock()
+		bundle.Chain.NextBlock()
+
+		// relay IBC transfer packet from consumer to provider
+		relayAllCommittedPackets(
+			s,
+			bundle.Chain,
+			bundle.TransferPath,
+			transfertypes.PortID,
+			bundle.TransferPath.EndpointA.ChannelID,
+			1,
+		)
+		totalConsumerRewards = totalConsumerRewards.Add(rewardPerConsumer...)
+	}
+
+	// Check that the provider receives the rewards
+	rewardPool = providerAccountKeeper.GetModuleAccount(s.providerCtx(), providertypes.ConsumerRewardsPool).GetAddress()
+	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	s.Require().Equal(totalConsumerRewards, rewardCoins)
+
+	for chainID := range s.consumerBundles {
+		// check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlock
+		rewardsAlloc := s.providerApp.GetProviderKeeper().GetConsumerRewardsAllocation(
+			s.providerCtx(),
+			chainID,
+		)
+		s.Require().Empty(rewardsAlloc.Rewards)
+	}
+}
