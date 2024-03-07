@@ -142,7 +142,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
 
-		// check that TopN was correctly set
+		// check that TopN is correctly set for the consumer
 		topN, found := providerKeeper.GetTopN(suite.providerCtx(), bundle.Chain.ChainID)
 		suite.Require().True(found)
 		suite.Require().Equal(bundle.TopN, topN)

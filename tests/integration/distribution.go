@@ -980,7 +980,7 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 	}
 }
 
-// TestMultiConsumerRewardsDistribution tests the reward distribution in the conext
+// TestMultiConsumerRewardsDistribution tests the reward distribution in the context
 // of multiple consumers sending rewards to the provider
 func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 	s.SetupAllCCVChannels()
@@ -997,17 +997,17 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 	totalConsumerRewards := sdk.Coins{}
 
 	// Iterate over the consumers and perform the reward distribution
-	// to the provider.
+	// to the provider
 	for chainID := range s.consumerBundles {
 		bundle := s.consumerBundles[chainID]
 		consumerKeeper := bundle.App.GetConsumerKeeper()
 		bankKeeper := bundle.App.GetTestBankKeeper()
 		accountKeeper := bundle.App.GetTestAccountKeeper()
 
-		// set the consumer reward denom and block per distribution params
+		// set the consumer reward denom and the block per distribution params
 		params := consumerKeeper.GetConsumerParams(bundle.GetCtx())
 		params.RewardDenoms = []string{sdk.DefaultBondDenom}
-		// set the reward distribution for the next block
+		// set the reward distribution to be performed during the next block
 		params.BlocksPerDistributionTransmission = int64(1)
 		consumerKeeper.SetParams(bundle.GetCtx(), params)
 
@@ -1015,7 +1015,7 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 		var rewardsPerConsumer sdk.Coin
 
 		// check the consumer pool balance
-		// Note that for a democracy consumer chain the reward pool may already be filled
+		// Note that for a democracy consumer chain the pool may already be filled
 		if pool := bankKeeper.GetAllBalances(
 			bundle.GetCtx(),
 			accountKeeper.GetModuleAccount(bundle.GetCtx(), consumertypes.ConsumerToSendToProviderName).GetAddress(),
@@ -1030,10 +1030,9 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 			)
 			s.Require().NoError(err)
 		} else {
-			// the pool is filled so we force
-			// the internal reward distribution
-			// and save the pool balance before
-			// it get transferred to the provider
+			// execute the internal rewards distribution
+			// to save the pool's balance before
+			// it gets transferred to the provider in EndBlock
 			consumerKeeper.DistributeRewardsInternally(bundle.GetCtx())
 			pool = bankKeeper.GetAllBalances(
 				bundle.GetCtx(),

@@ -31,7 +31,7 @@ type (
 // to run integration tests against your app.go implementations!
 
 const (
-	// Default number of setup consumer chains
+	// Default number of consumer chains
 	NumConsumers = 5
 )
 
