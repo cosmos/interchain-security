@@ -149,3 +149,10 @@ This param would allow provider binaries to panic deterministically in the event
 
 `RetryDelayPeriod` exists on the consumer for **ICS versions >= v3.2.0** (introduced by the implementation of [ADR-008](../adrs/adr-008-throttle-retries.md)) and is the period at which the consumer retries to send a `SlashPacket` that was rejected by the provider.
 
+
+## Epoch Parameters
+
+### BlocksPerEpoch
+`BlocksPerEpoch` exists on the provider for **ICS versions >= 3.3.0** (introduced by the implementation of [ADR-014](../adrs/adr-014-epochs.md))
+and corresponds to the number of blocks that constitute an epoch. This param is set to 600 by default and cannot exceed 1200.
+Assuming we need 6 seconds per block, the default value corresponds to 1 hour and the maximum to 2 hours.

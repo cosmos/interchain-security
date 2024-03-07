@@ -375,7 +375,8 @@ func SlashThrottleTestConfig() TestConfig {
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"0.10\" | " +
-					".app_state.provider.params.slash_meter_replenish_period = \"20s\"",
+					".app_state.provider.params.slash_meter_replenish_period = \"20s\" | " +
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
@@ -384,7 +385,7 @@ func SlashThrottleTestConfig() TestConfig {
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
@@ -522,7 +523,8 @@ func DefaultTestConfig() TestConfig {
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
-					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
+					".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
@@ -531,7 +533,7 @@ func DefaultTestConfig() TestConfig {
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
@@ -551,7 +553,8 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 		".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 		".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 		".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
-		".app_state.transfer.params.send_enabled = false"
+		".app_state.transfer.params.send_enabled = false | " +
+		".app_state.provider.params.blocks_per_epoch = 3"
 
 	name := string(DemocracyTestCfg)
 	if allowReward {
@@ -583,7 +586,8 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
-					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("democ"): {
 				ChainId:        ChainID("democ"),
@@ -625,7 +629,8 @@ func MultiConsumerTestConfig() TestConfig {
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
-					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
@@ -634,7 +639,7 @@ func MultiConsumerTestConfig() TestConfig {
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
@@ -646,7 +651,7 @@ func MultiConsumerTestConfig() TestConfig {
 				IpPrefix:       "7.7.9",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
@@ -684,7 +689,8 @@ func ChangeoverTestConfig() TestConfig {
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
-					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
+					".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("sover"): {
 				ChainId:        ChainID("sover"),
@@ -694,7 +700,7 @@ func ChangeoverTestConfig() TestConfig {
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
@@ -784,7 +790,8 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
-					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
+					".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
+					".app_state.provider.params.blocks_per_epoch = 3",
 			},
 			ChainID("consu"): {
 				ChainId:        ChainID("consu"),
@@ -793,7 +800,7 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",

@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -184,99 +183,6 @@ func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, chainID string, c
 	store.Delete(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr))
 }
 
-// GetKeyAssignmentReplacement returns the previous assigned consumer key and the current power
-// for a provider validator for which a key assignment was received in this block. Both are
-// needed to update the validator's power on the consumer chain at the end of the current block.
-func (k Keeper) GetKeyAssignmentReplacement(
-	ctx sdk.Context,
-	chainID string,
-	providerAddr types.ProviderConsAddress,
-) (prevCKey tmprotocrypto.PublicKey, power int64, found bool) {
-	var pubKeyAndPower abci.ValidatorUpdate
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
-	if bz == nil {
-		return pubKeyAndPower.PubKey, pubKeyAndPower.Power, false
-	}
-
-	err := pubKeyAndPower.Unmarshal(bz)
-	if err != nil {
-		// An error here would indicate something is very wrong,
-		// the public key and power are assumed to be correctly serialized in SetKeyAssignmentReplacement.
-		panic(fmt.Sprintf("failed to unmarshal public key and power: %v", err))
-	}
-	return pubKeyAndPower.PubKey, pubKeyAndPower.Power, true
-}
-
-// SetKeyAssignmentReplacement sets the previous assigned consumer key and the current power
-// for a provider validator for which a key assignment was received in this block. Both are
-// needed to update the validator's power on the consumer chain at the end of the current block.
-func (k Keeper) SetKeyAssignmentReplacement(
-	ctx sdk.Context,
-	chainID string,
-	providerAddr types.ProviderConsAddress,
-	prevCKey tmprotocrypto.PublicKey,
-	power int64,
-) {
-	store := ctx.KVStore(k.storeKey)
-	pubKeyAndPower := abci.ValidatorUpdate{PubKey: prevCKey, Power: power}
-	bz, err := pubKeyAndPower.Marshal()
-	if err != nil {
-		// An error here would indicate something is very wrong,
-		// prevCKey is obtained from GetValidatorConsumerPubKey (called from AssignConsumerKey),
-		// and power is obtained from GetLastValidatorPower (called from AssignConsumerKey).
-		// Both of which are assumed to return valid values.
-		panic(fmt.Sprintf("failed to marshal public key and power: %v", err))
-	}
-	store.Set(types.KeyAssignmentReplacementsKey(chainID, providerAddr), bz)
-}
-
-// GetAllKeyAssignmentReplacements gets all pairs of previous assigned consumer keys
-// and current powers for all provider validator for which key assignments were received in this block.
-//
-// Note that the pairs are stored under keys with the following format:
-// KeyAssignmentReplacementsBytePrefix | len(chainID) | chainID | providerAddress
-// Thus, the iteration is in ascending order of providerAddresses.
-func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string) (replacements []types.KeyAssignmentReplacement) {
-	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := types.ChainIdWithLenKey(types.KeyAssignmentReplacementsBytePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		// TODO: store chainID and provider cons address in value bytes, marshaled as protobuf type
-		_, providerAddrTmp, err := types.ParseChainIdAndConsAddrKey(types.KeyAssignmentReplacementsBytePrefix, iterator.Key())
-		if err != nil {
-			// An error here would indicate something is very wrong,
-			// store keys are assumed to be correctly serialized in SetKeyAssignmentReplacement.
-			panic(err)
-		}
-		providerAddr := types.NewProviderConsAddress(providerAddrTmp)
-		var pubKeyAndPower abci.ValidatorUpdate
-		err = pubKeyAndPower.Unmarshal(iterator.Value())
-		if err != nil {
-			// An error here would indicate something is very wrong,
-			// the public key and power are assumed to be correctly serialized in SetKeyAssignmentReplacement.
-			panic(fmt.Sprintf("failed to unmarshal public key and power: %v", err))
-		}
-
-		replacements = append(replacements, types.KeyAssignmentReplacement{
-			ProviderAddr: providerAddr.ToSdkConsAddr(),
-			PrevCKey:     &pubKeyAndPower.PubKey,
-			Power:        pubKeyAndPower.Power,
-		})
-	}
-
-	return replacements
-}
-
-// DeleteKeyAssignmentReplacement deletes the previous assigned consumer key and the current power
-// for a provider validator for which a key assignment was received in this block. Both are
-// needed to update the validator's power on the consumer chain at the end of the current block.
-func (k Keeper) DeleteKeyAssignmentReplacement(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
-}
-
 // AppendConsumerAddrsToPrune appends a consumer validator address to the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received.
 //
@@ -425,20 +331,20 @@ func (k Keeper) AssignConsumerKey(
 		)
 	}
 
-	// check whether the consumer chain is already registered,
-	// i.e., a client to the consumer was already created
-	if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
-		// get the previous key assigned for this validator on this consumer chain
-		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-		if found {
-			// mark this old consumer key as prunable once the VSCMaturedPacket
+	// get the previous key assigned for this validator on this consumer chain
+	if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
+		oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+		if err != nil {
+			return err
+		}
+		oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
+
+		// check whether the consumer chain is already registered,
+		// i.e., a client to the consumer was already created
+		if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
+			// mark the old consumer address as prunable once the VSCMaturedPacket
 			// for the current VSC ID is received;
 			// note: this state is removed on receiving the VSCMaturedPacket
-			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
-			if err != nil {
-				return err
-			}
-			oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
 			k.AppendConsumerAddrsToPrune(
 				ctx,
 				chainID,
@@ -446,42 +352,8 @@ func (k Keeper) AssignConsumerKey(
 				oldConsumerAddr,
 			)
 		} else {
-			// the validator had no key assigned on this consumer chain
-			providerKey, err := validator.TmConsPublicKey()
-			if err != nil {
-				return err
-			}
-			oldConsumerKey = providerKey
-		}
-
-		// check whether the validator is valid, i.e., its power is positive
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		if 0 < power {
-			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
-
-			// the key assignment replacement should not be overwritten
-			if _, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr); !found {
-				// store old key and current power for modifying the valset update in EndBlock;
-				// note: this state is deleted at the end of the block
-				k.SetKeyAssignmentReplacement(
-					ctx,
-					chainID,
-					providerAddr,
-					oldConsumerKey,
-					power,
-				)
-			}
-		}
-	} else {
-		// if the consumer chain is not registered, then remove the mapping
-		// from the old consumer address to the provider address (if any)
-		// get the previous key assigned for this validator on this consumer chain
-		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
-			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
-			if err != nil {
-				return err
-			}
-			oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
+			// if the consumer chain is not registered, then remove the mapping
+			// from the old consumer address to the provider address
 			k.DeleteValidatorByConsumerAddr(ctx, chainID, oldConsumerAddr)
 		}
 	}
@@ -497,88 +369,6 @@ func (k Keeper) AssignConsumerKey(
 	k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
 
 	return nil
-}
-
-// MustApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates
-// received from the staking module.
-// The method panics if the key-assignment state is corrupted.
-func (k Keeper) MustApplyKeyAssignmentToValUpdates(
-	ctx sdk.Context,
-	chainID string,
-	valUpdates []abci.ValidatorUpdate,
-) (newUpdates []abci.ValidatorUpdate) {
-	for _, valUpdate := range valUpdates {
-		providerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
-		if err != nil {
-			panic(fmt.Errorf("cannot get provider address from pub key: %s", err.Error()))
-		}
-		providerAddr := types.NewProviderConsAddress(providerAddrTmp)
-
-		// If a key assignment replacement is found, we remove the valupdate with the old consumer key,
-		// create two new valupdates,
-		//  - setting the old consumer key's power to 0
-		//  - and setting the new consumer key's power to the power in the update
-		prevConsumerKey, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
-		if found {
-			newUpdates = append(newUpdates, abci.ValidatorUpdate{
-				PubKey: prevConsumerKey,
-				Power:  0,
-			})
-
-			newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-			if !found {
-				// This should never happen as for every KeyAssignmentReplacement there should
-				// be a ValidatorConsumerPubKey that was stored when AssignConsumerKey() was called.
-				panic(fmt.Errorf("consumer key not found for provider addr %s stored in KeyAssignmentReplacement", providerAddr))
-			}
-			newUpdates = append(newUpdates, abci.ValidatorUpdate{
-				PubKey: newConsumerKey,
-				Power:  valUpdate.Power,
-			})
-			k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
-		} else {
-			// If a key assignment replacement is not found, we check if the validator's key is assigned.
-			// If it is, we replace the update containing the provider key with an update containing
-			// the consumer key.
-			// Note that this will always be the branch taken when creating the genesis state
-			// of a newly registered consumer chain.
-			consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-			if found {
-				newUpdates = append(newUpdates, abci.ValidatorUpdate{
-					PubKey: consumerKey,
-					Power:  valUpdate.Power,
-				})
-			} else {
-				// keep the same update
-				newUpdates = append(newUpdates, valUpdate)
-			}
-		}
-	}
-
-	// For any key assignment replacements that did not have a corresponding validator update already,
-	// set the old consumer key's power to 0 and the new consumer key's power to the
-	// power in the pending key assignment.
-	for _, replacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
-		providerAddr := types.NewProviderConsAddress(replacement.ProviderAddr)
-		k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
-		newUpdates = append(newUpdates, abci.ValidatorUpdate{
-			PubKey: *replacement.PrevCKey,
-			Power:  0,
-		})
-
-		newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-		if !found {
-			// This should never happen as for every KeyAssignmentReplacement there should
-			// be a ValidatorConsumerPubKey that was stored when AssignConsumerKey() was called.
-			panic(fmt.Errorf("consumer key not found for provider addr %s stored in KeyAssignmentReplacement", replacement.ProviderAddr))
-		}
-		newUpdates = append(newUpdates, abci.ValidatorUpdate{
-			PubKey: newConsumerKey,
-			Power:  replacement.Power,
-		})
-	}
-
-	return newUpdates
 }
 
 // GetProviderAddrFromConsumerAddr returns the consensus address of a validator with
@@ -625,12 +415,6 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	for _, validatorConsumerAddr := range k.GetAllValidatorsByConsumerAddr(ctx, &chainID) {
 		consumerAddr := types.NewConsumerConsAddress(validatorConsumerAddr.ConsumerAddr)
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, consumerAddr)
-	}
-
-	// delete KeyAssignmentReplacements
-	for _, keyAssignmentReplacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
-		providerAddr := types.NewProviderConsAddress(keyAssignmentReplacement.ProviderAddr)
-		k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
 	}
 
 	// delete ValidatorConsumerPubKey
