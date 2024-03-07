@@ -980,6 +980,8 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 	}
 }
 
+// TestMultiConsumerRewardsDistribution tests the reward distribution in the conext
+// of multiple consumers sending rewards to the provider
 func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 	s.SetupAllCCVChannels()
 	s.SetupAllTransferChannels()
@@ -1015,7 +1017,7 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
 	s.Require().Empty(rewardCoins)
 
-	rewardPerConsumer := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+	rewardsPerConsumer := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))
 	totalConsumerRewards := sdk.Coins{}
 
 	// for each chain, fill the reward pool
@@ -1030,13 +1032,13 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 			bundle.GetCtx(),
 			bundle.Chain.SenderAccount.GetAddress(),
 			consumertypes.ConsumerToSendToProviderName,
-			rewardPerConsumer,
+			sdk.NewCoins(rewardsPerConsumer),
 		)
 		s.Require().NoError(err)
 
 		// register consumer reward denom
 		params := consumerKeeper.GetConsumerParams(bundle.GetCtx())
-		params.RewardDenoms = []string{sdk.DefaultBondDenom}
+		params.RewardDenoms = []string{rewardsPerConsumer.Denom}
 		consumerKeeper.SetParams(bundle.GetCtx(), params)
 
 		// reward for the provider chain will be sent after each 2 blocks
@@ -1054,7 +1056,15 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 			bundle.TransferPath.EndpointA.ChannelID,
 			1,
 		)
-		totalConsumerRewards = totalConsumerRewards.Add(rewardPerConsumer...)
+
+		// construct the denom of the reward tokens for the provider
+		prefixedDenom := ibctransfertypes.GetPrefixedDenom(
+			transfertypes.PortID,
+			bundle.TransferPath.EndpointB.ChannelID,
+			rewardsPerConsumer.Denom,
+		)
+		provIBCDenom := ibctransfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
+		totalConsumerRewards = totalConsumerRewards.Add(sdk.NewCoin(provIBCDenom, rewardsPerConsumer.Amount))
 	}
 
 	// Check that the provider receives the rewards
