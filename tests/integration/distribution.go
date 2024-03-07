@@ -23,7 +23,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
-	s.providerChain.NextBlock()
+	s.nextEpoch()
 
 	// register a consumer reward denom
 	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
@@ -124,7 +124,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
-	s.providerChain.NextBlock()
+	s.nextEpoch()
 
 	// Register denom on consumer chain
 	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
@@ -253,7 +253,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		bondAmt := sdk.NewInt(10000000)
 		delAddr := s.providerChain.SenderAccount.GetAddress()
 		delegate(s, delAddr, bondAmt)
-		s.providerChain.NextBlock()
+		s.nextEpoch()
 
 		if tc.denomRegistered {
 			params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())

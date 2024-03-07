@@ -356,6 +356,26 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		NewChain: consumerGenesis.NewChain,
 	}
 
+	var stakingValidators []stakingtypes.Validator
+
+	// set up the current consumer validators by utilizing the initial validator set
+	for _, val := range consumerGenesisForProvider.Provider.InitialValSet {
+		pubKey := val.PubKey
+		consAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(pubKey)
+		if err != nil {
+			continue
+		}
+
+		v, found := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		if !found {
+			continue
+		}
+		stakingValidators = append(stakingValidators, v)
+	}
+
+	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators)
+	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
+
 	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),
 		string(consumerChainId),

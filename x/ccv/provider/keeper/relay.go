@@ -148,13 +148,17 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
-	// collect validator updates
-	k.QueueVSCPackets(ctx)
+	if ctx.BlockHeight()%k.GetBlocksPerEpoch(ctx) == 0 {
+		// only queue and send VSCPackets at the boundaries of an epoch
 
-	// try sending VSC packets to all registered consumer chains;
-	// if the CCV channel is not established for a consumer chain,
-	// the updates will remain queued until the channel is established
-	k.SendVSCPackets(ctx)
+		// collect validator updates
+		k.QueueVSCPackets(ctx)
+
+		// try sending VSC packets to all registered consumer chains;
+		// if the CCV channel is not established for a consumer chain,
+		// the updates will remain queued until the channel is established
+		k.SendVSCPackets(ctx)
+	}
 }
 
 // SendVSCPackets iterates over all registered consumers and sends pending
@@ -212,14 +216,15 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
-	// Get the validator updates from the staking module.
-	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
-	// of cosmos-sdk is invalid.
-	stakingValUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
+
+	// get the bonded validators from the staking module
+	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
-		// Apply the key assignment to the validator updates.
-		valUpdates := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, stakingValUpdates)
+		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
+		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators)
+		valUpdates := DiffValidators(currentValidators, nextValidators)
+		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations

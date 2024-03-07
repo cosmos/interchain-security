@@ -1307,6 +1307,12 @@ func (tr TestConfig) relayPacketsGorelayer(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
+	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
+	// queued and are subsequently relayed.
+	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
+	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
+
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
 
 	// rly transact relay-packets [path-name] --channel [channel-id]
@@ -1331,6 +1337,12 @@ func (tr TestConfig) relayPacketsHermes(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
+	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
+	// queued and are subsequently relayed.
+	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
+	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
+
 	// hermes clear packets ibc0 transfer channel-13
 	cmd := target.ExecCommand("hermes", "clear", "packets",
 		"--chain", string(tr.chainConfigs[action.ChainA].ChainId),
@@ -1639,7 +1651,7 @@ func (tr TestConfig) invokeDowntimeSlash(action DowntimeSlashAction, target Exec
 	// Bring validator down
 	tr.setValidatorDowntime(action.Chain, action.Validator, true, target, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.Chain, 10, 3*time.Minute)
+	tr.waitBlocks(action.Chain, 11, 3*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.Chain, action.Validator, false, target, verbose)
 }

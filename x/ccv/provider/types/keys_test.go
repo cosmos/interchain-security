@@ -56,6 +56,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.VSCMaturedHandledThisBlockBytePrefix,
 		providertypes.EquivocationEvidenceMinHeightBytePrefix,
 		providertypes.ProposedConsumerChainByteKey,
+		providertypes.ConsumerValidatorBytePrefix,
 	}
 }
 
@@ -96,7 +97,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.GlobalSlashEntryKey(providertypes.GlobalSlashEntry{}),
 		providertypes.ConsumerValidatorsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
-		providertypes.KeyAssignmentReplacementsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.VSCMaturedHandledThisBlockKey(),

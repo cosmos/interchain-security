@@ -184,6 +184,12 @@ func RunItfTrace(t *testing.T, path string) {
 
 	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
 
+	// set `BlocksPerEpoch` to 10: a reasonable small value greater than 1 that prevents waiting for too
+	// many blocks and slowing down the tests
+	providerParams := driver.providerKeeper().GetParams(driver.providerCtx())
+	providerParams.BlocksPerEpoch = 10
+	driver.providerKeeper().SetParams(driver.providerCtx(), providerParams)
+
 	// remember the time offsets to be able to compare times to the model
 	// this is necessary because the system needs to do many steps to initialize the chains,
 	// which is abstracted away in the model
@@ -233,17 +239,23 @@ func RunItfTrace(t *testing.T, path string) {
 			stats.numStartedChains += len(consumersToStart)
 			stats.numStops += len(consumersToStop)
 
-			// we need 2 blocks, because for a packet sent at height H, the receiving chain
+			// we need at least 2 blocks, because for a packet sent at height H, the receiving chain
 			// needs a header of height H+1 to accept the packet
-			// so we do one time advancement with a very small increment,
+			// so, we do `blocksPerEpoch` time advancements with a very small increment,
 			// and then increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
-			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+
+			// going through `blocksPerEpoch` blocks to take into account an epoch
+			blocksPerEpoch := driver.providerKeeper().GetBlocksPerEpoch(driver.providerCtx())
+			for i := int64(0); i < blocksPerEpoch; i = i + 1 {
+				driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+			}
 			for _, consumer := range driver.runningConsumers() {
 				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
 			}
 
-			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
+			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-time.Nanosecond*time.Duration(blocksPerEpoch))
+
 			runningConsumersAfter := driver.runningConsumers()
 
 			// the consumers that were running before but not after must have timed out
