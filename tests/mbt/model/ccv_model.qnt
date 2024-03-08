@@ -243,6 +243,7 @@ module ccv_model {
     // The first block will start all consumers in consumersToStart and stop all consumers in consumersToStop,
     // and advance time by timeAdvancement - ((epochLength-1) * Seconds).
     // The rest of the blocks will not start or stop any consumers, and will advance time by 1 second each.
+    // As a a `Run`, it is only used in tests, not during simulation or verification.
     run EndProviderEpoch(
         timeAdvancement: Time,
         consumersToStart: Set[Chain],
@@ -250,10 +251,11 @@ module ccv_model {
     ): bool =
         epochLength.reps(
             i => 
-            if (i == 0)
-            EndAndBeginBlockForProvider(timeAdvancement-((epochLength-1)*Second), consumersToStart, consumersToStop)
-            else
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            if (i == 0) {
+                EndAndBeginBlockForProvider(timeAdvancement-((epochLength-1)*Second), consumersToStart, consumersToStop)
+            } else {
+                EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            }
         )
 
     // ==================
