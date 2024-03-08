@@ -542,7 +542,7 @@ module ccv_model {
                     // change voting power on provider again
                     VotingPowerChange("node1", 50).then(
                         // end the epoch
-                        EndProviderEpoch(1 * Second, Set(), Set())
+                        EndProviderEpoch(epochLength * Second, Set(), Set())
                     )
                     .then(
                         // deliver packet to consumer1
@@ -613,7 +613,7 @@ module ccv_model {
             VotingPowerChange("node1", 50)
         ).then(
             // send packet to consumer1 and consumer2
-            EndProviderEpoch(1 * Second, Set(), Set())
+            EndProviderEpoch(epochLength * Second, Set(), Set())
         ).then(
             // deliver the packets
             DeliverVscPacket("consumer1")
@@ -628,7 +628,7 @@ module ccv_model {
             VotingPowerChange("node2", 50)
         ).then(
             // send packets
-            EndProviderEpoch(1 * Second, Set(), Set())
+            EndProviderEpoch(epochLength * Second, Set(), Set())
         ).then(
             //deliver to consumer1
             DeliverVscPacket("consumer1")
@@ -874,7 +874,7 @@ module ccv_model {
         )
         .then(
             // end and begin block to make sure the key assignment is processed and the packet is sent
-            EndProviderEpoch(1 * Second, Set(), Set())
+            EndProviderEpoch(epochLength * Second, Set(), Set())
         )
         .then(
             // receive the packet on the consumer
