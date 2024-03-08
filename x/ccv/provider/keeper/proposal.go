@@ -188,12 +188,12 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 
 		// delete VSC send timestamps
 		k.DeleteVscSendTimestampsForConsumer(ctx, chainID)
+	}
 
-		// delete consumer commission rate
-		provAddrs := k.GetAllCommissionRateValidators(ctx, "chainID")
-		for _, addr := range provAddrs {
-			k.DeleteConsumerCommissionRate(ctx, "chainID", addr)
-		}
+	// delete consumer commission rate
+	provAddrs := k.GetAllCommissionRateValidators(ctx, chainID)
+	for _, addr := range provAddrs {
+		k.DeleteConsumerCommissionRate(ctx, chainID, addr)
 	}
 
 	k.DeleteInitChainHeight(ctx, chainID)
