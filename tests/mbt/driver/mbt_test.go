@@ -75,6 +75,7 @@ func TestMBT(t *testing.T) {
 	t.Logf("Number of blocks: %v", stats.numBlocks)
 	t.Logf("Number of transactions: %v", stats.numTxs)
 	t.Logf("Number of key assignments: %v", stats.numKeyAssignments)
+	t.Logf("Number of slashes: %v", stats.numSlashes)
 	t.Logf("Average summed block time delta passed per trace: %v", stats.totalBlockTimePassedPerTrace/time.Duration(numTraces))
 }
 
@@ -394,6 +395,8 @@ func RunItfTrace(t *testing.T, path string) {
 			vscId := lastAction["vscId"].Value.(int64)
 			isDowntime := lastAction["isDowntime"].Value.(bool)
 			t.Log("ConsumerInitiatedSlash", consumerChain, validatorName, vscId, isDowntime)
+
+			stats.numSlashes++
 
 			actualPacket, found := modelVscIdsToActualPackets[uint64(vscId)]
 			if !found {
