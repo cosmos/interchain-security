@@ -980,8 +980,7 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 	}
 }
 
-// TestMultiConsumerRewardsDistribution tests the reward distribution in the context
-// of multiple consumers sending rewards to the provider
+// TestMultiConsumerRewardsDistribution tests the rewards distribution of multiple consumers chains
 func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 	s.SetupAllCCVChannels()
 	s.SetupAllTransferChannels()
