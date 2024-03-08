@@ -183,9 +183,16 @@ module ccv_utils {
         runningTimestamp: chainState.runningTimestamp + timeAdvancement,
     }
 
+    pure def incrementBlockHeight(chainState: ChainState): ChainState = 
+    {
+        chainState.with(
+            "currentBlockHeight", chainState.currentBlockHeight + 1
+        )
+    }
+
     // common logic to update the chain state, used by both provider and consumers.
     pure def endAndBeginBlockShared(chainState: ChainState, timeAdvancement: Time): ChainState = {
-        chainState.enterCurValSetIntoBlock().advanceTime(timeAdvancement)
+        chainState.enterCurValSetIntoBlock().advanceTime(timeAdvancement).incrementBlockHeight()
     }
 
     // returns the providerState with the following modifications:
@@ -201,8 +208,8 @@ module ccv_utils {
         val newSentPacketsPerConsumer = providerState.getConsumers().mapBy( // compute, for each consumer, a list of new packets to be sent
             (consumer) => 
             // if validator set changed or the key assignments for this chain changed, and the consumer is running, send a packet
-            if ((providerState.providerValidatorSetChangedInThisBlock or 
-                providerState.consumersWithAddrAssignmentChangesInThisBlock.contains(consumer))
+            if ((providerState.consumersWithPowerChangesInThisEpoch.contains(consumer) or 
+                providerState.consumersWithAddrAssignmentChangesInThisEpoch.contains(consumer))
                 and 
                 isRunningConsumer(consumer, providerState)) {
                     // send a packet, i.e. use a list with one element (the packet to be sent)
@@ -240,8 +247,8 @@ module ccv_utils {
             runningVscId: providerState.runningVscId + 1,
             // we ended the block and processed that the valset or key assignments changed,
             // so reset the flags
-            providerValidatorSetChangedInThisBlock: false,
-            consumersWithAddrAssignmentChangesInThisBlock: Set(),
+            consumersWithPowerChangesInThisEpoch: Set(),
+            consumersWithAddrAssignmentChangesInThisEpoch: Set(),
             // remember the key assignments that were applied to send the packets
             keyAssignmentsForVSCPackets: providerState.keyAssignmentsForVSCPackets.put(
                 providerState.runningVscId,

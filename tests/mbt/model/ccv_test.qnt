@@ -12,8 +12,9 @@ module ccv_test {
     pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
     pure val trustingPeriods = chains.mapBy(chain => 2 * Week - 1 * Hour)
+    pure val epochLength = 3
 
-    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain=trustingPeriods).* from "./ccv"
+    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain=trustingPeriods, BlocksPerEpoch=epochLength).* from "./ccv"
 
     val votingPowerTestInitState = 
             GetEmptyProtocolState.with(
@@ -24,6 +25,10 @@ module ccv_test {
                         ).put(
                             "validator2", 5
                         )
+                    )
+                ).with(
+                    "consumerStatus", Map(
+                        "consumer" -> RUNNING
                     )
                 )
             )
@@ -78,7 +83,7 @@ module ccv_test {
         )
         // still should set the flag
         not(finalResult.hasError()) and
-        finalResult.newState.providerState.providerValidatorSetChangedInThisBlock
+        finalResult.newState.providerState.consumersWithPowerChangesInThisEpoch.contains("consumer")
     }
 
 
