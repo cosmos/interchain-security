@@ -1150,5 +1150,56 @@ module ccv_model {
                 VotingPowerChange("node1", 50)
             }
         )
+
+    run SlashAckTest = 
+        init
+        .then(
+            // start consumer 1
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+        )
+        .then(
+            // change voting power for node 1 by 50
+            VotingPowerChange("node1", 50)
+        )
+        .then(
+            // end and begin a block on the provider
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        )
+        .then(
+            // deliver the vsc packet to consumer 1
+            DeliverVscPacket("consumer1")
+        )
+        .then(
+            // initiate a slash for downtime
+            ConsumerInitiatedSlashDet("consumer1", "node1", 1, true)
+        )
+        .then(
+            // end and begin a block for consumer 1 to send the packet
+            EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+        )
+        .then(
+            all {
+                assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 1),
+                assert(currentState.consumerStates.get("consumer1").waitingForSlashPacketAck.size() == 1),
+                // deliver the slash request to the provider
+                DeliverPacketToProvider("consumer1")
+            }
+        )
+        // .then(
+        //     // ensure that the provider will send a slash ack to consumer 1 on endblock
+        //     all {
+        //         assert(currentState.providerState.acksToSendOnEndBlock.get("consumer1").length() == 1),
+        //         // end a block on the provider, which should send the ack
+        //         EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        //     }
+        // )
+        // .then(
+        //     all {
+        //         // the ack should have been received by the consumer
+        //         assert(currentState.consumerStates.get("consumer1").waitingForSlashPacketAck.size() == 0),
+        //         // action does not matter
+        //         VotingPowerChange("node1", 50)
+        //     }
+        // )
         
 }

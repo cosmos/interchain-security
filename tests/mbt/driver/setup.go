@@ -419,6 +419,8 @@ func (s *Driver) setupProvider(
 	// set the CcvTimeoutPeriod
 	providerParams := s.providerKeeper().GetParams(s.ctx("provider"))
 	providerParams.CcvTimeoutPeriod = params.CcvTimeout[ChainId(providerChain.ChainID)]
+	providerParams.SlashMeterReplenishFraction = "1"
+	providerParams.SlashMeterReplenishPeriod = time.Nanosecond
 	s.providerKeeper().SetParams(s.ctx("provider"), providerParams)
 
 	// set the signing infos

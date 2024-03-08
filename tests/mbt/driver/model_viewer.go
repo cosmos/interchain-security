@@ -91,3 +91,11 @@ func VscSendTimestamps(curStateExpr itf.MapExprType, consumer string) []int64 {
 	}
 	return res
 }
+
+func PacketsToAckOnEndBlock(curStateExpr itf.MapExprType) itf.MapExprType {
+	return ProviderState(curStateExpr)["acksToSendOnEndBlock"].Value.(itf.MapExprType)
+}
+
+func WaitingForAcks(curStateExpr itf.MapExprType, consumer string) itf.ListExprType {
+	return ConsumerState(curStateExpr, consumer)["waitingForSlashPacketAck"].Value.(itf.ListExprType)
+}

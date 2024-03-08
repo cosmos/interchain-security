@@ -436,7 +436,10 @@ module ccv {
                         currentState.providerState.acksToSendOnEndBlock.getOrElse(sender, List()).prepend(packet)
                     )
                 )
-                val result = recvPacketOnProvider(currentState, sender, packet)
+                val newState: ProtocolState = currentState.with(
+                    "providerState", newProviderState
+                )
+                val result = recvPacketOnProvider(newState, sender, packet)
                 val tmpState = result.newState
                 if (result.hasError()) {
                     (result, false)
@@ -630,7 +633,7 @@ module ccv {
                         )
                         newConsumerState
                     } else {
-                        currentState.consumerStates.get(consumer)
+                        tmpState2.consumerStates.get(consumer)
                     }
                 )
             val newState = tmpState2.with(
@@ -689,16 +692,16 @@ module ccv {
                     match packet {
                         | VscMatured(p) => VscMatured({
                             id: p.id,
-                            sendingTime: newChainState.runningTimestamp,
-                            timeoutTime: newChainState.runningTimestamp + CcvTimeout.get(chain)
+                            sendingTime: oldChainState.runningTimestamp,
+                            timeoutTime: oldChainState.runningTimestamp + CcvTimeout.get(chain)
                         })
                         | Slash(p) => Slash({
                             validator: p.validator,
                             id: p.id,
                             downtime: p.downtime,
                             valPower: p.valPower,
-                            sendingTime: newChainState.runningTimestamp,
-                            timeoutTime: newChainState.runningTimestamp + CcvTimeout.get(chain)
+                            sendingTime: oldChainState.runningTimestamp,
+                            timeoutTime: oldChainState.runningTimestamp + CcvTimeout.get(chain)
                         })
                         | _ => packet
                     }
@@ -708,10 +711,10 @@ module ccv {
                 
                 val tmp = if (haveOutstandingSlash) {
                     // if we have an outstanding slash, send nothing and keep everything queued
-                    (List(), newQueuedPackets)
+                    (List(), newQueuedPackets2)
                 } else {
                     // otherwise, add all packets from the queue before the first slash packet
-                    newQueuedPackets.splitAfterFirst(
+                    newQueuedPackets2.splitAfterFirst(
                         packet => packet.IsSlashPacket()
                     )
                 }
@@ -910,6 +913,9 @@ module ccv {
                 currentState.providerState
             }
 
+        // if the validator did not have voting power of 0, the validator set will change due to the slash
+        val valSetChanged = packet.downtime and currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0
+
         if (packet.downtime) {
             // if the packet is for downtime, add the consumer address to the list of acknowledged slashes
             // for the sender chain of this slash packet and indicate that we need to send a packet at endblock
@@ -919,7 +925,7 @@ module ccv {
             val newProviderState2 = newProviderState.with(
                 "downtimeSlashRequests", newProviderState.downtimeSlashRequests.put(sender, newDowntimeSlashRequests)
             ).with(
-                "providerValidatorSetChangedInThisBlock", true
+                "providerValidatorSetChangedInThisBlock", newProviderState.providerValidatorSetChangedInThisBlock or valSetChanged
             )
             Ok(currentState.with("providerState", newProviderState2))
         } else {
