@@ -108,7 +108,7 @@ func getAppBytesAndSenders(
 
 	// Create genesis accounts.
 	for i := 0; i < len(nodes); i++ {
-		pk := secp256k1.GenPrivKey()
+		pk := secp256k1.GenPrivKeyFromSecret([]byte(chainID + valNames[i]))
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
 		// Give enough funds for many delegations
