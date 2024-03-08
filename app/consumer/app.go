@@ -293,8 +293,8 @@ func New(
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		authcodec.NewBech32Codec(Bech32MainPrefix),
-		Bech32MainPrefix,
+		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
@@ -400,8 +400,8 @@ func New(
 		app.IBCKeeper,
 		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		authcodec.NewBech32Codec(Bech32PrefixValAddr),
-		authcodec.NewBech32Codec(Bech32PrefixConsAddr),
+		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
 
 	// register slashing module Slashing hooks to the consumer keeper

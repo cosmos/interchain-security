@@ -3,6 +3,7 @@ package staking
 import (
 	"context"
 	"encoding/json"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -59,7 +60,7 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper,
 // Note: InitGenesis is not called during the soft upgrade of a module
 // (as a part of a changeover from standalone -> consumer chain),
 // so there is no special handling needed in this method for a consumer being in the pre-CCV state.
-func (am AppModule) InitGenesis(ctx context.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 
 	cdc.MustUnmarshalJSON(data, &genesisState)
