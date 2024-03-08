@@ -104,13 +104,7 @@ const (
 	AppName     = "interchain-security-c"
 	upgradeName = "ics-v1-to-v2"
 
-	Bech32MainPrefix     = "consumer"
-	Bech32PrefixAccAddr  = Bech32MainPrefix
-	Bech32PrefixAccPub   = Bech32MainPrefix + sdk.PrefixPublic
-	Bech32PrefixValAddr  = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixOperator
-	Bech32PrefixValPub   = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixOperator + sdk.PrefixPublic
-	Bech32PrefixConsAddr = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixConsensus
-	Bech32PrefixConsPub  = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixConsensus + sdk.PrefixPublic
+	Bech32MainPrefix = "consumer"
 )
 
 func init() {
@@ -120,11 +114,6 @@ func init() {
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, "."+AppName)
-	cfg := sdk.GetConfig()
-	cfg.SetBech32PrefixForAccount(Bech32MainPrefix, Bech32MainPrefix+"pub")
-	cfg.SetBech32PrefixForValidator(Bech32MainPrefix+"valoper", Bech32MainPrefix+"valoperpub")
-	cfg.SetBech32PrefixForConsensusNode(Bech32MainPrefix+"valcons", Bech32MainPrefix+"valconspub")
-	cfg.Seal()
 }
 
 var (
@@ -811,9 +800,9 @@ func (app *App) AutoCliOpts() autocli.AppOptions {
 
 	return autocli.AppOptions{
 		Modules:               modules,
-		AddressCodec:          authcodec.NewBech32Codec(Bech32PrefixAccAddr),
-		ValidatorAddressCodec: authcodec.NewBech32Codec(Bech32PrefixValAddr),
-		ConsensusAddressCodec: authcodec.NewBech32Codec(Bech32PrefixConsAddr),
+		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	}
 }
 

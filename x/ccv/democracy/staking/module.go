@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/cosmos/cosmos-sdk/x/staking/exported"
@@ -42,11 +43,11 @@ type AppModule struct {
 
 // NewAppModule creates a new AppModule object using the native x/staking module
 // AppModule constructor.
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper, subspace exported.Subspace) AppModule {
-	stakingAppMod := staking.NewAppModule(cdc, &keeper, ak, bk, subspace)
+func NewAppModule(cdc codec.Codec, keeper *keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper, subspace exported.Subspace) AppModule {
+	stakingAppMod := staking.NewAppModule(cdc, keeper, ak, bk, subspace)
 	return AppModule{
 		AppModule:  stakingAppMod,
-		keeper:     keeper,
+		keeper:     *keeper,
 		accKeeper:  ak,
 		bankKeeper: bk,
 	}
