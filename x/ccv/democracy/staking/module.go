@@ -3,7 +3,6 @@ package staking
 import (
 	"context"
 	"encoding/json"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
