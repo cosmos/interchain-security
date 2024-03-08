@@ -119,14 +119,18 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
+	// trying to set a commission rate to a unknown consumer chain
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, "unknownChainID", providerAddr, sdk.ZeroDec()))
+
 	// setup a pending consumer chain
 	chainID := "pendingChainID"
+	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{ChainId: chainID})
 
 	// check that there's no commission rate set for the validator yet
 	_, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
 	require.False(t, found)
 
-	providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.OneDec())
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.OneDec()))
 
 	// check that the commission rate is now set
 	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
