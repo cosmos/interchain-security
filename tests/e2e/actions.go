@@ -1910,7 +1910,7 @@ func (tr TestConfig) registerRepresentative(
 			}
 
 			// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-			tr.waitBlocks(action.Chain, 1, 10*time.Second)
+			tr.waitBlocks(action.Chain, 2, 10*time.Second)
 		}(val, stake)
 	}
 
