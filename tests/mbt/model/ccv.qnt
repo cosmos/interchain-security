@@ -908,7 +908,7 @@ module ccv {
         val newProviderState = 
             if (packet.downtime) 
             { currentState.providerState
-            .jailUntil(packet.validator, jailEndTime)
+            .jailUntil(providerVal, jailEndTime)
             // // slashing is currently not enabled in ICS 
             // .slash(packet.validator, packet.valPower, slashFactor)
             } else {
