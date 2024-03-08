@@ -607,6 +607,8 @@ module ccv {
 
         if (err != "") {
             Err(err)
+        } else if (providerStateAfterConsumerAdvancement.chainState.votingPowerHistory.head().IsEmptyValSet()) {
+            Err("Validator set would be empty after ending this block!")
         } else {
             // for each consumer we just set to running, set its initial validator set to be the current one on the provider...
             val valSet = providerStateAfterConsumerAdvancement.chainState.votingPowerHistory.head()
@@ -913,8 +915,8 @@ module ccv {
                 currentState.providerState
             }
 
-        // if the validator did not have voting power of 0, the validator set will change due to the slash
-        val valSetChanged = packet.downtime and currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0
+        // if the validator did not have voting power of 0 or was already jailed before, the validator set will change due to the slash
+        val valSetChanged = packet.downtime and currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0 and providerVal.in(nonJailedNodes(currentState.providerState))
 
         if (packet.downtime) {
             // if the packet is for downtime, add the consumer address to the list of acknowledged slashes

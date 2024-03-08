@@ -523,4 +523,10 @@ module ccv_utils {
             node => not(providerState.chainState.jailedUntil.keys().contains(node))
         )
     }
+
+    pure def IsEmptyValSet(valSet: ValidatorSet): bool = {
+        valSet.keys().filter(
+            node => valSet.get(node) > 0
+        ).size() == 0
+    }
 }
