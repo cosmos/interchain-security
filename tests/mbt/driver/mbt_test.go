@@ -618,14 +618,19 @@ func ComparePacketQueue(
 	modelSenderQueue := PacketQueue(currentModelState, sender, receiver)
 	actualSenderQueue := driver.packetQueue(ChainId(sender), ChainId(receiver))
 
+	actualPacketStrings := make([]string, len(actualSenderQueue))
+	for i, packet := range actualSenderQueue {
+		actualPacketStrings[i] = string(packet.Packet.GetData())
+	}
+
 	require.Equal(t,
 		len(modelSenderQueue),
 		len(actualSenderQueue),
 		"Packet queue sizes do not match for sender %v, receiver %v.\n model: %v\n actual: %v",
 		sender,
 		receiver,
-		modelSenderQueue,
-		actualSenderQueue)
+		pretty.Sprint(modelSenderQueue),
+		pretty.Sprint(actualPacketStrings))
 
 	for i := range modelSenderQueue {
 		actualPacket := actualSenderQueue[i]
