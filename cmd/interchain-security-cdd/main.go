@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	appparams.SetAddressPrefixes(app.Bech32MainPrefix)
+	appparams.SetAddressPrefixes(app.AccountAddressPrefix)
 
 	rootCmd := cmd.NewRootCmd()
 
