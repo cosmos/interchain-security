@@ -1533,11 +1533,9 @@ func (tr TestConfig) delegateTokens(
 	}
 
 	cmd := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
-
 		"tx", "staking", "delegate",
 		validatorAddress,
 		fmt.Sprint(action.Amount)+`stake`,
-
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),

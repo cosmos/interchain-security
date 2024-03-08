@@ -138,8 +138,4 @@ The available sanity checks are:
 - CanOptIn (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
 - CanOptOut (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
 - CanFailOptOut (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
-<<<<<<< HEAD
 - CanHaveOptIn (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
-=======
-- CanHaveOptIn (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
->>>>>>> 6e075652 (test: MBT: Add partial set security to model (feature branch version) (#1627))
