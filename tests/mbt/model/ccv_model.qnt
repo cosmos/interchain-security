@@ -210,7 +210,7 @@ module ccv_model {
 
      // stepCommon is the core functionality of steps that does not have anything to do with time.
     action stepCommon = any {
-        nondet node = oneOf(nodes)
+        nondet node = oneOf(nonJailedNodes(currentState.providerState))
         // very restricted set of voting powers. exact values are not important,
         // and this keeps the state space smaller.
         nondet newVotingPower = oneOf(Set(-50, 50))

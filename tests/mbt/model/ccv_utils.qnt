@@ -514,4 +514,13 @@ module ccv_utils {
             "chainState", newChainState
         )
     }
+
+    // Returns the set of all nodes that are not currently jailed on the provider.
+    pure def nonJailedNodes(
+        providerState: ProviderState
+    ): Set[Node] = {
+        providerState.chainState.currentValidatorPowers.keys().filter(
+            node => not(providerState.chainState.jailedUntil.keys().contains(node))
+        )
+    }
 }
