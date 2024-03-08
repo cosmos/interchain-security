@@ -7,10 +7,13 @@ import (
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
 	app "github.com/cosmos/interchain-security/v4/app/consumer"
+	appparams "github.com/cosmos/interchain-security/v4/app/params"
 	"github.com/cosmos/interchain-security/v4/cmd/interchain-security-cd/cmd"
 )
 
 func main() {
+	appparams.SetAddressPrefixes(app.Bech32MainPrefix)
+
 	rootCmd := cmd.NewRootCmd()
 
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
