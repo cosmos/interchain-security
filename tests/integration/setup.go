@@ -142,12 +142,16 @@ func (suite *CCVTestSuite) SetupTest() {
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
 
 	// start consumer chains
-	numConsumers := 5
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
-	for i := 0; i < numConsumers; i++ {
+	for i := 0; i < icstestingutils.NumConsumers; i++ {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
+
+		// check that TopN is correctly set for the consumer
+		topN, found := providerKeeper.GetTopN(suite.providerCtx(), bundle.Chain.ChainID)
+		suite.Require().True(found)
+		suite.Require().Equal(bundle.TopN, topN)
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
@@ -228,7 +232,6 @@ func initConsumerChain(
 	)
 	s.Require().True(found, "provider endpoint clientID not found")
 	bundle.Path.EndpointB.ClientID = providerEndpointClientID
-
 	// Set consumer endpoint's clientID
 	consumerKeeper := bundle.GetKeeper()
 	consumerEndpointClientID, found := consumerKeeper.GetProviderClientID(bundle.GetCtx())
@@ -308,32 +311,68 @@ func (suite *CCVTestSuite) ExecuteCCVChannelHandshake(path *ibctesting.Path) {
 
 // TODO: Make SetupTransferChannel functional for multiple consumers by pattern matching SetupCCVChannel.
 // See: https://github.com/cosmos/interchain-security/issues/506
+// SetupTransferChannel setup the transfer channel of the first consumer chain among multiple
 func (suite *CCVTestSuite) SetupTransferChannel() {
-	// transfer path will use the same connection as ccv path
+	suite.setupTransferChannel(
+		suite.transferPath,
+		suite.path,
+		suite.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(
+			suite.consumerChain.GetContext(),
+		),
+	)
+}
 
-	suite.transferPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
-	suite.transferPath.EndpointA.ConnectionID = suite.path.EndpointA.ConnectionID
-	suite.transferPath.EndpointB.ClientID = suite.path.EndpointB.ClientID
-	suite.transferPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
+func (suite *CCVTestSuite) setupTransferChannel(
+	transferPath *ibctesting.Path,
+	ccvPath *ibctesting.Path,
+	channelID string,
+) {
+	// transfer path will use the same connection as ccv path
+	transferPath.EndpointA.ClientID = ccvPath.EndpointA.ClientID
+	transferPath.EndpointA.ConnectionID = ccvPath.EndpointA.ConnectionID
+	transferPath.EndpointB.ClientID = ccvPath.EndpointB.ClientID
+	transferPath.EndpointB.ConnectionID = ccvPath.EndpointB.ConnectionID
 
 	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
 	// so transfer channel will be on stage INIT when CompleteSetupCCVChannel returns.
-	suite.transferPath.EndpointA.ChannelID = suite.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(
-		suite.consumerChain.GetContext())
+	transferPath.EndpointA.ChannelID = channelID
 
 	// Complete TRY, ACK, CONFIRM for transfer path
-	err := suite.transferPath.EndpointB.ChanOpenTry()
+	err := transferPath.EndpointB.ChanOpenTry()
 	suite.Require().NoError(err)
 
-	err = suite.transferPath.EndpointA.ChanOpenAck()
+	err = transferPath.EndpointA.ChanOpenAck()
 	suite.Require().NoError(err)
 
-	err = suite.transferPath.EndpointB.ChanOpenConfirm()
+	err = transferPath.EndpointB.ChanOpenConfirm()
 	suite.Require().NoError(err)
 
 	// ensure counterparty is up to date
-	err = suite.transferPath.EndpointA.UpdateClient()
+	err = transferPath.EndpointA.UpdateClient()
 	suite.Require().NoError(err)
+}
+
+// SetupAllTransferChannel setup all consumer chains transfer channel
+func (suite *CCVTestSuite) SetupAllTransferChannels() {
+	// setup the first consumer transfer channel
+	suite.SetupTransferChannel()
+
+	// setup all the remaining consumers transfer channels
+	for chainID := range suite.consumerBundles {
+		// skip fist consumer
+		if chainID == suite.consumerChain.ChainID {
+			continue
+		}
+
+		// get the bundle for the chain ID
+		bundle := suite.consumerBundles[chainID]
+		// setup the transfer channel
+		suite.setupTransferChannel(
+			bundle.TransferPath,
+			bundle.Path,
+			bundle.App.GetConsumerKeeper().GetDistributionTransmissionChannel(bundle.GetCtx()),
+		)
+	}
 }
 
 func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) { //nolint:govet // this is a test so we can copy locks

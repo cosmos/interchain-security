@@ -1032,3 +1032,95 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 		})
 	}
 }
+
+// TestMultiConsumerRewardsDistribution tests the rewards distribution of multiple consumers chains
+func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
+	s.SetupAllCCVChannels()
+	s.SetupAllTransferChannels()
+
+	providerBankKeeper := s.providerApp.GetTestBankKeeper()
+	providerAccountKeeper := s.providerApp.GetTestAccountKeeper()
+
+	// check that the reward provider pool is empty
+	rewardPool := providerAccountKeeper.GetModuleAccount(s.providerCtx(), providertypes.ConsumerRewardsPool).GetAddress()
+	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	s.Require().Empty(rewardCoins)
+
+	totalConsumerRewards := sdk.Coins{}
+
+	// Iterate over the consumers and perform the reward distribution
+	// to the provider
+	for chainID := range s.consumerBundles {
+		bundle := s.consumerBundles[chainID]
+		consumerKeeper := bundle.App.GetConsumerKeeper()
+		bankKeeper := bundle.App.GetTestBankKeeper()
+		accountKeeper := bundle.App.GetTestAccountKeeper()
+
+		// set the consumer reward denom and the block per distribution params
+		params := consumerKeeper.GetConsumerParams(bundle.GetCtx())
+		params.RewardDenoms = []string{sdk.DefaultBondDenom}
+		// set the reward distribution to be performed during the next block
+		params.BlocksPerDistributionTransmission = int64(1)
+		consumerKeeper.SetParams(bundle.GetCtx(), params)
+
+		// transfer the consumer reward pool to the provider
+		var rewardsPerConsumer sdk.Coin
+
+		// check the consumer pool balance
+		// Note that for a democracy consumer chain the pool may already be filled
+		if pool := bankKeeper.GetAllBalances(
+			bundle.GetCtx(),
+			accountKeeper.GetModuleAccount(bundle.GetCtx(), consumertypes.ConsumerToSendToProviderName).GetAddress(),
+		); pool.Empty() {
+			// if pool is empty, fill it with some tokens
+			rewardsPerConsumer = sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))
+			err := bankKeeper.SendCoinsFromAccountToModule(
+				bundle.GetCtx(),
+				bundle.Chain.SenderAccount.GetAddress(),
+				consumertypes.ConsumerToSendToProviderName,
+				sdk.NewCoins(rewardsPerConsumer),
+			)
+			s.Require().NoError(err)
+		} else {
+			// execute the internal rewards distribution
+			// to save the pool's balance before
+			// it gets transferred to the provider in EndBlock
+			consumerKeeper.DistributeRewardsInternally(bundle.GetCtx())
+			pool = bankKeeper.GetAllBalances(
+				bundle.GetCtx(),
+				accountKeeper.GetModuleAccount(bundle.GetCtx(), consumertypes.ConsumerToSendToProviderName).GetAddress(),
+			)
+			s.Require().Len(pool, 1, "consumer reward pool cannot have mutiple token denoms")
+			rewardsPerConsumer = pool[0]
+		}
+
+		// perform the reward transfer
+		bundle.Chain.NextBlock()
+
+		// relay IBC transfer packet from consumer to provider
+		relayAllCommittedPackets(
+			s,
+			bundle.Chain,
+			bundle.TransferPath,
+			transfertypes.PortID,
+			bundle.TransferPath.EndpointA.ChannelID,
+			1,
+		)
+
+		// construct the denom of the reward tokens for the provider
+		prefixedDenom := ibctransfertypes.GetPrefixedDenom(
+			transfertypes.PortID,
+			bundle.TransferPath.EndpointB.ChannelID,
+			rewardsPerConsumer.Denom,
+		)
+		provIBCDenom := ibctransfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
+
+		// sum the total rewards transferred to the provider
+		totalConsumerRewards = totalConsumerRewards.
+			Add(sdk.NewCoin(provIBCDenom, rewardsPerConsumer.Amount))
+	}
+
+	// Check that the provider receives the rewards of each consumer
+	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	s.Require().Equal(totalConsumerRewards, rewardCoins, totalConsumerRewards.String(), rewardCoins.String())
+}
