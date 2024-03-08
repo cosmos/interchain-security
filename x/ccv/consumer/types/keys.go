@@ -51,7 +51,7 @@ const (
 	// received over CCV channel but not yet flushed over ABCI
 	PendingChangesByteKey
 
-	// NOTE: This prefix is depreciated, but left in place to avoid consumer state migrations
+	// NOTE: This prefix is deprecated, but left in place to avoid consumer state migrations
 	// [DEPRECATED]
 	PendingDataPacketsByteKey
 
@@ -61,7 +61,7 @@ const (
 	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
 	InitialValSetByteKey
 
-	// NOTE: This prefix is depreciated, but left in place to avoid consumer state migrations
+	// NOTE: This prefix is deprecated, but left in place to avoid consumer state migrations
 	// [DEPRECATED]
 	LastStandaloneHeightByteKey
 

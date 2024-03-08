@@ -291,7 +291,6 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -308,7 +307,6 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -351,7 +349,6 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -368,7 +365,6 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -427,7 +423,6 @@ func (tr TestConfig) submitParamChangeProposal(
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json"),
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -564,7 +559,7 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 	}
 	defer file.Close()
-	err = os.WriteFile(file.Name(), genesis, 0600)
+	err = os.WriteFile(file.Name(), genesis, 0o600)
 	if err != nil {
 		log.Fatalf("Failed writing consumer genesis to file: %v", err)
 	}
@@ -875,7 +870,6 @@ func (tr TestConfig) addChainToHermes(
 		"--chain", string(tr.chainConfigs[action.Chain].ChainId),
 		"--mnemonic-file", "/root/.hermes/mnemonic.txt",
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1307,6 +1301,9 @@ func (tr TestConfig) relayPacketsGorelayer(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
+	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
+	// queued and are subsequently relayed.
 	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
 	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
 
@@ -1334,6 +1331,9 @@ func (tr TestConfig) relayPacketsHermes(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
+	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
+	// queued and are subsequently relayed.
 	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
 	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
 
@@ -1831,7 +1831,6 @@ func (tr TestConfig) submitChangeRewardDenomsProposal(action SubmitChangeRewardD
 
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/change-reward-denoms-proposal.json")).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1847,7 +1846,6 @@ func (tr TestConfig) submitChangeRewardDenomsProposal(action SubmitChangeRewardD
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
