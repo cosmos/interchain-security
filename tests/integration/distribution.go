@@ -6,7 +6,7 @@ import (
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -575,7 +575,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			bankKeeper := s.providerApp.GetTestBankKeeper()
 			amount := sdk.NewInt(100)
 
-			data = types.NewFungibleTokenPacketData( // can be explicitly changed in setup
+			data = transfertypes.NewFungibleTokenPacketData( // can be explicitly changed in setup
 				sdk.DefaultBondDenom,
 				amount.String(),
 				authtypes.NewModuleAddress(consumertypes.ConsumerToSendToProviderName).String(),
@@ -734,11 +734,11 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	perValExpReward := validatorsExpRewards.QuoDec(sdk.NewDec(int64(valNum)))
 
 	// verify the validator tokens allocation
-	// note all validators have the same voting power to keep things simple
+	// note that the validators have the same voting power to keep things simple
 	for _, val := range s.providerChain.Vals.Validators {
-		valReward := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		valRewards := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
 		s.Require().Equal(
-			valReward.Rewards,
+			valRewards.Rewards,
 			lastValOutRewards[sdk.ValAddress(val.Address).String()].Add(perValExpReward...),
 		)
 	}
@@ -902,80 +902,133 @@ func (s *CCVTestSuite) prepareRewardDist() {
 }
 
 func (s *CCVTestSuite) TestAllocateTokensToValidator() {
-
-	providerkeepr := s.providerApp.GetProviderKeeper()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
+	bankKeeper := s.providerApp.GetTestBankKeeper()
 
 	chainID := "consumer"
-
 	validators := []bytes.HexBytes{
 		s.providerChain.Vals.Validators[0].Address,
 		s.providerChain.Vals.Validators[1].Address,
 	}
-
 	votes := []abci.VoteInfo{
 		{Validator: abci.Validator{Address: validators[0], Power: 1}},
 		{Validator: abci.Validator{Address: validators[1], Power: 1}},
 	}
 
 	testCases := []struct {
-		name               string
-		votes              []abci.VoteInfo
-		tokens             sdk.DecCoins
-		expCoinTransferred sdk.DecCoins
+		name         string
+		votes        []abci.VoteInfo
+		tokens       sdk.DecCoins
+		rate         sdk.Dec
+		expAllocated sdk.DecCoins
 	}{
 		{
-			name: "reward tokens are empty",
+			name:         "tokens are empty",
+			tokens:       sdk.DecCoins{},
+			rate:         sdk.ZeroDec(),
+			expAllocated: nil,
 		},
 		{
-			name:   "total voting power is zero",
-			tokens: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
+			name:         "total voting power is zero",
+			tokens:       sdk.DecCoins{sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(100_000))},
+			rate:         sdk.ZeroDec(),
+			expAllocated: nil,
 		},
 		{
-			name:               "expect all tokens to be allocated to a single validator",
-			votes:              []abci.VoteInfo{votes[0]},
-			tokens:             sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
-			expCoinTransferred: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(100_000))},
+			name:         "expect all tokens to be allocated to a single validator",
+			votes:        []abci.VoteInfo{votes[0]},
+			tokens:       sdk.DecCoins{sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(999))},
+			rate:         sdk.NewDecWithPrec(5, 1),
+			expAllocated: sdk.DecCoins{sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(999))},
 		},
 		{
-			name:               "expect tokens to be allocated evenly between validators",
-			votes:              []abci.VoteInfo{votes[0], votes[1]},
-			tokens:             sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(555_555))},
-			expCoinTransferred: sdk.DecCoins{sdk.NewDecCoin("uatom", math.NewInt(555_555))},
+			name:         "expect tokens to be allocated evenly between validators",
+			votes:        []abci.VoteInfo{votes[0], votes[1]},
+			tokens:       sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))},
+			rate:         sdk.OneDec(),
+			expAllocated: sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))},
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			// TODO: opt validators in and verify
-			// that rewards are solely allocated to them
 
+			// set the same consumer commission rate for all validators
+			for _, v := range s.providerChain.Vals.Validators {
+				provAddr := providertypes.NewProviderConsAddress(sdk.ConsAddress(v.Address))
+
+				providerKeeper.SetConsumerCommissionRate(
+					s.providerCtx(),
+					chainID,
+					provAddr,
+					tc.rate,
+				)
+			}
+
+			// TODO: opt validators in and verify
+			// that rewards are only allocated to them
 			ctx, _ := s.providerCtx().CacheContext()
 
 			// allocate tokens
-			res := providerkeepr.AllocateTokensToConsumerValidators(
+			res := providerKeeper.AllocateTokensToConsumerValidators(
 				ctx,
 				chainID,
 				tc.votes,
 				tc.tokens,
 			)
 
-			// check that the expect result is returned
-			s.Require().Equal(tc.expCoinTransferred, res)
+			// check that the expected result is returned
+			s.Require().Equal(tc.expAllocated, res)
 
-			if !tc.expCoinTransferred.Empty() {
+			if !tc.expAllocated.Empty() {
 				// rewards are expected to be allocated evenly between validators
-				rewardsPerVal := tc.expCoinTransferred.QuoDec(sdk.NewDec(int64(len(tc.votes))))
+				rewardsPerVal := tc.expAllocated.QuoDec(sdk.NewDec(int64(len(tc.votes))))
 
-				// check that the rewards are allocated to validators as expected
+				// check that the rewards are allocated to validators
 				for _, v := range tc.votes {
+					valAddr := sdk.ValAddress(v.Validator.Address)
 					rewards := s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(
 						ctx,
-						sdk.ValAddress(v.Validator.Address),
+						valAddr,
 					)
 					s.Require().Equal(rewardsPerVal, rewards.Rewards)
+
+					// send rewards to the distribution module
+					valRewardsTrunc, _ := rewards.Rewards.TruncateDecimal()
+					err := bankKeeper.SendCoinsFromAccountToModule(
+						ctx,
+						s.providerChain.SenderAccount.GetAddress(),
+						distrtypes.ModuleName,
+						valRewardsTrunc)
+					s.Require().NoError(err)
+
+					// check that validators can withdraw their rewards
+					withdrawnCoins, err := distributionKeeper.WithdrawValidatorCommission(
+						ctx,
+						valAddr,
+					)
+					s.Require().NoError(err)
+
+					// check that the withdrawn coins is equal to the entire reward amount
+					// times the set consumer commission rate
+					commission := rewards.Rewards.MulDec(tc.rate)
+					c, _ := commission.TruncateDecimal()
+					s.Require().Equal(withdrawnCoins, c)
+
+					// check that validators get rewards in their balance
+					s.Require().Equal(withdrawnCoins, bankKeeper.GetAllBalances(ctx, sdk.AccAddress(valAddr)))
+				}
+			} else {
+				for _, v := range tc.votes {
+					valAddr := sdk.ValAddress(v.Validator.Address)
+					rewards := s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(
+						ctx,
+						valAddr,
+					)
+					s.Require().Zero(rewards.Rewards)
 				}
 			}
-
 		})
 	}
 }

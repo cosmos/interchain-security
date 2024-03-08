@@ -24,6 +24,7 @@ const (
 	TypeMsgSubmitConsumerDoubleVoting = "submit_consumer_double_vote"
 	TypeMsgOptIn                      = "opt_in"
 	TypeMsgOptOut                     = "opt_out"
+	TypeMsgSetConsumerCommissionRate  = "set_consumer_commission_rate"
 )
 
 var (
@@ -32,6 +33,7 @@ var (
 	_ sdk.Msg = &MsgSubmitConsumerDoubleVoting{}
 	_ sdk.Msg = &MsgOptIn{}
 	_ sdk.Msg = &MsgOptOut{}
+	_ sdk.Msg = &MsgSetConsumerCommissionRate{}
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
@@ -315,4 +317,46 @@ func (msg MsgOptOut) ValidateBasic() error {
 // Type implements the sdk.Msg interface.
 func (msg MsgOptOut) Type() string {
 	return TypeMsgOptOut
+}
+
+func (msg MsgSetConsumerCommissionRate) Route() string {
+	return RouterKey
+}
+
+func (msg MsgSetConsumerCommissionRate) Type() string {
+	return TypeMsgSetConsumerCommissionRate
+}
+
+func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
+	}
+
+	if 128 < len(msg.ChainId) {
+		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	}
+	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return ErrInvalidProviderAddress
+	}
+
+	if msg.Rate.IsNegative() || msg.Rate.GT(sdk.OneDec()) {
+		return errorsmod.Wrapf(ErrInvalidConsumerCommissionRate, "consumer commission rate should be in the range [0, 1]")
+	}
+
+	return nil
+}
+
+func (msg MsgSetConsumerCommissionRate) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+func (msg MsgSetConsumerCommissionRate) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
 }

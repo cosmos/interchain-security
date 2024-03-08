@@ -142,6 +142,7 @@ type TestDistributionKeeper interface {
 	GetValidatorOutstandingRewards(ctx sdk.Context,
 		val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards)
 	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
+	WithdrawValidatorCommission(ctx sdk.Context, valAddr sdk.ValAddress) (sdk.Coins, error)
 }
 
 type TestMintKeeper interface {

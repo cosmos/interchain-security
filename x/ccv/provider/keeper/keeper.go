@@ -1248,6 +1248,75 @@ func (k Keeper) SetToBeOptedIn(
 	store.Set(types.ToBeOptedInKey(chainID, providerAddr), []byte{})
 }
 
+// SetConsumerCommissionRate sets a per-consumer chain commission rate
+// for the given validator address
+func (k Keeper) SetConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+	commissionRate sdk.Dec,
+) {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := commissionRate.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("consumer commission rate marshalling failed: %s", err))
+	}
+
+	store.Set(types.ConsumerCommissionRateKey(chainID, providerAddr), bz)
+}
+
+// GetConsumerCommissionRate returns the per-consumer commission rate set
+// for the given validator address
+func (k Keeper) GetConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) (sdk.Dec, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerCommissionRateKey(chainID, providerAddr))
+	if bz == nil {
+		return sdk.ZeroDec(), false
+	}
+
+	cr := sdk.Dec{}
+	if err := cr.Unmarshal(bz); err != nil {
+		k.Logger(ctx).Error("consumer commission rate unmarshalling failed: %s", err)
+		return sdk.ZeroDec(), false
+	}
+
+	return cr, true
+}
+
+// GetAllCommissionRateValidators returns all the validator address
+// that set a commission rate for the given chain ID
+func (k Keeper) GetAllCommissionRateValidators(
+	ctx sdk.Context,
+	chainID string) (addresses []types.ProviderConsAddress) {
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ConsumerCommissionRatePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
+		addresses = append(addresses, providerAddr)
+	}
+
+	return addresses
+}
+
+// DeleteConsumerCommissionRate the per-consumer chain commission rate
+// associated to the given validator address
+func (k Keeper) DeleteConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerCommissionRateKey(chainID, providerAddr))
+}
+
 func (k Keeper) DeleteToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,

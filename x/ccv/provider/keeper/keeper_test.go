@@ -15,6 +15,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -692,7 +693,8 @@ func TestGetAllOptedIn(t *testing.T) {
 				ProviderAddr: expectedOptedInValidator.ProviderAddr,
 				BlockHeight:  expectedOptedInValidator.BlockHeight,
 				Power:        expectedOptedInValidator.Power,
-				PublicKey:    expectedOptedInValidator.PublicKey})
+				PublicKey:    expectedOptedInValidator.PublicKey,
+			})
 	}
 
 	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "chainID")
@@ -857,4 +859,41 @@ func TestToBeOptedOut(t *testing.T) {
 	require.True(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 	providerKeeper.DeleteToBeOptedOut(ctx, "chainID", providerAddr)
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
+}
+
+// TestToBeOptedOut tests the `SetConsumerCommissionRate`, `GetConsumerCommissionRate`, and `DeleteConsumerCommissionRate` methods
+func TestConsumerCommissionRate(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+
+	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	require.False(t, found)
+	require.Equal(t, sdk.ZeroDec(), cr)
+
+	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr1, sdk.OneDec())
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	require.True(t, found)
+	require.Equal(t, sdk.OneDec(), cr)
+
+	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr2, sdk.ZeroDec())
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
+	require.True(t, found)
+	require.Equal(t, sdk.ZeroDec(), cr)
+
+	provAddrs := providerKeeper.GetAllCommissionRateValidators(ctx, "chainID")
+	require.Len(t, provAddrs, 2)
+
+	for _, addr := range provAddrs {
+		providerKeeper.DeleteConsumerCommissionRate(ctx, "chainID", addr)
+	}
+
+	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	require.False(t, found)
+
+	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
+	require.False(t, found)
+
 }

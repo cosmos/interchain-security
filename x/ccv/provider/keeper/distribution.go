@@ -5,9 +5,9 @@ import (
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
@@ -138,16 +138,17 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	chainID string,
 	bondedVotes []abci.VoteInfo,
 	tokens sdk.DecCoins,
-) (totalReward sdk.DecCoins) {
+) (allocated sdk.DecCoins) {
+
 	// return early if the tokens are empty
 	if tokens.Empty() {
-		return totalReward
+		return allocated
 	}
 
 	// get the consumer total voting power from the votes
 	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID, bondedVotes)
 	if totalPower == 0 {
-		return totalReward
+		return allocated
 	}
 
 	for _, vote := range bondedVotes {
@@ -157,19 +158,31 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPower))
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
+		// get the validator type struct for the consensus address
+		val := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr).(stakingtypes.Validator)
+
+		// check if the validator set a custom commission rate for the consumer chain
+		if cr, found := k.GetConsumerCommissionRate(ctx, chainID, types.NewProviderConsAddress(consAddr)); found {
+			// set the validator commission rate
+			val.Commission.CommissionRates.Rate = cr
+		}
+
+		// allocate the consumer reward tokens to the validator
 		k.distributionKeeper.AllocateTokensToValidator(
 			ctx,
-			k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr),
+			val,
 			tokensFraction,
 		)
-		totalReward = totalReward.Add(tokensFraction...)
+
+		// sum the tokens allocated
+		allocated = allocated.Add(tokensFraction...)
 	}
 
-	return totalReward
+	return allocated
 }
 
-// TransferConsumerRewardsToDistributionModule transfers the collected rewards of the given consumer chain
-// from the consumer rewards pool module account to a the distribution module
+// TransferConsumerRewardsToDistributionModule transfers the rewards allocation of the given consumer chain
+// from the consumer rewards pool to a the distribution module
 func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	ctx sdk.Context,
 	chainID string,
@@ -266,4 +279,24 @@ func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet cha
 	}
 
 	return chainID, nil
+}
+
+// HandleSetConsumerCommissionRate sets a per-consumer chain commission rate for the given provider address
+// on the condition that the given consumer chain exists.
+func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, commissionRate sdk.Dec) error {
+	// check that the consumer chain exists
+	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
+		return errorsmod.Wrapf(
+			types.ErrUnknownConsumerChainId,
+			"unknown consumer chain, with id: %s", chainID)
+	}
+	// set per-consumer chain commission rate for the validator address
+	k.SetConsumerCommissionRate(
+		ctx,
+		chainID,
+		providerAddr,
+		commissionRate,
+	)
+
+	return nil
 }
