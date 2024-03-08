@@ -207,24 +207,4 @@ module extraSpells {
         assert(not(listForAll(List(1, 2, 3), __x => __x > 1))),
         assert(listForAll(List(), __x => __x > 0)),
     }
-
-    // listMul returns a new list which is the result of concatenating the given list with itself the given number of times.
-    // It computes the result using fold.
-    //
-    // Parameters:
-    // - __list: The list to concatenate with itself.
-    // - __n: The number of times to concatenate the list with itself.
-    //
-    // Returns:
-    // - A new list which is the result of concatenating the given list with itself the given number of times.
-    pure def listMul(__list: List[a], __n: int): List[a] = {
-        1.to(__n).fold(List(), (__l, _) => __l.concat(__list))
-    }
-
-    run listMulTest =
-    all {
-        assert(listMul(List(1, 2, 3), 3) == List(1, 2, 3, 1, 2, 3, 1, 2, 3)),
-        assert(listMul(List(1, 2, 3), 0) == List()),
-        assert(listMul(List(), 3) == List()),
-    }
 }
