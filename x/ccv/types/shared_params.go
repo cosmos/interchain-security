@@ -51,16 +51,6 @@ func ValidatePositiveInt64(i interface{}) error {
 	return nil
 }
 
-func ValidatePositiveUint32(i interface{}) error {
-	if _, ok := i.(uint32); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	if i.(uint32) == 0 {
-		return fmt.Errorf("parameter must be positive")
-	}
-	return nil
-}
-
 func ValidateString(i interface{}) error {
 	if _, ok := i.(string); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)

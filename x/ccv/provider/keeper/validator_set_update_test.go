@@ -77,12 +77,8 @@ func TestGetConsumerValSet(t *testing.T) {
 			types.ConsumerValidator{
 				ProviderConsAddr:  expectedValidator.ProviderConsAddr,
 				Power:             expectedValidator.Power,
-<<<<<<< HEAD
-				ConsumerPublicKey: expectedValidator.ConsumerPublicKey})
-=======
 				ConsumerPublicKey: expectedValidator.ConsumerPublicKey,
 			})
->>>>>>> feat/epochs
 	}
 
 	actualValidators := providerKeeper.GetConsumerValSet(ctx, "chainID")
@@ -175,13 +171,8 @@ func TestDiff(t *testing.T) {
 	// and nextValidators = {B, C, D, E, F}. For the validators {B, C, D, E} in the intersection we have:
 	// - validator B has no power or consumer key change
 	// - validator C has changed its power
-<<<<<<< HEAD
-	// - validator E has no power change but has changed its consumer key
-	// - validator F has both changed its power and its consumer key
-=======
 	// - validator D has no power change but has changed its consumer key
 	// - validator E has both changed its power and its consumer key
->>>>>>> feat/epochs
 
 	var expectedUpdates []abci.ValidatorUpdate
 
@@ -274,8 +265,6 @@ func TestDiffEdgeCases(t *testing.T) {
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)
 	require.Equal(t, expectedUpdates, actualUpdates)
-<<<<<<< HEAD
-=======
 
 	// have nonempty `currentValidators` and `nextValidators`, but with empty intersection
 	// all old validators should be removed, all new validators should be added
@@ -284,7 +273,6 @@ func TestDiffEdgeCases(t *testing.T) {
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)
 	require.Equal(t, expectedUpdates, actualUpdates)
->>>>>>> feat/epochs
 }
 
 func TestSetConsumerValSet(t *testing.T) {
