@@ -9,9 +9,10 @@ import (
 
 func IsProposalWhitelisted(content v1beta1.Content) bool {
 	switch c := content.(type) {
+	case *v1beta1.TextProposal:
+		return true
 	case *proposal.ParameterChangeProposal:
 		return isLegacyParamChangeWhitelisted(c.Changes)
-
 	default:
 		return false
 	}
@@ -44,6 +45,7 @@ var WhiteListModule = map[string]struct{}{
 	"/cosmos.staking.v1beta1.MsgUpdateParams":      {},
 	"/cosmos.distribution.v1beta1.MsgUpdateParams": {},
 	"/cosmos.mint.v1beta1.MsgUpdateParams":         {},
+	"/cosmos.gov.v1beta1.TextProposal":             {},
 }
 
 func IsModuleWhiteList(typeUrl string) bool {
