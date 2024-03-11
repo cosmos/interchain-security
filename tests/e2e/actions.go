@@ -390,66 +390,24 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
 }
 
-type SubmitParamChangeLegacyProposalAction struct {
-	Chain    ChainID
-	From     ValidatorID
-	Deposit  uint
-	Subspace string
-	Key      string
-	Value    interface{}
+type SubmitLegacyTextProposalAction struct {
+	Chain   ChainID
+	From    ValidatorID
+	Deposit uint
 }
 
-type paramChangeProposalJSON struct {
-	Title       string            `json:"title"`
-	Summary     string            `json:"summary"`
-	Description string            `json:"description"`
-	Changes     []paramChangeJSON `json:"changes"`
-	Deposit     string            `json:"deposit"`
-}
-
-type paramChangeJSON struct {
-	Subspace string      `json:"subspace"`
-	Key      string      `json:"key"`
-	Value    interface{} `json:"value"`
-}
-
-func (tr TestConfig) submitParamChangeProposal(
-	action SubmitParamChangeLegacyProposalAction,
+func (tr TestConfig) submitLegacyTextProposal(
+	action SubmitLegacyTextProposalAction,
 	target ExecutionTarget,
 	verbose bool,
 ) {
-	prop := paramChangeProposalJSON{
-		Title:       "Legacy Param change",
-		Summary:     "Changing legacy module params",
-		Description: "Changing legacy module params",
-		Changes:     []paramChangeJSON{{Subspace: action.Subspace, Key: action.Key, Value: action.Value}},
-		Deposit:     fmt.Sprint(action.Deposit) + `stake`,
-	}
-
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
-
-	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	bz, err = target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json"),
-	).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
 	cmd := target.ExecCommand(
 		tr.chainConfigs[action.Chain].BinaryName,
-
-		"tx", "gov", "submit-legacy-proposal", "param-change", "/params-proposal.json",
-
+		"tx", "gov", "submit-legacy-proposal",
+		"--type", "Text",
+		"--title", "Test Proposal",
+		"--description", "testing",
+		"--deposit", fmt.Sprintf("%dstake", action.Deposit),
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
@@ -459,13 +417,17 @@ func (tr TestConfig) submitParamChangeProposal(
 		`-y`,
 	)
 
-	bz, err = cmd.CombinedOutput()
+	if verbose {
+		fmt.Println("submitLegacyTextProposal cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(action.Chain, 2, 60*time.Second)
+	tr.waitBlocks(action.Chain, 2, 10*time.Second)
 }
 
 type VoteGovProposalAction struct {
@@ -1883,6 +1845,19 @@ func (tr TestConfig) registerRepresentative(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	fileTempl := `{
+		"pubkey": %s,
+		"amount": "%s",
+		"moniker": "%s",
+		"identity": "",
+		"website": "",
+		"security": "",
+		"details": "",
+		"commission-rate": "0.1",
+		"commission-max-rate": "0.2",
+		"commission-max-change-rate": "0.01",
+		"min-self-delegation": "1"
+	}`
 	var wg sync.WaitGroup
 	for i, val := range action.Representatives {
 		wg.Add(1)
@@ -1900,22 +1875,46 @@ func (tr TestConfig) registerRepresentative(
 				log.Fatal(err, "\n", string(bzPubKey))
 			}
 
-			bz, err := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
+			fileContent := fmt.Sprintf(fileTempl, string(bzPubKey), fmt.Sprint(stake)+"stake", fmt.Sprint(val))
+			fileName := fmt.Sprintf("%s_democracy_representative.json", val)
+			file, err := os.CreateTemp("", fileName)
+			if err != nil {
+				panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
+			}
+			defer file.Close()
+			err = os.WriteFile(file.Name(), []byte(fileContent), 0600)
+			if err != nil {
+				log.Fatalf("Failed writing consumer genesis to file: %v", err)
+			}
+
+			containerInstance := tr.containerConfig.InstanceName
+			targetFile := fmt.Sprintf("/tmp/%s", fileName)
+			sourceFile := file.Name()
+			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+			copyCmd := exec.Command("docker", "cp", sourceFile,
+				fmt.Sprintf("%s:%s", containerInstance, targetFile))
+			writeResult, err := copyCmd.CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(writeResult))
+			}
+
+			cmd := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
 				"tx", "staking", "create-validator",
-				`--amount`, fmt.Sprint(stake)+"stake",
-				`--pubkey`, string(bzPubKey),
-				`--moniker`, fmt.Sprint(val),
-				`--commission-rate`, "0.1",
-				`--commission-max-rate`, "0.2",
-				`--commission-max-change-rate`, "0.01",
-				`--min-self-delegation`, "1",
+				targetFile,
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 				`--home`, tr.getValidatorHome(action.Chain, val),
 				`--node`, tr.getValidatorNode(action.Chain, val),
 				`--keyring-backend`, `test`,
 				`-y`,
-			).CombinedOutput()
+			)
+
+			if verbose {
+				fmt.Println("register representative cmd:", cmd.String())
+				fmt.Println("Tx json:", fileContent)
+			}
+
+			bz, err := cmd.CombinedOutput()
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}

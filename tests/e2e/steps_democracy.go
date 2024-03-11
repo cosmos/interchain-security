@@ -31,6 +31,12 @@ func stepsDemocracy(consumerName string) []Step {
 						IsIncrementalReward: true,
 						IsNativeDenom:       true,
 					},
+					// Check that delegating on gov-consumer does not change validator powers
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
+					},
 				},
 			},
 		},
@@ -69,13 +75,10 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			// whitelisted legacy proposal can only handle ibctransfer.SendEnabled/ReceiveEnabled
-			Action: SubmitParamChangeLegacyProposalAction{
-				Chain:    ChainID(consumerName),
-				From:     ValidatorID("alice"),
-				Deposit:  10000001,
-				Subspace: "transfer",
-				Key:      "SendEnabled",
-				Value:    true,
+			Action: SubmitLegacyTextProposalAction{
+				Chain:   ChainID(consumerName),
+				From:    ValidatorID("alice"),
+				Deposit: 10000001,
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
@@ -83,15 +86,13 @@ func stepsDemocracy(consumerName string) []Step {
 						ValidatorID("alice"): 9889999998,
 						ValidatorID("bob"):   9960000001,
 					},
-					// Check that the "SendEnabled" transfer parameter is set to false
-					Params: &([]Param{{Subspace: "transfer", Key: "SendEnabled", Value: "false"}}),
+					// confirm the
 					Proposals: &map[uint]Proposal{
-						1: ParamsProposal{
-							Deposit:  10000001,
-							Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-							Subspace: "transfer",
-							Key:      "SendEnabled",
-							Value:    "true",
+						1: TextProposal{
+							Deposit:     10000001,
+							Status:      strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Title:       "Test Proposal",
+							Description: "testing",
 						},
 					},
 				},
@@ -114,16 +115,13 @@ func stepsDemocracy(consumerName string) []Step {
 					},
 					// Check that the prop passed
 					Proposals: &map[uint]Proposal{
-						1: ParamsProposal{
-							Deposit:  10000001,
-							Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-							Subspace: "transfer",
-							Key:      "SendEnabled",
-							Value:    "true",
+						1: TextProposal{
+							Deposit:     10000001,
+							Status:      strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Title:       "Test Proposal",
+							Description: "testing",
 						},
 					},
-					// Check that the parameter is changed on gov-consumer chain
-					Params: &([]Param{{Subspace: "transfer", Key: "SendEnabled", Value: "true"}}),
 				},
 			},
 		},

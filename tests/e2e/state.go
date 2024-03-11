@@ -331,17 +331,18 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-
-		"query", "distribution", "rewards",
-		delAddresss,
-
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+		"query", "distribution", "delegation-total-rewards",
+		"--delegator-address", delAddresss,
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
-	).CombinedOutput()
+	)
+
+	bz, err := cmd.CombinedOutput()
+
 	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 
 	denomCondition := `total.#(denom!="stake").amount`
@@ -473,13 +474,23 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 			StopTime: int(stopTime.Milliseconds()),
 		}
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
-		// deprecated for most modules
+		// deprecated for all modules, keeping for posterity
 		return ParamsProposal{
 			Deposit:  uint(deposit),
 			Status:   status,
 			Subspace: rawContent.Get("changes.0.subspace").String(),
 			Key:      rawContent.Get("changes.0.key").String(),
 			Value:    rawContent.Get("changes.0.value").String(),
+		}
+	case "cosmos-sdk/TextProposal":
+		title := rawContent.Get("title").String()
+		description := rawContent.Get("description").String()
+
+		return TextProposal{
+			Deposit:     uint(deposit),
+			Status:      status,
+			Title:       title,
+			Description: description,
 		}
 	}
 
@@ -590,7 +601,7 @@ func (tr TestConfig) getValStakedTokens(chain ChainID, validator ValidatorID) ui
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	amount := gjson.Get(string(bz), `tokens`)
+	amount := gjson.Get(string(bz), `validator.tokens`)
 
 	return uint(amount.Uint())
 }

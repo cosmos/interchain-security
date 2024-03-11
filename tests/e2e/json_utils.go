@@ -95,8 +95,8 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.SubmitParamChangeLegacyProposalAction":
-		var a SubmitParamChangeLegacyProposalAction
+	case "main.SubmitLegacyTextProposalAction":
+		var a SubmitLegacyTextProposalAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
 			return a, nil
