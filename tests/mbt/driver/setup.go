@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"sort"
 	"testing"
 	"time"
 
@@ -57,9 +58,9 @@ var (
 // - a validator set
 // - a map from node names to validator objects and
 // - a map from validator addresses to private validators (signers)
-func CreateValSet(initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator, error) {
+func CreateValSet(initialValidatorSet map[string]int64, chainId string) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator, error) {
 	// create a valSet and signers, but the voting powers will not yet be right
-	valSet, _, signers, err := integration.CreateValidators(len(initialValidatorSet))
+	valSet, _, signers, err := integration.CreateValidators(len(initialValidatorSet), chainId)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -72,6 +73,8 @@ func CreateValSet(initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet,
 	for valName := range initialValidatorSet {
 		valNames = append(valNames, valName)
 	}
+	// sort the names so that the order is deterministic
+	sort.Strings(valNames)
 
 	// assign the validators from the created valSet to valNames in the chosen order
 	for i, valName := range valNames {

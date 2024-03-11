@@ -127,18 +127,28 @@ func RunItfTrace(t *testing.T, path string) {
 	// generate keys that can be assigned on consumers, according to the ConsumerAddresses in the trace
 	consumerAddressesExpr := params["ConsumerAddresses"].Value.(itf.ListExprType)
 
-	consumerValidators, _, consumerPrivVals, err := integration.CreateValidators(len(consumerAddressesExpr))
+	consumerValidators, _, consumerPrivVals, err := integration.CreateValidators(len(consumerAddressesExpr), "consumer")
 	require.NoError(t, err, "Error creating consumer signers")
+
+	// sort the keys of consumer priv vals for determinism
+	// this is necessary because the order of the keys in the map is not deterministic
+	// and the model and the system need to have the same order
+	consumerPrivValKeys := make([]string, 0, len(consumerPrivVals))
+	for key := range consumerPrivVals {
+		consumerPrivValKeys = append(consumerPrivValKeys, key)
+	}
+	// sort the keys
+	sort.Strings(consumerPrivValKeys)
 
 	consumerAddrNamesToVals := make(map[string]*cmttypes.Validator, len(consumerAddressesExpr))
 	consumerAddrNamesToPrivVals := make(map[string]cmttypes.PrivValidator, len(consumerAddressesExpr))
 	realAddrsToModelConsAddrs := make(map[string]string, len(consumerAddressesExpr))
-	i := 0
-	for address, privVal := range consumerPrivVals {
+	for i := 0; i < len(consumerAddressesExpr); i++ {
+		address := consumerPrivValKeys[i]
+		privVal := consumerPrivVals[address]
 		consumerAddrNamesToPrivVals[consumerAddressesExpr[i].Value.(string)] = privVal
 		consumerAddrNamesToVals[consumerAddressesExpr[i].Value.(string)] = consumerValidators.Validators[i]
 		realAddrsToModelConsAddrs[address] = consumerAddressesExpr[i].Value.(string)
-		i++
 	}
 
 	// create params struct
@@ -168,7 +178,7 @@ func RunItfTrace(t *testing.T, path string) {
 		valNames[i] = val.Value.(string)
 	}
 
-	valSet, addressMap, signers, err := CreateValSet(initialValSet)
+	valSet, addressMap, signers, err := CreateValSet(initialValSet, "provider")
 	require.NoError(t, err, "Error creating validator set")
 
 	// get the set of signers for consumers: the validator signers, plus signers for the assignable addresses

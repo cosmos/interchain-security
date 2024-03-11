@@ -12,7 +12,7 @@ import (
 )
 
 func TestDemocracyGovernanceWhitelistingKeys(t *testing.T) {
-	_, valUpdates, _, err := testutil.CreateValidators(4)
+	_, valUpdates, _, err := testutil.CreateValidators(4, "consumer")
 	require.NoError(t, err)
 	ibctesting.DefaultTestingAppInit = icstestingutils.DemocracyConsumerAppIniter(valUpdates)
 	chain := ibctesting.NewTestChain(t, ibctesting.NewCoordinator(t, 0), "test")
