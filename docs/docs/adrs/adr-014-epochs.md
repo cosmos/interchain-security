@@ -52,7 +52,7 @@ valUpdates := DiffValidators(currentValidators, stakingmodule.GetBondedValidator
 SetConsumerValSet(stakingmodule.GetBondedValidators())
 ```
 Note that a validator can change its consumer public key for a specific consumer chain an arbitrary amount of times during
-a block and during an epoch. Then, when we generate the validator updates in `DiffValidators`, we have to check on whether
+a block and during an epoch. Then, when we generate the validator updates in `DiffValidators`, we have to check whether
 the current consumer public key (retrieved by calling `GetValidatorConsumerPubKey`) is different from the consumer public
 key the validator was using in the current epoch.
 
