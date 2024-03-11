@@ -466,7 +466,7 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 				".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
 		}
-	} else if semver.Compare(providerVersion, "v4.0.0") < 0 {
+	} else if semver.Compare(providerVersion, "v4.0.0") <= 0 {
 		fmt.Println("Using provider chain config for v3.x.x")
 		providerConfig = ChainConfig{
 			ChainId:        ChainID("provi"),
@@ -553,9 +553,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 		".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 		".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 		".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
-		".app_state.transfer.params.send_enabled = false | " +
-		".app_state.provider.params.blocks_per_epoch = 3"
-
+		".app_state.transfer.params.send_enabled = false"
 	name := string(DemocracyTestCfg)
 	if allowReward {
 		// This allows the consumer chain to send rewards in the stake denom
