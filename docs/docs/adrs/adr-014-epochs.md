@@ -23,7 +23,7 @@ As a matter of fact, this already happens due to relaying delays.
 As a solution, this ADR introduces the concept of _epochs_. 
 An epoch consists of multiple blocks. 
 The provider sends `VSCPacket`s once per epoch. 
-A `VSCPacket` contains all the validator updates that are needed by consumer chains.
+A `VSCPacket` contains all the validator updates that are needed by a consumer chain.
 
 ## Decision
 
