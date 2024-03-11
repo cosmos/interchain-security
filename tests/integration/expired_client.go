@@ -96,7 +96,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	delegate(s, delAddr, bondAmt)
 
 	// send CCV packet to consumer
-	s.providerChain.NextBlock()
+	s.nextEpoch()
 
 	// bond more tokens on provider to change validator powers
 	delegate(s, delAddr, bondAmt)
