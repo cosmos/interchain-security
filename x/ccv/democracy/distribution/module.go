@@ -1,8 +1,10 @@
 package distribution
 
 import (
+	"context"
 	"time"
 
+	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/telemetry"
@@ -22,6 +24,9 @@ var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+
+	_ appmodule.AppModule       = AppModule{}
+	_ appmodule.HasBeginBlocker = AppModule{}
 )
 
 // AppModule embeds the Cosmos SDK's x/distribution AppModuleBasic.
@@ -59,23 +64,27 @@ func NewAppModule(
 	}
 }
 
-// BeginBlocker mirror functionality of cosmos-sdk/distribution BeginBlocker
-// however it allocates no proposer reward
-func (am AppModule) BeginBlock(ctx sdk.Context) {
+// BeginBlock implements HasBeginBlocker interface
+// The cosmos-sdk/distribution BeginBlocker functionality is replicated here,
+// however it no proposer awards are allocated.
+func (am AppModule) BeginBlock(goCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	defer telemetry.ModuleMeasureSince(distrtypes.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
 	// TODO this is Tendermint-dependent
 	// ref https://github.com/cosmos/cosmos-sdk/issues/3095
 	if ctx.BlockHeight() > 1 {
-		am.AllocateTokens(ctx)
+		return am.AllocateTokens(ctx)
 	}
+
+	return nil
 }
 
 // AllocateTokens handles distribution of the collected fees
 // NOTE: refactored to use collections (FeePool.Get instead of GetFeePool) for v47 -> v50 migration
 func (am AppModule) AllocateTokens(
 	ctx sdk.Context,
-) {
+) error {
 	// fetch and clear the collected fees for distribution, since this is
 	// called in BeginBlock, collected fees will be from the previous block
 	// (and distributed to the current representatives)
@@ -86,28 +95,26 @@ func (am AppModule) AllocateTokens(
 	// transfer collected fees to the distribution module account
 	err := am.bankKeeper.SendCoinsFromModuleToModule(ctx, consumertypes.ConsumerRedistributeName, distrtypes.ModuleName, feesCollectedInt)
 	if err != nil {
-		// same behavior as in the original x/distribution module of cosmos-sdk
-		panic(err)
+		return err
 	}
 
 	// temporary workaround to keep CanWithdrawInvariant happy
 	// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 	feePool, err := am.keeper.FeePool.Get(ctx)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	vs := am.stakingKeeper.GetValidatorSet()
 	totalBondedTokens, err := vs.TotalBondedTokens(ctx)
 	if err != nil {
-		// TODO: @MSalopek - how do we handle this err correcly?
-		panic(err)
+		return err
 	}
 	if totalBondedTokens.IsZero() {
 		feePool.CommunityPool = feePool.CommunityPool.Add(feesCollected...)
 		if err := am.keeper.FeePool.Set(ctx, feePool); err != nil {
-			panic(err)
+			return err
 		}
-		return
+		return nil
 	}
 
 	// calculate the fraction allocated to representatives by subtracting the community tax.
@@ -115,8 +122,7 @@ func (am AppModule) AllocateTokens(
 	remaining := feesCollected
 	communityTax, err := am.keeper.GetCommunityTax(ctx)
 	if err != nil {
-		// TODO: @MSalopek - how do we handle this err correcly?
-		panic(err)
+		return err
 	}
 	representativesFraction := math.LegacyOneDec().Sub(communityTax)
 
@@ -136,6 +142,8 @@ func (am AppModule) AllocateTokens(
 	// due to the 3 truncations above, remaining sent to the community pool will be slightly more than it should be. This is OK
 	feePool.CommunityPool = feePool.CommunityPool.Add(remaining...)
 	if err := am.keeper.FeePool.Set(ctx, feePool); err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
