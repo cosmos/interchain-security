@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -23,6 +24,8 @@ const (
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleSimulation = AppModule{}
+
+	_ appmodule.HasEndBlocker = AppModule{}
 )
 
 // AppModule embeds the Cosmos SDK's x/governance AppModule
