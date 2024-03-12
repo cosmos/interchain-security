@@ -2,7 +2,7 @@ package main
 
 const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"
 
-func stepsDemocracy(consumerName string) []Step {
+func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool) []Step {
 	return []Step{
 		{
 			Action: RegisterRepresentativeAction{
@@ -185,9 +185,9 @@ func stepsDemocracy(consumerName string) []Step {
 					// the tokens are not sent because the test configuration does not allow sending tokens
 					Rewards: &Rewards{
 						IsRewarded: map[ValidatorID]bool{
-							ValidatorID("alice"): false,
-							ValidatorID("bob"):   false,
-							ValidatorID("carol"): false,
+							ValidatorID("alice"): expectRegisteredRewardDistribution,
+							ValidatorID("bob"):   expectRegisteredRewardDistribution,
+							ValidatorID("carol"): expectRegisteredRewardDistribution,
 						},
 						IsIncrementalReward: false,
 						IsNativeDenom:       false,

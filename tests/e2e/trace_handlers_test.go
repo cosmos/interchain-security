@@ -45,11 +45,11 @@ func TestWriterThenParser(t *testing.T) {
 		"proposalInState":       {proposalInStateSteps},
 		"start_provider_chain":  {stepStartProviderChain()},
 		"happyPath":             {happyPathSteps},
-		"democracy":             {democracySteps},
+		"democracy":             {democracyUnregisteredDenomSteps},
 		"slashThrottle":         {slashThrottleSteps},
 		"multipleConsumers":     {multipleConsumers},
 		"shorthappy":            {shortHappyPathSteps},
-		"democracyRewardsSteps": {democracyRewardsSteps},
+		"democracyRewardsSteps": {democracyRegisteredDenomSteps},
 		"changeover":            {changeoverSteps},
 	}
 
@@ -76,11 +76,11 @@ func TestWriteExamples(t *testing.T) {
 		trace []Step
 	}{
 		"happyPath":             {happyPathSteps},
-		"democracy":             {democracySteps},
+		"democracy":             {democracyUnregisteredDenomSteps},
 		"slashThrottle":         {slashThrottleSteps},
 		"multipleConsumers":     {multipleConsumers},
 		"shorthappy":            {shortHappyPathSteps},
-		"democracyRewardsSteps": {democracyRewardsSteps},
+		"democracyRewardsSteps": {democracyRegisteredDenomSteps},
 		"changeover":            {changeoverSteps},
 		"consumer-misbehaviour": {consumerMisbehaviourSteps},
 		"consumer-double-sign":  {consumerDoubleSignSteps},
