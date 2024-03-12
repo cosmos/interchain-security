@@ -253,6 +253,8 @@ func (k Keeper) MakeConsumerGenesis(
 		return false
 	})
 
+	var bondedValidators []stakingtypes.Validator
+
 	initialUpdates := []abci.ValidatorUpdate{}
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
@@ -274,10 +276,16 @@ func (k Keeper) MakeConsumerGenesis(
 			PubKey: tmProtoPk,
 			Power:  p.Power,
 		})
+
+		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
+		bondedValidators = append(bondedValidators, val)
 	}
 
-	// Apply key assignments to the initial valset.
-	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
+	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
+	k.SetConsumerValSet(ctx, chainID, nextValidators)
+
+	// get the initial updates with the latest set consumer public keys
+	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)

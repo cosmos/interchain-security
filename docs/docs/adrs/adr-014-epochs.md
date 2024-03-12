@@ -5,7 +5,8 @@ title: Epochs
 # ADR 014: Epochs
 
 ## Changelog
-* 2024-01-105: Proposed, first draft of ADR.
+* 2024-01-05: Proposed, first draft of ADR.
+* 2024-02-29: Updated so that it describes the implementation where we store the whole consumer validator set.
 
 ## Status
 
@@ -22,24 +23,37 @@ As a matter of fact, this already happens due to relaying delays.
 As a solution, this ADR introduces the concept of _epochs_. 
 An epoch consists of multiple blocks. 
 The provider sends `VSCPacket`s once per epoch. 
-A `VSCPacket` contains all the valset changes that occurred throughout the epoch. 
+A `VSCPacket` contains all the validator updates that are needed by a consumer chain.
 
 ## Decision
 
 The implementation of epochs requires the following changes:
 
-- Add a param that sets the number of blocks in an epoch, i.e., `BlocksPerEpoch`. 
-  We can use `BlockHeight() % BlocksPerEpoch == 0` to decide when an epoch is over. 
-  Note that `BlocksPerEpoch` can also be a hardcoded constant as it's unlikely that it will change often.
-- In every provider `EndBlock()`, instead of queueing `VSCPacket` data for every consumer chain, we accumulate the validator changes (similarly to how is done on the consumer, see `AccumulateChanges`). 
-- Modify the key assignment logic to allow for `MustApplyKeyAssignmentToValUpdates` to be called once per epoch. 
-  Currently, this method is called in every block before queueing a `VSCPacket`. 
-  Also, the method uses the `KeyAssignmentReplacement` state, which is pruned at the end of every block. 
-  This needs to be done once per epoch instead.
-- At the end of every epoch, if there were validator set changes on the provider, then for every consumer chain, construct a `VSCPacket` with all the accumulated validator changes and add it to the list of `PendingVSCPackets`.
-
-As an optional change, to better accommodate [the Partial Set Security design](https://informalsystems.notion.site/Partial-Set-Security-398ca9a1453740068be5c7964a4059bb), the validator changes should be accumulated per consumer chain. 
-Like this, it would make it easier to have validators opting out from certain consumer chains. 
+- For each consumer chain, we store the consumer validator set that is currently (i.e., in this epoch) validating the 
+  consumer chain. For each validator in the set we store i) its voting power, and ii) the public key that it is 
+  using on the consumer chain during the current (i.e., ongoing) epoch.
+  The initial consumer validator set for a chain is set during the creation of the consumer genesis.  
+- We introduce the `BlocksPerEpoch` param that sets the number of blocks in an epoch. By default, `BlocksPerEpoch` is
+  set to be 600 which corresponds to 1 hour, assuming 6 seconds per block. This param can be changed through
+  a _governance proposal_. In the provider `EndBlock` we check `BlockHeight() % BlocksPerEpoch() == 0`
+  to decide when an epoch has ended.
+- At the end of every epoch, if there were validator set changes on the provider, then for every consumer chain, we 
+  construct a `VSCPacket` with all the validator updates and add it to the list of `PendingVSCPackets`. We compute the
+  validator updates needed by a consumer chain by comparing the stored list of consumer validators with the current
+  bonded validators on the provider, with something similar to this:
+```go
+// get the valset that has been validating the consumer chain during this epoch 
+currentValidators := GetConsumerValSet(consumerChain)
+// generate the validator updates needed to be sent through a `VSCPacket` by comparing the current validators 
+// in the epoch with the latest bonded validators
+valUpdates := DiffValidators(currentValidators, stakingmodule.GetBondedValidators())
+// update the current validators set for the upcoming epoch to be the latest bonded validators instead
+SetConsumerValSet(stakingmodule.GetBondedValidators())
+```
+Note that a validator can change its consumer public key for a specific consumer chain an arbitrary amount of times during
+a block and during an epoch. Then, when we generate the validator updates in `DiffValidators`, we have to check whether
+the current consumer public key (retrieved by calling `GetValidatorConsumerPubKey`) is different from the consumer public
+key the validator was using in the current epoch.
 
 ## Consequences
 
@@ -47,12 +61,13 @@ Like this, it would make it easier to have validators opting out from certain co
 
 - Reduce the cost of relaying.
 - Reduce the amount of IBC packets needed for ICS.
+- Simplifies [key-assignment code](https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-001-key-assignment.md) because
+  we only need to check if the `consumer_public_key` has been modified since the last epoch to generate an update. 
 
 ### Negative
 
-- Additional logic on the provider side as valset changes need to be accumulated. 
-- The changes might impact the key-assignment logic so special care is needed to avoid introducing bugs.
 - Increase the delay in the propagation of validator set changes (but for reasonable epoch lengths on the order of ~hours or less, this is unlikely to be significant).
+
 ### Neutral
 
 N/A
