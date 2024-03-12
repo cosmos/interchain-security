@@ -7,6 +7,7 @@ title: Key Assignment
 
 ## Changelog
 * 2022-12-01: Initial Draft
+* 2024-03-01: Updated to take into account they key-assigment-replacement deprecation.
 
 ## Status
 
@@ -29,10 +30,6 @@ ConsumerValidatorsBytePrefix | len(chainID) | chainID | providerConsAddress -> c
 - `ValidatorByConsumerAddr` - Stores the mapping from validator addresses on consumer chains to validator addresses on the provider chain. Needed for the consumer initiated slashing sub-protocol.
 ```golang
 ValidatorsByConsumerAddrBytePrefix | len(chainID) | chainID | consumerConsAddress -> providerConsAddress
-```
-- `KeyAssignmentReplacements` - Stores the key assignments that need to be replaced in the current block. Needed to apply the key assignments received in a block to the validator updates sent to the consumer chains.
-```golang
-KeyAssignmentReplacementsBytePrefix | len(chainID) | chainID | providerConsAddress -> abci.ValidatorUpdate{PubKey: oldConsumerKey, Power: currentPower},
 ```
 - `ConsumerAddrsToPrune` - Stores the mapping from VSC ids to consumer validators addresses. Needed for pruning `ValidatorByConsumerAddr`. 
 ```golang
@@ -67,20 +64,6 @@ if _, consumerRegistered := GetConsumerClientId(chainID); consumerRegistered {
         oldConsumerAddr := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
         vscID := GetValidatorSetUpdateId()
         AppendConsumerAddrsToPrune(chainID, vscID, oldConsumerAddr)
-    } else {
-        // the validator had no key assigned on this consumer chain
-        oldConsumerKey := validator.TmConsPublicKey()
-    }
-
-    // check whether the validator is valid, i.e., its power is positive
-    if currentPower := stakingKeeper.GetLastValidatorPower(providerAddr); currentPower > 0 {
-        // to enable multiple calls of AssignConsumerKey in the same block by the same validator
-        // the key assignment replacement should not be overwritten
-        if _, found := GetKeyAssignmentReplacement(chainID, providerConsAddr); !found {
-            // store old key and power for modifying the valset update in EndBlock
-            oldKeyAssignment := abci.ValidatorUpdate{PubKey: oldConsumerKey, Power: currentPower}
-            SetKeyAssignmentReplacement(chainID, providerConsAddr, oldKeyAssignment)
-        }
     }
 } else {
     // if the consumer chain is not registered, then remove the previous reverse mapping
@@ -129,89 +112,24 @@ func (k Keeper) MakeConsumerGenesis(chainID string) (gen consumertypes.GenesisSt
 }
 ```
 
-On `EndBlock` while queueing `VSCPacket`s to send to registered consumer chains:
+Note that key assignment works hand-in-hand with [epochs](https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-014-epochs.md).
+For each consumer chain, we store the consumer validator set that is currently (i.e., in this epoch) validating the consumer chain. 
+Specifically, for each validator in the set we store among others, the public key that it is using on the consumer chain during the current (i.e., ongoing) epoch.
+At the end of every epoch, if there were validator set changes on the provider, then for every consumer chain, we construct a `VSCPacket` 
+with all the validator updates and add it to the list of `PendingVSCPacket`s. We compute the validator updates needed by a consumer chain by
+comparing the stored list of consumer validators with the current bonded validators on the provider, with something similar to this:
 ```golang
-func QueueVSCPackets() {
-	valUpdateID := GetValidatorSetUpdateId()
-	// get the validator updates from the staking module
-	valUpdates := stakingKeeper.GetValidatorUpdates()
-
-	IterateConsumerChains(func(chainID, clientID string) (stop bool) {
-		// apply the key assignment to the validator updates
-		valUpdates := ApplyKeyAssignmentToValUpdates(chainID, valUpdates)
-        // ..
-    })
-    // ...
-}
-
-func ApplyKeyAssignmentToValUpdates(
-    chainID string, 
-    valUpdates []abci.ValidatorUpdate,
-) (newUpdates []abci.ValidatorUpdate) {
-    for _, valUpdate := range valUpdates {
-        providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
-
-        // if a key assignment replacement is found, then
-        // remove the valupdate with the old consumer key
-        // and create two new valupdates
-        prevConsumerKey, _, found := GetKeyAssignmentReplacement(chainID, providerAddr)
-        if found {
-            // set the old consumer key's power to 0
-            newUpdates = append(newUpdates, abci.ValidatorUpdate{
-				PubKey: prevConsumerKey,
-				Power:  0,
-			})
-		    // set the new consumer key's power to the power in the update
-            newConsumerKey := GetValidatorConsumerPubKey(chainID, providerAddr)
-			newUpdates = append(newUpdates, abci.ValidatorUpdate{
-				PubKey: newConsumerKey,
-				Power:  valUpdate.Power,
-			})
-            // delete key assignment replacement
-			DeleteKeyAssignmentReplacement(chainID, providerAddr)
-        } else {
-            // there is no key assignment replacement;
-            // check if the validator's key is assigned
-            consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-			if found {
-                // replace the update containing the provider key 
-                // with an update containing the consumer key
-				newUpdates = append(newUpdates, abci.ValidatorUpdate{
-					PubKey: consumerKey,
-					Power:  valUpdate.Power,
-				})
-			} else {
-				// keep the same update
-				newUpdates = append(newUpdates, valUpdate)
-			}
-        }
-    }
-
-    // iterate over the remaining key assignment replacements
-    IterateKeyAssignmentReplacements(chainID, func(
-		pAddr sdk.ConsAddress,
-		prevCKey tmprotocrypto.PublicKey,
-		power int64,
-	) (stop bool) {
-       // set the old consumer key's power to 0
-		newUpdates = append(newUpdates, abci.ValidatorUpdate{
-			PubKey: prevCKey,
-			Power:  0,
-		})
-        // set the new consumer key's power to the power in key assignment replacement
-		newConsumerKey := GetValidatorConsumerPubKey(chainID, pAddr)
-		newUpdates = append(newUpdates, abci.ValidatorUpdate{
-			PubKey: newConsumerKey,
-			Power:  power,
-		})
-		return false
-	})
-
-    // remove all the key assignment replacements
-   
-    return newUpdates
-}
+// get the valset that has been validating the consumer chain during this epoch 
+currentValidators := GetConsumerValSet(consumerChain)
+// generate the validator updates needed to be sent through a `VSCPacket` by comparing the current validators 
+// in the epoch with the latest bonded validators
+valUpdates := DiffValidators(currentValidators, stakingmodule.GetBondedValidators())
+// update the current validators set for the upcoming epoch to be the latest bonded validators instead
+SetConsumerValSet(stakingmodule.GetBondedValidators())
 ```
+where `DiffValidators` internally checks if the consumer public key for a validator has changed since the last
+epoch and if so generates a validator update. This way, a validator can change its consumer public key for a consumer
+chain an arbitrary amount of times and only the last set consumer public key would be taken into account.
 
 On receiving a `SlashPacket` from a consumer chain with id `chainID` for a infraction of a validator `data.Validator`:
 ```golang

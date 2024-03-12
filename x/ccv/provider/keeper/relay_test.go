@@ -1,23 +1,24 @@
 package keeper_test
 
 import (
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"strings"
 	"testing"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	"github.com/cosmos/interchain-security/v4/testutil/crypto"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
@@ -66,16 +67,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mocks := testkeeper.NewMockedKeepers(ctrl)
-		mockStakingKeeper := mocks.MockStakingKeeper
-
-		mockUpdates := []abci.ValidatorUpdate{}
-		if len(tc.packets) != 0 {
-			mockUpdates = tc.packets[0].ValidatorUpdates
-		}
-
-		gomock.InOrder(
-			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates),
-		)
+		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Times(1)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
@@ -660,4 +652,48 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 
 	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
 	require.NoError(t, err)
+}
+
+// TestEndBlockVSU tests that during `EndBlockVSU`, we only queue VSC packets at the boundaries of an epoch
+func TestEndBlockVSU(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// 10 blocks constitute an epoch
+	params := providertypes.DefaultParams()
+	params.BlocksPerEpoch = 10
+	providerKeeper.SetParams(ctx, params)
+
+	// create 4 sample lastValidators
+	var lastValidators []stakingtypes.Validator
+	for i := 0; i < 4; i++ {
+		lastValidators = append(lastValidators, crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator())
+	}
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(2)).AnyTimes()
+
+	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
+	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+
+	// with block height of 1 we do not expect any queueing of VSC packets
+	ctx = ctx.WithBlockHeight(1)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// with block height of 5 we do not expect any queueing of VSC packets
+	ctx = ctx.WithBlockHeight(5)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// with block height of 10 we expect the queueing of one VSC packet
+	ctx = ctx.WithBlockHeight(10)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// With block height of 15 we expect no additional queueing of a VSC packet.
+	// Note that the pending VSC packet is still there because `SendVSCPackets` does not send the packet. We
+	// need to mock channels, etc. for this to work, and it's out of scope for this test.
+	ctx = ctx.WithBlockHeight(15)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
 }
