@@ -35,8 +35,7 @@ The implementation of epochs requires the following changes:
   The initial consumer validator set for a chain is set during the creation of the consumer genesis.  
 - We introduce the `BlocksPerEpoch` param that sets the number of blocks in an epoch. By default, `BlocksPerEpoch` is
   set to be 600 which corresponds to 1 hour, assuming 6 seconds per block. This param can be changed through
-  a _governance proposal_ to be anywhere between `[1, MaxBlocksPerEpoch]` where `MaxBlocksPerEpoch` can be up to 1200
-  (2 hours if we assume 6 seconds per block). In the provider `EndBlock` we check `BlockHeight() % BlocksPerEpoch() == 0`
+  a _governance proposal_. In the provider `EndBlock` we check `BlockHeight() % BlocksPerEpoch() == 0`
   to decide when an epoch has ended.
 - At the end of every epoch, if there were validator set changes on the provider, then for every consumer chain, we 
   construct a `VSCPacket` with all the validator updates and add it to the list of `PendingVSCPackets`. We compute the

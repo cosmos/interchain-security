@@ -40,10 +40,6 @@ const (
 	// DefaultBlocksPerEpoch defines the default blocks that constitute an epoch. Assuming we need 6 seconds per block,
 	// an epoch corresponds to 1 hour (6 * 600 = 3600 seconds).
 	DefaultBlocksPerEpoch = 600
-
-	// MaxBlocksPerEpoch defines the maximum blocks that constitute an epoch. Assuming we need 6 seconds per block,
-	// the maximum epoch corresponds to 2 hours (6 * 1200 = 7200 seconds).
-	MaxBlocksPerEpoch = 1200
 )
 
 // Reflection based keys for params subspace
@@ -148,7 +144,7 @@ func (p Params) Validate() error {
 	if err := ValidateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
 		return fmt.Errorf("consumer reward denom registration fee is invalid: %s", err)
 	}
-	if err := ValidateBlocksPerEpoch(p.BlocksPerEpoch); err != nil {
+	if err := ccvtypes.ValidateInt64(p.BlocksPerEpoch); err != nil {
 		return fmt.Errorf("blocks per epoch is invalid: %s", err)
 	}
 	return nil
@@ -206,19 +202,5 @@ func ValidateCoin(i interface{}) error {
 		return fmt.Errorf("invalid consumer reward denom registration fee: %s", v)
 	}
 
-	return nil
-}
-
-// ValidateBlocksPerEpoch validates the BlocksPerEpoch param is in [1, MaxBlocksPerEpoch]
-func ValidateBlocksPerEpoch(i interface{}) error {
-	if _, ok := i.(int64); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	if i.(int64) <= int64(0) {
-		return fmt.Errorf("blocks per epoch must be positive")
-	}
-	if i.(int64) > MaxBlocksPerEpoch {
-		return fmt.Errorf("blocks per epoch have to be at most %d", MaxBlocksPerEpoch)
-	}
 	return nil
 }
