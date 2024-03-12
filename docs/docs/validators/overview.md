@@ -85,7 +85,7 @@ At present, the consumer chain can report evidence about downtime infractions to
 :::info
 Causing a downtime infraction on any consumer chain will not incur a slash penalty. Instead, the offending validator will be jailed on the provider chain and consequently on all consumer chains.
 
-To unjail, the validator must wait for the jailing period to elapse on the provider chain and [submit an unjail transaction](https://hub.cosmos.network/main/validators/validator-setup.html#unjail-validator) on the provider chain. After unjailing on the provider, the validator will be unjailed on all consumer chains.
+To unjail, the validator must wait for the jailing period to elapse on the provider chain and [submit an unjail transaction](https://hub.cosmos.network/validators/validator-setup#unjail-validator) on the provider chain. After unjailing on the provider, the validator will be unjailed on all consumer chains.
 
 More information is available in [Downtime Slashing documentation](../features/slashing.md#downtime-infractions)
 :::
@@ -99,7 +99,7 @@ Validators can use different consensus keys on the provider and each of the cons
 For more information check out the [Key assignment overview and guide](../features/key-assignment.md)
 
 ## References:
-- [Cosmos Hub Validators FAQ](https://hub.cosmos.network/main/validators/validator-faq.html)
-- [Cosmos Hub Running a validator](https://hub.cosmos.network/main/validators/validator-setup.html)
+- [Cosmos Hub Validators FAQ](https://hub.cosmos.network/validators/validator-faq)
+- [Cosmos Hub Running a validator](https://hub.cosmos.network/validators/validator-setup)
 - [Startup Sequence](https://github.com/cosmos/testnets/blob/master/replicated-security/CONSUMER_LAUNCH_GUIDE.md#chain-launch)
-- [Submit Unjailing Transaction](https://hub.cosmos.network/main/validators/validator-setup.html#unjail-validator)
+- [Submit Unjailing Transaction](https://hub.cosmos.network/validators/validator-setup#edit-validator-description)
