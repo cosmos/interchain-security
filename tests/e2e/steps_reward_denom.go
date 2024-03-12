@@ -179,12 +179,13 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 			},
 			State: State{
 				ChainID("provi"): ChainState{
-					// Check that tokens are not minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// Check that ARE minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// the tokens are sent because the test configuration does allows sending tokens
 					Rewards: &Rewards{
 						IsRewarded: map[ValidatorID]bool{
-							ValidatorID("alice"): false,
-							ValidatorID("bob"):   false,
-							ValidatorID("carol"): false,
+							ValidatorID("alice"): true,
+							ValidatorID("bob"):   true,
+							ValidatorID("carol"): true,
 						},
 						IsIncrementalReward: false,
 						IsNativeDenom:       false,

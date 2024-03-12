@@ -62,7 +62,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			// whitelisted legacy proposal can only handle ibctransfer.SendEnabled/ReceiveEnabled
+			// this proposal will allow ibc transfer by setting SendEnabled to true
 			Action: SubmitParamChangeLegacyProposalAction{
 				Chain:    ChainID(consumerName),
 				From:     ValidatorID("alice"),
@@ -181,12 +181,13 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			State: State{
 				ChainID("provi"): ChainState{
-					// Check that tokens are minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// Check that ARE NOT minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// the tokens are not sent because the test configuration does not allow sending tokens
 					Rewards: &Rewards{
 						IsRewarded: map[ValidatorID]bool{
-							ValidatorID("alice"): true,
-							ValidatorID("bob"):   true,
-							ValidatorID("carol"): true,
+							ValidatorID("alice"): false,
+							ValidatorID("bob"):   false,
+							ValidatorID("carol"): false,
 						},
 						IsIncrementalReward: false,
 						IsNativeDenom:       false,
