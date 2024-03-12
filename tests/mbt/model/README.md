@@ -31,16 +31,25 @@ All the logic in EndBlock/BeginBlock happens here, like updating the validator s
 * `EndAndBeginBlockForConsumer(chain: Chain, timeAdvancement: Time)`: On the consumer `chain`, ends the current block, and begins a new one. Again, all the logic in EndBlock/BeginBlock happens here, like validator set change maturations.
 * `DeliverVscPacket(receiver: Chain)`: Delivers a pending VSCPacket from the provider to the consumer `receiver`.
 * `DeliverVscMaturedPacket(receiver: Chain)`: Delivers a pending VSCMaturedPacket from the consumer `receiver` to the provider.
+* `KeyAssignment(chain: Chain, validator: Node, consumerAddr: ConsumerAddr)` (only when running with `--step stepKeyAssignment`): Assigns the `consumerAddr` to the `validator` on the `chain`. Note that we use "key" and "consumerAddr" pretty much interchangeably, as the model makes no differentiation between private keys, public keys, addresses, etc, as it doesn't model the cryptography.
 
 ### State machines
 
 There are 3 different "state machine layers" that can be put on top of the core logic.
+Some layers include extra logic, need other invariants, ...
 
 #### ccv_model.qnt
 This is the most general state machine layer. It allows the most behaviour,
 in particular it allows abitrary clock drift between chains, it allows starting and
 stopping consumer chains during runtime, etc.
 This layer is most useful for model checking, because it encompasses the most behaviour.
+As an optional module, it can also include KeyAssignment.
+
+##### KeyAssignment
+
+To run with key assignment, specify the step flag: `--step stepKeyAssignment`.
+
+KeyAssignment also needs some different invariants, see below.
 
 #### ccv_boundeddrift.qnt
 This state machine layer is more restricted to generate more interesting traces:
@@ -94,6 +103,13 @@ with a timestamp >= t + UnbondingPeriod on that consumer.
 - [X] EventuallyMatureOnProviderInv: If we send a VscPacket, this is eventually responded to by all consumers
 that were running at the time the packet was sent (and are still running).
 
+Invariants only relevant when running with key assignment (`--step stepKeyAssignment`):
+- [X] ValidatorSetHasExistedKeyAssignmentInv: Should replace ValidatorSetHasExistedInv when running with `--step stepKeyAssignment`. Validator sets are checked for equality under key assignment when checking whether they have existed.
+- [X] SameVscPacketsKeyAssignmentInv: Should replace SameVscPacketsInv when running with `--step stepKeyAssignment`. VscPackets are checked for equality under key assignment when ensuring consumers receive the same ones.
+- [X] KeyAssignmentRulesInv: Ensures the rules of key assignment are never violated. The two rules relevant for the model are: 1) validator A cannot assign consumer key K to consumer chain X if there is already a validator B (B!=A)
+using K on the provider, and 2) validator A cannot assign consumer key K to consumer chain X if there is already a validator B using K on X
+
+
 Invariants can also be model-checked by Apalache, using this command:
 ```
 quint verify --invariant ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv \
@@ -114,3 +130,5 @@ The available sanity checks are:
 - CanTimeoutConsumer
 - CanSendVscPackets
 - CanSendVscMaturedPackets
+- CanAssignConsumerKey (only with `--step stepKeyAssignment`)
+- CanHaveConsumerAddresses (only with `--step stepKeyAssignment`)

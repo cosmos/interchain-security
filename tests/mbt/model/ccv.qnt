@@ -1,6 +1,7 @@
 // -*- mode: Bluespec; -*-
 module ccv_types {
     import Time.* from "./libraries/Time"
+    import extraSpells.* from "./libraries/extraSpells"
 
     type Node = str
     type Chain = str
@@ -10,6 +11,11 @@ module ccv_types {
     type Height = int
     // a list of validator sets per blocks, ordered by recency
     type VotingPowerHistory = List[ValidatorSet]
+
+    // For key assignment, to differentiate Nodes
+    // (on the provider) from the assigned
+    // keys/addresses on consumers
+    type ConsumerAddr = str
 
     type VscPacket =
         {   
@@ -240,6 +246,7 @@ module ccv {
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
     import ccv_types.*
+    import ccv_utils.* from "./ccv_utils"
   
 
     // ===================
@@ -388,7 +395,7 @@ module ccv {
                 }
             } else {
                 // the packet has not timed out, so receive it on the consumer
-                val result = recvPacketOnConsumer(currentState, receiver, packet)
+                val result = recvPacketOnConsumer(currentState, receiver, packet, UnbondingPeriodPerChain.get(receiver))
                 val tmpState = result.newState
                 if (result.hasError()) {
                     (result, false)
@@ -421,23 +428,36 @@ module ccv {
         // check for vsc timeouts
         val timedOutConsumers = getRunningConsumers(currentProviderState).filter(
             consumer => 
-            val res = TimeoutDueToVscTimeout(currentState, consumer)
+            val res = TimeoutDueToVscTimeout(currentState, consumer, VscTimeout)
             res._1
         )
         
+        // for each consumer chain, apply the key assignment to the current validator set
+        val currentValSets = ConsumerChains.mapBy(
+            (consumer) => 
+            currentProviderState.applyKeyAssignmentToValSet(
+                consumer, 
+                currentProviderState.chainState.currentValidatorSet
+            )
+        )
+        // store the current validator set with the key assignments applied in the history
+        val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
+            (consumer) => 
+            currentProviderState.keyAssignedValSetHistory
+                .getOrElse(consumer, List()) // get the existing history (empty list if no history yet)
+                .prepend(currentValSets.get(consumer)) // prepend the current validator set with key assignments applied
+        )
 
         // run the shared core chainState logic
         val newChainState = currentProviderState.chainState.endAndBeginBlockShared(timeAdvancement)
-        val providerStateAfterTimeAdvancement = currentProviderState.with(
-            "chainState", newChainState
-        )
-
+        val providerStateAfterTimeAdvancement = 
+            {...currentProviderState, chainState: newChainState, keyAssignedValSetHistory: newKeyAssignedValSetHistory}
         val tmpState = currentState.with(
             "providerState", providerStateAfterTimeAdvancement
         )
         
 
-        // send vsc packets
+        // send vsc packets (will be a noop if no sends are necessary)
         val providerStateAfterSending =
             // if currentBlockHeight is a multiple of BlocksPerEpoch, send VscPackets
             if (providerStateAfterTimeAdvancement.chainState.currentBlockHeight % BlocksPerEpoch == 0) {
@@ -466,19 +486,21 @@ module ccv {
         if (err != "") {
             Err(err)
         } else {
-            // for each consumer we just set to running, set its initial validator set to be the current one on the provider.
+            // for each consumer we just set to running, set its initial validator set to be the current one on the provider...
             val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
             val newConsumerStateMap =
                 tmpState.consumerStates.keys().mapBy(
                     (consumer) => 
                     if (consumersToStart.contains(consumer)) {
+                        // ...modified by the key assignments for the consumer
+                        val consValSet = applyKeyAssignmentToValSet(providerStateAfterConsumerAdvancement, consumer, valSet)
                         val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
                         val newConsumerState: ConsumerState = currentConsumerState.with(
                             "chainState", currentConsumerState.chainState.with(
-                                "currentValidatorSet", valSet
+                                "currentValidatorSet", consValSet
                             ).with(
                                 "votingPowerHistory",
-                                List(valSet)
+                                List(consValSet)
                             ).with(
                                 "lastTimestamp", 
                                 providerStateAfterConsumerAdvancement.chainState.lastTimestamp
@@ -555,36 +577,21 @@ module ccv {
             }
     }
 
-    // ===================
-    // UTILITY FUNCTIONS
-    // which do not hold the core logic of the protocol, but are still part of it
-    // ===================
-
-    // Returns the new ConsumerStatusMap according to the consumers to stop
-    // and the consumers to time out.
-    // If a consumer is both stopped and timed out, it will be timed out.
-    // The second return is an error string: If it is not equal to "",
-    // it contains an error message, and the first return should be ignored.
-    pure def stopConsumers(
-        currentConsumerStatusMap: Chain -> str,
-        consumersToStop: Set[Chain],
-        consumersToTimeout: Set[Chain]): (Chain -> str, str) = {
-            val runningConsumers = currentConsumerStatusMap.keys().filter(
-                chain => currentConsumerStatusMap.get(chain) == RUNNING
-            )
-            // all consumers to stop must be running right now, else we have an error
-            if (consumersToStop.exclude(runningConsumers).size() > 0) {
-                (currentConsumerStatusMap, "Cannot stop a consumer that is not running")
+    // Validator providerNode assigns their address for the consumer to be the consumerAddress.
+    pure def assignConsumerKey(currentState: ProtocolState, consumer: Chain, providerNode: Node, consumerAddr: ConsumerAddr): Result = {
+        // rule 1: validator A cannot assign consumer key K to consumer chain X
+        // if there is already a validator B (B!=A) using K on the provider
+        pure val provCurValSet = currentState.providerState.chainState.currentValidatorSet
+        if (provCurValSet.keys().exists(node => node != providerNode and node == consumerAddr)) {
+            Err("validator A cannot assign consumer key K to consumer chain X
+            if there is already a validator B (B!=A) using K on the provider")
+        } else {
+            // rule 2: validator A cannot assign consumer key K to consumer chain X if
+            // there is already a validator B using K on X
+            pure val valByConsAddr = currentState.providerState.consumerAddrToValidator.getOrElse(consumer, Map())
+            if (valByConsAddr.keys().contains(consumerAddr)) {
+                Err("consumer key is already in use on the consumer chain")
             } else {
-                val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
-                    (chain) => 
-                    if (consumersToTimeout.contains(chain)) {
-                        TIMEDOUT
-                    } else if (consumersToStop.contains(chain)) {
-                        STOPPED
-                    } else {
-                        currentConsumerStatusMap.get(chain)
-                    }
                 // this key can be assigned
                 
                 // get the old assigned key
@@ -623,277 +630,37 @@ module ccv {
                         "consumersWithAddrAssignmentChangesInThisEpoch", consumersWithAddrAssignmentChangesInThisEpoch
                     )
                 )
-                (newConsumerStatusMap, "")
-            }
-        }
-        
-    // Returns the new ConsumerStatusMap according to the consumers to start.
-    // The second return is an error string: If it is not equal to "",
-    // it contains an error message, and the first return should be ignored.
-    pure def startConsumers(
-        currentConsumerStatusMap: Chain -> str,
-        consumersToStart: Set[Chain]): (Chain -> str, str) = {
-            val nonConsumers = currentConsumerStatusMap.keys().filter(
-                chain => currentConsumerStatusMap.get(chain) == NOT_CONSUMER
-            )
-            // all consumers to start must be nonConsumers right now, otherwise we have an error
-            if (consumersToStart.exclude(nonConsumers).size() > 0) {
-                (currentConsumerStatusMap, "cannot start a consumer that is stopped or already a consumer")
-            } else {
-                val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
-                    (chain) => 
-                    if (consumersToStart.contains(chain)) {
-                        RUNNING
-                    } else {
-                        currentConsumerStatusMap.get(chain)
-                    }
-                )
-                (newConsumerStatusMap, "")
-            }
-        }
-
-    pure def StartStopConsumers(
-        currentConsumerStatusMap: Chain -> str,
-        consumersToStart: Set[Chain],
-        consumersToStop: Set[Chain],
-        consumersToTimeout: Set[Chain]
-    ): (Chain -> str, str) = {
-        // check if any consumer is both started and stopped
-        if (consumersToStart.intersect(consumersToStop).size() > 0) {
-            (currentConsumerStatusMap, "Cannot start and stop a consumer at the same time")
-        } else {
-            val res1 = currentConsumerStatusMap.startConsumers(consumersToStart)
-            val newConsumerStatus = res1._1
-            val err1 = res1._2
-            val res2 = newConsumerStatus.stopConsumers(consumersToStop, consumersToTimeout)
-            val err2 = res2._2
-            if (err1 != "") {
-                (currentConsumerStatusMap, err1)
-            } else if (err2 != "") {
-                (currentConsumerStatusMap, err2)
-            } else {
-                (res2._1, "")
-            }
-        }
-    }
-
-
-    // Takes the currentValidatorSet and puts it as the newest set of the voting history
-    pure def enterCurValSetIntoBlock(chainState: ChainState): ChainState = {
-        chainState.with(
-            "votingPowerHistory", chainState.votingPowerHistory.prepend(
-                chainState.currentValidatorSet
-            )
-        )
-    }
-
-    // Advances the timestamp in the chainState by timeAdvancement
-    pure def advanceTime(chainState: ChainState, timeAdvancement: Time): ChainState = 
-    {
-        ...chainState,
-        lastTimestamp: chainState.runningTimestamp,
-        runningTimestamp: chainState.runningTimestamp + timeAdvancement,
-    }
-
-    // common logic to update the chain state, used by both provider and consumers.
-    pure def endAndBeginBlockShared(chainState: ChainState, timeAdvancement: Time): ChainState = {
-        chainState.enterCurValSetIntoBlock().advanceTime(timeAdvancement)
-    }
-
-    // returns the providerState with the following modifications:
-    // * sends VscPackets to all running consumers, using the provided timestamp as sending time
-    // * increments the runningVscId
-    // This should only be called when the provider chain is ending a block,
-    // and only when the running validator set is considered to have changed
-    // and there is a consumer to send a packet to.
-    pure def sendVscPackets(providerState: ProviderState, sendingTimestamp: Time): ProviderState = {
-        val newSentPacketsPerConsumer = ConsumerChains.mapBy(
-            (consumer) => 
-            // if validator set changed and the consumer is running, send a packet
-            if (providerState.providerValidatorSetChangedInThisBlock and 
-                isRunningConsumer(consumer, providerState)) {
-                List({
-                        id: providerState.runningVscId,
-                        validatorSet: providerState.chainState.currentValidatorSet,
-                        sendingTime: sendingTimestamp,
-                        timeoutTime: sendingTimestamp + CcvTimeout.get(PROVIDER_CHAIN)
-                })
-            } else {
-                List()
-            }
-        )
-        val newOutstandingPacketsToConsumer = ConsumerChains.mapBy(
-                (consumer) => 
-                providerState.outstandingPacketsToConsumer.get(consumer).concat(
-                    newSentPacketsPerConsumer.get(consumer)
-                )
-            )
-        val newSentVscPackets = ConsumerChains.mapBy(
-                    (consumer) => 
-                    providerState.sentVscPacketsToConsumer.get(consumer).concat(
-                        newSentPacketsPerConsumer.get(consumer)
+                
+                pure val newvalidatorToConsumerAddr = currentState.providerState.validatorToConsumerAddr.put(
+                    consumer,
+                    currentState.providerState.validatorToConsumerAddr.getOrElse(consumer, Map()).put(
+                        providerNode,
+                        consumerAddr
                     )
                 )
-        {
-            ...providerState,
-            outstandingPacketsToConsumer: newOutstandingPacketsToConsumer,
-            sentVscPacketsToConsumer: newSentVscPackets,
-            providerValidatorSetChangedInThisBlock: false,
-            runningVscId: providerState.runningVscId + 1,
-        }
-    }
 
-    // receives a given packet (sent by the provider) on the consumer. The arguments are the consumer chain that is receiving the packet, and the packet itself.
-    // To receive a packet, modify the running validator set (not the one entered into the block yet,
-    // but the candidate that would be put into the block if it ended now)
-    // and store the maturation time for the packet.
-    pure def recvPacketOnConsumer(currentState: ProtocolState, receiver: Chain, packet: VscPacket): Result = {
-        if(not(isRunningConsumer(receiver, currentState.providerState))) {
-            Err("Receiver is not currently a consumer - must have 'running' status!")
-        } else {
-            // update the running validator set, but not the history yet,
-            // as that only happens when the next block is started
-            val currentConsumerState: ConsumerState = currentState.consumerStates.get(receiver)
-            val newConsumerState: ConsumerState = 
-                {
-                    ...currentConsumerState,
-                    chainState: currentConsumerState.chainState.with(
-                        "currentValidatorSet", packet.validatorSet
-                    ),
-                    maturationTimes: currentConsumerState.maturationTimes.append(
-                        (
-                            packet, 
-                            currentConsumerState.chainState.runningTimestamp + UnbondingPeriodPerChain.get(receiver)
-                        )
-                    ),
-                    receivedVscPackets: currentConsumerState.receivedVscPackets.prepend(packet)
-                }
-            val newConsumerStates = currentState.consumerStates.set(receiver, newConsumerState)
-            val newState = currentState.with(
-                "consumerStates", newConsumerStates
-            )
-            Ok(newState)
-        }
-    }
+                pure val newconsumerAddrToValidator = currentState.providerState.consumerAddrToValidator.put(
+                    consumer,
+                    currentState.providerState.consumerAddrToValidator.getOrElse(consumer, Map()).put(
+                        consumerAddr,
+                        providerNode
+                    )
+                )
 
-    // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
-    // To receive a packet, add it to the list of received maturations.
-    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
-        if (not(isRunningConsumer(sender, currentState.providerState))) {
-            Err("Sender is not currently a consumer - must have 'running' status!")
-        } else if (currentState.providerState.sentVscPacketsToConsumer.get(sender).head().id != packet.id) {
-            // the packet is not the oldest sentVscPacket, something went wrong
-            Err("Received maturation is not for the oldest sentVscPacket")
-        } else {
-            val currentReceivedMaturations = currentState.providerState.receivedMaturations
-            val newReceivedMaturations = currentReceivedMaturations.union(Set(packet))
-            val newProviderState = currentState.providerState.with(
-                "receivedMaturations", newReceivedMaturations
-            )
-            // prune the sentVscPacket
-            val newSentVscPacket = currentState.providerState.sentVscPacketsToConsumer.get(sender).tail()
-            val newState = currentState.with(
-                "providerState", 
-                    {...newProviderState,
-                    sentVscPacketsToConsumer: currentState.providerState.sentVscPacketsToConsumer.set(sender, newSentVscPacket)
-                    }
-            )
-            Ok(newState)
-        }
-    }
+                pure val newProviderState = tmpStateAfterKeyAssignmentReplacement.providerState.with(
+                    "validatorToConsumerAddr", newvalidatorToConsumerAddr
+                ).with(
+                    "consumerAddrToValidator", newconsumerAddrToValidator
+                )
 
-    // removes the oldest outstanding packet from the consumer. on-chain, this would happen when the packet is acknowledged.
-    // only the oldest packet can be removed, since we model ordered channels.
-    pure def removeOutstandingPacketFromConsumer(currentState: ProtocolState, sender: Chain): ProtocolState = {
-        val currentOutstandingPackets = currentState.consumerStates.get(sender).outstandingPacketsToProvider
-        val newOutstandingPackets = currentOutstandingPackets.tail()
-        val newConsumerState = currentState.consumerStates.get(sender).with(
-            "outstandingPacketsToProvider", newOutstandingPackets
-        )
-        val newConsumerStates = currentState.consumerStates.set(sender, newConsumerState)
-        val newState = currentState.with(
-            "consumerStates", newConsumerStates
-        )
-        newState
-    }
-
-    // removes the oldest outstanding packet (to the given consumer) from the provider.
-    // on-chain, this would happen when the packet is acknowledged.
-    // only the oldest packet can be removed, since we model ordered channels.
-    pure def removeOutstandingPacketFromProvider(currentState: ProtocolState, receiver: Chain): ProtocolState = {
-        val currentOutstandingPackets = currentState.providerState.outstandingPacketsToConsumer.get(receiver)
-        val newOutstandingPackets = currentOutstandingPackets.tail()
-        val newProviderState = currentState.providerState.with(
-            "outstandingPacketsToConsumer", 
-            currentState.providerState.outstandingPacketsToConsumer.set(receiver, newOutstandingPackets)
-        )
-        val newState = currentState.with(
-            "providerState", newProviderState
-        )
-        newState
-    }
-
-    // Returns a ProtocolState where the current validator set on the provider is set to 
-    // newValidatorSet.
-    pure def setProviderValidatorSet(currentState: ProtocolState, newValidatorSet: ValidatorSet): ProtocolState = {
-        pure val newChainState = currentState.providerState.chainState.with(
-            "currentValidatorSet", newValidatorSet
-        )
-        currentState.with(
-            "providerState", 
-                currentState.providerState.with(
-                    "chainState", newChainState
-            )
-        )
-    }
-
-    // Returns true if the given chain is currently a running consumer, false otherwise.
-    pure def isRunningConsumer(chain: Chain, providerState: ProviderState): bool = {
-        val status = providerState.consumerStatus.get(chain)
-        status == RUNNING
-    }
-
-    // Returns the set of all consumer chains that currently have the status RUNNING.
-    pure def getRunningConsumers(providerState: ProviderState): Set[Chain] = {
-        providerState.consumerStatus.keys().filter(
-            chain => providerState.consumerStatus.get(chain) == RUNNING
-        )
-    }
-
-    // Returns the set of all consumer chains that currently have the status NOT_CONSUMER.
-    pure def getNonConsumers(providerState: ProviderState): Set[Chain] = {
-        providerState.consumerStatus.keys().filter(
-            chain => providerState.consumerStatus.get(chain) == NOT_CONSUMER
-        )
-    }
-
-    // Returns whether the consumer has timed out due to the VscTimeout, and an error message.
-    // If the second return is not equal to "", the first return should be ignored.
-    // If it is equal to "", the first return will be true if the consumer has timed out and should be dropped,
-    // or false otherwise.
-    pure def TimeoutDueToVscTimeout(currentState: ProtocolState, consumer: Chain): (bool, str) =
-        // check for errors: the consumer is not running
-        if (not(isRunningConsumer(consumer, currentState.providerState))) {
-            (false, "Consumer is not currently a consumer - must have 'running' status!")
-        } else {
-            val providerState = currentState.providerState
-            val consumerState: ConsumerState = currentState.consumerStates.get(consumer)
-
-            // has a packet been sent on the provider more than VscTimeout ago, but we have not received an answer since then?
-            val sentVscPacketsToConsumer = providerState.sentVscPacketsToConsumer.get(consumer)
-            if(sentVscPacketsToConsumer.length() > 0) {
-                val oldestSentVscPacket = sentVscPacketsToConsumer.head() // if length is 0, this is undefined, but we check for this before we use it
-                if(oldestSentVscPacket.sendingTime + VscTimeout < providerState.chainState.runningTimestamp) {
-                    (true, "")
-                } else {
-                    // no timeout yet, it has not been VscTimeout since that packet was sent
-                    (false, "")
-                }
-            } else {
-                // no packet has been sent yet, so no timeout
-                (false, "")
+                Ok(
+                    tmpStateAfterKeyAssignmentReplacement.with(
+                        "providerState", newProviderState
+                    )
+                )
             }
         }
+    }
 
     // ===================
     // ASSUMPTIONS ON MODEL PARAMETERS

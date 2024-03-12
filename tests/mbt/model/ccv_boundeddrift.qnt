@@ -1,6 +1,7 @@
 module ccv_boundeddrift {
     import ccv_model.* from "ccv_model"
     import ccv_types as Ccvt from "ccv"
+    import ccv_utils.* from "ccv_utils"
     import ccv from "ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
@@ -32,7 +33,7 @@ module ccv_boundeddrift {
 
     // Given the name of a chain, gets a set with the chain states of all other chains.
     def GetOtherChainStates(advancingChain: Ccvt::Chain): Set[Ccvt::ChainState] =
-        val runCons = ccv::getRunningConsumers(currentState.providerState)
+        val runCons = getRunningConsumers(currentState.providerState)
         if (advancingChain == Ccvt::PROVIDER_CHAIN) {
             runCons.map(c => currentState.consumerStates.get(c).chainState)
         } else {
@@ -48,7 +49,7 @@ module ccv_boundeddrift {
         }
 
     def GetRunningChainStates(): Set[Ccvt::ChainState] = 
-        val runCons = ccv::getRunningConsumers(currentState.providerState)
+        val runCons = getRunningConsumers(currentState.providerState)
         val consumerChainStates = runCons.map(c => currentState.consumerStates.get(c).chainState)
         consumerChainStates.union(Set(currentState.providerState.chainState))
 
@@ -80,11 +81,16 @@ module ccv_boundeddrift {
             val consumerStatus = currentState.providerState.consumerStatus
             nondet consumersToStart = oneOf(nonConsumers.powerset())
             // make it so we stop consumers only with small likelihood:
-            nondet stopConsumers = oneOf(1.to(100))
-            nondet consumersToStop = if (stopConsumers <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
+            nondet stopConsumersRand = oneOf(1.to(100))
+            nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
             nondet timeAdvancement = oneOf(possibleAdvancements)
             EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
         }
+    }
+
+    action stepBoundedDriftKeyAssignment = any {
+        stepBoundedDrift,
+        nondetKeyAssignment,
     }
 
     // INVARIANT

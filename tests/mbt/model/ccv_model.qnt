@@ -4,6 +4,7 @@ module ccv_model {
     import ccv_types.* from "./ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
+    import ccv_utils.* from "./ccv_utils"
 
     pure val consumerChainList = List("consumer1", "consumer2", "consumer3")
     pure val consumerChains = consumerChainList.toSet()
@@ -15,6 +16,8 @@ module ccv_model {
     pure val epochLength = 3
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
+    // possible consumer addresses that nodes can assign their key to
+    pure val consumerAddresses = Set("consAddr1", "consAddr2", "consAddr3", "consAddr4", "consAddr5", "consAddr6", "consAddr7", "consAddr8", "consAddr9", "consAddr10")
     pure val InitialValidatorSet = nodes.mapBy(node => 100)
 
     import ccv(
@@ -33,6 +36,7 @@ module ccv_model {
         TrustingPeriodPerChain: Chain -> Time,
         ConsumerChains: Set[Chain],
         Nodes: Set[Node],
+        ConsumerAddresses: Set[ConsumerAddr],
         InitialValidatorSet: Node -> int,
         BlocksPerEpoch: int,
     }
@@ -59,6 +63,7 @@ module ccv_model {
             consumersToStop: Set[Chain],
             validator: Node,
             changeAmount: int,
+            consumerAddr: ConsumerAddr,
         }
     
 
@@ -73,7 +78,7 @@ module ccv_model {
     // otherwise connections will break down.
     pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour)
 
-    pure def emptyAction =
+    pure def emptyAction: Action =
             {
                 kind: "",
                 consumerChain: "",
@@ -82,6 +87,7 @@ module ccv_model {
                 consumersToStop: Set(),
                 validator: "",
                 changeAmount: 0,
+                consumerAddr: "",
             }
 
 
@@ -109,6 +115,8 @@ module ccv_model {
             ).with(
                 "currentValidatorSet", InitialValidatorSet
             )
+        ).with(
+            "keyAssignedValSetHistory", ConsumerChains.mapBy(chain => List(InitialValidatorSet))
         )
         currentState' = {
             providerState: providerStateWithConsumers,
@@ -184,6 +192,7 @@ module ccv_model {
             params' = params,
         }
 
+
      // stepCommon is the core functionality of steps that does not have anything to do with time.
     action stepCommon = any {
         nondet node = oneOf(nodes)
@@ -253,6 +262,17 @@ module ccv_model {
     // UTILITY FUNCTIONS
     // ==================
 
+    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
+        valSet.keys().fold(
+            Map(),
+            (acc, node) => 
+                if (valSet.get(node) == 0) {
+                    acc
+                } else {
+                    acc.put(node, valSet.get(node))
+                }
+        )
+
     pure def oldest(packets: Set[VscPacket]): VscPacket =
         val newestPossiblePacket: VscPacket = {
             id: 0,
@@ -314,9 +334,11 @@ module ccv_model {
     // Every validator set on any consumer chain MUST either be or have been 
     // a validator set on the provider chain.
     val ValidatorSetHasExistedInv =
-        runningConsumers.forall(chain =>
+        runningConsumers.forall(chain => // for all running consumers
             currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
+                // go through all its historical and current validator sets
                 validatorSet => providerValidatorHistory.toSet().contains(validatorSet)
+                // and check that they are also historical or current validator sets on the provider
             )
         )
 
@@ -337,10 +359,6 @@ module ccv_model {
             consumer => currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
                 packet => packet.validatorSet == providerValSetInCurBlock
             )
-            // or the consumer was just started, which we detect by the consumer having a timestamp of 0
-            // and the consumer having the validator set that was just sent in the block
-            or 
-            (currentState.consumerStates.get(consumer).chainState.lastTimestamp == 0 and currentState.consumerStates.get(consumer).chainState.currentValidatorSet == providerValSetInCurBlock)
         )
 
     // Every consumer chain receives the same sequence of 
@@ -387,8 +405,11 @@ module ccv_model {
     val lastTimeAdvancement = trace[trace.length()-1].timeAdvancement
     val lastBlockTime = currentState.consumerStates.get(ConsumerWithPotentialMaturations).chainState.lastTimestamp - lastTimeAdvancement
     val MatureOnTimeInv =
+        // if a consumer ended a block
         MaturationPrecondition
         implies
+        // then all matured packets need to have been processed and removed from the packets
+        // waiting to mature
         currentState.consumerStates.get(ConsumerWithPotentialMaturations).maturationTimes.toSet().forall(
             pair => 
             val maturationTime = pair._2 
@@ -405,7 +426,7 @@ module ccv_model {
     val EventuallyMatureOnProviderInv =
         runningConsumers.forall(
             consumer => {
-                val sentPackets = currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet()
+                val sentPackets = currentState.providerState.sentVscPacketsToConsumer.getOrElse(consumer, List()).toSet()
                 sentPackets.forall(
                     packet =>
                         // consumer still has time to respond
@@ -416,6 +437,7 @@ module ccv_model {
                 )
             }
         )
+
 
     // =================
     // SANITY CHECKS
@@ -448,7 +470,7 @@ module ccv_model {
     val CanSendVscPackets =
         not(ConsumerChains.exists(
             consumer => 
-                currentState.providerState.outstandingPacketsToConsumer.get(consumer).length() > 0
+                currentState.providerState.outstandingPacketsToConsumer.getOrElse(consumer, List()).length() > 0
         ))
 
     val CanReceiveVscPackets =
@@ -516,7 +538,7 @@ module ccv_model {
                     // consumer1 was started
                     assert(currentState.providerState.consumerStatus.get("consumer1") == RUNNING),
                     // but no packet was sent to consumer 1
-                    assert(currentState.providerState.outstandingPacketsToConsumer.get("consumer1").length() == 0),
+                    assert(currentState.providerState.outstandingPacketsToConsumer.getOrElse("consumer1", List()).length() == 0),
                     // the validator set on the provider was entered into the history
                     assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 150), InitialValidatorSet)),
                     // change voting power on provider again
