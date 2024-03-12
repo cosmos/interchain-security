@@ -23,7 +23,6 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	defer ctrl.Finish()
 
 	pk.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
-	pk.SetKeyAssignmentReplacement(ctx, chainID, providerAddr, consumerKey, 100)
 
 	consumerPubKey, found := pk.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 	require.True(t, found, "consumer pubkey not found")

@@ -149,3 +149,15 @@ This param would allow provider binaries to panic deterministically in the event
 
 `RetryDelayPeriod` exists on the consumer for **ICS versions >= v3.2.0** (introduced by the implementation of [ADR-008](../adrs/adr-008-throttle-retries.md)) and is the period at which the consumer retries to send a `SlashPacket` that was rejected by the provider.
 
+
+## Epoch Parameters
+
+### BlocksPerEpoch
+`BlocksPerEpoch` exists on the provider for **ICS versions >= 3.3.0** (introduced by the implementation of [ADR-014](../adrs/adr-014-epochs.md))
+and corresponds to the number of blocks that constitute an epoch. This param is set to 600 by default. Assuming we need 6 seconds to
+commit a block, the duration of an epoch corresponds to 1 hour. This means that a `VSCPacket` would be sent to a consumer
+chain once at the end of every epoch, so once every 600 blocks. This parameter can be adjusted via a governance proposal,
+however careful consideration is needed so that `BlocksPerEpoch` is not too large. A large `BlocksPerEpoch` could lead to a delay
+of `VSCPacket`s and hence potentially lead to [unbonding pausing](https://informal.systems/blog/learning-to-live-with-unbonding-pausing).
+For setting `BlocksPerEpoch`, we also need to consider potential slow chain upgrades that could delay the sending of a 
+`VSCPacket`, as well as potential increases in the time it takes to commit a block (e.g., from 6 seconds to 30 seconds).

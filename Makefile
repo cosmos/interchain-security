@@ -132,6 +132,8 @@ verify-models:
 	quint test tests/mbt/model/ccv_test.qnt;\
 	quint test tests/mbt/model/ccv_model.qnt;\
 	quint run --invariant "all{ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" tests/mbt/model/ccv_model.qnt --max-steps 200 --max-samples 200
+	cd tests/mbt/model;\
+	../run_invariants.sh
 
 
 
