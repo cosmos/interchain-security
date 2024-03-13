@@ -255,7 +255,7 @@ module ccv_model {
     // As a a `Run`, it is only used in tests, not during simulation or verification.
     run EndProviderEpoch(
         timeAdvancement: Time,
-        consumersToStart: Set[Chain],
+        consumersToStart: Set[ConsumerAdditionMsg],
         consumersToStop: Set[Chain]
     ): bool =
         epochLength.reps(
