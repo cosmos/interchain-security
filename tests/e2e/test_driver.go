@@ -80,8 +80,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		td.testCfg.submitConsumerAdditionProposal(action, td.target, td.verbose)
 	case SubmitConsumerRemovalProposalAction:
 		td.testCfg.submitConsumerRemovalProposal(action, td.target, td.verbose)
-	case SubmitLegacyTextProposalAction:
-		td.testCfg.submitLegacyTextProposal(action, td.target, td.verbose)
+	case SubmitEnableTransfersProposalAction:
+		td.testCfg.submitEnableTransfersProposalAction(action, td.target, td.verbose)
 	case VoteGovProposalAction:
 		td.testCfg.voteGovProposal(action, td.target, td.verbose)
 	case StartConsumerChainAction:

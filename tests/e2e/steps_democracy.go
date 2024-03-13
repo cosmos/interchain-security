@@ -75,10 +75,11 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 		},
 		{
 			// whitelisted legacy proposal can only handle ibctransfer.SendEnabled/ReceiveEnabled
-			Action: SubmitLegacyTextProposalAction{
+			Action: SubmitEnableTransfersProposalAction{
 				Chain:   ChainID(consumerName),
 				From:    ValidatorID("alice"),
 				Deposit: 10000001,
+				Title:   "Enable IBC Send",
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
@@ -88,11 +89,11 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 					},
 					// confirm the
 					Proposals: &map[uint]Proposal{
-						1: TextProposal{
-							Deposit:     10000001,
-							Status:      strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-							Title:       "Test Proposal",
-							Description: "testing",
+						1: IBCTransferParamsProposal{
+							Deposit: 10000001,
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Title:   "Enable IBC Send",
+							Params:  IBCTransferParams{SendEnabled: true, ReceiveEnabled: true},
 						},
 					},
 				},
@@ -115,11 +116,11 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 					},
 					// Check that the prop passed
 					Proposals: &map[uint]Proposal{
-						1: TextProposal{
-							Deposit:     10000001,
-							Status:      strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-							Title:       "Test Proposal",
-							Description: "testing",
+						1: IBCTransferParamsProposal{
+							Deposit: 10000001,
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Title:   "Enable IBC Send",
+							Params:  IBCTransferParams{SendEnabled: true, ReceiveEnabled: true},
 						},
 					},
 				},

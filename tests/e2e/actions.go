@@ -390,24 +390,53 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
 }
 
-type SubmitLegacyTextProposalAction struct {
+type SubmitEnableTransfersProposalAction struct {
 	Chain   ChainID
 	From    ValidatorID
+	Title   string
 	Deposit uint
 }
 
-func (tr TestConfig) submitLegacyTextProposal(
-	action SubmitLegacyTextProposalAction,
+func (tr TestConfig) submitEnableTransfersProposalAction(
+	action SubmitEnableTransfersProposalAction,
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	// gov signed addres got by checking the gov module acc address in the test container
+	// interchain-security-cdd q auth module-account gov --node tcp://7.7.9.253:26658
+	template := `
+	{
+		"messages": [
+		 {
+		  "@type": "/ibc.applications.transfer.v1.MsgUpdateParams",
+		  "signer": "consumer10d07y265gmmuvt4z0w9aw880jnsr700jlh7295",
+		  "params": {
+		   "send_enabled": true,
+		   "receive_enabled": true
+		  }
+		 }
+		],
+		"metadata": "ipfs://CID",
+		"deposit": "%dstake",
+		"title": "%s",
+		"summary": "Enable transfer send",
+		"expedited": false
+	   }
+	`
+	jsonStr := fmt.Sprintf(template, action.Deposit, action.Title)
+
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	bz, err := target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json"),
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
 	cmd := target.ExecCommand(
 		tr.chainConfigs[action.Chain].BinaryName,
-		"tx", "gov", "submit-legacy-proposal",
-		"--type", "Text",
-		"--title", "Test Proposal",
-		"--description", "testing",
-		"--deposit", fmt.Sprintf("%dstake", action.Deposit),
+		"tx", "gov", "submit-proposal", "/params-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
@@ -417,17 +446,13 @@ func (tr TestConfig) submitLegacyTextProposal(
 		`-y`,
 	)
 
-	if verbose {
-		fmt.Println("submitLegacyTextProposal cmd:", cmd.String())
-	}
-
-	bz, err := cmd.CombinedOutput()
+	bz, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(action.Chain, 2, 10*time.Second)
+	tr.waitBlocks(action.Chain, 2, 60*time.Second)
 }
 
 type VoteGovProposalAction struct {

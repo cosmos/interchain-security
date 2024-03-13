@@ -118,18 +118,16 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				},
 			},
 		}},
-		"params-proposal": {ChainState{
+		"IBC trasfer update params": {ChainState{
 			ValBalances: &map[ValidatorID]uint{
 				ValidatorID("alice"): 9889999998,
 				ValidatorID("bob"):   9960000001,
 			},
 			Proposals: &map[uint]Proposal{
-				1: ParamsProposal{
-					Deposit:  10000001,
-					Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
-					Subspace: "staking",
-					Key:      "MaxValidators",
-					Value:    "105",
+				1: IBCTransferParamsProposal{
+					Deposit: 10000001,
+					Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+					Params:  IBCTransferParams{true, true},
 				},
 			},
 		}},

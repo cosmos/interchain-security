@@ -9,8 +9,6 @@ import (
 
 func IsProposalWhitelisted(content v1beta1.Content) bool {
 	switch c := content.(type) {
-	case *v1beta1.TextProposal:
-		return true
 	case *proposal.ParameterChangeProposal:
 		return isLegacyParamChangeWhitelisted(c.Changes)
 	default:
@@ -32,6 +30,7 @@ type legacyParamChangeKey struct {
 	Subspace, Key string
 }
 
+// these parameters don't exist in the consumer app -- keeping them as an
 var LegacyWhitelistedParams = map[legacyParamChangeKey]struct{}{
 	// ibc transfer
 	{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
@@ -40,12 +39,13 @@ var LegacyWhitelistedParams = map[legacyParamChangeKey]struct{}{
 }
 
 var WhiteListModule = map[string]struct{}{
-	"/cosmos.gov.v1.MsgUpdateParams":               {},
-	"/cosmos.bank.v1beta1.MsgUpdateParams":         {},
-	"/cosmos.staking.v1beta1.MsgUpdateParams":      {},
-	"/cosmos.distribution.v1beta1.MsgUpdateParams": {},
-	"/cosmos.mint.v1beta1.MsgUpdateParams":         {},
-	"/cosmos.gov.v1beta1.TextProposal":             {},
+	"/cosmos.gov.v1.MsgUpdateParams":                {},
+	"/cosmos.bank.v1beta1.MsgUpdateParams":          {},
+	"/cosmos.staking.v1beta1.MsgUpdateParams":       {},
+	"/cosmos.distribution.v1beta1.MsgUpdateParams":  {},
+	"/cosmos.mint.v1beta1.MsgUpdateParams":          {},
+	"/cosmos.gov.v1beta1.TextProposal":              {},
+	"/ibc.applications.transfer.v1.MsgUpdateParams": {},
 }
 
 func IsModuleWhiteList(typeUrl string) bool {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
@@ -23,7 +24,7 @@ type ChainState struct {
 	ProposedConsumerChains         *[]string
 	ValPowers                      *map[ValidatorID]uint
 	StakedTokens                   *map[ValidatorID]uint
-	Params                         *[]Param
+	IBCTransferParams              *IBCTransferParams
 	Rewards                        *Rewards
 	ConsumerChains                 *map[ChainID]bool
 	AssignedKeys                   *map[ValidatorID]string
@@ -44,6 +45,15 @@ type TextProposal struct {
 }
 
 func (p TextProposal) isProposal() {}
+
+type IBCTransferParamsProposal struct {
+	Title   string
+	Deposit uint
+	Status  string
+	Params  IBCTransferParams
+}
+
+func (ibct IBCTransferParamsProposal) isProposal() {}
 
 type ConsumerAdditionProposal struct {
 	Deposit       uint
@@ -101,6 +111,11 @@ type Param struct {
 	Value    string
 }
 
+type IBCTransferParams struct {
+	SendEnabled    bool `json:"send_enabled"`
+	ReceiveEnabled bool `json:"receive_enabled"`
+}
+
 func (tr TestConfig) getState(modelState State, verbose bool) State {
 	systemState := State{}
 	for k, modelState := range modelState {
@@ -142,9 +157,9 @@ func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainSt
 		chainState.StakedTokens = &representPowers
 	}
 
-	if modelState.Params != nil {
-		params := tr.getParams(chain, *modelState.Params)
-		chainState.Params = &params
+	if modelState.IBCTransferParams != nil {
+		params := tr.getIBCTransferParams(chain)
+		chainState.IBCTransferParams = &params
 	}
 
 	if modelState.Rewards != nil {
@@ -290,15 +305,6 @@ func (tr TestConfig) getStakedTokens(chain ChainID, modelState map[ValidatorID]u
 	return actualState
 }
 
-func (tr TestConfig) getParams(chain ChainID, modelState []Param) []Param {
-	actualState := []Param{}
-	for _, p := range modelState {
-		actualState = append(actualState, Param{Subspace: p.Subspace, Key: p.Key, Value: tr.getParam(chain, p)})
-	}
-
-	return actualState
-}
-
 func (tr TestConfig) getRewards(chain ChainID, modelState Rewards) Rewards {
 	receivedRewards := map[ValidatorID]bool{}
 
@@ -407,8 +413,17 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	// for legacy proposal types submitted using "tx submit-legacyproposal" (cosmos-sdk/v1/MsgExecLegacyContent)
 	propType := gjson.Get(string(bz), `proposal.messages.0.value.content.type`).String()
 	rawContent := gjson.Get(string(bz), `proposal.messages.0.value.content.value`)
+
+	// for current (>= v47) prop types submitted using "tx submit-proposal"
+	if propType == "" {
+		propType = gjson.Get(string(bz), `proposal.messages.0.type`).String()
+		rawContent = gjson.Get(string(bz), `proposal.messages.0.value`)
+	}
+
+	title := gjson.Get(string(bz), `proposal.title`).String()
 	deposit := gjson.Get(string(bz), `proposal.total_deposit.#(denom=="stake").amount`).Uint()
 	status := gjson.Get(string(bz), `proposal.status`).String()
 
@@ -473,28 +488,21 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 			Chain:    chain,
 			StopTime: int(stopTime.Milliseconds()),
 		}
-	case "/cosmos.params.v1beta1.ParameterChangeProposal":
-		// deprecated for all modules, keeping for posterity
-		return ParamsProposal{
-			Deposit:  uint(deposit),
-			Status:   status,
-			Subspace: rawContent.Get("changes.0.subspace").String(),
-			Key:      rawContent.Get("changes.0.key").String(),
-			Value:    rawContent.Get("changes.0.value").String(),
+	case "/ibc.applications.transfer.v1.MsgUpdateParams":
+		var params IBCTransferParams
+		if err := json.Unmarshal([]byte(rawContent.Get("params").String()), &params); err != nil {
+			log.Fatal("cannot unmarshal ibc-transfer params: ", err, "\n", string(bz))
 		}
-	case "cosmos-sdk/TextProposal":
-		title := rawContent.Get("title").String()
-		description := rawContent.Get("description").String()
 
-		return TextProposal{
-			Deposit:     uint(deposit),
-			Status:      status,
-			Title:       title,
-			Description: description,
+		return IBCTransferParamsProposal{
+			Deposit: uint(deposit),
+			Status:  status,
+			Title:   title,
+			Params:  params,
 		}
 	}
 
-	log.Fatal("unknown proposal type", string(bz))
+	log.Fatal("received unknosn proposal type: ", propType, "proposal JSON:", string(bz))
 
 	return nil
 }
@@ -624,6 +632,25 @@ func (tr TestConfig) getParam(chain ChainID, param Param) string {
 	value := gjson.Get(string(bz), `value`)
 
 	return value.String()
+}
+
+func (tr TestConfig) getIBCTransferParams(chain ChainID) IBCTransferParams {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+		"query", "ibc-transfer", "params",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	var params IBCTransferParams
+	if err := json.Unmarshal(bz, &params); err != nil {
+		log.Fatal("cannot unmarshal ibc-transfer params: ", err, "\n", string(bz))
+	}
+
+	return params
 }
 
 // getConsumerChains returns a list of consumer chains that're being secured by the provider chain,
