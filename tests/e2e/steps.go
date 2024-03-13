@@ -73,20 +73,25 @@ var slashThrottleSteps = concatSteps(
 	stepsStopChain("consu", 2),
 )
 
-var democracyRewardsSteps = concatSteps(
+// these tests start with transfer SendEnabled set to false
+// one of the steps will set SendEnabled to true
+var democracyUnregisteredDenomSteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
 	// delegation needs to happen so the first VSC packet can be delivered
 	stepsDelegate("democ"),
-	stepsDemocracy("democ"),
+	// the denom is not registered on the provider chain so it will not be distributed as rewards
+	stepsDemocracy("democ", false),
 )
 
-var democracySteps = concatSteps(
+// these tests start with transfer SendEnabled set to true
+var democracyRegisteredDenomSteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
 	// delegation needs to happen so the first VSC packet can be delivered
 	stepsDelegate("democ"),
-	stepsRewardDenomConsumer("democ"),
+	// the denom is registered on the provider chain so it will be distributed as rewards
+	stepsDemocracy("democ", true),
 )
 
 var multipleConsumers = concatSteps(
