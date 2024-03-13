@@ -884,17 +884,19 @@ module ccv {
     }
 
     pure def recvSlashPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: SlashPacket): Result = {
-        if (not(packet.downtime)) {
-            // if the packet is for double-sign, drop it without changing states
+        val providerVal = currentState.providerState.consumerAddrToValidator
+            .getOrElse(sender, Map())
+            // if there is no entry for that validator, there is no key assignment
+            .getOrElse(packet.validator, packet.validator)
+        // if the packet is for double-sign, drop it without changing states
+        if (not(packet.downtime) or 
+        // same if the validator is already jailed: no double-jailing!
+            not(providerVal.in(nonJailedNodes(currentState.providerState)))) {
             Ok(currentState)
         } else {
             val jailEndTime = ProviderBlockTime(currentState) + DowntimeJailTime
             // map the validator to its address on the provider
             // (in general, the validator is a consumer address and could be an assigned one)
-            val providerVal = currentState.providerState.consumerAddrToValidator
-                .getOrElse(sender, Map())
-                // if there is no entry for that validator, there is no key assignment
-                .getOrElse(packet.validator, packet.validator)
 
             val slashFactor = DowntimeSlashPercentage
             
@@ -905,8 +907,7 @@ module ccv {
 
             // if the validator did not have voting power of 0 or was already jailed before, the validator set will change due to the slash
             val valSetChanged = packet.downtime and 
-                                currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0 and 
-                                providerVal.in(nonJailedNodes(currentState.providerState))
+                                currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0 
 
             // add the consumer address to the list of acknowledged slashes
             // for the sender chain of this slash packet and indicate that we need to send a packet at endblock

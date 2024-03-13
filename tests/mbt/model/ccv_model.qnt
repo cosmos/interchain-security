@@ -795,8 +795,8 @@ module ccv_model {
                 nondet packet = oneOf(rcvdVscPackets.toSet())
                 val vscId = packet.id
                 val valSet = packet.validatorSet.keys()
-                // ...and picking one of the validators in the packet
-                nondet validator = oneOf(valSet)
+                // ...and picking one of the validators with non-zero power in the packet
+                nondet validator = oneOf(valSet.filter(node => packet.validatorSet.get(node) > 0))
                 // finally, choose whether to slash for downtime or double-signing
                 nondet isDowntime = oneOf(Set(true, false))
                 // then we can invoke the deterministic slash
