@@ -271,18 +271,19 @@ func (k Keeper) ComputePowerThreshold(ctx sdk.Context,
 		totalPower = totalPower + power
 	}
 
-	// sort by powers ascending
+	// sort by powers descending
 	sort.SliceStable(powers, func(i, j int) bool {
-		return powers[i] < powers[j]
+		return powers[i] > powers[j]
 	})
 
 	powerSum := sdk.ZeroDec()
 	for _, power := range powers {
 		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(power)))
-		if powerSum.Quo(sdk.NewDecFromInt(sdk.NewInt(totalPower))).GT(threshold) {
+		// FIXME: problematic with equal power
+		if powerSum.Quo(sdk.NewDecFromInt(sdk.NewInt(totalPower))).GTE(threshold) {
 			return power
 		}
 	}
 
-	panic("UpdateSoftOptOutThresholdPower should not reach this point. Incorrect logic!")
+	panic("...")
 }

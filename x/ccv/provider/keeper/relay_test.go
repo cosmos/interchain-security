@@ -672,6 +672,12 @@ func TestEndBlockVSU(t *testing.T) {
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
 	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(2)).AnyTimes()
 
+	for _, val := range lastValidators {
+		consAddr, _ := val.GetConsAddr()
+		// FIXME: probably `consAddr` is not needed
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).Return(val, true).AnyTimes()
+	}
+
 	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 

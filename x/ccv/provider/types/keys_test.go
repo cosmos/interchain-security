@@ -58,7 +58,6 @@ func getAllKeyPrefixes() []byte {
 		providertypes.ProposedConsumerChainByteKey,
 		providertypes.ConsumerValidatorBytePrefix,
 		providertypes.TopNBytePrefix,
-		providertypes.OptedInBytePrefix,
 		providertypes.ToBeOptedInBytePrefix,
 		providertypes.ToBeOptedOutBytePrefix,
 		providertypes.ConsumerRewardsAllocationBytePrefix,
