@@ -32,9 +32,9 @@ service Msg {
 
 
 message MsgAssignConsumerKey {
+  option (cosmos.msg.v1.signer) = "signer";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  option (cosmos.msg.v1.signer) = "signer";
 
 
   // The chain id of the consumer chain to assign a consensus public key to
@@ -56,9 +56,11 @@ message MsgAssignConsumerKeyResponse {}
 // MsgSubmitConsumerMisbehaviour defines a message that reports a light client attack,
 // also known as a misbehaviour, observed on a consumer chain
 message MsgSubmitConsumerMisbehaviour {
+  option (cosmos.msg.v1.signer) = "submitter";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  string submitter = 1;
+
+  string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // The Misbehaviour of the consumer chain wrapping 
   // two conflicting IBC headers 
   ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 2;
@@ -70,9 +72,11 @@ message MsgSubmitConsumerMisbehaviourResponse {}
 // MsgSubmitConsumerDoubleVoting defines a message that reports 
 // a double signing infraction observed on a consumer chain
 message MsgSubmitConsumerDoubleVoting {
+  option (cosmos.msg.v1.signer) = "submitter";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  string submitter = 1;
+
+  string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // The equivocation of the consumer chain wrapping 
   // an evidence of a validator that signed two conflicting votes
   tendermint.types.DuplicateVoteEvidence duplicate_vote_evidence = 2;
