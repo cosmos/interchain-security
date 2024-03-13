@@ -95,13 +95,13 @@ var stepChoices = map[string]StepChoice{
 	},
 	"democracy-reward": {
 		name:        "democracy-reward",
-		steps:       democracyRewardsSteps,
+		steps:       democracyRegisteredDenomSteps,
 		description: "democracy tests allowing rewards",
 		testConfig:  DemocracyTestConfig(true),
 	},
 	"democracy": {
 		name:        "democracy",
-		steps:       democracySteps,
+		steps:       democracyUnregisteredDenomSteps,
 		description: "democracy tests",
 		testConfig:  DemocracyTestConfig(false),
 	},
