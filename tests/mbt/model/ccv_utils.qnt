@@ -73,7 +73,7 @@ module ccv_utils {
     pure def AppendConsumerAddrToPrune(currentState: ProtocolState, oldConsAddr: ConsumerAddr, consumer: Chain): ProtocolState = {
         pure val vscId = currentState.providerState.runningVscId
         pure val consumerAddrsToPrune = currentState.providerState.consumerAddrsToPrune.getOrElse(consumer, Map())
-        pure val prevConsAddrs = consumerAddrsToPrune.getOrElse(oldConsAddr, Map()).getOrElse(vscId, [])
+        pure val prevConsAddrs = consumerAddrsToPrune.getOrElse(vscId, [])
 
         pure val newConsAddrsToPrune = consumerAddrsToPrune.put(vscId, prevConsAddrs.append(oldConsAddr))
 
