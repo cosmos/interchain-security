@@ -38,11 +38,10 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		keeper.SetOptedIn(
 			ctx,
 			chainID,
-			types.OptedInValidator{
-				ProviderAddr: val.Address,
-				BlockHeight:  ctx.BlockHeight(),
-				Power:        val.VotingPower,
-				PublicKey:    val.PubKey.Bytes(),
+			types.ConsumerValidator{
+				ProviderConsAddr: val.Address,
+				Power:            val.VotingPower,
+				//ConsumerPublicKey: val., FIXME
 			},
 		)
 

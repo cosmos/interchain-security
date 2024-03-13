@@ -666,46 +666,53 @@ func TestGetAllOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	expectedOptedInValidators := []types.OptedInValidator{
+	expectedOptedInValidators := []types.ConsumerValidator{
 		{
-			ProviderAddr: []byte("providerAddr1"),
-			BlockHeight:  1,
-			Power:        2,
-			PublicKey:    []byte{3},
+			ProviderConsAddr: []byte("providerAddr1"),
+			Power:            2,
+			ConsumerPublicKey: &tmprotocrypto.PublicKey{
+				Sum: &tmprotocrypto.PublicKey_Ed25519{
+					Ed25519: []byte{3},
+				},
+			},
 		},
 		{
-			ProviderAddr: []byte("providerAddr2"),
-			BlockHeight:  2,
-			Power:        3,
-			PublicKey:    []byte{4},
+			ProviderConsAddr: []byte("providerAddr2"),
+			Power:            3,
+			ConsumerPublicKey: &tmprotocrypto.PublicKey{
+				Sum: &tmprotocrypto.PublicKey_Ed25519{
+					Ed25519: []byte{4},
+				},
+			},
 		},
 		{
-			ProviderAddr: []byte("providerAddr3"),
-			BlockHeight:  3,
-			Power:        4,
-			PublicKey:    []byte{5},
+			ProviderConsAddr: []byte("providerAddr3"),
+			Power:            4,
+			ConsumerPublicKey: &tmprotocrypto.PublicKey{
+				Sum: &tmprotocrypto.PublicKey_Ed25519{
+					Ed25519: []byte{5},
+				},
+			},
 		},
 	}
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
 		providerKeeper.SetOptedIn(ctx, "chainID",
-			types.OptedInValidator{
-				ProviderAddr: expectedOptedInValidator.ProviderAddr,
-				BlockHeight:  expectedOptedInValidator.BlockHeight,
-				Power:        expectedOptedInValidator.Power,
-				PublicKey:    expectedOptedInValidator.PublicKey,
+			types.ConsumerValidator{
+				ProviderConsAddr:  expectedOptedInValidator.ProviderConsAddr,
+				Power:             expectedOptedInValidator.Power,
+				ConsumerPublicKey: expectedOptedInValidator.ConsumerPublicKey,
 			})
 	}
 
 	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "chainID")
 
 	// sort validators first to be able to compare
-	sortOptedInValidators := func(optedInValidators []types.OptedInValidator) {
+	sortOptedInValidators := func(optedInValidators []types.ConsumerValidator) {
 		sort.Slice(optedInValidators, func(i int, j int) bool {
 			a := optedInValidators[i]
 			b := optedInValidators[j]
-			return a.BlockHeight < b.BlockHeight ||
-				(a.BlockHeight == b.BlockHeight && bytes.Compare(a.ProviderAddr, b.ProviderAddr) < 0)
+			return bytes.Compare(a.ProviderConsAddr, b.ProviderConsAddr) < 0
 		})
 	}
 	sortOptedInValidators(expectedOptedInValidators)
@@ -718,17 +725,20 @@ func TestOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	optedInValidator := types.OptedInValidator{ProviderAddr: []byte("providerAddr"),
-		BlockHeight: 1,
-		Power:       2,
-		PublicKey:   []byte{3},
+	optedInValidator := types.ConsumerValidator{ProviderConsAddr: []byte("providerAddr"),
+		Power: 2,
+		ConsumerPublicKey: &tmprotocrypto.PublicKey{
+			Sum: &tmprotocrypto.PublicKey_Ed25519{
+				Ed25519: []byte{3},
+			},
+		},
 	}
 
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderConsAddr)))
 	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator)
-	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
-	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr))
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderConsAddr)))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderConsAddr))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderConsAddr)))
 }
 
 func TestGetAllToBeOptedIn(t *testing.T) {

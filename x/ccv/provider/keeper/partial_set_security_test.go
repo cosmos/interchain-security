@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	"testing"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -33,9 +34,12 @@ func TestHandleOptIn(t *testing.T) {
 	require.False(t, providerKeeper.IsToBeOptedOut(ctx, "chainID", providerAddr))
 
 	// if validator (`providerAddr`) is already opted in, then the validator cannot be opted in
-
 	providerKeeper.SetOptedIn(ctx, "chainID",
-		types.OptedInValidator{ProviderAddr: providerAddr.ToSdkConsAddr(), BlockHeight: 1, Power: 1, PublicKey: []byte{1}})
+		types.ConsumerValidator{ProviderConsAddr: providerAddr.ToSdkConsAddr(), Power: 1, ConsumerPublicKey: &crypto.PublicKey{
+			Sum: &crypto.PublicKey_Ed25519{
+				Ed25519: []byte{1},
+			},
+		}})
 	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, nil)
 	require.False(t, providerKeeper.IsToBeOptedIn(ctx, "chainID", providerAddr))
 }

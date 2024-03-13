@@ -222,7 +222,20 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
-		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators)
+
+		var nextValidators []providertypes.ConsumerValidator
+
+		if k.IsTopN(ctx, chain.ChainId) {
+			topN, _ := k.GetTopN(ctx, chain.ChainId)
+			threshold := sdk.NewDec(int64(topN)).QuoInt64(100)
+			k.OptInValidators(ctx, chain.ChainId, threshold, bondedValidators)
+		}
+
+		if k.IsOptIn(ctx, chain.ChainId) || k.IsTopN(ctx, chain.ChainId) {
+			//nextValidators = k.ComputeNextEpochOptedInConsumerValSet(ctx, chain.ChainId)
+		} else {
+			nextValidators = k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators)
+		}
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
 

@@ -154,9 +154,6 @@ const (
 	// that corresponds to the N% of the top validators that have to validate this consumer chain
 	TopNBytePrefix
 
-	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain all the opted in validators
-	OptedInBytePrefix
-
 	// ToBeOptedInBytePrefix is the byte prefix used when storing for each consumer chain the validators that
 	// are about to be opted in
 	ToBeOptedInBytePrefix
@@ -548,12 +545,6 @@ func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
 // TopNKey returns the key of consumer chain `chainID`
 func TopNKey(chainID string) []byte {
 	return ChainIdWithLenKey(TopNBytePrefix, chainID)
-}
-
-// OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func OptedInKey(chainID string, providerAddr []byte) []byte {
-	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
-	return append(prefix, providerAddr...)
 }
 
 // ToBeOptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`

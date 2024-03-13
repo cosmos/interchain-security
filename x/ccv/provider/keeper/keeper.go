@@ -1189,7 +1189,7 @@ func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	chainID string,
-	validator types.OptedInValidator,
+	validator types.ConsumerValidator,
 ) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := validator.Marshal()
@@ -1197,7 +1197,7 @@ func (k Keeper) SetOptedIn(
 		panic(fmt.Errorf("failed to marshal OptedInValidator: %w", err))
 	}
 
-	store.Set(types.OptedInKey(chainID, validator.ProviderAddr), bz)
+	store.Set(types.ConsumerValidatorKey(chainID, validator.ProviderConsAddr), bz)
 }
 
 func (k Keeper) DeleteOptedIn(
@@ -1206,7 +1206,7 @@ func (k Keeper) DeleteOptedIn(
 	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.OptedInKey(chainID, providerAddr.ToSdkConsAddr()))
+	store.Delete(types.ConsumerValidatorKey(chainID, providerAddr.ToSdkConsAddr()))
 }
 
 func (k Keeper) IsOptedIn(
@@ -1215,28 +1215,28 @@ func (k Keeper) IsOptedIn(
 	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.OptedInKey(chainID, providerAddr.ToSdkConsAddr())) != nil
+	return store.Get(types.ConsumerValidatorKey(chainID, providerAddr.ToSdkConsAddr())) != nil
 }
 
 // GetAllOptedIn returns all the opted-in validators on chain `chainID`
 func (k Keeper) GetAllOptedIn(
 	ctx sdk.Context,
-	chainID string) (optedInValidators []types.OptedInValidator) {
+	chainID string) (consumerValidators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		iterator.Value()
-		var optedInValidator types.OptedInValidator
-		if err := optedInValidator.Unmarshal(iterator.Value()); err != nil {
-			panic(fmt.Errorf("failed to unmarshal OptedInValidator: %w", err))
+		var consumerValidator types.ConsumerValidator
+		if err := consumerValidator.Unmarshal(iterator.Value()); err != nil {
+			panic(fmt.Errorf("failed to unmarshal ConsumerValidator: %w", err))
 		}
-		optedInValidators = append(optedInValidators, optedInValidator)
+		consumerValidators = append(consumerValidators, consumerValidator)
 	}
 
-	return optedInValidators
+	return consumerValidators
 }
 
 func (k Keeper) SetToBeOptedIn(

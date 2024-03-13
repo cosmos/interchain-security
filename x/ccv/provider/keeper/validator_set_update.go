@@ -1,11 +1,13 @@
 package keeper
 
 import (
+	"cosmossdk.io/math"
 	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"sort"
 )
 
 // SetConsumerValidator sets provided consumer `validator` on the consumer chain with `chainID`
@@ -175,4 +177,112 @@ func (k Keeper) SetConsumerValSet(ctx sdk.Context, chainID string, nextValidator
 	for _, val := range nextValidators {
 		k.SetConsumerValidator(ctx, chainID, val)
 	}
+}
+
+// ComputeNextEpochOptedInConsumerValSet returns the next validator set that is responsible for validating consumer
+// chain `chainID`, based on the bonded validators.
+func (k Keeper) ComputeNextEpochOptedInConsumerValSet(
+	ctx sdk.Context,
+	chainID string,
+) []types.ConsumerValidator {
+	var nextValidators []types.ConsumerValidator
+	for _, val := range k.GetAllOptedIn(ctx, chainID) {
+		// get next voting power and the next consumer public key
+		providerAddress := types.ProviderConsAddress{Address: val.ProviderConsAddr}
+		stakingValidator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddress.ToSdkConsAddr())
+		if !found {
+			// this should never happen but is recoverable if we exclude this validator from the `nextValidators`
+			k.Logger(ctx).Error("could not get consensus address of validator",
+				"validator", stakingValidator.GetOperator().String())
+
+			fmt.Println("..")
+		}
+		nextPower := k.stakingKeeper.GetLastValidatorPower(ctx, stakingValidator.GetOperator())
+		nextConsumerPublicKey, foundConsumerPublicKey := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddress)
+		if !foundConsumerPublicKey {
+			// if no consumer key assigned then use the validator's key itself
+			k.Logger(ctx).Info("could not retrieve public key for validator on consumer chain because"+
+				" the validator did not assign a new consumer key",
+				"validator", stakingValidator.GetOperator().String(),
+				"chainID", chainID)
+			var err error
+			nextConsumerPublicKey, err = stakingValidator.TmConsPublicKey()
+			if err != nil {
+				// this should never happen and might not be recoverable because without the public key
+				// we cannot generate a validator update
+				panic(fmt.Errorf("could not retrieve validator's (%+v) public key: %w", val, err))
+			}
+		}
+
+		nextValidator := types.ConsumerValidator{
+			ProviderConsAddr:  val.ProviderConsAddr,
+			Power:             nextPower,
+			ConsumerPublicKey: &nextConsumerPublicKey,
+		}
+		nextValidators = append(nextValidators, nextValidator)
+	}
+
+	return nextValidators
+}
+
+func (k Keeper) OptInValidators(ctx sdk.Context, chainID string, threshold math.LegacyDec, bondedValidators []stakingtypes.Validator) {
+	powerStop := k.ComputePowerThreshold(ctx, bondedValidators, threshold)
+
+	for _, val := range bondedValidators {
+		power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+		if power >= powerStop {
+			consAddr, err := val.GetConsAddr()
+			_ = err // fIXME
+			nextConsumerPublicKey, foundConsumerPublicKey := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
+			if !foundConsumerPublicKey {
+				// if no consumer key assigned then use the validator's key itself
+				k.Logger(ctx).Info("could not retrieve public key for validator on consumer chain because"+
+					" the validator did not assign a new consumer key",
+					"validator", val.GetOperator().String(),
+					"chainID", chainID)
+				nextConsumerPublicKey, err = val.TmConsPublicKey()
+				if err != nil {
+					// this should never happen and might not be recoverable because without the public key
+					// we cannot generate a validator update
+					panic(fmt.Errorf("could not retrieve validator's (%+v) public key: %w", val, err))
+				}
+			}
+			// if validator already exists it gets overwritten
+			k.SetOptedIn(ctx, chainID, types.ConsumerValidator{
+				ProviderConsAddr:  consAddr,
+				Power:             power,
+				ConsumerPublicKey: &nextConsumerPublicKey,
+			})
+		} else {
+			// validators that are not on the top N and habe opte din remain opted in,
+		}
+	}
+}
+
+func (k Keeper) ComputePowerThreshold(ctx sdk.Context,
+	bondedValidators []stakingtypes.Validator,
+	threshold math.LegacyDec,
+) int64 {
+	totalPower := int64(0)
+	var powers []int64
+	for _, val := range bondedValidators {
+		power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+		powers = append(powers, power)
+		totalPower = totalPower + power
+	}
+
+	// sort by powers ascending
+	sort.SliceStable(powers, func(i, j int) bool {
+		return powers[i] < powers[j]
+	})
+
+	powerSum := sdk.ZeroDec()
+	for _, power := range powers {
+		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(power)))
+		if powerSum.Quo(sdk.NewDecFromInt(sdk.NewInt(totalPower))).GT(threshold) {
+			return power
+		}
+	}
+
+	panic("UpdateSoftOptOutThresholdPower should not reach this point. Incorrect logic!")
 }
