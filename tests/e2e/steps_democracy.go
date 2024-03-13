@@ -8,7 +8,7 @@ import (
 
 const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"
 
-func stepsDemocracy(consumerName string) []Step {
+func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool) []Step {
 	return []Step{
 		{
 			Action: RegisterRepresentativeAction{
@@ -185,12 +185,13 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			State: State{
 				ChainID("provi"): ChainState{
-					// Check that tokens are minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// Check that ARE NOT minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// the tokens are not sent because the test configuration does not allow sending tokens
 					Rewards: &Rewards{
 						IsRewarded: map[ValidatorID]bool{
-							ValidatorID("alice"): true,
-							ValidatorID("bob"):   true,
-							ValidatorID("carol"): true,
+							ValidatorID("alice"): expectRegisteredRewardDistribution,
+							ValidatorID("bob"):   expectRegisteredRewardDistribution,
+							ValidatorID("carol"): expectRegisteredRewardDistribution,
 						},
 						IsIncrementalReward: false,
 						IsNativeDenom:       false,
