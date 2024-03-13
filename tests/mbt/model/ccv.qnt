@@ -884,42 +884,31 @@ module ccv {
     }
 
     pure def recvSlashPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: SlashPacket): Result = {
-        // determine the jail duration for the validator:
-        // if the packet is a downtime slash, the jail duration is DowntimeJailTime
-        // otherwise, the validator is jailed until the DoubleSignJailTime
-        val jailEndTime = if (packet.downtime) {
-            packet.sendingTime + DowntimeJailTime
+        if (not(packet.downtime)) {
+            // if the packet is for double-sign, drop it without changing states
+            Ok(currentState)
         } else {
-            packet.sendingTime + DoubleSignJailEndTime
-        }
-        // map the validator to its address on the provider
-        // (in general, the validator is a consumer address and could be an assigned one)
-        val providerVal = currentState.providerState.consumerAddrToValidator
-            .getOrElse(sender, Map())
-            // if there is no entry for that validator, there is no key assignment
-            .getOrElse(packet.validator, packet.validator)
+            val jailEndTime = ProviderBlockTime(currentState) + DowntimeJailTime
+            // map the validator to its address on the provider
+            // (in general, the validator is a consumer address and could be an assigned one)
+            val providerVal = currentState.providerState.consumerAddrToValidator
+                .getOrElse(sender, Map())
+                // if there is no entry for that validator, there is no key assignment
+                .getOrElse(packet.validator, packet.validator)
 
-        val slashFactor = if (packet.downtime) {
-            DowntimeSlashPercentage
-        } else {
-            DoubleSignSlashPercentage
-        }
-        
-        val newProviderState = 
-            if (packet.downtime) 
-            { currentState.providerState
-            .jailUntil(providerVal, jailEndTime)
-            // // slashing is currently not enabled in ICS 
-            // .slash(packet.validator, packet.valPower, slashFactor)
-            } else {
-                currentState.providerState
-            }
+            val slashFactor = DowntimeSlashPercentage
+            
+            val newProviderState = currentState.providerState
+                .jailUntil(providerVal, jailEndTime)
+                // // slashing is currently not enabled in ICS 
+                // .slash(packet.validator, packet.valPower, slashFactor)
 
-        // if the validator did not have voting power of 0 or was already jailed before, the validator set will change due to the slash
-        val valSetChanged = packet.downtime and currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0 and providerVal.in(nonJailedNodes(currentState.providerState))
+            // if the validator did not have voting power of 0 or was already jailed before, the validator set will change due to the slash
+            val valSetChanged = packet.downtime and 
+                                currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0 and 
+                                providerVal.in(nonJailedNodes(currentState.providerState))
 
-        if (packet.downtime) {
-            // if the packet is for downtime, add the consumer address to the list of acknowledged slashes
+            // add the consumer address to the list of acknowledged slashes
             // for the sender chain of this slash packet and indicate that we need to send a packet at endblock
             val newDowntimeSlashRequests = newProviderState.downtimeSlashRequests
                 .getOrElse(sender, List())
@@ -930,8 +919,6 @@ module ccv {
                 "providerValidatorSetChangedInThisBlock", newProviderState.providerValidatorSetChangedInThisBlock or valSetChanged
             )
             Ok(currentState.with("providerState", newProviderState2))
-        } else {
-            Ok(currentState.with("providerState", newProviderState))
         }
     }
 
@@ -992,7 +979,6 @@ module ccv {
                     )
                 )
             )
-
             // update the state
             pure val newState2 = newState.with(
                 "providerState", newProviderState2

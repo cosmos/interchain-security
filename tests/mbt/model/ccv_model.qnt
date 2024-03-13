@@ -47,6 +47,7 @@ module ccv_model {
         InitialValidatorSet: Node -> int,
         DowntimeSlashPercentage: int,
         DoubleSignSlashPercentage: int,
+        DowntimeJailDuration: Time,
     }
 
     // The params variable is never actually changed, and
@@ -148,6 +149,7 @@ module ccv_model {
             ConsumerAddresses: consumerAddresses,
             DowntimeSlashPercentage: DowntimeSlashPercentage,
             DoubleSignSlashPercentage: DoubleSignSlashPercentage,
+            DowntimeJailDuration: DowntimeJailTime,
         }
     }
 
@@ -502,6 +504,11 @@ module ccv_model {
     val CanJail =
         not(
             currentState.providerState.chainState.jailedUntil.keys().size() > 0
+        )
+
+    val CanJailMany =
+        not(
+            currentState.providerState.chainState.jailedUntil.keys().size() > 3
         )
     
     val CanReceiveMaturations =

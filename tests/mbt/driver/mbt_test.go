@@ -23,6 +23,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -164,6 +165,7 @@ func RunItfTrace(t *testing.T, path string) {
 	}
 	downtimeSlashPercentage := sdk.NewDec(params["DowntimeSlashPercentage"].Value.(int64))
 	doubleSignSlashPercentage := sdk.NewDec(params["DoubleSignSlashPercentage"].Value.(int64))
+	downtimeJailDuration := time.Duration(params["DowntimeJailDuration"].Value.(int64)) * time.Second
 
 	modelParams := ModelParams{
 		VscTimeout:              vscTimeout,
@@ -205,6 +207,10 @@ func RunItfTrace(t *testing.T, path string) {
 	driver.DriverStats = &stats
 
 	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
+
+	slashingParams := driver.providerSlashingKeeper().GetParams(driver.providerCtx())
+	slashingParams.DowntimeJailDuration = downtimeJailDuration
+	driver.providerSlashingKeeper().SetParams(driver.providerCtx(), slashingParams)
 
 	modelVscIdsToActualPackets := make(map[uint64]types.ValidatorSetChangePacketData, 0)
 	actualPacketIdsToModelVscIds := make(map[uint64]uint64, 0)
@@ -478,6 +484,10 @@ func RunItfTrace(t *testing.T, path string) {
 		// compare that the sent packets on the proider match the model
 		CompareSentPacketsOnProvider(driver, currentModelState, timeOffset)
 
+		// ensure that the jailed validators are the same in the model and the system,
+		// and that the jail end times are the same, in particular
+		CompareJailedValidators(driver, currentModelState, timeOffset, addressMap)
+
 		// for all newly sent vsc packets, figure out which vsc id in the model they correspond to
 		for _, consumer := range actualRunningConsumers {
 			actualPackets := driver.packetQueue(PROVIDER, ChainId(consumer))
@@ -745,6 +755,44 @@ func CompareSentPacketsOnProvider(driver *Driver, currentModelState map[string]i
 			)
 		}
 	}
+}
+
+func CompareJailedValidators(
+	driver *Driver,
+	currentModelState map[string]itf.Expr,
+	timeOffset time.Time,
+	modelNamesToSystemConsAddr map[string]*cmttypes.Validator,
+) {
+	modelJailedVals, modelJailEndTimes := ProviderJailedValidators(currentModelState)
+
+	for i, modelJailedVal := range modelJailedVals {
+		modelJailEndTime := modelJailEndTimes[i]
+
+		valConsAddr := sdk.ConsAddress(modelNamesToSystemConsAddr[modelJailedVal].Address)
+		valSigningInfo, found := driver.providerSlashingKeeper().GetValidatorSigningInfo(driver.providerCtx(), valConsAddr)
+		require.True(driver.t, found, "Error getting signing info for validator %v", modelJailedVal)
+
+		systemJailEndTime := valSigningInfo.JailedUntil
+		actualTimeWithOffset := systemJailEndTime.Unix() - timeOffset.Unix()
+
+		require.Equal(
+			driver.t,
+			modelJailEndTime,
+			actualTimeWithOffset,
+			"Jail end times do not match for validator %v",
+			modelJailedVal,
+		)
+	}
+
+	// build a convenient list of validator signing infos
+	validatorsSigningInfos := make([]slashingtypes.ValidatorSigningInfo, 0)
+	driver.providerSlashingKeeper().IterateValidatorSigningInfos(
+		driver.providerCtx(),
+		func(_ sdk.ConsAddress, valSigningInfo slashingtypes.ValidatorSigningInfo) (stop bool) {
+			validatorsSigningInfos = append(validatorsSigningInfos, valSigningInfo)
+			return false
+		},
+	)
 }
 
 func (s *Stats) EnterStats(driver *Driver) {

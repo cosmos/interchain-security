@@ -99,3 +99,17 @@ func PacketsToAckOnEndBlock(curStateExpr itf.MapExprType) itf.MapExprType {
 func WaitingForAcks(curStateExpr itf.MapExprType, consumer string) itf.ListExprType {
 	return ConsumerState(curStateExpr, consumer)["waitingForSlashPacketAck"].Value.(itf.ListExprType)
 }
+
+// ProviderJailedValidators returns the names and the jailEndTimes times of the jailed validators
+// on the provider. The slices are in the same order, i.e. the i-th element of jailedValidators
+// is the name of the i-th jailed validator and the i-th element of jailEndTimes is its jail end time
+func ProviderJailedValidators(curStateExpr itf.MapExprType) ([]string, []int64) {
+	jailMap := ChainState(curStateExpr, PROVIDER)["jailedUntil"].Value.(itf.MapExprType)
+	jailedValidators := make([]string, 0)
+	jailEndTimes := make([]int64, 0)
+	for val, endTime := range jailMap {
+		jailedValidators = append(jailedValidators, val)
+		jailEndTimes = append(jailEndTimes, endTime.Value.(int64))
+	}
+	return jailedValidators, jailEndTimes
+}

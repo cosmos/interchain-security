@@ -529,4 +529,10 @@ module ccv_utils {
             node => valSet.get(node) > 0
         ).size() == 0
     }
+
+    pure def ProviderBlockTime(currentState: ProtocolState): Time = {
+        currentState.providerState.chainState.runningTimestamp
+    }
+
+
 }
