@@ -50,12 +50,15 @@ As an optional module, it can also include KeyAssignment.
 To run with key assignment, specify the step flag: `--step stepKeyAssignment`.
 
 KeyAssignment also needs some different invariants, see below.
+<<<<<<< HEAD
 
 #### Partial Set Security
 
 To run with Partial Set Security, specify the step flag `--step stepBoundedDriftKeyAndPSS`.
 This runs both PSS and Key Assignment.
 It also requires running with `ccv_boundeddrift.qnt`, see below.
+=======
+>>>>>>> main
 
 #### ccv_boundeddrift.qnt
 This state machine layer is more restricted to generate more interesting traces:

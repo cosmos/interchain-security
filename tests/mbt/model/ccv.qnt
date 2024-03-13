@@ -89,12 +89,6 @@ module ccv_types {
             // Stores VscPackets which have been sent but where the provider has *not received a response yet*.
             sentVscPacketsToConsumer: Chain -> List[VscPacket],
 
-            // stores whether, in this block, the validator set has changed.
-            // this is needed because the validator set might be considered to have changed, even though
-            // it is still technically identical at our level of abstraction, e.g. a validator power change on the provider
-            // might leave the validator set the same because a delegation and undelegation cancel each other out.
-            providerValidatorSetChangedInThisBlock: bool,
-
             // stores for which consumer chains, in this epoch, the validator set is considered to have changed and we thus need to send a VscPacket to the consumer chains.
             consumersWithPowerChangesInThisEpoch: Set[Chain],
 
@@ -147,7 +141,6 @@ module ccv_types {
             outstandingPacketsToConsumer: Map(),
             receivedMaturations: Set(),
             sentVscPacketsToConsumer: Map(),
-            providerValidatorSetChangedInThisBlock: false,
             consumersWithPowerChangesInThisEpoch: Set(),
             consumerStatus: Map(),
             runningVscId: 0,
@@ -156,9 +149,9 @@ module ccv_types {
             consumerAddrToValidator: Map(),
             consumerAddrsToPrune: Map(),
             keyAssignmentsForVSCPackets: Map(),
-            consumersWithAddrAssignmentChangesInThisEpoch: Set(),
             optedInVals: Map(),
             topNByConsumer: Map(),
+            consumersWithAddrAssignmentChangesInThisEpoch: Set()
         }
         
 
@@ -510,7 +503,7 @@ module ccv {
             consumersToStop,
             timedOutConsumers
         )
-        val providerStateAfterConsumerAdvancement = res._1.with("providerValidatorSetChangedInThisBlock", false)
+        val providerStateAfterConsumerAdvancement = res._1
         val err = res._2
 
         val consumerAdditions = consumersToStart.map(consumer => consumer.chain)
