@@ -1,8 +1,7 @@
 package app
 
 import (
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 )
@@ -32,12 +31,13 @@ type legacyParamChangeKey struct {
 
 // these parameters don't exist in the consumer app -- keeping them as an
 var LegacyWhitelistedParams = map[legacyParamChangeKey]struct{}{
-	// ibc transfer
-	{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
-	{Subspace: ibctransfertypes.ModuleName, Key: "ReceiveEnabled"}: {},
-	// add interchain account params(HostEnabled, AllowedMessages) once the module is added to the consumer app
+	// add whitlisted legacy parameters here [cosmos-sdk <= 0.47]
+	// commented parameters are just an example - most params have been moved to their respecitve modules
+	// and they cannot be changed through legacy governance proposals
+	{Subspace: banktypes.ModuleName, Key: "SendEnabled"}: {},
 }
 
+// add whitelisted module param update messages [cosmos-sdk >= 0.47]
 var WhiteListModule = map[string]struct{}{
 	"/cosmos.gov.v1.MsgUpdateParams":                {},
 	"/cosmos.bank.v1beta1.MsgUpdateParams":          {},

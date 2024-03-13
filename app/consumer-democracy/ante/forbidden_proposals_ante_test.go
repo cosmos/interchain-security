@@ -8,7 +8,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -98,8 +97,9 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 	}
 }
 
-// Only ibctransfertypes.SendEnabled/ReceiveEnabled support legacy proposals for changing params
-// Note: see LegacyWhitelistedParams in proposals_whitelisting.go
+// Legacy parameter proposals are not supported in cosmos-sdk v0.50
+// since modules parameters were moved to their respective modules
+// this test is to ensure that legacy parameter proposals are not allowed
 func TestForbiddenLegacyProposalsDecorator(t *testing.T) {
 	txCfg := app.MakeTestEncodingConfig().TxConfig
 
@@ -109,17 +109,6 @@ func TestForbiddenLegacyProposalsDecorator(t *testing.T) {
 		msgs      []sdk.Msg
 		expectErr bool
 	}{
-		{
-			name: "Allowed legacy param change -- only for ibctransfertypes.SendEnabled/ReceiveEnabled",
-			ctx:  sdk.Context{},
-			msgs: []sdk.Msg{
-				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
-					// only subspace and key are relevant for testing
-					{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled", Value: "true"},
-				}),
-			},
-			expectErr: false,
-		},
 		{
 			name: "Forbidden param change",
 			ctx:  sdk.Context{},
@@ -131,29 +120,12 @@ func TestForbiddenLegacyProposalsDecorator(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name: "Allowed and forbidden param changes in the same msg",
+			name: "Multiple forbidden param changes in the same msg",
 			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
 				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
-					// allowed
 					{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled", Value: "true"},
-					// disallowed
 					{Subspace: authtypes.ModuleName, Key: "MaxMemoCharacters", Value: ""},
-				}),
-			},
-			expectErr: true,
-		},
-		{
-			name: "Allowed and forbidden param changes in different msg",
-			ctx:  sdk.Context{},
-			msgs: []sdk.Msg{
-				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
-					// disallowed
-					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
-				}),
-				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
-					// allowed
-					{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled", Value: "true"},
 				}),
 			},
 			expectErr: true,
