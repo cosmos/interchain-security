@@ -104,7 +104,6 @@ module ccv_boundeddrift {
                 nondet timeAdvancement = possibleAdvancements.oneOf()
                 EndAndBeginBlockForConsumer(chain, timeAdvancement),
             }
-<<<<<<< HEAD
     }
 
     action stepBoundedDriftKeyAssignment = any {
@@ -119,8 +118,6 @@ module ccv_boundeddrift {
         nondetKeyAssignment,
         StepOptIn,
         StepOptOut,
-=======
-        },
         
         // advance a block for the provider
         val maxAdv = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
@@ -136,14 +133,8 @@ module ccv_boundeddrift {
             nondet timeAdvancement = oneOf(possibleAdvancements)
             EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
         }
->>>>>>> main
     }
-
-    action stepBoundedDriftKeyAssignment = any {
-        stepBoundedDrift,
-        nondetKeyAssignment,
-    }
-
+    
     // INVARIANT
     // The maxDrift between chains is never exceeded.
     // This *should* be ensured by the step function.
