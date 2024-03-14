@@ -805,7 +805,7 @@ module ccv {
                 pure val provValPower = if (provValSet.keys().contains(providerNode)) provValSet.get(providerNode) else 0
                 pure val consumersWithAddrAssignmentChangesInThisEpoch = 
                     if (provValPower > 0 and providerNode.in(nonJailedNodes(currentState.providerState))) {
-                        // if the consumer has positive power, the relevant key assignment for the consumer changed
+                        // if the validator has positive power and is not jailed, the relevant key assignment for the consumer changed
                         currentState.providerState.consumersWithAddrAssignmentChangesInThisEpoch.union(Set(consumer))
                     } else {
                         // otherwise, the consumer doesn't need to know about the change, so no change
