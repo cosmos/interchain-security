@@ -24,7 +24,7 @@ func (m Migrator) Migrate1to2(ctx sdk.Context) error {
 	return v2.MigrateConsumerPacketData(ctx, store)
 }
 
-// Migrate1to2 migrates x/ccvconsumer state from consensus version 1 to 2.
+// Migrate2to3 migrates x/ccvconsumer state from consensus version 2 to 3.
 func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	store := ctx.KVStore(m.keeper.storeKey)
 	return v2.MigrateConsumerPacketData(ctx, store)

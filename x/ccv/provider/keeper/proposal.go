@@ -29,7 +29,6 @@ import (
 // Will replace legacy handler HandleLegacyConsumerAdditionProposal
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.MsgConsumerAddition) error {
 	p := types.ConsumerAdditionProposal{
-		Title:                             "New ConsumerAddition Proposal",
 		ChainId:                           proposal.ChainId,
 		InitialHeight:                     proposal.InitialHeight,
 		GenesisHash:                       proposal.GenesisHash,
@@ -62,7 +61,6 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.M
 // Will replace legacy handler HandleLegacyConsumerRewardDenomProposal
 func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *types.MsgChangeRewardDenoms) error {
 	p := types.ChangeRewardDenomsProposal{
-		Title:          "New ChangeRewardDenomsProposal",
 		DenomsToAdd:    proposal.DenomsToAdd,
 		DenomsToRemove: proposal.DenomsToRemove,
 	}
@@ -225,7 +223,7 @@ func (k Keeper) MakeConsumerGenesis(
 	chainID := prop.ChainId
 	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
 	if err != nil {
-		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "ubonding time not found: %s", err)
+		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "unbonding time not found: %s", err)
 	}
 	height := clienttypes.GetSelfHeight(ctx)
 

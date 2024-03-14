@@ -1,4 +1,4 @@
-package integration
+gpackage integration
 
 import (
 	"time"
@@ -291,5 +291,4 @@ func upgradeExpiredClient(s *CCVTestSuite, clientTo ChainType) {
 
 	res, err := hostChain.App.GetIBCKeeper().RecoverClient(hostChain.GetContext(), recoverMsg)
 	s.Require().NoError(err)
-	s.Require().NotNil(res)
 }

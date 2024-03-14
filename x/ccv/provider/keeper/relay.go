@@ -395,7 +395,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// Obtain validator from staking keeper
 	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
 	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
+		k.Logger(ctx).Error("validator not found", "validator", providerConsAddr.String())
 		return
 	}
 
@@ -406,7 +406,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// Note that it is impossible for the validator to be not found or unbonded if both the provider
 		// and the consumer are following the protocol. Thus if this branch is taken then one or both
 		// chains is incorrect, but it is impossible to tell which.
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
+		k.Logger(ctx).Error("validator already unbonded", "validator", providerConsAddr.String())
 		return
 	}
 

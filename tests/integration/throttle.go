@@ -528,7 +528,6 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	val3Operator, err := sdk.ValAddressFromHex(vals[3].GetOperator())
 	power, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val3Operator)
 	s.Require().NoError(err)
-	s.Require().NoError(err)
 	s.Require().Equal(int64(0), power)
 }
 

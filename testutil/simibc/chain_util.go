@@ -44,14 +44,12 @@ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Heade
 		ChainID:            c.ChainID,
 		Height:             c.App.LastBlockHeight() + 1,
 		AppHash:            c.App.LastCommitID().Hash,
-		Time:               c.CurrentHeader.Time,
+		Time:               c.CurrentHeader.Time.Add(dt),
 		ValidatorsHash:     c.Vals.Hash(),
 		NextValidatorsHash: c.NextVals.Hash(),
 		ProposerAddress:    c.CurrentHeader.ProposerAddress,
 	}
 
-	// set the new time
-	c.CurrentHeader.Time = c.CurrentHeader.Time.Add(dt)
 	// handle packets
 	packets := ParsePacketsFromEvents(res.Events)
 	return c.LastHeader, packets
