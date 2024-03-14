@@ -104,7 +104,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		feePool := k.distributionKeeper.GetFeePool(ctx)
-		if k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId, bondedVotes) == 0 {
+		if k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId) == 0 {
 			feePool.CommunityPool = feePool.CommunityPool.Add(rewardsCollectedDec...)
 			k.distributionKeeper.SetFeePool(ctx, feePool)
 			return
@@ -131,9 +131,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 	}
 }
 
-// TODO: allocate tokens to validators that opted-in and for long enough e.g. 1000 blocks
-// once the opt-in logic is integrated QueueVSCPackets()
-//
 // AllocateTokensToConsumerValidators allocates the given tokens from the
 // from consumer rewards pool to validator according to their voting power
 func (k Keeper) AllocateTokensToConsumerValidators(
@@ -148,7 +145,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	}
 
 	// get the consumer total voting power from the votes
-	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID, bondedVotes)
+	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID)
 	if totalPower == 0 {
 		return allocated
 	}
@@ -242,21 +239,15 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 	)
 }
 
-// ComputeConsumerTotalVotingPower returns the total voting power for a given consumer chain
-// by summing its opted-in validators votes
-func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string, votes []abci.VoteInfo) int64 {
-	// TODO: create a optedIn set from the OptedIn validators
-	// and sum their validator power
-	var totalPower int64
-
+// ComputeConsumerTotalVotingPower returns the total voting power of the given consumer chain
+// validator set
+func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
 	// sum the opted-in validators set voting powers
-	for _, vote := range votes {
-		// TODO: check that val is in the optedIn set
-
-		totalPower += vote.Validator.Power
+	for _, v := range k.GetConsumerValSet(ctx, chainID) {
+		totalPower += v.Power
 	}
 
-	return totalPower
+	return
 }
 
 // IdentifyConsumerChainIDFromIBCPacket checks if the packet destination matches a registered consumer chain.

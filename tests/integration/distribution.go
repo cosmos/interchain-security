@@ -906,7 +906,7 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
 	bankKeeper := s.providerApp.GetTestBankKeeper()
 
-	chainID := "consumer"
+	chainID := s.consumerChain.ChainID
 	validators := []bytes.HexBytes{
 		s.providerChain.Vals.Validators[0].Address,
 		s.providerChain.Vals.Validators[1].Address,
@@ -964,6 +964,9 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 					tc.rate,
 				)
 			}
+
+			consuVals := providerKeeper.GetConsumerValSet(s.providerCtx(), chainID)
+			_ = consuVals
 
 			// TODO: opt validators in and verify
 			// that rewards are only allocated to them
