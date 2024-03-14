@@ -18,10 +18,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 
-	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Callback for instantiating a new coordinator with a provider test chains

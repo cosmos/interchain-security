@@ -15,11 +15,11 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestOnChanOpenInit tests the provider's OnChanOpenInit method against spec.

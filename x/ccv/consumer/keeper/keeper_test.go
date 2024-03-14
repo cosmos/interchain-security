@@ -17,10 +17,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper

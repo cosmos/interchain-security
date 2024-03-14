@@ -17,7 +17,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
 )
 
 var (

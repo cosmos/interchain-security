@@ -11,7 +11,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 var (

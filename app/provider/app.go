@@ -106,12 +106,12 @@ import (
 	tmos "github.com/cometbft/cometbft/libs/os"
 	dbm "github.com/cosmos/cosmos-db"
 
-	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	ibcprovider "github.com/cosmos/interchain-security/v4/x/ccv/provider"
-	ibcproviderclient "github.com/cosmos/interchain-security/v4/x/ccv/provider/client"
-	ibcproviderkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	appencoding "github.com/cosmos/interchain-security/v5/app/encoding"
+	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	ibcprovider "github.com/cosmos/interchain-security/v5/x/ccv/provider"
+	ibcproviderclient "github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
+	ibcproviderkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 
 	"github.com/cosmos/cosmos-sdk/testutil/testdata/testpb"
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"

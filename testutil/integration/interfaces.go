@@ -16,13 +16,13 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 )
 
 // The interface that any provider app must implement to be compatible with ccv integration tests.

@@ -15,7 +15,7 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 func TestConsumerAdditionProposalValidateBasic(t *testing.T) {

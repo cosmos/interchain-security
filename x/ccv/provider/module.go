@@ -17,10 +17,10 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client/cli"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client/cli"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 var (

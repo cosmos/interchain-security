@@ -13,8 +13,8 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 
-	app "github.com/cosmos/interchain-security/v4/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/v4/app/consumer-democracy/ante"
+	app "github.com/cosmos/interchain-security/v5/app/consumer-democracy"
+	"github.com/cosmos/interchain-security/v5/app/consumer-democracy/ante"
 )
 
 // in SDKv47 parameter updates full params object is required

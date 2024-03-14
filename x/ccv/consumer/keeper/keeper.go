@@ -25,8 +25,8 @@ import (
 	"cosmossdk.io/log"
 	tmtypes "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper

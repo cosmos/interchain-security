@@ -5,7 +5,7 @@ import (
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	consumerKeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	consumerKeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
 )
 
 // MigrateParams migrates the consumers module's parameters from the x/params subspace to the

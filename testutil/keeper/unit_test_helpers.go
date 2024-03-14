@@ -30,12 +30,12 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 
 	dbm "github.com/cosmos/cosmos-db"
 )

@@ -17,8 +17,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 //

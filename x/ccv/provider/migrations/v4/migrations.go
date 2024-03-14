@@ -4,7 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 )
 
 // MigrateParams migrates the provider module's parameters from the x/params to self store.

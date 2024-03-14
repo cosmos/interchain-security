@@ -18,11 +18,11 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cosmos/interchain-security/v4/testutil/integration"
+	"github.com/cosmos/interchain-security/v5/testutil/integration"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 const verbose = false

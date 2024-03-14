@@ -14,7 +14,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.
