@@ -120,7 +120,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 		feeAllocated := k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumer.ChainId,
-			bondedVotes,
 			feeMultiplier,
 		)
 		remaining = remaining.Sub(feeAllocated)
@@ -136,7 +135,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 func (k Keeper) AllocateTokensToConsumerValidators(
 	ctx sdk.Context,
 	chainID string,
-	bondedVotes []abci.VoteInfo,
 	tokens sdk.DecCoins,
 ) (allocated sdk.DecCoins) {
 	// return early if the tokens are empty
@@ -150,11 +148,11 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		return allocated
 	}
 
-	for _, vote := range bondedVotes {
+	for _, val := range k.GetConsumerValSet(ctx, chainID) {
 		// TODO: should check if validator IsOptIn or continue here
-		consAddr := sdk.ConsAddress(vote.Validator.Address)
+		consAddr := sdk.ConsAddress(val.ProviderConsAddr)
 
-		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPower))
+		powerFraction := math.LegacyNewDec(val.Power).QuoTruncate(math.LegacyNewDec(totalPower))
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
 		// get the validator type struct for the consensus address

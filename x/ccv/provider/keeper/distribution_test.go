@@ -38,7 +38,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		chainID,
 	))
 
-	// create validators and block votes
+	// set 5 validators to the consumer chain
 	for i := 0; i < 5; i++ {
 		val := createVal(int64(i))
 		keeper.SetConsumerValidator(
@@ -59,8 +59,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		chainID,
 	)
 
-	// check that the total power returned corresponds
-	// to the total power of opted-in validators only
+	// check the total power returned
 	require.Equal(t, expTotalPower, res)
 }
 
