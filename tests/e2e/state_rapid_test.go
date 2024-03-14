@@ -117,6 +117,21 @@ func GetIBCTransferParamsGen() *rapid.Generator[IBCTransferParams] {
 			ReceiveEnabled: rapid.Bool().Draw(t, "ReceiveEnabled"),
 		}
 	})
+
+}
+
+func GetIBCTransferParamsProposalGen() *rapid.Generator[IBCTransferParamsProposal] {
+	return rapid.Custom(func(t *rapid.T) IBCTransferParamsProposal {
+		return IBCTransferParamsProposal{
+			Title:   rapid.String().Draw(t, "Title"),
+			Deposit: rapid.Uint().Draw(t, "Deposit"),
+			Status:  rapid.String().Draw(t, "Status"),
+			Params: IBCTransferParams{
+				SendEnabled:    rapid.Bool().Draw(t, "SendEnabled"),
+				ReceiveEnabled: rapid.Bool().Draw(t, "ReceiveEnabled"),
+			},
+		}
+	})
 }
 
 func GetStakedTokensGen() *rapid.Generator[map[ValidatorID]uint] {
@@ -167,7 +182,7 @@ func GetProposalGen() *rapid.Generator[Proposal] {
 			GetConsumerAdditionProposalGen().AsAny(),
 			GetConsumerRemovalProposalGen().AsAny(),
 			GetTextProposalGen().AsAny(),
-			GetIBCTransferParamsGen().AsAny(),
+			GetIBCTransferParamsProposalGen().AsAny(),
 		)
 		return gen.Draw(t, "Proposal").(Proposal)
 	})
