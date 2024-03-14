@@ -1,8 +1,12 @@
 package governance
 
 import (
+	"context"
 	"fmt"
+	"time"
 
+	"cosmossdk.io/collections"
+	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -11,8 +15,6 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-
-	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 const (
@@ -22,6 +24,8 @@ const (
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleSimulation = AppModule{}
+
+	_ appmodule.HasEndBlocker = AppModule{}
 )
 
 // AppModule embeds the Cosmos SDK's x/governance AppModule
@@ -56,15 +60,25 @@ func NewAppModule(cdc codec.Codec,
 	}
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []abci.ValidatorUpdate {
-	am.keeper.IterateActiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal govv1.Proposal) bool {
-		// if there are forbidden proposals in active proposals queue, refund deposit, delete votes for that proposal
-		// and delete proposal from all storages
+func (am AppModule) EndBlock(c context.Context) error {
+	ctx := sdk.UnwrapSDKContext(c)
+	rng := collections.NewPrefixUntilPairRange[time.Time, uint64](ctx.BlockTime())
+	keeper := am.keeper
+	// if there are forbidden proposals in active proposals queue, refund deposit, delete votes for that proposal
+	// and delete proposal from all storages
+	err := am.keeper.ActiveProposalsQueue.Walk(ctx, rng, func(key collections.Pair[time.Time, uint64], _ uint64) (bool, error) {
+		proposal, err := keeper.Proposals.Get(ctx, key.K2())
+		if err != nil {
+			return false, err
+		}
 		deleteForbiddenProposal(ctx, am, proposal)
-		return false
+		return false, nil
 	})
 
-	return am.AppModule.EndBlock(ctx, request)
+	if err != nil {
+		return err
+	}
+	return am.AppModule.EndBlock(ctx)
 }
 
 // isProposalWhitelisted checks whether a proposal is whitelisted

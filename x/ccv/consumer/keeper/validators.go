@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	"cosmossdk.io/math"
@@ -11,7 +13,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
 )
 
 //
@@ -25,7 +27,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
 		// convert TM pubkey to SDK pubkey
-		pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
+		pubkey, err := cryptocodec.FromCmtProtoPublicKey(change.GetPubKey())
 		if err != nil {
 			// An error here would indicate that the validator updates
 			// received from the provider are invalid.
@@ -78,27 +80,30 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 // IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis.
 // It is allowed since the condition verifying validator public keys in HandleValidatorSignature (x/slashing/keeper/infractions.go) is removed
 // therefore it isn't required to store any validator public keys to the slashing states during genesis.
-func (k Keeper) IterateValidators(sdk.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
+func (k Keeper) IterateValidators(context.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool)) error {
+	return nil
 }
 
 // Validator - unimplemented on CCV keeper
-func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI {
+func (k Keeper) Validator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.ValidatorI, error) {
 	panic("unimplemented on CCV keeper")
 }
 
 // IsJailed returns the outstanding slashing flag for the given validator address
-func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
+func (k Keeper) IsValidatorJailed(goCtx context.Context, addr sdk.ConsAddress) (bool, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	// if the changeover is not complete for prev standalone chain,
 	// return the standalone staking keeper's jailed status
 	if k.IsPrevStandaloneChain(ctx) && !k.ChangeoverIsComplete(ctx) {
 		return k.standaloneStakingKeeper.IsValidatorJailed(ctx, addr)
 	}
 	// Otherwise, return the ccv consumer keeper's notion of a validator being jailed
-	return k.OutstandingDowntime(ctx, addr)
+	return k.OutstandingDowntime(ctx, addr), nil
 }
 
 // ValidatorByConsAddr returns an empty validator
-func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
+func (k Keeper) ValidatorByConsAddr(context.Context, sdk.ConsAddress) (stakingtypes.ValidatorI, error) {
 	/*
 		NOTE:
 
@@ -109,22 +114,24 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 		Also, the slashing module will cal lthis function when it observes downtime. In that case
 		the only requirement on the returned value is that it isn't null.
 	*/
-	return stakingtypes.Validator{}
+	return stakingtypes.Validator{}, nil
 }
 
 // Calls SlashWithInfractionReason with Infraction_INFRACTION_UNSPECIFIED.
 // ConsumerKeeper must implement StakingKeeper interface.
 // This function should not be called anywhere
-func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec) math.Int {
+func (k Keeper) Slash(ctx context.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec) (math.Int, error) {
 	return k.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 }
 
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
 // Called by Slashing keeper in SlashWithInfractionReason
-func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.Infraction) math.Int {
+func (k Keeper) SlashWithInfractionReason(goCtx context.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec, infraction stakingtypes.Infraction) (math.Int, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
-		return math.NewInt(0)
+		return math.ZeroInt(), nil
 	}
 
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
@@ -145,7 +152,7 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 				"validator", addr,
 				"power", power,
 			)
-			return math.NewInt(0)
+			return math.ZeroInt(), nil
 		}
 	}
 	// get VSC ID for infraction height
@@ -170,7 +177,7 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 	)
 
 	// Only return to comply with the interface restriction
-	return math.ZeroInt()
+	return math.ZeroInt(), nil
 }
 
 // Jail - unimplemented on CCV keeper
@@ -178,45 +185,50 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 // This method should be a no-op even during a standalone to consumer changeover.
 // Once the upgrade has happened as a part of the changeover,
 // the provider validator set will soon be in effect, and jailing is n/a.
-func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
+func (k Keeper) Jail(context.Context, sdk.ConsAddress) error { return nil }
 
 // Unjail - unimplemented on CCV keeper
 //
 // This method should be a no-op even during a standalone to consumer changeover.
 // Once the upgrade has happened as a part of the changeover,
 // the provider validator set will soon be in effect, and jailing is n/a.
-func (k Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
+func (k Keeper) Unjail(context.Context, sdk.ConsAddress) error { return nil }
 
 // Delegation - unimplemented on CCV keeper
-func (k Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {
+func (k Keeper) Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error) {
 	panic("unimplemented on CCV keeper")
 }
 
 // MaxValidators - unimplemented on CCV keeper
-func (k Keeper) MaxValidators(sdk.Context) uint32 {
+func (k Keeper) MaxValidators(context.Context) (uint32, error) {
 	panic("unimplemented on CCV keeper")
 }
 
 // UnbondingTime returns consumer unbonding period, satisfying the staking keeper interface
-func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
-	return k.GetUnbondingPeriod(ctx)
+func (k Keeper) UnbondingTime(goCtx context.Context) (time.Duration, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	return k.GetUnbondingPeriod(ctx), nil
 }
 
 // GetHistoricalInfo gets the historical info at a given height
-func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
+func (k Keeper) GetHistoricalInfo(goCtx context.Context, height int64) (stakingtypes.HistoricalInfo, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	store := ctx.KVStore(k.storeKey)
 	key := types.HistoricalInfoKey(height)
 
 	value := store.Get(key)
 	if value == nil {
-		return stakingtypes.HistoricalInfo{}, false
+		return stakingtypes.HistoricalInfo{}, stakingtypes.ErrNoHistoricalInfo
 	}
 
-	return stakingtypes.MustUnmarshalHistoricalInfo(k.cdc, value), true
+	return stakingtypes.UnmarshalHistoricalInfo(k.cdc, value)
 }
 
 // SetHistoricalInfo sets the historical info at a given height
-func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtypes.HistoricalInfo) {
+func (k Keeper) SetHistoricalInfo(goCtx context.Context, height int64, hi *stakingtypes.HistoricalInfo) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	store := ctx.KVStore(k.storeKey)
 	key := types.HistoricalInfoKey(height)
 	value := k.cdc.MustMarshal(hi)
@@ -225,16 +237,21 @@ func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtype
 }
 
 // DeleteHistoricalInfo deletes the historical info at a given height
-func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
+func (k Keeper) DeleteHistoricalInfo(goCtx context.Context, height int64) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	store := ctx.KVStore(k.storeKey)
 	key := types.HistoricalInfoKey(height)
 
 	store.Delete(key)
+	return nil
 }
 
 // TrackHistoricalInfo saves the latest historical-info and deletes the oldest
 // heights that are below pruning height
-func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
+func (k Keeper) TrackHistoricalInfo(goCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	numHistoricalEntries := k.GetHistoricalEntries(ctx)
 
 	// Prune store to ensure we only have parameter-defined historical entries.
@@ -245,17 +262,21 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	// over the historical entries starting from the most recent version to be pruned
 	// and then return at the first empty entry.
 	for i := ctx.BlockHeight() - numHistoricalEntries; i >= 0; i-- {
-		_, found := k.GetHistoricalInfo(ctx, i)
-		if found {
-			k.DeleteHistoricalInfo(ctx, i)
-		} else {
-			break
+		_, err := k.GetHistoricalInfo(ctx, i)
+		if err != nil {
+			if errors.Is(err, stakingtypes.ErrNoHistoricalInfo) {
+				break
+			}
+			return err
+		}
+		if err = k.DeleteHistoricalInfo(ctx, i); err != nil {
+			return err
 		}
 	}
 
 	// if there is no need to persist historicalInfo, return
 	if numHistoricalEntries == 0 {
-		return
+		return nil
 	}
 
 	// Create HistoricalInfo struct
@@ -267,7 +288,8 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
-		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
+		// NOTE: @MSalopek -> double check pk.Address().String()
+		val, err := stakingtypes.NewValidator(pk.Address().String(), pk, stakingtypes.Description{})
 		if err != nil {
 			// This should never happen as the pubkey is assumed
 			// to be stored correctly in ApplyCCValidatorChanges.
@@ -282,10 +304,11 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	}
 
 	// Create historical info entry which sorts the validator set by voting power
-	historicalEntry := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), lastVals, sdk.DefaultPowerReduction)
+	historicalEntry := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), stakingtypes.Validators{Validators: lastVals, ValidatorCodec: k.validatorAddressCodec}, sdk.DefaultPowerReduction)
 
 	// Set latest HistoricalInfo at current height
 	k.SetHistoricalInfo(ctx, ctx.BlockHeight(), &historicalEntry)
+	return nil
 }
 
 // MustGetCurrentValidatorsAsABCIUpdates gets all cross-chain validators converted
@@ -313,12 +336,12 @@ func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.Va
 
 // implement interface method needed for x/genutil in sdk v47
 // returns empty updates and err
-func (k Keeper) ApplyAndReturnValidatorSetUpdates(sdk.Context) (updates []abci.ValidatorUpdate, err error) {
+func (k Keeper) ApplyAndReturnValidatorSetUpdates(context.Context) (updates []abci.ValidatorUpdate, err error) {
 	return
 }
 
 // GetAllValidators is needed to implement StakingKeeper as expected by the Slashing module since cosmos-sdk/v0.47.x.
 // Use GetAllCCValidator in places where access to all cross-chain validators is needed.
-func (k Keeper) GetAllValidators(ctx sdk.Context) []stakingtypes.Validator {
-	return []stakingtypes.Validator{}
+func (k Keeper) GetAllValidators(ctx context.Context) ([]stakingtypes.Validator, error) {
+	return []stakingtypes.Validator{}, nil
 }

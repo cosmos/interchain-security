@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -12,9 +13,9 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
@@ -75,7 +76,7 @@ func TestProviderProposalHandler(t *testing.T) {
 				Title:       "title",
 				Description: "desc",
 				Recipient:   "",
-				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10))),
+				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", math.NewInt(10))),
 			},
 		},
 	}

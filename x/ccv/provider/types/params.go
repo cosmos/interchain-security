@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const (
@@ -39,6 +40,9 @@ const (
 )
 
 // Reflection based keys for params subspace
+// Legacy: usage of x/params for parameters is deprecated.
+// Use x/ccv/provider/keeper/params instead
+// [DEPRECATED]
 var (
 	KeyTemplateClient                     = []byte("TemplateClient")
 	KeyTrustingPeriodFraction             = []byte("TrustingPeriodFraction")
@@ -102,7 +106,7 @@ func DefaultParams() Params {
 		// Following the pattern from cosmos-sdk/staking/types/params.go
 		sdk.Coin{
 			Denom:  sdk.DefaultBondDenom,
-			Amount: sdk.NewInt(10000000),
+			Amount: math.NewInt(10000000),
 		},
 	)
 }

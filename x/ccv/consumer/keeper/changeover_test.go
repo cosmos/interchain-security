@@ -11,8 +11,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/testutil/crypto"
-	uthelpers "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/testutil/crypto"
+	uthelpers "github.com/cosmos/interchain-security/v5/testutil/keeper"
 )
 
 func TestChangeoverToConsumer(t *testing.T) {
@@ -102,7 +102,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 
 		// Setup mocked return value for stakingKeeper.GetLastValidators()
 		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return(tc.lastSovVals),
+			mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return(tc.lastSovVals, nil),
 		)
 
 		// Add ref to standalone staking keeper

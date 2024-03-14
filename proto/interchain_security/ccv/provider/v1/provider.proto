@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v4/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v5/x/ccv/provider/types";
 
 import "interchain_security/ccv/v1/wire.proto";
 import "gogoproto/gogo.proto";
@@ -13,6 +13,7 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos/evidence/v1beta1/evidence.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
 
 //
 // Note any type defined in this file is ONLY used internally to the provider CCV module.
@@ -24,9 +25,12 @@ import "cosmos/base/v1beta1/coin.proto";
 // chain are expected to validate the consumer chain at spawn time or get
 // slashed. It is recommended that spawn time occurs after the proposal end
 // time.
+// Deprecated: Use MsgConsumerAddition instead
 message ConsumerAdditionProposal {
+  option deprecated = true;
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.goproto_stringer) = false;
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
 
   // the title of the proposal
   string title = 1;
@@ -89,7 +93,11 @@ message ConsumerAdditionProposal {
 // remove (and stop) a consumer chain. If it passes, all the consumer chain's
 // state is removed from the provider chain. The outstanding unbonding operation
 // funds are released.
+// Deprecated: Use MsgConsumerRemoval instead
 message ConsumerRemovalProposal {
+  option deprecated = true;
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
   // the title of the proposal
   string title = 1;
   // the description of the proposal
@@ -120,7 +128,11 @@ message EquivocationProposal {
 
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
+// Deprecated: Use MsgChangeRewardDenoms instead
 message ChangeRewardDenomsProposal {
+  option deprecated = true;
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
   // the title of the proposal
   string title = 1;
   // the description of the proposal

@@ -1,20 +1,20 @@
-package integration
+gpackage integration
 
 import (
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.
@@ -28,7 +28,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	expireClient(s, Consumer)
 
 	// bond some tokens on provider to change validator powers
-	bondAmt := sdk.NewInt(1000000)
+	bondAmt := math.NewInt(1000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 
@@ -91,7 +91,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.SetupCCVChannel(s.path)
 
 	// bond some tokens on provider to change validator powers
-	bondAmt := sdk.NewInt(1000000)
+	bondAmt := math.NewInt(1000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 
@@ -285,10 +285,10 @@ func upgradeExpiredClient(s *CCVTestSuite, clientTo ChainType) {
 	tmClientState.AllowUpdateAfterExpiry = true
 	hostChain.App.GetIBCKeeper().ClientKeeper.SetClientState(hostChain.GetContext(), substitute, tmClientState)
 
-	content := clienttypes.NewClientUpdateProposal(ibctesting.Title, ibctesting.Description, subject, substitute)
+	recoverMsg := clienttypes.NewMsgRecoverClient(hostChain.App.GetIBCKeeper().GetAuthority(), subject, substitute)
+	err = recoverMsg.ValidateBasic()
+	s.Require().NoError(err)
 
-	updateProp, ok := content.(*clienttypes.ClientUpdateProposal)
-	s.Require().True(ok)
-	err = hostChain.App.GetIBCKeeper().ClientKeeper.ClientUpdateProposal(hostChain.GetContext(), updateProp)
+	res, err := hostChain.App.GetIBCKeeper().RecoverClient(hostChain.GetContext(), recoverMsg)
 	s.Require().NoError(err)
 }

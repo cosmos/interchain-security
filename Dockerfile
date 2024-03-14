@@ -32,7 +32,7 @@ RUN make install
 FROM --platform=linux/amd64 ghcr.io/informalsystems/hermes:v1.8.0 AS hermes-builder
 
 # Get CometMock
-FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder
+FROM ghcr.io/informalsystems/cometmock:v0.38.x as cometmock-builder
 
 # Get GoRelayer
 FROM ghcr.io/informalsystems/relayer-no-gas-sim:v2.3.0-rc4-no-gas-sim AS gorelayer-builder

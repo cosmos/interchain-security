@@ -95,8 +95,8 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.SubmitParamChangeLegacyProposalAction":
-		var a SubmitParamChangeLegacyProposalAction
+	case "main.SubmitEnableTransfersProposalAction":
+		var a SubmitEnableTransfersProposalAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
 			return a, nil
@@ -372,8 +372,8 @@ func UnmarshalProposalWithType(inputMap json.RawMessage, proposalType string) (P
 		if err == nil {
 			return prop, nil
 		}
-	case "main.ParamsProposal":
-		prop := ParamsProposal{}
+	case "main.IBCTransferParamsProposal":
+		prop := IBCTransferParamsProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil

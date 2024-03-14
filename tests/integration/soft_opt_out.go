@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"sort"
 
+	"cosmossdk.io/core/comet"
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumerKeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	consumerKeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+
+	cmttypes "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // TestSoftOptOut tests the soft opt-out feature
@@ -32,10 +36,17 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 			func(ck *consumerKeeper.Keeper, sk *slashingkeeper.Keeper, valAddr []byte, valIdx int) {
 				for i, voteInfo := range votes {
 					if bytes.Equal(voteInfo.Validator.Address, valAddr) {
-						votes[i].SignedLastBlock = false
+						votes[i].BlockIdFlag = cmttypes.BlockIDFlagAbsent
 					}
 				}
-				blocksToDowntime := sk.SignedBlocksWindow(suite.consumerCtx()) - sk.MinSignedPerWindow(suite.consumerCtx()) + 1
+				blocksToDowntime, err := sk.SignedBlocksWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+
+				minSigned, err := sk.MinSignedPerWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+
+				blocksToDowntime = blocksToDowntime - minSigned + 1
+
 				slashingBeginBlocker(suite, votes, blocksToDowntime)
 			},
 			0,
@@ -47,10 +58,16 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 			func(ck *consumerKeeper.Keeper, sk *slashingkeeper.Keeper, valAddr []byte, valIdx int) {
 				for i, voteInfo := range votes {
 					if bytes.Equal(voteInfo.Validator.Address, valAddr) {
-						votes[i].SignedLastBlock = false
+						votes[i].BlockIdFlag = cmttypes.BlockIDFlagAbsent
 					}
 				}
-				blocksToDowntime := sk.SignedBlocksWindow(suite.consumerCtx()) - sk.MinSignedPerWindow(suite.consumerCtx()) + 1
+				blocksToDowntime, err := sk.SignedBlocksWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+
+				minSigned, err := sk.MinSignedPerWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+
+				blocksToDowntime = blocksToDowntime - minSigned + 1
 				slashingBeginBlocker(suite, votes, blocksToDowntime)
 			},
 			3,
@@ -62,15 +79,21 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 			func(ck *consumerKeeper.Keeper, sk *slashingkeeper.Keeper, valAddr []byte, valIdx int) {
 				for i, voteInfo := range votes {
 					if bytes.Equal(voteInfo.Validator.Address, valAddr) {
-						votes[i].SignedLastBlock = false
+						votes[i].BlockIdFlag = cmttypes.BlockIDFlagAbsent
 					}
 				}
-				blocksToDowntime := sk.SignedBlocksWindow(suite.consumerCtx()) - sk.MinSignedPerWindow(suite.consumerCtx())
+				blocksToDowntime, err := sk.SignedBlocksWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+
+				minSigned, err := sk.MinSignedPerWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+
+				blocksToDowntime = blocksToDowntime - minSigned + 1
 				slashingBeginBlocker(suite, votes, blocksToDowntime)
 
 				// Increase the power of this validator (to bring it in the top 95%)
 				delAddr := suite.providerChain.SenderAccount.GetAddress()
-				bondAmt := sdk.NewInt(100).Mul(sdk.DefaultPowerReduction)
+				bondAmt := math.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
 				suite.providerChain.NextBlock()
@@ -101,15 +124,21 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 			func(ck *consumerKeeper.Keeper, sk *slashingkeeper.Keeper, valAddr []byte, valIdx int) {
 				for i, voteInfo := range votes {
 					if bytes.Equal(voteInfo.Validator.Address, valAddr) {
-						votes[i].SignedLastBlock = false
+						votes[i].BlockIdFlag = cmttypes.BlockIDFlagAbsent
 					}
 				}
-				blocksToDowntime := sk.SignedBlocksWindow(suite.consumerCtx()) - sk.MinSignedPerWindow(suite.consumerCtx())
+				blocksToDowntime, err := sk.SignedBlocksWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+
+				minSigned, err := sk.MinSignedPerWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+
+				blocksToDowntime = blocksToDowntime - minSigned + 1
 				slashingBeginBlocker(suite, votes, blocksToDowntime)
 
 				// Increase the power of this validator (to bring it in the top 95%)
 				delAddr := suite.providerChain.SenderAccount.GetAddress()
-				bondAmt := sdk.NewInt(100).Mul(sdk.DefaultPowerReduction)
+				bondAmt := math.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
 				suite.providerChain.NextBlock()
@@ -130,7 +159,10 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 						votes[i].Validator.Power = val.Power
 					}
 				}
-				slashingBeginBlocker(suite, votes, sk.SignedBlocksWindow(suite.consumerCtx())+1)
+
+				sigBlockWindow, err := sk.SignedBlocksWindow(suite.consumerCtx())
+				suite.Require().NoError(err)
+				slashingBeginBlocker(suite, votes, sigBlockWindow+1)
 			},
 			2,
 			true,
@@ -172,11 +204,14 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 		votes = []abci.VoteInfo{}
 		for _, val := range vals {
 			votes = append(votes, abci.VoteInfo{
-				Validator:       abci.Validator{Address: val.Address, Power: val.Power},
-				SignedLastBlock: true,
+				Validator:   abci.Validator{Address: val.Address, Power: val.Power},
+				BlockIdFlag: cmttypes.BlockIDFlagCommit,
 			})
 		}
-		slashingBeginBlocker(suite, votes, consumerSlashingKeeper.SignedBlocksWindow(suite.consumerCtx()))
+
+		consuSlashingWindow, err := consumerSlashingKeeper.SignedBlocksWindow(suite.consumerCtx())
+		suite.Require().NoError(err)
+		slashingBeginBlocker(suite, votes, consuSlashingWindow)
 
 		// Downtime infraction
 		sk := consumerSlashingKeeper.(slashingkeeper.Keeper)
@@ -187,14 +222,16 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 		info, _ := consumerSlashingKeeper.GetValidatorSigningInfo(suite.consumerCtx(), consAddr)
 		if tc.expJailed {
 			// expect increased jail time
+			consumerJailDowntimeDuration, err := consumerSlashingKeeper.DowntimeJailDuration(suite.consumerCtx())
+			suite.Require().NoError(err)
 			suite.Require().True(
-				info.JailedUntil.Equal(suite.consumerCtx().BlockTime().Add(consumerSlashingKeeper.DowntimeJailDuration(suite.consumerCtx()))),
+				info.JailedUntil.Equal(suite.consumerCtx().BlockTime().Add(consumerJailDowntimeDuration)),
 				"test: "+tc.name+"; did not update validator jailed until signing info",
 			)
 			// expect missed block counters reset
 			suite.Require().Zero(info.MissedBlocksCounter, "test: "+tc.name+"; did not reset validator missed block counter")
 			suite.Require().Zero(info.IndexOffset, "test: "+tc.name)
-			consumerSlashingKeeper.IterateValidatorMissedBlockBitArray(suite.consumerCtx(), consAddr, func(_ int64, missed bool) bool {
+			consumerSlashingKeeper.IterateMissedBlockBitmap(suite.consumerCtx(), consAddr, func(_ int64, missed bool) bool {
 				suite.Require().True(missed, "test: "+tc.name)
 				return false
 			})
@@ -239,7 +276,7 @@ func slashingBeginBlocker(s *CCVTestSuite, votes []abci.VoteInfo, blocks int64) 
 				s.consumerCtx(),
 				voteInfo.Validator.Address,
 				voteInfo.Validator.Power,
-				voteInfo.SignedLastBlock,
+				comet.BlockIDFlag(voteInfo.GetBlockIdFlag()),
 			)
 		}
 		s.consumerChain.NextBlock()

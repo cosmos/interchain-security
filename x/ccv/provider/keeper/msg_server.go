@@ -8,13 +8,14 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 type msgServer struct {
@@ -29,6 +30,18 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
+// UpdateParams updates the params.
+func (k msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	if k.GetAuthority() != msg.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	k.Keeper.SetParams(ctx, msg.Params)
+
+	return &types.MsgUpdateParamsResponse{}, nil
+}
+
 // AssignConsumerKey defines a method to assign a consensus key on a consumer chain
 // for a given validator on the provider
 func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssignConsumerKey) (*types.MsgAssignConsumerKeyResponse, error) {
@@ -40,9 +53,11 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	}
 
 	// validator must already be registered
-	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
-	if !found {
+	validator, err := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if err != nil && err == stakingtypes.ErrNoValidatorFound {
 		return nil, stakingtypes.ErrNoValidatorFound
+	} else if err != nil {
+		return nil, err
 	}
 
 	// parse consumer key as long as it's in the right format
@@ -104,6 +119,52 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	})
 
 	return &types.MsgAssignConsumerKeyResponse{}, nil
+}
+
+// ConsumerAddition defines a rpc handler method for MsgConsumerAddition
+func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {
+	if k.GetAuthority() != msg.Authority {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleConsumerAdditionProposal(ctx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
+	}
+	return &types.MsgConsumerAdditionResponse{}, nil
+}
+
+// ConsumerRemoval defines a rpc handler method for MsgConsumerRemoval
+func (k msgServer) ConsumerRemoval(
+	goCtx context.Context,
+	msg *types.MsgConsumerRemoval) (*types.MsgConsumerRemovalResponse, error) {
+	if k.GetAuthority() != msg.Authority {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleConsumerRemovalProposal(ctx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
+	}
+
+	return &types.MsgConsumerRemovalResponse{}, nil
+}
+
+// ChangeRewardDenoms defines a rpc handler method for MsgChangeRewardDenoms
+func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChangeRewardDenoms) (*types.MsgChangeRewardDenomsResponse, error) {
+	if k.GetAuthority() != msg.Authority {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleConsumerRewardDenomProposal(sdkCtx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling Change Reward Denoms proposal")
+	}
+
+	return &types.MsgChangeRewardDenomsResponse{}, nil
 }
 
 func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {

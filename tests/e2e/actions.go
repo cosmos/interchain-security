@@ -15,13 +15,13 @@ import (
 	"sync"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 	"golang.org/x/mod/semver"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 type SendTokensAction struct {
@@ -300,7 +300,7 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 	}
 
 	// CONSUMER ADDITION PROPOSAL
-	bz, err = target.ExecCommand(
+	cmd := target.ExecCommand(
 		tr.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
@@ -310,10 +310,20 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
 		`-y`,
-	).CombinedOutput()
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerAdditionProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal output:", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
@@ -380,54 +390,43 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
 }
 
-type SubmitParamChangeLegacyProposalAction struct {
-	Chain    ChainID
-	From     ValidatorID
-	Deposit  uint
-	Subspace string
-	Key      string
-	Value    interface{}
+type SubmitEnableTransfersProposalAction struct {
+	Chain   ChainID
+	From    ValidatorID
+	Title   string
+	Deposit uint
 }
 
-type paramChangeProposalJSON struct {
-	Title       string            `json:"title"`
-	Summary     string            `json:"summary"`
-	Description string            `json:"description"`
-	Changes     []paramChangeJSON `json:"changes"`
-	Deposit     string            `json:"deposit"`
-}
-
-type paramChangeJSON struct {
-	Subspace string      `json:"subspace"`
-	Key      string      `json:"key"`
-	Value    interface{} `json:"value"`
-}
-
-func (tr TestConfig) submitParamChangeProposal(
-	action SubmitParamChangeLegacyProposalAction,
+func (tr TestConfig) submitEnableTransfersProposalAction(
+	action SubmitEnableTransfersProposalAction,
 	target ExecutionTarget,
 	verbose bool,
 ) {
-	prop := paramChangeProposalJSON{
-		Title:       "Legacy Param change",
-		Summary:     "Changing legacy module params",
-		Description: "Changing legacy module params",
-		Changes:     []paramChangeJSON{{Subspace: action.Subspace, Key: action.Key, Value: action.Value}},
-		Deposit:     fmt.Sprint(action.Deposit) + `stake`,
-	}
-
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
+	// gov signed addres got by checking the gov module acc address in the test container
+	// interchain-security-cdd q auth module-account gov --node tcp://7.7.9.253:26658
+	template := `
+	{
+		"messages": [
+		 {
+		  "@type": "/ibc.applications.transfer.v1.MsgUpdateParams",
+		  "signer": "consumer10d07y265gmmuvt4z0w9aw880jnsr700jlh7295",
+		  "params": {
+		   "send_enabled": true,
+		   "receive_enabled": true
+		  }
+		 }
+		],
+		"metadata": "ipfs://CID",
+		"deposit": "%dstake",
+		"title": "%s",
+		"summary": "Enable transfer send",
+		"expedited": false
+	   }
+	`
+	jsonStr := fmt.Sprintf(template, action.Deposit, action.Title)
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	bz, err = target.ExecCommand(
+	bz, err := target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json"),
 	).CombinedOutput()
 
@@ -437,9 +436,7 @@ func (tr TestConfig) submitParamChangeProposal(
 
 	cmd := target.ExecCommand(
 		tr.chainConfigs[action.Chain].BinaryName,
-
-		"tx", "gov", "submit-legacy-proposal", "param-change", "/params-proposal.json",
-
+		"tx", "gov", "submit-proposal", "/params-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
@@ -1648,7 +1645,7 @@ func (tr TestConfig) cancelUnbondTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-	creationHeight := gjson.Get(string(bz), "entries.0.creation_height").Int()
+	creationHeight := gjson.Get(string(bz), "unbond.entries.0.creation_height").Int()
 	if creationHeight == 0 {
 		log.Fatal("invalid creation height")
 	}
@@ -1844,6 +1841,7 @@ func (tr TestConfig) unjailValidator(action UnjailValidatorAction, target Execut
 		`--node`, tr.getValidatorNode(action.Provider, action.Validator),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
+		`--keyring-dir`, tr.getValidatorHome(action.Provider, action.Validator),
 		`-y`,
 	)
 
@@ -1872,6 +1870,19 @@ func (tr TestConfig) registerRepresentative(
 	target ExecutionTarget,
 	verbose bool,
 ) {
+	fileTempl := `{
+		"pubkey": %s,
+		"amount": "%s",
+		"moniker": "%s",
+		"identity": "",
+		"website": "",
+		"security": "",
+		"details": "",
+		"commission-rate": "0.1",
+		"commission-max-rate": "0.2",
+		"commission-max-change-rate": "0.01",
+		"min-self-delegation": "1"
+	}`
 	var wg sync.WaitGroup
 	for i, val := range action.Representatives {
 		wg.Add(1)
@@ -1889,22 +1900,46 @@ func (tr TestConfig) registerRepresentative(
 				log.Fatal(err, "\n", string(bzPubKey))
 			}
 
-			bz, err := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
+			fileContent := fmt.Sprintf(fileTempl, string(bzPubKey), fmt.Sprint(stake)+"stake", fmt.Sprint(val))
+			fileName := fmt.Sprintf("%s_democracy_representative.json", val)
+			file, err := os.CreateTemp("", fileName)
+			if err != nil {
+				panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
+			}
+			defer file.Close()
+			err = os.WriteFile(file.Name(), []byte(fileContent), 0600)
+			if err != nil {
+				log.Fatalf("Failed writing consumer genesis to file: %v", err)
+			}
+
+			containerInstance := tr.containerConfig.InstanceName
+			targetFile := fmt.Sprintf("/tmp/%s", fileName)
+			sourceFile := file.Name()
+			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+			copyCmd := exec.Command("docker", "cp", sourceFile,
+				fmt.Sprintf("%s:%s", containerInstance, targetFile))
+			writeResult, err := copyCmd.CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(writeResult))
+			}
+
+			cmd := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
 				"tx", "staking", "create-validator",
-				`--amount`, fmt.Sprint(stake)+"stake",
-				`--pubkey`, string(bzPubKey),
-				`--moniker`, fmt.Sprint(val),
-				`--commission-rate`, "0.1",
-				`--commission-max-rate`, "0.2",
-				`--commission-max-change-rate`, "0.01",
-				`--min-self-delegation`, "1",
+				targetFile,
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 				`--home`, tr.getValidatorHome(action.Chain, val),
 				`--node`, tr.getValidatorNode(action.Chain, val),
 				`--keyring-backend`, `test`,
 				`-y`,
-			).CombinedOutput()
+			)
+
+			if verbose {
+				fmt.Println("register representative cmd:", cmd.String())
+				fmt.Println("Tx json:", fileContent)
+			}
+
+			bz, err := cmd.CombinedOutput()
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}

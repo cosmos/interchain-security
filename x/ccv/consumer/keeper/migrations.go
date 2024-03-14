@@ -4,7 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	v2 "github.com/cosmos/interchain-security/v4/x/ccv/consumer/migrations/v2"
+	v2 "github.com/cosmos/interchain-security/v5/x/ccv/consumer/migrations/v2"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -20,6 +20,12 @@ func NewMigrator(keeper Keeper, paramspace paramtypes.Subspace) Migrator {
 
 // Migrate1to2 migrates x/ccvconsumer state from consensus version 1 to 2.
 func (m Migrator) Migrate1to2(ctx sdk.Context) error {
+	store := ctx.KVStore(m.keeper.storeKey)
+	return v2.MigrateConsumerPacketData(ctx, store)
+}
+
+// Migrate2to3 migrates x/ccvconsumer state from consensus version 2 to 3.
+func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	store := ctx.KVStore(m.keeper.storeKey)
 	return v2.MigrateConsumerPacketData(ctx, store)
 }

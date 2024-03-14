@@ -4,7 +4,10 @@ package main
 // sanity checks across different ICS versions.
 
 import (
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"strconv"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
 
 func compstepStartProviderChain() []Step {
@@ -135,7 +138,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_PASSED",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{

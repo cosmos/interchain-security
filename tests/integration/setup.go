@@ -3,29 +3,25 @@ package integration
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
-	"github.com/cosmos/ibc-go/v7/testing/mock"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	"github.com/cosmos/ibc-go/v8/testing/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	store "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 
-	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	"github.com/cosmos/interchain-security/v4/testutil/simibc"
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Callback for instantiating a new coordinator with a provider test chains
@@ -129,12 +125,6 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.registerPacketSniffer(suite.providerChain)
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
-	// re-assign all validator keys for the first consumer chain
-	providerKeeper.SetPendingConsumerAdditionProp(suite.providerCtx(), &types.ConsumerAdditionProposal{
-		ChainId: icstestingutils.FirstConsumerChainID,
-	})
-	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
-
 	// start consumer chains
 	numConsumers := 5
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
@@ -142,6 +132,11 @@ func (suite *CCVTestSuite) SetupTest() {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
+
+		// re-assign all validator keys for the first consumer chain
+		if i == 0 {
+			consumerKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
+		}
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
@@ -177,7 +172,9 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 		s.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 	}
 	p := newPacketSniffer()
-	chain.App.GetBaseApp().SetStreamingService(p)
+	chain.App.GetBaseApp().SetStreamingManager(store.StreamingManager{
+		ABCIListeners: []store.ABCIListener{p},
+	})
 	s.packetSniffers[chain] = p
 }
 
@@ -344,7 +341,8 @@ func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestinguti
 		"unexpected unbonding period in consumer client state",
 	)
 
-	providerUnbondingPeriod := providerStakingKeeper.UnbondingTime(s.providerCtx())
+	providerUnbondingPeriod, err := providerStakingKeeper.UnbondingTime(s.providerCtx())
+	s.Require().NoError(err)
 	cs, ok = consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(
 		consumerBundle.GetCtx(), consumerBundle.Path.EndpointA.ClientID)
 	s.Require().True(ok)
@@ -355,10 +353,10 @@ func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestinguti
 	)
 }
 
-// preProposalKeyAssignment assigns keys to all provider validators for
+// consumerKeyAssignmentt assigns keys to all provider validators for
 // the consumer with chainID before the chain is registered, i.e.,
 // before a client to the consumer is created
-func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
+func consumerKeyAssignment(s *CCVTestSuite, chainID string) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	for _, val := range s.providerChain.Vals.Validators {
@@ -389,7 +387,7 @@ type packetSniffer struct {
 	packets map[string]channeltypes.Packet
 }
 
-var _ baseapp.StreamingService = &packetSniffer{}
+var _ store.ABCIListener = &packetSniffer{}
 
 func newPacketSniffer() *packetSniffer {
 	return &packetSniffer{
@@ -397,8 +395,8 @@ func newPacketSniffer() *packetSniffer {
 	}
 }
 
-func (ps *packetSniffer) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
-	packets := simibc.ParsePacketsFromEvents(simibc.ABCIToSDKEvents(res.GetEvents()))
+func (ps *packetSniffer) ListenFinalizeBlock(ctx context.Context, req abci.RequestFinalizeBlock, res abci.ResponseFinalizeBlock) error {
+	packets := ParsePacketsFromEvents(res.GetEvents())
 	for _, packet := range packets {
 		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
 	}
@@ -411,17 +409,20 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 	return fmt.Sprintf("%s-%d", channelID, sequence)
 }
 
-func (*packetSniffer) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
+func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
 	return nil
 }
 
-func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit) error {
-	return nil
+// ParsePacketsFromEvents returns all packets found in events.
+func ParsePacketsFromEvents(events []abci.Event) (packets []channeltypes.Packet) {
+	for i, ev := range events {
+		if ev.Type == channeltypes.EventTypeSendPacket {
+			packet, err := ibctesting.ParsePacketFromEvents(events[i:])
+			if err != nil {
+				panic(err)
+			}
+			packets = append(packets, packet)
+		}
+	}
+	return
 }
-
-func (*packetSniffer) ListenDeliverTx(ctx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
-	return nil
-}
-func (*packetSniffer) Close() error                                        { return nil }
-func (*packetSniffer) Listeners() map[store.StoreKey][]store.WriteListener { return nil }
-func (*packetSniffer) Stream(wg *sync.WaitGroup) error                     { return nil }

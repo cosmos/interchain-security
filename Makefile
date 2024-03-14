@@ -186,7 +186,7 @@ $(BUILDDIR)/:
 DOCKER := $(shell which docker)
 HTTPS_GIT := https://github.com/cosmos/interchain-security.git
 
-containerProtoVer=0.13.0
+containerProtoVer=0.14.0
 containerProtoImage=ghcr.io/cosmos/proto-builder:$(containerProtoVer)
 
 protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage)

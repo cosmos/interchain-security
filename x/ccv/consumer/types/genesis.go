@@ -1,13 +1,13 @@
 package types
 
 import (
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // NewRestartGenesisState returns a consumer GenesisState that has already been established.

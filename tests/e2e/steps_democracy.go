@@ -1,5 +1,11 @@
 package main
 
+import (
+	"strconv"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+)
+
 const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"
 
 func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool) []Step {
@@ -24,6 +30,12 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 						},
 						IsIncrementalReward: true,
 						IsNativeDenom:       true,
+					},
+					// Check that delegating on gov-consumer does not change validator powers
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
@@ -62,14 +74,12 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 			},
 		},
 		{
-			// this proposal will allow ibc transfer by setting SendEnabled to true
-			Action: SubmitParamChangeLegacyProposalAction{
-				Chain:    ChainID(consumerName),
-				From:     ValidatorID("alice"),
-				Deposit:  10000001,
-				Subspace: "transfer",
-				Key:      "SendEnabled",
-				Value:    true,
+			// whitelisted legacy proposal can only handle ibctransfer.SendEnabled/ReceiveEnabled
+			Action: SubmitEnableTransfersProposalAction{
+				Chain:   ChainID(consumerName),
+				From:    ValidatorID("alice"),
+				Deposit: 10000001,
+				Title:   "Enable IBC Send",
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
@@ -77,15 +87,13 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 						ValidatorID("alice"): 9889999998,
 						ValidatorID("bob"):   9960000001,
 					},
-					// Check that the "SendEnabled" transfer parameter is set to false
-					Params: &([]Param{{Subspace: "transfer", Key: "SendEnabled", Value: "false"}}),
+					// confirm the
 					Proposals: &map[uint]Proposal{
-						1: ParamsProposal{
-							Deposit:  10000001,
-							Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
-							Subspace: "transfer",
-							Key:      "SendEnabled",
-							Value:    "true",
+						1: IBCTransferParamsProposal{
+							Deposit: 10000001,
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Title:   "Enable IBC Send",
+							Params:  IBCTransferParams{SendEnabled: true, ReceiveEnabled: true},
 						},
 					},
 				},
@@ -108,16 +116,13 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 					},
 					// Check that the prop passed
 					Proposals: &map[uint]Proposal{
-						1: ParamsProposal{
-							Deposit:  10000001,
-							Status:   "PROPOSAL_STATUS_PASSED",
-							Subspace: "transfer",
-							Key:      "SendEnabled",
-							Value:    "true",
+						1: IBCTransferParamsProposal{
+							Deposit: 10000001,
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Title:   "Enable IBC Send",
+							Params:  IBCTransferParams{SendEnabled: true, ReceiveEnabled: true},
 						},
 					},
-					// Check that the parameter is changed on gov-consumer chain
-					Params: &([]Param{{Subspace: "transfer", Key: "SendEnabled", Value: "true"}}),
 				},
 			},
 		},

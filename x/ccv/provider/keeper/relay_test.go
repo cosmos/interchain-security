@@ -4,13 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-
-	"cosmossdk.io/math"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,11 +17,11 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestQueueVSCPackets tests queueing validator set updates.
@@ -74,7 +73,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		}
 
 		gomock.InOrder(
-			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates),
+			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates, nil),
 		)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
@@ -148,9 +147,13 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()).
-			Return(stakingtypes.Validator{}, true).Times(1),
+			Return(stakingtypes.Validator{
+				// must be a hex string so it can be properly decoded by sdktypes.ValAddressFromHex(val.GetOperator())
+				// empty string is fine, as it's not used in this test
+				OperatorAddress: "557D5BD0FA991DAB8EED2B9DCF98AC1B3200D43D",
+			}, nil).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(ctx, gomock.Any()).
-			Return(int64(2)).Times(1),
+			Return(int64(2), nil).Times(1),
 	}
 
 	// Add mocks for slash packet handling
@@ -322,7 +325,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					// Method will return once validator is not found.
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, false, // false = Not found.
+						stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound, // false = Not found.
 					).Times(1),
 				}
 			},
@@ -341,7 +344,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, true, // true = Found.
+						stakingtypes.Validator{}, nil, // nil = no error.
 					).Times(1),
 					// Execution will stop after this call as validator is tombstoned.
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
@@ -364,7 +367,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, true,
+						stakingtypes.Validator{}, nil,
 					).Times(1),
 
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,

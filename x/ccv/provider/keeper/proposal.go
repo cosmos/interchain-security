@@ -1,16 +1,18 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -19,32 +21,50 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
-// If the client can be successfully created in a cached context, it stores the proposal as a pending proposal.
-//
-// Note: This method implements SpawnConsumerChainProposalHandler in spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
-// Spec tag: [CCV-PCF-HCAPROP.1]
-func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
-	// verify the consumer addition proposal execution
-	// in cached context and discard the cached writes
-	if _, _, err := k.CreateConsumerClientInCachedCtx(ctx, *p); err != nil {
-		return err
+// Wrapper for the new proposal message MsgConsumerAddition
+// Will replace legacy handler HandleLegacyConsumerAdditionProposal
+func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.MsgConsumerAddition) error {
+	p := types.ConsumerAdditionProposal{
+		ChainId:                           proposal.ChainId,
+		InitialHeight:                     proposal.InitialHeight,
+		GenesisHash:                       proposal.GenesisHash,
+		BinaryHash:                        proposal.BinaryHash,
+		SpawnTime:                         proposal.SpawnTime,
+		UnbondingPeriod:                   proposal.UnbondingPeriod,
+		CcvTimeoutPeriod:                  proposal.CcvTimeoutPeriod,
+		TransferTimeoutPeriod:             proposal.TransferTimeoutPeriod,
+		ConsumerRedistributionFraction:    proposal.ConsumerRedistributionFraction,
+		BlocksPerDistributionTransmission: proposal.BlocksPerDistributionTransmission,
+		HistoricalEntries:                 proposal.HistoricalEntries,
+		DistributionTransmissionChannel:   proposal.DistributionTransmissionChannel,
 	}
+	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)
 
-	k.SetPendingConsumerAdditionProp(ctx, p)
+}
 
-	k.Logger(ctx).Info("consumer addition proposal enqueued",
-		"chainID", p.ChainId,
-		"title", p.Title,
-		"spawn time", p.SpawnTime.UTC(),
-	)
+// Wrapper for the new proposal message MsgConsumerRemoval
+// Will replace legacy handler HandleLegacyConsumerRemovalProposal
+func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgConsumerRemoval) error {
+	p := types.ConsumerRemovalProposal{
+		ChainId:  proposal.ChainId,
+		StopTime: proposal.StopTime,
+	}
+	return k.HandleLegacyConsumerRemovalProposal(ctx, &p)
 
-	return nil
+}
+
+// Wrapper for the new proposal message MsgChangeRewardDenoms
+// Will replace legacy handler HandleLegacyConsumerRewardDenomProposal
+func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *types.MsgChangeRewardDenoms) error {
+	p := types.ChangeRewardDenomsProposal{
+		DenomsToAdd:    proposal.DenomsToAdd,
+		DenomsToRemove: proposal.DenomsToRemove,
+	}
+	return k.HandleLegacyConsumerRewardDenomProposal(ctx, &p)
 }
 
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
@@ -117,30 +137,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
 			sdk.NewAttribute(types.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
 		),
-	)
-
-	return nil
-}
-
-// HandleConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
-// If the consumer can be successfully stopped in a cached context, it stores the proposal as a pending proposal.
-//
-// This method implements StopConsumerChainProposalHandler from spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
-// Spec tag: [CCV-PCF-HCRPROP.1]
-func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
-	// verify the consumer removal proposal execution
-	// in cached context and discard the cached writes
-	if _, _, err := k.StopConsumerChainInCachedCtx(ctx, *p); err != nil {
-		return err
-	}
-
-	k.SetPendingConsumerRemovalProp(ctx, p)
-
-	k.Logger(ctx).Info("consumer removal proposal enqueued",
-		"chainID", p.ChainId,
-		"title", p.Title,
-		"stop time", p.StopTime.UTC(),
 	)
 
 	return nil
@@ -225,7 +221,10 @@ func (k Keeper) MakeConsumerGenesis(
 	prop *types.ConsumerAdditionProposal,
 ) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
-	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
+	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
+	if err != nil {
+		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "unbonding time not found: %s", err)
+	}
 	height := clienttypes.GetSelfHeight(ctx)
 
 	clientState := k.GetTemplateClient(ctx)
@@ -260,12 +259,14 @@ func (k Keeper) MakeConsumerGenesis(
 			return gen, nil, err
 		}
 
-		val, found := k.stakingKeeper.GetValidator(ctx, addr)
-		if !found {
-			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
+		val, err := k.stakingKeeper.GetValidator(ctx, addr)
+		if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
+			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers")
+		} else if err != nil {
+			return gen, nil, errorsmod.Wrapf(err, "error getting validator from LastValidatorPowers")
 		}
 
-		tmProtoPk, err := val.TmConsPublicKey()
+		tmProtoPk, err := val.CmtConsPublicKey()
 		if err != nil {
 			return gen, nil, err
 		}
@@ -388,7 +389,8 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 // Note: this method is split out from BeginBlockInit to be easily unit tested.
 func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecute []types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
+
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -418,7 +420,8 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecu
 // then they are ordered by chainID.
 func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
+
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -526,7 +529,7 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 	propsToExecute := []types.ConsumerRemovalProposal{}
 
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -557,7 +560,7 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 // Thus, the returned array is in stopTime order.
 func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -589,32 +592,4 @@ func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRe
 	cc, writeCache = ctx.CacheContext()
 	err = k.StopConsumerChain(cc, p.ChainId, true)
 	return
-}
-
-func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.ChangeRewardDenomsProposal) error {
-	for _, denomToAdd := range p.DenomsToAdd {
-		// Log error and move on if one of the denoms is already registered
-		if k.ConsumerRewardDenomExists(ctx, denomToAdd) {
-			ctx.Logger().Error("denom %s already registered", denomToAdd)
-			continue
-		}
-		k.SetConsumerRewardDenom(ctx, denomToAdd)
-		ctx.EventManager().EmitEvent(sdk.NewEvent(
-			types.EventTypeAddConsumerRewardDenom,
-			sdk.NewAttribute(types.AttributeConsumerRewardDenom, denomToAdd),
-		))
-	}
-	for _, denomToRemove := range p.DenomsToRemove {
-		// Log error and move on if one of the denoms is not registered
-		if !k.ConsumerRewardDenomExists(ctx, denomToRemove) {
-			ctx.Logger().Error("denom %s not registered", denomToRemove)
-			continue
-		}
-		k.DeleteConsumerRewardDenom(ctx, denomToRemove)
-		ctx.EventManager().EmitEvent(sdk.NewEvent(
-			types.EventTypeRemoveConsumerRewardDenom,
-			sdk.NewAttribute(types.AttributeConsumerRewardDenom, denomToRemove),
-		))
-	}
-	return nil
 }

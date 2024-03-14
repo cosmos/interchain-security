@@ -6,12 +6,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	v2 "github.com/cosmos/interchain-security/v4/x/ccv/consumer/migrations/v2"
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	testutil "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	v2 "github.com/cosmos/interchain-security/v5/x/ccv/consumer/migrations/v2"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 func TestMigrateConsumerPacketData(t *testing.T) {

@@ -3,17 +3,18 @@ package integration
 import (
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const fullSlashMeterString = "1.0"
@@ -79,7 +80,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.Require().Equal(tc.expectedMeterBeforeFirstSlash, slashMeter.Int64())
 
 		// Assert that we start out with no jailings
-		vals := providerStakingKeeper.GetAllValidators(s.providerCtx())
+		vals, err := providerStakingKeeper.GetAllValidators(s.providerCtx())
+		s.Require().NoError(err)
 		for _, val := range vals {
 			s.Require().False(val.IsJailed())
 		}
@@ -95,10 +97,14 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetData())
 
 		// Assert validator 0 is jailed and has no power
-		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		vals, err = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		s.Require().NoError(err)
 		slashedVal := vals[0]
 		s.Require().True(slashedVal.IsJailed())
-		lastValPower := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedVal.GetOperator())
+		slashedValOperator, err := sdk.ValAddressFromHex(slashedVal.GetOperator())
+		s.Require().NoError(err)
+		lastValPower, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedValOperator)
+		s.Require().NoError(err)
 		s.Require().Equal(int64(0), lastValPower)
 
 		// Assert expected slash meter and allowance value
@@ -115,7 +121,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		// Require that slash packet has not been handled, a bounce result would have
 		// been returned, but the IBC helper throws out acks.
-		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		vals, err = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		s.Require().NoError(err)
 		s.Require().False(vals[2].IsJailed())
 
 		// Assert slash meter value is still the same
@@ -176,7 +183,10 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Assert validator 2 has no power, this should be apparent next block,
 		// since the staking endblocker runs before the ccv endblocker.
 		s.providerChain.NextBlock()
-		lastValPower = providerStakingKeeper.GetLastValidatorPower(cacheCtx, slashedVal.GetOperator())
+		slashedValOperator, err = sdk.ValAddressFromHex(slashedVal.GetOperator())
+		s.Require().NoError(err)
+		lastValPower, err = providerStakingKeeper.GetLastValidatorPower(cacheCtx, slashedValOperator)
+		s.Require().NoError(err)
 		s.Require().Equal(int64(0), lastValPower)
 	}
 }
@@ -237,8 +247,9 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.confirmValidatorNotJailed(valsToSlash[2], 1000)
 
 	// Total power is now 3000 (as one validator was jailed)
-	s.Require().Equal(int64(3000),
-		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+	power, err := providerStakingKeeper.GetLastTotalPower(s.providerCtx())
+	s.Require().NoError(err)
+	s.Require().Equal(int64(3000), power.Int64())
 
 	// Now replenish the slash meter and confirm one of two queued slash
 	// packet entries are then handled, when both are retried.
@@ -269,8 +280,9 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.providerChain.NextBlock()
 
 	// If one of the entries was handled, total power will be 2000 (1000 power was just slashed)
-	s.Require().Equal(int64(2000),
-		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+	power, err = providerStakingKeeper.GetLastTotalPower(s.providerCtx())
+	s.Require().NoError(err)
+	s.Require().Equal(int64(2000), power.Int64())
 
 	// Now replenish one more time, and handle final slash packet.
 	s.replenishSlashMeterTillPositive()
@@ -290,8 +302,9 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.providerChain.NextBlock()
 
 	// Total power is now 1000 (just a single validator left)
-	s.Require().Equal(int64(1000),
-		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+	power, err = providerStakingKeeper.GetLastTotalPower(s.providerCtx())
+	s.Require().NoError(err)
+	s.Require().Equal(int64(1000), power.Int64())
 
 	// Now all 3 expected vals are jailed, and there are no more queued
 	// slash/vsc matured packets.
@@ -429,12 +442,11 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	for _, val := range s.providerChain.Vals.Validators {
-		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		power, err := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().NoError(err)
 		s.Require().Equal(int64(1000), power)
-		stakingVal, found := stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(val.Address))
-		if !found {
-			s.Require().Fail("validator not found")
-		}
+		stakingVal, err := stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(val.Address))
+		s.Require().Error(err)
 		s.Require().False(stakingVal.Jailed)
 
 		// 4th validator should have no slash log, all the others do
@@ -455,10 +467,10 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 	// Setup first val with 1000 power and the rest with 10 power.
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	delegateByIdx(s, delAddr, sdk.NewInt(999999999), 0)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 1)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 2)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 3)
+	delegateByIdx(s, delAddr, math.NewInt(999999999), 0)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 1)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 2)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 3)
 	s.providerChain.NextBlock()
 
 	// Initialize slash meter
@@ -466,7 +478,8 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 	// Assert that we start out with no jailings
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
-	vals := providerStakingKeeper.GetAllValidators(s.providerCtx())
+	vals, err := providerStakingKeeper.GetAllValidators(s.providerCtx())
+	s.Require().NoError(err)
 	for _, val := range vals {
 		s.Require().False(val.IsJailed())
 	}
@@ -492,19 +505,30 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket3.GetData())
 
 	// Default slash meter replenish fraction is 0.05, so all sent packets should be handled immediately.
-	vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
-	s.Require().False(vals[0].IsJailed())
-	s.Require().Equal(int64(1000),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[0].GetOperator()))
-	s.Require().True(vals[1].IsJailed())
-	s.Require().Equal(int64(0),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[1].GetOperator()))
-	s.Require().True(vals[2].IsJailed())
-	s.Require().Equal(int64(0),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[2].GetOperator()))
-	s.Require().True(vals[3].IsJailed())
-	s.Require().Equal(int64(0),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[3].GetOperator()))
+	vals, err = providerStakingKeeper.GetAllValidators(s.providerCtx())
+	s.Require().NoError(err)
+
+	val0Operator, err := sdk.ValAddressFromHex(vals[0].GetOperator())
+	power, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val0Operator)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(1000), power)
+
+	val1Operator, err := sdk.ValAddressFromHex(vals[1].GetOperator())
+	power, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val1Operator)
+	s.Require().NoError(err)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), power)
+
+	val2Operator, err := sdk.ValAddressFromHex(vals[2].GetOperator())
+	power, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val2Operator)
+	s.Require().NoError(err)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), power)
+
+	val3Operator, err := sdk.ValAddressFromHex(vals[3].GetOperator())
+	power, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val3Operator)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), power)
 }
 
 // TestSlashMeterAllowanceChanges tests scenarios where the slash meter allowance is expected to change.
@@ -598,24 +622,30 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 }
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
-	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
+	sdkVal, err := s.providerApp.GetTestStakingKeeper().GetValidator(
 		s.providerCtx(), sdk.ValAddress(tmVal.Address))
-	s.Require().True(found)
+	s.Require().NoError(err)
 	s.Require().True(sdkVal.IsJailed())
 
 	if checkPower {
-		valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
-			s.providerCtx(), sdkVal.GetOperator())
+		valOperator, err := sdk.ValAddressFromHex(sdkVal.GetOperator())
+		s.Require().NoError(err)
+		valPower, err := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
+			s.providerCtx(), valOperator)
+		s.Require().NoError(err)
 		s.Require().Equal(int64(0), valPower)
 	}
 }
 
 func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expectedPower int64) {
-	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
+	sdkVal, err := s.providerApp.GetTestStakingKeeper().GetValidator(
 		s.providerCtx(), sdk.ValAddress(tmVal.Address))
-	s.Require().True(found)
-	valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
-		s.providerCtx(), sdkVal.GetOperator())
+	s.Require().NoError(err)
+	valOperator, err := sdk.ValAddressFromHex(sdkVal.GetOperator())
+	s.Require().NoError(err)
+	valPower, err := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
+		s.providerCtx(), valOperator)
+	s.Require().NoError(err)
 	s.Require().Equal(expectedPower, valPower)
 	s.Require().False(sdkVal.IsJailed())
 }

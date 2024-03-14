@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
@@ -9,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
@@ -23,7 +24,7 @@ type ChainState struct {
 	ProposedConsumerChains         *[]string
 	ValPowers                      *map[ValidatorID]uint
 	StakedTokens                   *map[ValidatorID]uint
-	Params                         *[]Param
+	IBCTransferParams              *IBCTransferParams
 	Rewards                        *Rewards
 	ConsumerChains                 *map[ChainID]bool
 	AssignedKeys                   *map[ValidatorID]string
@@ -44,6 +45,15 @@ type TextProposal struct {
 }
 
 func (p TextProposal) isProposal() {}
+
+type IBCTransferParamsProposal struct {
+	Title   string
+	Deposit uint
+	Status  string
+	Params  IBCTransferParams
+}
+
+func (ibct IBCTransferParamsProposal) isProposal() {}
 
 type ConsumerAdditionProposal struct {
 	Deposit       uint
@@ -101,6 +111,11 @@ type Param struct {
 	Value    string
 }
 
+type IBCTransferParams struct {
+	SendEnabled    bool `json:"send_enabled"`
+	ReceiveEnabled bool `json:"receive_enabled"`
+}
+
 func (tr TestConfig) getState(modelState State, verbose bool) State {
 	systemState := State{}
 	for k, modelState := range modelState {
@@ -142,9 +157,9 @@ func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainSt
 		chainState.StakedTokens = &representPowers
 	}
 
-	if modelState.Params != nil {
-		params := tr.getParams(chain, *modelState.Params)
-		chainState.Params = &params
+	if modelState.IBCTransferParams != nil {
+		params := tr.getIBCTransferParams(chain)
+		chainState.IBCTransferParams = &params
 	}
 
 	if modelState.Rewards != nil {
@@ -290,15 +305,6 @@ func (tr TestConfig) getStakedTokens(chain ChainID, modelState map[ValidatorID]u
 	return actualState
 }
 
-func (tr TestConfig) getParams(chain ChainID, modelState []Param) []Param {
-	actualState := []Param{}
-	for _, p := range modelState {
-		actualState = append(actualState, Param{Subspace: p.Subspace, Key: p.Key, Value: tr.getParam(chain, p)})
-	}
-
-	return actualState
-}
-
 func (tr TestConfig) getRewards(chain ChainID, modelState Rewards) Rewards {
 	receivedRewards := map[ValidatorID]bool{}
 
@@ -331,17 +337,18 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-
-		"query", "distribution", "rewards",
-		delAddresss,
-
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+		"query", "distribution", "delegation-total-rewards",
+		"--delegator-address", delAddresss,
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
-	).CombinedOutput()
+	)
+
+	bz, err := cmd.CombinedOutput()
+
 	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 
 	denomCondition := `total.#(denom!="stake").amount`
@@ -390,10 +397,8 @@ var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
-
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
@@ -408,14 +413,24 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	propType := gjson.Get(string(bz), `messages.0.content.@type`).String()
-	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
-	status := gjson.Get(string(bz), `status`).String()
+	// for legacy proposal types submitted using "tx submit-legacyproposal" (cosmos-sdk/v1/MsgExecLegacyContent)
+	propType := gjson.Get(string(bz), `proposal.messages.0.value.content.type`).String()
+	rawContent := gjson.Get(string(bz), `proposal.messages.0.value.content.value`)
+
+	// for current (>= v47) prop types submitted using "tx submit-proposal"
+	if propType == "" {
+		propType = gjson.Get(string(bz), `proposal.messages.0.type`).String()
+		rawContent = gjson.Get(string(bz), `proposal.messages.0.value`)
+	}
+
+	title := gjson.Get(string(bz), `proposal.title`).String()
+	deposit := gjson.Get(string(bz), `proposal.total_deposit.#(denom=="stake").amount`).Uint()
+	status := gjson.Get(string(bz), `proposal.status`).String()
 
 	switch propType {
 	case "/cosmos.gov.v1beta1.TextProposal":
-		title := gjson.Get(string(bz), `content.title`).String()
-		description := gjson.Get(string(bz), `content.description`).String()
+		title := rawContent.Get("title").String()
+		description := rawContent.Get("description").String()
 
 		return TextProposal{
 			Deposit:     uint(deposit),
@@ -424,8 +439,8 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 			Description: description,
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		spawnTime := gjson.Get(string(bz), `messages.0.content.spawn_time`).Time().Sub(tr.containerConfig.Now)
+		chainId := rawContent.Get("chain_id").String()
+		spawnTime := rawContent.Get("spawn_time").Time().Sub(tr.containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {
@@ -441,13 +456,13 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 			Chain:     chain,
 			SpawnTime: int(spawnTime.Milliseconds()),
 			InitialHeight: clienttypes.Height{
-				RevisionNumber: gjson.Get(string(bz), `messages.0.content.initial_height.revision_number`).Uint(),
-				RevisionHeight: gjson.Get(string(bz), `messages.0.content.initial_height.revision_height`).Uint(),
+				RevisionNumber: rawContent.Get("initial_height.revision_number").Uint(),
+				RevisionHeight: rawContent.Get("initial_height.revision_height").Uint(),
 			},
 		}
 	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
-		height := gjson.Get(string(bz), `messages.0.content.plan.height`).Uint()
-		title := gjson.Get(string(bz), `messages.0.content.plan.name`).String()
+		height := rawContent.Get("plan.height").Uint()
+		title := rawContent.Get("plan.name").String()
 		return UpgradeProposal{
 			Deposit:       uint(deposit),
 			Status:        status,
@@ -456,8 +471,8 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		stopTime := gjson.Get(string(bz), `messages.0.content.stop_time`).Time().Sub(tr.containerConfig.Now)
+		chainId := rawContent.Get("chain_id").String()
+		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {
@@ -473,23 +488,31 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 			Chain:    chain,
 			StopTime: int(stopTime.Milliseconds()),
 		}
-	case "/cosmos.params.v1beta1.ParameterChangeProposal":
-		return ParamsProposal{
-			Deposit:  uint(deposit),
-			Status:   status,
-			Subspace: gjson.Get(string(bz), `messages.0.content.changes.0.subspace`).String(),
-			Key:      gjson.Get(string(bz), `messages.0.content.changes.0.key`).String(),
-			Value:    gjson.Get(string(bz), `messages.0.content.changes.0.value`).String(),
+	case "/ibc.applications.transfer.v1.MsgUpdateParams":
+		var params IBCTransferParams
+		if err := json.Unmarshal([]byte(rawContent.Get("params").String()), &params); err != nil {
+			log.Fatal("cannot unmarshal ibc-transfer params: ", err, "\n", string(bz))
+		}
+
+		return IBCTransferParamsProposal{
+			Deposit: uint(deposit),
+			Status:  status,
+			Title:   title,
+			Params:  params,
 		}
 	}
 
-	log.Fatal("unknown proposal type", string(bz))
+	log.Fatal("received unknosn proposal type: ", propType, "proposal JSON:", string(bz))
 
 	return nil
 }
 
 type TmValidatorSetYaml struct {
-	Total      string `yaml:"total"`
+	BlockHeight string `yaml:"block_height"`
+	Pagination  struct {
+		NextKey string `yaml:"next_key"`
+		Total   string `yaml:"total"`
+	} `yaml:"pagination"`
 	Validators []struct {
 		Address     string    `yaml:"address"`
 		VotingPower string    `yaml:"voting_power"`
@@ -525,14 +548,14 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 		log.Fatalf("yaml.Unmarshal returned an error while unmarshalling validator set: %v, input: %s", err, string(bz))
 	}
 
-	total, err := strconv.Atoi(valset.Total)
+	total, err := strconv.Atoi(valset.Pagination.Total)
 	if err != nil {
-		log.Fatalf("strconv.Atoi returned an error while converting total for validator set: %v, input: %s, validator set: %s", err, valset.Total, pretty.Sprint(valset))
+		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Pagination.Total, pretty.Sprint(valset))
 	}
 
 	if total != len(valset.Validators) {
 		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue. Validator set: %v",
-			valset.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
+			valset.Pagination.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
 	}
 
 	for _, val := range valset.Validators {
@@ -586,7 +609,7 @@ func (tr TestConfig) getValStakedTokens(chain ChainID, validator ValidatorID) ui
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	amount := gjson.Get(string(bz), `tokens`)
+	amount := gjson.Get(string(bz), `validator.tokens`)
 
 	return uint(amount.Uint())
 }
@@ -609,6 +632,25 @@ func (tr TestConfig) getParam(chain ChainID, param Param) string {
 	value := gjson.Get(string(bz), `value`)
 
 	return value.String()
+}
+
+func (tr TestConfig) getIBCTransferParams(chain ChainID) IBCTransferParams {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+		"query", "ibc-transfer", "params",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	var params IBCTransferParams
+	if err := json.Unmarshal(bz, &params); err != nil {
+		log.Fatal("cannot unmarshal ibc-transfer params: ", err, "\n", string(bz))
+	}
+
+	return params
 }
 
 // getConsumerChains returns a list of consumer chains that're being secured by the provider chain,

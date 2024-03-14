@@ -15,10 +15,10 @@ import (
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
 )
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
@@ -120,13 +120,17 @@ func TestIsValidatorJailed(t *testing.T) {
 
 	// IsValidatorJailed should return false for an arbitrary consensus address
 	consAddr := []byte{0x01, 0x02, 0x03}
-	require.False(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+	isJailed1, err := consumerKeeper.IsValidatorJailed(ctx, consAddr)
+	require.NoError(t, err)
+	require.False(t, isJailed1)
 
 	// Set outstanding downtime for that addr
 	consumerKeeper.SetOutstandingDowntime(ctx, consAddr)
 
 	// Now confirm IsValidatorJailed returns true
-	require.True(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+	isJailed2, err := consumerKeeper.IsValidatorJailed(ctx, consAddr)
+	require.NoError(t, err)
+	require.True(t, isJailed2)
 
 	// Next, we set a value for the standalone staking keeper,
 	// and mark the consumer keeper as being from a previous standalone chain
@@ -141,10 +145,12 @@ func TestIsValidatorJailed(t *testing.T) {
 	// At this point, the state of the consumer keeper is s.t. IsValidatorJailed() queries the standalone staking keeper
 
 	// Now mock that a validator is jailed from the standalone staking keeper
-	mocks.MockStakingKeeper.EXPECT().IsValidatorJailed(ctx, consAddr).Return(true).Times(1)
+	mocks.MockStakingKeeper.EXPECT().IsValidatorJailed(ctx, consAddr).Return(true, nil).Times(1)
 
 	// Confirm IsValidatorJailed returns true
-	require.True(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+	isJailed3, err := consumerKeeper.IsValidatorJailed(ctx, consAddr)
+	require.NoError(t, err)
+	require.True(t, isJailed3)
 }
 
 func TestSlash(t *testing.T) {
@@ -152,7 +158,7 @@ func TestSlash(t *testing.T) {
 	defer ctrl.Finish()
 
 	// If we call slash with infraction type empty, no slash packet will be queued
-	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
+	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, math.LegacyNewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
 	require.Len(t, pendingPackets, 0)
 
@@ -163,7 +169,7 @@ func TestSlash(t *testing.T) {
 	consumerKeeper.SetHeightValsetUpdateID(ctx, 5, 6)
 
 	// Call slash with valid infraction type and confirm 1 slash packet is queued
-	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, math.LegacyNewDec(9.0), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
 	require.Len(t, pendingPackets, 1)
 
@@ -178,21 +184,21 @@ func TestSlash(t *testing.T) {
 
 	// If we call slash with infraction type empty, standalone staking keeper's slash will not be called
 	// (if it was called, test would panic without mocking the call)
-	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
+	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, math.LegacyNewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 
 	// Now setup a mock for Slash, and confirm that it is called against
 	// standalone staking keeper with valid infraction type
 	infractionHeight := int64(5)
 	mocks.MockStakingKeeper.EXPECT().SlashWithInfractionReason(
 		ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, int64(6),
-		sdk.MustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_UNSPECIFIED).Times(1) // We pass empty infraction to standalone staking keeper since it's not used
+		math.LegacyMustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_UNSPECIFIED).Times(1) // We pass empty infraction to standalone staking keeper since it's not used
 
 	// Also setup init genesis height s.t. infraction height is before first consumer height
 	consumerKeeper.SetInitGenesisHeight(ctx, 4)
 	require.Equal(t, consumerKeeper.FirstConsumerHeight(ctx), int64(6))
 
 	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, 6,
-		sdk.MustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_DOWNTIME)
+		math.LegacyMustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 }
 
 // Tests the getter and setter behavior for historical info
@@ -214,7 +220,7 @@ func TestHistoricalInfo(t *testing.T) {
 		pk, err := v.ConsPubKey()
 		require.NoError(t, err)
 
-		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
+		val, err := stakingtypes.NewValidator("", pk, stakingtypes.Description{})
 		require.NoError(t, err)
 
 		// set voting power to random value
@@ -224,13 +230,17 @@ func TestHistoricalInfo(t *testing.T) {
 
 	currentHeight := ctx.BlockHeight()
 
+	validatorsWithCodec := stakingtypes.Validators{
+		Validators:     sVals,
+		ValidatorCodec: consumerKeeper.ValidatorAddressCodec(),
+	}
 	// create and store historical info
-	hi := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), sVals, sdk.DefaultPowerReduction)
+	hi := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), validatorsWithCodec, sdk.DefaultPowerReduction)
 	consumerKeeper.SetHistoricalInfo(ctx, currentHeight, &hi)
 
 	// expect to get historical info
-	recv, found := consumerKeeper.GetHistoricalInfo(ctx, currentHeight)
-	require.True(t, found, "HistoricalInfo not found after set")
+	recv, err := consumerKeeper.GetHistoricalInfo(ctx, currentHeight)
+	require.NoError(t, err, "HistoricalInfo not found after set")
 	require.Equal(t, hi, recv, "HistoricalInfo not equal")
 
 	// verify that historical info valset has validators sorted in order

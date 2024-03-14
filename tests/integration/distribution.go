@@ -3,16 +3,18 @@ package integration
 import (
 	"strings"
 
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	"cosmossdk.io/math"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	sdkdistrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 
-	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/integration"
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/integration"
+	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // This test is valid for minimal viable consumer chain
@@ -20,7 +22,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
-	bondAmt := sdk.NewInt(10000000)
+	bondAmt := math.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 	s.providerChain.NextBlock()
@@ -46,14 +48,14 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// send coins to the fee pool which is used for reward distribution
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
 	feePoolTokensOld := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
-	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100)))
 	err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(), s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
 	s.Require().NoError(err)
 	feePoolTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
-	s.Require().Equal(sdk.NewInt(100).Add(feePoolTokensOld.AmountOf(sdk.DefaultBondDenom)), feePoolTokens.AmountOf(sdk.DefaultBondDenom))
+	s.Require().Equal(math.NewInt(100).Add(feePoolTokensOld.AmountOf(sdk.DefaultBondDenom)), feePoolTokens.AmountOf(sdk.DefaultBondDenom))
 
 	// calculate the reward for consumer and provider chain. Consumer will receive ConsumerRedistributeFrac, the rest is going to provider
-	frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
+	frac, err := math.LegacyNewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 	s.Require().NoError(err)
 	consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
 	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards...)
@@ -110,7 +112,17 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().Equal(0, len(rewardCoins))
 
 	// check that the fee pool has the expected amount of coins
-	communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
+	testDistKeeper := s.providerApp.GetTestDistributionKeeper()
+	// try casting to the sdk distribution keeper
+	sdkDistKeeper, ok := testDistKeeper.(sdkdistrkeeper.Keeper)
+	s.Require().True(ok)
+	s.Require().NotEmpty(sdkDistKeeper)
+
+	feePool, err := sdkDistKeeper.FeePool.Get(s.consumerCtx().Context())
+	s.Require().NoError(err)
+	s.Require().NotEmpty(feePool)
+
+	communityCoins := feePool.GetCommunityPool()
 	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }
 
@@ -121,7 +133,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	// ccv and transmission channels setup
 	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
-	bondAmt := sdk.NewInt(10000000)
+	bondAmt := math.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 	s.providerChain.NextBlock()
@@ -142,7 +154,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(1000))
 
 	// fill fee pool
-	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100)))
 	err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(),
 		s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
 	s.Require().NoError(err)
@@ -250,7 +262,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		// ccv and transmission channels setup
 		s.SetupCCVChannel(s.path)
 		s.SetupTransferChannel()
-		bondAmt := sdk.NewInt(10000000)
+		bondAmt := math.NewInt(10000000)
 		delAddr := s.providerChain.SenderAccount.GetAddress()
 		delegate(s, delAddr, bondAmt)
 		s.providerChain.NextBlock()
@@ -272,7 +284,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(1000))
 
 		// fill fee pool
-		fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+		fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100)))
 		err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(),
 			s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
 		s.Require().NoError(err)
@@ -335,7 +347,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
 					consumertypes.ConsumerToSendToProviderName,
-					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100))),
 				)
 				s.Require().NoError(err)
 			},
@@ -389,7 +401,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
 					consumertypes.ConsumerToSendToProviderName,
-					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100))),
 				)
 				s.Require().NoError(err)
 			},
@@ -412,7 +424,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
 					consumertypes.ConsumerToSendToProviderName,
-					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100))),
 				)
 				s.Require().NoError(err)
 			},
@@ -426,7 +438,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 
 		// ccv channels setup
 		s.SetupCCVChannel(s.path)
-		bondAmt := sdk.NewInt(10000000)
+		bondAmt := math.NewInt(10000000)
 		delAddr := s.providerChain.SenderAccount.GetAddress()
 		delegate(s, delAddr, bondAmt)
 		s.providerChain.NextBlock()

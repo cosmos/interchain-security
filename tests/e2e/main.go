@@ -438,12 +438,12 @@ Summary:
 	for _, t := range failedTests {
 		report += t.Report()
 	}
-	report += fmt.Sprintln("\n\nPASSED TESTS:\n")
+	report += fmt.Sprintln("\n\nPASSED TESTS:")
 	for _, t := range passedTests {
 		report += t.Report()
 	}
 
-	report += fmt.Sprintln("\n\nREMAINING TESTS:\n")
+	report += fmt.Sprintln("\n\nREMAINING TESTS:")
 	for _, t := range remainingTests {
 		report += t.Report()
 	}

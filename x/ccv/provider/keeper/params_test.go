@@ -4,15 +4,16 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // TestParams tests the getting/setting of provider ccv module params.
@@ -46,7 +47,7 @@ func TestParams(t *testing.T) {
 		"0.4",
 		sdk.Coin{
 			Denom:  "stake",
-			Amount: sdk.NewInt(10000000),
+			Amount: math.NewInt(10000000),
 		},
 	)
 	providerKeeper.SetParams(ctx, newParams)

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -17,10 +17,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
@@ -187,9 +187,10 @@ func TestGetLastSovereignValidators(t *testing.T) {
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{
 			val,
-		}),
+		}, nil),
 	)
-	lastSovVals := ck.GetLastStandaloneValidators(ctx)
+	lastSovVals, err := ck.GetLastStandaloneValidators(ctx)
+	require.NoError(t, err)
 	require.Equal(t, []stakingtypes.Validator{val}, lastSovVals)
 	require.Equal(t, "sanity check this is the correctly serialized val",
 		lastSovVals[0].Description.Moniker)

@@ -4,15 +4,16 @@ import (
 	"strings"
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestGetEstimatedNextFeeDistribution tests next fee distribution parameters.
@@ -30,11 +31,11 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 
 	// Setup mock account balance
 	fracParam := consumerKeeper.GetConsumerRedistributionFrac(ctx)
-	fracDec, err := sdk.NewDecFromStr(fracParam)
+	fracDec, err := math.LegacyNewDecFromStr(fracParam)
 	require.NoError(t, err)
 	feeAmount := sdk.Coin{
 		Denom:  "MOCK",
-		Amount: sdk.NewInt(100),
+		Amount: math.NewInt(100),
 	}
 	feeAmountCoins := sdk.Coins([]sdk.Coin{feeAmount})
 	feeAmountDec := sdk.NewDecCoinsFromCoins(feeAmountCoins...)

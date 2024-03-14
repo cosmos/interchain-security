@@ -6,32 +6,38 @@ import (
 	"reflect"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	addresscodec "cosmossdk.io/core/address"
+	"cosmossdk.io/core/store"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
 	errorsmod "cosmossdk.io/errors"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
+	"cosmossdk.io/log"
 	tmtypes "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
-	storeKey         storetypes.StoreKey
+	// the address capable of executing a MsgUpdateParams message. Typically, this
+	// should be the x/gov module account.
+	authority string
+
+	storeKey         storetypes.StoreKey // TODO: maybe needs to be removed?
+	storeService     store.KVStoreService
 	cdc              codec.BinaryCodec
-	paramStore       paramtypes.Subspace
 	scopedKeeper     ccv.ScopedKeeper
 	channelKeeper    ccv.ChannelKeeper
 	portKeeper       ccv.PortKeeper
@@ -48,6 +54,9 @@ type Keeper struct {
 	ibcTransferKeeper       ccv.IBCTransferKeeper
 	ibcCoreKeeper           ccv.IBCCoreKeeper
 	feeCollectorName        string
+
+	validatorAddressCodec addresscodec.Codec
+	consensusAddressCodec addresscodec.Codec
 }
 
 // NewKeeper creates a new Consumer Keeper instance
@@ -60,7 +69,8 @@ func NewKeeper(
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
 	ibcTransferKeeper ccv.IBCTransferKeeper, ibcCoreKeeper ccv.IBCCoreKeeper,
-	feeCollectorName string,
+	feeCollectorName, authority string, validatorAddressCodec,
+	consensusAddressCodec addresscodec.Codec,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -68,9 +78,9 @@ func NewKeeper(
 	}
 
 	k := Keeper{
+		authority:               authority,
 		storeKey:                key,
 		cdc:                     cdc,
-		paramStore:              paramSpace,
 		scopedKeeper:            scopedKeeper,
 		channelKeeper:           channelKeeper,
 		portKeeper:              portKeeper,
@@ -83,6 +93,8 @@ func NewKeeper(
 		ibcCoreKeeper:           ibcCoreKeeper,
 		feeCollectorName:        feeCollectorName,
 		standaloneStakingKeeper: nil,
+		validatorAddressCodec:   validatorAddressCodec,
+		consensusAddressCodec:   consensusAddressCodec,
 	}
 
 	k.mustValidateFields()
@@ -93,9 +105,8 @@ func NewKeeper(
 // Used only in testing.
 func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace) Keeper {
 	return Keeper{
-		storeKey:   key,
-		cdc:        cdc,
-		paramStore: paramSpace,
+		storeKey: key,
+		cdc:      cdc,
 	}
 }
 
@@ -105,38 +116,44 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
 }
 
-// SetParamSpace sets the param space for the consumer keeper.
-// Note: this is only used for testing!
-func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
-	k.paramStore = ps
-}
-
 // Validates that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 16 {
+	if reflect.ValueOf(k).NumField() != 19 {
 		panic("number of fields in consumer keeper is not 16")
 	}
 
-	// Note 14 / 16 fields will be validated,
+	// Note 116 / 16 fields will be validated,
 	// hooks are explicitly set after the constructor,
 	// stakingKeeper is optionally set after the constructor,
 
-	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
-	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
-	ccv.PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
-	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
-	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
-	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
-	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
-	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
-	ccv.PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
-	ccv.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
-	ccv.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
+	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                           // 1
+	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 2
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 3
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 4
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 5
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 6
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 7
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 8
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                       // 9
+	ccv.PanicIfZeroOrNil(k.authKeeper, "authKeeper")                       // 10
+	ccv.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper")         // 11
+	ccv.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")                 // 12
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")           // 13
+	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 14
+	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 15
+	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 16
+}
+
+// ValidatorAddressCodec returns the app validator address codec.
+func (k Keeper) ValidatorAddressCodec() addresscodec.Codec {
+	return k.validatorAddressCodec
+}
+
+// ConsensusAddressCodec returns the app consensus address codec.
+func (k Keeper) ConsensusAddressCodec() addresscodec.Codec {
+	return k.consensusAddressCodec
 }
 
 // Logger returns a module-specific logger.
@@ -327,7 +344,7 @@ func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	return []tmtypes.ValidatorUpdate{}
 }
 
-func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) []stakingtypes.Validator {
+func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 	if !k.IsPreCCV(ctx) || k.standaloneStakingKeeper == nil {
 		panic("cannot get last standalone validators if not in pre-ccv state, or if standalone staking keeper is nil")
 	}
@@ -338,7 +355,7 @@ func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) []stakingtypes.Vali
 // i.e., the slice contains the IDs of the matured VSCPackets.
 func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 
@@ -370,7 +387,7 @@ func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacke
 // If two entries have the same maturityTime, then they are ordered by vscID.
 func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -471,7 +488,7 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 // Thus, the returned array is in ascending order of heights.
 func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -513,7 +530,7 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddre
 // Thus, the returned array is in ascending order of consAddresses.
 func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []types.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -562,7 +579,7 @@ func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 // Thus, the returned array is in ascending order of addresses.
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -590,7 +607,7 @@ func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint
 // DeleteHeadOfPendingPackets deletes the head of the pending packets queue.
 func (k Keeper) DeleteHeadOfPendingPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
 	defer iterator.Close()
 	if !iterator.Valid() {
 		return
@@ -624,7 +641,7 @@ func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDat
 	store := ctx.KVStore(k.storeKey)
 	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
 	// See consistency with PendingDataPacketsKey().
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		var packet ccv.ConsumerPacketData
@@ -656,7 +673,7 @@ func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
 	// See consistency with PendingDataPacketsKey().
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
 	keysToDel := [][]byte{}
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {

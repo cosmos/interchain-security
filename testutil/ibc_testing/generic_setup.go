@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -16,9 +16,10 @@ import (
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 type (
@@ -124,16 +125,28 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
 
-	prop := testkeeper.GetTestConsumerAdditionProp()
-	prop.ChainId = chainID
-	// NOTE: the initial height passed to CreateConsumerClient
-	// must be the height on the consumer when InitGenesis is called
-	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
-	err := providerKeeper.CreateConsumerClient(
-		providerChain.GetContext(),
-		prop,
-	)
-	s.Require().NoError(err)
+	prop := providertypes.ConsumerAdditionProposal{
+		Title:         fmt.Sprintf("start chain %s", chainID),
+		Description:   "description",
+		ChainId:       chainID,
+		InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2},
+		GenesisHash:   []byte("gen_hash"),
+		BinaryHash:    []byte("bin_hash"),
+		// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
+		// using time.Now() could set the spawn time to be too far in the past or too far in the future
+		SpawnTime:                         coordinator.CurrentTime,
+		UnbondingPeriod:                   ccvtypes.DefaultConsumerUnbondingPeriod,
+		CcvTimeoutPeriod:                  ccvtypes.DefaultBlocksPerDistributionTransmission,
+		TransferTimeoutPeriod:             ccvtypes.DefaultCCVTimeoutPeriod,
+		ConsumerRedistributionFraction:    ccvtypes.DefaultConsumerRedistributeFrac,
+		BlocksPerDistributionTransmission: ccvtypes.DefaultBlocksPerDistributionTransmission,
+		HistoricalEntries:                 ccvtypes.DefaultHistoricalEntries,
+		DistributionTransmissionChannel:   "",
+	}
+
+	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), &prop)
+	propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(providerChain.GetContext())
+	s.Require().Len(propsToExecute, 1, "props to execute is incorrect length")
 
 	// commit the state on the provider chain
 	coordinator.CommitBlock(providerChain)
@@ -150,7 +163,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	for _, update := range consumerGenesisState.Provider.InitialValSet {
 		// tmPubKey update.PubKey
 		tmPubKey, err := tmencoding.PubKeyFromProto(update.PubKey)
-		s.Require().NoError(err)
+		s.Require().NoError(err, "failed to convert tendermint pubkey")
 		valz = append(valz, &tmtypes.Validator{
 			PubKey:           tmPubKey,
 			VotingPower:      update.Power,

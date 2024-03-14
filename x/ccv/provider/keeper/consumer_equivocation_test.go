@@ -9,18 +9,18 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
+	evidencetypes "cosmossdk.io/x/evidence/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 func TestVerifyDoubleVotingEvidence(t *testing.T) {
@@ -339,7 +339,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					// Method will return once validator is not found.
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, false, // false = Not found.
+						stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound,
 					).Times(1),
 				}
 			},
@@ -354,7 +354,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					// We only expect a single call to GetValidatorByConsAddr.
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{Status: stakingtypes.Unbonded}, true,
+						stakingtypes.Validator{Status: stakingtypes.Unbonded}, nil,
 					).Times(1),
 				}
 			},
@@ -368,7 +368,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, true,
+						stakingtypes.Validator{}, nil,
 					).Times(1),
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
@@ -386,7 +386,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{Jailed: true}, true,
+						stakingtypes.Validator{Jailed: true}, nil,
 					).Times(1),
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
@@ -410,7 +410,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{Status: stakingtypes.Bonded}, true,
+						stakingtypes.Validator{Status: stakingtypes.Bonded}, nil,
 					).Times(1),
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
@@ -449,7 +449,7 @@ func createUndelegation(initialBalances []int64, completionTimes []time.Time) st
 	var entries []stakingtypes.UnbondingDelegationEntry
 	for i, balance := range initialBalances {
 		entry := stakingtypes.UnbondingDelegationEntry{
-			InitialBalance: sdk.NewInt(balance),
+			InitialBalance: math.NewInt(balance),
 			CompletionTime: completionTimes[i],
 		}
 		entries = append(entries, entry)
@@ -463,7 +463,7 @@ func createRedelegation(initialBalances []int64, completionTimes []time.Time) st
 	var entries []stakingtypes.RedelegationEntry
 	for i, balance := range initialBalances {
 		entry := stakingtypes.RedelegationEntry{
-			InitialBalance: sdk.NewInt(balance),
+			InitialBalance: math.NewInt(balance),
 			CompletionTime: completionTimes[i],
 		}
 		entries = append(entries, entry)
@@ -504,7 +504,7 @@ func TestComputePowerToSlash(t *testing.T) {
 				createRedelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
 			},
 			int64(1000),
-			sdk.NewInt(1),
+			math.NewInt(1),
 			int64(2000/1 + 1000),
 		},
 		{
@@ -527,7 +527,7 @@ func TestComputePowerToSlash(t *testing.T) {
 				createRedelegation([]int64{400}, []time.Time{nowPlus1Hour}),
 			},
 			int64(8391),
-			sdk.NewInt(2),
+			math.NewInt(2),
 			int64((2000+3500)/2 + 8391),
 		},
 		{
@@ -535,7 +535,7 @@ func TestComputePowerToSlash(t *testing.T) {
 			[]stakingtypes.UnbondingDelegation{},
 			[]stakingtypes.Redelegation{},
 			int64(3000),
-			sdk.NewInt(5),
+			math.NewInt(5),
 			int64(3000), // expectedPower is 0/5 + 3000
 		},
 		{
@@ -551,7 +551,7 @@ func TestComputePowerToSlash(t *testing.T) {
 				createRedelegation([]int64{100}, []time.Time{nowPlus1Hour}),
 			},
 			int64(17),
-			sdk.NewInt(3),
+			math.NewInt(3),
 			int64(2000/3 + 17),
 		},
 		{
@@ -566,7 +566,7 @@ func TestComputePowerToSlash(t *testing.T) {
 			},
 			[]stakingtypes.Redelegation{},
 			int64(1),
-			sdk.NewInt(3),
+			math.NewInt(3),
 			int64(2000/3 + 1),
 		},
 		{
@@ -591,40 +591,40 @@ func TestComputePowerToSlash(t *testing.T) {
 				createRedelegation([]int64{400}, []time.Time{now}),
 			},
 			int64(8391),
-			sdk.NewInt(2),
+			math.NewInt(2),
 			int64((1150+2550)/2 + 8391),
 		},
 	}
 
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
-	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+	validator, _ := stakingtypes.NewValidator(pubKey.Address().String(), pubKey, stakingtypes.Description{})
 
 	for _, tc := range testCases {
 		gomock.InOrder(mocks.MockStakingKeeper.EXPECT().
-			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), int64(0), sdk.NewDec(1)).
+			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), int64(0), math.LegacyNewDec(1)).
 			DoAndReturn(
-				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ math.LegacyDec) (math.Int, error) {
+					sum := math.NewInt(0)
 					for _, r := range undelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
-					return sum
+					return sum, nil
 				}).AnyTimes(),
 			mocks.MockStakingKeeper.EXPECT().
-				SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), int64(0), sdk.NewDec(1)).
+				SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), int64(0), math.LegacyNewDec(1)).
 				DoAndReturn(
-					func(ctx sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
-						sum := sdk.NewInt(0)
+					func(ctx sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ math.LegacyDec) (math.Int, error) {
+						sum := math.NewInt(0)
 						for _, r := range redelegation.Entries {
 							if r.IsMature(ctx.BlockTime()) {
 								continue
 							}
-							sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+							sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 						}
-						return sum
+						return sum, nil
 					}).AnyTimes(),
 		)
 
@@ -649,13 +649,10 @@ func TestSlashValidator(t *testing.T) {
 	// undelegation or redelegation entries with completion time one hour in the future have not yet matured
 	nowPlus1Hour := now.Add(time.Hour)
 
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	validator, err := stakingtypes.NewValidator(
-		sdk.ValAddress(pubKey.Address().Bytes()),
+		sdk.ValAddress(pubKey.Address()).String(),
 		pubKey,
 		stakingtypes.NewDescription("", "", "", "", ""),
 	)
@@ -679,64 +676,67 @@ func TestSlashValidator(t *testing.T) {
 	// validator's current power
 	currentPower := int64(3000)
 
-	powerReduction := sdk.NewInt(2)
-	slashFraction, _ := sdk.NewDecFromStr("0.5")
+	powerReduction := math.NewInt(2)
+	slashFraction, _ := math.LegacyNewDecFromStr("0.5")
 
 	// the call to `Slash` should provide an `infractionHeight` of 0 and an expected power of
 	// (750 (undelegations) + 750 (redelegations)) / 2 (= powerReduction) + 3000 (currentPower) = 3750
 	expectedInfractionHeight := int64(0)
 	expectedSlashPower := int64(3750)
 
+	expectedValoperAddr, err := keeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+	require.NoError(t, err)
+
 	expectedCalls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().
 			GetValidatorByConsAddr(ctx, gomock.Any()).
-			Return(validator, true),
+			Return(validator, nil),
 		mocks.MockSlashingKeeper.EXPECT().
 			IsTombstoned(ctx, consAddr).
 			Return(false),
 		mocks.MockStakingKeeper.EXPECT().
-			GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator()).
-			Return(undelegations),
+			GetUnbondingDelegationsFromValidator(ctx, expectedValoperAddr).
+			Return(undelegations, nil),
 		mocks.MockStakingKeeper.EXPECT().
-			GetRedelegationsFromSrcValidator(ctx, validator.GetOperator()).
-			Return(redelegations),
+			GetRedelegationsFromSrcValidator(ctx, expectedValoperAddr).
+			Return(redelegations, nil),
 		mocks.MockStakingKeeper.EXPECT().
-			GetLastValidatorPower(ctx, validator.GetOperator()).
-			Return(currentPower),
+			GetLastValidatorPower(ctx, expectedValoperAddr).
+			Return(currentPower, nil),
 		mocks.MockStakingKeeper.EXPECT().
 			PowerReduction(ctx).
 			Return(powerReduction),
 		mocks.MockStakingKeeper.EXPECT().
 			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ math.LegacyDec) (math.Int, error) {
+					sum := math.NewInt(0)
 					for _, r := range undelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
-					return sum
+					return sum, nil
 				}).AnyTimes(),
 		mocks.MockStakingKeeper.EXPECT().
 			SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ math.LegacyDec) (math.Int, error) {
+					sum := math.NewInt(0)
 					for _, r := range redelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
-					return sum
+					return sum, nil
 				}).AnyTimes(),
 		mocks.MockSlashingKeeper.EXPECT().
 			SlashFractionDoubleSign(ctx).
-			Return(slashFraction),
+			Return(slashFraction, nil),
 		mocks.MockStakingKeeper.EXPECT().
-			SlashWithInfractionReason(ctx, consAddr, expectedInfractionHeight, expectedSlashPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN).
+			SlashWithInfractionReason(ctx, consAddr, expectedInfractionHeight, expectedSlashPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN).Return(math.NewInt(expectedSlashPower), nil).
 			Times(1),
 	}
 
@@ -756,7 +756,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	// validator is initially unbonded
-	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+	validator, _ := stakingtypes.NewValidator(pubKey.Address().String(), pubKey, stakingtypes.Description{})
 
 	consAddr, _ := validator.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(consAddr)
@@ -764,7 +764,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 	expectedCalls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().
 			GetValidatorByConsAddr(ctx, gomock.Any()).
-			Return(validator, true),
+			Return(validator, nil),
 	}
 
 	gomock.InOrder(expectedCalls...)

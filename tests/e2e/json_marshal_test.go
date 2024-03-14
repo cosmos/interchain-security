@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -20,7 +22,7 @@ func TestProposalUnmarshal(t *testing.T) {
 			"InitialHeight": {
 				"revision_height": 1
 			},
-			"Status": "PROPOSAL_STATUS_PASSED"
+			"Status": "3"
 		}
 	}`
 
@@ -29,7 +31,7 @@ func TestProposalUnmarshal(t *testing.T) {
 		Chain:         ChainID("consu"),
 		SpawnTime:     0,
 		InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-		Status:        "PROPOSAL_STATUS_PASSED",
+		Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 	}
 
 	type ProposalAndType struct {
@@ -79,7 +81,7 @@ var testCases = []ChainStateTestCase{
 						"InitialHeight": {
 							"revision_height": 1
 						},
-						"Status": "PROPOSAL_STATUS_PASSED"
+						"Status": "3"
 					}
 				}
 			}
@@ -96,7 +98,7 @@ var testCases = []ChainStateTestCase{
 					Chain:         ChainID("consu"),
 					SpawnTime:     0,
 					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-					Status:        "PROPOSAL_STATUS_PASSED",
+					Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 				},
 			},
 		},
@@ -125,7 +127,7 @@ var testCases = []ChainStateTestCase{
 						"InitialHeight": {
 							"revision_height": 1
 						},
-						"Status": "PROPOSAL_STATUS_PASSED"
+						"Status": "3"
 					}
 				}
 			},

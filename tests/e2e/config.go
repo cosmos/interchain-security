@@ -368,6 +368,7 @@ func SlashThrottleTestConfig() TestConfig {
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -515,6 +516,7 @@ func DefaultTestConfig() TestConfig {
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -577,6 +579,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -619,6 +622,7 @@ func MultiConsumerTestConfig() TestConfig {
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"30s\" | " +
+					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -677,6 +681,7 @@ func ChangeoverTestConfig() TestConfig {
 				IpPrefix:       "7.7.7",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
