@@ -925,11 +925,12 @@ module ccv {
             val newProviderState2 = newProviderState.with(
                 "downtimeSlashRequests", newProviderState.downtimeSlashRequests.put(sender, newDowntimeSlashRequests)
             ).with(
-                "consumersWithAddrAssignmentChangesInThisEpoch", 
+                "consumersWithPowerChangesInThisEpoch", 
                 if (valSetChanged) {
-                    newProviderState.consumersWithAddrAssignmentChangesInThisEpoch.union(Set(sender))
+                    // valSet changes for all consumers, not only the sende,r because the validator will be jailed for everyone
+                    newProviderState.consumersWithPowerChangesInThisEpoch.union(getRunningConsumers(newProviderState))
                 } else {
-                    newProviderState.consumersWithAddrAssignmentChangesInThisEpoch
+                    newProviderState.consumersWithPowerChangesInThisEpoch
                 }
             )
             Ok(currentState.with("providerState", newProviderState2))
