@@ -188,7 +188,7 @@ func transformToV2(jsonRaw []byte, ctx client.Context, removePreHashKey bool) (j
 
 	provider, err := ctx.Codec.MarshalJSON(&srcConGen.Provider)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling 'Provider' failed: %v", err)
+		return nil, fmt.Errorf("marshalling 'Provider' failed: %v", err)
 	}
 	providerMap := map[string]json.RawMessage{}
 	if err := json.Unmarshal(provider, &providerMap); err != nil {

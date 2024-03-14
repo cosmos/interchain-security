@@ -80,6 +80,10 @@ func (s *Driver) providerChain() *ibctesting.TestChain {
 	return s.chain("provider")
 }
 
+func (s *Driver) providerHeight() int64 {
+	return s.providerChain().CurrentHeader.Height
+}
+
 func (s *Driver) providerCtx() sdk.Context {
 	return s.providerChain().GetContext()
 }

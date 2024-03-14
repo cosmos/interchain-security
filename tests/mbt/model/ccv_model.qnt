@@ -18,6 +18,7 @@ module ccv_model {
     // taken from the sdk, jail time ends at maximum of a certain datatype
     // see https://github.com/cosmos/cosmos-sdk/blob/03d578b9de5136ffc658f2b0c07434373b07b7da/x/evidence/types/params.go#L11 
     pure val doubleSignJailEndTime = 253402300799
+    pure val epochLength = 3
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     // possible consumer addresses that nodes can assign their key to
@@ -33,7 +34,8 @@ module ccv_model {
         DowntimeJailTime = downtimeJailTime,
         DoubleSignJailEndTime = doubleSignJailEndTime,
         DowntimeSlashPercentage = 5,
-        DoubleSignSlashPercentage = 10
+        DoubleSignSlashPercentage = 10,
+        BlocksPerEpoch = epochLength
     ).* from "./ccv"
 
     type Parameters = {
@@ -48,6 +50,7 @@ module ccv_model {
         DowntimeSlashPercentage: int,
         DoubleSignSlashPercentage: int,
         DowntimeJailDuration: Time,
+        BlocksPerEpoch: int,
     }
 
     // The params variable is never actually changed, and
@@ -150,6 +153,7 @@ module ccv_model {
             DowntimeSlashPercentage: DowntimeSlashPercentage,
             DoubleSignSlashPercentage: DoubleSignSlashPercentage,
             DowntimeJailDuration: DowntimeJailTime,
+            BlocksPerEpoch: epochLength,
         }
     }
 
@@ -258,6 +262,25 @@ module ccv_model {
         stepCommon
     }
 
+    // Runs epochLength many blocks on the provider.
+    // The first block will start all consumers in consumersToStart and stop all consumers in consumersToStop,
+    // and advance time by timeAdvancement - ((epochLength-1) * Seconds).
+    // The rest of the blocks will not start or stop any consumers, and will advance time by 1 second each.
+    // As a a `Run`, it is only used in tests, not during simulation or verification.
+    run EndProviderEpoch(
+        timeAdvancement: Time,
+        consumersToStart: Set[Chain],
+        consumersToStop: Set[Chain]
+    ): bool =
+        epochLength.reps(
+            i => 
+            if (i == 0) {
+                EndAndBeginBlockForProvider(timeAdvancement-((epochLength-1)*Second), consumersToStart, consumersToStop)
+            } else {
+                EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            }
+        )
+
     // ==================
     // UTILITY FUNCTIONS
     // ==================
@@ -347,16 +370,19 @@ module ccv_model {
             )
         )
 
+
+    val CurrentBlockEndsEpoch = currentState.providerState.chainState.currentBlockHeight % epochLength == 0
+
     // Any update in the power of a validator on the provider
     // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
     val ValUpdatePrecondition = trace[trace.length()-1].kind == "EndAndBeginBlockForProvider"
     val ValidatorUpdatesArePropagatedInv = 
-        // when the provider has just entered a validator set into a block...
-        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock
+        // when the an epoch ends and the provider has just entered a validator set into a block...
+        ValUpdatePrecondition and CurrentBlockEndsEpoch
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
-        // ... for each consumer that is running then ...
-        runningConsumers.forall(
+        // ... for each consumer for which we need to send a vsc packet ...
+        currentState.providerState.consumersWithPowerChangesInThisEpoch.forall(
             // ...the validator set is in a sent packet...
             consumer => currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
                 packet => packet.validatorSet == providerValSetInCurBlock
@@ -572,9 +598,10 @@ module ccv_model {
                     assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 150), InitialValidatorSet)),
                     // change voting power on provider again
                     VotingPowerChange("node1", 50).then(
-                        // end another block
-                        EndAndBeginBlockForProvider(1 * Second, Set(), Set())
-                    ).then(
+                        // end the epoch
+                        EndProviderEpoch(epochLength * Second, Set(), Set())
+                    )
+                    .then(
                         // deliver packet to consumer1
                         DeliverVscPacket("consumer1")
                     )
@@ -643,7 +670,7 @@ module ccv_model {
             VotingPowerChange("node1", 50)
         ).then(
             // send packet to consumer1 and consumer2
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(epochLength * Second, Set(), Set())
         ).then(
             // deliver the packets
             DeliverVscPacket("consumer1")
@@ -658,7 +685,7 @@ module ccv_model {
             VotingPowerChange("node2", 50)
         ).then(
             // send packets
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(epochLength * Second, Set(), Set())
         ).then(
             //deliver to consumer1
             DeliverVscPacket("consumer1")
@@ -691,7 +718,7 @@ module ccv_model {
         )
         .then(
             // send packets
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(epochLength * Second, Set(), Set())
         )
         .then(
             // advance time on provider by VscTimeout + 1 Second
@@ -827,11 +854,11 @@ module ccv_model {
     // and the key assignment of each validator should be applied in that VSCPacket.
     val ValidatorUpdatesArePropagatedKeyAssignmentInv = 
         // when the provider has just entered a validator set into a block...
-        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock
+        ValUpdatePrecondition and CurrentBlockEndsEpoch
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
-        runningConsumers.forall(
+        currentState.providerState.consumersWithPowerChangesInThisEpoch.forall(
             // ...the validator set under key assignment is in a sent packet...
             val providerState = currentState.providerState
             consumer => providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
@@ -961,7 +988,7 @@ module ccv_model {
         )
         .then(
             // end and begin block to make sure the key assignment is processed and the packet is sent
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(epochLength * Second, Set(), Set())
         )
         .then(
             // receive the packet on the consumer
@@ -1045,7 +1072,7 @@ module ccv_model {
             VotingPowerChange("node1", 50)
         ).then(
             // end a block on the provider
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(3 * Second, Set(), Set())
         ).then(
             val vscId = currentState.providerState.sentVscPacketsToConsumer.get("consumer1").head().id
             // deliver the vsc packet to consumer1
@@ -1085,7 +1112,7 @@ module ccv_model {
         )
         .then(
             // start consumer 2
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer2"), Set())
+            EndProviderEpoch(3 * Second, Set("consumer2"), Set())
         )
         .then(
             // deliver a vsc packet to consumer 3
@@ -1093,7 +1120,7 @@ module ccv_model {
         )
         .then(
             // consumer 3 slashes validator 1
-            ConsumerInitiatedSlashDet("consumer3", "node3", 1, true )
+            ConsumerInitiatedSlashDet("consumer3", "node3", 0, true )
         )
         .then(
             // end and begin a block for consumer 3
@@ -1127,7 +1154,7 @@ module ccv_model {
         )
         .then(
             // end and begin a block on the provider
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(3 * Second, Set(), Set())
         )
         .then(
             // deliver the vsc packet to consumer 2
@@ -1135,7 +1162,7 @@ module ccv_model {
         )
         .then(
             // consumer 2 slashes validator 9
-            ConsumerInitiatedSlashDet("consumer2", "node9", 1, true )
+            ConsumerInitiatedSlashDet("consumer2", "node9", 0, true )
         )
         .then(
             // end and begin a block for consumer 2
@@ -1170,7 +1197,7 @@ module ccv_model {
         )
         .then(
             // end and begin a block on the provider
-            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+            EndProviderEpoch(3 * Second, Set(), Set())
         )
         .then(
             // deliver the vsc packet to consumer 1
@@ -1178,7 +1205,7 @@ module ccv_model {
         )
         .then(
             // initiate a slash for downtime
-            ConsumerInitiatedSlashDet("consumer1", "node1", 1, true)
+            ConsumerInitiatedSlashDet("consumer1", "node1", 0, true)
         )
         .then(
             // end and begin a block for consumer 1 to send the packet
@@ -1192,21 +1219,4 @@ module ccv_model {
                 DeliverPacketToProvider("consumer1")
             }
         )
-        // .then(
-        //     // ensure that the provider will send a slash ack to consumer 1 on endblock
-        //     all {
-        //         assert(currentState.providerState.acksToSendOnEndBlock.get("consumer1").length() == 1),
-        //         // end a block on the provider, which should send the ack
-        //         EndAndBeginBlockForProvider(1 * Second, Set(), Set())
-        //     }
-        // )
-        // .then(
-        //     all {
-        //         // the ack should have been received by the consumer
-        //         assert(currentState.consumerStates.get("consumer1").waitingForSlashPacketAck.size() == 0),
-        //         // action does not matter
-        //         VotingPowerChange("node1", 50)
-        //     }
-        // )
-        
 }

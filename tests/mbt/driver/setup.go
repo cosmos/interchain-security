@@ -360,6 +360,26 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		NewChain: consumerGenesis.NewChain,
 	}
 
+	var stakingValidators []stakingtypes.Validator
+
+	// set up the current consumer validators by utilizing the initial validator set
+	for _, val := range consumerGenesisForProvider.Provider.InitialValSet {
+		pubKey := val.PubKey
+		consAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(pubKey)
+		if err != nil {
+			continue
+		}
+
+		v, found := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		if !found {
+			continue
+		}
+		stakingValidators = append(stakingValidators, v)
+	}
+
+	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators)
+	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
+
 	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),
 		string(consumerChainId),
@@ -380,22 +400,6 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// we model a blank slate: a provider and consumer that have fully established
 	// their channel, and are ready for anything to happen.
 	s.consumerKeeper(consumerChainId).SetProviderChannel(s.ctx(consumerChainId), consumerEndPoint.ChannelID)
-
-	// Commit a block on both chains, giving us two committed headers from
-	// the same time and height. This is the starting point for all our
-	// data driven testing.
-	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
-	lastProviderHeader, _ := simibc.EndBlock(providerChain, func() {})
-
-	// Get ready to update clients.
-	simibc.BeginBlock(providerChain, 5)
-	simibc.BeginBlock(consumerChain, 5)
-
-	// Update clients to the latest header.
-	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader, false)
-	require.NoError(s.t, err, "Error updating client on consumer for chain %v", consumerChain.ChainID)
-	err = simibc.UpdateReceiverClient(providerEndPoint, consumerEndPoint, lastProviderHeader, false)
-	require.NoError(s.t, err, "Error updating client on provider for chain %v", consumerChain.ChainID)
 
 	// path is ready to go
 	return path

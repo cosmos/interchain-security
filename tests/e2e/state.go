@@ -365,18 +365,18 @@ func (tr TestConfig) getBalance(chain ChainID, validator ValidatorID) uint {
 			valDelAddress = valCfg.DelAddressOnConsumer
 		}
 	}
-
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 
 		"query", "bank", "balances",
 		valDelAddress,
 
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
-	).CombinedOutput()
+	)
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal("getBalance() failed: ", cmd, ": ", err, "\n", string(bz))
 	}
 
 	amount := gjson.Get(string(bz), `balances.#(denom=="stake").amount`)
@@ -527,7 +527,7 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 
 	total, err := strconv.Atoi(valset.Total)
 	if err != nil {
-		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Total, pretty.Sprint(valset))
+		log.Fatalf("strconv.Atoi returned an error while converting total for validator set: %v, input: %s, validator set: %s", err, valset.Total, pretty.Sprint(valset))
 	}
 
 	if total != len(valset.Validators) {
@@ -685,6 +685,7 @@ func (tr TestConfig) getProviderAddressFromConsumer(consumerChain ChainID, valid
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
+		log.Println("error running ", cmd)
 		log.Fatal(err, "\n", string(bz))
 	}
 

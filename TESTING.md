@@ -1,4 +1,4 @@
-# Testing 
+# Testing
 
 To increase confidence in the correctness of the Interchain Security code we consider various testing approaches.
 
@@ -18,9 +18,14 @@ To run integration tests against your own consumer/provider implementations, use
 
 [MBT](tests/mbt/) tests are similar to integration tests, but they compare the system state to an expected state generated from a formally verified specification written in Quint.
 
-## End-to-End (E2E) Tests 
+## End-to-End (E2E) Tests
 
 [E2E tests](tests/e2e/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. E2E tests use queries/transactions invoked from CLI to drive and validate the code.
+
+## Compatibility Tests
+
+To test compatibility between different provider and consumer versions the [E2E tests](tests/e2e/) were extended by compatibility tests. The test cases perform basic sanity tests against the selected provider and consumer versions. A selected combination of provider and consumer versions are tested on a nightly bases and can be run locally with the
+related make command listed below.
 
 ## Running Tests
 Tests can be run using `make`:
@@ -49,6 +54,9 @@ make test-e2e-short
 
 # equivalent to make test with caching disabled
 make test-no-cache
+
+# run E2E compatibility tests for selected provider and consumer versions
+make test-e2e-compatibility-tests-latest
 ```
 
 Alternatively you can run tests using `go test`:
@@ -128,4 +136,4 @@ If using VSCode, see [vscode-go/wiki/debugging](https://github.com/golang/vscode
 
 ## More
 
-More instructions will be added soon, in time for the testnet. 
+More instructions will be added soon, in time for the testnet.

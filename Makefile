@@ -2,6 +2,9 @@
 
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
+# Fetch tags and get the latest ICS version by filtering tags by vX.Y.Z and vX.Y.Z-lsm
+# using lazy set to only execute commands when variable is used
+LATEST_RELEASE ?= $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm | head -n 1)
 
 # don't override user values
 ifeq (,$(VERSION))
@@ -82,6 +85,10 @@ test-e2e-short:
 test-e2e-short-cometmock:
 	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer
 
+# run minimal set of traces with cometmock and gaia
+test-e2e-short-cometmock-gaia:
+	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer --use-gaia
+
 # run full E2E tests in sequence (including multiconsumer)
 test-e2e-multi-consumer:
 	go run ./tests/e2e/... --include-multi-consumer
@@ -89,6 +96,10 @@ test-e2e-multi-consumer:
 # run full E2E tests in parallel (including multiconsumer)
 test-e2e-parallel:
 	go run ./tests/e2e/... --include-multi-consumer --parallel
+
+# run E2E compatibility tests against latest release
+test-e2e-compatibility-tests-latest:
+	go run ./tests/e2e/... --tc compatibility -pv $(LATEST_RELEASE)
 
 # run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
 test-gaia-e2e:
@@ -129,10 +140,8 @@ test-trace:
 # Note: this is *not* using the Quint models to test the system,
 # this tests/verifies the Quint models *themselves*.
 verify-models:
-	quint test tests/mbt/model/ccv_test.qnt;\
-	quint test tests/mbt/model/ccv_model.qnt;\
-	quint run --invariant "all{ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" tests/mbt/model/ccv_model.qnt --max-steps 200 --max-samples 200;\
-	quint run --invariant "all{ValidatorUpdatesArePropagatedKeyAssignmentInv,ValidatorSetHasExistedKeyAssignmentInv,SameVscPacketsKeyAssignmentInv,MatureOnTimeInv,EventuallyMatureOnProviderInv,KeyAssignmentRulesInv}" tests/mbt/model/ccv_model.qnt --step stepKeyAssignment --max-steps 200 --max-samples 200
+	cd tests/mbt/model;\
+	../run_invariants.sh
 
 
 
