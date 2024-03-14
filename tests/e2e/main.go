@@ -250,17 +250,27 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 	tests = []testStepsWithConfig{}
 	// Get predefined from selection
 	for _, tc := range selectedPredefinedTests {
+		testConfig := TestConfigType("")
+		testSteps := []Step{}
+
 		// first part of tc is the steps, second part is the test config
+		splitTcString := strings.Split(tc, "::")
+		if len(splitTcString) == 2 {
+			tc = splitTcString[0]
+			testConfig = TestConfigType(splitTcString[1])
+		}
 
 		if _, exists := stepChoices[tc]; !exists {
 			log.Fatalf("Step choice '%s' not found.\nsee usage info:\n%s", tc, getTestCaseUsageString())
 		}
 
-		stepChoice := stepChoices[tc]
-
+		testSteps = stepChoices[tc].steps
+		if testConfig == "" {
+			testConfig = stepChoices[tc].testConfig
+		}
 		tests = append(tests, testStepsWithConfig{
-			config: stepChoice.testConfig,
-			steps:  stepChoice.steps,
+			config: testConfig,
+			steps:  testSteps,
 		},
 		)
 	}
