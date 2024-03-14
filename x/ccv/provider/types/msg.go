@@ -314,6 +314,15 @@ func (msg MsgOptOut) ValidateBasic() error {
 	return nil
 }
 
+// NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
+func NewMsgSetConsumerCommissionRate(chainID string, commission sdk.Dec, providerValidatorAddress sdk.ValAddress) *MsgSetConsumerCommissionRate {
+	return &MsgSetConsumerCommissionRate{
+		ChainId:      chainID,
+		Rate:         commission,
+		ProviderAddr: providerValidatorAddress.String(),
+	}
+}
+
 // Type implements the sdk.Msg interface.
 func (msg MsgOptOut) Type() string {
 	return TypeMsgOptOut
