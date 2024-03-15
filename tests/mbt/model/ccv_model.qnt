@@ -858,9 +858,9 @@ module ccv_model {
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
+        val providerState = currentState.providerState
         currentState.providerState.consumersWithPowerChangesInThisEpoch.forall(
             // ...the validator set under key assignment is in a sent packet...
-            val providerState = currentState.providerState
             consumer => providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
                 packet => 
                     packet.validatorSet == 
