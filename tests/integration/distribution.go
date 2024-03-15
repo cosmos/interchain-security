@@ -151,7 +151,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 		1,
 	)
 
-	// Check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlock
+	// Check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlockRD
 	rewardsAlloc := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().Empty(rewardsAlloc.Rewards)
 

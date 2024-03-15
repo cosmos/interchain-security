@@ -147,7 +147,6 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	}
 
 	for _, val := range k.GetConsumerValSet(ctx, chainID) {
-		// TODO: should check if validator IsOptIn or continue here
 		consAddr := sdk.ConsAddress(val.ProviderConsAddr)
 
 		powerFraction := math.LegacyNewDec(val.Power).QuoTruncate(math.LegacyNewDec(totalPower))
