@@ -78,12 +78,18 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().Equal(providerExpectedRewards.AmountOf(sdk.DefaultBondDenom), providerTokens.AmountOf(sdk.DefaultBondDenom))
 
 	// send the reward to provider chain after 2 blocks
-
 	s.consumerChain.NextBlock()
 	providerTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
 	s.Require().Equal(0, len(providerTokens))
 
-	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
+	relayAllCommittedPackets(
+		s,
+		s.consumerChain,
+		s.transferPath,
+		transfertypes.PortID,
+		s.transferPath.EndpointA.ChannelID,
+		1,
+	)
 	s.providerChain.NextBlock()
 
 	// Since consumer reward denom is not yet registered, the coins never get into the fee pool, staying in the ConsumerRewardsPool
@@ -101,41 +107,72 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().Greater(ibcCoinIndex, -1)
 
 	// Check that the coins got into the ConsumerRewardsPool
-	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpectedRewards[0].Amount))
+	providerExpRewardsAmount := providerExpectedRewards.AmountOf(sdk.DefaultBondDenom)
+	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpRewardsAmount))
 
 	// Advance a block and check that the coins are still in the ConsumerRewardsPool
 	s.providerChain.NextBlock()
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
-	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpectedRewards[0].Amount))
+	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpRewardsAmount))
 
 	// Set the consumer reward denom. This would be done by a governance proposal in prod
 	s.providerApp.GetProviderKeeper().SetConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom)
 
 	// Refill the consumer fee pool
-	err = consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(), s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
+	err = consumerBankKeeper.SendCoinsFromAccountToModule(
+		s.consumerCtx(),
+		s.consumerChain.SenderAccount.GetAddress(),
+		authtypes.FeeCollectorName,
+		fees,
+	)
 	s.Require().NoError(err)
 
 	// pass two blocks
 	s.consumerChain.NextBlock()
 	s.consumerChain.NextBlock()
 
+	// save the consumer validators total outstanding rewards on the provider,
+	// before transferring the rewards from the consumer
+	consumerValsOutstandingRewardsFunc := func(ctx sdk.Context) sdk.DecCoins {
+		totalRewards := sdk.DecCoins{}
+		for _, v := range s.providerApp.GetProviderKeeper().GetConsumerValSet(ctx, s.consumerChain.ChainID) {
+			val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(ctx, sdk.ConsAddress(v.ProviderConsAddr))
+			s.Require().True(ok)
+			valReward := s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(ctx, val.GetOperator())
+			totalRewards = totalRewards.Add(valReward.Rewards...)
+		}
+		return totalRewards
+	}
+	consuValsRewards := consumerValsOutstandingRewardsFunc(s.providerCtx())
+
+	// save community pool balance
+	communityPool := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
+
 	// transfer rewards from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
+	relayAllCommittedPackets(
+		s,
+		s.consumerChain,
+		s.transferPath,
+		transfertypes.PortID,
+		s.transferPath.EndpointA.ChannelID,
+		1,
+	)
 
 	// check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlock
 	rewardsAlloc := s.providerApp.GetProviderKeeper().GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().Empty(rewardsAlloc.Rewards)
 
-	// Check that the reward pool still has the first coins transferred that were never allocated
+	// Check that the reward pool still holds the first coins transferred that were never allocated
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
-	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpectedRewards[0].Amount))
+	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, providerExpRewardsAmount)
 
-	// check that the fee pool has the expected amount of coins
-	// Note that all rewards are allocated to the community pool since
-	// BeginBlock is called without the validators' votes in ibctesting.
-	// See NextBlock() in https://github.com/cosmos/ibc-go/blob/release/v7.3.x/testing/chain.go#L281
-	communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
-	s.Require().Equal(communityCoins[ibcCoinIndex].Amount, (sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
+	// check that the rewards are transferred to both the consumer validators and the community pool
+	consuValsRewardsReceived := consumerValsOutstandingRewardsFunc(s.providerCtx()).Sub(consuValsRewards)
+	s.Require().NotEmpty(consuValsRewardsReceived)
+	commPoolDelta := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx()).Sub(communityPool)
+	s.Require().NotEmpty(commPoolDelta)
+
+	s.Require().Equal(sdk.NewDecFromInt(providerExpRewardsAmount), consuValsRewardsReceived[0].Amount.Add(commPoolDelta[0].Amount))
 }
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks

@@ -17,16 +17,11 @@ import (
 
 // BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.
 func (k Keeper) BeginBlockRD(ctx sdk.Context, req abci.RequestBeginBlock) {
-	// determine the total power signing the block
-	var previousTotalPower int64
-	for _, voteInfo := range req.LastCommitInfo.GetVotes() {
-		previousTotalPower += voteInfo.Validator.Power
-	}
 
 	// TODO this is Tendermint-dependent
 	// ref https://github.com/cosmos/cosmos-sdk/issues/3095
 	if ctx.BlockHeight() > 1 {
-		k.AllocateTokens(ctx, previousTotalPower, req.LastCommitInfo.GetVotes())
+		k.AllocateTokens(ctx)
 	}
 }
 
@@ -75,7 +70,7 @@ func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenom
 
 // AllocateTokens performs rewards distribution to the community pool and validators
 // based on the Partial Set Security distribution specification.
-func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bondedVotes []abci.VoteInfo) {
+func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	// return if there is no coins in the consumer rewards pool
 	if k.GetConsumerRewardsPool(ctx).IsZero() {
 		return
@@ -95,6 +90,9 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 			continue
 		}
 
+		// note that it's possible that no rewards are collected even though the
+		// reward pool isn't empty. This can happen if the reward pool holds some tokens
+		// of non-whitelisted denominations.
 		if rewardsCollected.IsZero() {
 			continue
 		}
@@ -110,7 +108,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 			return
 		}
 
-		// Calculate the reward allocations
+		// calculate the reward allocations
 		remaining := rewardsCollectedDec
 		communityTax := k.distributionKeeper.GetCommunityTax(ctx)
 		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
