@@ -862,7 +862,8 @@ module ccv {
         if (not(isRunningConsumer(consumer, currentState.providerState))) {
             Err("Consumer is not currently a consumer - must have 'running' status!")
         } else if (downtime and consumerState.outstandingDowntime.contains(consumerNode)) {
-            Err("Consumer already has outstanding downtime for validator!")
+            // consumer already has outstanding downtime - this should be a noop, i.e. no change in state
+            Ok(currentState)
         } else {
             val vscPacket = consumerState.receivedVscPackets.select(packet => packet.id == vscId)[0]
             val packet = Slash({
