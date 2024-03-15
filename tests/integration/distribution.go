@@ -50,6 +50,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	providerAccountKeeper := s.providerApp.GetTestAccountKeeper()
 	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 	providerBankKeeper := s.providerApp.GetTestBankKeeper()
+	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// send coins to the fee pool which is used for reward distribution
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
@@ -82,41 +83,35 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	providerTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
 	s.Require().Equal(0, len(providerTokens))
 
-	relayAllCommittedPackets(
-		s,
-		s.consumerChain,
-		s.transferPath,
-		transfertypes.PortID,
-		s.transferPath.EndpointA.ChannelID,
-		1,
-	)
+	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
 	s.providerChain.NextBlock()
 
 	// Since consumer reward denom is not yet registered, the coins never get into the fee pool, staying in the ConsumerRewardsPool
 	rewardPool := providerAccountKeeper.GetModuleAccount(s.providerCtx(), providertypes.ConsumerRewardsPool).GetAddress()
 	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
 
-	ibcCoinIndex := -1
-	for i, coin := range rewardCoins {
+	// Find the reward denom with an IBC prefix
+	rewardsIBCdenom := ""
+	for _, coin := range rewardCoins {
 		if strings.HasPrefix(coin.Denom, "ibc") {
-			ibcCoinIndex = i
+			rewardsIBCdenom = coin.Denom
 		}
 	}
 
 	// Check that we found an ibc denom in the reward pool
-	s.Require().Greater(ibcCoinIndex, -1)
+	s.Require().NotZero(rewardsIBCdenom)
 
 	// Check that the coins got into the ConsumerRewardsPool
 	providerExpRewardsAmount := providerExpectedRewards.AmountOf(sdk.DefaultBondDenom)
-	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpRewardsAmount))
+	s.Require().Equal(rewardCoins.AmountOf(rewardsIBCdenom), providerExpRewardsAmount)
 
 	// Advance a block and check that the coins are still in the ConsumerRewardsPool
 	s.providerChain.NextBlock()
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
-	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, (providerExpRewardsAmount))
+	s.Require().Equal(rewardCoins.AmountOf(rewardsIBCdenom), providerExpRewardsAmount)
 
 	// Set the consumer reward denom. This would be done by a governance proposal in prod
-	s.providerApp.GetProviderKeeper().SetConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom)
+	providerKeeper.SetConsumerRewardDenom(s.providerCtx(), rewardsIBCdenom)
 
 	// Refill the consumer fee pool
 	err = consumerBankKeeper.SendCoinsFromAccountToModule(
@@ -127,15 +122,15 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	)
 	s.Require().NoError(err)
 
-	// pass two blocks
+	// Pass two blocks
 	s.consumerChain.NextBlock()
 	s.consumerChain.NextBlock()
 
-	// save the consumer validators total outstanding rewards on the provider,
+	// Save the consumer validators total outstanding rewards on the provider,
 	// before transferring the rewards from the consumer
 	consumerValsOutstandingRewardsFunc := func(ctx sdk.Context) sdk.DecCoins {
 		totalRewards := sdk.DecCoins{}
-		for _, v := range s.providerApp.GetProviderKeeper().GetConsumerValSet(ctx, s.consumerChain.ChainID) {
+		for _, v := range providerKeeper.GetConsumerValSet(ctx, s.consumerChain.ChainID) {
 			val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(ctx, sdk.ConsAddress(v.ProviderConsAddr))
 			s.Require().True(ok)
 			valReward := s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(ctx, val.GetOperator())
@@ -145,10 +140,10 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	}
 	consuValsRewards := consumerValsOutstandingRewardsFunc(s.providerCtx())
 
-	// save community pool balance
+	// Save community pool balance
 	communityPool := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
 
-	// transfer rewards from consumer to provider
+	// Transfer rewards from consumer to provider
 	relayAllCommittedPackets(
 		s,
 		s.consumerChain,
@@ -158,21 +153,24 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 		1,
 	)
 
-	// check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlock
-	rewardsAlloc := s.providerApp.GetProviderKeeper().GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
+	// Check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlock
+	rewardsAlloc := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().Empty(rewardsAlloc.Rewards)
 
-	// Check that the reward pool still holds the first coins transferred that were never allocated
+	// Check that the reward pool still holds the coins from the first transfer,
+	// which were never allocated since they were not whitelisted
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
-	s.Require().Equal(rewardCoins[ibcCoinIndex].Amount, providerExpRewardsAmount)
+	s.Require().Equal(rewardCoins.AmountOf(rewardsIBCdenom), providerExpRewardsAmount)
 
-	// check that the rewards are transferred to both the consumer validators and the community pool
+	// Check that summing the rewards received by the consumer validators and the community pool
+	// is equal to the expected provider rewards
 	consuValsRewardsReceived := consumerValsOutstandingRewardsFunc(s.providerCtx()).Sub(consuValsRewards)
-	s.Require().NotEmpty(consuValsRewardsReceived)
-	commPoolDelta := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx()).Sub(communityPool)
-	s.Require().NotEmpty(commPoolDelta)
+	communityPoolDelta := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx()).Sub(communityPool)
 
-	s.Require().Equal(sdk.NewDecFromInt(providerExpRewardsAmount), consuValsRewardsReceived[0].Amount.Add(commPoolDelta[0].Amount))
+	s.Require().Equal(
+		sdk.NewDecFromInt(providerExpRewardsAmount),
+		consuValsRewardsReceived.AmountOf(rewardsIBCdenom).Add(communityPoolDelta.AmountOf(rewardsIBCdenom)),
+	)
 }
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
