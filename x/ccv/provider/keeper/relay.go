@@ -391,6 +391,14 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		"infractionType", data.Infraction,
 	)
 
+	// Check that the validator belongs to the consumer chain valset
+	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
+		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
+			providerConsAddr.String(), chainID)
+		// drop packet
+		return
+	}
+
 	// Obtain validator from staking keeper
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
 
