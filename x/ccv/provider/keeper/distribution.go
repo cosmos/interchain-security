@@ -128,8 +128,8 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	}
 }
 
-// AllocateTokensToConsumerValidators allocates the given tokens from the
-// from consumer rewards pool to validator according to their voting power
+// AllocateTokensToConsumerValidators allocates tokens
+// to the given consumer chain's validator set
 func (k Keeper) AllocateTokensToConsumerValidators(
 	ctx sdk.Context,
 	chainID string,
@@ -140,16 +140,18 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		return allocated
 	}
 
-	// get the consumer total voting power from the votes
+	// get the total voting power of the consumer valset
 	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID)
 	if totalPower == 0 {
 		return allocated
 	}
 
-	for _, val := range k.GetConsumerValSet(ctx, chainID) {
-		consAddr := sdk.ConsAddress(val.ProviderConsAddr)
+	// Allocate tokens by iterating over the consumer validators
+	for _, consumerVal := range k.GetConsumerValSet(ctx, chainID) {
+		consAddr := sdk.ConsAddress(consumerVal.ProviderConsAddr)
 
-		powerFraction := math.LegacyNewDec(val.Power).QuoTruncate(math.LegacyNewDec(totalPower))
+		// get the validator tokens fraction using its voting power
+		powerFraction := math.LegacyNewDec(consumerVal.Power).QuoTruncate(math.LegacyNewDec(totalPower))
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
 		// get the validator type struct for the consensus address
@@ -234,8 +236,8 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 	)
 }
 
-// ComputeConsumerTotalVotingPower returns the total voting power of the given consumer chain
-// validator set
+// ComputeConsumerTotalVotingPower returns the validator set total voting power
+// for the given consumer chain
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
 	// sum the opted-in validators set voting powers
 	for _, v := range k.GetConsumerValSet(ctx, chainID) {

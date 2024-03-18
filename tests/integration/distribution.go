@@ -91,7 +91,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	rewardPool := providerAccountKeeper.GetModuleAccount(s.providerCtx(), providertypes.ConsumerRewardsPool).GetAddress()
 	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
 
-	// Check that the reward pool contains a coin with a IBC denom
+	// Check that the reward pool contains a coin with an IBC denom
 	rewardsIBCdenom := ""
 	for _, coin := range rewardCoins {
 		if strings.HasPrefix(coin.Denom, "ibc") {
@@ -151,7 +151,8 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 		1,
 	)
 
-	// Check that the consumer rewards allocation are empty since relayAllCommittedPackets call BeginBlockRD
+	// Check that the consumer rewards allocation are empty since relayAllCommittedPackets calls BeginBlockRD,
+	// which in turns call AllocateTokens.
 	rewardsAlloc := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().Empty(rewardsAlloc.Rewards)
 
