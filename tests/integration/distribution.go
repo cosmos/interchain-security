@@ -152,7 +152,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	)
 
 	// Check that the consumer rewards allocation are empty since relayAllCommittedPackets calls BeginBlockRD,
-	// which in turns call AllocateTokens.
+	// which in turns calls AllocateTokens.
 	rewardsAlloc := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().Empty(rewardsAlloc.Rewards)
 
