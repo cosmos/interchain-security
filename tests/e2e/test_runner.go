@@ -118,20 +118,14 @@ func (tr *TestRunner) Setup(testCfg TestConfig) error {
 	return nil
 }
 
-func CreateTestRunner(config TestConfig, steps []Step, target ExecutionTarget, verbose bool) (error, TestRunner) {
-
-	switch target.(type) {
-	case *DockerContainer:
-		target.(*DockerContainer).containerCfg = config.containerConfig
-	}
-	tr := TestRunner{
+func CreateTestRunner(config TestConfig, steps []Step, target ExecutionTarget, verbose bool) TestRunner {
+	return TestRunner{
 		target:  target,
 		steps:   steps,
 		config:  config,
 		verbose: verbose,
 		result:  TestResult{Status: TEST_STATUS_NOTRUN},
 	}
-	return nil, tr
 }
 
 // Info returns a header string containing useful information about the test runner

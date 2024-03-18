@@ -236,7 +236,6 @@ func getIcsVersion(reference string) string {
 				log.Printf("error identifying config version to use '%v': %s", err, string(out))
 				return ""
 			}
-
 		}
 	}
 	return semver.Canonical(icsVersion)
@@ -248,26 +247,30 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 	cv := getIcsVersion(consumerVersion)
 	fmt.Println("Config version for provider :", pv)
 	fmt.Println("Config version for consumer :", cv)
+	var testCfg TestConfig
 	switch cfgType {
 	case DefaultTestCfg:
-		return DefaultTestConfig()
+		testCfg = DefaultTestConfig()
 	case ChangeoverTestCfg:
-		return ChangeoverTestConfig()
+		testCfg = ChangeoverTestConfig()
 	case DemocracyTestCfg:
-		return DemocracyTestConfig(false)
+		testCfg = DemocracyTestConfig(false)
 	case DemocracyRewardTestCfg:
-		return DemocracyTestConfig(true)
+		testCfg = DemocracyTestConfig(true)
 	case SlashThrottleTestCfg:
-		return SlashThrottleTestConfig()
+		testCfg = SlashThrottleTestConfig()
 	case MulticonsumerTestCfg:
-		return MultiConsumerTestConfig()
+		testCfg = MultiConsumerTestConfig()
 	case ConsumerMisbehaviourTestCfg:
-		return ConsumerMisbehaviourTestConfig()
+		testCfg = ConsumerMisbehaviourTestConfig()
 	case CompatibilityTestCfg:
-		return CompatibilityTestConfig(pv, cv)
+		testCfg = CompatibilityTestConfig(pv, cv)
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
+	testCfg.consumerVersion = consumerVersion
+	testCfg.providerVersion = providerVersion
+	return testCfg
 }
 
 func getDefaultValidators() map[ValidatorID]ValidatorConfig {

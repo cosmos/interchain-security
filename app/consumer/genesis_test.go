@@ -636,7 +636,7 @@ func TestConsumerGenesisTransformationV4ToV33(t *testing.T) {
 	targetVersion := "v3.3.x"
 	result, err := transformConsumerGenesis(filePath, &targetVersion)
 	require.NoError(t, err)
-
+	resultGenesis := consumerTypes.GenesisState{} //Only difference to v33 is no RetryDelayPeriod
 	err = ctx.Codec.UnmarshalJSON(result, &resultGenesis)
 	require.NoError(t, err)
 

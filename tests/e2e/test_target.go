@@ -28,8 +28,23 @@ type ExecutionTarget interface {
 type DockerContainer struct {
 	targetConfig TargetConfig
 	containerCfg ContainerConfig
-
+	images       []string //images needed to build the target container
 	ImageName    string
+}
+
+func createTarget(testCfg TestConfig, targetCfg TargetConfig) (DockerContainer, error) {
+	targetCfg.providerVersion = testCfg.providerVersion
+	targetCfg.consumerVersion = testCfg.consumerVersion
+	target := DockerContainer{
+		targetConfig: targetCfg,
+		containerCfg: testCfg.containerConfig,
+	}
+
+	err := target.Build()
+	if err != nil {
+		return target, fmt.Errorf("failed building target %s\n: %v", target.Info(), err)
+	}
+	return target, nil
 }
 
 func (dc *DockerContainer) GetTargetConfig() TargetConfig {

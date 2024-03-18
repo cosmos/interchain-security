@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 

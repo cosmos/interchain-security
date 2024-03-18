@@ -1038,12 +1038,13 @@ func (tr TestConfig) addIbcConnection(
 	if !tr.useGorelayer {
 		tr.addIbcConnectionHermes(action, target, verbose)
 	} else {
-		tr.addIbcConnectionGorelayer(action, verbose)
+		tr.addIbcConnectionGorelayer(action, target, verbose)
 	}
 }
 
 func (tr TestConfig) addIbcConnectionGorelayer(
 	action AddIbcConnectionAction,
+	target ExecutionTarget,
 	verbose bool,
 ) {
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
@@ -1053,13 +1054,13 @@ func (tr TestConfig) addIbcConnectionGorelayer(
 	pathConfigFileName := fmt.Sprintf("/root/%s_config.json", pathName)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, pathConfig, pathConfigFileName)
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	pathConfigCommand := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "bash", "-c",
-		bashCommand)
+	pathConfigCommand := target.ExecCommand("bash", "-c", bashCommand)
 	executeCommand(pathConfigCommand, "add path config")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	newPathCommand := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "rly",
+	newPathCommand := target.ExecCommand("rly",
 		"paths", "add",
 		string(tr.chainConfigs[action.ChainA].ChainId),
 		string(tr.chainConfigs[action.ChainB].ChainId),
@@ -1070,10 +1071,7 @@ func (tr TestConfig) addIbcConnectionGorelayer(
 	executeCommand(newPathCommand, "new path")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	newClientsCommand := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "rly",
-		"transact", "clients",
-		pathName,
-	)
+	newClientsCommand := target.ExecCommand("rly", "transact", "clients", pathName)
 
 	executeCommand(newClientsCommand, "new clients")
 
@@ -1081,10 +1079,7 @@ func (tr TestConfig) addIbcConnectionGorelayer(
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	newConnectionCommand := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "rly",
-		"transact", "connection",
-		pathName,
-	)
+	newConnectionCommand := target.ExecCommand("rly", "transact", "connection", pathName)
 
 	executeCommand(newConnectionCommand, "new connection")
 

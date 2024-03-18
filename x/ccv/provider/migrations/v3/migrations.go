@@ -12,14 +12,14 @@ import (
 // on the provider in the v2 consensus version (jail throttling v1).
 func MigrateQueuedPackets(ctx sdk.Context, k providerkeeper.Keeper) error {
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
-		slashData, vscmData := k.LegacyGetAllThrottledPacketData(ctx, consumer.ChainId) 
+		slashData, vscmData := k.LegacyGetAllThrottledPacketData(ctx, consumer.ChainId)
 		if len(slashData) > 0 {
 			k.Logger(ctx).Error(fmt.Sprintf("slash data being dropped: %v", slashData))
 		}
 		for _, data := range vscmData {
 			k.HandleVSCMaturedPacket(ctx, consumer.ChainId, data)
 		}
-		k.LegacyDeleteThrottledPacketDataForConsumer(ctx, consumer.ChainId) 
+		k.LegacyDeleteThrottledPacketDataForConsumer(ctx, consumer.ChainId)
 	}
 	return nil
 }
