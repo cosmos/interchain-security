@@ -1063,7 +1063,7 @@ module ccv_model {
 
     // ======= tests for consumer initiated slashing =======
 
-    run DoubleDowntimeSlashTest = 
+    run DowntimeSlashTest = 
         init.then(
             // start all consumer chains
             EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
