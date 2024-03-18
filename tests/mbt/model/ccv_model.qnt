@@ -466,7 +466,7 @@ module ccv_model {
             }
         )
 
-    // for all consumers, waitingForSlachPacketAck is either empty or has a single element
+    // for all consumers, waitingForSlashPacketAck is either empty or has a single element
     val WaitingForSlashPacketAckInv = 
         runningConsumers.forall(
             consumer => 
