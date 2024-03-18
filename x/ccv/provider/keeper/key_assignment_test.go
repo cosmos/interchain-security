@@ -2,15 +2,17 @@ package keeper_test
 
 import (
 	"bytes"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"math/rand"
 	"sort"
 	"testing"
 	"time"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 

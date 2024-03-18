@@ -408,5 +408,4 @@ $ %s query provider params
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
-
 }

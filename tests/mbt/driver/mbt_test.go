@@ -15,13 +15,12 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
 
-	cmttypes "github.com/cometbft/cometbft/types"
-
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cosmos/interchain-security/v4/testutil/integration"
-
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	cmttypes "github.com/cometbft/cometbft/types"
+
+	"github.com/cosmos/interchain-security/v4/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 

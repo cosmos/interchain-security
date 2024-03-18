@@ -559,7 +559,6 @@ func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID, t
 
 // needsGenesisTransform tries to identify if a genesis transformation should be performed
 func needsGenesisTransform(cfg TargetConfig) bool {
-
 	// no genesis transformation needed for same versions
 	if cfg.consumerVersion == cfg.providerVersion {
 		return false
@@ -673,7 +672,7 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 	}
 	defer file.Close()
-	err = os.WriteFile(file.Name(), genesis, 0600)
+	err = os.WriteFile(file.Name(), genesis, 0o600)
 	if err != nil {
 		log.Fatalf("Failed writing consumer genesis to file: %v", err)
 	}
@@ -954,7 +953,6 @@ func (tr TestConfig) addChainToHermes(
 	target ExecutionTarget,
 	verbose bool,
 ) {
-
 	bz, err := target.ExecCommand("bash", "-c", "hermes", "version").CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n error getting hermes version", string(bz))

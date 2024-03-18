@@ -1,19 +1,22 @@
 package keeper
 
 import (
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 // BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.
 func (k Keeper) BeginBlockRD(ctx sdk.Context, req abci.RequestBeginBlock) {
-
 	// determine the total power signing the block
 	var previousTotalPower int64
 	for _, voteInfo := range req.LastCommitInfo.GetVotes() {
@@ -139,7 +142,6 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	bondedVotes []abci.VoteInfo,
 	tokens sdk.DecCoins,
 ) (allocated sdk.DecCoins) {
-
 	// return early if the tokens are empty
 	if tokens.Empty() {
 		return allocated

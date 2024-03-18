@@ -103,6 +103,7 @@ func (tr *TestRunner) checkConfig() error {
 	tr.config.validateStringLiterals()
 	return nil
 }
+
 func (tr *TestRunner) setupEnvironment(target ExecutionTarget) error {
 	tr.target = target
 	return target.Start()
@@ -118,7 +119,7 @@ func (tr *TestRunner) Setup(testCfg TestConfig) error {
 }
 
 func CreateTestRunner(config TestConfig, steps []Step, target ExecutionTarget, verbose bool) (error, TestRunner) {
-	//targetConfig := target.GetTargetConfig()
+
 	switch target.(type) {
 	case *DockerContainer:
 		target.(*DockerContainer).containerCfg = config.containerConfig
@@ -143,7 +144,6 @@ Target: %s
 		tr.config.name,
 		tr.target.Info(),
 	)
-
 }
 
 func (tr *TestRunner) Report() string {

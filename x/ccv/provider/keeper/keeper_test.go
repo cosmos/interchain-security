@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -701,7 +701,7 @@ func TestGetAllOptedIn(t *testing.T) {
 
 	// sort validators first to be able to compare
 	sortOptedInValidators := func(optedInValidators []types.OptedInValidator) {
-		sort.Slice(optedInValidators, func(i int, j int) bool {
+		sort.Slice(optedInValidators, func(i, j int) bool {
 			a := optedInValidators[i]
 			b := optedInValidators[j]
 			return a.BlockHeight < b.BlockHeight ||
@@ -718,10 +718,11 @@ func TestOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	optedInValidator := types.OptedInValidator{ProviderAddr: []byte("providerAddr"),
-		BlockHeight: 1,
-		Power:       2,
-		PublicKey:   []byte{3},
+	optedInValidator := types.OptedInValidator{
+		ProviderAddr: []byte("providerAddr"),
+		BlockHeight:  1,
+		Power:        2,
+		PublicKey:    []byte{3},
 	}
 
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(optedInValidator.ProviderAddr)))
@@ -738,7 +739,8 @@ func TestGetAllToBeOptedIn(t *testing.T) {
 	expectedAddresses := []types.ProviderConsAddress{
 		types.NewProviderConsAddress([]byte("providerAddr1")),
 		types.NewProviderConsAddress([]byte("providerAddr2")),
-		types.NewProviderConsAddress([]byte("providerAddr3"))}
+		types.NewProviderConsAddress([]byte("providerAddr3")),
+	}
 
 	for _, addr := range expectedAddresses {
 		providerKeeper.SetToBeOptedIn(ctx, "chainID", addr)
@@ -748,7 +750,7 @@ func TestGetAllToBeOptedIn(t *testing.T) {
 
 	// sort addresses first to be able to compare
 	sortAddresses := func(addresses []types.ProviderConsAddress) {
-		sort.Slice(addresses, func(i int, j int) bool {
+		sort.Slice(addresses, func(i, j int) bool {
 			a := addresses[i]
 			b := addresses[j]
 			return bytes.Compare(a.Address.Bytes(), b.Address.Bytes()) < 0
@@ -772,7 +774,8 @@ func TestBeOptedIn(t *testing.T) {
 	expectedAddresses := []types.ProviderConsAddress{
 		types.NewProviderConsAddress([]byte("providerAddr1")),
 		types.NewProviderConsAddress([]byte("providerAddr2")),
-		types.NewProviderConsAddress([]byte("providerAddr3"))}
+		types.NewProviderConsAddress([]byte("providerAddr3")),
+	}
 
 	for _, addr := range expectedAddresses {
 		providerKeeper.SetToBeOptedIn(ctx, "chainID", addr)
@@ -782,7 +785,7 @@ func TestBeOptedIn(t *testing.T) {
 
 	// sort addresses first to be able to compare
 	sortAddresses := func(addresses []types.ProviderConsAddress) {
-		sort.Slice(addresses, func(i int, j int) bool {
+		sort.Slice(addresses, func(i, j int) bool {
 			a := addresses[i]
 			b := addresses[j]
 			return bytes.Compare(a.Address.Bytes(), b.Address.Bytes()) < 0
@@ -820,7 +823,8 @@ func TestGetAllToBeOptedOut(t *testing.T) {
 	expectedAddresses := []types.ProviderConsAddress{
 		types.NewProviderConsAddress([]byte("providerAddr1")),
 		types.NewProviderConsAddress([]byte("providerAddr2")),
-		types.NewProviderConsAddress([]byte("providerAddr3"))}
+		types.NewProviderConsAddress([]byte("providerAddr3")),
+	}
 
 	for _, addr := range expectedAddresses {
 		providerKeeper.SetToBeOptedOut(ctx, "chainID", addr)
@@ -830,7 +834,7 @@ func TestGetAllToBeOptedOut(t *testing.T) {
 
 	// sort addresses first to be able to compare
 	sortAddresses := func(addresses []types.ProviderConsAddress) {
-		sort.Slice(addresses, func(i int, j int) bool {
+		sort.Slice(addresses, func(i, j int) bool {
 			a := addresses[i]
 			b := addresses[j]
 			return bytes.Compare(a.Address.Bytes(), b.Address.Bytes()) < 0
@@ -895,5 +899,4 @@ func TestConsumerCommissionRate(t *testing.T) {
 
 	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
 	require.False(t, found)
-
 }

@@ -36,7 +36,7 @@ func (vs *VersionSet) Set(value string) error {
 
 func (vs *VersionSet) String() string {
 	keys := []string{}
-	for k, _ := range *vs {
+	for k := range *vs {
 		keys = append(keys, k)
 	}
 	return fmt.Sprint(keys)
@@ -233,7 +233,8 @@ type testStepsWithConfig struct {
 }
 
 func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVersions,
-	consumerVersions VersionSet) (tests []testStepsWithConfig) {
+	consumerVersions VersionSet,
+) (tests []testStepsWithConfig) {
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
@@ -319,10 +320,10 @@ func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTa
 	}
 
 	// Create targets as a combination of "provider versions" with "consumer version"
-	for provider, _ := range providerVersions {
+	for provider := range providerVersions {
 		targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag}
 		targetCfg.providerVersion = provider
-		for consumer, _ := range consumerVersions {
+		for consumer := range consumerVersions {
 			// Skip target creation for same version of provider and consumer
 			// if multiple versions need to be tested.
 			// This is to reduce the tests to be run for compatibility testing.
@@ -376,7 +377,7 @@ func executeTests(runners []TestRunner) error {
 	var wg sync.WaitGroup
 	var err error = nil
 
-	for idx, _ := range runners {
+	for idx := range runners {
 		if parallel != nil && *parallel {
 			wg.Add(1)
 			go func(runner *TestRunner) {

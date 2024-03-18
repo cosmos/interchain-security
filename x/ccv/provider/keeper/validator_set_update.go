@@ -2,9 +2,13 @@ package keeper
 
 import (
 	"fmt"
-	abci "github.com/cometbft/cometbft/abci/types"
+
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
@@ -36,7 +40,8 @@ func (k Keeper) DeleteConsumerValidator(
 // DeleteConsumerValSet deletes all the stored consumer validators for chain `chainID`
 func (k Keeper) DeleteConsumerValSet(
 	ctx sdk.Context,
-	chainID string) {
+	chainID string,
+) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
@@ -65,7 +70,8 @@ func (k Keeper) IsConsumerValidator(
 // GetConsumerValSet returns all the consumer validators for chain `chainID`
 func (k Keeper) GetConsumerValSet(
 	ctx sdk.Context,
-	chainID string) (validators []types.ConsumerValidator) {
+	chainID string,
+) (validators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
@@ -132,7 +138,8 @@ func (k Keeper) ComputeNextEpochConsumerValSet(
 // needed by CometBFT to update the validator set on a chain.
 func DiffValidators(
 	currentValidators []types.ConsumerValidator,
-	nextValidators []types.ConsumerValidator) []abci.ValidatorUpdate {
+	nextValidators []types.ConsumerValidator,
+) []abci.ValidatorUpdate {
 	var updates []abci.ValidatorUpdate
 
 	isCurrentValidator := make(map[string]types.ConsumerValidator)

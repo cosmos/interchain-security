@@ -58,7 +58,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 						},
 					},
 					// not supported across major versions
-					//ProposedConsumerChains: &[]string{consumerName},
+					// ProposedConsumerChains: &[]string{consumerName},
 				},
 			},
 		},
@@ -169,7 +169,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 						ValidatorID("carol"): 9500000000,
 					},
 					// not supported
-					//ProposedConsumerChains: &[]string{},
+					// ProposedConsumerChains: &[]string{},
 				},
 				ChainID(consumerName): ChainState{
 					ValBalances: &map[ValidatorID]uint{

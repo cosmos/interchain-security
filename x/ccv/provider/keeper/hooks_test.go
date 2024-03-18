@@ -1,27 +1,28 @@
 package keeper_test
 
 import (
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"testing"
 	"time"
+
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {
@@ -264,7 +265,8 @@ func TestAfterProposalVoteWithNoVote(t *testing.T) {
 			"Weighted vote with 100% NO",
 			[]*v1.WeightedVoteOption{{Option: v1.OptionNo, Weight: "1"}},
 			func(ctx sdk.Context, options []*v1.WeightedVoteOption,
-				mocks testkeeper.MockedKeepers, pubKey *codectypes.Any) {
+				mocks testkeeper.MockedKeepers, pubKey *codectypes.Any,
+			) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, gomock.Any()).Return(
 						stakingtypes.Validator{ConsensusPubkey: pubKey}, true),
@@ -278,7 +280,8 @@ func TestAfterProposalVoteWithNoVote(t *testing.T) {
 			"Weighted vote with 99.9% YES and 0.1% NO",
 			[]*v1.WeightedVoteOption{{Option: v1.OptionYes, Weight: "0.999"}, {Option: v1.OptionNo, Weight: "0.001"}},
 			func(ctx sdk.Context, options []*v1.WeightedVoteOption,
-				mocks testkeeper.MockedKeepers, pubKey *codectypes.Any) {
+				mocks testkeeper.MockedKeepers, pubKey *codectypes.Any,
+			) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, gomock.Any()).Return(
 						stakingtypes.Validator{ConsensusPubkey: pubKey}, true),
