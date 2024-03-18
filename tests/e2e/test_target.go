@@ -28,7 +28,7 @@ type ExecutionTarget interface {
 type DockerContainer struct {
 	targetConfig TargetConfig
 	containerCfg ContainerConfig
-
+	images       []string // images needed to build the target container
 	ImageName    string
 }
 
