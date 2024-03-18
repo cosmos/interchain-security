@@ -82,7 +82,6 @@ func generateImageName(version string, cfg TargetConfig) (string, error) {
 		tagName = "local" // this refers to build from local workspace
 	} else {
 		// use git hash of rev as docker image tag
-
 		cmd := exec.Command("git", "log", "--pretty=format:%h", "-n", "1", version)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
