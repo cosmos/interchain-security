@@ -928,7 +928,7 @@ module ccv {
             ).with(
                 "consumersWithPowerChangesInThisEpoch", 
                 if (valSetChanged) {
-                    // valSet changes for all consumers, not only the sende,r because the validator will be jailed for everyone
+                    // valSet changes for all consumers, not only the sender because the validator will be jailed for everyone
                     newProviderState.consumersWithPowerChangesInThisEpoch.union(getRunningConsumers(newProviderState))
                 } else {
                     newProviderState.consumersWithPowerChangesInThisEpoch
