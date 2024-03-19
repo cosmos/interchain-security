@@ -107,65 +107,25 @@ func createConsumerValidator(index int, power int64, seed int) (types.ConsumerVa
 	}, publicKey
 }
 
-func TestComputeNextEpochConsumerValSet(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
+// createStakingValidator helper function to generate a validator with the given power and with a provider address based on index
+func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, index int, power int64) stakingtypes.Validator {
+	providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{byte(index)}).PubKey()
+	consAddr := sdk.ConsAddress(providerConsPubKey.Address())
+	providerAddr := types.NewProviderConsAddress(consAddr)
+	pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
+	pkAny, _ := codectypes.NewAnyWithValue(pk)
 
-	chainID := "chainID"
+	var providerValidatorAddr sdk.ValAddress
+	providerValidatorAddr = providerAddr.Address.Bytes()
 
-	// helper function to generate a validator with the given power and with a provider address based on index
-	createStakingValidator := func(ctx sdk.Context, mocks testkeeper.MockedKeepers, index int, power int64) stakingtypes.Validator {
-		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{byte(index)}).PubKey()
-		consAddr := sdk.ConsAddress(providerConsPubKey.Address())
-		providerAddr := types.NewProviderConsAddress(consAddr)
-		pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
-		pkAny, _ := codectypes.NewAnyWithValue(pk)
+	mocks.MockStakingKeeper.EXPECT().
+		GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
 
-		var providerValidatorAddr sdk.ValAddress
-		providerValidatorAddr = providerAddr.Address.Bytes()
-
-		mocks.MockStakingKeeper.EXPECT().
-			GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
-
-		return stakingtypes.Validator{
-			OperatorAddress: providerValidatorAddr.String(),
-			ConsensusPubkey: pkAny,
-		}
+	return stakingtypes.Validator{
+		OperatorAddress: providerValidatorAddr.String(),
+		ConsensusPubkey: pkAny,
 	}
-
-	// no consumer validators returned if we have no bonded validators
-	require.Empty(t, providerKeeper.ComputeNextEpochConsumerValSet(ctx, chainID, []stakingtypes.Validator{}))
-
-	var expectedValidators []types.ConsumerValidator
-
-	// create a staking validator A that has not set a consumer public key
-	valA := createStakingValidator(ctx, mocks, 1, 1)
-	// because validator A has no consumer key set, the `ConsumerPublicKey` we expect is the key on the provider chain
-	valAConsAddr, _ := valA.GetConsAddr()
-	valAPublicKey, _ := valA.TmConsPublicKey()
-	expectedValidators = append(expectedValidators, types.ConsumerValidator{
-		ProviderConsAddr:  types.NewProviderConsAddress(valAConsAddr).Address.Bytes(),
-		Power:             1,
-		ConsumerPublicKey: &valAPublicKey,
-	})
-
-	// create a staking validator B that has set a consumer public key
-	valB := createStakingValidator(ctx, mocks, 2, 2)
-	// validator B has set a consumer key, the `ConsumerPublicKey` we expect is the key set by `SetValidatorConsumerPubKey`
-	valBConsumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	valBConsAddr, _ := valB.GetConsAddr()
-	providerKeeper.SetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(valBConsAddr), valBConsumerKey)
-	expectedValidators = append(expectedValidators, types.ConsumerValidator{
-		ProviderConsAddr:  types.NewProviderConsAddress(valBConsAddr).Address.Bytes(),
-		Power:             2,
-		ConsumerPublicKey: &valBConsumerKey,
-	})
-
-	bondedValidators := []stakingtypes.Validator{valA, valB}
-	actualValidators := providerKeeper.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
-	require.Equal(t, expectedValidators, actualValidators)
 }
-
 func TestDiff(t *testing.T) {
 	// In what follows we create 6 validators: A, B, C, D, E, and F where currentValidators = {A, B, C, D, E}
 	// and nextValidators = {B, C, D, E, F}. For the validators {B, C, D, E} in the intersection we have:
@@ -354,39 +314,61 @@ func TestSetConsumerValSet(t *testing.T) {
 	require.Equal(t, nextValidators, nextCurrentValidators)
 }
 
-func TestComputeNextEpochOptedInConsumerValSet(t *testing.T) {
+func TestComputeNextEpochConsumerValSetConsiderAll(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainID := "chainID"
 
-	// helper function to generate a validator with the given power and with a provider address based on index
-	createStakingValidator := func(ctx sdk.Context, mocks testkeeper.MockedKeepers, index int, power int64) stakingtypes.Validator {
-		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{byte(index)}).PubKey()
-		consAddr := sdk.ConsAddress(providerConsPubKey.Address())
-		providerAddr := types.NewProviderConsAddress(consAddr)
-		pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
-		pkAny, _ := codectypes.NewAnyWithValue(pk)
+	// no consumer validators returned if we have no bonded validators
+	considerAll := func(validator stakingtypes.Validator) bool { return true }
+	require.Empty(t, providerKeeper.ComputeNextEpochConsumerValSet(ctx, chainID, []stakingtypes.Validator{}, considerAll))
 
-		var providerValidatorAddr sdk.ValAddress
-		providerValidatorAddr = providerAddr.Address.Bytes()
+	var expectedValidators []types.ConsumerValidator
 
-		mocks.MockStakingKeeper.EXPECT().
-			GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
+	// create a staking validator A that has not set a consumer public key
+	valA := createStakingValidator(ctx, mocks, 1, 1)
+	// because validator A has no consumer key set, the `ConsumerPublicKey` we expect is the key on the provider chain
+	valAConsAddr, _ := valA.GetConsAddr()
+	valAPublicKey, _ := valA.TmConsPublicKey()
+	expectedValidators = append(expectedValidators, types.ConsumerValidator{
+		ProviderConsAddr:  types.NewProviderConsAddress(valAConsAddr).Address.Bytes(),
+		Power:             1,
+		ConsumerPublicKey: &valAPublicKey,
+	})
 
-		stakingValidator := stakingtypes.Validator{
-			OperatorAddress: providerValidatorAddr.String(),
-			ConsensusPubkey: pkAny,
-		}
+	// create a staking validator B that has set a consumer public key
+	valB := createStakingValidator(ctx, mocks, 2, 2)
+	// validator B has set a consumer key, the `ConsumerPublicKey` we expect is the key set by `SetValidatorConsumerPubKey`
+	valBConsumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	valBConsAddr, _ := valB.GetConsAddr()
+	providerKeeper.SetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(valBConsAddr), valBConsumerKey)
+	expectedValidators = append(expectedValidators, types.ConsumerValidator{
+		ProviderConsAddr:  types.NewProviderConsAddress(valBConsAddr).Address.Bytes(),
+		Power:             2,
+		ConsumerPublicKey: &valBConsumerKey,
+	})
 
-		mocks.MockStakingKeeper.EXPECT().
-			GetValidatorByConsAddr(ctx, consAddr).Return(stakingValidator, true).AnyTimes()
+	bondedValidators := []stakingtypes.Validator{valA, valB}
+	actualValidators := providerKeeper.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators, considerAll)
+	require.Equal(t, expectedValidators, actualValidators)
+}
 
-		return stakingValidator
-	}
+func TestComputeNextEpochConsumerValSetConsiderOnlyOptIn(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
 
 	// no consumer validators returned if we have no opted-in validators
-	require.Empty(t, providerKeeper.ComputeNextEpochOptedInConsumerValSet(ctx, chainID))
+	considerOnlyOptIn := func(validator stakingtypes.Validator) bool {
+		consAddr, err := validator.GetConsAddr()
+		if err != nil {
+			return false
+		}
+		return providerKeeper.IsOptedIn(ctx, chainID, types.NewProviderConsAddress(consAddr))
+	}
+	require.Empty(t, providerKeeper.ComputeNextEpochConsumerValSet(ctx, chainID, []stakingtypes.Validator{}, considerOnlyOptIn))
 
 	var expectedValidators []types.ConsumerValidator
 
@@ -419,7 +401,8 @@ func TestComputeNextEpochOptedInConsumerValSet(t *testing.T) {
 	providerKeeper.SetOptedIn(ctx, chainID, types.ConsumerValidator{ProviderConsAddr: valBConsAddr, Power: 0, ConsumerPublicKey: nil})
 
 	// the expected actual validators are the opted-in validators but with the correct power and consumer public keys set
-	actualValidators := providerKeeper.ComputeNextEpochOptedInConsumerValSet(ctx, "chainID")
+	bondedValidators := []stakingtypes.Validator{valA, valB}
+	actualValidators := providerKeeper.ComputeNextEpochConsumerValSet(ctx, "chainID", bondedValidators, considerOnlyOptIn)
 
 	// sort validators first to be able to compare
 	sortValidators := func(validators []types.ConsumerValidator) {
@@ -431,4 +414,49 @@ func TestComputeNextEpochOptedInConsumerValSet(t *testing.T) {
 	sortValidators(actualValidators)
 	sortValidators(expectedValidators)
 	require.Equal(t, expectedValidators, actualValidators)
+
+	// create a staking validator C that is not opted in, hence `expectedValidators` remains the same
+	valC := createStakingValidator(ctx, mocks, 3, 3)
+	bondedValidators = []stakingtypes.Validator{valA, valB, valC}
+	actualValidators = providerKeeper.ComputeNextEpochConsumerValSet(ctx, "chainID", bondedValidators, considerOnlyOptIn)
+
+	sortValidators(actualValidators)
+	sortValidators(expectedValidators)
+	require.Equal(t, expectedValidators, actualValidators)
+}
+
+func TestCreateConsumerValidator(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
+
+	// create a validator which has set a consumer public key
+	valA := createStakingValidator(ctx, mocks, 0, 1)
+	valAConsumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	valAConsAddr, _ := valA.GetConsAddr()
+	valAProviderConsAddr := types.NewProviderConsAddress(valAConsAddr)
+	providerKeeper.SetValidatorConsumerPubKey(ctx, chainID, valAProviderConsAddr, valAConsumerKey)
+	actualConsumerValidatorA, err := providerKeeper.CreateConsumerValidator(ctx, chainID, valA)
+	expectedConsumerValidatorA := types.ConsumerValidator{
+		ProviderConsAddr:  valAProviderConsAddr.ToSdkConsAddr(),
+		Power:             1,
+		ConsumerPublicKey: &valAConsumerKey,
+	}
+	require.Equal(t, expectedConsumerValidatorA, actualConsumerValidatorA)
+	require.NoError(t, err)
+
+	// create a validator which has not set a consumer public key
+	valB := createStakingValidator(ctx, mocks, 1, 2)
+	valBConsAddr, _ := valB.GetConsAddr()
+	valBProviderConsAddr := types.NewProviderConsAddress(valBConsAddr)
+	valBPublicKey, _ := valB.TmConsPublicKey()
+	actualConsumerValidatorB, err := providerKeeper.CreateConsumerValidator(ctx, chainID, valB)
+	expectedConsumerValidatorB := types.ConsumerValidator{
+		ProviderConsAddr:  valBProviderConsAddr.ToSdkConsAddr(),
+		Power:             2,
+		ConsumerPublicKey: &valBPublicKey,
+	}
+	require.Equal(t, expectedConsumerValidatorB, actualConsumerValidatorB)
+	require.NoError(t, err)
 }

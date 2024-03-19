@@ -766,7 +766,10 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				})
 			}
 
-			nextValidators := k.ComputeNextEpochConsumerValSet(ctx, CHAINID, bondedValidators)
+			nextValidators := k.ComputeNextEpochConsumerValSet(ctx, CHAINID, bondedValidators,
+				func(validator stakingtypes.Validator) bool {
+					return true
+				})
 			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, CHAINID), nextValidators)
 			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
 

@@ -1174,13 +1174,13 @@ func (k Keeper) GetTopN(
 	return binary.BigEndian.Uint32(buf), true
 }
 
-// IsTopN returns true if chain with `chainID` is a Top N chain (i.e., enforces at least one validator to validate chain `chainID`)
+// IsTopN returns true if chain with `chainID` is a Top-N chain (i.e., enforces at least one validator to validate chain `chainID`)
 func (k Keeper) IsTopN(ctx sdk.Context, chainID string) bool {
 	topN, found := k.GetTopN(ctx, chainID)
 	return found && topN > 0
 }
 
-// IsOptIn returns true if chain with `chainID` is an Opt In chain (i.e., no validator is forced to validate chain `chainID`)
+// IsOptIn returns true if chain with `chainID` is an Opt-In chain (i.e., no validator is forced to validate chain `chainID`)
 func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
 	topN, found := k.GetTopN(ctx, chainID)
 	return !found || topN == 0
@@ -1326,6 +1326,24 @@ func (k Keeper) DeleteToBeOptedIn(
 	store.Delete(types.ToBeOptedInKey(chainID, providerAddr))
 }
 
+// DeleteAllToBeOptedIn FIXME
+func (k Keeper) DeleteAllToBeOptedIn(
+	ctx sdk.Context,
+	chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ToBeOptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+
+	var keysToDel [][]byte
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
+	}
+}
+
 func (k Keeper) IsToBeOptedIn(
 	ctx sdk.Context,
 	chainID string,
@@ -1369,6 +1387,24 @@ func (k Keeper) DeleteToBeOptedOut(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ToBeOptedOutKey(chainID, providerAddr))
+}
+
+// DeleteAllToBeOptedOut FIXME
+func (k Keeper) DeleteAllToBeOptedOut(
+	ctx sdk.Context,
+	chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ToBeOptedOutBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+
+	var keysToDel [][]byte
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
+	}
 }
 
 func (k Keeper) IsToBeOptedOut(
