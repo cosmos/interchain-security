@@ -138,6 +138,9 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	// Now set slash meter to positive value and assert slash packet handled result is returned
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
 
+	// Set the consumer validator
+	providerKeeper.SetConsumerValidator(ctx, "chain-1", types.ConsumerValidator{ProviderConsAddr: packetData.Validator.Address})
+
 	// Mock call to GetEffectiveValPower, so that it returns 2.
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
 	calls := []*gomock.Call{
