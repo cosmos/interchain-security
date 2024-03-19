@@ -221,10 +221,6 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
-		// FIXME: add comment that this should take place before `OptInTopNValidators`
-		k.OptOutToBeOptedOutValidators(ctx, chain.ChainId)
-		k.OptInToBeOptedInValidators(ctx, chain.ChainId)
-
 		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
 		var nextValidators []providertypes.ConsumerValidator
 
@@ -238,8 +234,8 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 		if topN, found := k.GetTopN(ctx, chain.ChainId); found {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			threshold := sdk.NewDec(int64(topN)).QuoInt64(100)
-			k.OptInTopNValidators(ctx, chain.ChainId, threshold)
+			minPower := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
+			k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
 		}
 
 		nextValidators = k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators, considerOnlyOptIn)

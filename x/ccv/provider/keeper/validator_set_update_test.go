@@ -397,8 +397,8 @@ func TestComputeNextEpochConsumerValSetConsiderOnlyOptIn(t *testing.T) {
 	expectedValidators = append(expectedValidators, expectedValBConsumerValidator)
 
 	// opt in validators A and B with 0 power and no consumer public keys
-	providerKeeper.SetOptedIn(ctx, chainID, types.ConsumerValidator{ProviderConsAddr: valAConsAddr, Power: 0, ConsumerPublicKey: nil})
-	providerKeeper.SetOptedIn(ctx, chainID, types.ConsumerValidator{ProviderConsAddr: valBConsAddr, Power: 0, ConsumerPublicKey: nil})
+	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valAConsAddr))
+	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valBConsAddr))
 
 	// the expected actual validators are the opted-in validators but with the correct power and consumer public keys set
 	bondedValidators := []stakingtypes.Validator{valA, valB}

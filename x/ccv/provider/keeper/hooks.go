@@ -223,12 +223,13 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 			return
 		}
 
-		// in the validator is already to-be-opted in, the `SetToBeOptedIn` is a no-op
-		h.k.SetToBeOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
+		// in the validator is already opted in, the `SetOptedIn` is a no-op
+		h.k.SetOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
 	} else {
-		// if vote is not a YES vote with 100% weight, we delete the validator from to-be-opted in
-		// if the validator is not to-be-opted in, the `DeleteToBeOptedIn` is a no-op
-		h.k.DeleteToBeOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
+		// If vote is not a YES vote with 100% weight, we opt out the validator.
+		// Note that a validator still gets opted out even if before it manually opted in with a `MsgOptIn` message.
+		// This is because if a validator wants to opt in, there's no reason to not vote YES with 100% weight.
+		h.k.DeleteOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
 	}
 }
 

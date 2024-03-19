@@ -249,9 +249,9 @@ func TestAfterProposalVoteWithYesVote(t *testing.T) {
 		),
 	)
 
-	require.False(t, k.IsToBeOptedIn(ctx, "chainID", providerAddr))
+	require.False(t, k.IsOptedIn(ctx, "chainID", providerAddr))
 	k.Hooks().AfterProposalVote(ctx, 1, sdk.AccAddress{})
-	require.True(t, k.IsToBeOptedIn(ctx, "chainID", providerAddr))
+	require.True(t, k.IsOptedIn(ctx, "chainID", providerAddr))
 }
 
 func TestAfterProposalVoteWithNoVote(t *testing.T) {
@@ -304,10 +304,10 @@ func TestAfterProposalVoteWithNoVote(t *testing.T) {
 			tc.setup(ctx, tc.options, mocks, pkAny)
 
 			// set the validator to-be-opted in first to assert that a NO vote removes the validator from to-be-opted in
-			k.SetToBeOptedIn(ctx, "chainID", providerAddr)
-			require.True(t, k.IsToBeOptedIn(ctx, "chainID", providerAddr))
+			k.SetOptedIn(ctx, "chainID", providerAddr)
+			require.True(t, k.IsOptedIn(ctx, "chainID", providerAddr))
 			k.Hooks().AfterProposalVote(ctx, 1, sdk.AccAddress{})
-			require.False(t, k.IsToBeOptedIn(ctx, "chainID", providerAddr))
+			require.False(t, k.IsOptedIn(ctx, "chainID", providerAddr))
 		})
 	}
 }

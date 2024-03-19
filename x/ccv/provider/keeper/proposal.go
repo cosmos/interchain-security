@@ -291,8 +291,6 @@ func (k Keeper) MakeConsumerGenesis(
 
 	var nextValidators []types.ConsumerValidator
 
-	k.OptInToBeOptedInValidators(ctx, chainID)
-
 	considerOnlyOptIn := func(validator stakingtypes.Validator) bool {
 		consAddr, err := validator.GetConsAddr()
 		if err != nil {
@@ -303,8 +301,8 @@ func (k Keeper) MakeConsumerGenesis(
 
 	if topN, found := k.GetTopN(ctx, chainID); found {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		threshold := sdk.NewDec(int64(topN)).QuoInt64(100)
-		k.OptInTopNValidators(ctx, chainID, threshold)
+		minPower := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
+		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 	}
 
 	nextValidators = k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators, considerOnlyOptIn)
