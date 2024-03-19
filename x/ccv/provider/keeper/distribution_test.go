@@ -44,16 +44,9 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		keeper.SetConsumerValidator(
 			ctx,
 			chainID,
-			types.NewProviderConsAddress(val.Address.Bytes()),
-		)
-
-		validatorsVotes = append(
-			validatorsVotes,
-			abci.VoteInfo{
-				Validator: abci.Validator{
-					Address: val.Address,
-					Power:   val.VotingPower,
-				},
+			types.ConsumerValidator{
+				ProviderConsAddr: val.Address,
+				Power:            val.VotingPower,
 			},
 		)
 
