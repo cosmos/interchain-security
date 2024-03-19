@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -703,7 +703,7 @@ func TestOptedIn(t *testing.T) {
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator))
 }
 
-// TestToBeOptedOut tests the `SetConsumerCommissionRate`, `GetConsumerCommissionRate`, and `DeleteConsumerCommissionRate` methods
+// TestConsumerCommissionRate tests the `SetConsumerCommissionRate`, `GetConsumerCommissionRate`, and `DeleteConsumerCommissionRate` methods
 func TestConsumerCommissionRate(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -737,5 +737,4 @@ func TestConsumerCommissionRate(t *testing.T) {
 
 	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
 	require.False(t, found)
-
 }

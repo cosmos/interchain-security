@@ -106,18 +106,35 @@ module ccv_boundeddrift {
             }
     }
 
-    action stepBoundedDriftKeyAndPSS = any {
+    action stepBoundedDriftKeyAssignment = any {
+        stepBoundedDrift,
+        nondetKeyAssignment,
+    }
+
+    action stepBoundedDriftKeyAndPSS: bool = any {
         stepCommon,
         stepBoundedDriftProviderPSS,
         stepBoundedDriftConsumer,
         nondetKeyAssignment,
         StepOptIn,
         StepOptOut,
-    }
-
-    action stepBoundedDriftKeyAssignment = any {
-        stepBoundedDrift,
-        nondetKeyAssignment,
+        
+        // advance a block for the provider
+        val maxAdv = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
+        val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
+        all {
+            possibleAdvancements.size() > 0, // ensure there is a possible advancement, otherwise this action does not make sense
+            // advance a block for the provider
+            val consumerStatus = currentState.providerState.consumerStatus
+            nondet consumersToStart = oneOf(nonConsumers.powerset())
+            nondet topN = oneOf(variousPossibleTopN)
+            nondet consumerAdditions = consumersToStart.map(c => Ccvt::NewTopNConsumer(c, topN))
+            // make it so we stop consumers only with small likelihood:
+            nondet stopConsumersRand = oneOf(1.to(100))
+            nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
+            nondet timeAdvancement = oneOf(possibleAdvancements)
+            EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
+        }
     }
 
     // INVARIANT

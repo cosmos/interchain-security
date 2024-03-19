@@ -1272,8 +1272,8 @@ func (k Keeper) GetConsumerCommissionRate(
 // that set a commission rate for the given chain ID
 func (k Keeper) GetAllCommissionRateValidators(
 	ctx sdk.Context,
-	chainID string) (addresses []types.ProviderConsAddress) {
-
+	chainID string,
+) (addresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerCommissionRatePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)

@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
+
 	consumerTypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -149,7 +150,6 @@ func transformToV33(jsonRaw []byte, ctx client.Context) ([]byte, error) {
 // to a format readable by consumer implementation of version v2.x
 // Use removePreHashKey to remove prehash_key_before_comparison from result.
 func transformToV2(jsonRaw []byte, ctx client.Context, removePreHashKey bool) (json.RawMessage, error) {
-
 	// populate deprecated fields of GenesisState used by version v2.x
 	srcConGen := consumerTypes.GenesisState{}
 	err := ctx.Codec.UnmarshalJSON(jsonRaw, &srcConGen)
@@ -284,7 +284,6 @@ func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []by
 //
 // Result will be written to defined output.
 func TransformConsumerGenesis(cmd *cobra.Command, args []string) error {
-
 	sourceFile := args[0]
 	jsonRaw, err := os.ReadFile(filepath.Clean(sourceFile))
 	if err != nil {

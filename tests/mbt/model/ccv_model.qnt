@@ -109,7 +109,7 @@ module ccv_model {
         val consumerStates = ConsumerChains.mapBy(chain => GetEmptyConsumerState)
         val providerStateWithConsumers = providerState.with(
             "consumerStatus", 
-            ConsumerChains.mapBy(chain =>  NOT_CONSUMER)
+            ConsumerChains.mapBy(chain => NOT_CONSUMER)
         ).with(
             "outstandingPacketsToConsumer", 
             ConsumerChains.mapBy(chain => List())
@@ -270,7 +270,6 @@ module ccv_model {
     // ==================
     // UTILITY FUNCTIONS
     // ==================
-
     pure def oldest(packets: Set[VscPacket]): VscPacket =
         val newestPossiblePacket: VscPacket = {
             id: 0,
@@ -740,11 +739,11 @@ module ccv_model {
     // and the key assignment of each validator should be applied in that VSCPacket.
     val ValidatorUpdatesArePropagatedKeyAssignmentInv = 
         // when the provider has just entered a validator set into a block...
-        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock
+        ValUpdatePrecondition and CurrentBlockEndsEpoch
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
-        runningConsumers.forall(
+        currentState.providerState.consumersWithPowerChangesInThisEpoch.forall(
             // ...the validator set under key assignment is in a sent packet...
             val providerState = currentState.providerState
             consumer => providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(

@@ -3,17 +3,19 @@ package keeper_test
 import (
 	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmtypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 func TestComputeConsumerTotalVotingPower(t *testing.T) {
@@ -27,15 +29,19 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 	}
 
 	chainID := "consumer"
-	validatorsVotes := make([]abci.VoteInfo, 5)
-
 	expTotalPower := int64(0)
 
-	// create validators, opt them in and use them
-	// to create block votes
+	// verify that the total power returned is equal to zero
+	// when the consumer doesn't exist or has no validators.
+	require.Zero(t, keeper.ComputeConsumerTotalVotingPower(
+		ctx,
+		chainID,
+	))
+
+	// set 5 validators to the consumer chain
 	for i := 0; i < 5; i++ {
 		val := createVal(int64(i))
-		keeper.SetOptedIn(
+		keeper.SetConsumerValidator(
 			ctx,
 			chainID,
 			types.NewProviderConsAddress(val.Address.Bytes()),
@@ -54,12 +60,13 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		expTotalPower += val.VotingPower
 	}
 
+	// compute the total power of opted-in validators
 	res := keeper.ComputeConsumerTotalVotingPower(
 		ctx,
 		chainID,
-		validatorsVotes,
 	)
 
+	// check the total power returned
 	require.Equal(t, expTotalPower, res)
 }
 
@@ -212,7 +219,6 @@ func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 			defer ctrl.Finish()
 
