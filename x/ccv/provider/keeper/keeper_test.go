@@ -10,11 +10,10 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
