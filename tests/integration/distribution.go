@@ -3,16 +3,18 @@ package integration
 import (
 	"strings"
 
-	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/bytes"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/bytes"
 
 	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
@@ -479,7 +481,6 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 
 // TestIBCTransferMiddleware tests the logic of the IBC transfer OnRecvPacket callback
 func (s *CCVTestSuite) TestIBCTransferMiddleware() {
-
 	var (
 		data        transfertypes.FungibleTokenPacketData
 		packet      channeltypes.Packet
@@ -952,7 +953,6 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-
 			// set the same consumer commission rate for all validators
 			for _, v := range s.providerChain.Vals.Validators {
 				provAddr := providertypes.NewProviderConsAddress(sdk.ConsAddress(v.Address))

@@ -15,13 +15,12 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
 
-	cmttypes "github.com/cometbft/cometbft/types"
-
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cosmos/interchain-security/v4/testutil/integration"
-
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	cmttypes "github.com/cometbft/cometbft/types"
+
+	"github.com/cosmos/interchain-security/v4/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
@@ -130,7 +129,7 @@ func RunItfTrace(t *testing.T, path string) {
 	// consumerAddrNames are the human readable names of consumer addresses in the model
 	// "realAddrs" are the addresses of the consumer keys on chain
 	// these maps relate the consumerAddrNames to the priv validators (from which one can get the real address)
-	// and from the real ddresses to the consumerAddrNames to allow converting between the two easily
+	// and from the real addresses to the consumerAddrNames to allow converting between the two easily
 	consumerAddrNamesToPrivVals := make(map[string]cmttypes.PrivValidator, len(consumerAddressesExpr))
 	realAddrsToModelConsAddrs := make(map[string]string, len(consumerAddressesExpr))
 	i := 0

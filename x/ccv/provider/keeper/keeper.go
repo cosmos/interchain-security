@@ -1221,7 +1221,8 @@ func (k Keeper) IsOptedIn(
 // GetAllOptedIn returns all the opted-in validators on chain `chainID`
 func (k Keeper) GetAllOptedIn(
 	ctx sdk.Context,
-	chainID string) (optedInValidators []types.OptedInValidator) {
+	chainID string,
+) (optedInValidators []types.OptedInValidator) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
@@ -1291,8 +1292,8 @@ func (k Keeper) GetConsumerCommissionRate(
 // that set a commission rate for the given chain ID
 func (k Keeper) GetAllCommissionRateValidators(
 	ctx sdk.Context,
-	chainID string) (addresses []types.ProviderConsAddress) {
-
+	chainID string,
+) (addresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerCommissionRatePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
@@ -1338,8 +1339,8 @@ func (k Keeper) IsToBeOptedIn(
 // GetAllToBeOptedIn returns all the to-be-opted-in validators on chain `chainID`
 func (k Keeper) GetAllToBeOptedIn(
 	ctx sdk.Context,
-	chainID string) (addresses []types.ProviderConsAddress) {
-
+	chainID string,
+) (addresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ToBeOptedInBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
@@ -1383,8 +1384,8 @@ func (k Keeper) IsToBeOptedOut(
 // GetAllToBeOptedOut returns all the to-be-opted-out validators on chain `chainID`
 func (k Keeper) GetAllToBeOptedOut(
 	ctx sdk.Context,
-	chainID string) (addresses []types.ProviderConsAddress) {
-
+	chainID string,
+) (addresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ToBeOptedOutBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)

@@ -18,9 +18,9 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
 	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"

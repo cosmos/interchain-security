@@ -502,7 +502,6 @@ func TestConsumerGenesisTransformationFromV2ToCurrent(t *testing.T) {
 	require.Equal(t, "", resultGenesis.ProviderChannelId)
 	require.Equal(t, srcGenesis.InitialValSet, resultGenesis.Provider.InitialValSet)
 	require.Empty(t, resultGenesis.InitialValSet)
-
 }
 
 // Check transformation of provider v3.3.x implementation to consumer V2
@@ -530,7 +529,6 @@ func TestConsumerGenesisTransformationV330ToV2(t *testing.T) {
 	require.Equal(t, srcGenesis.NewChain, resultGenesis.NewChain)
 	require.Equal(t, "", resultGenesis.ProviderClientId)
 	require.Equal(t, "", resultGenesis.ProviderChannelId)
-
 }
 
 // Check transformation of provider v3.3.x implementation to current consumer version

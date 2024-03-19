@@ -233,7 +233,6 @@ func NewOptInCmd() *cobra.Command {
 				consumerPubKey = ""
 			}
 			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
-
 			if err != nil {
 				return err
 			}
