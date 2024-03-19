@@ -12,7 +12,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
@@ -30,44 +29,37 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 	}
 
 	chainID := "consumer"
-	validatorsVotes := make([]abci.VoteInfo, 5)
-
 	expTotalPower := int64(0)
 
-	// create validators, opt them in and use them
-	// to create block votes
+	// verify that the total power returned is equal to zero
+	// when the consumer doesn't exist or has no validators.
+	require.Zero(t, keeper.ComputeConsumerTotalVotingPower(
+		ctx,
+		chainID,
+	))
+
+	// set 5 validators to the consumer chain
 	for i := 0; i < 5; i++ {
 		val := createVal(int64(i))
-		keeper.SetOptedIn(
+		keeper.SetConsumerValidator(
 			ctx,
 			chainID,
-			types.OptedInValidator{
-				ProviderAddr: val.Address,
-				BlockHeight:  ctx.BlockHeight(),
-				Power:        val.VotingPower,
-				PublicKey:    val.PubKey.Bytes(),
-			},
-		)
-
-		validatorsVotes = append(
-			validatorsVotes,
-			abci.VoteInfo{
-				Validator: abci.Validator{
-					Address: val.Address,
-					Power:   val.VotingPower,
-				},
+			types.ConsumerValidator{
+				ProviderConsAddr: val.Address,
+				Power:            val.VotingPower,
 			},
 		)
 
 		expTotalPower += val.VotingPower
 	}
 
+	// compute the total power of opted-in validators
 	res := keeper.ComputeConsumerTotalVotingPower(
 		ctx,
 		chainID,
-		validatorsVotes,
 	)
 
+	// check the total power returned
 	require.Equal(t, expTotalPower, res)
 }
 

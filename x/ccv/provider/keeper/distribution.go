@@ -17,16 +17,11 @@ import (
 
 // BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.
 func (k Keeper) BeginBlockRD(ctx sdk.Context, req abci.RequestBeginBlock) {
-	// determine the total power signing the block
-	var previousTotalPower int64
-	for _, voteInfo := range req.LastCommitInfo.GetVotes() {
-		previousTotalPower += voteInfo.Validator.Power
-	}
 
 	// TODO this is Tendermint-dependent
 	// ref https://github.com/cosmos/cosmos-sdk/issues/3095
 	if ctx.BlockHeight() > 1 {
-		k.AllocateTokens(ctx, previousTotalPower, req.LastCommitInfo.GetVotes())
+		k.AllocateTokens(ctx)
 	}
 }
 
@@ -75,7 +70,7 @@ func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenom
 
 // AllocateTokens performs rewards distribution to the community pool and validators
 // based on the Partial Set Security distribution specification.
-func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bondedVotes []abci.VoteInfo) {
+func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	// return if there is no coins in the consumer rewards pool
 	if k.GetConsumerRewardsPool(ctx).IsZero() {
 		return
@@ -95,6 +90,9 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 			continue
 		}
 
+		// note that it's possible that no rewards are collected even though the
+		// reward pool isn't empty. This can happen if the reward pool holds some tokens
+		// of non-whitelisted denominations.
 		if rewardsCollected.IsZero() {
 			continue
 		}
@@ -104,13 +102,13 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		feePool := k.distributionKeeper.GetFeePool(ctx)
-		if k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId, bondedVotes) == 0 {
+		if k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId) == 0 {
 			feePool.CommunityPool = feePool.CommunityPool.Add(rewardsCollectedDec...)
 			k.distributionKeeper.SetFeePool(ctx, feePool)
 			return
 		}
 
-		// Calculate the reward allocations
+		// calculate the reward allocations
 		remaining := rewardsCollectedDec
 		communityTax := k.distributionKeeper.GetCommunityTax(ctx)
 		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
@@ -120,7 +118,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 		feeAllocated := k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumer.ChainId,
-			bondedVotes,
 			feeMultiplier,
 		)
 		remaining = remaining.Sub(feeAllocated)
@@ -131,15 +128,11 @@ func (k Keeper) AllocateTokens(ctx sdk.Context, totalPreviousPower int64, bonded
 	}
 }
 
-// TODO: allocate tokens to validators that opted-in and for long enough e.g. 1000 blocks
-// once the opt-in logic is integrated QueueVSCPackets()
-//
-// AllocateTokensToConsumerValidators allocates the given tokens from the
-// from consumer rewards pool to validator according to their voting power
+// AllocateTokensToConsumerValidators allocates tokens
+// to the given consumer chain's validator set
 func (k Keeper) AllocateTokensToConsumerValidators(
 	ctx sdk.Context,
 	chainID string,
-	bondedVotes []abci.VoteInfo,
 	tokens sdk.DecCoins,
 ) (allocated sdk.DecCoins) {
 	// return early if the tokens are empty
@@ -147,17 +140,18 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		return allocated
 	}
 
-	// get the consumer total voting power from the votes
-	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID, bondedVotes)
+	// get the total voting power of the consumer valset
+	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID)
 	if totalPower == 0 {
 		return allocated
 	}
 
-	for _, vote := range bondedVotes {
-		// TODO: should check if validator IsOptIn or continue here
-		consAddr := sdk.ConsAddress(vote.Validator.Address)
+	// Allocate tokens by iterating over the consumer validators
+	for _, consumerVal := range k.GetConsumerValSet(ctx, chainID) {
+		consAddr := sdk.ConsAddress(consumerVal.ProviderConsAddr)
 
-		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(totalPower))
+		// get the validator tokens fraction using its voting power
+		powerFraction := math.LegacyNewDec(consumerVal.Power).QuoTruncate(math.LegacyNewDec(totalPower))
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
 		// get the validator type struct for the consensus address
@@ -242,21 +236,15 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 	)
 }
 
-// ComputeConsumerTotalVotingPower returns the total voting power for a given consumer chain
-// by summing its opted-in validators votes
-func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string, votes []abci.VoteInfo) int64 {
-	// TODO: create a optedIn set from the OptedIn validators
-	// and sum their validator power
-	var totalPower int64
-
+// ComputeConsumerTotalVotingPower returns the validator set total voting power
+// for the given consumer chain
+func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
 	// sum the opted-in validators set voting powers
-	for _, vote := range votes {
-		// TODO: check that val is in the optedIn set
-
-		totalPower += vote.Validator.Power
+	for _, v := range k.GetConsumerValSet(ctx, chainID) {
+		totalPower += v.Power
 	}
 
-	return totalPower
+	return
 }
 
 // IdentifyConsumerChainIDFromIBCPacket checks if the packet destination matches a registered consumer chain.
