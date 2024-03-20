@@ -2,7 +2,6 @@ package keeper
 
 import (
 	errorsmod "cosmossdk.io/errors"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -50,6 +49,25 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerChainId,
 			"opting out of an unknown or not running consumer chain, with id: %s", chainID)
+	}
+
+	if topN, found := k.GetTopN(ctx, chainID); found {
+		// a validator cannot opt out from a Top N chain if the validator is in the Top N validators
+		validator, validatorFound := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+		if !validatorFound {
+			return errorsmod.Wrapf(
+				stakingtypes.ErrNoValidatorFound,
+				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
+		}
+		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
+		minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
+
+		if power >= minPowerToOptIn {
+			return errorsmod.Wrapf(
+				types.ErrCannotOptOutFromTopN,
+				"validator with power (%d) cannot opt out from Top N chain because all validators"+
+					"with at least %d power have to validate", power, minPowerToOptIn)
+		}
 	}
 
 	k.DeleteOptedIn(ctx, chainID, providerAddr)

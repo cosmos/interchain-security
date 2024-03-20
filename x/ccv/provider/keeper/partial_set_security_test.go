@@ -99,6 +99,56 @@ func TestHandleOptOut(t *testing.T) {
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", providerAddr))
 }
 
+func TestHandleOptOutFromTopNChain(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
+
+	// set a consumer client so that the chain is considered running
+	providerKeeper.SetConsumerClientId(ctx, chainID, "clientID")
+
+	// set the chain as Top 50 and create 4 validators with 10%, 20%, 30%, and 40% of the total voting power
+	// respectively
+	providerKeeper.SetTopN(ctx, "chainID", 50)
+	valA := createStakingValidator(ctx, mocks, 1, 1) // 10% of the total voting power (can opt out)
+	valAConsAddr, _ := valA.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, true).AnyTimes()
+	valB := createStakingValidator(ctx, mocks, 2, 2) // 20% of the total voting power (can opt out)
+	valBConsAddr, _ := valB.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, true).AnyTimes()
+	valC := createStakingValidator(ctx, mocks, 3, 3) // 30% of the total voting power (cannot opt out)
+	valCConsAddr, _ := valC.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, true).AnyTimes()
+	valD := createStakingValidator(ctx, mocks, 4, 4) // 40% of the total voting power (cannot opt out)
+	valDConsAddr, _ := valD.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, true).AnyTimes()
+
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD}).AnyTimes()
+
+	// opt in all validators
+	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valAConsAddr))
+	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valBConsAddr))
+	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valCConsAddr))
+	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valDConsAddr))
+
+	// validators A and B can opt out because they belong the bottom 30% of validators
+	require.NoError(t, providerKeeper.HandleOptOut(ctx, chainID, types.NewProviderConsAddress(valAConsAddr)))
+	require.NoError(t, providerKeeper.HandleOptOut(ctx, chainID, types.NewProviderConsAddress(valBConsAddr)))
+
+	// validators C and D cannot opt out because C has 30% of the voting power and D has 40% of the voting power
+	// and hence both are needed to keep validating a Top 50 chain
+	require.Error(t, providerKeeper.HandleOptOut(ctx, chainID, types.NewProviderConsAddress(valCConsAddr)))
+	require.Error(t, providerKeeper.HandleOptOut(ctx, chainID, types.NewProviderConsAddress(valDConsAddr)))
+
+	// opting out a validator that cannot be found from a Top N chain should also return an error
+	notFoundValidator := createStakingValidator(ctx, mocks, 5, 5)
+	notFoundValidatorConsAddr, _ := notFoundValidator.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, notFoundValidatorConsAddr).
+		Return(stakingtypes.Validator{}, false)
+	require.Error(t, providerKeeper.HandleOptOut(ctx, chainID, types.NewProviderConsAddress(notFoundValidatorConsAddr)))
+}
+
 func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()

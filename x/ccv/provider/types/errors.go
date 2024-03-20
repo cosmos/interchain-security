@@ -25,4 +25,5 @@ var (
 	ErrDuplicateConsumerChain           = errorsmod.Register(ModuleName, 17, "consumer chain already exists")
 	ErrConsumerChainNotFound            = errorsmod.Register(ModuleName, 18, "consumer chain not found")
 	ErrInvalidConsumerCommissionRate    = errorsmod.Register(ModuleName, 19, "consumer commission rate is invalid")
+	ErrCannotOptOutFromTopN             = errorsmod.Register(ModuleName, 20, "cannot opt out from a Top N chain")
 )
