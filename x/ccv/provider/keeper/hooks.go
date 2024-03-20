@@ -225,7 +225,7 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 			return
 		}
 
-		// in the validator is already opted in, the `SetOptedIn` is a no-op
+		// If the validator is already opted in, the `SetOptedIn` is a no-op
 		h.k.SetOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
 	} else {
 		// If vote is not a YES vote with 100% weight, we opt out the validator.
