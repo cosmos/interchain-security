@@ -156,6 +156,4 @@ type ScopedKeeper interface {
 
 type GovKeeper interface {
 	GetProposal(ctx sdk.Context, proposalID uint64) (v1.Proposal, bool)
-	GetProposals(ctx sdk.Context) (proposals v1.Proposals)
-	GetVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) (vote v1.Vote, found bool)
 }
