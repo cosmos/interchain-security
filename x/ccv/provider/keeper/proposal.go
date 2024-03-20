@@ -289,23 +289,16 @@ func (k Keeper) MakeConsumerGenesis(
 		bondedValidators = append(bondedValidators, val)
 	}
 
-	var nextValidators []types.ConsumerValidator
-
-	considerOnlyOptIn := func(validator stakingtypes.Validator) bool {
-		consAddr, err := validator.GetConsAddr()
-		if err != nil {
-			return false
-		}
-		return k.IsOptedIn(ctx, chainID, types.NewProviderConsAddress(consAddr))
-	}
-
 	if prop.Top_N > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower := k.ComputeMinPowerToOptIn(ctx, bondedValidators, prop.Top_N)
 		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 	}
 
-	nextValidators = k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators, considerOnlyOptIn)
+	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators,
+		func(validator stakingtypes.Validator) bool {
+			return k.ShouldConsiderOnlyOptIn(ctx, chainID, validator)
+		})
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys

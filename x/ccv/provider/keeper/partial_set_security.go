@@ -104,11 +104,20 @@ func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, bondedValidators []staki
 	}
 
 	// We should never reach this point because the topN can be up to 1.0 (100%) and in the above `for` loop we
-	// perform an equal comparison as well (`GTE`). In any case, we do not have to panic here because we can return
-	// the smallest possible power.
+	// perform an equal comparison as well (`GTE`). In any case, we do not have to panic here because we can return 0
+	// as the smallest possible power.
 	k.Logger(ctx).Error("should never reach this point",
 		"topN", topN,
 		"totalPower", totalPower,
 		"powerSum", powerSum)
-	return powers[len(powers)-1]
+	return 0
+}
+
+// ShouldConsiderOnlyOptIn returns true if `validator` is opted in, in `chainID.
+func (k Keeper) ShouldConsiderOnlyOptIn(ctx sdk.Context, chainID string, validator stakingtypes.Validator) bool {
+	consAddr, err := validator.GetConsAddr()
+	if err != nil {
+		return false
+	}
+	return k.IsOptedIn(ctx, chainID, types.NewProviderConsAddress(consAddr))
 }

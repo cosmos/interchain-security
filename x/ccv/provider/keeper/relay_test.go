@@ -671,31 +671,14 @@ func TestEndBlockVSU(t *testing.T) {
 	// create 4 sample lastValidators
 	var lastValidators []stakingtypes.Validator
 	var valAddresses []sdk.ValAddress
-	var powers []int64
 	for i := 0; i < 4; i++ {
 		validator := crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
 		lastValidators = append(lastValidators, validator)
 		valAddresses = append(valAddresses, validator.GetOperator())
-		powers = append(powers, int64(i+1))
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(i + 1)).AnyTimes()
 	}
 
-	mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool)) {
-			for i, addr := range valAddresses {
-				if cb(addr, powers[i]) {
-					break
-				}
-			}
-		},
-	).AnyTimes()
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(2)).AnyTimes()
-
-	for _, val := range lastValidators {
-		consAddr, _ := val.GetConsAddr()
-		// FIXME: probably `consAddr` is not needed
-		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).Return(val, true).AnyTimes()
-	}
 
 	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, chainID, "clientID")

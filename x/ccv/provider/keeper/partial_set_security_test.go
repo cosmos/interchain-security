@@ -128,20 +128,23 @@ func TestOptInTopNValidators(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// create 3 validators with powers 1, 2, and 3 respectively
+	// create 4 validators with powers 1, 2, 3, and 1 respectively
 	valA := createStakingValidator(ctx, mocks, 1, 1)
 	valAConsAddr, _ := valA.GetConsAddr()
 	valB := createStakingValidator(ctx, mocks, 2, 2)
 	valBConsAddr, _ := valB.GetConsAddr()
 	valC := createStakingValidator(ctx, mocks, 3, 3)
 	valCConsAddr, _ := valC.GetConsAddr()
+	valD := createStakingValidator(ctx, mocks, 4, 1)
+	valDConsAddr, _ := valD.GetConsAddr()
 
-	// opts in all validators with power >= 1
-	providerKeeper.OptInTopNValidators(ctx, "chainID", []stakingtypes.Validator{valA, valB, valC}, 1)
+	// Start Test 1: opt in all validators with power >= 0
+	providerKeeper.OptInTopNValidators(ctx, "chainID", []stakingtypes.Validator{valA, valB, valC, valD}, 0)
 	expectedOptedInValidators := []types.ProviderConsAddress{
 		types.NewProviderConsAddress(valAConsAddr),
 		types.NewProviderConsAddress(valBConsAddr),
-		types.NewProviderConsAddress(valCConsAddr)}
+		types.NewProviderConsAddress(valCConsAddr),
+		types.NewProviderConsAddress(valDConsAddr)}
 	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "chainID")
 
 	// sort validators first to be able to compare
@@ -159,9 +162,23 @@ func TestOptInTopNValidators(t *testing.T) {
 	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valAConsAddr))
 	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valBConsAddr))
 	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valCConsAddr))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valDConsAddr))
 
-	// opts in all validators with power >= 2 and hence we do not expect to opt in validator A
-	providerKeeper.OptInTopNValidators(ctx, "chainID", []stakingtypes.Validator{valA, valB, valC}, 2)
+	// Start Test 2: opt in all validators with power >= 1
+	// We expect the same `expectedOptedInValidators` as when we opted in all validators with power >= 0 because the
+	// validators with the smallest power have power == 1
+	providerKeeper.OptInTopNValidators(ctx, "chainID", []stakingtypes.Validator{valA, valB, valC, valD}, 0)
+	actualOptedInValidators = providerKeeper.GetAllOptedIn(ctx, "chainID")
+	sortUpdates(actualOptedInValidators)
+	require.Equal(t, expectedOptedInValidators, actualOptedInValidators)
+
+	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valAConsAddr))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valBConsAddr))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valCConsAddr))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valDConsAddr))
+
+	// Start Test 3: opt in all validators with power >= 2 and hence we do not expect to opt in validator A
+	providerKeeper.OptInTopNValidators(ctx, "chainID", []stakingtypes.Validator{valA, valB, valC, valD}, 2)
 	expectedOptedInValidators = []types.ProviderConsAddress{
 		types.NewProviderConsAddress(valBConsAddr),
 		types.NewProviderConsAddress(valCConsAddr)}
@@ -176,9 +193,10 @@ func TestOptInTopNValidators(t *testing.T) {
 	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valAConsAddr))
 	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valBConsAddr))
 	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valCConsAddr))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", types.NewProviderConsAddress(valDConsAddr))
 
-	// opts in all validators with power >= 4 and hence we do not expect any opted-in validators
-	providerKeeper.OptInTopNValidators(ctx, "chainID", []stakingtypes.Validator{valA, valB, valC}, 4)
+	// Start Test 4: opt in all validators with power >= 4 and hence we do not expect any opted-in validators
+	providerKeeper.OptInTopNValidators(ctx, "chainID", []stakingtypes.Validator{valA, valB, valC, valD}, 4)
 	require.Empty(t, providerKeeper.GetAllOptedIn(ctx, "chainID"))
 }
 
@@ -213,4 +231,18 @@ func TestComputeMinPowerToOptIn(t *testing.T) {
 	require.Equal(t, int64(6), providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 41))
 	require.Equal(t, int64(10), providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 40))
 	require.Equal(t, int64(10), providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 1))
+}
+
+// TestShouldConsiderOnlyOptIn returns true if `validator` is opted in, in `chainID.
+func TestShouldConsiderOnlyOptIn(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	validator := createStakingValidator(ctx, mocks, 0, 1)
+	consAddr, _ := validator.GetConsAddr()
+
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr)))
+	providerKeeper.SetOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr))
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr)))
+
 }
