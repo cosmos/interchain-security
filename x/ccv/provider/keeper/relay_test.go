@@ -22,6 +22,7 @@ import (
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -135,6 +136,9 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 
 	// Now set slash meter to positive value and assert slash packet handled result is returned
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
+
+	// Set the consumer validator
+	providerKeeper.SetConsumerValidator(ctx, "chain-1", types.ConsumerValidator{ProviderConsAddr: packetData.Validator.Address})
 
 	// Mock call to GetEffectiveValPower, so that it returns 2.
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
@@ -289,8 +293,11 @@ func TestValidateSlashPacket(t *testing.T) {
 func TestHandleSlashPacket(t *testing.T) {
 	chainId := "consumer-id"
 	validVscID := uint64(234)
+
 	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
 	consumerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987634).ConsumerConsAddress()
+	// this "dummy" consensus address won't be stored on the provider states
+	dummyConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987639).ConsumerConsAddress()
 
 	testCases := []struct {
 		name       string
@@ -299,6 +306,20 @@ func TestHandleSlashPacket(t *testing.T) {
 		expectedCalls        func(sdk.Context, testkeeper.MockedKeepers, ccv.SlashPacketData) []*gomock.Call
 		expectedSlashAcksLen int
 	}{
+		{
+			"validator isn't a consumer validator",
+			ccv.SlashPacketData{
+				Validator:      abci.Validator{Address: dummyConsAddr.ToSdkConsAddr()},
+				ValsetUpdateId: validVscID,
+				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
+			},
+			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
+				expectedPacketData ccv.SlashPacketData,
+			) []*gomock.Call {
+				return []*gomock.Call{}
+			},
+			0,
+		},
 		{
 			"unfound validator",
 			ccv.SlashPacketData{
@@ -403,34 +424,36 @@ func TestHandleSlashPacket(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+				t, testkeeper.NewInMemKeeperParams(t))
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+			// Setup expected mock calls
+			gomock.InOrder(tc.expectedCalls(ctx, mocks, tc.packetData)...)
 
-		// Setup expected mock calls
-		gomock.InOrder(tc.expectedCalls(ctx, mocks, tc.packetData)...)
+			// Setup init chain height and a single valid valset update ID to block height mapping.
+			providerKeeper.SetInitChainHeight(ctx, chainId, 5)
+			providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, 99)
 
-		// Setup init chain height and a single valid valset update ID to block height mapping.
-		providerKeeper.SetInitChainHeight(ctx, chainId, 5)
-		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, 99)
+			// Setup consumer address to provider address mapping.
+			require.NotEmpty(t, tc.packetData.Validator.Address)
+			providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, consumerConsAddr, providerConsAddr)
+			providerKeeper.SetConsumerValidator(ctx, chainId, types.ConsumerValidator{ProviderConsAddr: providerConsAddr.Address.Bytes()})
 
-		// Setup consumer address to provider address mapping.
-		require.NotEmpty(t, tc.packetData.Validator.Address)
-		providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, consumerConsAddr, providerConsAddr)
+			// Execute method and assert expected mock calls.
+			providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
 
-		// Execute method and assert expected mock calls.
-		providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
+			require.Equal(t, tc.expectedSlashAcksLen, len(providerKeeper.GetSlashAcks(ctx, chainId)))
 
-		require.Equal(t, tc.expectedSlashAcksLen, len(providerKeeper.GetSlashAcks(ctx, chainId)))
+			if tc.expectedSlashAcksLen == 1 {
+				// must match the consumer address
+				require.Equal(t, consumerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+				require.NotEqual(t, providerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+				require.NotEqual(t, providerConsAddr.String(), consumerConsAddr.String())
+			}
 
-		if tc.expectedSlashAcksLen == 1 {
-			// must match the consumer address
-			require.Equal(t, consumerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
-			require.NotEqual(t, providerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
-			require.NotEqual(t, providerConsAddr.String(), consumerConsAddr.String())
-		}
-
-		ctrl.Finish()
+			ctrl.Finish()
+		})
 	}
 }
 
