@@ -140,7 +140,6 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	prop := testkeeper.GetTestConsumerAdditionProp()
 	prop.ChainId = chainID
 	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
-
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
 	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
