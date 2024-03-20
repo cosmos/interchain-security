@@ -294,9 +294,10 @@ func TestHandleSlashPacket(t *testing.T) {
 	chainId := "consumer-id"
 	validVscID := uint64(234)
 
-	dumConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987639).ConsumerConsAddress()
 	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
 	consumerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987634).ConsumerConsAddress()
+	// this "dummy" consensus address won't be stored on the provider states
+	dummyConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987639).ConsumerConsAddress()
 
 	testCases := []struct {
 		name       string
@@ -308,7 +309,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"validator isn't a consumer validator",
 			ccv.SlashPacketData{
-				Validator:      abci.Validator{Address: dumConsAddr.ToSdkConsAddr()},
+				Validator:      abci.Validator{Address: dummyConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: validVscID,
 				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
