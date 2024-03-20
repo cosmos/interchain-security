@@ -141,10 +141,6 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	prop.ChainId = chainID
 	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
 
-	// set the consumer TopN here since the test suite setup only used the consumer addition prop
-	// to create the consumer genesis, see BeginBlockInit in /x/ccv/provider/keeper/proposal.go.
-	providerKeeper.SetTopN(providerChain.GetContext(), chainID, prop.Top_N)
-
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
 	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
@@ -153,6 +149,10 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		prop,
 	)
 	s.Require().NoError(err)
+
+	// set the consumer TopN here since the test suite setup only used the consumer addition prop
+	// to create the consumer genesis, see BeginBlockInit in /x/ccv/provider/keeper/proposal.go.
+	providerKeeper.SetTopN(providerChain.GetContext(), chainID, prop.Top_N)
 
 	// commit the state on the provider chain
 	coordinator.CommitBlock(providerChain)
