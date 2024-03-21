@@ -210,6 +210,12 @@ func RunItfTrace(t *testing.T, path string) {
 
 	t.Log("Reading the trace...")
 
+	// maps from string representations of cmttypes.Addresses to monikers
+	reverseAddressMap := make(map[string]string, len(addressMap))
+	for k, v := range addressMap {
+		reverseAddressMap[string(v.Address)] = k
+	}
+
 	for index, state := range trace.States {
 		t.Log("Height modulo epoch length:", driver.providerChain().CurrentHeader.Height%blocksPerEpoch)
 		t.Log("Model height modulo epoch length:", ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch)
@@ -315,15 +321,42 @@ func RunItfTrace(t *testing.T, path string) {
 			for _, consumer := range consumersToStart {
 				chainId := consumer.Value.(itf.MapExprType)["chain"].Value.(string)
 				topN := consumer.Value.(itf.MapExprType)["topN"].Value.(int64)
+				yesVoters := consumer.Value.(itf.MapExprType)["yesVoters"].Value.(itf.ListExprType)
+				yesVotersMap := make(map[string]bool, len(yesVoters))
+				for _, voter := range yesVoters {
+					yesVotersMap[voter.Value.(string)] = true
+				}
+
+				initialValSet := cmttypes.ValidatorSet{}
+				for _, val := range driver.providerChain().Vals.Validators {
+					moniker := reverseAddressMap[string(val.Address)]
+					if _, ok := yesVotersMap[moniker]; ok {
+						initialValSet.Validators = append(initialValSet.Validators, val)
+					}
+				}
+				initialValSet.Proposer = driver.providerChain().Vals.Proposer
+
+				// opt the yes voters in, which would usually have been done for each one after voting on the proposal
+				// which we do not model
+				validatorsToOptIn := make([]*providertypes.ProviderConsAddress, 0)
+				for _, monikerExpr := range yesVoters {
+					moniker := monikerExpr.Value.(string)
+					valAddr := addressMap[moniker].Address
+					consAddr, err := sdktypes.ConsAddressFromHex(valAddr.String())
+					require.NoError(t, err, "Error getting consensus address from hex")
+					validatorsToOptIn = append(validatorsToOptIn, &providertypes.ProviderConsAddress{Address: consAddr})
+				}
+
 				driver.setupConsumer(
 					chainId,
 					modelParams,
-					driver.providerChain().Vals,
+					&initialValSet,
 					consumerSigners,
 					nodes,
 					valNames,
 					driver.providerChain(),
 					topN,
+					validatorsToOptIn,
 				)
 			}
 
@@ -690,7 +723,7 @@ func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int6
 	}
 
 	if !reflect.DeepEqual(expectedValSet, actualValSet) {
-		return fmt.Errorf("Validator sets do not match: (+ expected, - actual): %v", pretty.Compare(expectedValSet, actualValSet))
+		return fmt.Errorf("Validator sets do not match: (- expected, + actual): %v", pretty.Compare(expectedValSet, actualValSet))
 	}
 	return nil
 }

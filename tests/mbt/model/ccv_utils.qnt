@@ -491,4 +491,27 @@ module ccv_utils {
                     acc.put(node, valSet.get(node))
                 }
         )
+
+    // For each new consumer addition, opts in all the validators that voted yes.
+    pure def OptInYesVoters(providerState: ProviderState, consumers: Set[ConsumerAdditionMsg]): ProviderState = {
+        val consumerToYesVoters = 
+            consumers.fold(
+                Map(),
+                (acc, consumer) => acc.put(consumer.chain, consumer.yesVoters)
+            )
+        providerState.with(
+            "optedInVals",
+            providerState.optedInVals.keys().mapBy(
+                (consumer) => 
+                val prevOptedInVals = providerState.optedInVals.get(consumer)
+                prevOptedInVals.union(consumerToYesVoters.getOrElse(consumer, Set()))
+            )
+        )
+    }
+
+    pure def IsEmptyValSet(valSet: ValidatorSet): bool = {
+        valSet.keys().filter(
+            node => valSet.get(node) > 0
+        ).size() == 0
+    }
 }

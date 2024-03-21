@@ -244,27 +244,31 @@ module ccv_types {
     // In particular, holds:
     // the chain name/identifier,
     // and the top N factor for the chain.
+    // the set of nodes that votes yes on the proposal (we don't model the actual voting process, but use this only to set the initial set of opted-in nodes)
     type ConsumerAdditionMsg = {
         chain: Chain,
-        topN: int
+        topN: int,
+        yesVoters: Set[Node],
     }
 
-    // Creates a new ConsumerAdditionMsg with a given top N.
-    pure def NewTopNConsumer(chain: Chain, topN: int): ConsumerAdditionMsg = {
+    // Creates a new ConsumerAdditionMsg with a given top N and given set of nodes that voted yes.
+    pure def NewTopNConsumer(chain: Chain, topN: int, yesVoters: Set[Node]): ConsumerAdditionMsg = {
         {
             chain: chain,
-            topN: topN
+            topN: topN,
+            yesVoters: yesVoters
         }
     }
 
-    // Creates a new ConsumerAdditionMsg with topN = 0.
-    pure def NewOptInConsumer(chain: Chain): ConsumerAdditionMsg = {
-        NewTopNConsumer(chain, 0)
+    // Creates a new ConsumerAdditionMsg with topN = 0 and given set of nodes that voted yes.
+    pure def NewOptInConsumer(chain: Chain, yesVoters: Set[Node]): ConsumerAdditionMsg = {
+        NewTopNConsumer(chain, 0, yesVoters)
     }
 
     // Creates a new ConsumerAdditionMsg with top N = 100%.
-    pure def NewFullConsumer(chain: Chain): ConsumerAdditionMsg = {
-        NewTopNConsumer(chain, 100)
+    // Yes voters don't really matter - the chain will force everyone to validate anyways.
+    pure def NewFullConsumer(chain: Chain, yesVoters: Set[Node]): ConsumerAdditionMsg = {
+        NewTopNConsumer(chain, 100, yesVoters)
     }
 }
 
@@ -511,28 +515,33 @@ module ccv {
         // for each running consumer chain, opt in validators that are in the top N
         val providerStateAfterPSS = providerStateAfterConsumerAdvancement.endBlockPSS()
 
+        // for each new consumer addition, opt in the validators that voted yes
+        val providerStateAfterPSSAndYesOptIns = providerStateAfterPSS.OptInYesVoters(consumersToStart)
+
         if (err != "") {
             Err(err)
+        } else if (providerStateAfterConsumerAdvancement.chainState.votingPowerHistory.head().IsEmptyValSet()) {
+            Err("Validator set would be empty after ending this block!")
         } else {
             // for each consumer chain, apply the key assignment to the current validator set
-            val currentValSets = getRunningConsumers(providerStateAfterPSS).mapBy(
+            val currentValSets = getRunningConsumers(providerStateAfterPSSAndYesOptIns).mapBy(
                 (consumer) => 
-                providerStateAfterPSS.applyKeyAssignmentToValSet(
+                providerStateAfterPSSAndYesOptIns.applyKeyAssignmentToValSet(
                     consumer,
                     // get the validator set after partial set security has been applied
-                    GetPSSValidatorSet(providerStateAfterPSS, curValSet, consumer)
+                    GetPSSValidatorSet(providerStateAfterPSSAndYesOptIns, curValSet, consumer)
                 )
             )
 
             // store the current validator set with the key assignments applied in the history
             val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
                 (consumer) => 
-                providerStateAfterPSS.keyAssignedValSetHistory
+                providerStateAfterPSSAndYesOptIns.keyAssignedValSetHistory
                     .getOrElse(consumer, List()) // get the existing history (empty list if no history yet)
                     .prepend(currentValSets.get(consumer)) // prepend the current validator set with key assignments applied
             )
 
-            val providerStateAfterStoringValSets = providerStateAfterPSS.with(
+            val providerStateAfterStoringValSets = providerStateAfterPSSAndYesOptIns.with(
                 "keyAssignedValSetHistory", newKeyAssignedValSetHistory
             )
 
