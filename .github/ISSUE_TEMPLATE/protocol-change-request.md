@@ -1,7 +1,7 @@
 ---
 name: Protocol change proposal
 about: Create a proposal to request a change to the protocol
-labels: protocol-change, needs-triage
+labels: "type: protocol-change", "status: waiting-triage"
 ---
 
 <!-- < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < ☺ 
