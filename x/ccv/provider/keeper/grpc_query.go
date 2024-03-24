@@ -203,8 +203,8 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 			return nil, err
 		}
 		pairValConAddrs = append(pairValConAddrs, &types.PairValConAddrProviderAndConsumer{
-			ProviderAddress: string(data.ProviderAddr),
-			ConsumerAddress: string(consumerAddr),
+			ProviderAddress: sdk.ConsAddress(data.ProviderAddr).String(),
+			ConsumerAddress: consumerAddr.String(),
 			ConsumerKey:     data.ConsumerKey,
 		})
 	}
