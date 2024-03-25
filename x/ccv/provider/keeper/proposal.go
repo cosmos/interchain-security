@@ -291,7 +291,7 @@ func (k Keeper) MakeConsumerGenesis(
 
 	if prop.Top_N > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower := k.ComputeMinPowerToOptIn(ctx, bondedValidators, prop.Top_N)
+		minPower := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, prop.Top_N)
 		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 	}
 
