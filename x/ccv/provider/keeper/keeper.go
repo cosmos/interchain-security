@@ -255,6 +255,7 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 			ChainId:  chainID,
 			ClientId: clientID,
 			Top_N:    topN,
+			OptIn:
 		})
 	}
 

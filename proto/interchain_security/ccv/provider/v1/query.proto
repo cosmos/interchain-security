@@ -127,7 +127,10 @@ message QueryConsumerChainStopProposalsResponse {
 message Chain {
   string chain_id = 1;
   string client_id = 2;
-  uint32 top_N = 3;
+  // If the `chainID` is an Opt-In chain, i.e., no validator is forced to validate chain `chainID`
+  bool opt_In = 3;
+  // If chain with `chainID` is a Top-N chain, i.e., enforces at least one validator to validate chain `chainID`
+  uint32 top_N = 4;
 }
 
 message QueryValidatorConsumerAddrRequest {
