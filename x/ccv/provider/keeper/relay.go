@@ -223,9 +223,9 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
 
-		if topN, found := k.GetTopN(ctx, chain.ChainId); found {
+		if topN, found := k.GetTopN(ctx, chain.ChainId); found && topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			minPower := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
+			minPower := k.ComputeMinPowerToOptIn(ctx, chain.ChainId, bondedValidators, topN)
 			k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
 		}
 
