@@ -240,7 +240,7 @@ module ccv_model {
 
         val consumerStatus = currentState.providerState.consumerStatus
         nondet consumersToStart = oneOf(nonConsumers.powerset())
-        val consumerAdditions = consumersToStart.map(chain => NewFullConsumer(chain))
+        val consumerAdditions = consumersToStart.map(chain => NewFullConsumer(chain, Set()))
         nondet consumersToStop = oneOf(runningConsumers.powerset())
         nondet timeAdvancement = oneOf(timeAdvancements)
         EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
@@ -321,7 +321,9 @@ module ccv_model {
             assert(newest(Set(packet1, packet2, packet3)) == packet3),
             assert(newest(Set(packet3, packet2, packet1)) == packet3),
         }
-    }        
+    }
+
+    val currentProviValSet = currentState.providerState.chainState.currentValidatorSet
 
     // ==================
     // INVARIANT CHECKS
@@ -528,7 +530,7 @@ module ccv_model {
                 // the validator set has changed
                 assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet.put("node1", 150)),
                 // start consumer1
-                EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1")), Set())
+                EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1", Set())), Set())
             })
             .then(
                 all {
@@ -606,7 +608,7 @@ module ccv_model {
     run SameVscPacketsManualTest =
         init.then(
             // start all consumers except for consumer3
-            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1"), NewFullConsumer("consumer2")), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1", Set()), NewFullConsumer("consumer2", Set())), Set())
         ).then(
             // change voting power
             VotingPowerChange("node1", 50)
@@ -621,7 +623,7 @@ module ccv_model {
             DeliverVscPacket("consumer2")
         ).then(
             // start consumer3
-            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer3")), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer3", Set())), Set())
         ).then(
             // do another voting power change
             VotingPowerChange("node2", 50)
@@ -652,7 +654,7 @@ module ccv_model {
         init
         .then(
             // start all consumer chains
-            EndAndBeginBlockForProvider(1 * Second, ConsumerChains.map(c => NewFullConsumer(c)), Set())
+            EndAndBeginBlockForProvider(1 * Second, ConsumerChains.map(c => NewFullConsumer(c, Set())), Set())
         )
         .then(
             // change voting power
@@ -865,7 +867,7 @@ module ccv_model {
         init
         .then(
             // start all consumer chains
-            EndAndBeginBlockForProvider(1 * Second, consumerChains.map(c => NewFullConsumer(c)), Set())
+            EndAndBeginBlockForProvider(1 * Second, consumerChains.map(c => NewFullConsumer(c, Set())), Set())
         )
         .then(
             // node 1 assigns a key on consumer1
@@ -937,7 +939,7 @@ module ccv_model {
             VotingPowerChange("node1", 50)
         )
         .then(
-            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1"), NewFullConsumer("consumer2")), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1", Set()), NewFullConsumer("consumer2", Set())), Set())
         ).then(
             all {
                 ValidatorSetHasExistedKeyAssignmentInv,
