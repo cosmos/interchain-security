@@ -402,8 +402,10 @@ func TestGetAllConsumerChains(t *testing.T) {
 	expectedGetAllOrder := []types.Chain{}
 	for i, chainID := range chainIDs {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+		topN := uint32(i)
 		pk.SetConsumerClientId(ctx, chainID, clientID)
-		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID})
+		pk.SetTopN(ctx, chainID, topN)
+		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID, Top_N: topN})
 	}
 	// sorting by chainID
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {

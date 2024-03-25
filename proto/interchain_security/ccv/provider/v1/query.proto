@@ -127,6 +127,7 @@ message QueryConsumerChainStopProposalsResponse {
 message Chain {
   string chain_id = 1;
   string client_id = 2;
+  uint32 top_N = 3;
 }
 
 message QueryValidatorConsumerAddrRequest {
