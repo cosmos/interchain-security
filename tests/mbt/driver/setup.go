@@ -14,6 +14,8 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
 
+	ce "github.com/cometbft/cometbft/crypto/encoding"
+
 	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -375,10 +377,6 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	considerAll := func(validator stakingtypes.Validator) bool { return true }
-	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
-	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
-
 	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),
 		string(consumerChainId),
@@ -394,6 +392,11 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	for _, addr := range valsToOptIn {
 		s.providerKeeper().HandleOptIn(s.providerCtx(), consumerChain.ChainID, *addr, nil)
 	}
+
+	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators, func(validator stakingtypes.Validator) bool {
+		return s.providerKeeper().ShouldConsiderOnlyOptIn(s.providerCtx(), string(consumerChainId), validator)
+	})
+	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.
@@ -482,6 +485,18 @@ func (s *Driver) setupConsumer(
 	s.coordinator.Chains[chain] = consumerChain
 
 	valUpdates := cmttypes.TM2PB.ValidatorUpdates(&initValSet)
+	consumerVals := make([]providertypes.ConsumerValidator, len(initValSet.Validators))
+	for i, val := range initValSet.Validators {
+		pk, err := ce.PubKeyToProto(val.PubKey)
+		require.NoError(s.t, err)
+
+		consumerVals[i] = providertypes.ConsumerValidator{
+			ProviderConsAddr:  val.Address,
+			Power:             val.VotingPower,
+			ConsumerPublicKey: &pk,
+		}
+	}
+	s.providerKeeper().SetConsumerValSet(s.providerCtx(), chain, consumerVals)
 
 	path := s.ConfigureNewPath(consumerChain, providerChain, params, uint32(topN), validatorsToOptIn, valUpdates)
 	s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
