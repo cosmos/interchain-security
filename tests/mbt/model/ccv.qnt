@@ -343,7 +343,7 @@ module ccv {
                 } else {
                     // set the validator set changed flag
                     val newProviderState = currentState.providerState.with(
-                        "consumersWithPowerChangesInThisEpoch", getRunningConsumers(currentState.providerState)
+                        "consumersWithPowerChangesInThisEpoch", getRunningConsumers(currentState.providerState).filter(consumer => currentState.providerState.optedInVals.get(consumer).contains(validator))
                     )
                     pure val tmpState = currentState.with(
                         "providerState", newProviderState

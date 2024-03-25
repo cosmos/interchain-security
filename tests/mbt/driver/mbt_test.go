@@ -350,7 +350,6 @@ func RunItfTrace(t *testing.T, path string) {
 				driver.setupConsumer(
 					chainId,
 					modelParams,
-					&initialValSet,
 					consumerSigners,
 					nodes,
 					valNames,

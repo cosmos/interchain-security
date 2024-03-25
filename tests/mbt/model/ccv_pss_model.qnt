@@ -40,8 +40,9 @@ module ccv_pss_model {
 
     action OptOut_Deterministic(consumer: Chain, validator: Node): bool = {
         val res = OptOut(currentState, consumer, validator)
-        all {
-            currentState' = res.newState,
+        all {   
+            // since we sometimes get expected errors here, we need to rollback to the current state if that is the case
+            currentState' = if (res.error == "") res.newState else currentState,
             trace' = trace.append(
                 {
                     ...emptyAction,
