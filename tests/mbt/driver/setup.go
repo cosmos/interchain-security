@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"testing"
@@ -12,6 +13,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
+
+	ce "github.com/cometbft/cometbft/crypto/encoding"
 
 	"cosmossdk.io/math"
 
@@ -32,6 +35,7 @@ import (
 	"github.com/cosmos/interchain-security/v4/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
@@ -310,7 +314,7 @@ func newChain(
 // Creates a path for cross-chain validation from the consumer to the provider and configures the channel config of the endpoints
 // as well as the clients.
 // this function stops when there is an initialized, ready-to-relay channel between the provider and consumer.
-func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestChain, params ModelParams, topN uint32) *ibctesting.Path {
+func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestChain, params ModelParams, topN uint32, valsToOptIn []*providertypes.ProviderConsAddress, initialValSet []abcitypes.ValidatorUpdate) *ibctesting.Path {
 	consumerChainId := ChainId(consumerChain.ChainID)
 
 	path := ibctesting.NewPath(consumerChain, providerChain)
@@ -346,7 +350,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		[]string{"upgrade", "upgradedIBCState"},
 	)
 
-	consumerGenesis := createConsumerGenesis(params, providerChain, consumerClientState)
+	consumerGenesis := createConsumerGenesis(params, providerChain, consumerClientState, initialValSet)
 
 	s.consumerKeeper(consumerChainId).InitGenesis(s.ctx(consumerChainId), consumerGenesis)
 
@@ -373,10 +377,6 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	considerAll := func(validator stakingtypes.Validator) bool { return true }
-	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
-	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
-
 	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),
 		string(consumerChainId),
@@ -387,6 +387,16 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// needs to be done before the provider queues the first vsc packet to the consumer
 	// TODO: might be able to move this into setupConsumer, need to test once more logic is here
 	s.providerKeeper().SetTopN(providerChain.GetContext(), consumerChain.ChainID, topN)
+
+	// Opt-in validators to the consumer chain
+	for _, addr := range valsToOptIn {
+		s.providerKeeper().HandleOptIn(s.providerCtx(), consumerChain.ChainID, *addr, nil)
+	}
+
+	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators, func(validator stakingtypes.Validator) bool {
+		return s.providerKeeper().ShouldConsiderOnlyOptIn(s.providerCtx(), string(consumerChainId), validator)
+	})
+	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.
@@ -438,32 +448,63 @@ func (s *Driver) setupProvider(
 func (s *Driver) setupConsumer(
 	chain string,
 	params ModelParams,
-	valSet *cmttypes.ValidatorSet, // the current validator set on the provider chain
 	signers map[string]cmttypes.PrivValidator, // a map of validator addresses to private validators (signers)
 	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
 	valNames []string,
 	providerChain *ibctesting.TestChain,
 	topN int64,
+	validatorsToOptIn []*providertypes.ProviderConsAddress,
 ) {
 	s.t.Logf("Starting consumer %v", chain)
 
-	// TODO: reuse the partial set computation logic to compute the initial validator set
-	// for top N chains
-	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
+	minPowerToOptIn := s.providerKeeper().ComputeMinPowerToOptIn(s.providerCtx(), s.providerValidatorSet(), uint32(topN))
+
+	valSet := s.providerChain().Vals
+
+	// Filter out all the validators that do not either a) have power at least minPowerToOptIn, or b) are in the validatorsToOptIn slice
+	filteredValSet := make([]*cmttypes.Validator, 0)
+	for _, val := range valSet.Validators {
+		if val.VotingPower >= minPowerToOptIn && topN > 0 {
+			filteredValSet = append(filteredValSet, val)
+			continue
+		}
+		for _, optInVal := range validatorsToOptIn {
+			if bytes.Equal(val.Address, optInVal.Address.Bytes()) {
+				filteredValSet = append(filteredValSet, val)
+				break
+			}
+		}
+	}
+
+	initValSet := cmttypes.ValidatorSet{Validators: filteredValSet, Proposer: filteredValSet[0]}
+	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(&initValSet)
 
 	// start consumer chains
 	s.t.Logf("Creating consumer chain %v", chain)
-	consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes, valNames)
+	consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, &initValSet, signers, nodes, valNames)
 	s.coordinator.Chains[chain] = consumerChain
 
-	path := s.ConfigureNewPath(consumerChain, providerChain, params, uint32(topN))
+	valUpdates := cmttypes.TM2PB.ValidatorUpdates(&initValSet)
+	consumerVals := make([]providertypes.ConsumerValidator, len(initValSet.Validators))
+	for i, val := range initValSet.Validators {
+		pk, err := ce.PubKeyToProto(val.PubKey)
+		require.NoError(s.t, err)
+
+		consumerVals[i] = providertypes.ConsumerValidator{
+			ProviderConsAddr:  val.Address,
+			Power:             val.VotingPower,
+			ConsumerPublicKey: &pk,
+		}
+	}
+	s.providerKeeper().SetConsumerValSet(s.providerCtx(), chain, consumerVals)
+
+	path := s.ConfigureNewPath(consumerChain, providerChain, params, uint32(topN), validatorsToOptIn, valUpdates)
 	s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
 }
 
-func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState) *consumertypes.GenesisState {
+func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState, initialValSet []abcitypes.ValidatorUpdate) *consumertypes.GenesisState {
 	providerConsState := providerChain.LastHeader.ConsensusState()
 
-	valUpdates := cmttypes.TM2PB.ValidatorUpdates(providerChain.Vals)
 	params := ccvtypes.NewParams(
 		true,
 		1000, // ignore distribution
@@ -480,5 +521,5 @@ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.Te
 		ccvtypes.DefaultRetryDelayPeriod,
 	)
 
-	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, valUpdates, params)
+	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, initialValSet, params)
 }

@@ -248,7 +248,7 @@ module ccv_test {
         )
         val res = StartStopConsumers(
             GetEmptyProviderState.with("consumerStatus", currentConsumerStatusMap),
-            Set(NewOptInConsumer("chain1")),
+            Set(NewOptInConsumer("chain1", Set())),
             Set("chain2"),
             Set()
         )
@@ -267,7 +267,7 @@ module ccv_test {
         )
         val res = StartStopConsumers(
             GetEmptyProviderState.with("consumerStatus", currentConsumerStatusMap),
-            Set(NewOptInConsumer("chain2")),
+            Set(NewOptInConsumer("chain2", Set())),
             Set("chain3"),
             Set()
         )
@@ -283,7 +283,7 @@ module ccv_test {
         )
         val res = StartStopConsumers(
             GetEmptyProviderState.with("consumerStatus", currentConsumerStatusMap),
-            Set(NewOptInConsumer("chain1")),
+            Set(NewOptInConsumer("chain1", Set())),
             Set("chain3"),
             Set()
         )
@@ -299,7 +299,7 @@ module ccv_test {
         )
         val res = StartStopConsumers(
             GetEmptyProviderState.with("consumerStatus", currentConsumerStatusMap),
-            Set(NewOptInConsumer("chain1")),
+            Set(NewOptInConsumer("chain1", Set())),
             Set("chain1"),
             Set()
         )

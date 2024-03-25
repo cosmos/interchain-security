@@ -115,8 +115,6 @@ module ccv_pss {
     pure def OptOut(currentState: ProtocolState, consumer: Chain, validator: Node): Result = {
         if (currentState.IsTopN(validator, consumer)) {
             Err("Cannot opt out a validator that is in the top N")
-        } else if (not(currentState.IsOptedIn(validator, consumer))) {
-            Err("Cannot opt out a validator that is not opted in")
         } else {
             pure val optedInVals = currentState.providerState.optedInVals.get(consumer)
             pure val newOptedInVals = optedInVals.exclude(Set(validator))

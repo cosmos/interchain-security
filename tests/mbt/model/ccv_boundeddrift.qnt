@@ -81,11 +81,15 @@ module ccv_boundeddrift {
         val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
         all {
             possibleAdvancements.size() > 0, // ensure there is a possible advancement, otherwise this action does not make sense
+            currentProviValSet.keys().filter(v => currentProviValSet.get(v) > 0).size() > 0, // ensure that at least one validator has positive voting power
             // advance a block for the provider
             val consumerStatus = currentState.providerState.consumerStatus
             nondet consumersToStart = oneOf(nonConsumers.powerset())
             nondet topN = oneOf(topNOracle)
-            nondet consumerAdditions = consumersToStart.map(c => Ccvt::NewTopNConsumer(c, topN))
+            // TODO: once we merge slashing, this also needs to filter jailed validators out! (leaving this comment here as a reminder)
+            // get a random subset of the current validator set as yes voters
+            nondet yesVoters = oneOf(currentProviValSet.keys().filter(v => currentProviValSet.get(v) > 0).powerset().filter(s => s.size() > 0)) // get rid of the empty set
+            nondet consumerAdditions = consumersToStart.map(c => Ccvt::NewTopNConsumer(c, topN, yesVoters))
             // make it so we stop consumers only with small likelihood:
             nondet stopConsumersRand = oneOf(1.to(100))
             nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
@@ -118,23 +122,6 @@ module ccv_boundeddrift {
         nondetKeyAssignment,
         StepOptIn,
         StepOptOut,
-        
-        // advance a block for the provider
-        val maxAdv = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
-        val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
-        all {
-            possibleAdvancements.size() > 0, // ensure there is a possible advancement, otherwise this action does not make sense
-            // advance a block for the provider
-            val consumerStatus = currentState.providerState.consumerStatus
-            nondet consumersToStart = oneOf(nonConsumers.powerset())
-            nondet topN = oneOf(variousPossibleTopN)
-            nondet consumerAdditions = consumersToStart.map(c => Ccvt::NewTopNConsumer(c, topN))
-            // make it so we stop consumers only with small likelihood:
-            nondet stopConsumersRand = oneOf(1.to(100))
-            nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
-            nondet timeAdvancement = oneOf(possibleAdvancements)
-            EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
-        }
     }
 
     // INVARIANT
