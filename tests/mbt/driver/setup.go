@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"testing"
@@ -444,7 +445,6 @@ func (s *Driver) setupProvider(
 func (s *Driver) setupConsumer(
 	chain string,
 	params ModelParams,
-	valSet *cmttypes.ValidatorSet, // the current validator set on the provider chain
 	signers map[string]cmttypes.PrivValidator, // a map of validator addresses to private validators (signers)
 	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
 	valNames []string,
@@ -454,16 +454,34 @@ func (s *Driver) setupConsumer(
 ) {
 	s.t.Logf("Starting consumer %v", chain)
 
-	// TODO: reuse the partial set computation logic to compute the initial validator set
-	// for top N chains
-	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
+	minPowerToOptIn := s.providerKeeper().ComputeMinPowerToOptIn(s.providerCtx(), s.providerValidatorSet(), uint32(topN))
+
+	valSet := s.providerChain().Vals
+
+	// Filter out all the validators that do not either a) have power at least minPowerToOptIn, or b) are in the validatorsToOptIn slice
+	filteredValSet := make([]*cmttypes.Validator, 0)
+	for _, val := range valSet.Validators {
+		if val.VotingPower >= minPowerToOptIn && topN > 0 {
+			filteredValSet = append(filteredValSet, val)
+			continue
+		}
+		for _, optInVal := range validatorsToOptIn {
+			if bytes.Equal(val.Address, optInVal.Address.Bytes()) {
+				filteredValSet = append(filteredValSet, val)
+				break
+			}
+		}
+	}
+
+	initValSet := cmttypes.ValidatorSet{Validators: filteredValSet, Proposer: filteredValSet[0]}
+	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(&initValSet)
 
 	// start consumer chains
 	s.t.Logf("Creating consumer chain %v", chain)
-	consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes, valNames)
+	consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, &initValSet, signers, nodes, valNames)
 	s.coordinator.Chains[chain] = consumerChain
 
-	valUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
+	valUpdates := cmttypes.TM2PB.ValidatorUpdates(&initValSet)
 
 	path := s.ConfigureNewPath(consumerChain, providerChain, params, uint32(topN), validatorsToOptIn, valUpdates)
 	s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
