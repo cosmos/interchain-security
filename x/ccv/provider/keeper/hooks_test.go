@@ -9,19 +9,14 @@ import (
 
 	"cosmossdk.io/math"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {
@@ -226,90 +221,6 @@ func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
 			// retrieve consumer addition proposal
 			_, ok := k.Hooks().GetConsumerAdditionLegacyPropFromProp(ctx, prop.Id)
 			require.Equal(t, tc.expConsuAddProp, ok)
-		})
-	}
-}
-
-func TestAfterProposalVoteWithYesVote(t *testing.T) {
-	k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{1}).PubKey()
-	pkAny, _ := codectypes.NewAnyWithValue(providerConsPubKey)
-	providerAddr := types.NewProviderConsAddress(providerConsPubKey.Address().Bytes())
-
-	options := []*v1.WeightedVoteOption{{Option: v1.OptionYes, Weight: "1"}}
-	k.SetProposedConsumerChain(ctx, "chainID", 1)
-
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, gomock.Any()).Return(
-			stakingtypes.Validator{ConsensusPubkey: pkAny}, true),
-		mocks.MockGovKeeper.EXPECT().GetVote(ctx, gomock.Any(), gomock.Any()).Return(
-			v1.Vote{ProposalId: 1, Voter: "voter", Options: options}, true,
-		),
-	)
-
-	require.False(t, k.IsToBeOptedIn(ctx, "chainID", providerAddr))
-	k.Hooks().AfterProposalVote(ctx, 1, sdk.AccAddress{})
-	require.True(t, k.IsToBeOptedIn(ctx, "chainID", providerAddr))
-}
-
-func TestAfterProposalVoteWithNoVote(t *testing.T) {
-	testCases := []struct {
-		name    string
-		options []*v1.WeightedVoteOption
-		setup   func(sdk.Context, []*v1.WeightedVoteOption, testkeeper.MockedKeepers, *codectypes.Any)
-	}{
-		{
-			"Weighted vote with 100% NO",
-			[]*v1.WeightedVoteOption{{Option: v1.OptionNo, Weight: "1"}},
-			func(ctx sdk.Context, options []*v1.WeightedVoteOption,
-				mocks testkeeper.MockedKeepers, pubKey *codectypes.Any,
-			) {
-				gomock.InOrder(
-					mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, gomock.Any()).Return(
-						stakingtypes.Validator{ConsensusPubkey: pubKey}, true),
-					mocks.MockGovKeeper.EXPECT().GetVote(ctx, gomock.Any(), gomock.Any()).Return(
-						v1.Vote{ProposalId: 1, Voter: "voter", Options: options}, true,
-					),
-				)
-			},
-		},
-		{
-			"Weighted vote with 99.9% YES and 0.1% NO",
-			[]*v1.WeightedVoteOption{{Option: v1.OptionYes, Weight: "0.999"}, {Option: v1.OptionNo, Weight: "0.001"}},
-			func(ctx sdk.Context, options []*v1.WeightedVoteOption,
-				mocks testkeeper.MockedKeepers, pubKey *codectypes.Any,
-			) {
-				gomock.InOrder(
-					mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, gomock.Any()).Return(
-						stakingtypes.Validator{ConsensusPubkey: pubKey}, true),
-					mocks.MockGovKeeper.EXPECT().GetVote(ctx, gomock.Any(), gomock.Any()).Return(
-						v1.Vote{ProposalId: 1, Voter: "voter", Options: options}, true,
-					),
-				)
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-			defer ctrl.Finish()
-
-			providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{1}).PubKey()
-			pkAny, _ := codectypes.NewAnyWithValue(providerConsPubKey)
-			providerAddr := types.NewProviderConsAddress(providerConsPubKey.Address().Bytes())
-
-			k.SetProposedConsumerChain(ctx, "chainID", 1)
-
-			tc.setup(ctx, tc.options, mocks, pkAny)
-
-			// set the validator to-be-opted in first to assert that a NO vote removes the validator from to-be-opted in
-			k.SetToBeOptedIn(ctx, "chainID", providerAddr)
-			require.True(t, k.IsToBeOptedIn(ctx, "chainID", providerAddr))
-			k.Hooks().AfterProposalVote(ctx, 1, sdk.AccAddress{})
-			require.False(t, k.IsToBeOptedIn(ctx, "chainID", providerAddr))
 		})
 	}
 }

@@ -3,8 +3,6 @@ package keeper
 import (
 	"fmt"
 
-	"cosmossdk.io/math"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -177,61 +175,7 @@ func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64
 func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
 }
 
-// AfterProposalVote opts in validators that vote YES (with 100% weight) on a `ConsumerAdditionProposal`. If a
-// validator votes multiple times, only the last vote would be considered on whether the validator is opted in or not.
 func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {
-	validator, found := h.k.stakingKeeper.GetValidator(ctx, voterAddr.Bytes())
-	if !found {
-		return
-	}
-
-	consAddr, err := validator.GetConsAddr()
-	if err != nil {
-		h.k.Logger(ctx).Error("could not extract validator's consensus address",
-			"error", err.Error(),
-			"validator acc addr", voterAddr,
-		)
-		return
-	}
-
-	chainID, found := h.k.GetProposedConsumerChain(ctx, proposalID)
-	if !found {
-		return
-	}
-
-	vote, found := h.k.govKeeper.GetVote(ctx, proposalID, voterAddr)
-	if !found {
-		h.k.Logger(ctx).Error("could not find vote for validator",
-			"validator acc addr", voterAddr,
-			"proposalID", proposalID,
-		)
-		return
-	}
-
-	if len(vote.Options) == 1 && vote.Options[0].Option == v1.VoteOption_VOTE_OPTION_YES {
-		// only consider votes that vote YES with 100% weight
-		weight, err := sdk.NewDecFromStr(vote.Options[0].Weight)
-		if err != nil {
-			h.k.Logger(ctx).Error("could not extract decimal value from vote's weight",
-				"vote", vote,
-				"error", err.Error(),
-			)
-			return
-		}
-		if !weight.Equal(math.LegacyNewDec(1)) {
-			h.k.Logger(ctx).Error("single vote does not have a weight of 1",
-				"vote", vote,
-			)
-			return
-		}
-
-		// in the validator is already to-be-opted in, the `SetToBeOptedIn` is a no-op
-		h.k.SetToBeOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
-	} else {
-		// if vote is not a YES vote with 100% weight, we delete the validator from to-be-opted in
-		// if the validator is not to-be-opted in, the `DeleteToBeOptedIn` is a no-op
-		h.k.DeleteToBeOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
-	}
 }
 
 func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {

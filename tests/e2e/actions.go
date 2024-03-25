@@ -278,6 +278,7 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 		UnbondingPeriod:                   params.UnbondingPeriod,
 		Deposit:                           fmt.Sprint(action.Deposit) + `stake`,
 		DistributionTransmissionChannel:   action.DistributionChannel,
+		TopN:                              100,
 	}
 
 	bz, err := json.Marshal(prop)

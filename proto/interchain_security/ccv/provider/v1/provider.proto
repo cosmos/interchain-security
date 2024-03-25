@@ -326,16 +326,3 @@ message ConsumerRewardsAllocation {
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"
   ];
 }
-
-// OptedInValidator is used to store a opted-in validator 
-// to a consumer chain with the following mapping:  (chainID, providerAddr) -> optedInValidator
-message OptedInValidator {
-  // validator address
-  bytes provider_addr = 1;
-  // block height at which the validator opted-in
-  int64 block_height = 2;
-  // validator voting power at the block it opted-in
-  int64 power = 3;
-  // public key used by the validator on the consumer
-  bytes public_key = 4;
-}

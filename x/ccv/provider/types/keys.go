@@ -147,23 +147,17 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
-	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer validators in this epoch
+	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain the validators that
+	// are opted in but not necessarily the ones that are validating.
+	OptedInBytePrefix
+
+	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer
+	// validators in this epoch that are validating the consumer chain
 	ConsumerValidatorBytePrefix
 
 	// TopNBytePrefix is the byte prefix storing the mapping from a consumer chain to the N value of this chain,
 	// that corresponds to the N% of the top validators that have to validate this consumer chain
 	TopNBytePrefix
-
-	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain all the opted in validators
-	OptedInBytePrefix
-
-	// ToBeOptedInBytePrefix is the byte prefix used when storing for each consumer chain the validators that
-	// are about to be opted in
-	ToBeOptedInBytePrefix
-
-	// ToBeOptedOutBytePrefix is the byte prefix used when storing for each consumer chain the validators that
-	// are about to be opted out
-	ToBeOptedOutBytePrefix
 
 	// ConsumerRewardsAllocationBytePrefix is the byte prefix used when storing for each consumer the rewards
 	// it allocated to the consumer rewards pool
@@ -551,20 +545,8 @@ func TopNKey(chainID string) []byte {
 }
 
 // OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func OptedInKey(chainID string, providerAddr []byte) []byte {
+func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
-	return append(prefix, providerAddr...)
-}
-
-// ToBeOptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func ToBeOptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	prefix := ChainIdWithLenKey(ToBeOptedInBytePrefix, chainID)
-	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
-}
-
-// ToBeOptedOutKey returns the key of consumer chain `chainID` and validator with `providerAddr`
-func ToBeOptedOutKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	prefix := ChainIdWithLenKey(ToBeOptedOutBytePrefix, chainID)
 	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
