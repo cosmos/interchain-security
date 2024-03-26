@@ -99,6 +99,24 @@ service Query {
       option (google.api.http).get =
     "/interchain_security/ccv/provider/params";
     }
+
+  // QueryOptedInValidatorsByConsumerChainID returns a list of validators consensus address
+  // that opted-in to the given consumer chain
+  rpc QueryOptedInValidatorsByConsumerChainID(
+    QueryOptedInValidatorsByConsumerChainIDRequest)
+    returns (QueryOptedInValidatorsByConsumerChainIDResponse) {
+      option (google.api.http).get =
+    "/interchain_security/ccv/provider/opted_in_validators";
+    }
+
+  // QueryConsumerChainsByValidatorAddress returns a list of consumer chains
+  // that a validator must validate
+  rpc QueryConsumerChainsByValidatorAddress(
+    QueryConsumerChainsByValidatorAddressRequest)
+    returns (QueryConsumerChainsByValidatorAddressResponse) {
+      option (google.api.http).get =
+    "/interchain_security/ccv/provider/consumer_chains_per_validator";
+    }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -216,3 +234,21 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
+
+message QueryOptedInValidatorsByConsumerChainIDRequest {
+  string chain_id = 1;
+}
+
+message QueryOptedInValidatorsByConsumerChainIDResponse {
+  repeated string validators_provider_address = 1;
+}
+
+
+message QueryConsumerChainsByValidatorAddressRequest {
+  // The consensus address of the validator on the provider chain
+  string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+}
+
+message QueryConsumerChainsByValidatorAddressResponse {
+  repeated string validator_consumer_chains = 1;
+}

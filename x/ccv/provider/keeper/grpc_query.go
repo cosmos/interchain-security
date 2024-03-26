@@ -221,3 +221,58 @@ func (k Keeper) QueryParams(c context.Context, _ *types.QueryParamsRequest) (*ty
 
 	return &types.QueryParamsResponse{Params: params}, nil
 }
+
+// QueryOptedInValidatorsByConsumerChainID returns all validators that opted-in to a given consumer chain
+func (k Keeper) QueryOptedInValidatorsByConsumerChainID(goCtx context.Context, req *types.QueryOptedInValidatorsByConsumerChainIDRequest) (*types.QueryOptedInValidatorsByConsumerChainIDResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.ChainId == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty chainId")
+	}
+
+	optedVals := []string{}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	for _, v := range k.GetAllOptedIn(ctx, ctx.ChainID()) {
+		optedVals = append(optedVals, v.ToSdkConsAddr().String())
+	}
+
+	return &types.QueryOptedInValidatorsByConsumerChainIDResponse{
+		ValidatorsProviderAddress: optedVals,
+	}, nil
+}
+
+// QueryOptedInValidatorsByConsumerChainID returns all consumer chains a given validator has to validate
+func (k Keeper) QueryConsumerChainsByValidatorAddress(goCtx context.Context, req *types.QueryConsumerChainsByValidatorAddressRequest) (*types.QueryConsumerChainsByValidatorAddressResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.ProviderAddress == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty provider address")
+	}
+
+	consAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid provider address")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// get all consumer chains
+	consumersToValidate := []string{}
+	// iterate over all consumer chains to see if the validator is opted in
+	for _, consumer := range k.GetAllConsumerChains(ctx) {
+		chainID := consumer.ChainId
+		if k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
+			consumersToValidate = append(consumersToValidate, chainID)
+		}
+	}
+
+	return &types.QueryConsumerChainsByValidatorAddressResponse{
+		ValidatorConsumerChains: consumersToValidate,
+	}, nil
+}
