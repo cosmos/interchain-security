@@ -17,9 +17,8 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 type (
@@ -125,28 +124,16 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
 
-	prop := providertypes.ConsumerAdditionProposal{
-		Title:         fmt.Sprintf("start chain %s", chainID),
-		Description:   "description",
-		ChainId:       chainID,
-		InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2},
-		GenesisHash:   []byte("gen_hash"),
-		BinaryHash:    []byte("bin_hash"),
-		// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
-		// using time.Now() could set the spawn time to be too far in the past or too far in the future
-		SpawnTime:                         coordinator.CurrentTime,
-		UnbondingPeriod:                   ccvtypes.DefaultConsumerUnbondingPeriod,
-		CcvTimeoutPeriod:                  ccvtypes.DefaultBlocksPerDistributionTransmission,
-		TransferTimeoutPeriod:             ccvtypes.DefaultCCVTimeoutPeriod,
-		ConsumerRedistributionFraction:    ccvtypes.DefaultConsumerRedistributeFrac,
-		BlocksPerDistributionTransmission: ccvtypes.DefaultBlocksPerDistributionTransmission,
-		HistoricalEntries:                 ccvtypes.DefaultHistoricalEntries,
-		DistributionTransmissionChannel:   "",
-	}
-
-	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), &prop)
-	propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(providerChain.GetContext())
-	s.Require().Len(propsToExecute, 1, "props to execute is incorrect length")
+	prop := testkeeper.GetTestConsumerAdditionProp()
+	prop.ChainId = chainID
+	// NOTE: the initial height passed to CreateConsumerClient
+	// must be the height on the consumer when InitGenesis is called
+	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
+	err := providerKeeper.CreateConsumerClient(
+		providerChain.GetContext(),
+		prop,
+	)
+	s.Require().NoError(err)
 
 	// commit the state on the provider chain
 	coordinator.CommitBlock(providerChain)
