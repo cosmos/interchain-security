@@ -374,6 +374,13 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
+		if prop.Top_N == 0 && len(k.GetAllOptedIn(ctx, prop.ChainId)) == 0 {
+			// drop the proposal
+			ctx.Logger().Info("consumer client could not be created because no validator has"+
+				" opted in the Opt-In chain: %s", prop.ChainId)
+			continue
+		}
+
 		// create consumer client in a cached context to handle errors
 		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
 		if err != nil {
@@ -384,7 +391,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 
 		// Only set Top N at the moment a chain starts. If we were to do this earlier (e.g., during the proposal),
 		// then someone could create a bogus ConsumerAdditionProposal to override the Top N for a specific chain.
-		k.SetTopN(ctx, prop.ChainId, prop.Top_N)
+		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
