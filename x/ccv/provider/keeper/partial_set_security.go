@@ -1,12 +1,13 @@
 package keeper
 
 import (
+	"math"
+	"sort"
+
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	"sort"
 )
 
 // HandleOptIn prepares validator `providerAddr` to opt in to `chainID` with an optional `consumerKey` consumer public key.
@@ -51,7 +52,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 			"opting out of an unknown or not running consumer chain, with id: %s", chainID)
 	}
 
-	if topN, found := k.GetTopN(ctx, chainID); found {
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// a validator cannot opt out from a Top N chain if the validator is in the Top N validators
 		validator, validatorFound := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 		if !validatorFound {
@@ -60,7 +61,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
+		minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
 		if power >= minPowerToOptIn {
 			return errorsmod.Wrapf(
@@ -94,8 +95,16 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValid
 }
 
 // ComputeMinPowerToOptIn returns the minimum power needed for a validator (from the bonded validators)
-// to belong to the `topN` validators
-func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, bondedValidators []stakingtypes.Validator, topN uint32) int64 {
+// to belong to the `topN` validators. `chainID` is only used for logging purposes.
+func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, topN uint32) int64 {
+	if topN == 0 {
+		// This should never happen but because `ComputeMinPowerToOptIn` is called during an `EndBlock` we do want
+		// to `panic` here. Instead, we log an error and return the maximum possible `int64`.
+		k.Logger(ctx).Error("trying to compute minimum power to opt in for a non-Top-N chain",
+			"chainID", chainID)
+		return math.MaxInt64
+	}
+
 	totalPower := sdk.ZeroDec()
 	var powers []int64
 

@@ -23,8 +23,14 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		case *types.MsgSubmitConsumerMisbehaviour:
 			res, err := msgServer.SubmitConsumerMisbehaviour(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgSubmitConsumerDoubleVoting:
-			res, err := msgServer.SubmitConsumerDoubleVoting(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgOptIn:
+			res, err := msgServer.OptIn(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgOptOut:
+			res, err := msgServer.OptOut(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgSetConsumerCommissionRate:
+			res, err := msgServer.SetConsumerCommissionRate(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		default:
 			return nil, errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)
