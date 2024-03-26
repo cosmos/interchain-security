@@ -127,10 +127,19 @@ func (suite *CCVTestSuite) SetupTest() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
 	// re-assign all validator keys for the first consumer chain
+	// this has to be done before:
+	//  1. the consumer chain is added to the coordinator
+	//  2. MakeGenesis is called on the provider chain
+	//  3. ibc/testing sets the tendermint header for the consumer chain app
 	providerKeeper.SetPendingConsumerAdditionProp(suite.providerCtx(), &types.ConsumerAdditionProposal{
 		ChainId: icstestingutils.FirstConsumerChainID,
 	})
+	ps := providerKeeper.GetAllPendingConsumerAdditionProps(suite.providerCtx())
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
+
+	// remove props so they don't interfere with the rest of the setup
+	// if not removed here, setupConsumerCallback will have 2 proposals for adding the first consumer chain
+	providerKeeper.DeletePendingConsumerAdditionProps(suite.providerCtx(), ps...)
 
 	// start consumer chains
 	numConsumers := 5
@@ -148,6 +157,7 @@ func (suite *CCVTestSuite) SetupTest() {
 			suite.providerCtx(),
 			chainID,
 		)
+
 		suite.Require().True(found, "consumer genesis not found")
 		genesisState := consumertypes.GenesisState{
 			Params:   consumerGenesisState.Params,
