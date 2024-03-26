@@ -280,3 +280,42 @@ func (k Keeper) QueryConsumerChainsByValidatorAddress(goCtx context.Context, req
 		ValidatorConsumerChains: consumersToValidate,
 	}, nil
 }
+
+// QueryValidatorConsumerCommissionRate returns the commission rate a given
+// validator charges on a given consumer chain
+func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req *types.QueryValidatorConsumerCommissionRateRequest) (*types.QueryValidatorConsumerCommissionRateResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	consumerChainID := req.ChainId
+	if consumerChainID == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty chainId")
+	}
+
+	consAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid provider address")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.IsConsumerProposedOrRegistered(ctx, consumerChainID) {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerChainID))
+	}
+
+	res := &types.QueryValidatorConsumerCommissionRateResponse{}
+
+	consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerChainID, types.NewProviderConsAddress(consAddr))
+	if found {
+		res.Rate = consumerRate
+	} else {
+		v, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+		if !ok {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown validator: %s", consAddr.String()))
+		}
+		res.Rate = v.Commission.Rate
+	}
+
+	return res, nil
+}

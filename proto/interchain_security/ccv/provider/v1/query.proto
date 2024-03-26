@@ -10,6 +10,7 @@ import "interchain_security/ccv/provider/v1/provider.proto";
 import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "tendermint/crypto/keys.proto";
+import "cosmos_proto/cosmos.proto";
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -116,6 +117,15 @@ service Query {
     returns (QueryConsumerChainsByValidatorAddressResponse) {
       option (google.api.http).get =
     "/interchain_security/ccv/provider/consumer_chains_per_validator";
+    }
+
+   // QueryValidatorConsumerCommissionRate returns the commission rate a given
+   // validator charges on a given consumer chain
+  rpc QueryValidatorConsumerCommissionRate(
+    QueryValidatorConsumerCommissionRateRequest)
+    returns (QueryValidatorConsumerCommissionRateResponse) {
+      option (google.api.http).get =
+    "/interchain_security/ccv/provider/consumer_commission_rate";
     }
 }
 
@@ -252,3 +262,19 @@ message QueryConsumerChainsByValidatorAddressRequest {
 message QueryConsumerChainsByValidatorAddressResponse {
   repeated string validator_consumer_chains = 1;
 }
+
+message QueryValidatorConsumerCommissionRateRequest {
+  string chain_id = 1;
+    // The consensus address of the validator on the provider chain
+  string provider_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+}
+
+message QueryValidatorConsumerCommissionRateResponse {
+  // The rate to charge delegators on the consumer chain, as a fraction
+  string rate = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false 
+  ];
+}
+
