@@ -377,7 +377,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		if prop.Top_N == 0 && len(k.GetAllOptedIn(ctx, prop.ChainId)) == 0 {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created because no validator has"+
-				" opted in the Opt-In chain: %s", prop.ChainId)
+				" opted in for the Opt-In chain: %s", prop.ChainId)
 			continue
 		}
 
