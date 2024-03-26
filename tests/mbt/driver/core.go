@@ -413,6 +413,10 @@ func (s *Driver) DeliverPacketFromConsumer(sender ChainId, expectError bool) {
 	s.path(sender).DeliverPackets(PROVIDER, 1, expectError) // deliver to the provider
 }
 
+// RequestSlash requests a slash for the given validator on the given consumer chain.
+// The slash can either be for downtime (isDowntime=true) or double signing (isDowntime=false).
+// The slash percentage is the percentage of the validator's stake that should be slashed.
+// The vscPacket is packet that should be treated as in effect when the slash is requested.
 func (s *Driver) RequestSlash(
 	consumer ChainId,
 	valConsAddr sdk.ConsAddress,

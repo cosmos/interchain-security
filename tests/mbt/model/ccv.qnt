@@ -915,8 +915,7 @@ module ccv {
                 // .slash(packet.validator, packet.valPower, slashFactor)
 
             // if the validator did not have voting power of 0 or was already jailed before, the validator set will change due to the slash
-            val valSetChanged = packet.downtime and 
-                                currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0 
+            val valSetChanged = currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0 
 
             // add the consumer address to the list of acknowledged slashes
             // for the sender chain of this slash packet and indicate that we need to send a packet at endblock
