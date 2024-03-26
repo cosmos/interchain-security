@@ -36,6 +36,7 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(NewSubmitConsumerDoubleVotingCmd())
 	cmd.AddCommand(NewOptInCmd())
 	cmd.AddCommand(NewOptOutCmd())
+	cmd.AddCommand(NewSetConsumerCommissionRateCmd())
 
 	return cmd
 }
@@ -289,7 +290,7 @@ func NewOptOutCmd() *cobra.Command {
 	return cmd
 }
 
-func NewSetConsumerCommissionRate() *cobra.Command {
+func NewSetConsumerCommissionRateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-consumer-commission-rate [consumer-chain-id] [commission-rate]",
 		Short: "set a per-consumer chain commission",
