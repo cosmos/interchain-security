@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -42,7 +43,6 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// convert to array of pointers
 	chains := []*types.Chain{}
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// prevent implicit memory aliasing
@@ -228,20 +228,24 @@ func (k Keeper) QueryOptedInValidatorsByConsumerChainID(goCtx context.Context, r
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if req.ChainId == "" {
+	consumerChainID := req.ChainId
+	if consumerChainID == "" {
 		return nil, status.Error(codes.InvalidArgument, "empty chainId")
 	}
 
-	optedVals := []string{}
-
+	optedInVals := []string{}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if !k.IsConsumerProposedOrRegistered(ctx, consumerChainID) {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerChainID))
+	}
+
 	for _, v := range k.GetAllOptedIn(ctx, ctx.ChainID()) {
-		optedVals = append(optedVals, v.ToSdkConsAddr().String())
+		optedInVals = append(optedInVals, v.ToSdkConsAddr().String())
 	}
 
 	return &types.QueryOptedInValidatorsByConsumerChainIDResponse{
-		ValidatorsProviderAddress: optedVals,
+		ValidatorsProviderAddress: optedInVals,
 	}, nil
 }
 
@@ -264,7 +268,7 @@ func (k Keeper) QueryConsumerChainsByValidatorAddress(goCtx context.Context, req
 
 	// get all consumer chains
 	consumersToValidate := []string{}
-	// iterate over all consumer chains to see if the validator is opted in
+	// iterate over all consumer chains and check if the validator is opted-in
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
 		chainID := consumer.ChainId
 		if k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
