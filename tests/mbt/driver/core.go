@@ -13,9 +13,12 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -28,6 +31,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -92,8 +96,16 @@ func (b *Driver) providerStakingKeeper() stakingkeeper.Keeper {
 	return *b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
+func (b *Driver) providerSlashingKeeper() slashingkeeper.Keeper {
+	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+}
+
 func (b *Driver) consumerKeeper(chain ChainId) consumerkeeper.Keeper {
 	return b.chain(chain).App.(*appConsumer.App).ConsumerKeeper
+}
+
+func (s *Driver) consumerCtx(chain ChainId) sdk.Context {
+	return s.chain(chain).GetContext()
 }
 
 // runningTime returns the timestamp of the current header of chain
@@ -399,6 +411,37 @@ func (s *Driver) DeliverPacketToConsumer(recipient ChainId, expectError bool) {
 // Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
 func (s *Driver) DeliverPacketFromConsumer(sender ChainId, expectError bool) {
 	s.path(sender).DeliverPackets(PROVIDER, 1, expectError) // deliver to the provider
+}
+
+// RequestSlash requests a slash for the given validator on the given consumer chain.
+// The slash can either be for downtime (isDowntime=true) or double signing (isDowntime=false).
+// The slash percentage is the percentage of the validator's stake that should be slashed.
+// The vscPacket is packet that should be treated as in effect when the slash is requested.
+func (s *Driver) RequestSlash(
+	consumer ChainId,
+	valConsAddr sdk.ConsAddress,
+	isDowntime bool,
+	vscPacket types.ValidatorSetChangePacketData,
+	slashPercentage sdkmath.LegacyDec,
+) error {
+	var infractionReason stakingtypes.Infraction
+	if isDowntime {
+		infractionReason = stakingtypes.Infraction_INFRACTION_DOWNTIME
+	} else {
+		infractionReason = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
+	}
+
+	s.consumerKeeper(consumer).QueueSlashPacket(
+		s.consumerCtx(consumer),
+		abcitypes.Validator{
+			Address: valConsAddr.Bytes(),
+			// power does not matter
+			Power: 100,
+		},
+		vscPacket.ValsetUpdateId,
+		infractionReason,
+	)
+	return nil
 }
 
 // DeliverAcks delivers, for each path,

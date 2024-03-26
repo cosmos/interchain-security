@@ -14,13 +14,24 @@ module ccv_test {
     pure val trustingPeriods = chains.mapBy(chain => 2 * Week - 1 * Hour)
     pure val epochLength = 3
 
-    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain=trustingPeriods, BlocksPerEpoch=epochLength).* from "./ccv"
+    import ccv(
+        VscTimeout = 5 * Week,
+        CcvTimeout = ccvTimeouts,
+        UnbondingPeriodPerChain = unbondingPeriods,
+        ConsumerChains = consumerChains,
+        TrustingPeriodPerChain=trustingPeriods,
+        DowntimeJailTime=4*Day,
+        DoubleSignJailEndTime=9999 * 50 * Week,
+        DowntimeSlashPercentage = 5,
+        DoubleSignSlashPercentage = 10,
+        BlocksPerEpoch=epochLength
+    ).* from "./ccv"
 
     val votingPowerTestInitState = 
             GetEmptyProtocolState.with(
                 "providerState", GetEmptyProtocolState.providerState.with(
                     "chainState", GetEmptyProtocolState.providerState.chainState.with(
-                        "currentValidatorSet", GetEmptyProtocolState.providerState.chainState.currentValidatorSet.put(
+                        "currentValidatorPowers", GetEmptyProtocolState.providerState.chainState.currentValidatorPowers.put(
                             "validator", 5
                         ).put(
                             "validator2", 5
@@ -51,8 +62,8 @@ module ccv_test {
             5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.keys().contains("validator") and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 10
+        result.newState.providerState.chainState.currentValidatorPowers.keys().contains("validator") and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 10
     }
 
     // voting power of 0 is allowed and applied as usual
@@ -64,7 +75,7 @@ module ccv_test {
             -5
         )
         not(finalResult.hasError()) and
-        finalResult.newState.providerState.chainState.currentValidatorSet.get("validator") == 0
+        finalResult.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0
     }
 
     run VotingPowerSetsFlagTest =
@@ -114,7 +125,7 @@ module ccv_test {
             5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0 and
         result2.hasError()
     }
 
@@ -132,7 +143,7 @@ module ccv_test {
             -5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0 and
         result2.hasError()
     }
 
@@ -148,12 +159,15 @@ module ccv_test {
             "consumerStatus", providerState.consumerStatus.put(sender, RUNNING)
         )
         val providerState3 = providerState2.with(
-            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List({
+            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List(
+                Vsc({
                 id: 0,
                 validatorSet: Map(),
                 sendingTime: 0,
-                timeoutTime: CcvTimeout.get(sender)
-            }))
+                timeoutTime: CcvTimeout.get(sender),
+                downtimeSlashAcks: List(),
+                })
+            ))
         )
         currentState.with(
             "providerState", providerState3
@@ -165,11 +179,11 @@ module ccv_test {
     pure val DeliverPacketToProviderHappyPathTest_testState = _DeliverPacketToProvider_TestState.with(
         "consumerStates", _DeliverPacketToProvider_TestState.consumerStates.put(
             "sender", _DeliverPacketToProvider_TestState.consumerStates.get("sender").with(
-                "outstandingPacketsToProvider", List({
+                "outstandingPacketsToProvider", List(VscMatured({
                     id: 0,
                     sendingTime: 0,
                     timeoutTime: CcvTimeout.get("sender")
-                })
+                }))
             )
         )
     ).with(
@@ -178,9 +192,10 @@ module ccv_test {
             "sentVscPacketsToConsumer", _DeliverPacketToProvider_TestState.providerState.sentVscPacketsToConsumer.put(
                 "sender", List({
                     id: 0,
-                    validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorSet,
+                    validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorPowers,
                     sendingTime: 0,
-                    timeoutTime: CcvTimeout.get("sender")
+                    timeoutTime: CcvTimeout.get("sender"),
+                    downtimeSlashAcks: List()
                 })
             )
         )
