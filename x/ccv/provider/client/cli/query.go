@@ -35,6 +35,8 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdProposedConsumerChains())
 	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
 	cmd.AddCommand(CmdProviderParameters())
+	cmd.AddCommand(CmdOptedInValidatorsByConsumerChainID())
+	cmd.AddCommand(CmdConsumerChainsByValidatorAddress())
 	return cmd
 }
 
@@ -402,6 +404,82 @@ $ %s query provider params
 			}
 
 			return clientCtx.PrintProto(&res.Params)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// Command to query opted-in validators by consumer chain ID
+func CmdOptedInValidatorsByConsumerChainID() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "opted-in-validators",
+		Short: "Query opted-in validators for a given consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query opted-in validators for a given consumer chain.
+Example:
+$ %s opted-in-validators foochain
+		`, version.AppName),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.QueryOptedInValidatorsByConsumerChainID(cmd.Context(),
+				&types.QueryOptedInValidatorsByConsumerChainIDRequest{ChainId: args[0]})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// Command to query the consumer chains list a given validator has to validate
+func CmdConsumerChainsByValidatorAddress() *cobra.Command {
+	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
+	cmd := &cobra.Command{
+		Use:   "has-to-validate",
+		Short: "Query the consumer chains list a given validator has to validate",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the consumer chains list a given validator has to validate.
+Example:
+$ %s has-to-validate %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+		`, version.AppName, bech32PrefixConsAddr),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			addr, err := sdk.ConsAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			res, err := queryClient.QueryConsumerChainsByValidatorAddress(cmd.Context(),
+				&types.QueryConsumerChainsByValidatorAddressRequest{
+					ProviderAddress: addr.String(),
+				})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
 		},
 	}
 
