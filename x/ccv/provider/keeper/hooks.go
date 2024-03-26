@@ -8,6 +8,7 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -35,8 +36,22 @@ func (k *Keeper) Hooks() Hooks {
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 	var consumerChainIDS []string
 
+	// get the validator from the unbonding op id
+	validator, found := h.k.stakingKeeper.GetValidatorByUnbondingID(ctx, id)
+	if !found {
+		panic("unbonding operation for unknown validator")
+	}
+
+	consAddr, err := validator.GetConsAddr()
+	if err != nil {
+		panic("unbonding operation for unknown validator")
+	}
+
+	// get all consumers for which the validator opted-in to
 	for _, chain := range h.k.GetAllConsumerChains(ctx) {
-		consumerChainIDS = append(consumerChainIDS, chain.ChainId)
+		if h.k.IsConsumerValidator(ctx, chain.ChainId, types.NewProviderConsAddress(consAddr)) {
+			consumerChainIDS = append(consumerChainIDS, chain.ChainId)
+		}
 	}
 
 	if len(consumerChainIDS) == 0 {

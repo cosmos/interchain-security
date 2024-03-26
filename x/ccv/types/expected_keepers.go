@@ -42,6 +42,7 @@ type StakingKeeper interface {
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) math.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
+	GetValidatorByUnbondingID(ctx sdk.Context, id uint64) (val stakingtypes.Validator, found bool)
 	IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
 	Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
 	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
