@@ -266,9 +266,8 @@ func (k Keeper) QueryConsumerChainsByValidatorAddress(goCtx context.Context, req
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// get all consumer chains
+	// get all the consumer chains for which the validator is opted-in
 	consumersToValidate := []string{}
-	// iterate over all consumer chains and check if the validator is opted-in
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
 		chainID := consumer.ChainId
 		if k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) {

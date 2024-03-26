@@ -111,7 +111,7 @@ service Query {
     }
 
   // QueryConsumerChainsByValidatorAddress returns a list of consumer chains
-  // that a validator must validate
+  // that a given validator must validate
   rpc QueryConsumerChainsByValidatorAddress(
     QueryConsumerChainsByValidatorAddressRequest)
     returns (QueryConsumerChainsByValidatorAddressResponse) {
