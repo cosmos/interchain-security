@@ -589,6 +589,9 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	evidenceMsg, err := evidencetypes.NewMsgSubmitEvidence(addr, e)
 	suite.Require().NoError(err)
 	suite.Require().NotEmpty(evidenceMsg)
+	// NOTE: v50 -> this part is not correct -> we cannot do this without registering an evidence handler
+	// this was done using 	suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
+	// HandleEquivocationEvidence is not exposed in the evidencekeeper interface anymore
 	suite.consumerApp.GetTestEvidenceKeeper().SubmitEvidence(ctx, e)
 
 	// check slash packet is queued

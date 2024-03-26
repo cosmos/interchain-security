@@ -264,6 +264,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
 
+	providerKeeper := s.providerApp.GetProviderKeeper()
+
 	// create signing info for all validators
 	for _, v := range s.providerChain.Vals.Validators {
 		s.setDefaultValSigningInfo(*v)
@@ -349,7 +351,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		s.Require().NotZero(shares)
 
 		// undelegate 1/2 of the bound amount
-		valAddr, err := sdk.ValAddressFromHex(validator.GetOperator())
+		valAddr, err := providerKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
 		s.Require().NoError(err)
 		undelegate(s, delAddr, valAddr, shares.Quo(math.LegacyNewDec(4)))
 		undelegate(s, delAddr, valAddr, shares.Quo(math.LegacyNewDec(4)))
@@ -361,7 +363,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 
 		// save the delegation shares of the validator to redelegate to
 		// Note this shares should not be slashed!
-		valAddr2, err := sdk.ValAddressFromHex(validator2.GetOperator())
+		valAddr2, err := providerKeeper.ValidatorAddressCodec().StringToBytes(validator2.GetOperator())
 		del, err := s.providerApp.GetTestStakingKeeper().Delegation(s.providerCtx(), delAddr, valAddr2)
 		s.Require().NoError(err)
 		delShares := del.GetShares()

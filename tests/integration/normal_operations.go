@@ -65,7 +65,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	}{
 		{
 			height: initHeight + 1,
-			found:  false,
+			found:  false, // needs to be changed to expect an error
 			expLen: 0,
 		},
 		{

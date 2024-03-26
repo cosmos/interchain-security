@@ -67,6 +67,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.SetupAllCCVChannels()
 		s.setupValidatorPowers([]int64{1000, 1000, 1000, 1000})
 
+		providerKeeper := s.providerApp.GetProviderKeeper()
 		providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 		// Use default params (incl replenish period), but set replenish fraction to tc value.
@@ -101,7 +102,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.Require().NoError(err)
 		slashedVal := vals[0]
 		s.Require().True(slashedVal.IsJailed())
-		slashedValOperator, err := sdk.ValAddressFromHex(slashedVal.GetOperator())
+		slashedValOperator, err := providerKeeper.ValidatorAddressCodec().StringToBytes(slashedVal.GetOperator())
 		s.Require().NoError(err)
 		lastValPower, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedValOperator)
 		s.Require().NoError(err)
@@ -183,7 +184,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Assert validator 2 has no power, this should be apparent next block,
 		// since the staking endblocker runs before the ccv endblocker.
 		s.providerChain.NextBlock()
-		slashedValOperator, err = sdk.ValAddressFromHex(slashedVal.GetOperator())
+		slashedValOperator, err = providerKeeper.ValidatorAddressCodec().StringToBytes(slashedVal.GetOperator())
 		s.Require().NoError(err)
 		lastValPower, err = providerStakingKeeper.GetLastValidatorPower(cacheCtx, slashedValOperator)
 		s.Require().NoError(err)
@@ -446,7 +447,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		s.Require().NoError(err)
 		s.Require().Equal(int64(1000), power)
 		stakingVal, err := stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(val.Address))
-		s.Require().Error(err)
+		s.Require().NoError(err)
 		s.Require().False(stakingVal.Jailed)
 
 		// 4th validator should have no slash log, all the others do
@@ -464,6 +465,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 // power can be handled by the provider chain in a non-throttled manner.
 func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	s.SetupAllCCVChannels()
+	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// Setup first val with 1000 power and the rest with 10 power.
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -508,24 +510,26 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	vals, err = providerStakingKeeper.GetAllValidators(s.providerCtx())
 	s.Require().NoError(err)
 
-	val0Operator, err := sdk.ValAddressFromHex(vals[0].GetOperator())
+	val0Operator, err := providerKeeper.ValidatorAddressCodec().StringToBytes(vals[0].GetOperator())
+	s.Require().NoError(err)
 	power, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val0Operator)
 	s.Require().NoError(err)
 	s.Require().Equal(int64(1000), power)
 
-	val1Operator, err := sdk.ValAddressFromHex(vals[1].GetOperator())
+	val1Operator, err := providerKeeper.ValidatorAddressCodec().StringToBytes(vals[1].GetOperator())
+	s.Require().NoError(err)
 	power, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val1Operator)
 	s.Require().NoError(err)
-	s.Require().NoError(err)
 	s.Require().Equal(int64(0), power)
 
-	val2Operator, err := sdk.ValAddressFromHex(vals[2].GetOperator())
+	val2Operator, err := providerKeeper.ValidatorAddressCodec().StringToBytes(vals[2].GetOperator())
+	s.Require().NoError(err)
 	power, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val2Operator)
 	s.Require().NoError(err)
-	s.Require().NoError(err)
 	s.Require().Equal(int64(0), power)
 
-	val3Operator, err := sdk.ValAddressFromHex(vals[3].GetOperator())
+	val3Operator, err := providerKeeper.ValidatorAddressCodec().StringToBytes(vals[3].GetOperator())
+	s.Require().NoError(err)
 	power, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val3Operator)
 	s.Require().NoError(err)
 	s.Require().Equal(int64(0), power)
@@ -622,13 +626,14 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 }
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
+	providerKeeper := s.providerApp.GetProviderKeeper()
 	sdkVal, err := s.providerApp.GetTestStakingKeeper().GetValidator(
 		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().NoError(err)
 	s.Require().True(sdkVal.IsJailed())
 
 	if checkPower {
-		valOperator, err := sdk.ValAddressFromHex(sdkVal.GetOperator())
+		valOperator, err := providerKeeper.ValidatorAddressCodec().StringToBytes(sdkVal.GetOperator())
 		s.Require().NoError(err)
 		valPower, err := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
 			s.providerCtx(), valOperator)
@@ -638,10 +643,11 @@ func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPowe
 }
 
 func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expectedPower int64) {
+	providerKeeper := s.providerApp.GetProviderKeeper()
 	sdkVal, err := s.providerApp.GetTestStakingKeeper().GetValidator(
 		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().NoError(err)
-	valOperator, err := sdk.ValAddressFromHex(sdkVal.GetOperator())
+	valOperator, err := providerKeeper.ValidatorAddressCodec().StringToBytes(sdkVal.GetOperator())
 	s.Require().NoError(err)
 	valPower, err := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
 		s.providerCtx(), valOperator)
