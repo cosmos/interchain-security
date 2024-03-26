@@ -192,6 +192,21 @@ func (mr *MockStakingKeeperMockRecorder) GetValidatorByConsAddr(ctx, consAddr in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByConsAddr", reflect.TypeOf((*MockStakingKeeper)(nil).GetValidatorByConsAddr), ctx, consAddr)
 }
 
+// GetValidatorByUnbondingID mocks base method.
+func (m *MockStakingKeeper) GetValidatorByUnbondingID(ctx types0.Context, id uint64) (types5.Validator, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorByUnbondingID", ctx, id)
+	ret0, _ := ret[0].(types5.Validator)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetValidatorByUnbondingID indicates an expected call of GetValidatorByUnbondingID.
+func (mr *MockStakingKeeperMockRecorder) GetValidatorByUnbondingID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByUnbondingID", reflect.TypeOf((*MockStakingKeeper)(nil).GetValidatorByUnbondingID), ctx, id)
+}
+
 // GetValidatorUpdates mocks base method.
 func (m *MockStakingKeeper) GetValidatorUpdates(ctx types0.Context) []types.ValidatorUpdate {
 	m.ctrl.T.Helper()
