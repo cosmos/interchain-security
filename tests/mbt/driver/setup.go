@@ -457,7 +457,7 @@ func (s *Driver) setupConsumer(
 ) {
 	s.t.Logf("Starting consumer %v", chain)
 
-	minPowerToOptIn := s.providerKeeper().ComputeMinPowerToOptIn(s.providerCtx(), s.providerValidatorSet(), uint32(topN))
+	minPowerToOptIn := s.providerKeeper().ComputeMinPowerToOptIn(s.providerCtx(), chain, s.providerValidatorSet(), uint32(topN))
 
 	valSet := s.providerChain().Vals
 
