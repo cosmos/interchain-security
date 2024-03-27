@@ -245,7 +245,7 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	}
 
 	return &types.QueryConsumerChainOptedInValidatorsResponse{
-		ValidatorsProviderAddress: optedInVals,
+		ValidatorsProviderAddresses: optedInVals,
 	}, nil
 }
 

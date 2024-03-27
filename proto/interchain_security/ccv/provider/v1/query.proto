@@ -250,7 +250,8 @@ message QueryConsumerChainOptedInValidatorsRequest {
 }
 
 message QueryConsumerChainOptedInValidatorsResponse {
-  repeated string validators_provider_address = 1;
+  // The consensus addresses of the validators on the provider chain
+  repeated string validators_provider_addresses = 1;
 }
 
 
