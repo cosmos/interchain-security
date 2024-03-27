@@ -276,7 +276,7 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	}
 
 	return &types.QueryConsumerChainsValidatorHasToValidateResponse{
-		ConsumerChains: consumersToValidate,
+		ConsumerChainIds: consumersToValidate,
 	}, nil
 }
 
