@@ -404,7 +404,7 @@ func TestGetAllConsumerChains(t *testing.T) {
 		topN := uint32(i)
 		pk.SetConsumerClientId(ctx, chainID, clientID)
 		pk.SetTopN(ctx, chainID, topN)
-		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID, Opt_In: topN == 0, Top_N: topN})
+		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID, Top_N: topN})
 	}
 	// sorting by chainID
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
