@@ -101,7 +101,7 @@ service Query {
     "/interchain_security/ccv/provider/params";
     }
 
-  // QueryConsumerChainOptedInValidators returns a list of validators consensus address
+  // QueryConsumerChainOptedInValidators returns a list of validators consensus addresses
   // that opted-in to the given consumer chain
   rpc QueryConsumerChainOptedInValidators(
     QueryConsumerChainOptedInValidatorsRequest)
