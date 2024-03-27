@@ -270,7 +270,7 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	consumersToValidate := []string{}
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
 		chainID := consumer.ChainId
-		if k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
+		if k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) || k.IsOptedIn(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
 			consumersToValidate = append(consumersToValidate, chainID)
 		}
 	}
