@@ -926,7 +926,7 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
-			67,
+			50,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -938,7 +938,7 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
-			0,
+			50,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time not passed", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -950,7 +950,7 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
-			0,
+			50,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "invalid proposal: chain id already exists", "chain2", clienttypes.NewHeight(4, 5), []byte{}, []byte{},
@@ -962,46 +962,109 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			50,
+		).(*providertypes.ConsumerAdditionProposal),
+		providertypes.NewConsumerAdditionProposal(
+			"title", "opt-in chain with no validator opted in", "chain4", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.Add(-time.Hour*2).UTC(),
+			"0.75",
+			10,
+			"",
+			10000,
+			100000000000,
+			100000000000,
+			100000000000,
+			0,
+		).(*providertypes.ConsumerAdditionProposal),
+		providertypes.NewConsumerAdditionProposal(
+			"title", "opt-in chain with at least one validator opted in", "chain5", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.Add(-time.Hour*1).UTC(),
+			"0.75",
+			10,
+			"",
+			10000,
+			100000000000,
+			100000000000,
+			100000000000,
 			0,
 		).(*providertypes.ConsumerAdditionProposal),
 	}
 
-	// Expect client creation for only for the 1st and second proposals (spawn time already passed and valid)
-	gomock.InOrder(
-		append(testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4)),
-			testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)...,
-	)
+	// Expect client creation for only the first, second, and sixth proposals (spawn time already passed and valid)
+	expectedCalls := testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain5", clienttypes.NewHeight(3, 4))...)
+
+	gomock.InOrder(expectedCalls...)
 
 	for _, prop := range pendingProps {
 		providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
 	}
 
+	// opt in a sample validator so the chain's proposal can successfully execute
+	providerKeeper.SetOptedIn(ctx, pendingProps[5].ChainId, providertypes.OptedInValidator{
+		ProviderAddr: []byte{1},
+		BlockHeight:  int64(2),
+		Power:        int64(3),
+		PublicKey:    []byte{4},
+	})
+
 	providerKeeper.BeginBlockInit(ctx)
 
-	// Only the third proposal is still stored as pending
+	// first proposal is not pending anymore because its spawn time already passed and was executed
 	_, found := providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[0].SpawnTime, pendingProps[0].ChainId)
 	require.False(t, found)
+	// first proposal was successfully executed and hence consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[0].ChainId)
+	require.True(t, found)
 
+	// second proposal is not pending anymore because its spawn time already passed and was executed
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[1].SpawnTime, pendingProps[1].ChainId)
 	require.False(t, found)
+	// second proposal was successfully executed and hence consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[1].ChainId)
+	require.True(t, found)
 
+	// third proposal is still stored as pending because its spawn time has not passed
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[2].SpawnTime, pendingProps[2].ChainId)
 	require.True(t, found)
+	// because the proposal is still pending, no consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[2].ChainId)
+	require.False(t, found)
 
-	// check that the invalid proposal was dropped
+	// check that the invalid proposals were dropped
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[3].SpawnTime, pendingProps[3].ChainId)
 	require.False(t, found)
+	// Note that we do not check that `GetConsumerGenesis(ctx, pendingProps[3].ChainId)` returns `false` here because
+	//`pendingProps[3]` is an invalid proposal due to the chain id already existing so the consumer genesis also exists
+
+	// fifth proposal is dropped due to it being an Opt-In chain with no validators opted in
+	_, found = providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[4].SpawnTime, pendingProps[4].ChainId)
+	require.False(t, found)
+	// because the proposal is dropped, no consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[4].ChainId)
+	require.False(t, found)
+
+	// sixth proposal corresponds to an Opt-In chain with one opted-in validator and hence the proposal gets
+	// successfully executed
+	_, found = providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[5].SpawnTime, pendingProps[5].ChainId)
+	require.False(t, found)
+	// sixth proposal was successfully executed and hence consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[5].ChainId)
+	require.True(t, found)
 
 	// test that Top N is set correctly
 	require.True(t, providerKeeper.IsTopN(ctx, "chain1"))
 	topN, found := providerKeeper.GetTopN(ctx, "chain1")
-	require.Equal(t, uint32(67), topN)
+	require.Equal(t, uint32(50), topN)
 
-	require.True(t, providerKeeper.IsOptIn(ctx, "chain2"))
+	require.True(t, providerKeeper.IsOptIn(ctx, "chain4"))
 }
 
 // TestBeginBlockCCR tests BeginBlockCCR against the spec.
