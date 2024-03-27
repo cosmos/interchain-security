@@ -305,6 +305,8 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 
 	res := &types.QueryValidatorConsumerCommissionRateResponse{}
 
+	// Check if the validator has a commission rate set for the consumer chain,
+	// otherwise use the commission rate from the validator staking module struct
 	consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerChainID, types.NewProviderConsAddress(consAddr))
 	if found {
 		res.Rate = consumerRate
