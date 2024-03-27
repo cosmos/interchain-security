@@ -103,18 +103,18 @@ service Query {
 
   // QueryOptedInValidatorsByConsumerChainID returns a list of validators consensus address
   // that opted-in to the given consumer chain
-  rpc QueryOptedInValidatorsByConsumerChainID(
-    QueryOptedInValidatorsByConsumerChainIDRequest)
-    returns (QueryOptedInValidatorsByConsumerChainIDResponse) {
+  rpc QueryConsumerChainOptedInValidators(
+    QueryConsumerChainOptedInValidatorsRequest)
+    returns (QueryConsumerChainOptedInValidatorsResponse) {
       option (google.api.http).get =
     "/interchain_security/ccv/provider/opted_in_validators";
     }
 
   // QueryConsumerChainsByValidatorAddress returns a list of consumer chains
   // that a given validator must validate
-  rpc QueryConsumerChainsByValidatorAddress(
-    QueryConsumerChainsByValidatorAddressRequest)
-    returns (QueryConsumerChainsByValidatorAddressResponse) {
+  rpc QueryConsumerChainsValidatorHasToValidate(
+    QueryConsumerChainsValidatorHasToValidateRequest)
+    returns (QueryConsumerChainsValidatorHasToValidateResponse) {
       option (google.api.http).get =
     "/interchain_security/ccv/provider/consumer_chains_per_validator";
     }
@@ -245,22 +245,22 @@ message QueryParamsResponse {
 }
 
 
-message QueryOptedInValidatorsByConsumerChainIDRequest {
+message QueryConsumerChainOptedInValidatorsRequest {
   string chain_id = 1;
 }
 
-message QueryOptedInValidatorsByConsumerChainIDResponse {
+message QueryConsumerChainOptedInValidatorsResponse {
   repeated string validators_provider_address = 1;
 }
 
 
-message QueryConsumerChainsByValidatorAddressRequest {
+message QueryConsumerChainsValidatorHasToValidateRequest {
   // The consensus address of the validator on the provider chain
   string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
 }
 
-message QueryConsumerChainsByValidatorAddressResponse {
-  repeated string validator_consumer_chains = 1;
+message QueryConsumerChainsValidatorHasToValidateResponse {
+  repeated string consumer_chains = 1;
 }
 
 message QueryValidatorConsumerCommissionRateRequest {
@@ -277,4 +277,3 @@ message QueryValidatorConsumerCommissionRateResponse {
     (gogoproto.nullable)   = false 
   ];
 }
-

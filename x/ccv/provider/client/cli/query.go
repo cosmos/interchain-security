@@ -35,8 +35,8 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdProposedConsumerChains())
 	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
 	cmd.AddCommand(CmdProviderParameters())
-	cmd.AddCommand(CmdOptedInValidatorsByConsumerChainID())
-	cmd.AddCommand(CmdConsumerChainsByValidatorAddress())
+	cmd.AddCommand(CmdConsumerChainOptedInValidators())
+	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	return cmd
 }
@@ -414,14 +414,14 @@ $ %s query provider params
 }
 
 // Command to query opted-in validators by consumer chain ID
-func CmdOptedInValidatorsByConsumerChainID() *cobra.Command {
+func CmdConsumerChainOptedInValidators() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "opted-in-validators [chainid]",
+		Use:   "consumer-opted-in-validators [chainid]",
 		Short: "Query opted-in validators for a given consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query opted-in validators for a given consumer chain.
 Example:
-$ %s opted-in-validators foochain
+$ %s consumer-opted-in-validators foochain
 		`, version.AppName),
 		),
 		Args: cobra.ExactArgs(1),
@@ -432,8 +432,8 @@ $ %s opted-in-validators foochain
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			res, err := queryClient.QueryOptedInValidatorsByConsumerChainID(cmd.Context(),
-				&types.QueryOptedInValidatorsByConsumerChainIDRequest{ChainId: args[0]})
+			res, err := queryClient.QueryConsumerChainOptedInValidators(cmd.Context(),
+				&types.QueryConsumerChainOptedInValidatorsRequest{ChainId: args[0]})
 			if err != nil {
 				return err
 			}
@@ -448,7 +448,7 @@ $ %s opted-in-validators foochain
 }
 
 // Command to query the consumer chains list a given validator has to validate
-func CmdConsumerChainsByValidatorAddress() *cobra.Command {
+func CmdConsumerChainsValidatorHasToValidate() *cobra.Command {
 	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	cmd := &cobra.Command{
 		Use:   "has-to-validate [provider-validator-address]",
@@ -472,8 +472,8 @@ $ %s has-to-validate %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 				return err
 			}
 
-			res, err := queryClient.QueryConsumerChainsByValidatorAddress(cmd.Context(),
-				&types.QueryConsumerChainsByValidatorAddressRequest{
+			res, err := queryClient.QueryConsumerChainsValidatorHasToValidate(cmd.Context(),
+				&types.QueryConsumerChainsValidatorHasToValidateRequest{
 					ProviderAddress: addr.String(),
 				})
 			if err != nil {
