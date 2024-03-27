@@ -376,6 +376,11 @@ func (k Keeper) AssignConsumerKey(
 		if providerAddr.Address.Equals(existingProviderAddr.Address) {
 			// the validator itself is the one already using the consumer key,
 			// just do a noop
+			k.Logger(ctx).Info("tried to assign a consumer key that is already assigned to the validator",
+				"consumer chainID", chainID,
+				"validator", providerAddr.String(),
+				"consumer consensus addr", consumerAddr.String(),
+			)
 			return nil
 		} else {
 			// the validators are different -> throw an error to
