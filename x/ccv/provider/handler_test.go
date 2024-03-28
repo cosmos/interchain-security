@@ -112,7 +112,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
 					ChainId: "chainid",
 				})
-				// Use the consumer key already
+				// Use the consumer key already used by some other validator
 				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr2)
 
 				gomock.InOrder(
