@@ -100,11 +100,11 @@ service Query {
     "/interchain_security/ccv/provider/params";
     }
 
-  // QueryFirstVscSendTimestamp returns the send timestamp of the oldest unconfirmed VSCPacket for a given chainID
-  rpc QueryFirstVscSendTimestamp(QueryFirstVscSendTimestampRequest)
-    returns (QueryFirstVscSendTimestampResponse) {
+  // QueryOldestUnconfirmVsc returns the send timestamp of the oldest unconfirmed VSCPacket for a given chainID
+  rpc QueryOldestUnconfirmVsc(QueryOldestUnconfirmVscRequest)
+    returns (QueryOldestUnconfirmVscResponse) {
       option (google.api.http).get =
-      "/interchain_security/ccv/provider/first_vsc_send_timestamp/{chain_id}";
+      "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}";
     }
 }
 
@@ -219,9 +219,9 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryFirstVscSendTimestampRequest { string chain_id = 1; }
+message QueryOldestUnconfirmVscRequest { string chain_id = 1; }
 
-message QueryFirstVscSendTimestampResponse {
+message QueryOldestUnconfirmVscResponse {
   interchain_security.ccv.provider.v1.VscSendTimestamp vsc_send_timestamp = 1
       [ (gogoproto.nullable) = false ];
 }

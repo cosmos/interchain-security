@@ -56,7 +56,7 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	require.Equal(t, &expectedResult, response.PairValConAddr[0])
 }
 
-func TestQueryFirstVscSendTimestamp(t *testing.T) {
+func TestQueryOldestUnconfirmVsc(t *testing.T) {
 	chainID := consumer
 
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -67,19 +67,19 @@ func TestQueryFirstVscSendTimestamp(t *testing.T) {
 	pk.SetVscSendTimestamp(ctx, chainID, vscID, now)
 
 	// Request is nil
-	_, err := pk.QueryFirstVscSendTimestamp(ctx, nil)
+	_, err := pk.QueryOldestUnconfirmVsc(ctx, nil)
 	require.Error(t, err)
 
 	// Request with chainId is empty
-	_, err = pk.QueryFirstVscSendTimestamp(ctx, &types.QueryFirstVscSendTimestampRequest{})
+	_, err = pk.QueryOldestUnconfirmVsc(ctx, &types.QueryOldestUnconfirmVscRequest{})
 	require.Error(t, err)
 
 	// Request with chainId is invalid
-	_, err = pk.QueryFirstVscSendTimestamp(ctx, &types.QueryFirstVscSendTimestampRequest{ChainId: "invalidChainId"})
+	_, err = pk.QueryOldestUnconfirmVsc(ctx, &types.QueryOldestUnconfirmVscRequest{ChainId: "invalidChainId"})
 	require.Error(t, err)
 
 	// Request is valid
-	response, err := pk.QueryFirstVscSendTimestamp(ctx, &types.QueryFirstVscSendTimestampRequest{ChainId: chainID})
+	response, err := pk.QueryOldestUnconfirmVsc(ctx, &types.QueryOldestUnconfirmVscRequest{ChainId: chainID})
 	require.NoError(t, err)
 	expectedResult := types.VscSendTimestamp{
 		VscId:     vscID,
