@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -53,4 +54,36 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	}
 	require.Equal(t, &consumerKey, response.PairValConAddr[0].ConsumerKey)
 	require.Equal(t, &expectedResult, response.PairValConAddr[0])
+}
+
+func TestQueryFirstVscSendTimestamp(t *testing.T) {
+	chainID := consumer
+
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	var vscID uint64 = 1
+	now := time.Now().UTC()
+	pk.SetVscSendTimestamp(ctx, chainID, vscID, now)
+
+	// Request is nil
+	_, err := pk.QueryFirstVscSendTimestamp(ctx, nil)
+	require.Error(t, err)
+
+	// Request with chainId is empty
+	_, err = pk.QueryFirstVscSendTimestamp(ctx, &types.QueryFirstVscSendTimestampRequest{})
+	require.Error(t, err)
+
+	// Request with chainId is invalid
+	_, err = pk.QueryFirstVscSendTimestamp(ctx, &types.QueryFirstVscSendTimestampRequest{ChainId: "invalidChainId"})
+	require.Error(t, err)
+
+	// Request is valid
+	response, err := pk.QueryFirstVscSendTimestamp(ctx, &types.QueryFirstVscSendTimestampRequest{ChainId: chainID})
+	require.NoError(t, err)
+	expectedResult := types.VscSendTimestamp{
+		VscId:     vscID,
+		Timestamp: now,
+	}
+	require.Equal(t, expectedResult, response.VscSendTimestamp)
 }

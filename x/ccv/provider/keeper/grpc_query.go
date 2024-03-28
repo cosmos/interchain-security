@@ -221,3 +221,22 @@ func (k Keeper) QueryParams(c context.Context, _ *types.QueryParamsRequest) (*ty
 
 	return &types.QueryParamsResponse{Params: params}, nil
 }
+
+func (k Keeper) QueryFirstVscSendTimestamp(goCtx context.Context, req *types.QueryFirstVscSendTimestampRequest) (*types.QueryFirstVscSendTimestampResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if req.ChainId == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid request: chain id cannot be empty")
+	}
+
+	ts, found := k.GetFirstVscSendTimestamp(ctx, req.ChainId)
+	if !found {
+		return nil, errorsmod.Wrap(types.ErrNoVscSendTimestamp, req.ChainId)
+	}
+
+	return &types.QueryFirstVscSendTimestampResponse{VscSendTimestamp: ts}, nil
+}
