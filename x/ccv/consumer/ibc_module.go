@@ -246,7 +246,7 @@ func (am AppModule) OnRecvPacket(
 			ackErr = err
 			logger.Error(fmt.Sprintf("%s sequence %d", ackErr.Error(), packet.Sequence))
 		} else {
-			logger.Info("successfully handled VSCPacket sequence: %d", packet.Sequence)
+			logger.Info("successfully handled VSCPacket", "sequence", packet.Sequence)
 		}
 	}
 

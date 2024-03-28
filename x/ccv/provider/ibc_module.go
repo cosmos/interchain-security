@@ -201,7 +201,7 @@ func (am AppModule) OnRecvPacket(
 			data := *consumerPacket.GetVscMaturedPacketData()
 			err = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, data)
 			if err == nil {
-				logger.Info("successfully handled VSCMaturedPacket sequence: %d", packet.Sequence)
+				logger.Info("successfully handled VSCMaturedPacket", "sequence", packet.Sequence)
 				eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
 			}
 		case ccv.SlashPacket:
@@ -211,7 +211,7 @@ func (am AppModule) OnRecvPacket(
 			ackResult, err = am.keeper.OnRecvSlashPacket(ctx, packet, data)
 			if err == nil {
 				ack = channeltypes.NewResultAcknowledgement(ackResult)
-				logger.Info("successfully handled SlashPacket sequence: %d", packet.Sequence)
+				logger.Info("successfully handled SlashPacket", "sequence", packet.Sequence)
 				eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
 			}
 		default:

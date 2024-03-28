@@ -1395,7 +1395,7 @@ func (m *ConsumerAddrsToPrune) GetConsumerAddrs() *AddressList {
 }
 
 // ConsumerValidator is used to facilitate epoch-based transitions. It contains relevant info for
-// a validator that is opted in, in an epoch, on a consumer chain.
+// a validator that is expected to validate on a consumer chain during an epoch.
 type ConsumerValidator struct {
 	// validator's consensus address on the provider chain
 	ProviderConsAddr []byte `protobuf:"bytes,1,opt,name=provider_cons_addr,json=providerConsAddr,proto3" json:"provider_cons_addr,omitempty"`

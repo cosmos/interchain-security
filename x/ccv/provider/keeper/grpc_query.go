@@ -29,7 +29,10 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	gen, ok := k.GetConsumerGenesis(ctx, req.ChainId)
 	if !ok {
-		return nil, errorsmod.Wrap(types.ErrUnknownConsumerChainId, req.ChainId)
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrap(types.ErrUnknownConsumerChainId, req.ChainId).Error(),
+		)
 	}
 
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
@@ -220,4 +223,33 @@ func (k Keeper) QueryParams(c context.Context, _ *types.QueryParamsRequest) (*ty
 	params := k.GetParams(ctx)
 
 	return &types.QueryParamsResponse{Params: params}, nil
+}
+
+func (k Keeper) QueryOldestUnconfirmVsc(goCtx context.Context, req *types.QueryOldestUnconfirmVscRequest) (*types.QueryOldestUnconfirmVscResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if req.ChainId == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid request: chain id cannot be empty")
+	}
+
+	if _, consumerRegistered := k.GetConsumerClientId(ctx, req.ChainId); !consumerRegistered {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrap(types.ErrUnknownConsumerChainId, req.ChainId).Error(),
+		)
+	}
+
+	ts, found := k.GetFirstVscSendTimestamp(ctx, req.ChainId)
+	if !found {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrap(types.ErrNoUnconfirmedVSCPacket, req.ChainId).Error(),
+		)
+	}
+
+	return &types.QueryOldestUnconfirmVscResponse{VscSendTimestamp: ts}, nil
 }
