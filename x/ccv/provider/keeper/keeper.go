@@ -249,9 +249,15 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 		chainID := string(iterator.Key()[1:])
 		clientID := string(iterator.Value())
 
+		// Get the consumer TopN value by checking
+		// if the chain is a TopN chain,
+		// otherwise it's a OptIn chain
+		topN, _ := k.GetTopN(ctx, chainID)
+
 		chains = append(chains, types.Chain{
 			ChainId:  chainID,
 			ClientId: clientID,
+			Top_N:    topN,
 		})
 	}
 
