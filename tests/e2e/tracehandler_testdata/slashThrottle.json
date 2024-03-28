@@ -57,7 +57,8 @@
       "InitialHeight": {
         "revision_height": 1
       },
-      "DistributionChannel": ""
+      "DistributionChannel": "",
+      "TopN": 100
     },
     "State": {
       "provi": {

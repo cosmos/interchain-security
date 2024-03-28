@@ -1002,13 +1002,8 @@ func TestBeginBlockInit(t *testing.T) {
 	}
 
 	// opt in a sample validator so the chain's proposal can successfully execute
-	providerKeeper.SetOptedIn(ctx, pendingProps[5].ChainId, providertypes.OptedInValidator{
-		ProviderAddr: []byte{1},
-		BlockHeight:  int64(2),
-		Power:        int64(3),
-		PublicKey:    []byte{4},
-	})
-
+	providerKeeper.SetOptedIn(ctx, pendingProps[5].ChainId, providertypes.NewProviderConsAddress([]byte("providerAddr")))
+	
 	providerKeeper.BeginBlockInit(ctx)
 
 	// first proposal is not pending anymore because its spawn time already passed and was executed
