@@ -454,7 +454,7 @@ func CmdConsumerChainsValidatorHasToValidate() *cobra.Command {
 		Use:   "has-to-validate [provider-validator-address]",
 		Short: "Query the consumer chains list a given validator has to validate",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Query the consumer chains list a given validator has to validate.
+			fmt.Sprintf(`the list of consumer chains that as a validator, you need to be running right now, is always a subset of this, so it seems like a very nice "safe bet".
 Example:
 $ %s has-to-validate %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 		`, version.AppName, bech32PrefixConsAddr),
