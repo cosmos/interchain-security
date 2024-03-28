@@ -257,7 +257,7 @@ module extraSpells {
     /// Returns:
     /// - The index of the first element that satisfies the predicate function, or -1 if no such element exists.
     pure def firstIndex(__list: List[a], __f: a => bool): int = {
-        range(0, __list.length()).foldl(
+        __list.indices().fold(
             -1,
             (acc, i) => if (acc == -1 and __f(__list[i])) i else acc
         )
