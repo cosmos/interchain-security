@@ -283,8 +283,8 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 				power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
 				minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-				// Check that the validator's voting power is smaller
-				// than the minimum to be automatically opt-in
+				// Check if the validator's voting power is smaller
+				// than the minimum and hence not automatically opted in
 				if power < minPowerToOptIn {
 					continue
 				}
