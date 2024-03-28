@@ -249,7 +249,7 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	}, nil
 }
 
-// QueryConsumerChainsValidatorHasToValidate returns all consumer chains a given validator has to validate
+// QueryConsumerChainsValidatorHasToValidate returns all consumer chains a given validator has to validate.
 func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context, req *types.QueryConsumerChainsValidatorHasToValidateRequest) (*types.QueryConsumerChainsValidatorHasToValidateResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -266,15 +266,31 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// get all the consumer chains for which the validator is already or will be
-	// opted-in starting from the next epoch
+	// get all the consumer chains for which the validator is either already
+	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
 	consumersToValidate := []string{}
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
 		chainID := consumer.ChainId
+		provAddr := types.NewProviderConsAddress(consAddr)
+		if !k.IsOptedIn(ctx, chainID, provAddr) && !k.IsConsumerValidator(ctx, chainID, provAddr) {
+			// check that the validator voting power isn't in the TopN
+			if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+				val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+				if !found {
+					return nil, status.Error(codes.InvalidArgument, "invalid provider address")
+				}
+				power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+				minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-		if k.IsOptedIn(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
-			consumersToValidate = append(consumersToValidate, chainID)
+				// Check that the validator's voting power is smaller
+				// than the minimum to be automatically opt-in
+				if power < minPowerToOptIn {
+					continue
+				}
+			}
 		}
+
+		consumersToValidate = append(consumersToValidate, chainID)
 	}
 
 	return &types.QueryConsumerChainsValidatorHasToValidateResponse{
