@@ -249,7 +249,8 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	}, nil
 }
 
-// QueryConsumerChainsValidatorHasToValidate returns all consumer chains a given validator has to validate.
+// QueryConsumerChainsValidatorHasToValidate returns all consumer chains that the given validator has to validate now
+// or in the next epoch if nothing change.
 func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context, req *types.QueryConsumerChainsValidatorHasToValidateRequest) (*types.QueryConsumerChainsValidatorHasToValidateResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
