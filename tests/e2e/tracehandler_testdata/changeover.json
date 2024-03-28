@@ -229,7 +229,8 @@
       "InitialHeight": {
         "revision_height": 111
       },
-      "DistributionChannel": "channel-0"
+      "DistributionChannel": "channel-0",
+      "TopN": 100
     },
     "State": {
       "provi": {
