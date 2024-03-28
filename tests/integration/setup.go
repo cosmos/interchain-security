@@ -119,6 +119,14 @@ func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
 	}
 }
 
+func (suite *CCVTestSuite) GetProviderChain() *ibctesting.TestChain {
+	return suite.providerChain
+}
+
+func (suite *CCVTestSuite) GetCCVPath() *ibctesting.Path {
+	return suite.path
+}
+
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
 	suite.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
