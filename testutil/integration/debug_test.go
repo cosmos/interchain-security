@@ -61,10 +61,12 @@ func TestInitTimeout(t *testing.T) {
 // Consumer democracy tests
 //
 
+// TODO: fix
 func TestDemocracyRewardsDistribution(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyRewardsDistribution")
 }
 
+// TODO: fix
 func TestDemocracyGovernanceWhitelisting(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
 }
@@ -77,6 +79,7 @@ func TestSendRewardsRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSendRewardsRetries")
 }
 
+// TODO: fix
 func TestRewardsDistribution(t *testing.T) {
 	runCCVTestByName(t, "TestRewardsDistribution")
 }
@@ -93,10 +96,12 @@ func TestSendRewardsToProvider(t *testing.T) {
 // Expired client tests
 //
 
+// TODO: fix
 func TestVSCPacketSendExpiredClient(t *testing.T) {
 	runCCVTestByName(t, "TestVSCPacketSendExpiredClient")
 }
 
+// TODO: fix
 func TestConsumerPacketSendExpiredClient(t *testing.T) {
 	runCCVTestByName(t, "TestConsumerPacketSendExpiredClient")
 }
@@ -105,6 +110,7 @@ func TestConsumerPacketSendExpiredClient(t *testing.T) {
 // Normal operations tests
 //
 
+// TODO: needs to be redone or code needs to be fixed
 func TestHistoricalInfo(t *testing.T) {
 	runCCVTestByName(t, "TestHistoricalInfo")
 }
@@ -113,6 +119,7 @@ func TestHistoricalInfo(t *testing.T) {
 // Slashing tests
 //
 
+// TODO: fix
 func TestRelayAndApplyDowntimePacket(t *testing.T) {
 	runCCVTestByName(t, "TestRelayAndApplyDowntimePacket")
 }
@@ -133,14 +140,17 @@ func TestOnRecvSlashPacketErrors(t *testing.T) {
 	runCCVTestByName(t, "TestOnRecvSlashPacketErrors")
 }
 
+// TODO: fix -- possible wire protocol change because packet commits don't match
 func TestValidatorDowntime(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDowntime")
 }
 
+// TODO: fix panics -> possible app wiring issue -> seems that evidence router is nil
 func TestValidatorDoubleSigning(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDoubleSigning")
 }
 
+// TODO: fix -> packet times out
 func TestQueueAndSendSlashPacket(t *testing.T) {
 	runCCVTestByName(t, "TestQueueAndSendSlashPacket")
 }
@@ -153,6 +163,7 @@ func TestCISBeforeCCVEstablished(t *testing.T) {
 // Soft opt out tests
 //
 
+// TODO: fix -> test: downtime bottom 5% first and then top 95%, but not enough; validator jailed until signing info was updated
 func TestSoftOptOut(t *testing.T) {
 	runCCVTestByName(t, "TestSoftOptOut")
 }
@@ -173,10 +184,12 @@ func TestStopConsumerOnChannelClosed(t *testing.T) {
 // Throttle tests
 //
 
+// TODO: fix
 func TestBasicSlashPacketThrottling(t *testing.T) {
 	runCCVTestByName(t, "TestBasicSlashPacketThrottling")
 }
 
+// TODO: fix
 func TestMultiConsumerSlashPacketThrottling(t *testing.T) {
 	runCCVTestByName(t, "TestMultiConsumerSlashPacketThrottling")
 }
@@ -205,6 +218,7 @@ func TestSlashAllValidators(t *testing.T) {
 // Unbonding tests
 //
 
+// TODO: fix -> packet times out
 func TestUndelegationNormalOperation(t *testing.T) {
 	runCCVTestByName(t, "TestUndelegationNormalOperation")
 }
@@ -213,6 +227,7 @@ func TestUndelegationVscTimeout(t *testing.T) {
 	runCCVTestByName(t, "TestUndelegationVscTimeout")
 }
 
+// TODO: fix -> packet times out
 func TestUndelegationDuringInit(t *testing.T) {
 	runCCVTestByName(t, "TestUndelegationDuringInit")
 }
@@ -233,6 +248,7 @@ func TestRedelegationProviderFirst(t *testing.T) {
 // Val set update tests
 //
 
+// TODO: fix -> packet times out
 func TestPacketRoundtrip(t *testing.T) {
 	runCCVTestByName(t, "TestPacketRoundtrip")
 }
@@ -280,6 +296,7 @@ func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing
 // Throttle retry tests
 //
 
+// TODO: fix -> packet times out
 func TestSlashRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSlashRetries")
 }
