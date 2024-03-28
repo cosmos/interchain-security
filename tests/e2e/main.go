@@ -156,6 +156,18 @@ var stepChoices = map[string]StepChoice{
 		description: `Minimal set of test steps to perform compatibility tests`,
 		testConfig:  CompatibilityTestCfg,
 	},
+	"partial-set-security-opt-in": {
+		name:        "partial-set-security-opt-in",
+		steps:       stepsOptInChain(),
+		description: "test partial set security for an Opt-In chain",
+		testConfig:  DefaultTestCfg,
+	},
+	"partial-set-security-top-n": {
+		name:        "partial-set-security-top-n",
+		steps:       stepsTopNChain(),
+		description: "test partial set security for a Top-N chain",
+		testConfig:  DefaultTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
