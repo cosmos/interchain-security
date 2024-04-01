@@ -65,6 +65,7 @@ func TestQueryOldestUnconfirmVsc(t *testing.T) {
 	var vscID uint64 = 1
 	now := time.Now().UTC()
 	pk.SetVscSendTimestamp(ctx, chainID, vscID, now)
+	pk.SetConsumerClientId(ctx, chainID, "client-1")
 
 	// Request is nil
 	_, err := pk.QueryOldestUnconfirmVsc(ctx, nil)
