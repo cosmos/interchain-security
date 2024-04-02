@@ -877,8 +877,8 @@ module ccv {
             })
             val newConsumerState = 
                 commitPacketOnConsumer(consumerState, packet)
-                // add the consumer address to the list of outstanding slashes
-                .with("outstandingDowntime", consumerState.outstandingDowntime.union(Set(consumerNode)))
+                // add the consumer address to the list of outstanding downtime if the packet is a downtime slash
+                .with("outstandingDowntime", if (downtime) consumerState.outstandingDowntime.add(consumerNode) else consumerState.outstandingDowntime)
             Ok(currentState.with("consumerStates", currentState.consumerStates.set(consumer, newConsumerState)))
         }
     }
