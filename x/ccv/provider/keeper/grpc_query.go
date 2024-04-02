@@ -243,6 +243,8 @@ func (k Keeper) QueryOldestUnconfirmVsc(goCtx context.Context, req *types.QueryO
 		)
 	}
 
+	// Note that GetFirstVscSendTimestamp returns the send timestamp of the oldest
+	// unconfirmed VSCPacket as these timestamps are deleted when handling VSCMaturedPackets
 	ts, found := k.GetFirstVscSendTimestamp(ctx, req.ChainId)
 	if !found {
 		return nil, status.Error(
