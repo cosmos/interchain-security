@@ -36,7 +36,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	// a different providerConsAddr, to simulate different validators having assigned keys
 	providerCryptoId2 := testcrypto.NewCryptoIdentityFromIntSeed(10)
-	providerConsAddr2 := providerCryptoId.ProviderConsAddress()
+	providerConsAddr2 := providerCryptoId2.ProviderConsAddress()
 
 	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
@@ -118,10 +118,11 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// Return a valid validator, found!
-					).Return(providerCryptoId2.SDKStakingValidator(), true).Times(1),
+						// validator should not be missing
+					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerConsAddr.ToSdkConsAddr(),
+						// return false - no other validator uses the consumer key to validate *on the provider*
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},
