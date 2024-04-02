@@ -62,9 +62,9 @@ func TestQueryOldestUnconfirmedVsc(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	var vscID uint64 = 1
 	now := time.Now().UTC()
-	pk.SetVscSendTimestamp(ctx, chainID, vscID, now)
+	pk.SetVscSendTimestamp(ctx, chainID, 2, now)
+	pk.SetVscSendTimestamp(ctx, chainID, 1, now)
 	pk.SetConsumerClientId(ctx, chainID, "client-1")
 
 	// Request is nil
@@ -83,7 +83,17 @@ func TestQueryOldestUnconfirmedVsc(t *testing.T) {
 	response, err := pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: chainID})
 	require.NoError(t, err)
 	expectedResult := types.VscSendTimestamp{
-		VscId:     vscID,
+		VscId:     1,
+		Timestamp: now,
+	}
+	require.Equal(t, expectedResult, response.VscSendTimestamp)
+
+	// Make sure that the oldest is queried
+	pk.DeleteVscSendTimestamp(ctx, chainID, 1)
+	response, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: chainID})
+	require.NoError(t, err)
+	expectedResult = types.VscSendTimestamp{
+		VscId:     2,
 		Timestamp: now,
 	}
 	require.Equal(t, expectedResult, response.VscSendTimestamp)
