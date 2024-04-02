@@ -35,7 +35,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdProposedConsumerChains())
 	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
 	cmd.AddCommand(CmdProviderParameters())
-	cmd.AddCommand(CmdOldestUnconfirmVsc())
+	cmd.AddCommand(CmdOldestUnconfirmedVsc())
 	return cmd
 }
 
@@ -412,7 +412,7 @@ $ %s query provider params
 
 }
 
-func CmdOldestUnconfirmVsc() *cobra.Command {
+func CmdOldestUnconfirmedVsc() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "oldest_unconfirmed_vsc [chainid]",
 		Short: "Query the send timestamp of the oldest unconfirmed VSCPacket by chain id",
@@ -424,8 +424,8 @@ func CmdOldestUnconfirmVsc() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := types.QueryOldestUnconfirmVscRequest{ChainId: args[0]}
-			res, err := queryClient.QueryOldestUnconfirmVsc(cmd.Context(), &req)
+			req := types.QueryOldestUnconfirmedVscRequest{ChainId: args[0]}
+			res, err := queryClient.QueryOldestUnconfirmedVsc(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}

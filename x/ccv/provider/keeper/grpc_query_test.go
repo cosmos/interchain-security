@@ -56,7 +56,7 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	require.Equal(t, &expectedResult, response.PairValConAddr[0])
 }
 
-func TestQueryOldestUnconfirmVsc(t *testing.T) {
+func TestQueryOldestUnconfirmedVsc(t *testing.T) {
 	chainID := consumer
 
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -68,19 +68,19 @@ func TestQueryOldestUnconfirmVsc(t *testing.T) {
 	pk.SetConsumerClientId(ctx, chainID, "client-1")
 
 	// Request is nil
-	_, err := pk.QueryOldestUnconfirmVsc(ctx, nil)
+	_, err := pk.QueryOldestUnconfirmedVsc(ctx, nil)
 	require.Error(t, err)
 
 	// Request with chainId is empty
-	_, err = pk.QueryOldestUnconfirmVsc(ctx, &types.QueryOldestUnconfirmVscRequest{})
+	_, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{})
 	require.Error(t, err)
 
 	// Request with chainId is invalid
-	_, err = pk.QueryOldestUnconfirmVsc(ctx, &types.QueryOldestUnconfirmVscRequest{ChainId: "invalidChainId"})
+	_, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: "invalidChainId"})
 	require.Error(t, err)
 
 	// Request is valid
-	response, err := pk.QueryOldestUnconfirmVsc(ctx, &types.QueryOldestUnconfirmVscRequest{ChainId: chainID})
+	response, err := pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: chainID})
 	require.NoError(t, err)
 	expectedResult := types.VscSendTimestamp{
 		VscId:     vscID,

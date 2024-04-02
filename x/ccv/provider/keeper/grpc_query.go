@@ -225,7 +225,7 @@ func (k Keeper) QueryParams(c context.Context, _ *types.QueryParamsRequest) (*ty
 	return &types.QueryParamsResponse{Params: params}, nil
 }
 
-func (k Keeper) QueryOldestUnconfirmVsc(goCtx context.Context, req *types.QueryOldestUnconfirmVscRequest) (*types.QueryOldestUnconfirmVscResponse, error) {
+func (k Keeper) QueryOldestUnconfirmedVsc(goCtx context.Context, req *types.QueryOldestUnconfirmedVscRequest) (*types.QueryOldestUnconfirmedVscResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if req == nil {
@@ -253,5 +253,5 @@ func (k Keeper) QueryOldestUnconfirmVsc(goCtx context.Context, req *types.QueryO
 		)
 	}
 
-	return &types.QueryOldestUnconfirmVscResponse{VscSendTimestamp: ts}, nil
+	return &types.QueryOldestUnconfirmedVscResponse{VscSendTimestamp: ts}, nil
 }
