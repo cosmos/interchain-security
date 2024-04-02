@@ -7,6 +7,8 @@ import (
 	context "context"
 	fmt "fmt"
 	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	_ "github.com/cosmos/cosmos-proto"
+	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -374,6 +376,8 @@ func (m *QueryConsumerChainStopProposalsResponse) GetProposals() *ConsumerRemova
 type Chain struct {
 	ChainId  string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	// If chain with `chainID` is a Top-N chain, i.e., enforces at least one validator to validate chain `chainID`
+	Top_N uint32 `protobuf:"varint,3,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
 }
 
 func (m *Chain) Reset()         { *m = Chain{} }
@@ -421,6 +425,13 @@ func (m *Chain) GetClientId() string {
 		return m.ClientId
 	}
 	return ""
+}
+
+func (m *Chain) GetTop_N() uint32 {
+	if m != nil {
+		return m.Top_N
+	}
+	return 0
 }
 
 type QueryValidatorConsumerAddrRequest struct {
@@ -1153,6 +1164,299 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
+type QueryConsumerChainOptedInValidatorsRequest struct {
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+}
+
+func (m *QueryConsumerChainOptedInValidatorsRequest) Reset() {
+	*m = QueryConsumerChainOptedInValidatorsRequest{}
+}
+func (m *QueryConsumerChainOptedInValidatorsRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryConsumerChainOptedInValidatorsRequest) ProtoMessage() {}
+func (*QueryConsumerChainOptedInValidatorsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{25}
+}
+func (m *QueryConsumerChainOptedInValidatorsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryConsumerChainOptedInValidatorsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryConsumerChainOptedInValidatorsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryConsumerChainOptedInValidatorsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryConsumerChainOptedInValidatorsRequest.Merge(m, src)
+}
+func (m *QueryConsumerChainOptedInValidatorsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryConsumerChainOptedInValidatorsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryConsumerChainOptedInValidatorsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryConsumerChainOptedInValidatorsRequest proto.InternalMessageInfo
+
+func (m *QueryConsumerChainOptedInValidatorsRequest) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+type QueryConsumerChainOptedInValidatorsResponse struct {
+	// The consensus addresses of the validators on the provider chain
+	ValidatorsProviderAddresses []string `protobuf:"bytes,1,rep,name=validators_provider_addresses,json=validatorsProviderAddresses,proto3" json:"validators_provider_addresses,omitempty"`
+}
+
+func (m *QueryConsumerChainOptedInValidatorsResponse) Reset() {
+	*m = QueryConsumerChainOptedInValidatorsResponse{}
+}
+func (m *QueryConsumerChainOptedInValidatorsResponse) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryConsumerChainOptedInValidatorsResponse) ProtoMessage() {}
+func (*QueryConsumerChainOptedInValidatorsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{26}
+}
+func (m *QueryConsumerChainOptedInValidatorsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryConsumerChainOptedInValidatorsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryConsumerChainOptedInValidatorsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryConsumerChainOptedInValidatorsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryConsumerChainOptedInValidatorsResponse.Merge(m, src)
+}
+func (m *QueryConsumerChainOptedInValidatorsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryConsumerChainOptedInValidatorsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryConsumerChainOptedInValidatorsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryConsumerChainOptedInValidatorsResponse proto.InternalMessageInfo
+
+func (m *QueryConsumerChainOptedInValidatorsResponse) GetValidatorsProviderAddresses() []string {
+	if m != nil {
+		return m.ValidatorsProviderAddresses
+	}
+	return nil
+}
+
+type QueryConsumerChainsValidatorHasToValidateRequest struct {
+	// The consensus address of the validator on the provider chain
+	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty" yaml:"address"`
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) Reset() {
+	*m = QueryConsumerChainsValidatorHasToValidateRequest{}
+}
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryConsumerChainsValidatorHasToValidateRequest) ProtoMessage() {}
+func (*QueryConsumerChainsValidatorHasToValidateRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{27}
+}
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateRequest.Merge(m, src)
+}
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateRequest proto.InternalMessageInfo
+
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) GetProviderAddress() string {
+	if m != nil {
+		return m.ProviderAddress
+	}
+	return ""
+}
+
+type QueryConsumerChainsValidatorHasToValidateResponse struct {
+	ConsumerChainIds []string `protobuf:"bytes,1,rep,name=consumer_chain_ids,json=consumerChainIds,proto3" json:"consumer_chain_ids,omitempty"`
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) Reset() {
+	*m = QueryConsumerChainsValidatorHasToValidateResponse{}
+}
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryConsumerChainsValidatorHasToValidateResponse) ProtoMessage() {}
+func (*QueryConsumerChainsValidatorHasToValidateResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{28}
+}
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateResponse.Merge(m, src)
+}
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateResponse proto.InternalMessageInfo
+
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) GetConsumerChainIds() []string {
+	if m != nil {
+		return m.ConsumerChainIds
+	}
+	return nil
+}
+
+type QueryValidatorConsumerCommissionRateRequest struct {
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// The consensus address of the validator on the provider chain
+	ProviderAddress string `protobuf:"bytes,2,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty" yaml:"address"`
+}
+
+func (m *QueryValidatorConsumerCommissionRateRequest) Reset() {
+	*m = QueryValidatorConsumerCommissionRateRequest{}
+}
+func (m *QueryValidatorConsumerCommissionRateRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryValidatorConsumerCommissionRateRequest) ProtoMessage() {}
+func (*QueryValidatorConsumerCommissionRateRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{29}
+}
+func (m *QueryValidatorConsumerCommissionRateRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryValidatorConsumerCommissionRateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryValidatorConsumerCommissionRateRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryValidatorConsumerCommissionRateRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryValidatorConsumerCommissionRateRequest.Merge(m, src)
+}
+func (m *QueryValidatorConsumerCommissionRateRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryValidatorConsumerCommissionRateRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryValidatorConsumerCommissionRateRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryValidatorConsumerCommissionRateRequest proto.InternalMessageInfo
+
+func (m *QueryValidatorConsumerCommissionRateRequest) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *QueryValidatorConsumerCommissionRateRequest) GetProviderAddress() string {
+	if m != nil {
+		return m.ProviderAddress
+	}
+	return ""
+}
+
+type QueryValidatorConsumerCommissionRateResponse struct {
+	// The rate to charge delegators on the consumer chain, as a fraction
+	Rate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=rate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"rate"`
+}
+
+func (m *QueryValidatorConsumerCommissionRateResponse) Reset() {
+	*m = QueryValidatorConsumerCommissionRateResponse{}
+}
+func (m *QueryValidatorConsumerCommissionRateResponse) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryValidatorConsumerCommissionRateResponse) ProtoMessage() {}
+func (*QueryValidatorConsumerCommissionRateResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{30}
+}
+func (m *QueryValidatorConsumerCommissionRateResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryValidatorConsumerCommissionRateResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryValidatorConsumerCommissionRateResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryValidatorConsumerCommissionRateResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryValidatorConsumerCommissionRateResponse.Merge(m, src)
+}
+func (m *QueryValidatorConsumerCommissionRateResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryValidatorConsumerCommissionRateResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryValidatorConsumerCommissionRateResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryValidatorConsumerCommissionRateResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*QueryConsumerGenesisRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerGenesisRequest")
 	proto.RegisterType((*QueryConsumerGenesisResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerGenesisResponse")
@@ -1179,6 +1483,12 @@ func init() {
 	proto.RegisterType((*PairValConAddrProviderAndConsumer)(nil), "interchain_security.ccv.provider.v1.PairValConAddrProviderAndConsumer")
 	proto.RegisterType((*QueryParamsRequest)(nil), "interchain_security.ccv.provider.v1.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "interchain_security.ccv.provider.v1.QueryParamsResponse")
+	proto.RegisterType((*QueryConsumerChainOptedInValidatorsRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainOptedInValidatorsRequest")
+	proto.RegisterType((*QueryConsumerChainOptedInValidatorsResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainOptedInValidatorsResponse")
+	proto.RegisterType((*QueryConsumerChainsValidatorHasToValidateRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainsValidatorHasToValidateRequest")
+	proto.RegisterType((*QueryConsumerChainsValidatorHasToValidateResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainsValidatorHasToValidateResponse")
+	proto.RegisterType((*QueryValidatorConsumerCommissionRateRequest)(nil), "interchain_security.ccv.provider.v1.QueryValidatorConsumerCommissionRateRequest")
+	proto.RegisterType((*QueryValidatorConsumerCommissionRateResponse)(nil), "interchain_security.ccv.provider.v1.QueryValidatorConsumerCommissionRateResponse")
 }
 
 func init() {
@@ -1186,95 +1496,113 @@ func init() {
 }
 
 var fileDescriptor_422512d7b7586cd7 = []byte{
-	// 1403 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x58, 0x4f, 0x73, 0x14, 0xc5,
-	0x1b, 0xce, 0x24, 0x90, 0x5f, 0xd2, 0xe1, 0xdf, 0xaf, 0x89, 0x18, 0x86, 0xb8, 0x0b, 0x43, 0xa9,
-	0x01, 0x74, 0x26, 0x59, 0xb4, 0xe4, 0x8f, 0x21, 0xec, 0x26, 0x80, 0x5b, 0x81, 0x22, 0x0e, 0x88,
-	0x55, 0x6a, 0xb9, 0x74, 0x66, 0xda, 0xcd, 0x14, 0xb3, 0xd3, 0x43, 0x77, 0xef, 0xc2, 0x16, 0xe5,
-	0x01, 0x0f, 0xca, 0x91, 0x2a, 0xf5, 0xce, 0xc5, 0x2f, 0xe0, 0xa7, 0xe0, 0x06, 0x16, 0x17, 0x4f,
-	0x68, 0x05, 0x0f, 0x96, 0x27, 0xcb, 0xbb, 0x55, 0xd6, 0xf4, 0xf4, 0xcc, 0xee, 0xec, 0x4e, 0x76,
-	0x67, 0x37, 0xb9, 0x65, 0xbb, 0xfb, 0x7d, 0xde, 0xe7, 0x79, 0xbb, 0xfb, 0xed, 0x67, 0x02, 0x0c,
-	0xc7, 0xe3, 0x98, 0x5a, 0x1b, 0xc8, 0xf1, 0x2a, 0x0c, 0x5b, 0x75, 0xea, 0xf0, 0xa6, 0x61, 0x59,
-	0x0d, 0xc3, 0xa7, 0xa4, 0xe1, 0xd8, 0x98, 0x1a, 0x8d, 0x05, 0xe3, 0x6e, 0x1d, 0xd3, 0xa6, 0xee,
-	0x53, 0xc2, 0x09, 0x3c, 0x9e, 0x12, 0xa0, 0x5b, 0x56, 0x43, 0x8f, 0x02, 0xf4, 0xc6, 0x82, 0x3a,
-	0x5b, 0x25, 0xa4, 0xea, 0x62, 0x03, 0xf9, 0x8e, 0x81, 0x3c, 0x8f, 0x70, 0xc4, 0x1d, 0xe2, 0xb1,
-	0x10, 0x42, 0x9d, 0xae, 0x92, 0x2a, 0x11, 0x7f, 0x1a, 0xc1, 0x5f, 0x72, 0x34, 0x2f, 0x63, 0xc4,
-	0xaf, 0xf5, 0xfa, 0x57, 0x06, 0x77, 0x6a, 0x98, 0x71, 0x54, 0xf3, 0xe5, 0x82, 0x42, 0x16, 0xaa,
-	0x31, 0x8b, 0x30, 0x66, 0x7e, 0xab, 0x98, 0xc6, 0x82, 0xc1, 0x36, 0x10, 0xc5, 0x76, 0xc5, 0x22,
-	0x1e, 0xab, 0xd7, 0xe2, 0x88, 0x37, 0x7b, 0x44, 0xdc, 0x73, 0x28, 0x96, 0xcb, 0x66, 0x39, 0xf6,
-	0x6c, 0x4c, 0x6b, 0x8e, 0xc7, 0x0d, 0x8b, 0x36, 0x7d, 0x4e, 0x8c, 0x3b, 0xb8, 0x29, 0x15, 0x6a,
-	0x67, 0xc0, 0x91, 0x8f, 0x83, 0x9a, 0x2d, 0x4b, 0xec, 0x2b, 0xd8, 0xc3, 0xcc, 0x61, 0x26, 0xbe,
-	0x5b, 0xc7, 0x8c, 0xc3, 0xc3, 0x60, 0x22, 0x4c, 0xe0, 0xd8, 0x33, 0xca, 0x51, 0x65, 0x6e, 0xd2,
-	0xfc, 0x9f, 0xf8, 0x5d, 0xb6, 0xb5, 0x07, 0x60, 0x36, 0x3d, 0x92, 0xf9, 0xc4, 0x63, 0x18, 0x7e,
-	0x0e, 0xf6, 0x56, 0xc3, 0xa1, 0x0a, 0xe3, 0x88, 0x63, 0x11, 0x3f, 0x55, 0x98, 0xd7, 0xb7, 0xda,
-	0x96, 0xc6, 0x82, 0xde, 0x81, 0x75, 0x23, 0x88, 0x2b, 0xed, 0x7a, 0xfa, 0x32, 0x3f, 0x62, 0xee,
-	0xa9, 0xb6, 0x8d, 0x69, 0xb3, 0x40, 0x4d, 0x24, 0x5f, 0x0e, 0xe0, 0x22, 0xd6, 0x1a, 0xea, 0x10,
-	0x15, 0xcd, 0x4a, 0x66, 0x25, 0x30, 0x2e, 0xd2, 0xb3, 0x19, 0xe5, 0xe8, 0xd8, 0xdc, 0x54, 0xe1,
-	0xa4, 0x9e, 0xe1, 0xa4, 0xe8, 0x02, 0xc4, 0x94, 0x91, 0xda, 0x09, 0xf0, 0x76, 0x77, 0x8a, 0x1b,
-	0x1c, 0x51, 0xbe, 0x46, 0x89, 0x4f, 0x18, 0x72, 0x63, 0x36, 0x8f, 0x14, 0x30, 0xd7, 0x7f, 0xad,
-	0xe4, 0xf6, 0x05, 0x98, 0xf4, 0xa3, 0x41, 0x59, 0xb1, 0x0b, 0xd9, 0xe8, 0x49, 0xf0, 0xa2, 0x6d,
-	0x3b, 0xc1, 0x11, 0x6e, 0x41, 0xb7, 0x00, 0xb5, 0x39, 0xf0, 0x56, 0x1a, 0x13, 0xe2, 0x77, 0x91,
-	0xfe, 0x56, 0x49, 0x17, 0x98, 0x58, 0x1a, 0xef, 0x74, 0x17, 0xe7, 0xc5, 0x81, 0x38, 0x9b, 0xb8,
-	0x46, 0x1a, 0xc8, 0x4d, 0xa5, 0xbc, 0x04, 0x76, 0x8b, 0xd4, 0x3d, 0x8e, 0x22, 0x3c, 0x02, 0x26,
-	0x2d, 0xd7, 0xc1, 0x1e, 0x0f, 0xe6, 0x46, 0xc5, 0xdc, 0x44, 0x38, 0x50, 0xb6, 0xb5, 0xef, 0x14,
-	0x70, 0x4c, 0x28, 0xb9, 0x85, 0x5c, 0xc7, 0x46, 0x9c, 0xd0, 0xb6, 0x52, 0xd1, 0xfe, 0x07, 0x1d,
-	0x2e, 0x82, 0x03, 0x11, 0xe9, 0x0a, 0xb2, 0x6d, 0x8a, 0x19, 0x0b, 0x93, 0x94, 0xe0, 0x3f, 0x2f,
-	0xf3, 0xfb, 0x9a, 0xa8, 0xe6, 0x9e, 0xd3, 0xe4, 0x84, 0x66, 0xee, 0x8f, 0xd6, 0x16, 0xc3, 0x91,
-	0x73, 0x13, 0x8f, 0x9e, 0xe4, 0x47, 0xfe, 0x7c, 0x92, 0x1f, 0xd1, 0xae, 0x03, 0xad, 0x17, 0x11,
-	0x59, 0xcd, 0x13, 0xe0, 0x40, 0x74, 0xd1, 0xe3, 0x74, 0x21, 0xa3, 0xfd, 0x56, 0xdb, 0xfa, 0x20,
-	0x59, 0xb7, 0xb4, 0xb5, 0xb6, 0xe4, 0xd9, 0xa4, 0x75, 0xe5, 0xea, 0x21, 0xad, 0x23, 0x7f, 0x2f,
-	0x69, 0x49, 0x22, 0x2d, 0x69, 0x5d, 0x95, 0x94, 0xd2, 0x3a, 0xaa, 0xa6, 0x1d, 0x01, 0x87, 0x05,
-	0xe0, 0xcd, 0x0d, 0x4a, 0x38, 0x77, 0xb1, 0xb8, 0xf6, 0xd1, 0xe1, 0xfc, 0x45, 0x91, 0xd7, 0xbf,
-	0x63, 0x56, 0xa6, 0xc9, 0x83, 0x29, 0xe6, 0x22, 0xb6, 0x51, 0xa9, 0x61, 0x8e, 0xa9, 0xc8, 0x30,
-	0x66, 0x02, 0x31, 0x74, 0x2d, 0x18, 0x81, 0x05, 0xf0, 0x5a, 0xdb, 0x82, 0x0a, 0x72, 0x5d, 0x72,
-	0x0f, 0x79, 0x16, 0x16, 0xda, 0xc7, 0xcc, 0x83, 0xad, 0xa5, 0xc5, 0x68, 0x0a, 0x7e, 0x09, 0x66,
-	0x3c, 0x7c, 0x9f, 0x57, 0x28, 0xf6, 0x5d, 0xec, 0x39, 0x6c, 0xa3, 0x62, 0x21, 0xcf, 0x0e, 0xc4,
-	0xe2, 0x99, 0x31, 0x71, 0xe6, 0x55, 0x3d, 0x7c, 0x17, 0xf4, 0xe8, 0x5d, 0xd0, 0x6f, 0x46, 0xef,
-	0x42, 0x69, 0x22, 0xe8, 0x61, 0x8f, 0x7f, 0xcb, 0x2b, 0xe6, 0xa1, 0x00, 0xc5, 0x8c, 0x40, 0x96,
-	0x23, 0x0c, 0xed, 0x1d, 0x70, 0x52, 0x48, 0x32, 0x71, 0xd5, 0x61, 0x1c, 0x53, 0x6c, 0xb7, 0x6e,
-	0xc7, 0x3d, 0x44, 0xed, 0x15, 0xec, 0x91, 0x5a, 0x7c, 0x3d, 0x2f, 0x81, 0x53, 0x99, 0x56, 0xcb,
-	0x8a, 0x1c, 0x02, 0xe3, 0xb6, 0x18, 0x11, 0x1d, 0x6f, 0xd2, 0x94, 0xbf, 0xb4, 0x9c, 0xec, 0xe1,
-	0xe1, 0xcd, 0xc3, 0xb6, 0xb8, 0x69, 0xe5, 0x95, 0x38, 0xcd, 0x43, 0x05, 0xbc, 0xb1, 0xc5, 0x02,
-	0x89, 0x7c, 0x1b, 0xec, 0xf3, 0xdb, 0xe7, 0xa2, 0x9e, 0x5a, 0xc8, 0xd4, 0x00, 0x12, 0xb0, 0xb2,
-	0xd1, 0x77, 0xe0, 0x69, 0x65, 0xb0, 0x37, 0xb1, 0x0c, 0xce, 0x00, 0x79, 0x7e, 0x57, 0x92, 0xc7,
-	0x79, 0x05, 0xe6, 0x00, 0x88, 0x1a, 0x47, 0x79, 0x45, 0x6c, 0xe6, 0x2e, 0xb3, 0x6d, 0x44, 0xbb,
-	0x0a, 0x0c, 0xa1, 0xa6, 0xe8, 0xba, 0x6b, 0xc8, 0xa1, 0xec, 0x16, 0x72, 0x97, 0x89, 0x17, 0x1c,
-	0xb9, 0x52, 0xb2, 0xcf, 0x95, 0x57, 0x32, 0x3c, 0x80, 0x3f, 0x29, 0x60, 0x3e, 0x3b, 0x9c, 0xac,
-	0xd7, 0x5d, 0xf0, 0x7f, 0x1f, 0x39, 0xb4, 0xd2, 0x40, 0x6e, 0xf0, 0x9e, 0x8b, 0x6b, 0x20, 0x4b,
-	0x76, 0x39, 0x5b, 0xc9, 0x90, 0x43, 0x5b, 0x89, 0xe2, 0x6b, 0xe6, 0xb5, 0x0e, 0xc0, 0x3e, 0x3f,
-	0xb1, 0x44, 0xdb, 0x54, 0xc0, 0xb1, 0xbe, 0x51, 0xa9, 0x5d, 0x4e, 0xc9, 0xdc, 0xe5, 0xb6, 0xd9,
-	0x49, 0xe0, 0x12, 0xd8, 0x13, 0x87, 0xdf, 0xc1, 0x4d, 0x79, 0xa3, 0x66, 0xf5, 0x96, 0x77, 0xd1,
-	0x43, 0xef, 0xa2, 0xaf, 0xd5, 0xd7, 0x5d, 0xc7, 0x5a, 0xc5, 0x4d, 0x73, 0x2a, 0x8a, 0x58, 0xc5,
-	0x4d, 0x6d, 0x1a, 0xc0, 0xf0, 0xa0, 0x22, 0x8a, 0x5a, 0xd7, 0xe4, 0x36, 0x38, 0x98, 0x18, 0x95,
-	0x9b, 0x50, 0x06, 0xe3, 0xbe, 0x18, 0x91, 0xaf, 0xd5, 0xa9, 0x8c, 0x95, 0x0f, 0x42, 0xe4, 0x29,
-	0x95, 0x00, 0x85, 0x67, 0xd3, 0x60, 0xb7, 0x48, 0x01, 0x37, 0x15, 0x30, 0x9d, 0x66, 0x88, 0xe0,
-	0xc5, 0x4c, 0xe8, 0x3d, 0x5c, 0x98, 0x5a, 0xdc, 0x06, 0x42, 0x28, 0x59, 0xbb, 0xf4, 0xcd, 0x8b,
-	0x3f, 0xbe, 0x1f, 0x5d, 0x82, 0x8b, 0xfd, 0x6d, 0x74, 0xbc, 0x11, 0xd2, 0x71, 0x19, 0x0f, 0xa2,
-	0x1b, 0xf0, 0x35, 0x7c, 0xa1, 0xc8, 0x8a, 0x26, 0xad, 0x15, 0x5c, 0x1a, 0x9c, 0x61, 0xc2, 0xb2,
-	0xa9, 0x17, 0x87, 0x07, 0x90, 0x0a, 0xcf, 0x0a, 0x85, 0xa7, 0xe1, 0xc2, 0x00, 0x0a, 0x43, 0x33,
-	0x07, 0x1f, 0x8e, 0x82, 0x99, 0x2d, 0x1c, 0x1a, 0x83, 0x57, 0x87, 0x64, 0x96, 0x6a, 0x06, 0xd5,
-	0x6b, 0x3b, 0x84, 0x26, 0x45, 0x7f, 0x24, 0x44, 0x97, 0xe0, 0xc5, 0x41, 0x45, 0x07, 0x9e, 0x9c,
-	0xf2, 0x4a, 0xec, 0xb3, 0xe0, 0xbf, 0x0a, 0x78, 0x3d, 0xdd, 0xf0, 0x31, 0xb8, 0x3a, 0x34, 0xe9,
-	0x6e, 0x67, 0xa9, 0x5e, 0xdd, 0x19, 0x30, 0x59, 0x80, 0x2b, 0xa2, 0x00, 0x45, 0xb8, 0x34, 0x44,
-	0x01, 0x88, 0xdf, 0xa6, 0xff, 0xef, 0xc8, 0x53, 0xa4, 0xba, 0x33, 0x78, 0x39, 0x3b, 0xeb, 0x5e,
-	0x3e, 0x53, 0xbd, 0xb2, 0x6d, 0x1c, 0x29, 0xbc, 0x28, 0x84, 0x9f, 0x87, 0x67, 0x33, 0x7c, 0x17,
-	0x47, 0x40, 0x95, 0x44, 0x8b, 0x4e, 0x91, 0xdc, 0xee, 0xda, 0x86, 0x92, 0x9c, 0xe2, 0x3f, 0x87,
-	0x92, 0x9c, 0x66, 0x1f, 0x87, 0x93, 0x9c, 0x78, 0xd4, 0xe0, 0x33, 0x45, 0xbe, 0x13, 0x09, 0xe7,
-	0x08, 0x2f, 0x64, 0xa7, 0x98, 0x66, 0x48, 0xd5, 0xa5, 0xa1, 0xe3, 0xa5, 0xb4, 0x33, 0x42, 0x5a,
-	0x01, 0xce, 0xf7, 0x97, 0xc6, 0x25, 0x40, 0xf8, 0x55, 0x0d, 0x7f, 0x1c, 0x05, 0xc7, 0x33, 0x58,
-	0x41, 0x78, 0x3d, 0x3b, 0xc5, 0x4c, 0x16, 0x54, 0x5d, 0xdb, 0x39, 0x40, 0x59, 0x84, 0x55, 0x51,
-	0x84, 0x4b, 0x70, 0xb9, 0x7f, 0x11, 0x68, 0x8c, 0xd8, 0x3a, 0xd3, 0x54, 0x60, 0x56, 0x42, 0x6b,
-	0x0b, 0xff, 0xea, 0xb2, 0xae, 0x49, 0x47, 0xc6, 0xe0, 0x00, 0xaf, 0xea, 0x16, 0xfe, 0x58, 0x2d,
-	0x6d, 0x07, 0x42, 0xaa, 0x2e, 0x09, 0xd5, 0x1f, 0xc2, 0x73, 0xfd, 0x55, 0x47, 0xce, 0xb8, 0xd2,
-	0xf9, 0x80, 0xfd, 0x30, 0x2a, 0xff, 0xc5, 0x90, 0xc1, 0x8a, 0xc2, 0x9b, 0xd9, 0x49, 0x67, 0x37,
-	0xca, 0xea, 0x27, 0x3b, 0x8c, 0x2a, 0xab, 0x73, 0x5e, 0x54, 0xe7, 0x7d, 0x78, 0x7a, 0xe0, 0xfe,
-	0xee, 0xd8, 0xf0, 0x67, 0x05, 0x4c, 0xb5, 0xf9, 0x3f, 0xf8, 0xc1, 0x00, 0xdb, 0xd5, 0xee, 0x23,
-	0xd5, 0x33, 0x83, 0x07, 0x4a, 0xfe, 0xf3, 0x82, 0xff, 0x49, 0x38, 0x97, 0x61, 0x77, 0x43, 0x7f,
-	0xf9, 0xe9, 0xd3, 0xcd, 0x9c, 0xf2, 0x7c, 0x33, 0xa7, 0xfc, 0xbe, 0x99, 0x53, 0x1e, 0xbf, 0xca,
-	0x8d, 0x3c, 0x7f, 0x95, 0x1b, 0xf9, 0xf5, 0x55, 0x6e, 0xe4, 0xb3, 0xc5, 0xaa, 0xc3, 0x37, 0xea,
-	0xeb, 0xba, 0x45, 0x6a, 0x86, 0x45, 0x58, 0x8d, 0xb0, 0x36, 0xd0, 0x77, 0x63, 0xd0, 0xc6, 0x7b,
-	0xc6, 0xfd, 0x8e, 0x96, 0xd1, 0xf4, 0x31, 0x5b, 0x1f, 0x17, 0xdf, 0xa5, 0xa7, 0xff, 0x0b, 0x00,
-	0x00, 0xff, 0xff, 0x67, 0x8a, 0xee, 0xb2, 0x49, 0x15, 0x00, 0x00,
+	// 1688 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0x5d, 0x6f, 0xd4, 0x46,
+	0x17, 0x8e, 0x93, 0x90, 0x37, 0x99, 0xf0, 0xf5, 0x0e, 0xbc, 0xbc, 0xc1, 0x09, 0xbb, 0x60, 0x5a,
+	0x1a, 0xbe, 0xec, 0x64, 0x29, 0xe2, 0x33, 0x84, 0x6c, 0x16, 0xc2, 0x2a, 0x7c, 0x2c, 0x26, 0x50,
+	0xa9, 0xad, 0x6a, 0x1c, 0x7b, 0xba, 0xb1, 0xf0, 0x7a, 0x1c, 0x8f, 0xb3, 0xb0, 0x42, 0x95, 0x4a,
+	0x2f, 0x0a, 0x77, 0xa5, 0x6a, 0x7b, 0x8f, 0x54, 0xf5, 0x0f, 0x54, 0xfd, 0x11, 0xdc, 0x95, 0x96,
+	0x9b, 0xaa, 0x17, 0xb4, 0x0a, 0xbd, 0xa8, 0x7a, 0x55, 0xf5, 0xbe, 0x52, 0xe5, 0xf1, 0xd8, 0x5e,
+	0xef, 0x3a, 0xbb, 0xde, 0xdd, 0xf4, 0x2a, 0xf1, 0xcc, 0x9c, 0xe7, 0x9c, 0xe7, 0xcc, 0x99, 0x33,
+	0xf3, 0x2c, 0x90, 0x0c, 0xcb, 0x45, 0x8e, 0xb6, 0xa2, 0x1a, 0x96, 0x42, 0x90, 0xb6, 0xe6, 0x18,
+	0x6e, 0x4d, 0xd2, 0xb4, 0xaa, 0x64, 0x3b, 0xb8, 0x6a, 0xe8, 0xc8, 0x91, 0xaa, 0xd3, 0xd2, 0xea,
+	0x1a, 0x72, 0x6a, 0xa2, 0xed, 0x60, 0x17, 0xc3, 0x83, 0x09, 0x06, 0xa2, 0xa6, 0x55, 0xc5, 0xc0,
+	0x40, 0xac, 0x4e, 0xf3, 0x13, 0x65, 0x8c, 0xcb, 0x26, 0x92, 0x54, 0xdb, 0x90, 0x54, 0xcb, 0xc2,
+	0xae, 0xea, 0x1a, 0xd8, 0x22, 0x3e, 0x04, 0xbf, 0xbb, 0x8c, 0xcb, 0x98, 0xfe, 0x2b, 0x79, 0xff,
+	0xb1, 0xd1, 0x2c, 0xb3, 0xa1, 0x5f, 0xcb, 0x6b, 0x1f, 0x4a, 0xae, 0x51, 0x41, 0xc4, 0x55, 0x2b,
+	0x36, 0x5b, 0x90, 0x4b, 0x13, 0x6a, 0x18, 0x85, 0x6f, 0x33, 0xb5, 0x91, 0x4d, 0x75, 0x5a, 0x22,
+	0x2b, 0xaa, 0x83, 0x74, 0x45, 0xc3, 0x16, 0x59, 0xab, 0x84, 0x16, 0x6f, 0xb6, 0xb0, 0xb8, 0x6f,
+	0x38, 0x88, 0x2d, 0x9b, 0x70, 0x91, 0xa5, 0x23, 0xa7, 0x62, 0x58, 0xae, 0xa4, 0x39, 0x35, 0xdb,
+	0xc5, 0xd2, 0x3d, 0x54, 0x0b, 0x18, 0xee, 0xd5, 0x30, 0xa9, 0x60, 0xa2, 0xf8, 0x24, 0xfd, 0x0f,
+	0x7f, 0x4a, 0x38, 0x0d, 0xc6, 0x6f, 0x7a, 0xe9, 0x9c, 0x67, 0x6e, 0x17, 0x90, 0x85, 0x88, 0x41,
+	0x64, 0xb4, 0xba, 0x86, 0x88, 0x0b, 0xf7, 0x82, 0x61, 0xdf, 0xb7, 0xa1, 0x8f, 0x71, 0xfb, 0xb9,
+	0xc9, 0x11, 0xf9, 0x3f, 0xf4, 0xbb, 0xa8, 0x0b, 0x0f, 0xc1, 0x44, 0xb2, 0x25, 0xb1, 0xb1, 0x45,
+	0x10, 0x7c, 0x0f, 0x6c, 0x2b, 0xfb, 0x43, 0x0a, 0x71, 0x55, 0x17, 0x51, 0xfb, 0xd1, 0xdc, 0x94,
+	0xb8, 0xd1, 0x8e, 0x55, 0xa7, 0xc5, 0x06, 0xac, 0x5b, 0x9e, 0x5d, 0x7e, 0xf0, 0xf9, 0xab, 0x6c,
+	0x9f, 0xbc, 0xb5, 0x5c, 0x37, 0x26, 0x4c, 0x00, 0x3e, 0xe6, 0x7c, 0xde, 0x83, 0x0b, 0xa2, 0x16,
+	0xd4, 0x06, 0x52, 0xc1, 0x2c, 0x8b, 0x2c, 0x0f, 0x86, 0xa8, 0x7b, 0x32, 0xc6, 0xed, 0x1f, 0x98,
+	0x1c, 0xcd, 0x1d, 0x11, 0x53, 0x14, 0x91, 0x48, 0x41, 0x64, 0x66, 0x29, 0x1c, 0x06, 0x6f, 0x35,
+	0xbb, 0xb8, 0xe5, 0xaa, 0x8e, 0x5b, 0x72, 0xb0, 0x8d, 0x89, 0x6a, 0x86, 0xd1, 0x3c, 0xe1, 0xc0,
+	0x64, 0xfb, 0xb5, 0x2c, 0xb6, 0xf7, 0xc1, 0x88, 0x1d, 0x0c, 0xb2, 0x8c, 0x5d, 0x48, 0x17, 0x1e,
+	0x03, 0x9f, 0xd3, 0x75, 0xc3, 0xab, 0xee, 0x08, 0x3a, 0x02, 0x14, 0x26, 0xc1, 0xa1, 0xa4, 0x48,
+	0xb0, 0xdd, 0x14, 0xf4, 0xa7, 0x5c, 0x32, 0xc1, 0xd8, 0xd2, 0x70, 0xa7, 0x9b, 0x62, 0x9e, 0xe9,
+	0x28, 0x66, 0x19, 0x55, 0x70, 0x55, 0x35, 0x13, 0x43, 0x5e, 0x02, 0x5b, 0xa8, 0xeb, 0x16, 0xa5,
+	0x08, 0xc7, 0xc1, 0x88, 0x66, 0x1a, 0xc8, 0x72, 0xbd, 0xb9, 0x7e, 0x3a, 0x37, 0xec, 0x0f, 0x14,
+	0x75, 0xb8, 0x0b, 0x6c, 0x71, 0xb1, 0xad, 0x5c, 0x1f, 0x1b, 0xd8, 0xcf, 0x4d, 0x6e, 0x93, 0x07,
+	0x5d, 0x6c, 0x5f, 0x17, 0x1e, 0x73, 0xe0, 0x00, 0xa5, 0x77, 0x47, 0x35, 0x0d, 0x5d, 0x75, 0xb1,
+	0x53, 0x97, 0x3f, 0xa7, 0x7d, 0xf5, 0xc3, 0x19, 0xb0, 0x33, 0x60, 0xa2, 0xa8, 0xba, 0xee, 0x20,
+	0x42, 0x7c, 0xcf, 0x79, 0xf8, 0xd7, 0xab, 0xec, 0xf6, 0x9a, 0x5a, 0x31, 0xcf, 0x0a, 0x6c, 0x42,
+	0x90, 0x77, 0x04, 0x6b, 0xe7, 0xfc, 0x91, 0xb3, 0xc3, 0x4f, 0x9e, 0x65, 0xfb, 0x7e, 0x7f, 0x96,
+	0xed, 0x13, 0x6e, 0x00, 0xa1, 0x55, 0x20, 0x2c, 0xc5, 0x87, 0xc1, 0xce, 0xa0, 0x31, 0x84, 0xee,
+	0xfc, 0x88, 0x76, 0x68, 0x75, 0xeb, 0x3d, 0x67, 0xcd, 0xd4, 0x4a, 0x75, 0xce, 0xd3, 0x51, 0x6b,
+	0xf2, 0xd5, 0x82, 0x5a, 0x83, 0xff, 0x56, 0xd4, 0xe2, 0x81, 0x44, 0xd4, 0x9a, 0x32, 0xc9, 0xa8,
+	0x35, 0x64, 0x4d, 0x18, 0x07, 0x7b, 0x29, 0xe0, 0xd2, 0x8a, 0x83, 0x5d, 0xd7, 0x44, 0xb4, 0x17,
+	0x04, 0x15, 0xfb, 0x03, 0xc7, 0x7a, 0x42, 0xc3, 0x2c, 0x73, 0x93, 0x05, 0xa3, 0xc4, 0x54, 0xc9,
+	0x8a, 0x52, 0x41, 0x2e, 0x72, 0xa8, 0x87, 0x01, 0x19, 0xd0, 0xa1, 0x6b, 0xde, 0x08, 0xcc, 0x81,
+	0xff, 0xd5, 0x2d, 0x50, 0x54, 0xd3, 0xc4, 0xf7, 0x55, 0x4b, 0x43, 0x94, 0xfb, 0x80, 0xbc, 0x2b,
+	0x5a, 0x3a, 0x17, 0x4c, 0xc1, 0x0f, 0xc0, 0x98, 0x85, 0x1e, 0xb8, 0x8a, 0x83, 0x6c, 0x13, 0x59,
+	0x06, 0x59, 0x51, 0x34, 0xd5, 0xd2, 0x3d, 0xb2, 0x88, 0x96, 0xdb, 0x68, 0x8e, 0x17, 0xfd, 0x7b,
+	0x44, 0x0c, 0xee, 0x11, 0x71, 0x29, 0xb8, 0x47, 0xf2, 0xc3, 0x5e, 0x63, 0x7b, 0xfa, 0x4b, 0x96,
+	0x93, 0xf7, 0x78, 0x28, 0x72, 0x00, 0x32, 0x1f, 0x60, 0x08, 0xc7, 0xc0, 0x11, 0x4a, 0x49, 0x46,
+	0x65, 0x83, 0xb8, 0xc8, 0x41, 0x7a, 0x74, 0x64, 0xee, 0xab, 0x8e, 0x5e, 0x40, 0x16, 0xae, 0x84,
+	0x67, 0xf6, 0x12, 0x38, 0x9a, 0x6a, 0x35, 0xcb, 0xc8, 0x1e, 0x30, 0xa4, 0xd3, 0x11, 0xda, 0x06,
+	0x47, 0x64, 0xf6, 0x25, 0x64, 0x58, 0x63, 0xf7, 0x8f, 0x23, 0xd2, 0xe9, 0xf1, 0x2b, 0x16, 0x42,
+	0x37, 0x8f, 0x38, 0xb0, 0x6f, 0x83, 0x05, 0x0c, 0xf9, 0x2e, 0xd8, 0x6e, 0xd7, 0xcf, 0x05, 0x8d,
+	0x36, 0x97, 0xaa, 0x2b, 0xc4, 0x60, 0x59, 0xf7, 0x6f, 0xc0, 0x13, 0x8a, 0x60, 0x5b, 0x6c, 0x19,
+	0x1c, 0x03, 0xac, 0x7e, 0x0b, 0xf1, 0x72, 0x2e, 0xc0, 0x0c, 0x00, 0x41, 0x37, 0x29, 0x16, 0xe8,
+	0x66, 0x0e, 0xca, 0x75, 0x23, 0xc2, 0x55, 0x20, 0x51, 0x36, 0x73, 0xa6, 0x59, 0x52, 0x0d, 0x87,
+	0xdc, 0x51, 0xcd, 0x79, 0x6c, 0x79, 0x25, 0x97, 0x8f, 0x37, 0xbf, 0x62, 0x21, 0xc5, 0xad, 0xf8,
+	0x0d, 0x07, 0xa6, 0xd2, 0xc3, 0xb1, 0x7c, 0xad, 0x82, 0xff, 0xda, 0xaa, 0xe1, 0x28, 0x55, 0xd5,
+	0xf4, 0xee, 0x7f, 0x7a, 0x0c, 0x58, 0xca, 0x2e, 0xa7, 0x4b, 0x99, 0x6a, 0x38, 0x91, 0xa3, 0xf0,
+	0x98, 0x59, 0x51, 0x01, 0x6c, 0xb7, 0x63, 0x4b, 0x84, 0x75, 0x0e, 0x1c, 0x68, 0x6b, 0x95, 0xd8,
+	0xe5, 0xb8, 0xd4, 0x5d, 0xae, 0xc7, 0x4e, 0x02, 0x67, 0xc1, 0xd6, 0xd0, 0xfc, 0x1e, 0xaa, 0xb1,
+	0x13, 0x35, 0x21, 0x46, 0x6f, 0x1d, 0xd1, 0x7f, 0xeb, 0x88, 0xa5, 0xb5, 0x65, 0xd3, 0xd0, 0x16,
+	0x51, 0x4d, 0x1e, 0x0d, 0x2c, 0x16, 0x51, 0x4d, 0xd8, 0x0d, 0xa0, 0x5f, 0xa8, 0xaa, 0xa3, 0x46,
+	0xc7, 0xe4, 0x2e, 0xd8, 0x15, 0x1b, 0x65, 0x9b, 0x50, 0x04, 0x43, 0x36, 0x1d, 0x61, 0x57, 0xd8,
+	0xd1, 0x94, 0x99, 0xf7, 0x4c, 0x58, 0x95, 0x32, 0x00, 0x61, 0x81, 0x1d, 0xdb, 0xd8, 0x7e, 0xdf,
+	0xb0, 0x5d, 0xa4, 0x17, 0xad, 0xb0, 0x19, 0xa6, 0x79, 0x63, 0xad, 0xb2, 0x13, 0xdd, 0x0e, 0x28,
+	0x7c, 0xd8, 0xec, 0xab, 0x86, 0xa3, 0x4a, 0xe3, 0xce, 0xa1, 0xe0, 0xa0, 0x8f, 0x47, 0x8b, 0x4a,
+	0xf1, 0x1d, 0x43, 0x44, 0x58, 0x65, 0xf5, 0x1b, 0x7f, 0x3b, 0x85, 0xce, 0xae, 0xa8, 0x64, 0x09,
+	0xb3, 0xaf, 0xa0, 0xf5, 0xf6, 0x58, 0x26, 0x82, 0x0a, 0xa6, 0x3b, 0x70, 0xc9, 0xb8, 0x1e, 0x03,
+	0x30, 0x2c, 0x8e, 0x20, 0x7d, 0x01, 0xc1, 0xb0, 0xea, 0xfc, 0x83, 0xa6, 0xd3, 0x4b, 0xf1, 0x68,
+	0xf2, 0x35, 0x3b, 0x8f, 0x2b, 0x15, 0x83, 0x10, 0x03, 0x5b, 0x72, 0x1d, 0xa3, 0x7f, 0xed, 0xe6,
+	0x17, 0x3e, 0xe6, 0xc0, 0xb1, 0x74, 0x91, 0x30, 0xa2, 0x25, 0x30, 0xe8, 0x04, 0xcf, 0xe7, 0x91,
+	0xfc, 0x79, 0xaf, 0xd0, 0x7e, 0x7e, 0x95, 0x3d, 0x54, 0x36, 0xdc, 0x95, 0xb5, 0x65, 0x51, 0xc3,
+	0x15, 0xf6, 0xa0, 0x67, 0x7f, 0x8e, 0x13, 0xfd, 0x9e, 0xe4, 0xd6, 0x6c, 0x44, 0xc4, 0x02, 0xd2,
+	0x7e, 0xfc, 0xee, 0x38, 0x60, 0xef, 0xfd, 0x02, 0xd2, 0x64, 0x8a, 0x94, 0xfb, 0x7c, 0x1c, 0x6c,
+	0xa1, 0x21, 0xc0, 0x75, 0x0e, 0xec, 0x4e, 0x7a, 0xc4, 0xc3, 0x8b, 0xa9, 0x8a, 0xbf, 0x85, 0x72,
+	0xe0, 0xe7, 0x7a, 0x40, 0xf0, 0x99, 0x0b, 0x97, 0x3e, 0x79, 0xf9, 0xdb, 0x17, 0xfd, 0xb3, 0x70,
+	0xa6, 0xbd, 0x2a, 0x0c, 0x4b, 0x81, 0xa9, 0x04, 0xe9, 0x61, 0xb0, 0x7d, 0x1f, 0xc1, 0x97, 0x1c,
+	0x3b, 0xf0, 0xf1, 0xfa, 0x82, 0xb3, 0x9d, 0x47, 0x18, 0x93, 0x19, 0xfc, 0xc5, 0xee, 0x01, 0x18,
+	0xc3, 0x33, 0x94, 0xe1, 0x09, 0x38, 0xdd, 0x01, 0x43, 0x5f, 0x80, 0xc0, 0x47, 0xfd, 0x60, 0x6c,
+	0x03, 0x55, 0x41, 0xe0, 0xd5, 0x2e, 0x23, 0x4b, 0x14, 0x30, 0xfc, 0xb5, 0x4d, 0x42, 0x63, 0xa4,
+	0xaf, 0x50, 0xd2, 0x79, 0x78, 0xb1, 0x53, 0xd2, 0x9e, 0x8e, 0x74, 0x5c, 0x25, 0xd4, 0x06, 0xf0,
+	0x6f, 0x0e, 0xfc, 0x3f, 0x59, 0xa4, 0x10, 0xb8, 0xd8, 0x75, 0xd0, 0xcd, 0x6a, 0x88, 0xbf, 0xba,
+	0x39, 0x60, 0x2c, 0x01, 0x0b, 0x34, 0x01, 0x73, 0x70, 0xb6, 0x8b, 0x04, 0x60, 0xbb, 0x8e, 0xff,
+	0x9f, 0xc1, 0x93, 0x37, 0x51, 0x3c, 0xc0, 0xcb, 0xe9, 0xa3, 0x6e, 0x25, 0x83, 0xf8, 0x85, 0x9e,
+	0x71, 0x18, 0xf1, 0x39, 0x4a, 0xfc, 0x1c, 0x3c, 0x93, 0xe2, 0x67, 0x9e, 0x00, 0x48, 0x89, 0xbd,
+	0x20, 0x12, 0x28, 0xd7, 0x5f, 0x61, 0x5d, 0x51, 0x4e, 0x90, 0x47, 0x5d, 0x51, 0x4e, 0x52, 0x37,
+	0xdd, 0x51, 0x8e, 0xdd, 0x2f, 0xf0, 0x7b, 0x8e, 0x3d, 0x63, 0x62, 0xc2, 0x06, 0x5e, 0x48, 0x1f,
+	0x62, 0x92, 0x5e, 0xe2, 0x67, 0xbb, 0xb6, 0x67, 0xd4, 0x4e, 0x53, 0x6a, 0x39, 0x38, 0xd5, 0x9e,
+	0x9a, 0xcb, 0x00, 0xfc, 0x5f, 0x82, 0xe0, 0x57, 0xfd, 0xe0, 0x60, 0x0a, 0xa5, 0x02, 0x6f, 0xa4,
+	0x0f, 0x31, 0x95, 0x42, 0xe2, 0x4b, 0x9b, 0x07, 0xc8, 0x92, 0xb0, 0x48, 0x93, 0x70, 0x09, 0xce,
+	0xb7, 0x4f, 0x82, 0x13, 0x22, 0x46, 0x35, 0xed, 0x50, 0x4c, 0xc5, 0x57, 0x5e, 0xf0, 0x8f, 0x26,
+	0x65, 0x15, 0x17, 0x0c, 0x04, 0x76, 0x70, 0xab, 0x6e, 0x20, 0xdf, 0xf8, 0x7c, 0x2f, 0x10, 0x8c,
+	0x75, 0x9e, 0xb2, 0x3e, 0x0f, 0xcf, 0xb6, 0x67, 0x1d, 0x08, 0x37, 0xa5, 0xf1, 0x02, 0xfb, 0xb2,
+	0x9f, 0xfd, 0x2c, 0x96, 0x42, 0x29, 0xc1, 0xa5, 0xf4, 0x41, 0xa7, 0xd7, 0x71, 0xfc, 0xed, 0x4d,
+	0x46, 0x65, 0xd9, 0x39, 0x47, 0xb3, 0x73, 0x12, 0x9e, 0xe8, 0xb8, 0xbf, 0x1b, 0x3a, 0xfc, 0x96,
+	0x03, 0xa3, 0x75, 0xf2, 0x04, 0x9e, 0xea, 0x60, 0xbb, 0xea, 0x65, 0x0e, 0x7f, 0xba, 0x73, 0x43,
+	0x16, 0xff, 0x14, 0x8d, 0xff, 0x08, 0x9c, 0x4c, 0xb1, 0xbb, 0x7e, 0x90, 0x8f, 0x83, 0x03, 0xdd,
+	0x5a, 0xa8, 0x74, 0x72, 0xa0, 0x53, 0x69, 0xa7, 0x4e, 0x0e, 0x74, 0x3a, 0x0d, 0x25, 0xcc, 0x50,
+	0xf2, 0xa7, 0xe0, 0xc9, 0xf6, 0xe4, 0xb1, 0x07, 0xa2, 0x18, 0x96, 0x12, 0xe9, 0x29, 0xf8, 0x75,
+	0x3f, 0x38, 0x9c, 0x5a, 0xcc, 0xc0, 0xdb, 0xdd, 0xbe, 0x20, 0x5b, 0xea, 0x31, 0xfe, 0xce, 0x66,
+	0xc3, 0xf6, 0xfa, 0x70, 0x21, 0x8a, 0x8d, 0x9c, 0x28, 0x4d, 0xf0, 0xb3, 0x7e, 0xf0, 0x46, 0x1a,
+	0x11, 0x04, 0x4b, 0x3d, 0x3c, 0x3d, 0x12, 0x95, 0x1d, 0x7f, 0x73, 0x13, 0x11, 0x3b, 0xef, 0x86,
+	0x51, 0x5a, 0x42, 0x28, 0xc5, 0xd3, 0x64, 0xf9, 0x77, 0x9e, 0xaf, 0x67, 0xb8, 0x17, 0xeb, 0x19,
+	0xee, 0xd7, 0xf5, 0x0c, 0xf7, 0xf4, 0x75, 0xa6, 0xef, 0xc5, 0xeb, 0x4c, 0xdf, 0x4f, 0xaf, 0x33,
+	0x7d, 0xef, 0xce, 0x34, 0x2b, 0xbd, 0xc8, 0xcd, 0xf1, 0xd0, 0x4d, 0xf5, 0x6d, 0xe9, 0x41, 0xc3,
+	0xa5, 0xeb, 0x89, 0xc0, 0xe5, 0x21, 0xfa, 0xc3, 0xe3, 0x89, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff,
+	0xc8, 0x14, 0xa5, 0x41, 0x5a, 0x1b, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1319,6 +1647,15 @@ type QueryClient interface {
 	QueryAllPairsValConAddrByConsumerChainID(ctx context.Context, in *QueryAllPairsValConAddrByConsumerChainIDRequest, opts ...grpc.CallOption) (*QueryAllPairsValConAddrByConsumerChainIDResponse, error)
 	// QueryParams returns all current values of provider parameters
 	QueryParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// QueryConsumerChainOptedInValidators returns a list of validators consensus address
+	// that opted-in to the given consumer chain
+	QueryConsumerChainOptedInValidators(ctx context.Context, in *QueryConsumerChainOptedInValidatorsRequest, opts ...grpc.CallOption) (*QueryConsumerChainOptedInValidatorsResponse, error)
+	// QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
+	// that a given validator must validate
+	QueryConsumerChainsValidatorHasToValidate(ctx context.Context, in *QueryConsumerChainsValidatorHasToValidateRequest, opts ...grpc.CallOption) (*QueryConsumerChainsValidatorHasToValidateResponse, error)
+	// QueryValidatorConsumerCommissionRate returns the commission rate a given
+	// validator charges on a given consumer chain
+	QueryValidatorConsumerCommissionRate(ctx context.Context, in *QueryValidatorConsumerCommissionRateRequest, opts ...grpc.CallOption) (*QueryValidatorConsumerCommissionRateResponse, error)
 }
 
 type queryClient struct {
@@ -1428,6 +1765,33 @@ func (c *queryClient) QueryParams(ctx context.Context, in *QueryParamsRequest, o
 	return out, nil
 }
 
+func (c *queryClient) QueryConsumerChainOptedInValidators(ctx context.Context, in *QueryConsumerChainOptedInValidatorsRequest, opts ...grpc.CallOption) (*QueryConsumerChainOptedInValidatorsResponse, error) {
+	out := new(QueryConsumerChainOptedInValidatorsResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerChainOptedInValidators", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) QueryConsumerChainsValidatorHasToValidate(ctx context.Context, in *QueryConsumerChainsValidatorHasToValidateRequest, opts ...grpc.CallOption) (*QueryConsumerChainsValidatorHasToValidateResponse, error) {
+	out := new(QueryConsumerChainsValidatorHasToValidateResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerChainsValidatorHasToValidate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) QueryValidatorConsumerCommissionRate(ctx context.Context, in *QueryValidatorConsumerCommissionRateRequest, opts ...grpc.CallOption) (*QueryValidatorConsumerCommissionRateResponse, error) {
+	out := new(QueryValidatorConsumerCommissionRateResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerCommissionRate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -1460,6 +1824,15 @@ type QueryServer interface {
 	QueryAllPairsValConAddrByConsumerChainID(context.Context, *QueryAllPairsValConAddrByConsumerChainIDRequest) (*QueryAllPairsValConAddrByConsumerChainIDResponse, error)
 	// QueryParams returns all current values of provider parameters
 	QueryParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// QueryConsumerChainOptedInValidators returns a list of validators consensus address
+	// that opted-in to the given consumer chain
+	QueryConsumerChainOptedInValidators(context.Context, *QueryConsumerChainOptedInValidatorsRequest) (*QueryConsumerChainOptedInValidatorsResponse, error)
+	// QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
+	// that a given validator must validate
+	QueryConsumerChainsValidatorHasToValidate(context.Context, *QueryConsumerChainsValidatorHasToValidateRequest) (*QueryConsumerChainsValidatorHasToValidateResponse, error)
+	// QueryValidatorConsumerCommissionRate returns the commission rate a given
+	// validator charges on a given consumer chain
+	QueryValidatorConsumerCommissionRate(context.Context, *QueryValidatorConsumerCommissionRateRequest) (*QueryValidatorConsumerCommissionRateResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -1498,6 +1871,15 @@ func (*UnimplementedQueryServer) QueryAllPairsValConAddrByConsumerChainID(ctx co
 }
 func (*UnimplementedQueryServer) QueryParams(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryParams not implemented")
+}
+func (*UnimplementedQueryServer) QueryConsumerChainOptedInValidators(ctx context.Context, req *QueryConsumerChainOptedInValidatorsRequest) (*QueryConsumerChainOptedInValidatorsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryConsumerChainOptedInValidators not implemented")
+}
+func (*UnimplementedQueryServer) QueryConsumerChainsValidatorHasToValidate(ctx context.Context, req *QueryConsumerChainsValidatorHasToValidateRequest) (*QueryConsumerChainsValidatorHasToValidateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryConsumerChainsValidatorHasToValidate not implemented")
+}
+func (*UnimplementedQueryServer) QueryValidatorConsumerCommissionRate(ctx context.Context, req *QueryValidatorConsumerCommissionRateRequest) (*QueryValidatorConsumerCommissionRateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryValidatorConsumerCommissionRate not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -1702,6 +2084,60 @@ func _Query_QueryParams_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_QueryConsumerChainOptedInValidators_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryConsumerChainOptedInValidatorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryConsumerChainOptedInValidators(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryConsumerChainOptedInValidators",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryConsumerChainOptedInValidators(ctx, req.(*QueryConsumerChainOptedInValidatorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_QueryConsumerChainsValidatorHasToValidate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryConsumerChainsValidatorHasToValidateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryConsumerChainsValidatorHasToValidate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryConsumerChainsValidatorHasToValidate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryConsumerChainsValidatorHasToValidate(ctx, req.(*QueryConsumerChainsValidatorHasToValidateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_QueryValidatorConsumerCommissionRate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryValidatorConsumerCommissionRateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryValidatorConsumerCommissionRate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerCommissionRate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryValidatorConsumerCommissionRate(ctx, req.(*QueryValidatorConsumerCommissionRateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "interchain_security.ccv.provider.v1.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -1749,6 +2185,18 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryParams",
 			Handler:    _Query_QueryParams_Handler,
+		},
+		{
+			MethodName: "QueryConsumerChainOptedInValidators",
+			Handler:    _Query_QueryConsumerChainOptedInValidators_Handler,
+		},
+		{
+			MethodName: "QueryConsumerChainsValidatorHasToValidate",
+			Handler:    _Query_QueryConsumerChainsValidatorHasToValidate_Handler,
+		},
+		{
+			MethodName: "QueryValidatorConsumerCommissionRate",
+			Handler:    _Query_QueryValidatorConsumerCommissionRate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -2014,6 +2462,11 @@ func (m *Chain) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Top_N != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Top_N))
+		i--
+		dAtA[i] = 0x18
+	}
 	if len(m.ClientId) > 0 {
 		i -= len(m.ClientId)
 		copy(dAtA[i:], m.ClientId)
@@ -2551,6 +3004,200 @@ func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryConsumerChainOptedInValidatorsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryConsumerChainOptedInValidatorsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryConsumerChainOptedInValidatorsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryConsumerChainOptedInValidatorsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryConsumerChainOptedInValidatorsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryConsumerChainOptedInValidatorsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ValidatorsProviderAddresses) > 0 {
+		for iNdEx := len(m.ValidatorsProviderAddresses) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ValidatorsProviderAddresses[iNdEx])
+			copy(dAtA[i:], m.ValidatorsProviderAddresses[iNdEx])
+			i = encodeVarintQuery(dAtA, i, uint64(len(m.ValidatorsProviderAddresses[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ProviderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ConsumerChainIds) > 0 {
+		for iNdEx := len(m.ConsumerChainIds) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ConsumerChainIds[iNdEx])
+			copy(dAtA[i:], m.ConsumerChainIds[iNdEx])
+			i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerChainIds[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryValidatorConsumerCommissionRateRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryValidatorConsumerCommissionRateRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryValidatorConsumerCommissionRateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ProviderAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryValidatorConsumerCommissionRateResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryValidatorConsumerCommissionRateResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryValidatorConsumerCommissionRateResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size := m.Rate.Size()
+		i -= size
+		if _, err := m.Rate.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -2667,6 +3314,9 @@ func (m *Chain) Size() (n int) {
 	l = len(m.ClientId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Top_N != 0 {
+		n += 1 + sovQuery(uint64(m.Top_N))
 	}
 	return n
 }
@@ -2886,6 +3536,90 @@ func (m *QueryParamsResponse) Size() (n int) {
 	var l int
 	_ = l
 	l = m.Params.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryConsumerChainOptedInValidatorsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryConsumerChainOptedInValidatorsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.ValidatorsProviderAddresses) > 0 {
+		for _, s := range m.ValidatorsProviderAddresses {
+			l = len(s)
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ProviderAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.ConsumerChainIds) > 0 {
+		for _, s := range m.ConsumerChainIds {
+			l = len(s)
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryValidatorConsumerCommissionRateRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.ProviderAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryValidatorConsumerCommissionRateResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Rate.Size()
 	n += 1 + l + sovQuery(uint64(l))
 	return n
 }
@@ -3560,6 +4294,25 @@ func (m *Chain) Unmarshal(dAtA []byte) error {
 			}
 			m.ClientId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Top_N", wireType)
+			}
+			m.Top_N = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Top_N |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -4936,6 +5689,532 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryConsumerChainOptedInValidatorsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryConsumerChainOptedInValidatorsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryConsumerChainOptedInValidatorsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryConsumerChainOptedInValidatorsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryConsumerChainOptedInValidatorsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryConsumerChainOptedInValidatorsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorsProviderAddresses", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorsProviderAddresses = append(m.ValidatorsProviderAddresses, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryConsumerChainsValidatorHasToValidateRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryConsumerChainsValidatorHasToValidateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryConsumerChainsValidatorHasToValidateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryConsumerChainsValidatorHasToValidateResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryConsumerChainsValidatorHasToValidateResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerChainIds", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerChainIds = append(m.ConsumerChainIds, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryValidatorConsumerCommissionRateRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryValidatorConsumerCommissionRateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryValidatorConsumerCommissionRateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryValidatorConsumerCommissionRateResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryValidatorConsumerCommissionRateResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryValidatorConsumerCommissionRateResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rate", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Rate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
