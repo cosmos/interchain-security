@@ -430,13 +430,13 @@ TEST RESULTS
 		}
 	}
 	if len(passedTests) > 0 {
-		report += fmt.Sprintln("\n\nPASSED TESTS:\n")
+		report += fmt.Sprintln("\n\nPASSED TESTS:")
 		for _, t := range passedTests {
 			report += t.Report()
 		}
 	}
 	if len(remainingTests) > 0 {
-		report += fmt.Sprintln("\n\nREMAINING TESTS:\n")
+		report += fmt.Sprintln("\n\nREMAINING TESTS:")
 		for _, t := range remainingTests {
 			report += t.Report()
 		}
