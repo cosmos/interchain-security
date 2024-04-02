@@ -240,7 +240,7 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerChainID))
 	}
 
-	for _, v := range k.GetAllOptedIn(ctx, ctx.ChainID()) {
+	for _, v := range k.GetAllOptedIn(ctx, consumerChainID) {
 		optedInVals = append(optedInVals, v.ToSdkConsAddr().String())
 	}
 
