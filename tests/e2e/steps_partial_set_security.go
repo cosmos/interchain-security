@@ -157,7 +157,7 @@ func stepsOptInChain() []Step {
 				Chain:     ChainID("consu"),
 				Validator: ValidatorID("carol"),
 				// reconfigure the node -> validator was using provider key
-				// until this point -> key matches config.consumerValPubKey for "bob"
+				// until this point -> key matches config.consumerValPubKey for "carol"
 				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
 				ReconfigureNode: true,
 			},
