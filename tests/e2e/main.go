@@ -253,7 +253,7 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"changeover", "happy-path",
 			"democracy-reward", "democracy",
 			"slash-throttle", "consumer-double-sign", "consumer-misbehaviour",
-			"consumer-double-downtime",
+			"consumer-double-downtime", "partial-set-security-opt-in", "partial-set-security-top-n",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")
