@@ -145,7 +145,7 @@ func stepsOptInChain() []Step {
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100,
 						ValidatorID("bob"):   200,
-						// "carol" has not yet opted in, the VSCPacket capturing the opt-in should first be relayed
+						// "carol" has opted in, but the VSCPacket capturing the opt-in was not relayed yet
 						ValidatorID("carol"): 0,
 					},
 				},
