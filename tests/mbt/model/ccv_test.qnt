@@ -320,4 +320,61 @@ module ccv_test {
         )
         res._2 == "Cannot start and stop a consumer at the same time"
     }
+
+    // ===== Tests for Slashing =====
+    // create  a base state for the slashing tests.
+    // set consumer "receiver" to running and set a validator set with two validators as current
+    // and historical validator set on provider and consumer.
+    // Also, make it so the consumer state has received a vsc packet from the provider.
+    pure val validatorSet = Map(
+        "validator" -> 5,
+        "validator2" -> 5
+    )
+    pure val vscPacket = {
+        id: 0,
+        validatorSet: validatorSet,
+        sendingTime: 0,
+        timeoutTime: 1,
+        downtimeSlashAcks: List()
+    }
+    pure val SlashingTestState = 
+        GetEmptyProtocolState.with(
+            "providerState", GetEmptyProtocolState.providerState.with(
+                "chainState", GetEmptyProtocolState.providerState.chainState.with(
+                    "currentValidatorPowers", validatorSet
+                ).with(
+                    "votingPowerHistory", List(validatorSet)
+                )
+            ).with(
+                "consumerStatus", Map(
+                    "receiver" -> RUNNING
+                )
+            )
+        ).with(
+            "consumerStates", GetEmptyProtocolState.consumerStates.put(
+                "receiver", GetEmptyConsumerState.with(
+                    "chainState", GetEmptyProtocolState.providerState.chainState.with(
+                        "currentValidatorPowers", validatorSet
+                    ).with(
+                        "votingPowerHistory", List(validatorSet)
+                    )
+                ).with(
+                    "receivedVscPackets", List(vscPacket)
+                )
+            )
+        )
+
+    // ensure that sending a slash request for a double-sign infraction does not put outstandingDowntime in the state
+    run DoubleSignSlashRequestNoOutstandingDowntimeTest =
+    {
+        val result = SlashingTestState.sendSlashRequest(
+            "receiver",
+            "validator",
+            0,
+            false
+        )
+        not(result.hasError()) and
+        // should not have outstanding downtime, since the slash is for double-signing
+        result.newState.consumerStates.get("receiver").outstandingDowntime.size() == 0
+    }
 }
