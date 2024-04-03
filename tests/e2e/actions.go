@@ -2333,7 +2333,10 @@ func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose b
 	}
 
 	bz, err := cmd.CombinedOutput()
-	_, _ = bz, err
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
 	if !tr.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if verbose {
 			fmt.Printf("got expected error during opt in | err: %s | output: %s \n", err, string(bz))
@@ -2379,7 +2382,10 @@ func (tr TestConfig) optOut(action OptOutAction, target ExecutionTarget, verbose
 	}
 
 	bz, err := cmd.CombinedOutput()
-	_, _ = bz, err
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
 	if !tr.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if verbose {
 			fmt.Printf("got expected error during opt out | err: %s | output: %s \n", err, string(bz))
