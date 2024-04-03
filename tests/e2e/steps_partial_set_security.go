@@ -294,7 +294,7 @@ func stepsOptInChain() []Step {
 			},
 		},
 		{
-			// relay the vsc packet that contains the slashed power for alice
+			// relay the VSCPacket that contains the slashed power for alice
 			Action: RelayPacketsAction{
 				ChainA:  ChainID("consu"),
 				ChainB:  ChainID("provi"),
@@ -346,7 +346,7 @@ func stepsOptInChain() []Step {
 			},
 		},
 		{
-			// relay the vsc packet that puts alice back into power on the consumer
+			// relay the VSCPacket that puts alice back into power on the consumer
 			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID("consu"),
@@ -364,7 +364,8 @@ func stepsOptInChain() []Step {
 				},
 			},
 		},
-		{ // slash alice for downtime again
+		{
+			// slash alice for downtime again
 			Action: DowntimeSlashAction{
 				Chain:     ChainID("consu"),
 				Validator: ValidatorID("alice"),
@@ -407,7 +408,7 @@ func stepsOptInChain() []Step {
 			},
 		},
 		{
-			// relay the vsc packet that contains the slashed power for alice
+			// relay the VSCPacket that contains the slashed power for alice
 			Action: RelayPacketsAction{
 				ChainA:  ChainID("consu"),
 				ChainB:  ChainID("provi"),
@@ -728,7 +729,7 @@ func stepsTopNChain() []Step {
 			},
 		},
 		{
-			// relay the vsc packet that contains the slashed power for alice
+			// relay the VSCPacket that contains the slashed power for alice
 			Action: RelayPacketsAction{
 				ChainA:  ChainID("consu"),
 				ChainB:  ChainID("provi"),
@@ -780,7 +781,7 @@ func stepsTopNChain() []Step {
 			},
 		},
 		{
-			// relay the vsc packet that puts alice back into power on the consumer
+			// relay the VSCPacket that puts alice back into power on the consumer
 			Action: RelayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID("consu"),
@@ -798,7 +799,8 @@ func stepsTopNChain() []Step {
 				},
 			},
 		},
-		{ // slash alice for downtime again
+		{
+			// slash alice for downtime again
 			Action: DowntimeSlashAction{
 				Chain:     ChainID("consu"),
 				Validator: ValidatorID("alice"),
@@ -841,7 +843,7 @@ func stepsTopNChain() []Step {
 			},
 		},
 		{
-			// relay the vsc packet that contains the slashed power for alice
+			// relay the VSCPacket that contains the slashed power for alice
 			Action: RelayPacketsAction{
 				ChainA:  ChainID("consu"),
 				ChainB:  ChainID("provi"),
