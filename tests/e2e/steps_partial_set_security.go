@@ -182,6 +182,75 @@ func stepsOptInChain() []Step {
 			},
 		},
 		{
+			Action: OptOutAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("bob"),
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						// "bob" has not yet opted out from the consumer chain because the VSCPacket has not yet been relayed
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						// bob has now opted out
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// re opt-in "bob"
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("bob"),
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						// "bob" has not yet been opted in to the consumer chain because the VSCPacket has not yet been relayed
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						// bob is in power on the consumer
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
 			// DowntimeSlash for alice on consumer
 			Action: DowntimeSlashAction{
 				Chain:     ChainID("consu"),
