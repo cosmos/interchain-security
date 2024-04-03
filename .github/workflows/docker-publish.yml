@@ -13,7 +13,6 @@ on:
   push:
     branches:
       - 'main'
-      - 'release/**'
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+" # Push events matching tag versions as v3.0.0
       - "v[0-9]+.[0-9]+.[0-9]+-lsm" # Push events matching '-lsm' postfix tags
@@ -45,7 +44,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 #v3.4.0
         with:
-          cosign-release: 'v2.1.1'
+          cosign-release: 'v2.2.3'
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
