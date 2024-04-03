@@ -119,6 +119,18 @@ func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
 	}
 }
 
+// GetProviderChain returns the provider chain struct
+// which is required to get context and have control over the blocks
+func (suite *CCVTestSuite) GetProviderChain() *ibctesting.TestChain {
+	return suite.providerChain
+}
+
+// GetCCVPath returns the CCV path which is
+// required to call SetupCCVChannel
+func (suite *CCVTestSuite) GetCCVPath() *ibctesting.Path {
+	return suite.path
+}
+
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
 	suite.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
