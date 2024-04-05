@@ -42,6 +42,8 @@ type StakingKeeper interface {
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) math.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
+	GetUnbondingDelegationByUnbondingID(ctx sdk.Context, id uint64) (ubd stakingtypes.UnbondingDelegation, found bool)
+	GetRedelegationByUnbondingID(ctx sdk.Context, id uint64) (red stakingtypes.Redelegation, found bool)
 	GetValidatorByUnbondingID(ctx sdk.Context, id uint64) (val stakingtypes.Validator, found bool)
 	IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
 	Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
@@ -55,6 +57,7 @@ type StakingKeeper interface {
 	GetUnbondingDelegationsFromValidator(ctx sdk.Context, valAddr sdk.ValAddress) (ubds []stakingtypes.UnbondingDelegation)
 	GetRedelegationsFromSrcValidator(ctx sdk.Context, valAddr sdk.ValAddress) (reds []stakingtypes.Redelegation)
 	GetUnbondingType(ctx sdk.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
+	BlockValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing

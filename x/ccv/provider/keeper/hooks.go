@@ -36,18 +36,52 @@ func (k *Keeper) Hooks() Hooks {
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 	var consumerChainIDS []string
 
-	// get the validator from the unbonding op id
-	validator, found := h.k.stakingKeeper.GetValidatorByUnbondingID(ctx, id)
+	// get validator address from unbonding operation
+	unbondingType, found := h.k.stakingKeeper.GetUnbondingType(ctx, id)
+	vadAddrBech32 := ""
+	if !found {
+		return stakingtypes.ErrUnbondingNotFound
+	}
+
+	switch unbondingType {
+	case stakingtypes.UnbondingType_UnbondingDelegation:
+		ubd, found := h.k.stakingKeeper.GetUnbondingDelegationByUnbondingID(ctx, id)
+		if !found {
+			panic(stakingtypes.ErrUnbondingNotFound)
+		}
+		vadAddrBech32 = ubd.ValidatorAddress
+	case stakingtypes.UnbondingType_Redelegation:
+		red, found := h.k.stakingKeeper.GetRedelegationByUnbondingID(ctx, id)
+		if !found {
+			panic(stakingtypes.ErrUnbondingNotFound)
+		}
+		vadAddrBech32 = red.ValidatorDstAddress
+	case stakingtypes.UnbondingType_ValidatorUnbonding:
+		val, found := h.k.stakingKeeper.GetValidatorByUnbondingID(ctx, id)
+		if !found {
+			panic(stakingtypes.ErrUnbondingNotFound)
+		}
+		vadAddrBech32 = val.OperatorAddress
+	default:
+		panic(stakingtypes.ErrUnbondingNotFound)
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(vadAddrBech32)
+	if err != nil {
+		panic(fmt.Sprintf("invalid Bech32 validator address: %s", valAddr))
+	}
+
+	validator, found := h.k.stakingKeeper.GetValidator(ctx, valAddr)
 	if !found {
 		panic("unbonding operation for unknown validator")
 	}
 
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
-		panic("unbonding operation for unknown validator")
+		panic(err)
 	}
 
-	// get all consumers for which the validator opted-in to
+	// get all consumers where the validator is in the validator set
 	for _, chain := range h.k.GetAllConsumerChains(ctx) {
 		if h.k.IsConsumerValidator(ctx, chain.ChainId, types.NewProviderConsAddress(consAddr)) {
 			consumerChainIDS = append(consumerChainIDS, chain.ChainId)
