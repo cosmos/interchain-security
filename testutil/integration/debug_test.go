@@ -96,12 +96,10 @@ func TestSendRewardsToProvider(t *testing.T) {
 // Expired client tests
 //
 
-// TODO: fix
 func TestVSCPacketSendExpiredClient(t *testing.T) {
 	runCCVTestByName(t, "TestVSCPacketSendExpiredClient")
 }
 
-// TODO: fix
 func TestConsumerPacketSendExpiredClient(t *testing.T) {
 	runCCVTestByName(t, "TestConsumerPacketSendExpiredClient")
 }
@@ -140,7 +138,6 @@ func TestOnRecvSlashPacketErrors(t *testing.T) {
 	runCCVTestByName(t, "TestOnRecvSlashPacketErrors")
 }
 
-// TODO: fix -- possible wire protocol change because packet commits don't match
 func TestValidatorDowntime(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDowntime")
 }
@@ -150,7 +147,6 @@ func TestValidatorDoubleSigning(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDoubleSigning")
 }
 
-// TODO: fix -> packet times out
 func TestQueueAndSendSlashPacket(t *testing.T) {
 	runCCVTestByName(t, "TestQueueAndSendSlashPacket")
 }
@@ -218,7 +214,6 @@ func TestSlashAllValidators(t *testing.T) {
 // Unbonding tests
 //
 
-// TODO: fix -> packet times out
 func TestUndelegationNormalOperation(t *testing.T) {
 	runCCVTestByName(t, "TestUndelegationNormalOperation")
 }
@@ -227,7 +222,6 @@ func TestUndelegationVscTimeout(t *testing.T) {
 	runCCVTestByName(t, "TestUndelegationVscTimeout")
 }
 
-// TODO: fix -> packet times out
 func TestUndelegationDuringInit(t *testing.T) {
 	runCCVTestByName(t, "TestUndelegationDuringInit")
 }
@@ -248,7 +242,6 @@ func TestRedelegationProviderFirst(t *testing.T) {
 // Val set update tests
 //
 
-// TODO: fix -> packet times out
 func TestPacketRoundtrip(t *testing.T) {
 	runCCVTestByName(t, "TestPacketRoundtrip")
 }
