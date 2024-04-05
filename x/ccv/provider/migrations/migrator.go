@@ -29,5 +29,6 @@ func (m Migrator) Migrate1to2(ctx sdktypes.Context) error {
 
 // Migrate2to3 migrates x/ccvprovider state from consensus version 2 to 3.
 func (m Migrator) Migrate2to3(ctx sdktypes.Context) error {
+	v3.MigrateParams(ctx, m.paramSpace)
 	return v3.MigrateQueuedPackets(ctx, m.providerKeeper)
 }

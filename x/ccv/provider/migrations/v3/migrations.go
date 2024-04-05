@@ -5,7 +5,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 // MigrateQueuedPackets processes all queued packet data for all consumer chains that were stored
@@ -22,4 +24,13 @@ func MigrateQueuedPackets(ctx sdk.Context, k providerkeeper.Keeper) error {
 		k.LegacyDeleteThrottledPacketDataForConsumer(ctx, consumer.ChainId) //nolint:staticcheck //  SA1019: function used for migration
 	}
 	return nil
+}
+
+func MigrateParams(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
+	if paramsSubspace.HasKeyTable() {
+		paramsSubspace.Set(ctx, providertypes.KeyBlocksPerEpoch, providertypes.DefaultBlocksPerEpoch)
+	} else {
+		paramsSubspace.WithKeyTable(providertypes.ParamKeyTable())
+		paramsSubspace.Set(ctx, providertypes.KeyBlocksPerEpoch, providertypes.DefaultBlocksPerEpoch)
+	}
 }
