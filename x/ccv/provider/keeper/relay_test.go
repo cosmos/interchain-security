@@ -12,7 +12,9 @@ import (
 
 	"cosmossdk.io/math"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -468,6 +470,10 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 
 	// Start first unbonding without any consumers registered
 	var unbondingOpId uint64 = 1
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_Undefined, false),
+	)
+
 	err := pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
 	require.NoError(t, err)
 	// Check that no unbonding op was stored
@@ -478,12 +484,34 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	pk.IncrementValidatorSetUpdateId(ctx)
 	require.Equal(t, uint64(2), pk.GetValidatorSetUpdateId(ctx))
 
-	// Registered first consumer
+	// Register first consumer
 	pk.SetConsumerClientId(ctx, "chain-1", "client-1")
+
+	// Create 2 validators
+	vals := []stakingtypes.Validator{}
+	valsPk := []cryptotypes.PubKey{}
+	for i := 0; i < 2; i++ {
+		pubkey, err := cryptocodec.FromTmPubKeyInterface(cryptotestutil.NewCryptoIdentityFromIntSeed(54321 + i).TMCryptoPubKey())
+		require.NoError(t, err)
+		valsPk = append(valsPk, pubkey)
+		pkAny, err := codectypes.NewAnyWithValue(pubkey)
+		require.NoError(t, err)
+		vals = append(vals, stakingtypes.Validator{ConsensusPubkey: pkAny})
+	}
+
+	// Opt-in one validator to consumer
+	pk.SetConsumerValidator(ctx, "chain-1", types.ConsumerValidator{ProviderConsAddr: valsPk[0].Address()})
 
 	// Start second unbonding
 	unbondingOpId = 2
 	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_UnbondingDelegation, true),
+		mocks.MockStakingKeeper.EXPECT().GetUnbondingDelegationByUnbondingID(ctx, unbondingOpId).Return(
+			stakingtypes.UnbondingDelegation{
+				ValidatorAddress: sdk.ValAddress([]byte{1}).String(),
+			}, true),
+		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
+			Return(vals[0], true),
 		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
 	)
 	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
@@ -507,10 +535,21 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	// Registered second consumer
 	pk.SetConsumerClientId(ctx, "chain-2", "client-2")
 
+	// Opt-in both validators to second consumer
+	pk.SetConsumerValidator(ctx, "chain-2", types.ConsumerValidator{ProviderConsAddr: valsPk[0].Address()})
+	pk.SetConsumerValidator(ctx, "chain-2", types.ConsumerValidator{ProviderConsAddr: valsPk[1].Address()})
+
 	// Start third and fourth unbonding
 	unbondingOpIds := []uint64{3, 4}
 	for _, id := range unbondingOpIds {
 		gomock.InOrder(
+			mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, id).Return(stakingtypes.UnbondingType_Redelegation, true),
+			mocks.MockStakingKeeper.EXPECT().GetRedelegationByUnbondingID(ctx, id).Return(
+				stakingtypes.Redelegation{
+					ValidatorSrcAddress: sdk.ValAddress([]byte{1}).String(),
+				}, true),
+			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
+				Return(vals[0], true),
 			mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, id).Return(nil),
 		)
 		err = pk.Hooks().AfterUnbondingInitiated(ctx, id)
@@ -530,6 +569,33 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 		require.True(t, found)
 		require.Equal(t, unbondingOpIds, ids)
 	}
+
+	// Increment vscID
+	pk.IncrementValidatorSetUpdateId(ctx)
+	require.Equal(t, uint64(4), pk.GetValidatorSetUpdateId(ctx))
+
+	// Start fith unbonding
+	unbondingOpId = 5
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_ValidatorUnbonding, true),
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByUnbondingID(ctx, unbondingOpId).Return(
+			stakingtypes.Validator{
+				OperatorAddress: sdk.ValAddress([]byte{1}).String(),
+			}, true),
+		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
+			Return(vals[1], true),
+		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
+	)
+	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	require.NoError(t, err)
+
+	// Check that an unbonding op was stored for chain-2 only
+	// since it's the only consumer the unbonding validator has opted-in to
+	expectedChains = []string{"chain-2"}
+	unbondingOp, found = pk.GetUnbondingOp(ctx, unbondingOpId)
+	require.True(t, found)
+	require.Equal(t, unbondingOpId, unbondingOp.Id)
+	require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
 
 	// Handle VSCMatured packet from chain-1 for vscID 1.
 	// Note that no VSCPacket was sent as the chain was not yet registered,

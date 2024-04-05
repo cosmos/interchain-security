@@ -40,26 +40,30 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 	unbondingType, found := h.k.stakingKeeper.GetUnbondingType(ctx, id)
 	vadAddrBech32 := ""
 	if !found {
-		return stakingtypes.ErrUnbondingNotFound
+		ctx.Logger().Error("undefined type for unbonding operation id: %d", id)
+		return nil
 	}
 
 	switch unbondingType {
 	case stakingtypes.UnbondingType_UnbondingDelegation:
 		ubd, found := h.k.stakingKeeper.GetUnbondingDelegationByUnbondingID(ctx, id)
 		if !found {
-			panic(stakingtypes.ErrUnbondingNotFound)
+			ctx.Logger().Error("unfound ubonding delegation for unbonding id: %d", id)
+			return nil
 		}
 		vadAddrBech32 = ubd.ValidatorAddress
 	case stakingtypes.UnbondingType_Redelegation:
 		red, found := h.k.stakingKeeper.GetRedelegationByUnbondingID(ctx, id)
 		if !found {
-			panic(stakingtypes.ErrUnbondingNotFound)
+			ctx.Logger().Error("unfound relegation for unbonding operation id: %d", id)
+			return nil
 		}
-		vadAddrBech32 = red.ValidatorDstAddress
+		vadAddrBech32 = red.ValidatorSrcAddress
 	case stakingtypes.UnbondingType_ValidatorUnbonding:
 		val, found := h.k.stakingKeeper.GetValidatorByUnbondingID(ctx, id)
 		if !found {
-			panic(stakingtypes.ErrUnbondingNotFound)
+			ctx.Logger().Error("unfound validator for unbonding operation id: %d", id)
+			return nil
 		}
 		vadAddrBech32 = val.OperatorAddress
 	default:
@@ -68,17 +72,20 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 
 	valAddr, err := sdk.ValAddressFromBech32(vadAddrBech32)
 	if err != nil {
-		panic(fmt.Sprintf("invalid Bech32 validator address: %s", valAddr))
+		ctx.Logger().Error(err.Error())
+		return nil
 	}
 
 	validator, found := h.k.stakingKeeper.GetValidator(ctx, valAddr)
 	if !found {
-		panic("unbonding operation for unknown validator")
+		ctx.Logger().Error("unfound validator for validator address %s", vadAddrBech32)
+		return nil
 	}
 
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
-		panic(err)
+		ctx.Logger().Error(err.Error())
+		return nil
 	}
 
 	// get all consumers where the validator is in the validator set
