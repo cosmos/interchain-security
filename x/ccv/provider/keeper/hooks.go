@@ -67,7 +67,8 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 		}
 		vadAddrBech32 = val.OperatorAddress
 	default:
-		panic(stakingtypes.ErrUnbondingNotFound)
+		ctx.Logger().Error("invalid unbonding operation type: %s", unbondingType)
+		return nil
 	}
 
 	valAddr, err := sdk.ValAddressFromBech32(vadAddrBech32)
