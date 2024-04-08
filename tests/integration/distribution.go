@@ -36,8 +36,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 	// reward for the provider chain will be sent after each 2 blocks
-	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-	consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(2))
+	s.consumerApp.GetConsumerKeeper().SetBlocksPerDistributionTransmission(s.consumerCtx(), 2)
 	s.consumerChain.NextBlock()
 
 	consumerAccountKeeper := s.consumerApp.GetTestAccountKeeper()
@@ -85,6 +84,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
 
 	ibcCoinIndex := -1
+
 	for i, coin := range rewardCoins {
 		if strings.HasPrefix(coin.Denom, "ibc") {
 			ibcCoinIndex = i
@@ -93,6 +93,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	// Check that we found an ibc denom in the reward pool
 	s.Require().Greater(ibcCoinIndex, -1)
+	ibcDenom := rewardCoins[ibcCoinIndex].Denom
 
 	// Check that the coins got into the ConsumerRewardsPool
 	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
@@ -103,13 +104,20 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
 
 	// Set the consumer reward denom. This would be done by a governance proposal in prod
-	s.providerApp.GetProviderKeeper().SetConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom)
+	s.providerApp.GetProviderKeeper().SetConsumerRewardDenom(s.providerCtx(), ibcDenom)
 
 	s.providerChain.NextBlock()
 
-	// Check that the reward pool has no more coins because they were transferred to the fee pool
+	// Check that the reward pool has no more coins because they were transferred to the fee collector
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
 	s.Require().Equal(0, len(rewardCoins))
+	feeCollectorIbcCoin := providerBankKeeper.GetBalance(s.providerCtx(), authtypes.NewModuleAddress(authtypes.FeeCollectorName), ibcDenom)
+	s.Require().True(feeCollectorIbcCoin.Amount.Equal(providerExpectedRewards[0].Amount))
+
+	// Advance a block and check that the coins are transfered from fee collector to fee pool
+	s.providerChain.NextBlock()
+	feeCollectorIbcCoin = providerBankKeeper.GetBalance(s.providerCtx(), authtypes.NewModuleAddress(authtypes.FeeCollectorName), ibcDenom)
+	s.Require().Equal(math.ZeroInt(), feeCollectorIbcCoin.Amount)
 
 	// check that the fee pool has the expected amount of coins
 	testDistKeeper := s.providerApp.GetTestDistributionKeeper()
@@ -118,7 +126,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().True(ok)
 	s.Require().NotEmpty(sdkDistKeeper)
 
-	feePool, err := sdkDistKeeper.FeePool.Get(s.consumerCtx().Context())
+	feePool, err := sdkDistKeeper.FeePool.Get(s.providerCtx())
 	s.Require().NoError(err)
 	s.Require().NotEmpty(feePool)
 
@@ -150,8 +158,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
 	// reward for the provider chain will be sent after each 1000 blocks
-	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-	consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(1000))
+	s.consumerApp.GetConsumerKeeper().SetBlocksPerDistributionTransmission(s.consumerCtx(), 1000)
 
 	// fill fee pool
 	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100)))
@@ -280,8 +287,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 
 		// reward for the provider chain will be sent after each 1000 blocks
-		consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-		consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(1000))
+		s.consumerApp.GetConsumerKeeper().SetBlocksPerDistributionTransmission(s.consumerCtx(), 1000)
 
 		// fill fee pool
 		fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100)))

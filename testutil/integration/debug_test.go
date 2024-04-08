@@ -79,7 +79,6 @@ func TestSendRewardsRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSendRewardsRetries")
 }
 
-// TODO: fix
 func TestRewardsDistribution(t *testing.T) {
 	runCCVTestByName(t, "TestRewardsDistribution")
 }
