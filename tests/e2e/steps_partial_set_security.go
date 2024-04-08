@@ -225,7 +225,7 @@ func stepsOptInChain() []Step {
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100,
-						// "bob" has not yet been opted in from the consumer chain because the VSCPacket has not yet been relayed
+						// "bob" has not yet been opted in to the consumer chain because the VSCPacket has not yet been relayed
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 300,
 					},
@@ -243,7 +243,190 @@ func stepsOptInChain() []Step {
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100,
-						// bob has now opted in
+						// bob is in power on the consumer
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// DowntimeSlash for alice on consumer
+			Action: DowntimeSlashAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("alice"),
+			},
+			// powers are not affected yet on either chain
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// relay the slash packet
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				Port:    "consumer",
+				Channel: 0,
+			},
+			// alice's power is reduced on the provider
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// relay the VSCPacket that contains the slashed power for alice
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				Port:    "consumer",
+				Channel: 0,
+			},
+			// alice's power is reduced on the provider
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						// alice should definitely not be in power on the consumer
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// unjail alice
+			Action: UnjailValidatorAction{
+				Provider:  ChainID("provi"),
+				Validator: ValidatorID("alice"),
+			},
+			// alices power is restored on the provider
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				// still 0 power on the consumer
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// relay the VSCPacket that puts alice back into power on the consumer
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			// alice's power is restored on the consumer
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// slash alice for downtime again
+			Action: DowntimeSlashAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("alice"),
+			},
+			// alice's power is not yet reduced, the packet needs to be relayed
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// relay the slash packet
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				Port:    "consumer",
+				Channel: 0,
+			},
+			// alice's power is reduced on the provider
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			// relay the VSCPacket that contains the slashed power for alice
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				Port:    "consumer",
+				Channel: 0,
+			},
+			// alice's power is reduced on the consumer
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 300,
 					},
@@ -469,6 +652,215 @@ func stepsTopNChain() []Step {
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						// "alice" has now opted out
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		// opt alice back in
+		{
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("alice"),
+			},
+			State: State{},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						// "alice" has now opted in
+						ValidatorID("alice"): 200,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// DowntimeSlash for alice on consumer
+			Action: DowntimeSlashAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("alice"),
+			},
+			// powers are not affected yet on either chain
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 200,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 200,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// relay the slash packet
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				Port:    "consumer",
+				Channel: 0,
+			},
+			// alice's power is reduced on the provider
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// relay the VSCPacket that contains the slashed power for alice
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				Port:    "consumer",
+				Channel: 0,
+			},
+			// alice's power is reduced on the provider
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						// alice should definitely not be in power on the consumer
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// unjail alice
+			Action: UnjailValidatorAction{
+				Provider:  ChainID("provi"),
+				Validator: ValidatorID("alice"),
+			},
+			// alices power is restored on the provider
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 200,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+				// still 0 power on the consumer
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// relay the VSCPacket that puts alice back into power on the consumer
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			// alice's power is restored on the consumer
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 200,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// slash alice for downtime again
+			Action: DowntimeSlashAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("alice"),
+			},
+			// alice's power is not yet reduced, the packet needs to be relayed
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 200,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 200,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// relay the slash packet
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				Port:    "consumer",
+				Channel: 0,
+			},
+			// alice's power is reduced on the provider
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// relay the VSCPacket that contains the slashed power for alice
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				Port:    "consumer",
+				Channel: 0,
+			},
+			// alice's power is reduced on the consumer
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   300,
+						ValidatorID("carol"): 500,
+					},
+				},
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 0,
 						ValidatorID("bob"):   300,
 						ValidatorID("carol"): 500,
