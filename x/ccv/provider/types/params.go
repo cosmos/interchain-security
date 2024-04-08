@@ -39,7 +39,8 @@ const (
 
 	// DefaultBlocksPerEpoch defines the default blocks that constitute an epoch. Assuming we need 6 seconds per block,
 	// an epoch corresponds to 1 hour (6 * 600 = 3600 seconds).
-	DefaultBlocksPerEpoch = 600
+	// forcing int64 as the Params KeyTable expects an int64 and not int.
+	DefaultBlocksPerEpoch = int64(600)
 )
 
 // Reflection based keys for params subspace
