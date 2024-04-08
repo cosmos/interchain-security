@@ -112,6 +112,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 2, m.Migrate2to3); err != nil {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
 	}
+	if err := cfg.RegisterMigration(providertypes.ModuleName, 3, m.Migrate3to4); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
+	}
 }
 
 // InitGenesis performs genesis initialization for the provider module. It returns no validator updates.
