@@ -2,7 +2,7 @@
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
-## [v4.1.x](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-rc1) and [v4.1.x-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-lsm-rc1)
+## [v4.1.x](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-rc2) and [v4.1.x-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-lsm-rc2)
 
 ### Provider
 
