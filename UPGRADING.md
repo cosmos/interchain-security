@@ -2,6 +2,17 @@
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
+## [v4.1.x](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-rc1) and [v4.1.x-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-lsm-rc1)
+
+### Provider
+
+Upgrading a provider from `v4.0.0` to `v4.1.0` or `v4.1.0-lsm` requires state migrations, see relevant pull request [here](https://github.com/cosmos/interchain-security/pull/1762),
+as well as the corresponding migrators [here](https://github.com/cosmos/interchain-security/blob/release/v4.1.x/x/ccv/provider/migrations/migrator.go#L38) and [here](https://github.com/cosmos/interchain-security/blob/release/v4.1.x-lsm/x/ccv/provider/migrations/migrator.go#L38).
+
+### Consumer
+
+***Note that consumer chains can upgrade directly from `v4.0.0` to `v4.1.0`.***
+
 ## [v4.0.x](https://github.com/cosmos/interchain-security/tree/release/v4.0.x)
 
 `v4.0.x` sets the minimum required version of Go to `1.21`, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/go.mod#L3. 
