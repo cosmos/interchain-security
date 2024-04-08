@@ -405,7 +405,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
 		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
 			providerConsAddr.String(), chainID)
-		// drop packet
+		// drop packet but return a slash ack so that the consumer can send another slash packet
+		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 		return
 	}
 

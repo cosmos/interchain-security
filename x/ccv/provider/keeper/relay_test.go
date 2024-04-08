@@ -303,8 +303,9 @@ func TestHandleSlashPacket(t *testing.T) {
 		name       string
 		packetData ccv.SlashPacketData
 		// The mocks that we expect to be called for the specified packet data.
-		expectedCalls        func(sdk.Context, testkeeper.MockedKeepers, ccv.SlashPacketData) []*gomock.Call
-		expectedSlashAcksLen int
+		expectedCalls                       func(sdk.Context, testkeeper.MockedKeepers, ccv.SlashPacketData) []*gomock.Call
+		expectedSlashAcksLen                int
+		expectedSlashAckConsumerConsAddress types.ConsumerConsAddress
 	}{
 		{
 			"validator isn't a consumer validator",
@@ -318,7 +319,8 @@ func TestHandleSlashPacket(t *testing.T) {
 			) []*gomock.Call {
 				return []*gomock.Call{}
 			},
-			0,
+			1,
+			dummyConsAddr,
 		},
 		{
 			"unfound validator",
@@ -340,6 +342,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				}
 			},
 			0,
+			consumerConsAddr,
 		},
 		{
 			"found, but tombstoned validator",
@@ -362,6 +365,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				}
 			},
 			0,
+			consumerConsAddr,
 		},
 		{
 			"drop packet when infraction height not found",
@@ -385,6 +389,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				}
 			},
 			0,
+			consumerConsAddr,
 		},
 		{
 			"full downtime packet handling, uses init chain height and non-jailed validator",
@@ -402,6 +407,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					true)                                  // expectJailing = true
 			},
 			1,
+			consumerConsAddr,
 		},
 		{
 			"full downtime packet handling, uses valid vscID and jailed validator",
@@ -419,6 +425,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					false)                                // expectJailing = false, validator is already jailed.
 			},
 			1,
+			consumerConsAddr,
 		},
 		// Note: double-sign slash packet handling should not occur, see OnRecvSlashPacket.
 	}
@@ -447,7 +454,7 @@ func TestHandleSlashPacket(t *testing.T) {
 
 			if tc.expectedSlashAcksLen == 1 {
 				// must match the consumer address
-				require.Equal(t, consumerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+				require.Equal(t, tc.expectedSlashAckConsumerConsAddress.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
 				require.NotEqual(t, providerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
 				require.NotEqual(t, providerConsAddr.String(), consumerConsAddr.String())
 			}
