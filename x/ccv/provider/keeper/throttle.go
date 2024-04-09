@@ -27,8 +27,7 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 		return math.ZeroInt()
 	} else {
 		// Otherwise, return the staking keeper's LastValidatorPower value.
-		// NOTE: @MSalopek double check this conversion and see if it's necessary
-		valAddr, err := sdktypes.ValAddressFromHex(val.GetOperator())
+		valAddr, err := k.ValidatorAddressCodec().StringToBytes(val.GetOperator())
 		if err != nil {
 			return math.ZeroInt()
 		}

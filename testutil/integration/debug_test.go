@@ -179,12 +179,10 @@ func TestStopConsumerOnChannelClosed(t *testing.T) {
 // Throttle tests
 //
 
-// TODO: fix
 func TestBasicSlashPacketThrottling(t *testing.T) {
 	runCCVTestByName(t, "TestBasicSlashPacketThrottling")
 }
 
-// TODO: fix
 func TestMultiConsumerSlashPacketThrottling(t *testing.T) {
 	runCCVTestByName(t, "TestMultiConsumerSlashPacketThrottling")
 }
@@ -288,7 +286,6 @@ func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing
 // Throttle retry tests
 //
 
-// TODO: fix -> packet times out
 func TestSlashRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSlashRetries")
 }
