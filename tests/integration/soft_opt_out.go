@@ -88,7 +88,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 				minSigned, err := sk.MinSignedPerWindow(suite.consumerCtx())
 				suite.Require().NoError(err)
 
-				blocksToDowntime = blocksToDowntime - minSigned + 1
+				blocksToDowntime = blocksToDowntime - minSigned
 				slashingBeginBlocker(suite, votes, blocksToDowntime)
 
 				// Increase the power of this validator (to bring it in the top 95%)
@@ -133,7 +133,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 				minSigned, err := sk.MinSignedPerWindow(suite.consumerCtx())
 				suite.Require().NoError(err)
 
-				blocksToDowntime = blocksToDowntime - minSigned + 1
+				blocksToDowntime = blocksToDowntime - minSigned
 				slashingBeginBlocker(suite, votes, blocksToDowntime)
 
 				// Increase the power of this validator (to bring it in the top 95%)

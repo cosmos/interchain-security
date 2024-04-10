@@ -156,7 +156,6 @@ func TestCISBeforeCCVEstablished(t *testing.T) {
 // Soft opt out tests
 //
 
-// TODO: fix -> test: downtime bottom 5% first and then top 95%, but not enough; validator jailed until signing info was updated
 func TestSoftOptOut(t *testing.T) {
 	runCCVTestByName(t, "TestSoftOptOut")
 }
