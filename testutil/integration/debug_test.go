@@ -61,12 +61,10 @@ func TestInitTimeout(t *testing.T) {
 // Consumer democracy tests
 //
 
-// TODO: fix
 func TestDemocracyRewardsDistribution(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyRewardsDistribution")
 }
 
-// TODO: fix
 func TestDemocracyGovernanceWhitelisting(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
 }

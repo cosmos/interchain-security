@@ -1,8 +1,6 @@
 package integration
 
 import (
-	"github.com/cosmos/cosmos-sdk/testutil/mock"
-
 	"github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -17,7 +15,7 @@ func CreateValidators(n int) (
 		signersByAddress = make(map[string]tmtypes.PrivValidator, n)
 	)
 	for i := 0; i < n; i++ {
-		privVal := mock.NewPV()
+		privVal := tmtypes.NewMockPV()
 		pubKey, err := privVal.GetPubKey()
 		if err != nil {
 			return nil, nil, nil, err
