@@ -35,14 +35,16 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 
 	// testsetup create 2 validators and then call track historical info with header block height
 	// increased by HistoricalEntries in order to prune the historical info less or equal to the current block height
-	// Note that historical info containing the created validators are stored during the next block BeginBlocker
-	// and thus are indexed with the respective block heights InitHeight+1 and InitHeight+2
+	// Note that historical info containing the created validators were stored during the BeginBlocker of the current block
+	// at the moment of creation and thus are indexed with the respective block heights InitHeight and InitHeight+1
+	// Last saved historical info was in the last commited block k.consumerChain.GetContext().BlockHeight(), meaning that
+	// if we want to prune old entries we need to start from the last saved historical info which is k.consumerChain.GetContext().BlockHeight() - 1
 	testSetup := []func(CCVTestSuite){
 		createVal,
 		createVal,
 		func(k CCVTestSuite) { //nolint:govet // this is a test so we can copy locks
 			historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
-			newHeight := k.consumerChain.GetContext().BlockHeight() + historicalEntries
+			newHeight := k.consumerChain.GetContext().BlockHeight() - 1 + historicalEntries
 			header := tmproto.Header{
 				ChainID: "HelloChain",
 				Height:  newHeight,
@@ -59,31 +61,31 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	// test cases verify that historical info entries are pruned when their height
 	// is below CurrentHeight - HistoricalEntries, and check that their valset gets updated
 	testCases := []struct {
-		height int64
-		found  bool
-		expLen int
+		height       int64
+		expectsError bool
+		expLen       int
 	}{
 		{
-			height: initHeight + 1,
-			found:  false, // needs to be changed to expect an error
-			expLen: 0,
+			height:       initHeight,
+			expectsError: true,
+			expLen:       0,
 		},
 		{
-			height: initHeight + 2,
-			found:  false,
-			expLen: 0,
+			height:       initHeight + 1,
+			expectsError: true,
+			expLen:       0,
 		},
 		{
-			height: initHeight + ccvtypes.DefaultHistoricalEntries + 2,
-			found:  true,
-			expLen: initValsetLen + 2,
+			height:       initHeight + ccvtypes.DefaultHistoricalEntries + 1,
+			expectsError: false,
+			expLen:       initValsetLen + 2,
 		},
 	}
 
 	for _, tc := range testCases {
 		cCtx().WithBlockHeight(tc.height)
-		hi, found := consumerKeeper.GetHistoricalInfo(cCtx().WithBlockHeight(tc.height), tc.height)
-		k.Require().Equal(tc.found, found)
+		hi, err := consumerKeeper.GetHistoricalInfo(cCtx().WithBlockHeight(tc.height), tc.height)
+		k.Require().Equal(tc.expectsError, err != nil)
 		k.Require().Len(hi.Valset, tc.expLen)
 	}
 }

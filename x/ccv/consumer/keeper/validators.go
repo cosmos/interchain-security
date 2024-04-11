@@ -288,8 +288,8 @@ func (k Keeper) TrackHistoricalInfo(goCtx context.Context) error {
 			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
-		// NOTE: @MSalopek -> double check pk.Address().String()
-		val, err := stakingtypes.NewValidator(pk.Address().String(), pk, stakingtypes.Description{})
+
+		val, err := stakingtypes.NewValidator(sdk.ValAddress(pk.Address()).String(), pk, stakingtypes.Description{})
 		if err != nil {
 			// This should never happen as the pubkey is assumed
 			// to be stored correctly in ApplyCCValidatorChanges.

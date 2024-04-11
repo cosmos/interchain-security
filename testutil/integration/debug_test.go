@@ -105,7 +105,6 @@ func TestConsumerPacketSendExpiredClient(t *testing.T) {
 // Normal operations tests
 //
 
-// TODO: needs to be redone or code needs to be fixed
 func TestHistoricalInfo(t *testing.T) {
 	runCCVTestByName(t, "TestHistoricalInfo")
 }
