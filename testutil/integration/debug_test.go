@@ -113,7 +113,6 @@ func TestHistoricalInfo(t *testing.T) {
 // Slashing tests
 //
 
-// TODO: fix
 func TestRelayAndApplyDowntimePacket(t *testing.T) {
 	runCCVTestByName(t, "TestRelayAndApplyDowntimePacket")
 }

@@ -122,11 +122,11 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		relayAllCommittedPackets(s, s.providerChain, bundle.Path,
 			ccv.ProviderPortID, bundle.Path.EndpointB.ChannelID, 1)
 
-		// check that each consumer updated its VSC ID for the subsequent block
+		// check that each consumer updated its VSC ID for the subsequent not commited block ctx.BlockHeight()
 		consumerKeeper := bundle.GetKeeper()
 		ctx := bundle.GetCtx()
 		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
-			ctx, uint64(ctx.BlockHeight())+1)
+			ctx, uint64(ctx.BlockHeight()))
 		s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
 
 		// check that jailed validator was removed from each consumer validator set
