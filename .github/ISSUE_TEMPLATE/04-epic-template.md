@@ -1,7 +1,7 @@
 ---
 name: EPIC Template
 about: Basic template for EPICs (used by the team)
-labels: "admin: epic", "status: waiting-triage"
+labels: 'admin: epic', 'status: waiting-triage'
 ---
 
 ## Problem
