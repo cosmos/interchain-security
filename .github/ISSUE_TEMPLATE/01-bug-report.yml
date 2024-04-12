@@ -1,4 +1,4 @@
-name: 🐞 Bug report
+name: 🐛 Bug report
 description: Create a report to help us squash bugs!
 title: "[Bug]: "
 labels: ["type: bug", "status: waiting-triage"]

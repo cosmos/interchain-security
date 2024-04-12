@@ -1,6 +1,6 @@
 name: Documentation Request
 description: Create an issue for missing or incorrect documentation
-title: "[Documentation]: "
+title: "[Docs]: "
 labels: ["type: docs-req", "status: waiting-triage"]
 body:
   - type: markdown

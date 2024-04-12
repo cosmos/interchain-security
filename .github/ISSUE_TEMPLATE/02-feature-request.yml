@@ -49,7 +49,6 @@ body:
       label: Work Breakdown
       description: |
         Break the work into many tasks that will later be turned into issues that can be assigned to developers to work on. 
-        This work may need to be broken up into phases of work in order to better organize when and how things get done.
       placeholder: Description of the steps needed to deliver this feature
       value: | 
         ```[tasklist]
