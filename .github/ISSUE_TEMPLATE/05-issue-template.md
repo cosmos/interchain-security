@@ -1,7 +1,7 @@
 ---
 name: Issue Template
 about: Basic template for issues (used by the team)
-labels: "status: waiting-triage"
+labels: 'status: waiting-triage'
 ---
 
 <!-- < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < ☺ 
