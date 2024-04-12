@@ -1,7 +1,7 @@
-name: Bug report
+name: Bug Report
 description: Create a report to help us squash bugs!
 title: "[Bug]: "
-labels: ["status: waiting-triage"]
+labels: ["type: bug", "status: waiting-triage"]
 body:
   - type: markdown
     attributes:
