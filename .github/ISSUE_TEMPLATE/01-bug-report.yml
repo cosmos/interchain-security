@@ -47,6 +47,6 @@ body:
     attributes:
       label: How to reproduce?
       description: If applicable could you describe how we could reproduce the bug
-      placeholder: Tell us what how to reproduce the bug!
+      placeholder: Tell us how to reproduce the bug!
     validations:
       required: false
