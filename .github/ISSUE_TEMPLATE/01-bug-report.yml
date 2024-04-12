@@ -1,4 +1,4 @@
-name: "Bug report"
+name: "🐛 Bug report"
 description: Create a report to help us squash bugs!
 title: "[Bug]: "
 labels: ["type: bug", "status: waiting-triage"]
@@ -23,7 +23,6 @@ body:
         IMPORTANT: Prior to opening a bug report, check if it affects one of the core modules
         and if its eligible for a bug bounty on `SECURITY.md`. Bugs that are not submitted
         through the appropriate channels won't receive any bounty.
-
   - type: textarea
     id: what-happened
     attributes:
@@ -33,7 +32,6 @@ body:
       value: "A bug happened!"
     validations:
       required: true
-
   - type: input
     attributes:
       label: Interchain Security Version
@@ -41,7 +39,6 @@ body:
       placeholder: v4.0.0, v4.1.0, main, etc.
     validations:
       required: true
-
   - type: textarea
     id: reproduce
     attributes:
