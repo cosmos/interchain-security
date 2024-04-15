@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -14,7 +15,10 @@ import (
 
 func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	chainID := consumer
-	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
+
+	providerConsAddress, err := sdktypes.ConsAddressFromBech32("cosmosvalcons1wpex7anfv3jhystyv3eq20r35a")
+	require.NoError(t, err)
+	providerAddr := types.NewProviderConsAddress(providerConsAddress)
 
 	consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	consumerAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
@@ -48,8 +52,8 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedResult := types.PairValConAddrProviderAndConsumer{
-		ProviderAddress: "providerAddr",
-		ConsumerAddress: string(consumerAddr),
+		ProviderAddress: providerConsAddress.String(),
+		ConsumerAddress: consumerAddr.String(),
 		ConsumerKey:     &consumerKey,
 	}
 	require.Equal(t, &consumerKey, response.PairValConAddr[0].ConsumerKey)
