@@ -1,37 +1,17 @@
-<!--
-  A release notes template that should be adapted for every release
-    - release: <v*.*.*>
-    - release branch: <v*.x>
-    - the last release: <v-last> 
-    - the last release branch: <v-last.x>
--->
-
-# Replicated Security <v*.*.*>  Release Notes
+# Replicated Security v4.1.0  Release Notes
 
 <!--
   Please indicate whether this release is relevant to consumers or providers.
 -->
-❗ ***Note this release is ONLY relevant to <consumers/providers>***
+❗ ***Note this release is ONLY relevant to providers***
 
 ## 📝 Changelog
-** REMOVE THE LINE BELOW TO ENABLE THE MARKDOWN LINK CHECKER FOR RELEASE **
-<!-- markdown-link-check-disable -->
-
-Check out the [changelog](https://github.com/cosmos/interchain-security/blob/<v*.*.*>/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/release/<v-last>...<v*.*.*>) from last release.
+Check out the [changelog](https://github.com/cosmos/interchain-security/blob/v4.1.0/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/v4.0.0...v4.1.0) from last release.
 
 <!-- Add the following line for major releases -->
-Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/<v*.x>/UPGRADING.md) when migrating from `<v-last.x>` to `<v*.x>`.
+Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/v4.1.x/UPGRADING.md) when migrating from `v4.0.x` to `v4.1.x`.
 
-** REMOVE THE LINE BELOW TO ENABLE THE MARKDOWN LINK CHECKER FOR RELEASE **
-<!-- markdown-link-check-enable -->
 ## 🚀 Highlights
-
-<!-- Add any highlights of this release -->
-
-## ❤️ Contributors
-<!-- markdown-link-check-disable -->
-* Informal Systems ([@informalinc](https://twitter.com/informalinc))
-<!-- markdown-link-check-enable -->
-
-This list is non-exhaustive and ordered alphabetically.  
-Thank you to everyone who contributed to this release!
+This release introduces epochs that reduce the costs of relaying IBC packets for ICS.
+In addition it introduces queries to retrieve the send timestamp of the oldest unconfirmed VSCPacket by chain id and
+for current values of all provider parameters.
