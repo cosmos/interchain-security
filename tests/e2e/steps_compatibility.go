@@ -58,7 +58,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 						},
 					},
 					// not supported across major versions
-					//ProposedConsumerChains: &[]string{consumerName},
+					// ProposedConsumerChains: &[]string{consumerName},
 				},
 			},
 		},
@@ -169,7 +169,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 						ValidatorID("carol"): 9500000000,
 					},
 					// not supported
-					//ProposedConsumerChains: &[]string{},
+					// ProposedConsumerChains: &[]string{},
 				},
 				ChainID(consumerName): ChainState{
 					ValBalances: &map[ValidatorID]uint{
@@ -230,83 +230,4 @@ func compstepsStartChains(consumerNames []string, setupTransferChans bool) []Ste
 	}
 
 	return s
-}
-
-func compstepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step {
-	return []Step{
-		{
-			Action: AssignConsumerPubKeyAction{
-				Chain:     ChainID(consumerName),
-				Validator: ValidatorID("bob"),
-				// reconfigure the node -> validator was using provider key
-				// until this point -> key matches config.consumerValPubKey for "bob"
-				ConsumerPubkey:  getDefaultValidators()[ValidatorID("bob")].ConsumerValPubKey,
-				ReconfigureNode: true,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						// this happens after some delegations
-						// so that the chain does not halt if 1/3 of power is offline
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 500,
-					},
-				},
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						// this happens after some delegations
-						// so that the chain does not halt if 1/3 of power is offline
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 500,
-					},
-					AssignedKeys: &map[ValidatorID]string{
-						ValidatorID("bob"):   getDefaultValidators()[ValidatorID("bob")].ConsumerValconsAddressOnProvider,
-						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ConsumerValconsAddressOnProvider,
-					},
-					ProviderKeys: &map[ValidatorID]string{
-						ValidatorID("bob"):   getDefaultValidators()[ValidatorID("bob")].ValconsAddress,
-						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
-					},
-				},
-			},
-		},
-		{
-			Action: RelayPacketsAction{
-				ChainA:  ChainID("provi"),
-				ChainB:  ChainID(consumerName),
-				Port:    "provider",
-				Channel: 0,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						// this happens after some delegations
-						// so that the chain does not halt if 1/3 of power is offline
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 500,
-					},
-				},
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						// this happens after some delegations
-						// so that the chain does not halt if 1/3 of power is offline
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 500,
-					},
-					AssignedKeys: &map[ValidatorID]string{
-						ValidatorID("bob"):   getDefaultValidators()[ValidatorID("bob")].ConsumerValconsAddressOnProvider,
-						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ConsumerValconsAddressOnProvider,
-					},
-					ProviderKeys: &map[ValidatorID]string{
-						ValidatorID("bob"):   getDefaultValidators()[ValidatorID("bob")].ValconsAddress,
-						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
-					},
-				},
-			},
-		},
-	}
 }

@@ -99,13 +99,13 @@ func (k Keeper) UpdateSlashingSigningInfo(ctx sdk.Context) {
 		}
 		if val.Power < smallestNonOptOutPower {
 			// validator CAN opt-out from validating on consumer chains
-			if val.OptedOut == false {
+			if !val.OptedOut {
 				// previously the validator couldn't opt-out
 				val.OptedOut = true
 			}
 		} else {
 			// validator CANNOT opt-out from validating on consumer chains
-			if val.OptedOut == true {
+			if val.OptedOut {
 				// previously the validator could opt-out
 				signingInfo.StartHeight = ctx.BlockHeight()
 				val.OptedOut = false

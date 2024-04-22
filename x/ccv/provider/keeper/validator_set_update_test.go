@@ -5,18 +5,21 @@ import (
 	"sort"
 	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	"github.com/stretchr/testify/require"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 // TestConsumerValidator tests the `SetConsumerValidator`, `IsConsumerValidator`, and `DeleteConsumerValidator` methods
@@ -85,7 +88,7 @@ func TestGetConsumerValSet(t *testing.T) {
 
 	// sort validators first to be able to compare
 	sortValidators := func(validators []types.ConsumerValidator) {
-		sort.Slice(validators, func(i int, j int) bool {
+		sort.Slice(validators, func(i, j int) bool {
 			return bytes.Compare(validators[i].ProviderConsAddr, validators[j].ProviderConsAddr) < 0
 		})
 	}
@@ -121,8 +124,7 @@ func TestComputeNextEpochConsumerValSet(t *testing.T) {
 		pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
 		pkAny, _ := codectypes.NewAnyWithValue(pk)
 
-		var providerValidatorAddr sdk.ValAddress
-		providerValidatorAddr = providerAddr.Address.Bytes()
+		var providerValidatorAddr sdk.ValAddress = providerAddr.Address.Bytes()
 
 		mocks.MockStakingKeeper.EXPECT().
 			GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
@@ -243,7 +245,11 @@ func TestDiffEdgeCases(t *testing.T) {
 	require.Empty(t, len(keeper.DiffValidators(validators, validators)))
 
 	// only have `nextValidators` that would generate validator updates for the validators to be added
-	expectedUpdates := []abci.ValidatorUpdate{{publicKeyA, 1}, {publicKeyB, 2}, {publicKeyC, 3}}
+	expectedUpdates := []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 1},
+		{PubKey: publicKeyB, Power: 2},
+		{PubKey: publicKeyC, Power: 3},
+	}
 	actualUpdates := keeper.DiffValidators([]types.ConsumerValidator{}, validators)
 	// sort validators first to be able to compare
 	sortUpdates := func(updates []abci.ValidatorUpdate) {
@@ -260,7 +266,11 @@ func TestDiffEdgeCases(t *testing.T) {
 	require.Equal(t, expectedUpdates, actualUpdates)
 
 	// only have `currentValidators` that would generate validator updates for the validators to be removed
-	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 0}, {publicKeyC, 0}}
+	expectedUpdates = []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 0},
+		{PubKey: publicKeyB, Power: 0},
+		{PubKey: publicKeyC, Power: 0},
+	}
 	actualUpdates = keeper.DiffValidators(validators, []types.ConsumerValidator{})
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)
@@ -268,7 +278,10 @@ func TestDiffEdgeCases(t *testing.T) {
 
 	// have nonempty `currentValidators` and `nextValidators`, but with empty intersection
 	// all old validators should be removed, all new validators should be added
-	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 2}}
+	expectedUpdates = []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 0},
+		{PubKey: publicKeyB, Power: 2},
+	}
 	actualUpdates = keeper.DiffValidators(validators[0:1], validators[1:2])
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)

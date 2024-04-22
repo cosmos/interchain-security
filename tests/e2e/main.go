@@ -36,7 +36,7 @@ func (vs *VersionSet) Set(value string) error {
 
 func (vs *VersionSet) String() string {
 	keys := []string{}
-	for k, _ := range *vs {
+	for k := range *vs {
 		keys = append(keys, k)
 	}
 	return fmt.Sprint(keys)
@@ -233,7 +233,8 @@ type testStepsWithConfig struct {
 }
 
 func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVersions,
-	consumerVersions VersionSet) (tests []testStepsWithConfig) {
+	consumerVersions VersionSet,
+) (tests []testStepsWithConfig) {
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
@@ -251,7 +252,6 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 	// Get predefined from selection
 	for _, tc := range selectedPredefinedTests {
 		testConfig := TestConfigType("")
-		testSteps := []Step{}
 
 		// first part of tc is the steps, second part is the test config
 		splitTcString := strings.Split(tc, "::")
@@ -264,7 +264,7 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			log.Fatalf("Step choice '%s' not found.\nsee usage info:\n%s", tc, getTestCaseUsageString())
 		}
 
-		testSteps = stepChoices[tc].steps
+		testSteps := stepChoices[tc].steps
 		if testConfig == "" {
 			testConfig = stepChoices[tc].testConfig
 		}
@@ -326,8 +326,8 @@ func createTestConfigs(cfgType TestConfigType, providerVersions, consumerVersion
 	}
 
 	// Create test configs as a combination of "provider versions" with "consumer version" and "test case"
-	for provider, _ := range providerVersions {
-		for consumer, _ := range consumerVersions {
+	for provider := range providerVersions {
+		for consumer := range consumerVersions {
 			// Skip target creation for same version of provider and consumer
 			// if multiple versions need to be tested.
 			// This is to reduce the tests to be run for compatibility testing.
@@ -375,7 +375,7 @@ func executeTests(runners []TestRunner) error {
 	var wg sync.WaitGroup
 	var err error = nil
 
-	for idx, _ := range runners {
+	for idx := range runners {
 		if parallel != nil && *parallel {
 			wg.Add(1)
 			go func(runner *TestRunner) {
@@ -429,13 +429,13 @@ TEST RESULTS
 		}
 	}
 	if len(passedTests) > 0 {
-		report += fmt.Sprintln("\n\nPASSED TESTS:\n")
+		report += fmt.Sprintln("\n\nPASSED TESTS:")
 		for _, t := range passedTests {
 			report += t.Report()
 		}
 	}
 	if len(remainingTests) > 0 {
-		report += fmt.Sprintln("\n\nREMAINING TESTS:\n")
+		report += fmt.Sprintln("\n\nREMAINING TESTS:")
 		for _, t := range remainingTests {
 			report += t.Report()
 		}
@@ -474,7 +474,7 @@ func main() {
 	start := time.Now()
 	err := executeTests(testRunners)
 	if err != nil {
-		log.Fatalf("Test execution failed '%s'", err)
+		log.Panicf("Test execution failed '%s'", err)
 	}
 
 	printReport(testRunners, time.Since(start))

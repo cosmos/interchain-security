@@ -148,17 +148,20 @@ verify-models:
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
-
+golangci_lint_cmd=golangci-lint
 golangci_version=v1.54.1
 
 lint:
 	@echo "--> Running linter"
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
-	golangci-lint run  ./... --config .golangci.yml
+	@$(golangci_lint_cmd) run  ./... --config .golangci.yml
 
 format:
+	@go install mvdan.cc/gofumpt@latest
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -path "./tests/mocks/*" -not -name "*.pb.go" -not -name "*.pb.gw.go" -not -name "*.pulsar.go" -not -path "./crypto/keys/secp256k1/*" | xargs gofumpt -w -l
-	golangci-lint run --fix --config .golangci.yml
+	$(golangci_lint_cmd) run --fix --config .golangci.yml
+
 .PHONY: format
 
 mockgen_cmd=go run github.com/golang/mock/mockgen
