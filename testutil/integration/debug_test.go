@@ -137,7 +137,6 @@ func TestValidatorDowntime(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDowntime")
 }
 
-// TODO: fix panics -> possible app wiring issue -> seems that evidence router is nil
 func TestValidatorDoubleSigning(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDoubleSigning")
 }
