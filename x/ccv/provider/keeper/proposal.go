@@ -14,7 +14,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
@@ -245,29 +244,8 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
 
-	var lastPowers []stakingtypes.LastValidatorPower
-
-	k.stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
-		lastPowers = append(lastPowers, stakingtypes.LastValidatorPower{Address: addr.String(), Power: power})
-		return false
-	})
-
-	var bondedValidators []stakingtypes.Validator
-
-	for _, p := range lastPowers {
-		addr, err := sdk.ValAddressFromBech32(p.Address)
-		if err != nil {
-			return gen, nil, err
-		}
-
-		val, found := k.stakingKeeper.GetValidator(ctx, addr)
-		if !found {
-			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
-		}
-
-		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
-		bondedValidators = append(bondedValidators, val)
-	}
+	// get the bonded validators from the staking module
+	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
 	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
