@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v4.1.1
+
+*April 22, 2024*
+
+### BUG FIXES
+
+- [Provider](x/ccv/provider)
+  - Fix the output format of QueryAllPairsValConAddrByConsumerChainID to be consumer addresses instead of bytes
+    ([\#1722](https://github.com/cosmos/interchain-security/pull/1722))
+
 ## v4.1.0
 
 *April 17, 2024*
