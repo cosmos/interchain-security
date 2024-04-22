@@ -595,9 +595,8 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	suite.Require().NoError(err)
 	suite.Require().NotEmpty(evidenceMsg)
 
-	// NOTE: v50 -> this part is not correct -> we cannot do this without registering an evidence handler
-	// this was done using 	suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
-	// HandleEquivocationEvidence is not exposed in the evidencekeeper interface anymore
+	// this was previously done using suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
+	// HandleEquivocationEvidence is not exposed in the evidencekeeper interface starting cosmos-sdk v0.50.x
 	// suite.consumerApp.GetTestEvidenceKeeper().SubmitEvidence(ctx, e)
 	handleEquivocationEvidence(ctx, suite.consumerApp, e)
 
