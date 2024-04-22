@@ -14,16 +14,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-
 	abcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
 	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"

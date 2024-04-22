@@ -24,14 +24,21 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
+const (
+	done = "done!!!!!!!!"
+
+	VLatest = "latest"
+	V400    = "v4.0.0"
+	V330    = "v3.3.0"
+	V300    = "v3.0.0"
+)
+
 type SendTokensAction struct {
 	Chain  ChainID
 	From   ValidatorID
 	To     ValidatorID
 	Amount uint
 }
-
-const done = "done!!!!!!!!"
 
 func (tr TestConfig) sendTokens(
 	action SendTokensAction,
@@ -294,7 +301,6 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -311,7 +317,6 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -354,7 +359,6 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -371,7 +375,6 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -430,7 +433,6 @@ func (tr TestConfig) submitParamChangeProposal(
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json"),
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -559,7 +561,6 @@ func (tr *TestConfig) getConsumerGenesis(providerChain, consumerChain ChainID, t
 
 // needsGenesisTransform tries to identify if a genesis transformation should be performed
 func needsGenesisTransform(cfg TargetConfig) bool {
-
 	// no genesis transformation needed for same versions
 	if cfg.consumerVersion == cfg.providerVersion {
 		return false
@@ -567,12 +568,12 @@ func needsGenesisTransform(cfg TargetConfig) bool {
 
 	// use v4.0.0 (after genesis transform breakages) for the checks if 'latest' is used
 	consumerVersion := cfg.consumerVersion
-	if cfg.consumerVersion == "latest" {
-		consumerVersion = "v4.0.0"
+	if cfg.consumerVersion == VLatest {
+		consumerVersion = V400
 	}
 	providerVersion := cfg.providerVersion
-	if cfg.providerVersion == "latest" {
-		providerVersion = "v4.0.0"
+	if cfg.providerVersion == VLatest {
+		providerVersion = V400
 	}
 
 	if !semver.IsValid(consumerVersion) || !semver.IsValid(providerVersion) {
@@ -581,7 +582,7 @@ func needsGenesisTransform(cfg TargetConfig) bool {
 		return false
 	}
 
-	breakages := []string{"v3.0.0", "v3.3.0", "v4.0.0"}
+	breakages := []string{V300, V330, V400}
 	for _, breakage := range breakages {
 		if (semver.Compare(consumerVersion, breakage) < 0 && semver.Compare(providerVersion, breakage) >= 0) ||
 			(semver.Compare(providerVersion, breakage) < 0 && semver.Compare(consumerVersion, breakage) >= 0) {
@@ -600,7 +601,7 @@ func getTransformParameter(consumerVersion string) (string, error) {
 	case "":
 		// For "" (default: local workspace) use HEAD as reference point
 		consumerVersion = "HEAD"
-	case "latest":
+	case VLatest:
 		// For 'latest' originated from latest-image use "origin/main" as ref point
 		consumerVersion = "origin/main"
 	}
@@ -673,9 +674,9 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 	}
 	defer file.Close()
-	err = os.WriteFile(file.Name(), genesis, 0600)
+	err = os.WriteFile(file.Name(), genesis, 0o600)
 	if err != nil {
-		log.Fatalf("Failed writing consumer genesis to file: %v", err)
+		log.Panicf("Failed writing consumer genesis to file: %v", err)
 	}
 
 	containerInstance := tr.containerConfig.InstanceName
@@ -686,7 +687,7 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		fmt.Sprintf("%s:%s", containerInstance, targetFile))
 	genesis, err = cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err, "\n", string(genesis))
+		log.Panic(err, "\n", string(genesis))
 	}
 
 	// check if genesis transform supports --to target
@@ -697,7 +698,7 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 		cfg := target.GetTargetConfig()
 		targetVersion, err := getTransformParameter(cfg.consumerVersion)
 		if err != nil {
-			log.Fatal("Failed getting genesis transformation parameter: ", err)
+			log.Panic("Failed getting genesis transformation parameter: ", err)
 		}
 		cmd = target.ExecCommand(
 			"interchain-security-transformer",
@@ -710,7 +711,7 @@ func (tr *TestConfig) transformConsumerGenesis(consumerChain ChainID, genesis []
 
 	result, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(result))
+		log.Panic(err, "CCV consumer genesis transformation failed: %s", string(result))
 	}
 	return result
 }
@@ -852,32 +853,6 @@ type AddChainToRelayerAction struct {
 	IsConsumer bool
 }
 
-const hermesChainConfigTemplate = `
-
-[[chains]]
-account_prefix = "%s"
-clock_drift = "5s"
-gas_multiplier = 1.1
-grpc_addr = "%s"
-id = "%s"
-key_name = "%s"
-max_gas = 20000000
-rpc_addr = "%s"
-rpc_timeout = "10s"
-store_prefix = "ibc"
-trusting_period = "14days"
-event_source = { mode = "push", url = "%s", batch_delay = "50ms" }
-ccv_consumer_chain = %v
-
-[chains.gas_price]
-	denom = "stake"
-	price = 0.000
-
-[chains.trust_threshold]
-	denominator = "3"
-	numerator = "1"
-`
-
 // Set up the config for a new chain for gorelayer.
 // This config is added to the container as a file.
 // We then add the chain to the relayer, using this config as the chain config with `rly chains add --file`
@@ -954,15 +929,11 @@ func (tr TestConfig) addChainToHermes(
 	target ExecutionTarget,
 	verbose bool,
 ) {
-
 	bz, err := target.ExecCommand("bash", "-c", "hermes", "version").CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n error getting hermes version", string(bz))
 	}
-	re, err := regexp.Compile(`hermes\s+(\d+.\d+.\d+)`)
-	if err != nil {
-		log.Fatal(err, "error identifying hermes version")
-	}
+	re := regexp.MustCompile(`hermes\s+(\d+.\d+.\d+)`)
 	match := re.FindStringSubmatch(string(bz))
 	if match == nil {
 		log.Fatalln("error identifying hermes version from", string(bz))
@@ -999,7 +970,6 @@ func (tr TestConfig) addChainToHermes(
 		"--chain", string(tr.chainConfigs[action.Chain].ChainId),
 		"--mnemonic-file", "/root/.hermes/mnemonic.txt",
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1956,7 +1926,6 @@ func (tr TestConfig) submitChangeRewardDenomsProposal(action SubmitChangeRewardD
 
 	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/change-reward-denoms-proposal.json")).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1972,7 +1941,6 @@ func (tr TestConfig) submitChangeRewardDenomsProposal(action SubmitChangeRewardD
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}

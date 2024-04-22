@@ -1,24 +1,23 @@
 package keeper_test
 
 import (
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"strings"
 	"testing"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/testutil/crypto"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
@@ -667,7 +666,7 @@ func TestEndBlockVSU(t *testing.T) {
 	// create 4 sample lastValidators
 	var lastValidators []stakingtypes.Validator
 	for i := 0; i < 4; i++ {
-		lastValidators = append(lastValidators, crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator())
+		lastValidators = append(lastValidators, cryptotestutil.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator())
 	}
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
 	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(2)).AnyTimes()

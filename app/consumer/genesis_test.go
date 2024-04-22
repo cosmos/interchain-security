@@ -21,6 +21,12 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
+const (
+	V4x  = "v4.x"
+	V33x = "v3.3.x"
+	V2x  = "v2.x"
+)
+
 // Testdata mapping consumer genesis exports to a provider module version as
 // used by transformation function for consumer genesis content.
 var consumerGenesisStates map[string]string = map[string]string{
@@ -393,6 +399,7 @@ var consumerGenesisStates map[string]string = map[string]string{
 // creates ccv consumer genesis data content for a given version
 // as it was exported from a provider
 func createConsumerDataGenesisFile(t *testing.T, version string) string {
+	t.Helper()
 	filePath := filepath.Join(t.TempDir(), fmt.Sprintf("ConsumerGenesis_%s.json", version))
 	err := os.WriteFile(
 		filePath,
@@ -454,7 +461,7 @@ func transformConsumerGenesis(filePath string, version *string) ([]byte, error) 
 // Check transformation of a version 2 ConsumerGenesis export to
 // consumer genesis json format used by current consumer implementation.
 func TestConsumerGenesisTransformationFromV2ToCurrent(t *testing.T) {
-	version := "v2.x"
+	version := V2x
 	ctx := getClientCtx()
 
 	srcGenesis := consumerTypes.GenesisState{}
@@ -502,12 +509,11 @@ func TestConsumerGenesisTransformationFromV2ToCurrent(t *testing.T) {
 	require.Equal(t, "", resultGenesis.ProviderChannelId)
 	require.Equal(t, srcGenesis.InitialValSet, resultGenesis.Provider.InitialValSet)
 	require.Empty(t, resultGenesis.InitialValSet)
-
 }
 
 // Check transformation of provider v3.3.x implementation to consumer V2
 func TestConsumerGenesisTransformationV330ToV2(t *testing.T) {
-	version := "v3.3.x"
+	version := V33x
 	filePath := createConsumerDataGenesisFile(t, version)
 	defer os.Remove(filePath)
 
@@ -516,7 +522,7 @@ func TestConsumerGenesisTransformationV330ToV2(t *testing.T) {
 	err := ctx.Codec.UnmarshalJSON([]byte(consumerGenesisStates[version]), &srcGenesis)
 	require.NoError(t, err)
 
-	targetVersion := "v2.x"
+	targetVersion := V2x
 	result, err := transformConsumerGenesis(filePath, &targetVersion)
 	require.NoError(t, err)
 
@@ -530,12 +536,11 @@ func TestConsumerGenesisTransformationV330ToV2(t *testing.T) {
 	require.Equal(t, srcGenesis.NewChain, resultGenesis.NewChain)
 	require.Equal(t, "", resultGenesis.ProviderClientId)
 	require.Equal(t, "", resultGenesis.ProviderChannelId)
-
 }
 
 // Check transformation of provider v3.3.x implementation to current consumer version
 func TestConsumerGenesisTransformationV330ToCurrent(t *testing.T) {
-	version := "v3.3.x"
+	version := V33x
 	filePath := createConsumerDataGenesisFile(t, version)
 	defer os.Remove(filePath)
 
@@ -578,7 +583,7 @@ func TestConsumerGenesisTransformationV330ToCurrent(t *testing.T) {
 
 // Check transformation of provider v4.x implementation to consumer V2
 func TestConsumerGenesisTransformationV4ToV2(t *testing.T) {
-	version := "v4.x"
+	version := V4x
 	filePath := createConsumerDataGenesisFile(t, version)
 	defer os.Remove(filePath)
 
@@ -587,7 +592,7 @@ func TestConsumerGenesisTransformationV4ToV2(t *testing.T) {
 	err := ctx.Codec.UnmarshalJSON([]byte(consumerGenesisStates[version]), &srcGenesis)
 	require.NoError(t, err)
 
-	targetVersion := "v2.x"
+	targetVersion := V2x
 	result, err := transformConsumerGenesis(filePath, &targetVersion)
 	require.NoError(t, err)
 
@@ -626,7 +631,7 @@ func TestConsumerGenesisTransformationV4ToV2(t *testing.T) {
 
 // Check transformation of provider v3.3.x implementation to consumer V2
 func TestConsumerGenesisTransformationV4ToV33(t *testing.T) {
-	version := "v4.x"
+	version := V4x
 	filePath := createConsumerDataGenesisFile(t, version)
 	defer os.Remove(filePath)
 
@@ -635,10 +640,10 @@ func TestConsumerGenesisTransformationV4ToV33(t *testing.T) {
 	err := ctx.Codec.UnmarshalJSON([]byte(consumerGenesisStates[version]), &srcGenesis)
 	require.NoError(t, err)
 
-	targetVersion := "v3.3.x"
+	targetVersion := V33x
 	result, err := transformConsumerGenesis(filePath, &targetVersion)
 	require.NoError(t, err)
-	resultGenesis := consumerTypes.GenesisState{} //Only difference to v33 is no RetryDelayPeriod
+	resultGenesis := consumerTypes.GenesisState{} // Only difference to v33 is no RetryDelayPeriod
 	err = ctx.Codec.UnmarshalJSON(result, &resultGenesis)
 	require.NoError(t, err)
 

@@ -15,15 +15,13 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
 
-	cmttypes "github.com/cometbft/cometbft/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	cmttypes "github.com/cometbft/cometbft/types"
+
 	"github.com/cosmos/interchain-security/v4/testutil/integration"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -460,7 +458,7 @@ func RunItfTrace(t *testing.T, path string) {
 			}
 
 			val := addressMap[validatorName]
-			valConsAddr := sdktypes.ConsAddress(val.Address)
+			valConsAddr := sdk.ConsAddress(val.Address)
 
 			slashFraction := doubleSignSlashPercentage
 			if isDowntime {
@@ -587,12 +585,14 @@ func RunItfTrace(t *testing.T, path string) {
 }
 
 func UpdateProviderClientOnConsumer(t *testing.T, driver *Driver, consumerChainId string) {
+	t.Helper()
 	driver.path(ChainId(consumerChainId)).AddClientHeader(PROVIDER, driver.providerHeader())
 	err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
 	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
 }
 
 func UpdateConsumerClientOnProvider(t *testing.T, driver *Driver, consumerChain string) {
+	t.Helper()
 	consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
 	driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
 	err := driver.path(ChainId(consumerChain)).UpdateClient(PROVIDER, false)
@@ -634,7 +634,7 @@ func CompareValidatorSets(
 			if ok { // the node has a key assigned, use the name of the consumer address in the model
 				consumerCurValSet[consAddrModelName] = val.Power
 			} else { // the node doesn't have a key assigned yet, get the validator moniker
-				consAddr := providertypes.NewConsumerConsAddress(sdktypes.ConsAddress(pubkey.Address().Bytes()))
+				consAddr := providertypes.NewConsumerConsAddress(sdk.ConsAddress(pubkey.Address().Bytes()))
 
 				// the consumer vals right now are CrossChainValidators, for which we don't know their mnemonic
 				// so we need to find the mnemonic of the consumer val now to enter it by name in the map
