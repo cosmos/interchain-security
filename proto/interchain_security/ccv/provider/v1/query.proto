@@ -207,9 +207,9 @@ message QueryAllPairsValConAddrByConsumerChainIDResponse {
 
 message PairValConAddrProviderAndConsumer {
   // The consensus address of the validator on the provider chain
-  string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"provider_address\"" ];
   // The consensus address of the validator on the consumer chain
-  string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"consumer_address\"" ];
   tendermint.crypto.PublicKey consumer_key = 3;
 }
 
