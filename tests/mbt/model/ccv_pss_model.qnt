@@ -68,7 +68,7 @@ module ccv_pss_model {
     val AtLeastTopNPower: bool = 
         runningConsumers.forall(consumer => {
             val topN = currentState.providerState.topNByConsumer.get(consumer)
-            val totalPowerConsu = currentState.consumerStates.get(consumer).chainState.currentValidatorSet.mapValuesSum()
+            val totalPowerConsu = currentState.consumerStates.get(consumer).chainState.currentValidatorPowers.mapValuesSum()
             currentState.providerState.chainState.votingPowerHistory.toSet().exists(
                 valSet => {
                     val totalPowerProvi = valSet.mapValuesSum()

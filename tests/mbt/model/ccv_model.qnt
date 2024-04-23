@@ -1063,7 +1063,7 @@ module ccv_model {
     run DowntimeSlashTest = 
         init.then(
             // start all consumer chains
-            EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
+            EndAndBeginBlockForProvider(1 * Second, ConsumerChains.map(c => NewFullConsumer(c)), Set())
         ).then(
             // change voting power
             VotingPowerChange("node1", 50)
@@ -1101,7 +1101,7 @@ module ccv_model {
         init
         .then(
             // start consumer 3
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer3")), Set())
         )
         .then(
             // change voting power for node 3 by 50
@@ -1109,7 +1109,7 @@ module ccv_model {
         )
         .then(
             // start consumer 2
-            EndProviderEpoch(3 * Second, Set("consumer2"), Set())
+            EndProviderEpoch(3 * Second, Set(NewFullConsumer("consumer2")), Set())
         )
         .then(
             // deliver a vsc packet to consumer 3
@@ -1129,7 +1129,7 @@ module ccv_model {
         )
         .then(
             // start consumer 1
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1")), Set())
         )
         .then(
             all {
@@ -1143,7 +1143,7 @@ module ccv_model {
         init
         .then(
             // start consumer 2
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer2"), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer2")), Set())
         )
         .then(
             // change vp of node 10 by -50
@@ -1171,7 +1171,7 @@ module ccv_model {
         )
         .then(
             // end and begin a block on the provider, starting consumer 3
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer3")), Set())
         )
         .then(
             // check the ValidatorSetHasExistedKeyAssignmentInv
@@ -1186,7 +1186,7 @@ module ccv_model {
         init
         .then(
             // start consumer 1
-            EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1")), Set())
         )
         .then(
             // change voting power for node 1 by 50
