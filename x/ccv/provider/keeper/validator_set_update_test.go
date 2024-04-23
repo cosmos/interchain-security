@@ -117,9 +117,7 @@ func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, ind
 	providerAddr := types.NewProviderConsAddress(consAddr)
 	pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
 	pkAny, _ := codectypes.NewAnyWithValue(pk)
-
-	var providerValidatorAddr sdk.ValAddress
-	providerValidatorAddr = providerAddr.Address.Bytes()
+	providerValidatorAddr := sdk.ValAddress(providerAddr.Address.Bytes())
 
 	mocks.MockStakingKeeper.EXPECT().
 		GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
