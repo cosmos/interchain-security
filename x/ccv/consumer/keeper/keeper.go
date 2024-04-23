@@ -101,6 +101,11 @@ func NewKeeper(
 	return k
 }
 
+// GetAuthority returns the x/ccv/provider module's authority.
+func (k Keeper) GetAuthority() string {
+	return k.authority
+}
+
 // Returns a keeper with cdc, key and paramSpace set it does not raise any panics during registration (eg with IBCKeeper).
 // Used only in testing.
 func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace) Keeper {
