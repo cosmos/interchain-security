@@ -362,7 +362,7 @@ module ccv_model {
         runningConsumers.forall(chain => // for all running consumers
             currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
                 // go through all its historical and current validator sets
-                validatorSet => providerValidatorHistory.toSet().contains(validatorSet)
+                validatorSet => providerValidatorHistory.toSet().map(v => removeZeroPowers(v)).contains(removeZeroPowers(validatorSet))
                 // and check that they are also historical or current validator sets on the provider
             )
         )
