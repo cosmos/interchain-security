@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Overview
 :::tip
-We advise that you join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/replicated-security) to gain hands-on experience with running consumer chains.
+We advise that you join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/interchain-security) to gain hands-on experience with running consumer chains.
 :::
 
 At present, replicated security requires all validators of the provider chain (ie. Cosmos Hub) to run validator nodes for all governance-approved consumer chains.
