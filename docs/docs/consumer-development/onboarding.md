@@ -4,9 +4,9 @@ title: Onboarding Checklist
 ---
 # Consumer Onboarding Checklist
 
-The following checklists will aid in onboarding a new consumer chain to replicated security.
+The following checklists will aid in onboarding a new consumer chain to interchain security.
 
-Additionally, you can check the [testnet repo](https://github.com/cosmos/testnets/blob/master/replicated-security/CONSUMER_LAUNCH_GUIDE.md) for a comprehensive guide on preparing and launching consumer chains.
+Additionally, you can check the [testnet repo](https://github.com/cosmos/testnets/blob/master/interchain-security/CONSUMER_LAUNCH_GUIDE.md) for a comprehensive guide on preparing and launching consumer chains.
 
 ## 1. Complete testing & integration
 
