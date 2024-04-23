@@ -126,7 +126,7 @@ $: genesis.json $NODE_HOME/config/genesis.json
 $: gaiad start --x-crisis-skip-assert-invariants --home $NODE_HOME --p2p.seeds="08ec17e86dac67b9da70deb20177655495a55407@provider-seed-01.rs-testnet.polypore.xyz:26656,4ea6e56300a2f37b90e58de5ee27d1c9065cf871@provider-seed-02.rs-testnet.polypore.xyz:26656"
 ```
 
-Additional scripts to setup your nodes are available [here](https://github.com/cosmos/testnets/blob/master/interchain-security/provider/join-rs-provider.sh) and [here](https://github.com/cosmos/testnets/blob/master/interchain-security/provider/join-rs-provider-cv.sh). The scripts will configure your node and create the required services - the scripts only work in linux environments.
+Additional scripts to setup your nodes are available [here](https://github.com/cosmos/testnets/blob/master/interchain-security/provider/join-ics-provider.sh) and [here](https://github.com/cosmos/testnets/blob/master/interchain-security/provider/join-ics-provider-cv.sh). The scripts will configure your node and create the required services - the scripts only work in linux environments.
 
 ## Joining consumer chains
 
