@@ -18,4 +18,5 @@ type Stats struct {
 	totalBlockTimePassedPerTrace time.Duration
 
 	numKeyAssignments int
+	numSlashes        int
 }

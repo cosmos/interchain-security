@@ -1,7 +1,8 @@
 ---
-name: EPIC Template
-about: Basic template for EPICs (used by the team)
-labels: epic, needs-triage
+name: Epic Template
+about: Basic template for epics (used by the team)
+title: "[Epic]: "
+labels: ['admin: epic', 'status: waiting-triage']
 ---
 
 ## Problem

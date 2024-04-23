@@ -127,6 +127,13 @@ service Query {
       option (google.api.http).get =
     "/interchain_security/ccv/provider/consumer_commission_rate";
     }
+
+  // QueryOldestUnconfirmedVsc returns the send timestamp of the oldest unconfirmed VSCPacket for a given chainID
+  rpc QueryOldestUnconfirmedVsc(QueryOldestUnconfirmedVscRequest)
+    returns (QueryOldestUnconfirmedVscResponse) {
+      option (google.api.http).get =
+      "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}";
+    }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -230,9 +237,9 @@ message QueryAllPairsValConAddrByConsumerChainIDResponse {
 
 message PairValConAddrProviderAndConsumer {
   // The consensus address of the validator on the provider chain
-  string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"provider_address\"" ];
   // The consensus address of the validator on the consumer chain
-  string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"consumer_address\"" ];
   tendermint.crypto.PublicKey consumer_key = 3;
 }
 
@@ -242,6 +249,7 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
+<<<<<<< HEAD
 
 message QueryConsumerChainOptedInValidatorsRequest {
   string chain_id = 1;
@@ -276,3 +284,11 @@ message QueryValidatorConsumerCommissionRateResponse {
     (gogoproto.nullable)   = false 
   ];
 }
+=======
+message QueryOldestUnconfirmedVscRequest { string chain_id = 1; }
+
+message QueryOldestUnconfirmedVscResponse {
+  interchain_security.ccv.provider.v1.VscSendTimestamp vsc_send_timestamp = 1
+      [ (gogoproto.nullable) = false ];
+}
+>>>>>>> main

@@ -16,7 +16,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -263,7 +262,6 @@ func (k Keeper) MakeConsumerGenesis(
 
 	var bondedValidators []stakingtypes.Validator
 
-	initialUpdates := []abci.ValidatorUpdate{}
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
 		if err != nil {
@@ -274,16 +272,6 @@ func (k Keeper) MakeConsumerGenesis(
 		if !found {
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
 		}
-
-		tmProtoPk, err := val.TmConsPublicKey()
-		if err != nil {
-			return gen, nil, err
-		}
-
-		initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
-			PubKey: tmProtoPk,
-			Power:  p.Power,
-		})
 
 		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
 		bondedValidators = append(bondedValidators, val)

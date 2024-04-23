@@ -124,9 +124,21 @@ func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, ind
 	mocks.MockStakingKeeper.EXPECT().
 		GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
 
+<<<<<<< HEAD
 	return stakingtypes.Validator{
 		OperatorAddress: providerValidatorAddr.String(),
 		ConsensusPubkey: pkAny,
+=======
+		var providerValidatorAddr sdk.ValAddress = providerAddr.Address.Bytes()
+
+		mocks.MockStakingKeeper.EXPECT().
+			GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
+
+		return stakingtypes.Validator{
+			OperatorAddress: providerValidatorAddr.String(),
+			ConsensusPubkey: pkAny,
+		}
+>>>>>>> main
 	}
 }
 func TestDiff(t *testing.T) {
@@ -206,7 +218,11 @@ func TestDiffEdgeCases(t *testing.T) {
 	require.Empty(t, len(keeper.DiffValidators(validators, validators)))
 
 	// only have `nextValidators` that would generate validator updates for the validators to be added
-	expectedUpdates := []abci.ValidatorUpdate{{publicKeyA, 1}, {publicKeyB, 2}, {publicKeyC, 3}}
+	expectedUpdates := []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 1},
+		{PubKey: publicKeyB, Power: 2},
+		{PubKey: publicKeyC, Power: 3},
+	}
 	actualUpdates := keeper.DiffValidators([]types.ConsumerValidator{}, validators)
 	// sort validators first to be able to compare
 	sortUpdates := func(updates []abci.ValidatorUpdate) {
@@ -223,7 +239,11 @@ func TestDiffEdgeCases(t *testing.T) {
 	require.Equal(t, expectedUpdates, actualUpdates)
 
 	// only have `currentValidators` that would generate validator updates for the validators to be removed
-	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 0}, {publicKeyC, 0}}
+	expectedUpdates = []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 0},
+		{PubKey: publicKeyB, Power: 0},
+		{PubKey: publicKeyC, Power: 0},
+	}
 	actualUpdates = keeper.DiffValidators(validators, []types.ConsumerValidator{})
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)
@@ -231,7 +251,10 @@ func TestDiffEdgeCases(t *testing.T) {
 
 	// have nonempty `currentValidators` and `nextValidators`, but with empty intersection
 	// all old validators should be removed, all new validators should be added
-	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 2}}
+	expectedUpdates = []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 0},
+		{PubKey: publicKeyB, Power: 2},
+	}
 	actualUpdates = keeper.DiffValidators(validators[0:1], validators[1:2])
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)

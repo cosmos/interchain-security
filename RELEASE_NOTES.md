@@ -3,9 +3,8 @@
 ## 📝 Changelog
 Check out the [changelog](https://github.com/cosmos/interchain-security/blob/v4.0.0/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/v3.3.0...v4.0.0) from last release.
 
-<!-- Add the following line for major releases -->
-Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/v4.0.x/UPGRADING.md) when migrating 
-from a version `>= v3.1.x` to `v4.0.x`.
+<!-- Add the following line for major or minor releases -->
+Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/<v*.x>/UPGRADING.md) when migrating from `<v-last.x>` to `<v*.x>`.
 
 ## 🚀 Highlights
 

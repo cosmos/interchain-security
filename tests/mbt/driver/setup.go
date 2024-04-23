@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"sort"
 	"testing"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
@@ -56,9 +58,9 @@ var (
 // - a validator set
 // - a map from node names to validator objects and
 // - a map from validator addresses to private validators (signers)
-func CreateValSet(initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator, error) {
+func CreateValSet(initialValidatorSet map[string]int64, chainId string) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator, error) {
 	// create a valSet and signers, but the voting powers will not yet be right
-	valSet, _, signers, err := integration.CreateValidators(len(initialValidatorSet))
+	valSet, _, signers, err := integration.CreateValidators(len(initialValidatorSet), chainId)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -71,6 +73,8 @@ func CreateValSet(initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet,
 	for valName := range initialValidatorSet {
 		valNames = append(valNames, valName)
 	}
+	// sort the names so that the order is deterministic
+	sort.Strings(valNames)
 
 	// assign the validators from the created valSet to valNames in the chosen order
 	for i, valName := range valNames {
@@ -107,7 +111,7 @@ func getAppBytesAndSenders(
 
 	// Create genesis accounts.
 	for i := 0; i < len(nodes); i++ {
-		pk := secp256k1.GenPrivKey()
+		pk := secp256k1.GenPrivKeyFromSecret([]byte(chainID + valNames[i]))
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
 		// Give enough funds for many delegations
@@ -428,7 +432,21 @@ func (s *Driver) setupProvider(
 	// set the CcvTimeoutPeriod
 	providerParams := s.providerKeeper().GetParams(s.ctx("provider"))
 	providerParams.CcvTimeoutPeriod = params.CcvTimeout[ChainId(providerChain.ChainID)]
+	providerParams.SlashMeterReplenishFraction = "1"
+	providerParams.SlashMeterReplenishPeriod = time.Nanosecond
 	s.providerKeeper().SetParams(s.ctx("provider"), providerParams)
+
+	// set the signing infos
+	for _, val := range nodes {
+		s.providerSlashingKeeper().SetValidatorSigningInfo(s.ctx("provider"), val.Address.Bytes(), slashingtypes.ValidatorSigningInfo{
+			Address:             val.Address.String(),
+			StartHeight:         0,
+			IndexOffset:         0,
+			JailedUntil:         time.Time{},
+			Tombstoned:          false,
+			MissedBlocksCounter: 0,
+		})
+	}
 
 	// produce a first block
 	simibc.EndBlock(providerChain, func() {})

@@ -26,4 +26,5 @@ var (
 	ErrConsumerChainNotFound            = errorsmod.Register(ModuleName, 18, "consumer chain not found")
 	ErrInvalidConsumerCommissionRate    = errorsmod.Register(ModuleName, 19, "consumer commission rate is invalid")
 	ErrCannotOptOutFromTopN             = errorsmod.Register(ModuleName, 20, "cannot opt out from a Top N chain")
+	ErrNoUnconfirmedVSCPacket           = errorsmod.Register(ModuleName, 21, "no unconfirmed vsc packet for this chain id")
 )

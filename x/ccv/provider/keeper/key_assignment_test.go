@@ -24,6 +24,8 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
+const ChainID = "chainID"
+
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	chainID := consumer
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
@@ -312,7 +314,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
-	chainID := "chainID"
+	chainID := ChainID
 	providerIdentities := []*cryptotestutil.CryptoIdentity{
 		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
 		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
@@ -638,7 +640,7 @@ type Assignment struct {
 // of simulated scenarios where random key assignments and validator
 // set updates are generated.
 func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
-	CHAINID := "chainID"
+	CHAINID := ChainID
 	// The number of full test executions to run
 	NUM_EXECUTIONS := 100
 	// Each test execution mimics the adding of a consumer chain and the

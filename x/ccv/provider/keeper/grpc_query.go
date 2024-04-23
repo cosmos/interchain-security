@@ -30,7 +30,10 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	gen, ok := k.GetConsumerGenesis(ctx, req.ChainId)
 	if !ok {
-		return nil, errorsmod.Wrap(types.ErrUnknownConsumerChainId, req.ChainId)
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrap(types.ErrUnknownConsumerChainId, req.ChainId).Error(),
+		)
 	}
 
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
@@ -203,8 +206,8 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 			return nil, err
 		}
 		pairValConAddrs = append(pairValConAddrs, &types.PairValConAddrProviderAndConsumer{
-			ProviderAddress: string(data.ProviderAddr),
-			ConsumerAddress: string(consumerAddr),
+			ProviderAddress: sdk.ConsAddress(data.ProviderAddr).String(),
+			ConsumerAddress: consumerAddr.String(),
 			ConsumerKey:     data.ConsumerKey,
 		})
 	}
@@ -338,4 +341,35 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 	}
 
 	return res, nil
+}
+
+func (k Keeper) QueryOldestUnconfirmedVsc(goCtx context.Context, req *types.QueryOldestUnconfirmedVscRequest) (*types.QueryOldestUnconfirmedVscResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if req.ChainId == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid request: chain id cannot be empty")
+	}
+
+	if _, consumerRegistered := k.GetConsumerClientId(ctx, req.ChainId); !consumerRegistered {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrap(types.ErrUnknownConsumerChainId, req.ChainId).Error(),
+		)
+	}
+
+	// Note that GetFirstVscSendTimestamp returns the send timestamp of the oldest
+	// unconfirmed VSCPacket as these timestamps are deleted when handling VSCMaturedPackets
+	ts, found := k.GetFirstVscSendTimestamp(ctx, req.ChainId)
+	if !found {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrap(types.ErrNoUnconfirmedVSCPacket, req.ChainId).Error(),
+		)
+	}
+
+	return &types.QueryOldestUnconfirmedVscResponse{VscSendTimestamp: ts}, nil
 }
