@@ -154,8 +154,4 @@ Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migra
 
 ### Consumer
 
-<<<<<<< HEAD
-Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations.
-=======
 Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. 
->>>>>>> dddbb19 (docs: Add epoch migration to UPGRADING.md (#1808))
