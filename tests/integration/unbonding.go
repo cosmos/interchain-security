@@ -97,7 +97,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 		checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true, "test: "+tc.name)
 
 		// call NextBlock on the provider (which increments the height)
-		s.providerChain.NextBlock()
+		s.nextEpoch()
 
 		// unbond both on provider and consumer and check that
 		// the balance remains unchanged in between

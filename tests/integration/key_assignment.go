@@ -211,7 +211,8 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 			delegate(s, delAddr, bondAmt)
 
 			// Send CCV packet to consumer
-			s.providerChain.NextBlock()
+			// s.providerChain.NextBlock()
+			s.nextEpoch()
 
 			// Relay all VSC packets from provider to consumer
 			relayAllCommittedPackets(

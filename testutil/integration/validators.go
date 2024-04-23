@@ -1,11 +1,6 @@
 package integration
 
 import (
-	"fmt"
-
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/testutil/mock"
-
 	"github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -26,8 +21,8 @@ func CreateValidators(n int, chainId string) (
 		signersByAddress = make(map[string]tmtypes.PrivValidator, n)
 	)
 	for i := 0; i < n; i++ {
-		// privVal := tmtypes.NewMockPV()
-		privVal := mock.PV{PrivKey: ed25519.GenPrivKeyFromSecret([]byte(chainId + fmt.Sprint(i)))}
+		privVal := tmtypes.NewMockPV()
+		// privVal := mock.PV{PrivKey: ed25519.GenPrivKeyFromSecret([]byte(chainId + fmt.Sprint(i)))}
 		pubKey, err := privVal.GetPubKey()
 		if err != nil {
 			return nil, nil, nil, err

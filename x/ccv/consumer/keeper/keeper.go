@@ -35,7 +35,7 @@ type Keeper struct {
 	// should be the x/gov module account.
 	authority string
 
-	storeKey         storetypes.StoreKey // TODO: maybe needs to be removed?
+	storeKey         storetypes.StoreKey
 	storeService     store.KVStoreService
 	cdc              codec.BinaryCodec
 	scopedKeeper     ccv.ScopedKeeper

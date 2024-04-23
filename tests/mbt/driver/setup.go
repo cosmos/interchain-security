@@ -400,7 +400,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// their channel, and are ready for anything to happen.
 	s.consumerKeeper(consumerChainId).SetProviderChannel(s.ctx(consumerChainId), consumerEndPoint.ChannelID)
 
-	// TODO: remove if not needed
+	// TODO: @MSalopek remove if not needed post main merge on release/v5.x branch
 	// Commit a block on both chains, giving us two committed headers from
 	// the same time and height. This is the starting point for all our
 	// data driven testing.

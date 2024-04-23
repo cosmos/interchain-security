@@ -561,7 +561,6 @@ func New(
 	)
 
 	// NOTE: @Msalopek -> ModuleBasic override is happening because Tx commands don't work without it
-	// TODO: double-check
 	ModuleBasics = module.NewBasicManagerFromManager(
 		app.MM,
 		map[string]module.AppModuleBasic{

@@ -283,3 +283,7 @@ func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing
 func TestSlashRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSlashRetries")
 }
+
+func TestKeyAssignment(t *testing.T) {
+	runCCVTestByName(t, "TestKeyAssignment")
+}

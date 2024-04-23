@@ -90,7 +90,7 @@ func AddDemocracyConsumer[T testutil.DemocConsumerApp](
 	s.T().Helper()
 
 	// generate validators private/public key
-	valSet, valUpdates, signers, err := testutil.CreateValidators(4, "test")
+	valSet, valUpdates, signers, err := testutil.CreateValidators(4, "")
 	require.NoError(s.T(), err)
 
 	ibctesting.DefaultTestingAppInit = appIniter(valUpdates)

@@ -96,7 +96,6 @@ func (app *App) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []str
 		panic(err)
 	}
 	for _, delegation := range dels {
-		// NOTE: @MSalopek this may be wrong
 		// TODO: add tests to figure this out (it's low impact since this is just a test app)
 		delAddr, err := app.AccountKeeper.AddressCodec().StringToBytes(delegation.GetDelegatorAddr())
 		if err != nil {

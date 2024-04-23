@@ -361,12 +361,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(sdkCtx,
 						consumerIdentities[0].SDKValConsAddress(),
-					// TODO: check this code after main branch is merged
-					// ).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
-					// mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-					// 	sdkCtx, providerIdentities[0].SDKValOpAddress(),
-					// ).Return(int64(0), nil),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -389,21 +384,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					// TODO: check this code after main branch is merged
-					// ).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
-					// mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-					// 	ctx, providerIdentities[0].SDKValOpAddress(),
-					// ).Return(int64(0), nil),
-					// mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-					// 	consumerIdentities[1].SDKValConsAddress(),
-					// ).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
-					// mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-					// 	ctx, providerIdentities[0].SDKValOpAddress(),
-					// ).Return(int64(0), nil),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[1].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			doActions: func(sdkCtx sdk.Context, k providerkeeper.Keeper) {
@@ -430,12 +414,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					// TODO: check this code after main branch is merged
-					// ).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
-					// mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-					// 	ctx, providerIdentities[0].SDKValOpAddress(),
-					// ).Return(int64(0), nil),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
 					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
