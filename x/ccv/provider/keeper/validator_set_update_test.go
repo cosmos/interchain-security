@@ -144,7 +144,7 @@ func TestComputeNextEpochConsumerValSet(t *testing.T) {
 	valA := createStakingValidator(ctx, mocks, 1, 1)
 	// because validator A has no consumer key set, the `ConsumerPublicKey` we expect is the key on the provider chain
 	valAConsAddr, _ := valA.GetConsAddr()
-	valAPublicKey, _ := valA.TmConsPublicKey()
+	valAPublicKey, _ := valA.CmtConsPublicKey()
 	expectedValidators = append(expectedValidators, types.ConsumerValidator{
 		ProviderConsAddr:  types.NewProviderConsAddress(valAConsAddr).Address.Bytes(),
 		Power:             1,

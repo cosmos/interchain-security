@@ -122,7 +122,7 @@ func (k Keeper) ComputeNextEpochConsumerValSet(
 				" the validator did not assign a new consumer key",
 				"validator", val.GetOperator(),
 				"chainID", chainID)
-			nextConsumerPublicKey, err = val.TmConsPublicKey()
+			nextConsumerPublicKey, err = val.CmtConsPublicKey()
 			if err != nil {
 				// this should never happen and might not be recoverable because without the public key
 				// we cannot generate a validator update
