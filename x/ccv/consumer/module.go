@@ -54,7 +54,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers module concrete types into protobuf Any.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	// ccv.RegisterInterfaces(registry)
+	consumertypes.RegisterInterfaces(registry)
 }
 
 // IsAppModule implements the appmodule.AppModule interface.
