@@ -10,7 +10,7 @@ Upgrading a provider from `v4.0.0` to `v4.1.0` or `v4.1.0-lsm` requires state mi
 as well as the corresponding migrators [here](https://github.com/cosmos/interchain-security/blob/release/v4.1.x/x/ccv/provider/migrations/migrator.go#L38) and [here](https://github.com/cosmos/interchain-security/blob/release/v4.1.x-lsm/x/ccv/provider/migrations/migrator.go#L38).
 Another necessary migration apart from migrating parameters is to initialize the initial ConsumerValSet for all existing consumer chains.
 To do so, the following code should be added to the upgrade handler of the provider chain:
-```
+```go
 func InitICSEpochs(ctx sdk.Context, pk providerkeeper.Keeper, sk stakingkeeper.Keeper) error {
 	ctx.Logger().Info("Initializing ICS epochs...")
 
