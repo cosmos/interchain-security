@@ -17,7 +17,7 @@ import (
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {
-	pk, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
 
 	cases := []struct {
@@ -67,9 +67,9 @@ func TestPacketDataValidateBasic(t *testing.T) {
 }
 
 func TestMarshalPacketData(t *testing.T) {
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk1, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk2, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
 
 	vpd := types.NewValidatorSetChangePacketData(

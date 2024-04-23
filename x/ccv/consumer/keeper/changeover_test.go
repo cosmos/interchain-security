@@ -124,7 +124,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 			for _, ccVal := range ccVals {
 				ccvValPubKey, err := ccVal.ConsPubKey()
 				require.NoError(t, err)
-				tmProtoPubKey, err := sdkcryptocodec.ToTmProtoPublicKey(ccvValPubKey)
+				tmProtoPubKey, err := sdkcryptocodec.ToCmtProtoPublicKey(ccvValPubKey)
 				require.NoError(t, err)
 				if tmProtoPubKey.Equal(valUpdate.PubKey) {
 					found = true
@@ -150,7 +150,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 			for _, val := range tc.lastSovVals {
 				ccvValPubKey, err := val.ConsPubKey()
 				require.NoError(t, err)
-				tmProtoPubKey, err := sdkcryptocodec.ToTmProtoPublicKey(ccvValPubKey)
+				tmProtoPubKey, err := sdkcryptocodec.ToCmtProtoPublicKey(ccvValPubKey)
 				require.NoError(t, err)
 				if returnedValUpdate.PubKey.Equal(tmProtoPubKey) {
 					// If val was already matched to a val update for new set, it's power won't be 0

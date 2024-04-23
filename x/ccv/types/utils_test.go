@@ -16,8 +16,8 @@ import (
 func TestAccumulateChanges(t *testing.T) {
 	_, testKeys, _ := ibctesting.GenerateKeys(t, 2)
 
-	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(testKeys[0])
-	tmPubKey2, _ := cryptocodec.ToTmProtoPublicKey(testKeys[1])
+	tmPubKey, _ := cryptocodec.ToCmtProtoPublicKey(testKeys[0])
+	tmPubKey2, _ := cryptocodec.ToCmtProtoPublicKey(testKeys[1])
 
 	testCases := []struct {
 		name     string

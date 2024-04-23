@@ -248,7 +248,7 @@ func TestExportGenesis(t *testing.T) {
 
 	// mock a validator set
 	pubKey := ed25519.GenPrivKey().PubKey()
-	tmPK, err := cryptocodec.ToTmPubKeyInterface(pubKey)
+	tmPK, err := cryptocodec.ToCmtPubKeyInterface(pubKey)
 	require.NoError(t, err)
 	validator := tmtypes.NewValidator(tmPK, 1)
 	abciValidator := abci.Validator{Address: pubKey.Address(), Power: int64(1)}

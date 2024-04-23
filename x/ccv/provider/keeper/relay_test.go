@@ -27,7 +27,7 @@ import (
 // TestQueueVSCPackets tests queueing validator set updates.
 func TestQueueVSCPackets(t *testing.T) {
 	_, _, key := ibctesting.GenerateKeys(t, 1)
-	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(key)
+	tmPubKey, _ := cryptocodec.ToCmtProtoPublicKey(key)
 
 	testCases := []struct {
 		name                     string

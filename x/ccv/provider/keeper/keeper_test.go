@@ -159,7 +159,7 @@ func TestPendingVSCs(t *testing.T) {
 	_, pks, _ := ibctesting.GenerateKeys(t, 4)
 	var ppks [4]tmprotocrypto.PublicKey
 	for i, pk := range pks {
-		ppks[i], _ = cryptocodec.ToTmProtoPublicKey(pk)
+		ppks[i], _ = cryptocodec.ToCmtProtoPublicKey(pk)
 	}
 
 	packetList := []ccv.ValidatorSetChangePacketData{

@@ -323,7 +323,7 @@ func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.Va
 			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
-		tmPK, err := cryptocodec.ToTmProtoPublicKey(pk)
+		tmPK, err := cryptocodec.ToCmtProtoPublicKey(pk)
 		if err != nil {
 			// This should never happen as the pubkey is assumed
 			// to be stored correctly in ApplyCCValidatorChanges.
