@@ -21,6 +21,7 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
@@ -125,6 +126,21 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.registerPacketSniffer(suite.providerChain)
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
+	// re-assign all validator keys for the first consumer chain
+	// this has to be done before:
+	//  1. the consumer chain is added to the coordinator
+	//  2. MakeGenesis is called on the provider chain
+	//  3. ibc/testing sets the tendermint header for the consumer chain app
+	providerKeeper.SetPendingConsumerAdditionProp(suite.providerCtx(), &types.ConsumerAdditionProposal{
+		ChainId: icstestingutils.FirstConsumerChainID,
+	})
+	ps := providerKeeper.GetAllPendingConsumerAdditionProps(suite.providerCtx())
+	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
+
+	// remove props so they don't interfere with the rest of the setup
+	// if not removed here, setupConsumerCallback will have 2 proposals for adding the first consumer chain
+	providerKeeper.DeletePendingConsumerAdditionProps(suite.providerCtx(), ps...)
+
 	// start consumer chains
 	numConsumers := 5
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
@@ -132,11 +148,6 @@ func (suite *CCVTestSuite) SetupTest() {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
-
-		// re-assign all validator keys for the first consumer chain
-		if i == 0 {
-			consumerKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
-		}
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
@@ -146,6 +157,7 @@ func (suite *CCVTestSuite) SetupTest() {
 			suite.providerCtx(),
 			chainID,
 		)
+
 		suite.Require().True(found, "consumer genesis not found")
 		genesisState := consumertypes.GenesisState{
 			Params:   consumerGenesisState.Params,
@@ -353,10 +365,10 @@ func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestinguti
 	)
 }
 
-// consumerKeyAssignmentt assigns keys to all provider validators for
+// preProposalKeyAssignment assigns keys to all provider validators for
 // the consumer with chainID before the chain is registered, i.e.,
 // before a client to the consumer is created
-func consumerKeyAssignment(s *CCVTestSuite, chainID string) {
+func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	for _, val := range s.providerChain.Vals.Validators {

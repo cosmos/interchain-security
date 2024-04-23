@@ -30,7 +30,7 @@ type ConsumerDemocracyTestSuite struct {
 	setupCallback DemocSetupCallback
 }
 
-// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
+// NewConsumerDemocracyTestSuite returns a new instance of ConsumerDemocracyTestSuite,
 // ready to be tested against using suite.Run().
 func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 	democConsumerAppIniter icstestingutils.ValSetAppIniter,
@@ -80,41 +80,53 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	bondDenom, err := stakingKeeper.BondDenom(s.consumerCtx())
 	s.Require().NoError(err)
 
-	currentRepresentativesRewards := map[string]math.LegacyDec{}
+	previousRepresentativesRewards := map[string]math.LegacyDec{}
 	nextRepresentativesRewards := map[string]math.LegacyDec{}
 	representativesTokens := map[string]math.Int{}
 
 	representatives, err := stakingKeeper.GetAllValidators(s.consumerCtx())
 	s.Require().NoError(err)
 	for _, representative := range representatives {
-		currentRepresentativesRewards[representative.OperatorAddress] = math.LegacyNewDec(0)
+		previousRepresentativesRewards[representative.OperatorAddress] = math.LegacyNewDec(0)
 		nextRepresentativesRewards[representative.OperatorAddress] = math.LegacyNewDec(0)
 		representativesTokens[representative.OperatorAddress] = representative.GetTokens()
 	}
 
 	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerCtx())
 	providerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
-	// balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
+	consumerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerRedistributeName)
 
 	dk, ok := distrKeeper.(sdkdistrkeeper.Keeper)
 	s.Require().True(ok)
-	feePool, err := dk.FeePool.Get(s.consumerCtx().Context())
+	feePool, err := dk.FeePool.Get(s.consumerCtx())
 	s.Require().NoError(err)
 	s.Require().NotEmpty(feePool)
-	currentDistrModuleAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
-	currentProviderFeeAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
-	currentCommunityPoolBalance := feePool.GetCommunityPool().AmountOf(bondDenom)
-	for key := range currentRepresentativesRewards {
+
+	// take balance of relevant accounts before advancing to the next block
+	previousDistrModuleAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
+	previousProviderFeeAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
+	previousConsumerRedistributeBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), consumerRedistributeAccount.GetAddress(), bondDenom).Amount)
+	previousCommunityPoolBalance := feePool.GetCommunityPool().AmountOf(bondDenom)
+	for key := range previousRepresentativesRewards {
 		representativeAddr, _ := sdk.ValAddressFromBech32(key)
 		representativeReward, err := distrKeeper.GetValidatorOutstandingRewards(s.consumerCtx(), representativeAddr)
 		s.Require().NoError(err)
-		currentRepresentativesRewards[key] = representativeReward.Rewards.AmountOf(bondDenom)
+		previousRepresentativesRewards[key] = representativeReward.Rewards.AmountOf(bondDenom)
 	}
 
+	// NextBlock will call the begin block and end block, respectively. Democracy module in the begin blocker sends the tokens from
+	// the consumer redistribute address to the distribution module, giving representatives and community fee pool its portion of rewards.
+	// Consumer module in endblocker, sends the fees from fee collector(auth module) to the consumer redistribute address and to
+	// provider rewards address
 	s.consumerChain.NextBlock()
 
+	// take balance of relevant accounts after new block is created
 	nextDistrModuleAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
 	nextProviderFeeAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
+	nextConsumerRedistributeBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), consumerRedistributeAccount.GetAddress(), bondDenom).Amount)
+	feePool, err = dk.FeePool.Get(s.consumerCtx())
+	s.Require().NoError(err)
+	s.Require().NotEmpty(feePool)
 	nextCommunityPoolBalance := feePool.GetCommunityPool().AmountOf(bondDenom)
 	for key := range nextRepresentativesRewards {
 		representativeAddr, _ := sdk.ValAddressFromBech32(key)
@@ -123,41 +135,44 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 		nextRepresentativesRewards[key] = representativeReward.Rewards.AmountOf(bondDenom)
 	}
 
-	distrModuleDifference := nextDistrModuleAccountBalance.Sub(currentDistrModuleAccountBalance)
-	providerDifference := nextProviderFeeAccountBalance.Sub(currentProviderFeeAccountBalance)
-	communityPoolDifference := nextCommunityPoolBalance.Sub(currentCommunityPoolBalance)
+	distrModuleDifference := nextDistrModuleAccountBalance.Sub(previousDistrModuleAccountBalance)
+	providerDifference := nextProviderFeeAccountBalance.Sub(previousProviderFeeAccountBalance)
+	communityPoolDifference := nextCommunityPoolBalance.Sub(previousCommunityPoolBalance)
 	representativeDifference := map[string]math.LegacyDec{}
-	consumerRedistributeDifference := communityPoolDifference
-
-	for key, currentReward := range currentRepresentativesRewards {
-		representativeDifference[key] = nextRepresentativesRewards[key].Sub(currentReward)
-		consumerRedistributeDifference = consumerRedistributeDifference.Add(representativeDifference[key])
+	totalRepresentativeDifference := math.LegacyZeroDec()
+	for key, currentReward := range previousRepresentativesRewards {
+		diff := nextRepresentativesRewards[key].Sub(currentReward)
+		representativeDifference[key] = diff
+		totalRepresentativeDifference = totalRepresentativeDifference.Add(diff)
 	}
 
+	// confirm endblocker changes: consumer module distributes fees from fee collector to consumer redistribute address
+	// and address aimed for provider rewards
 	consumerRedistributionFraction := math.LegacyMustNewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
+	// since we cannot know the balance of the fee collector when the consumer module transfers the fees, we can only calculate the total fees
+	// as a sum of the provider and consumer rewards and check if the reward is distributed in the expected proportion
+	totalFees := nextConsumerRedistributeBalance.Add(providerDifference)
+	s.Require().Equal(totalFees.Mul(consumerRedistributionFraction), nextConsumerRedistributeBalance)
 
-	// confirm that the total amount given to the community pool plus all representatives is equal to the total amount taken out of distribution
-	s.Require().Equal(distrModuleDifference, consumerRedistributeDifference)
+	// confirm begin blocker changes: democracy module distributes the fees from c onsumer redistribute address to representatives
+	// and community fee pool
+	// distribution module got tokens from previous consumer redistribute balance
+	s.Require().Equal(distrModuleDifference, previousConsumerRedistributeBalance)
 	// confirm that the percentage given to the community pool is equal to the configured community tax percentage.
 	tax, err := distrKeeper.GetCommunityTax(s.consumerCtx())
 	s.Require().NoError(err)
-	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference), tax)
-	// check that the fraction actually kept by the consumer is the correct fraction. using InEpsilon because the math code uses truncations
-	s.Require().InEpsilon(distrModuleDifference.Quo(
-		providerDifference.Add(distrModuleDifference)).MustFloat64(),
-		consumerRedistributionFraction.MustFloat64(), float64(0.0001))
-	// check that the fraction actually kept by the provider is the correct fraction. using InEpsilon because the math code uses truncations
-	s.Require().InEpsilon(providerDifference.Quo(
-		providerDifference.Add(distrModuleDifference)).MustFloat64(),
-		math.LegacyNewDec(1).Sub(consumerRedistributionFraction).MustFloat64(), float64(0.0001))
 
+	s.Require().Equal(communityPoolDifference.Quo(previousConsumerRedistributeBalance), tax)
+	// confirm that the total amount given to the community pool plus all representatives is equal to the previous consumer redistribute balance
+	s.Require().Equal(previousConsumerRedistributeBalance, communityPoolDifference.Add(totalRepresentativeDifference))
+
+	// check that each representative has gotten the correct amount of rewards
 	totalRepresentativePower, err := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
 	s.Require().NoError(err)
 
-	// check that each representative has gotten the correct amount of rewards
 	for key, representativeTokens := range representativesTokens {
 		powerFraction := math.LegacyNewDecFromInt(representativeTokens).QuoTruncate(math.LegacyNewDecFromInt(totalRepresentativePower))
-		s.Require().Equal(powerFraction, representativeDifference[key].Quo(consumerRedistributeDifference.Sub(communityPoolDifference)))
+		s.Require().Equal(powerFraction, representativeDifference[key].Quo(previousConsumerRedistributeBalance.Sub(communityPoolDifference)))
 	}
 }
 
@@ -203,7 +218,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
 	// once the proposal is added to the chain
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
-	s.consumerChain.NextBlock()
 	// at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
 	oldAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	oldMintParams, err := mintKeeper.Params.Get(s.consumerCtx())
@@ -227,7 +241,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), []sdk.Msg{msg_1}, votingAccounts, proposer.GetAddress(), depositAmount)
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
-	s.consumerChain.NextBlock()
 	oldMintParam, err := mintKeeper.Params.Get(s.consumerCtx())
 	s.Require().NoError(err)
 	oldMintParamValue = oldMintParam.InflationMax

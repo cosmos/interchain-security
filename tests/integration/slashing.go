@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,10 +10,12 @@ import (
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
+	"cosmossdk.io/x/evidence/types"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -20,6 +23,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 
+	"github.com/cosmos/interchain-security/v5/testutil/integration"
 	keepertestutil "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
@@ -122,11 +126,11 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		relayAllCommittedPackets(s, s.providerChain, bundle.Path,
 			ccv.ProviderPortID, bundle.Path.EndpointB.ChannelID, 1)
 
-		// check that each consumer updated its VSC ID for the subsequent block
+		// check that each consumer updated its VSC ID for the subsequent not commited block ctx.BlockHeight()
 		consumerKeeper := bundle.GetKeeper()
 		ctx := bundle.GetCtx()
 		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
-			ctx, uint64(ctx.BlockHeight())+1)
+			ctx, uint64(ctx.BlockHeight()))
 		s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
 
 		// check that jailed validator was removed from each consumer validator set
@@ -582,14 +586,19 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	)
 	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
-	// expect to send slash packet when handling double-sign evidence
-	// NOTE: using IBCKeeper Authority as msg submitter (equal to gov module addr)
+	suite.consumerChain.NextBlock()
+	// // expect to send slash packet when handling double-sign evidence
+	// // NOTE: using IBCKeeper Authority as msg submitter (equal to gov module addr)
 	addr, err := sdk.AccAddressFromBech32(suite.consumerApp.GetIBCKeeper().GetAuthority())
 	suite.Require().NoError(err)
 	evidenceMsg, err := evidencetypes.NewMsgSubmitEvidence(addr, e)
 	suite.Require().NoError(err)
 	suite.Require().NotEmpty(evidenceMsg)
-	suite.consumerApp.GetTestEvidenceKeeper().SubmitEvidence(ctx, e)
+
+	// this was previously done using suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
+	// HandleEquivocationEvidence is not exposed in the evidencekeeper interface starting cosmos-sdk v0.50.x
+	// suite.consumerApp.GetTestEvidenceKeeper().SubmitEvidence(ctx, e)
+	handleEquivocationEvidence(ctx, suite.consumerApp, e)
 
 	// check slash packet is queued
 	pendingPackets := suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
@@ -739,4 +748,90 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	// Slash record should now be found (slash sent)
 	_, found = consumerKeeper.GetSlashRecord(suite.consumerCtx())
 	suite.Require().True(found)
+}
+
+// copy of the function from slashing/keeper.go
+// in cosmos-sdk v0.50.x the function HandleEquivocationEvidence is not exposed (it was exposed for versions <= v0.47.x)
+// https://github.com/cosmos/cosmos-sdk/blob/v0.50.4/x/evidence/keeper/infraction.go#L27
+func handleEquivocationEvidence(ctx context.Context, k integration.ConsumerApp, evidence *types.Equivocation) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	slashingKeeper := k.GetTestSlashingKeeper().(slashingkeeper.Keeper)
+	evidenceKeeper := k.GetTestEvidenceKeeper()
+	consAddr := evidence.GetConsensusAddress(k.GetConsumerKeeper().ConsensusAddressCodec())
+
+	validator, err := k.GetConsumerKeeper().ValidatorByConsAddr(ctx, consAddr)
+	if err != nil {
+		return err
+	}
+	if validator == nil || validator.IsUnbonded() {
+		return nil
+	}
+
+	if len(validator.GetOperator()) != 0 {
+		if _, err := slashingKeeper.GetPubkey(ctx, consAddr.Bytes()); err != nil {
+			return nil
+		}
+	}
+
+	// calculate the age of the evidence
+	infractionHeight := evidence.GetHeight()
+	infractionTime := evidence.GetTime()
+	ageDuration := sdkCtx.BlockHeader().Time.Sub(infractionTime)
+	ageBlocks := sdkCtx.BlockHeader().Height - infractionHeight
+
+	// Reject evidence if the double-sign is too old. Evidence is considered stale
+	// if the difference in time and number of blocks is greater than the allowed
+	// parameters defined.
+	cp := sdkCtx.ConsensusParams()
+	if cp.Evidence != nil {
+		if ageDuration > cp.Evidence.MaxAgeDuration && ageBlocks > cp.Evidence.MaxAgeNumBlocks {
+			return nil
+		}
+	}
+
+	if ok := slashingKeeper.HasValidatorSigningInfo(ctx, consAddr); !ok {
+		panic(fmt.Sprintf("expected signing info for validator %s but not found", consAddr))
+	}
+
+	// ignore if the validator is already tombstoned
+	if slashingKeeper.IsTombstoned(ctx, consAddr) {
+		return nil
+	}
+
+	distributionHeight := infractionHeight - sdk.ValidatorUpdateDelay
+	slashFractionDoubleSign, err := slashingKeeper.SlashFractionDoubleSign(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = slashingKeeper.SlashWithInfractionReason(
+		ctx,
+		consAddr,
+		slashFractionDoubleSign,
+		evidence.GetValidatorPower(), distributionHeight,
+		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Jail the validator if not already jailed. This will begin unbonding the
+	// validator if not already unbonding (tombstoned).
+	if !validator.IsJailed() {
+		err = slashingKeeper.Jail(ctx, consAddr)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = slashingKeeper.JailUntil(ctx, consAddr, types.DoubleSignJailEndTime)
+	if err != nil {
+		return err
+	}
+
+	err = slashingKeeper.Tombstone(ctx, consAddr)
+	if err != nil {
+		return err
+	}
+	return evidenceKeeper.Evidences.Set(ctx, evidence.Hash(), evidence)
 }

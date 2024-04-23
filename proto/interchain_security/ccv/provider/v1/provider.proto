@@ -25,9 +25,8 @@ import "cosmos_proto/cosmos.proto";
 // chain are expected to validate the consumer chain at spawn time or get
 // slashed. It is recommended that spawn time occurs after the proposal end
 // time.
-// Deprecated: Use MsgConsumerAddition instead
+// Use MsgConsumerAddition to submit this proposal type.
 message ConsumerAdditionProposal {
-  option deprecated = true;
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.goproto_stringer) = false;
   option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
@@ -93,9 +92,8 @@ message ConsumerAdditionProposal {
 // remove (and stop) a consumer chain. If it passes, all the consumer chain's
 // state is removed from the provider chain. The outstanding unbonding operation
 // funds are released.
-// Deprecated: Use MsgConsumerRemoval instead
+// Use MsgConsumerRemoval to submit this proposal type.
 message ConsumerRemovalProposal {
-  option deprecated = true;
   option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
 
   // the title of the proposal
@@ -128,9 +126,8 @@ message EquivocationProposal {
 
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
-// Deprecated: Use MsgChangeRewardDenoms instead
+// Use MsgChangeRewardDenoms to submit this proposal type.
 message ChangeRewardDenomsProposal {
-  option deprecated = true;
   option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
 
   // the title of the proposal

@@ -5,7 +5,6 @@ import (
 
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
@@ -93,7 +92,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Default slash meter replenish fraction is 0.05, so packet should be handled on provider.
 	stakingVal1 := s.mustGetStakingValFromTmVal(*tmval1)
 	s.Require().True(stakingVal1.IsJailed())
-	stakingVal1Addr, err := sdk.ValAddressFromHex(stakingVal1.GetOperator())
+	stakingVal1Addr, err := providerKeeper.ValidatorAddressCodec().StringToBytes(stakingVal1.GetOperator())
 	s.Require().NoError(err)
 	stakingVal1LastPower, err := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), stakingVal1Addr)
 	s.Require().NoError(err)
@@ -156,7 +155,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Val 2 shouldn't be jailed on provider. Slash packet should have been bounced.
 	stakingVal2 := s.mustGetStakingValFromTmVal(*tmval2)
 	s.Require().False(stakingVal2.IsJailed())
-	stakingVal2Addr, err := sdk.ValAddressFromHex(stakingVal2.GetOperator())
+	stakingVal2Addr, err := providerKeeper.ValidatorAddressCodec().StringToBytes(stakingVal2.GetOperator())
 	s.Require().NoError(err)
 	stakingVal2LastPower, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2Addr)
 	s.Require().Equal(int64(1000), stakingVal2LastPower)
@@ -210,8 +209,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Provider should have now jailed val 2
 	stakingVal2 = s.mustGetStakingValFromTmVal(*tmval2)
 	s.Require().True(stakingVal2.IsJailed())
-	s.Require().False(stakingVal2.IsJailed())
-	stakingVal2Addr, err = sdk.ValAddressFromHex(stakingVal2.GetOperator())
+	stakingVal2Addr, err = providerKeeper.ValidatorAddressCodec().StringToBytes(stakingVal2.GetOperator())
 	s.Require().NoError(err)
 	stakingVal2LastPower, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2Addr)
 	s.Require().Equal(int64(0), stakingVal2LastPower)

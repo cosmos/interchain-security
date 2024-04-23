@@ -136,8 +136,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		// using time.Now() could set the spawn time to be too far in the past or too far in the future
 		SpawnTime:                         coordinator.CurrentTime,
 		UnbondingPeriod:                   ccvtypes.DefaultConsumerUnbondingPeriod,
-		CcvTimeoutPeriod:                  ccvtypes.DefaultBlocksPerDistributionTransmission,
-		TransferTimeoutPeriod:             ccvtypes.DefaultCCVTimeoutPeriod,
+		CcvTimeoutPeriod:                  ccvtypes.DefaultCCVTimeoutPeriod,
+		TransferTimeoutPeriod:             ccvtypes.DefaultTransferTimeoutPeriod,
 		ConsumerRedistributionFraction:    ccvtypes.DefaultConsumerRedistributeFrac,
 		BlocksPerDistributionTransmission: ccvtypes.DefaultBlocksPerDistributionTransmission,
 		HistoricalEntries:                 ccvtypes.DefaultHistoricalEntries,
@@ -145,8 +145,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	}
 
 	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), &prop)
-	propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(providerChain.GetContext())
-	s.Require().Len(propsToExecute, 1, "props to execute is incorrect length")
+	props := providerKeeper.GetAllPendingConsumerAdditionProps(providerChain.GetContext())
+	s.Require().Len(props, 1, "unexpected len consumer addition proposals in AddConsumer")
 
 	// commit the state on the provider chain
 	coordinator.CommitBlock(providerChain)
@@ -156,7 +156,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		providerChain.GetContext(),
 		chainID,
 	)
-	s.Require().True(found, "consumer genesis not found")
+
+	s.Require().True(found, "consumer genesis not found in AddConsumer")
 
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator

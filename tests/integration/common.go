@@ -275,7 +275,7 @@ func relayAllCommittedPackets(
 	s.Require().Equal(
 		expectedPackets,
 		len(commitments),
-		fmt.Sprintf("actual number of packet commitments does not match expectation; %s", msgAndArgs...),
+		fmt.Sprintf("actual number of packet commitments does not match expectation; expected: %d - got: %d", expectedPackets, len(commitments)),
 	)
 
 	// relay all packets from srcChain to counterparty
@@ -290,7 +290,7 @@ func relayAllCommittedPackets(
 		err := path.RelayPacket(packet)
 		s.Require().NoError(
 			err,
-			fmt.Sprintf("error while relaying packets; %s", msgAndArgs...),
+			fmt.Sprintf("error while relaying packets; %v", err),
 		)
 	}
 }
@@ -371,10 +371,9 @@ func checkRedelegationEntryCompletionTime(
 }
 
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k testutil.TestStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
-	found := false
 	stakingUbd, err := k.GetUnbondingDelegationByUnbondingID(ctx, id)
 	if err != nil {
-		return found
+		return
 	}
 
 	for _, entry := range stakingUbd.Entries {
