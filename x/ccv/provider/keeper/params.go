@@ -74,9 +74,8 @@ func (k Keeper) GetConsumerRewardDenomRegistrationFee(ctx sdk.Context) sdk.Coin 
 
 // GetBlocksPerEpoch returns the number of blocks that constitute an epoch
 func (k Keeper) GetBlocksPerEpoch(ctx sdk.Context) int64 {
-	var b int64
-	k.paramSpace.Get(ctx, types.KeyBlocksPerEpoch, &b)
-	return b
+	params := k.GetParams(ctx)
+	return params.BlocksPerEpoch
 }
 
 // GetParams returns the paramset for the provider module

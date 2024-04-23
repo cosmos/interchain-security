@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -43,7 +44,7 @@ func (k Keeper) DeleteConsumerValSet(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 
 	var keysToDel [][]byte
 	defer iterator.Close()
@@ -73,7 +74,7 @@ func (k Keeper) GetConsumerValSet(
 ) (validators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -97,13 +98,20 @@ func (k Keeper) ComputeNextEpochConsumerValSet(
 ) []types.ConsumerValidator {
 	var nextValidators []types.ConsumerValidator
 	for _, val := range bondedValidators {
+		valoper, err := k.ValidatorAddressCodec().StringToBytes(val.GetOperator())
+		if err != nil {
+			panic(fmt.Errorf("could not decode validator operator: %w", err))
+		}
 		// get next voting power and the next consumer public key
-		nextPower := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+		nextPower, err := k.stakingKeeper.GetLastValidatorPower(ctx, valoper)
+		if err != nil {
+			panic(fmt.Errorf("could not get last validator power: %w", err))
+		}
 		consAddr, err := val.GetConsAddr()
 		if err != nil {
 			// this should never happen but is recoverable if we exclude this validator from the `nextValidators`
 			k.Logger(ctx).Error("could not get consensus address of validator",
-				"validator", val.GetOperator().String(),
+				"validator", val.GetOperator(),
 				"error", err)
 			continue
 		}
@@ -112,7 +120,7 @@ func (k Keeper) ComputeNextEpochConsumerValSet(
 			// if no consumer key assigned then use the validator's key itself
 			k.Logger(ctx).Info("could not retrieve public key for validator on consumer chain because"+
 				" the validator did not assign a new consumer key",
-				"validator", val.GetOperator().String(),
+				"validator", val.GetOperator(),
 				"chainID", chainID)
 			nextConsumerPublicKey, err = val.TmConsPublicKey()
 			if err != nil {

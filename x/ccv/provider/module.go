@@ -127,8 +127,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err != nil {
 		panic(err)
 	}
-	if err := cfg.RegisterMigration(providertypes.ModuleName, 3, m.Migrate3to4); err != nil {
-		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
+	if err := cfg.RegisterMigration(providertypes.ModuleName, 3, migrator.Migrate3to4); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 3 -> 4", providertypes.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(providertypes.ModuleName, 4, migrator.Migrate4to5); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 4 -> 4", providertypes.ModuleName, err))
 	}
 }
 
@@ -150,7 +153,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 4 }
+func (AppModule) ConsensusVersion() uint64 { return 5 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx context.Context) error {

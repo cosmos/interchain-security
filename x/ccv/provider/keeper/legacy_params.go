@@ -70,6 +70,12 @@ func getConsumerRewardDenomRegistrationFee(ctx sdk.Context, paramSpace paramtype
 	return c
 }
 
+func getBlocksPerEpoch(ctx sdk.Context, paramSpace paramtypes.Subspace) int64 {
+	var b int64
+	paramSpace.Get(ctx, types.KeyBlocksPerEpoch, &b)
+	return b
+}
+
 // Legacy: Only for migration purposes. GetParamsLegacy returns the paramset for the provider
 // module from a given param subspace
 func GetParamsLegacy(ctx sdk.Context, paramspace paramtypes.Subspace) types.Params {
@@ -82,5 +88,6 @@ func GetParamsLegacy(ctx sdk.Context, paramspace paramtypes.Subspace) types.Para
 		getSlashMeterReplenishPeriod(ctx, paramspace),
 		getSlashMeterReplenishFraction(ctx, paramspace),
 		getConsumerRewardDenomRegistrationFee(ctx, paramspace),
+		getBlocksPerEpoch(ctx, paramspace),
 	)
 }
