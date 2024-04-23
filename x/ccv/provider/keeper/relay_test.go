@@ -682,8 +682,8 @@ func TestEndBlockVSU(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		lastValidators = append(lastValidators, cryptotestutil.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator())
 	}
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(2)).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(2), nil).AnyTimes()
 
 	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")

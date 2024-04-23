@@ -121,13 +121,13 @@ func TestComputeNextEpochConsumerValSet(t *testing.T) {
 		providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{byte(index)}).PubKey()
 		consAddr := sdk.ConsAddress(providerConsPubKey.Address())
 		providerAddr := types.NewProviderConsAddress(consAddr)
-		pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
+		pk, _ := cryptocodec.FromCmtPubKeyInterface(providerConsPubKey)
 		pkAny, _ := codectypes.NewAnyWithValue(pk)
 
 		var providerValidatorAddr sdk.ValAddress = providerAddr.Address.Bytes()
 
 		mocks.MockStakingKeeper.EXPECT().
-			GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
+			GetLastValidatorPower(ctx, providerValidatorAddr).Return(power, nil).AnyTimes()
 
 		return stakingtypes.Validator{
 			OperatorAddress: providerValidatorAddr.String(),
