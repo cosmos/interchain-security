@@ -63,6 +63,7 @@ All missing minor release versions have been discontinued.
 | `v3.3.x` | July 10, 2024 |
 | `v3.3.x-lsm` | July 10, 2024 |
 | `v4.0.x` | January 24, 2025 |
+| `v4.1.x` | January 24, 2025 |
 
 **Note**: As of [Gaia v15.1.0](https://github.com/cosmos/gaia/releases/tag/v15.1.0),
 the Cosmos Hub uses a fork of Cosmos SDK ([v0.47.10-ics-lsm](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.10-ics-lsm))
@@ -81,6 +82,8 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 | [v3.3.0](https://github.com/cosmos/interchain-security/releases/tag/v3.3.0) | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 |
 | [v3.3.3-lsm](https://github.com/cosmos/interchain-security/releases/tag/v3.3.3-lsm) | 1.20 | v7.3.1 | v0.47.10-ics-lsm | v0.37.4 | Provider only (Cosmos Hub specific) |
 | [v4.0.0](https://github.com/cosmos/interchain-security/releases/tag/v4.0.0) | 1.21 | v7.3.1 | v0.47.7 | v0.37.4 | Provider on >= v4.0.0 backwards compatible with consumers >= v3.2.0 |
+| [v4.1.1](https://github.com/cosmos/interchain-security/releases/tag/v4.1.1) | 1.21 | v7.4.0 | v0.47.10 | v0.37.4 |
+| [v4.1.1-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.1.1-lsm) | 1.21 | v7.4.0 | v0.47.12-ics-lsm | v0.37.4 | Provider only (Cosmos Hub specific) |
 
 **Note:** For a list of major ICS features available in the currently active releases, see [FEATURES.md](./FEATURES.md).
 
@@ -90,11 +93,12 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 
 The following table indicates the compatibility of currently active releases:
 
-| Consumer | Provider | `v3.2.0` | `v3.3.0` | `v3.3.3-lsm` | `v4.0.0` |
-|----------|----------|----------|----------|--------------|----------|
-| `v3.2.0` || ✅ | ✅ (1) | ✅ | ✅ |
-| `v3.3.0` || ✅ (1) | ✅ | ✅ | ✅ |
-| `v4.0.0` || ✅ (1)| ✅ (1)| ✅ (1) | ✅ |
+| Consumer | Provider | `v3.2.0` | `v3.3.0` | `v3.3.3-lsm` | `v4.0.0` | `v4.1.1-lsm` |
+|----------|----------|----------|----------|--------------|----------|--------------|
+| `v3.2.0` || ✅ | ✅ (1) | ✅ | ✅ | ✅ |
+| `v3.3.0` || ✅ (1) | ✅ | ✅ | ✅ | ✅ |
+| `v4.0.0` || ✅ (1)| ✅ (1)| ✅ (1) | ✅ | ✅ |
+| `v4.1.1` || ✅ (1)| ✅ (1)| ✅ (1) | ✅ | ✅ |
 
 #### Notes
 
