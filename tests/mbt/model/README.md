@@ -32,6 +32,8 @@ All the logic in EndBlock/BeginBlock happens here, like updating the validator s
 * `DeliverVscPacket(receiver: Chain)`: Delivers a pending VSCPacket from the provider to the consumer `receiver`.
 * `DeliverPacketToProvider(sender: Chain)`: Delivers a pending packet from the consumer `sender` to the provider.
 * `KeyAssignment(chain: Chain, validator: Node, consumerAddr: ConsumerAddr)` (only when running with `--step stepKeyAssignment`): Assigns the `consumerAddr` to the `validator` on the `chain`. Note that we use "key" and "consumerAddr" pretty much interchangeably, as the model makes no differentiation between private keys, public keys, addresses, etc, as it doesn't model the cryptography.
+* `OptIn(chain: Chain, validator: Node)` (only when running with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`): The `validator` opts in on the `chain`.
+* `OptOut(chain: Chain, validator: Node)` (only when running with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`): The `validator` opts out on the `chain`.
 
 ### State machines
 
