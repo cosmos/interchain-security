@@ -148,9 +148,9 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()).
 			Return(stakingtypes.Validator{
-				// must be a hex string so it can be properly decoded by sdktypes.ValAddressFromHex(val.GetOperator())
-				// empty string is fine, as it's not used in this test
-				OperatorAddress: "557D5BD0FA991DAB8EED2B9DCF98AC1B3200D43D",
+				// provided address must be valid so it can be processed correctly
+				// by k.ValidatorAddressCodec().StringToBytes(val.GetOperator()) call in GetEffectiveValPower()
+				OperatorAddress: sdk.ValAddress(packetData.Validator.Address).String(),
 			}, nil).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(ctx, gomock.Any()).
 			Return(int64(2), nil).Times(1),

@@ -364,6 +364,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		// save the delegation shares of the validator to redelegate to
 		// Note this shares should not be slashed!
 		valAddr2, err := providerKeeper.ValidatorAddressCodec().StringToBytes(validator2.GetOperator())
+		s.Require().NoError(err)
 		del, err := s.providerApp.GetTestStakingKeeper().Delegation(s.providerCtx(), delAddr, valAddr2)
 		s.Require().NoError(err)
 		delShares := del.GetShares()
