@@ -540,6 +540,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			Denom:  "stake",
 			Amount: math.NewInt(1000000),
 		},
+		BlocksPerEpoch: 600,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()

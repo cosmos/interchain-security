@@ -82,7 +82,7 @@ func generateImageName(version string, cfg TargetConfig) (string, error) {
 		tagName = "local" // this refers to build from local workspace
 	} else {
 		// use git hash of rev as docker image tag
-		//cmd := exec.Command("git", "rev-parse", "--verify", "--short", version)
+		// cmd := exec.Command("git", "rev-parse", "--verify", "--short", version)
 		cmd := exec.Command("git", "log", "--pretty=format:%h", "-n", "1", version)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -179,7 +179,7 @@ func pullDockerImage(tag string, targetConfig TargetConfig) (string, error) {
 // bootstrapSDK in workspace to use custom SDK setup if required
 func bootstrapSDK(workSpace string, targetCfg TargetConfig) error {
 	sdkPath := strings.Join([]string{workSpace, "cosmos-sdk"}, string(os.PathSeparator))
-	err := os.RemoveAll(sdkPath) //delete old SDK directory
+	err := os.RemoveAll(sdkPath) // delete old SDK directory
 	if err != nil {
 		return fmt.Errorf("error deleting SDK directory from workspace: %v", err)
 	}

@@ -120,7 +120,9 @@ const (
 	// on consumer chains to validator addresses on the provider chain
 	ValidatorsByConsumerAddrBytePrefix
 
-	// KeyAssignmentReplacementsBytePrefix is the byte prefix that will store the key assignments that need to be replaced in the current block
+	// KeyAssignmentReplacementsBytePrefix was the byte prefix used to store the key assignments that needed to be replaced in the current block
+	// NOTE: This prefix is deprecated, but left in place to avoid consumer state migrations
+	// [DEPRECATED]
 	KeyAssignmentReplacementsBytePrefix
 
 	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
@@ -145,9 +147,11 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
+	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer validators in this epoch
+	ConsumerValidatorBytePrefix
+
 	// ParametersKey is the is the single byte key for storing provider's parameters.
 	ParametersByteKey
-
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -370,12 +374,6 @@ func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byt
 	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
-// KeyAssignmentReplacementsKey returns the key under which the
-// key assignments that need to be replaced in the current block are stored
-func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
-}
-
 // ConsumerAddrsToPruneKey returns the key under which the
 // mapping from VSC ids to consumer validators addresses is stored
 func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
@@ -523,6 +521,12 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 	proposalID := sdk.BigEndianToUint64(bz[prefixL:])
 
 	return proposalID, nil
+}
+
+// ConsumerValidatorKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
+	prefix := ChainIdWithLenKey(ConsumerValidatorBytePrefix, chainID)
+	return append(prefix, providerAddr...)
 }
 
 //

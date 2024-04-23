@@ -2,6 +2,42 @@
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
+## [v4.1.x](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-rc2) and [v4.1.x-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-lsm-rc2)
+
+### Provider
+
+Upgrading a provider from `v4.0.0` to `v4.1.0` or `v4.1.0-lsm` requires state migrations, see relevant pull request [here](https://github.com/cosmos/interchain-security/pull/1762),
+as well as the corresponding migrators [here](https://github.com/cosmos/interchain-security/blob/release/v4.1.x/x/ccv/provider/migrations/migrator.go#L38) and [here](https://github.com/cosmos/interchain-security/blob/release/v4.1.x-lsm/x/ccv/provider/migrations/migrator.go#L38).
+Apart from running the ICS migrators, the provider chain also needs to initialize the `ConsumerValSet` for all existing consumer chains to ensure correct validator set replication.
+To do so, the following code should be added to the upgrade handler of the provider chain:
+```go
+func InitICSEpochs(ctx sdk.Context, pk providerkeeper.Keeper, sk stakingkeeper.Keeper) error {
+	ctx.Logger().Info("Initializing ICS epochs...")
+
+	// get the bonded validators from the staking module
+	bondedValidators := sk.GetLastValidators(ctx)
+
+	for _, chain := range pk.GetAllConsumerChains(ctx) {
+		chainID := chain.ChainId
+		valset := pk.GetConsumerValSet(ctx, chainID)
+		if len(valset) > 0 {
+			ctx.Logger().Info("consumer chain `%s` already has the valset initialized", chainID)
+		} else {
+			// init valset for consumer with chainID
+			nextValidators := pk.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
+			pk.SetConsumerValSet(ctx, chainID, nextValidators)
+		}
+	}
+
+	ctx.Logger().Info("Finished initializing ICS epochs")
+	return nil
+}
+```
+
+### Consumer
+
+***Note that consumer chains can upgrade directly from `v4.0.0` to `v4.1.0`.***
+
 ## [v4.0.x](https://github.com/cosmos/interchain-security/tree/release/v4.0.x)
 
 `v4.0.x` sets the minimum required version of Go to `1.21`, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/go.mod#L3. 

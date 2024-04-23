@@ -65,16 +65,18 @@ func TestQueueVSCPackets(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mocks := testkeeper.NewMockedKeepers(ctrl)
-		mockStakingKeeper := mocks.MockStakingKeeper
+		// TODO: remove this after main merge
+		// mockStakingKeeper := mocks.MockStakingKeeper
 
-		mockUpdates := []abci.ValidatorUpdate{}
-		if len(tc.packets) != 0 {
-			mockUpdates = tc.packets[0].ValidatorUpdates
-		}
+		// mockUpdates := []abci.ValidatorUpdate{}
+		// if len(tc.packets) != 0 {
+		// 	mockUpdates = tc.packets[0].ValidatorUpdates
+		// }
 
-		gomock.InOrder(
-			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates, nil),
-		)
+		// gomock.InOrder(
+		// 	mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates, nil),
+		// )
+		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Times(1)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
@@ -663,4 +665,48 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 
 	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
 	require.NoError(t, err)
+}
+
+// TestEndBlockVSU tests that during `EndBlockVSU`, we only queue VSC packets at the boundaries of an epoch
+func TestEndBlockVSU(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// 10 blocks constitute an epoch
+	params := providertypes.DefaultParams()
+	params.BlocksPerEpoch = 10
+	providerKeeper.SetParams(ctx, params)
+
+	// create 4 sample lastValidators
+	var lastValidators []stakingtypes.Validator
+	for i := 0; i < 4; i++ {
+		lastValidators = append(lastValidators, cryptotestutil.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator())
+	}
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(2)).AnyTimes()
+
+	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
+	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+
+	// with block height of 1 we do not expect any queueing of VSC packets
+	ctx = ctx.WithBlockHeight(1)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// with block height of 5 we do not expect any queueing of VSC packets
+	ctx = ctx.WithBlockHeight(5)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// with block height of 10 we expect the queueing of one VSC packet
+	ctx = ctx.WithBlockHeight(10)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
+
+	// With block height of 15 we expect no additional queueing of a VSC packet.
+	// Note that the pending VSC packet is still there because `SendVSCPackets` does not send the packet. We
+	// need to mock channels, etc. for this to work, and it's out of scope for this test.
+	ctx = ctx.WithBlockHeight(15)
+	providerKeeper.EndBlockVSU(ctx)
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, "chainID")))
 }

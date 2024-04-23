@@ -30,7 +30,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				}
 
 				// check that a VSCPacket is queued
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 				pendingPackets := pk.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
 				s.Require().Len(pendingPackets, 1)
 
@@ -51,7 +51,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 
 				return nil
 			}, false, 2,
@@ -73,7 +73,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				delAddr := s.providerChain.SenderAccount.GetAddress()
 				delegate(s, delAddr, bondAmt)
 
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 
 				return nil
 			}, false, 2,
@@ -95,7 +95,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 
 				return nil
 			}, true, 2,
@@ -118,7 +118,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 
 				return nil
 			}, false, 2,
@@ -134,14 +134,14 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 
 				// same key assignment
 				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
 				if err != nil {
 					return err
 				}
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 
 				return nil
 			}, true, 2,
@@ -157,7 +157,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 
 				// same key assignment
 				validator, consumerKey = generateNewConsumerKey(s, 0)
@@ -165,7 +165,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-				s.providerChain.NextBlock()
+				s.nextEpoch()
 
 				return nil
 			}, false, 3,

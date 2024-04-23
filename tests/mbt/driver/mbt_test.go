@@ -15,14 +15,17 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
 
-	cmttypes "github.com/cometbft/cometbft/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cosmos/interchain-security/v5/testutil/integration"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 
+	"github.com/cosmos/interchain-security/v5/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const verbose = false
@@ -73,6 +76,7 @@ func TestMBT(t *testing.T) {
 	t.Logf("Number of blocks: %v", stats.numBlocks)
 	t.Logf("Number of transactions: %v", stats.numTxs)
 	t.Logf("Number of key assignments: %v", stats.numKeyAssignments)
+	t.Logf("Number of slashes: %v", stats.numSlashes)
 	t.Logf("Average summed block time delta passed per trace: %v", stats.totalBlockTimePassedPerTrace/time.Duration(numTraces))
 }
 
@@ -124,16 +128,28 @@ func RunItfTrace(t *testing.T, path string) {
 	// generate keys that can be assigned on consumers, according to the ConsumerAddresses in the trace
 	consumerAddressesExpr := params["ConsumerAddresses"].Value.(itf.ListExprType)
 
-	_, _, consumerPrivVals, err := integration.CreateValidators(len(consumerAddressesExpr))
+	consumerValidators, _, consumerPrivVals, err := integration.CreateValidators(len(consumerAddressesExpr), "consumer")
 	require.NoError(t, err, "Error creating consumer signers")
 
+	// sort the keys of consumer priv vals for determinism
+	// this is necessary because the order of the keys in the map is not deterministic
+	// and the model and the system need to have the same order
+	consumerPrivValKeys := make([]string, 0, len(consumerPrivVals))
+	for key := range consumerPrivVals {
+		consumerPrivValKeys = append(consumerPrivValKeys, key)
+	}
+	// sort the keys
+	sort.Strings(consumerPrivValKeys)
+
+	consumerAddrNamesToVals := make(map[string]*cmttypes.Validator, len(consumerAddressesExpr))
 	consumerAddrNamesToPrivVals := make(map[string]cmttypes.PrivValidator, len(consumerAddressesExpr))
 	realAddrsToModelConsAddrs := make(map[string]string, len(consumerAddressesExpr))
-	i := 0
-	for address, privVal := range consumerPrivVals {
+	for i := 0; i < len(consumerAddressesExpr); i++ {
+		address := consumerPrivValKeys[i]
+		privVal := consumerPrivVals[address]
 		consumerAddrNamesToPrivVals[consumerAddressesExpr[i].Value.(string)] = privVal
+		consumerAddrNamesToVals[consumerAddressesExpr[i].Value.(string)] = consumerValidators.Validators[i]
 		realAddrsToModelConsAddrs[address] = consumerAddressesExpr[i].Value.(string)
-		i++
 	}
 
 	// create params struct
@@ -147,6 +163,9 @@ func RunItfTrace(t *testing.T, path string) {
 		trustingPeriodPerChain[ChainId(consumer)] = time.Duration(params["TrustingPeriodPerChain"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 		ccvTimeoutPerChain[ChainId(consumer)] = time.Duration(params["CcvTimeout"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 	}
+	downtimeSlashPercentage := sdk.NewDec(params["DowntimeSlashPercentage"].Value.(int64))
+	doubleSignSlashPercentage := sdk.NewDec(params["DoubleSignSlashPercentage"].Value.(int64))
+	downtimeJailDuration := time.Duration(params["DowntimeJailDuration"].Value.(int64)) * time.Second
 
 	modelParams := ModelParams{
 		VscTimeout:              vscTimeout,
@@ -161,7 +180,7 @@ func RunItfTrace(t *testing.T, path string) {
 		valNames[i] = val.Value.(string)
 	}
 
-	valSet, addressMap, signers, err := CreateValSet(initialValSet)
+	valSet, addressMap, signers, err := CreateValSet(initialValSet, "provider")
 	require.NoError(t, err, "Error creating validator set")
 
 	// get the set of signers for consumers: the validator signers, plus signers for the assignable addresses
@@ -173,16 +192,42 @@ func RunItfTrace(t *testing.T, path string) {
 		consumerSigners[consAddr] = signer
 	}
 
+	// add the consumer validators to the address map
+	for consAddr, consVal := range consumerAddrNamesToVals {
+		addressMap[consAddr] = consVal
+	}
+
 	// get a slice of validators in the right order
 	nodes := make([]*cmttypes.Validator, len(valNames))
 	for i, valName := range valNames {
 		nodes[i] = addressMap[valName]
 	}
 
+	// very hacky: the system produces a lot of extra blocks, e.g. when setting up consumer chains, when updating clients, etc.
+	// to be able to compare the model to the system, we make the blocks per epoch a very large number (such that an epoch never ends naturally in the system while running the trace)
+	// When an epoch in the model ends (which we can detect by the height modulo the epoch length), we produce many, many blocks in the system, such that an epoch actually ends.
+	blocksPerEpoch := int64(200)
+	modelBlocksPerEpoch := params["BlocksPerEpoch"].Value.(int64)
+
 	driver := newDriver(t, nodes, valNames)
 	driver.DriverStats = &stats
 
 	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
+	providerParams := driver.providerKeeper().GetParams(driver.providerCtx())
+	providerParams.BlocksPerEpoch = blocksPerEpoch
+	driver.providerKeeper().SetParams(driver.providerCtx(), providerParams)
+
+	// begin enough blocks to end the first epoch
+	for i := int64(1); i < blocksPerEpoch; i++ {
+		driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+	}
+
+	slashingParams := driver.providerSlashingKeeper().GetParams(driver.providerCtx())
+	slashingParams.DowntimeJailDuration = downtimeJailDuration
+	driver.providerSlashingKeeper().SetParams(driver.providerCtx(), slashingParams)
+
+	modelVscIdsToActualPackets := make(map[uint64]types.ValidatorSetChangePacketData, 0)
+	actualPacketIdsToModelVscIds := make(map[uint64]uint64, 0)
 
 	// remember the time offsets to be able to compare times to the model
 	// this is necessary because the system needs to do many steps to initialize the chains,
@@ -194,7 +239,15 @@ func RunItfTrace(t *testing.T, path string) {
 	t.Log("Reading the trace...")
 
 	for index, state := range trace.States {
+		t.Log("Height modulo epoch length:", driver.providerChain().CurrentHeader.Height%blocksPerEpoch)
+		t.Log("Model height modulo epoch length:", ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch)
 		t.Logf("Reading state %v of trace %v", index, path)
+
+		// store the height of the provider state before each step.
+		// The height should only pass an epoch when it passes an epoch in the model, too,
+		// otherwise there is an error, and blocksPerEpoch needs to be increased.
+		// See the comment for blocksPerEpoch above.
+		heightBeforeStep := driver.providerHeight()
 
 		trace := state.VarValues["trace"].Value.(itf.ListExprType)
 		// lastAction will get the last action that was executed so far along the model trace,
@@ -233,17 +286,34 @@ func RunItfTrace(t *testing.T, path string) {
 			stats.numStartedChains += len(consumersToStart)
 			stats.numStops += len(consumersToStop)
 
-			// we need 2 blocks, because for a packet sent at height H, the receiving chain
+			// get the block height in the model
+			modelHeight := ProviderHeight(currentModelState)
+
+			if modelHeight%modelBlocksPerEpoch == 0 {
+				// in the model, an epoch ends, so we need to produce blocks in the system to get the actual height
+				// to end an epoch with the first of the two subsequent calls to endAndBeginBlock below
+				actualHeight := driver.providerHeight()
+
+				heightInEpoch := actualHeight % blocksPerEpoch
+
+				// produce blocks until the next block ends the epoch
+				for i := heightInEpoch; i < blocksPerEpoch; i++ {
+					driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+				}
+			}
+
+			// we need at least 2 blocks, because for a packet sent at height H, the receiving chain
 			// needs a header of height H+1 to accept the packet
-			// so we do one time advancement with a very small increment,
-			// and then increment the rest of the time
+			// so, we do two blocks, one with a very small increment,
+			// and then another to increment the rest of the time
 			runningConsumersBefore := driver.runningConsumers()
+
 			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 			for _, consumer := range driver.runningConsumers() {
 				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
 			}
-
 			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
+
 			runningConsumersAfter := driver.runningConsumers()
 
 			// the consumers that were running before but not after must have timed out
@@ -339,9 +409,9 @@ func RunItfTrace(t *testing.T, path string) {
 				expectError = false
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
 			}
-		case "DeliverVscMaturedPacket":
+		case "DeliverPacketToProvider":
 			consumerChain := lastAction["consumerChain"].Value.(string)
-			t.Log("DeliverVscMaturedPacket", consumerChain)
+			t.Log("DeliverPacketToProvider", consumerChain)
 
 			var expectError bool
 			if ConsumerStatus(currentModelState, consumerChain) == TIMEDOUT_STATUS {
@@ -372,8 +442,39 @@ func RunItfTrace(t *testing.T, path string) {
 			protoPubKey, err := tmencoding.PubKeyToProto(assignedKey)
 			require.NoError(t, err, "Error converting pubkey to proto")
 
-			error := driver.AssignKey(ChainId(consumerChain), int64(valIndex), protoPubKey)
-			require.NoError(t, error, "Error assigning key")
+			err = driver.AssignKey(ChainId(consumerChain), int64(valIndex), protoPubKey)
+			require.NoError(t, err, "Error assigning key")
+		case "ConsumerInitiatedSlash":
+			consumerChain := lastAction["consumerChain"].Value.(string)
+			validatorName := lastAction["validator"].Value.(string)
+			vscId := lastAction["vscId"].Value.(int64)
+			isDowntime := lastAction["isDowntime"].Value.(bool)
+			t.Log("ConsumerInitiatedSlash", consumerChain, validatorName, vscId, isDowntime)
+
+			stats.numSlashes++
+
+			actualPacket, found := modelVscIdsToActualPackets[uint64(vscId)]
+			if !found {
+				log.Fatalf("Error loading trace file %s, step %v: could not find actual packet for vsc id %v",
+					path, index, vscId)
+			}
+
+			val := addressMap[validatorName]
+			valConsAddr := sdk.ConsAddress(val.Address)
+
+			slashFraction := doubleSignSlashPercentage
+			if isDowntime {
+				slashFraction = downtimeSlashPercentage
+			}
+
+			err = driver.RequestSlash(
+				ChainId(consumerChain),
+				valConsAddr,
+				isDowntime,
+				actualPacket,
+				slashFraction,
+			)
+			require.NoError(t, err, "Error requesting slash")
 
 		default:
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
@@ -422,7 +523,63 @@ func RunItfTrace(t *testing.T, path string) {
 		// compare that the sent packets on the proider match the model
 		CompareSentPacketsOnProvider(driver, currentModelState, timeOffset)
 
+		// ensure that the jailed validators are the same in the model and the system,
+		// and that the jail end times are the same, in particular
+		CompareJailedValidators(driver, currentModelState, timeOffset, addressMap)
+
+		// for all newly sent vsc packets, figure out which vsc id in the model they correspond to
+		for _, consumer := range actualRunningConsumers {
+			actualPackets := driver.packetQueue(PROVIDER, ChainId(consumer))
+			actualNewPackets := make([]types.ValidatorSetChangePacketData, 0)
+			for _, packet := range actualPackets {
+
+				var packetData types.ValidatorSetChangePacketData
+				err := types.ModuleCdc.UnmarshalJSON(packet.Packet.GetData(), &packetData)
+				require.NoError(t, err, "Error unmarshalling packet data")
+
+				actualVscId := packetData.ValsetUpdateId
+				if _, ok := actualPacketIdsToModelVscIds[actualVscId]; ok {
+					// we already handled this packet previously; continue
+					continue
+				}
+				actualNewPackets = append(actualNewPackets, packetData)
+			}
+
+			modelPackets := PacketQueue(currentModelState, PROVIDER, consumer)
+			newModelVscIds := make([]uint64, 0)
+			for _, packet := range modelPackets {
+				modelVscId := uint64(packet.Value.(itf.MapExprType)["value"].Value.(itf.MapExprType)["id"].Value.(int64))
+				if _, ok := modelVscIdsToActualPackets[modelVscId]; ok {
+					// we already handled this packet previously; continue
+					continue
+				}
+				newModelVscIds = append(newModelVscIds, modelVscId)
+			}
+
+			// sort the new packets by vsc id
+			sort.Slice(actualNewPackets, func(i, j int) bool {
+				return actualNewPackets[i].ValsetUpdateId < actualNewPackets[j].ValsetUpdateId
+			})
+			sort.Slice(newModelVscIds, func(i, j int) bool {
+				return newModelVscIds[i] < newModelVscIds[j]
+			})
+
+			// map the actual packets to the model ids
+			for i, actualPacket := range actualNewPackets {
+				modelVscIdsToActualPackets[newModelVscIds[i]] = actualPacket
+				actualPacketIdsToModelVscIds[actualPacket.ValsetUpdateId] = newModelVscIds[i]
+			}
+		}
+
 		stats.EnterStats(driver)
+
+		// should not have ended an epoch, unless we also ended an epoch in the model
+		heightAfterStep := driver.providerHeight()
+
+		if heightBeforeStep/blocksPerEpoch != heightAfterStep/blocksPerEpoch {
+			// we changed epoch during this step, so ensure that the model also changed epochs
+			require.True(t, ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch == 0, "Height in model did not change epoch, but did in system. increase blocksPerEpoch in the system")
+		}
 
 		t.Logf("State %v of trace %v is ok!", index, path)
 	}
@@ -430,12 +587,14 @@ func RunItfTrace(t *testing.T, path string) {
 }
 
 func UpdateProviderClientOnConsumer(t *testing.T, driver *Driver, consumerChainId string) {
+	t.Helper()
 	driver.path(ChainId(consumerChainId)).AddClientHeader(PROVIDER, driver.providerHeader())
 	err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
 	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
 }
 
 func UpdateConsumerClientOnProvider(t *testing.T, driver *Driver, consumerChain string) {
+	t.Helper()
 	consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
 	driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
 	err := driver.path(ChainId(consumerChain)).UpdateClient(PROVIDER, false)
@@ -478,7 +637,7 @@ func CompareValidatorSets(
 			if ok { // the node has a key assigned, use the name of the consumer address in the model
 				consumerCurValSet[consAddrModelName] = val.Power
 			} else { // the node doesn't have a key assigned yet, get the validator moniker
-				consAddr := providertypes.NewConsumerConsAddress(sdktypes.ConsAddress(pubkey.Address().Bytes()))
+				consAddr := providertypes.NewConsumerConsAddress(sdk.ConsAddress(pubkey.Address().Bytes()))
 
 				// the consumer vals right now are CrossChainValidators, for which we don't know their mnemonic
 				// so we need to find the mnemonic of the consumer val now to enter it by name in the map
@@ -530,16 +689,23 @@ func ComparePacketQueue(
 	modelSenderQueue := PacketQueue(currentModelState, sender, receiver)
 	actualSenderQueue := driver.packetQueue(ChainId(sender), ChainId(receiver))
 
+	actualPacketStrings := make([]string, len(actualSenderQueue))
+	for i, packet := range actualSenderQueue {
+		actualPacketStrings[i] = string(packet.Packet.GetData())
+	}
+
 	require.Equal(t,
 		len(modelSenderQueue),
 		len(actualSenderQueue),
-		"Packet queue sizes do not match for sender %v, receiver %v",
+		"Packet queue sizes do not match for sender %v, receiver %v.\n model: %v\n actual: %v",
 		sender,
-		receiver)
+		receiver,
+		pretty.Sprint(modelSenderQueue),
+		pretty.Sprint(actualPacketStrings))
 
 	for i := range modelSenderQueue {
 		actualPacket := actualSenderQueue[i]
-		modelPacket := modelSenderQueue[i].Value.(itf.MapExprType)
+		modelPacket := modelSenderQueue[i].Value.(itf.MapExprType)["value"].Value.(itf.MapExprType)
 
 		actualTimeout := time.Unix(0, int64(actualPacket.Packet.TimeoutTimestamp)).Unix() - timeOffset.Unix()
 		modelTimeout := GetTimeoutForPacket(modelPacket)
@@ -613,7 +779,7 @@ func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int6
 	}
 
 	if !reflect.DeepEqual(expectedValSet, actualValSet) {
-		return fmt.Errorf("Validator sets do not match: (+ expected, - actual): %v", pretty.Compare(expectedValSet, actualValSet))
+		return fmt.Errorf("Validator sets do not match: (- expected, + actual): %v", pretty.Compare(expectedValSet, actualValSet))
 	}
 	return nil
 }
@@ -640,6 +806,44 @@ func CompareSentPacketsOnProvider(driver *Driver, currentModelState map[string]i
 			)
 		}
 	}
+}
+
+func CompareJailedValidators(
+	driver *Driver,
+	currentModelState map[string]itf.Expr,
+	timeOffset time.Time,
+	modelNamesToSystemConsAddr map[string]*cmttypes.Validator,
+) {
+	modelJailedVals, modelJailEndTimes := ProviderJailedValidators(currentModelState)
+
+	for i, modelJailedVal := range modelJailedVals {
+		modelJailEndTime := modelJailEndTimes[i]
+
+		valConsAddr := sdk.ConsAddress(modelNamesToSystemConsAddr[modelJailedVal].Address)
+		valSigningInfo, found := driver.providerSlashingKeeper().GetValidatorSigningInfo(driver.providerCtx(), valConsAddr)
+		require.True(driver.t, found, "Error getting signing info for validator %v", modelJailedVal)
+
+		systemJailEndTime := valSigningInfo.JailedUntil
+		actualTimeWithOffset := systemJailEndTime.Unix() - timeOffset.Unix()
+
+		require.Equal(
+			driver.t,
+			modelJailEndTime,
+			actualTimeWithOffset,
+			"Jail end times do not match for validator %v",
+			modelJailedVal,
+		)
+	}
+
+	// build a convenient list of validator signing infos
+	validatorsSigningInfos := make([]slashingtypes.ValidatorSigningInfo, 0)
+	driver.providerSlashingKeeper().IterateValidatorSigningInfos(
+		driver.providerCtx(),
+		func(_ sdk.ConsAddress, valSigningInfo slashingtypes.ValidatorSigningInfo) (stop bool) {
+			validatorsSigningInfos = append(validatorsSigningInfos, valSigningInfo)
+			return false
+		},
+	)
 }
 
 func (s *Stats) EnterStats(driver *Driver) {

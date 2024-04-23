@@ -12,18 +12,34 @@ module ccv_test {
     pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
     pure val trustingPeriods = chains.mapBy(chain => 2 * Week - 1 * Hour)
+    pure val epochLength = 3
 
-    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain=trustingPeriods).* from "./ccv"
+    import ccv(
+        VscTimeout = 5 * Week,
+        CcvTimeout = ccvTimeouts,
+        UnbondingPeriodPerChain = unbondingPeriods,
+        ConsumerChains = consumerChains,
+        TrustingPeriodPerChain=trustingPeriods,
+        DowntimeJailTime=4*Day,
+        DoubleSignJailEndTime=9999 * 50 * Week,
+        DowntimeSlashPercentage = 5,
+        DoubleSignSlashPercentage = 10,
+        BlocksPerEpoch=epochLength
+    ).* from "./ccv"
 
     val votingPowerTestInitState = 
             GetEmptyProtocolState.with(
                 "providerState", GetEmptyProtocolState.providerState.with(
                     "chainState", GetEmptyProtocolState.providerState.chainState.with(
-                        "currentValidatorSet", GetEmptyProtocolState.providerState.chainState.currentValidatorSet.put(
+                        "currentValidatorPowers", GetEmptyProtocolState.providerState.chainState.currentValidatorPowers.put(
                             "validator", 5
                         ).put(
                             "validator2", 5
                         )
+                    )
+                ).with(
+                    "consumerStatus", Map(
+                        "consumer" -> RUNNING
                     )
                 )
             )
@@ -46,8 +62,8 @@ module ccv_test {
             5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.keys().contains("validator") and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 10
+        result.newState.providerState.chainState.currentValidatorPowers.keys().contains("validator") and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 10
     }
 
     // voting power of 0 is allowed and applied as usual
@@ -59,7 +75,7 @@ module ccv_test {
             -5
         )
         not(finalResult.hasError()) and
-        finalResult.newState.providerState.chainState.currentValidatorSet.get("validator") == 0
+        finalResult.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0
     }
 
     run VotingPowerSetsFlagTest =
@@ -78,7 +94,7 @@ module ccv_test {
         )
         // still should set the flag
         not(finalResult.hasError()) and
-        finalResult.newState.providerState.providerValidatorSetChangedInThisBlock
+        finalResult.newState.providerState.consumersWithPowerChangesInThisEpoch.contains("consumer")
     }
 
 
@@ -109,7 +125,7 @@ module ccv_test {
             5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0 and
         result2.hasError()
     }
 
@@ -127,7 +143,7 @@ module ccv_test {
             -5
         )
         not(result.hasError()) and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0 and
+        result.newState.providerState.chainState.currentValidatorPowers.get("validator") == 0 and
         result2.hasError()
     }
 
@@ -143,12 +159,15 @@ module ccv_test {
             "consumerStatus", providerState.consumerStatus.put(sender, RUNNING)
         )
         val providerState3 = providerState2.with(
-            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List({
+            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List(
+                Vsc({
                 id: 0,
                 validatorSet: Map(),
                 sendingTime: 0,
-                timeoutTime: CcvTimeout.get(sender)
-            }))
+                timeoutTime: CcvTimeout.get(sender),
+                downtimeSlashAcks: List(),
+                })
+            ))
         )
         currentState.with(
             "providerState", providerState3
@@ -160,11 +179,11 @@ module ccv_test {
     pure val DeliverPacketToProviderHappyPathTest_testState = _DeliverPacketToProvider_TestState.with(
         "consumerStates", _DeliverPacketToProvider_TestState.consumerStates.put(
             "sender", _DeliverPacketToProvider_TestState.consumerStates.get("sender").with(
-                "outstandingPacketsToProvider", List({
+                "outstandingPacketsToProvider", List(VscMatured({
                     id: 0,
                     sendingTime: 0,
                     timeoutTime: CcvTimeout.get("sender")
-                })
+                }))
             )
         )
     ).with(
@@ -173,9 +192,10 @@ module ccv_test {
             "sentVscPacketsToConsumer", _DeliverPacketToProvider_TestState.providerState.sentVscPacketsToConsumer.put(
                 "sender", List({
                     id: 0,
-                    validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorSet,
+                    validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorPowers,
                     sendingTime: 0,
-                    timeoutTime: CcvTimeout.get("sender")
+                    timeoutTime: CcvTimeout.get("sender"),
+                    downtimeSlashAcks: List()
                 })
             )
         )
@@ -299,5 +319,62 @@ module ccv_test {
             Set()
         )
         res._2 == "Cannot start and stop a consumer at the same time"
+    }
+
+    // ===== Tests for Slashing =====
+    // create  a base state for the slashing tests.
+    // set consumer "receiver" to running and set a validator set with two validators as current
+    // and historical validator set on provider and consumer.
+    // Also, make it so the consumer state has received a vsc packet from the provider.
+    pure val validatorSet = Map(
+        "validator" -> 5,
+        "validator2" -> 5
+    )
+    pure val vscPacket = {
+        id: 0,
+        validatorSet: validatorSet,
+        sendingTime: 0,
+        timeoutTime: 1,
+        downtimeSlashAcks: List()
+    }
+    pure val SlashingTestState = 
+        GetEmptyProtocolState.with(
+            "providerState", GetEmptyProtocolState.providerState.with(
+                "chainState", GetEmptyProtocolState.providerState.chainState.with(
+                    "currentValidatorPowers", validatorSet
+                ).with(
+                    "votingPowerHistory", List(validatorSet)
+                )
+            ).with(
+                "consumerStatus", Map(
+                    "receiver" -> RUNNING
+                )
+            )
+        ).with(
+            "consumerStates", GetEmptyProtocolState.consumerStates.put(
+                "receiver", GetEmptyConsumerState.with(
+                    "chainState", GetEmptyProtocolState.providerState.chainState.with(
+                        "currentValidatorPowers", validatorSet
+                    ).with(
+                        "votingPowerHistory", List(validatorSet)
+                    )
+                ).with(
+                    "receivedVscPackets", List(vscPacket)
+                )
+            )
+        )
+
+    // ensure that sending a slash request for a double-sign infraction does not put outstandingDowntime in the state
+    run DoubleSignSlashRequestNoOutstandingDowntimeTest =
+    {
+        val result = SlashingTestState.sendSlashRequest(
+            "receiver",
+            "validator",
+            0,
+            false
+        )
+        not(result.hasError()) and
+        // should not have outstanding downtime, since the slash is for double-signing
+        result.newState.consumerStates.get("receiver").outstandingDowntime.size() == 0
     }
 }

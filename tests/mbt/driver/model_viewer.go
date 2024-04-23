@@ -28,7 +28,7 @@ func ChainState(curStateExpr itf.MapExprType, chain string) itf.MapExprType {
 }
 
 func ValidatorSet(curStateExpr itf.MapExprType, chain string) itf.MapExprType {
-	return ChainState(curStateExpr, chain)["currentValidatorSet"].Value.(itf.MapExprType)
+	return ChainState(curStateExpr, chain)["currentValidatorPowers"].Value.(itf.MapExprType)
 }
 
 func HistoricalValidatorSet(curStateExpr itf.MapExprType, chain string, index int) itf.MapExprType {
@@ -38,6 +38,10 @@ func HistoricalValidatorSet(curStateExpr itf.MapExprType, chain string, index in
 
 func RunningTime(curStateExpr itf.MapExprType, chain string) int64 {
 	return ChainState(curStateExpr, chain)["runningTimestamp"].Value.(int64)
+}
+
+func ProviderHeight(curStateExpr itf.MapExprType) int64 {
+	return ProviderState(curStateExpr)["chainState"].Value.(itf.MapExprType)["currentBlockHeight"].Value.(int64)
 }
 
 // PacketQueue returns the queued packets between sender and receiver.
@@ -90,4 +94,26 @@ func VscSendTimestamps(curStateExpr itf.MapExprType, consumer string) []int64 {
 		res[i] = GetSendingTimeForPacket(packetExpr.Value.(itf.MapExprType))
 	}
 	return res
+}
+
+func PacketsToAckOnEndBlock(curStateExpr itf.MapExprType) itf.MapExprType {
+	return ProviderState(curStateExpr)["acksToSendOnEndBlock"].Value.(itf.MapExprType)
+}
+
+func WaitingForAcks(curStateExpr itf.MapExprType, consumer string) itf.ListExprType {
+	return ConsumerState(curStateExpr, consumer)["waitingForSlashPacketAck"].Value.(itf.ListExprType)
+}
+
+// ProviderJailedValidators returns the names and the jailEndTimes times of the jailed validators
+// on the provider. The slices are in the same order, i.e. the i-th element of jailedValidators
+// is the name of the i-th jailed validator and the i-th element of jailEndTimes is its jail end time
+func ProviderJailedValidators(curStateExpr itf.MapExprType) ([]string, []int64) {
+	jailMap := ChainState(curStateExpr, PROVIDER)["jailedUntil"].Value.(itf.MapExprType)
+	jailedValidators := make([]string, 0)
+	jailEndTimes := make([]int64, 0)
+	for val, endTime := range jailMap {
+		jailedValidators = append(jailedValidators, val)
+		jailEndTimes = append(jailEndTimes, endTime.Value.(int64))
+	}
+	return jailedValidators, jailEndTimes
 }

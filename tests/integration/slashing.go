@@ -113,8 +113,10 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		s.Require().True(found)
 	}
 
+	s.nextEpoch()
+
 	// Confirm the valset update Id was incremented twice on provider,
-	// since two endblockers have passed.
+	// since an epoch has passed.
 	s.Require().Equal(valsetUpdateIdN+2,
 		providerKeeper.GetValidatorSetUpdateId(s.providerCtx()))
 

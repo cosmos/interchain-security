@@ -36,7 +36,7 @@ func (vs *VersionSet) Set(value string) error {
 
 func (vs *VersionSet) String() string {
 	keys := []string{}
-	for k, _ := range *vs {
+	for k := range *vs {
 		keys = append(keys, k)
 	}
 	return fmt.Sprint(keys)
@@ -233,7 +233,8 @@ type testStepsWithConfig struct {
 }
 
 func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVersions,
-	consumerVersions VersionSet) (tests []testStepsWithConfig) {
+	consumerVersions VersionSet,
+) (tests []testStepsWithConfig) {
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
@@ -250,17 +251,26 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 	tests = []testStepsWithConfig{}
 	// Get predefined from selection
 	for _, tc := range selectedPredefinedTests {
+		testConfig := TestConfigType("")
+
 		// first part of tc is the steps, second part is the test config
+		splitTcString := strings.Split(tc, "::")
+		if len(splitTcString) == 2 {
+			tc = splitTcString[0]
+			testConfig = TestConfigType(splitTcString[1])
+		}
 
 		if _, exists := stepChoices[tc]; !exists {
 			log.Fatalf("Step choice '%s' not found.\nsee usage info:\n%s", tc, getTestCaseUsageString())
 		}
 
-		stepChoice := stepChoices[tc]
-
+		testSteps := stepChoices[tc].steps
+		if testConfig == "" {
+			testConfig = stepChoices[tc].testConfig
+		}
 		tests = append(tests, testStepsWithConfig{
-			config: stepChoice.testConfig,
-			steps:  stepChoice.steps,
+			config: testConfig,
+			steps:  testSteps,
 		},
 		)
 	}
@@ -297,19 +307,16 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 }
 
 // delete all test targets
-func deleteTargets(targets []ExecutionTarget) {
-	for _, target := range targets {
-		if err := target.Delete(); err != nil {
+func deleteTargets(runners []TestRunner) {
+	for _, runner := range runners {
+		if err := runner.target.Delete(); err != nil {
 			log.Println("error deleting target: ", err)
 		}
 	}
 }
 
-// Create targets where test cases should be executed on.
-// For each combination of provider & consumer versions an ExecutionTarget
-// is created.
-func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTarget, error) {
-	var targets []ExecutionTarget
+func createTestConfigs(cfgType TestConfigType, providerVersions, consumerVersions VersionSet) []TestConfig {
+	var configs []TestConfig
 
 	if len(consumerVersions) == 0 {
 		consumerVersions[""] = true
@@ -318,47 +325,39 @@ func createTargets(providerVersions, consumerVersions VersionSet) ([]ExecutionTa
 		providerVersions[""] = true
 	}
 
-	// Create targets as a combination of "provider versions" with "consumer version"
-	for provider, _ := range providerVersions {
-		targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag}
-		targetCfg.providerVersion = provider
-		for consumer, _ := range consumerVersions {
+	// Create test configs as a combination of "provider versions" with "consumer version" and "test case"
+	for provider := range providerVersions {
+		for consumer := range consumerVersions {
 			// Skip target creation for same version of provider and consumer
 			// if multiple versions need to be tested.
 			// This is to reduce the tests to be run for compatibility testing.
 			if (len(consumerVersions) > 1 || len(providerVersions) > 1) && consumer == provider {
 				continue
 			}
-			targetCfg.consumerVersion = consumer
-			target := DockerContainer{targetConfig: targetCfg}
-			targets = append(targets, &target)
-		}
-	}
-
-	for _, target := range targets {
-		err := target.Build()
-		if err != nil {
-			return targets, fmt.Errorf("failed building target %s\n: %v", target.Info(), err)
-		}
-	}
-	return targets, nil
-}
-
-// createTestRunners creates test runners to run each test case on each target
-func createTestRunners(targets []ExecutionTarget, testCases []testStepsWithConfig) []TestRunner {
-	runners := []TestRunner{}
-	for _, target := range targets {
-		for _, tc := range testCases {
-			providerVersion := target.GetTargetConfig().providerVersion
-			consumerVersion := target.GetTargetConfig().consumerVersion
-			config := GetTestConfig(tc.config, providerVersion, consumerVersion)
+			config := GetTestConfig(cfgType, provider, consumer)
 			config.SetRelayerConfig(*useGorelayer)
 			config.SetCometMockConfig(*useCometmock)
 			config.transformGenesis = *transformGenesis
 			config.useGorelayer = *useGorelayer
-			err, tr := CreateTestRunner(config, tc.steps, target, *verbose)
+			configs = append(configs, config)
+		}
+	}
+	return configs
+}
+
+// createTestRunners creates test runners to run each test case on each target
+func createTestRunners(testCases []testStepsWithConfig) []TestRunner {
+	runners := []TestRunner{}
+	targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag}
+
+	for _, tc := range testCases {
+		testConfigs := createTestConfigs(tc.config, providerVersions, consumerVersions)
+		for _, cfg := range testConfigs {
+			target, err := createTarget(cfg, targetCfg)
+			tr := CreateTestRunner(cfg, tc.steps, &target, *verbose)
 			if err == nil {
-				fmt.Println("Created test runner for provider", config.name, "with provVers=", providerVersion, "consVers=", consumerVersion)
+				fmt.Println("Created test runner for ", cfg.name,
+					"with provVers=", cfg.providerVersion, "consVers=", cfg.consumerVersion)
 				runners = append(runners, tr)
 			} else {
 				fmt.Println("No test runner created:", err)
@@ -376,7 +375,7 @@ func executeTests(runners []TestRunner) error {
 	var wg sync.WaitGroup
 	var err error = nil
 
-	for idx, _ := range runners {
+	for idx := range runners {
 		if parallel != nil && *parallel {
 			wg.Add(1)
 			go func(runner *TestRunner) {
@@ -417,16 +416,37 @@ func printReport(runners []TestRunner, duration time.Duration) {
 		}
 	}
 	numTotalTests := len(runners)
-	report := fmt.Sprintf(`
+	report := `
 =================================================
+TEST RESULTS
+-------------------------------------------------
+
+`
+	if len(failedTests) > 0 {
+		report += fmt.Sprintln("\nFAILED TESTS:")
+		for _, t := range failedTests {
+			report += t.Report()
+		}
+	}
+	if len(passedTests) > 0 {
+		report += fmt.Sprintln("\n\nPASSED TESTS:")
+		for _, t := range passedTests {
+			report += t.Report()
+		}
+	}
+	if len(remainingTests) > 0 {
+		report += fmt.Sprintln("\n\nREMAINING TESTS:")
+		for _, t := range remainingTests {
+			report += t.Report()
+		}
+	}
+	report += fmt.Sprintf(`
+-------------------------------------------------
 Summary:
 - time elapsed: %s
 - %d/%d tests passed
 - %d/%d tests failed
 - %d/%d tests with misc status (check details)
--------------------------------------------------
-
-
 `,
 		duration,
 		len(passedTests), numTotalTests,
@@ -461,17 +481,13 @@ func main() {
 	}
 
 	testCases := getTestCases(selectedTests, selectedTestfiles, providerVersions, consumerVersions)
-	targets, err := createTargets(providerVersions, consumerVersions)
-	if err != nil {
-		log.Fatal("failed creating test targets: ", err)
-	}
-	defer func() { deleteTargets(targets) }()
+	testRunners := createTestRunners(testCases)
+	defer deleteTargets(testRunners)
 
-	testRunners := createTestRunners(targets, testCases)
 	start := time.Now()
-	err = executeTests(testRunners)
+	err := executeTests(testRunners)
 	if err != nil {
-		log.Fatalf("Test execution failed '%s'", err)
+		log.Panicf("Test execution failed '%s'", err)
 	}
 
 	printReport(testRunners, time.Since(start))

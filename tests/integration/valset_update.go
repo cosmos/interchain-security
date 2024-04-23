@@ -23,8 +23,8 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 
-	// Send CCV packet to consumer
-	s.providerChain.NextBlock()
+	// Send CCV packet to consumer at the end of the epoch
+	s.nextEpoch()
 
 	// Relay 1 VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)

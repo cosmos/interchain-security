@@ -49,6 +49,7 @@ func TestParams(t *testing.T) {
 			Denom:  "stake",
 			Amount: math.NewInt(10000000),
 		},
+		600,
 	)
 	providerKeeper.SetParams(ctx, newParams)
 	params = providerKeeper.GetParams(ctx)

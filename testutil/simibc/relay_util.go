@@ -24,7 +24,6 @@ import (
 // NOTE: this function MAY be used independently of the rest of simibc.
 func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmtypes.Header, expectExpiration bool) (err error) {
 	err = augmentHeader(sender.Chain, receiver.Chain, receiver.ClientID, header)
-
 	if err != nil {
 		return err
 	}
@@ -100,7 +99,6 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 	}
 
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
-
 	if err != nil {
 		return nil, err
 	}

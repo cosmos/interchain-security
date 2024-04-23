@@ -140,27 +140,28 @@ test-trace:
 # Note: this is *not* using the Quint models to test the system,
 # this tests/verifies the Quint models *themselves*.
 verify-models:
-	quint test tests/mbt/model/ccv_test.qnt;\
-	quint test tests/mbt/model/ccv_model.qnt;\
-	quint run --invariant "all{ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" tests/mbt/model/ccv_model.qnt --max-steps 200 --max-samples 200;\
-	quint run --invariant "all{ValidatorUpdatesArePropagatedKeyAssignmentInv,ValidatorSetHasExistedKeyAssignmentInv,SameVscPacketsKeyAssignmentInv,MatureOnTimeInv,EventuallyMatureOnProviderInv,KeyAssignmentRulesInv}" tests/mbt/model/ccv_model.qnt --step stepKeyAssignment --max-steps 200 --max-samples 200
+	cd tests/mbt/model;\
+	../run_invariants.sh
 
 
 
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
-
+golangci_lint_cmd=golangci-lint
 golangci_version=v1.54.1
 
 lint:
 	@echo "--> Running linter"
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
-	golangci-lint run  ./... --config .golangci.yml
+	@$(golangci_lint_cmd) run  ./... --config .golangci.yml
 
 format:
+	@go install mvdan.cc/gofumpt@latest
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -path "./tests/mocks/*" -not -name "*.pb.go" -not -name "*.pb.gw.go" -not -name "*.pulsar.go" -not -path "./crypto/keys/secp256k1/*" | xargs gofumpt -w -l
-	golangci-lint run --fix --config .golangci.yml
+	$(golangci_lint_cmd) run --fix --config .golangci.yml
+
 .PHONY: format
 
 mockgen_cmd=go run github.com/golang/mock/mockgen

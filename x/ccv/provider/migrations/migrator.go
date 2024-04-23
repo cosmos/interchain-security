@@ -33,6 +33,14 @@ func (m Migrator) Migrate2to3(ctx sdktypes.Context) error {
 	return v3.MigrateQueuedPackets(ctx, m.providerKeeper)
 }
 
+// TODO: change to v5.MigrateParams after main merge
+// func (m Migrator) Migrate3to4(ctx sdktypes.Context) error {
+// 	return v4.MigrateParams(ctx, m.providerKeeper, m.paramSpace)
+// }
+
+// Migrate3to4 migrates x/ccvprovider state from consensus version 3 to 4.
+// The migration consists of provider chain params additions.
 func (m Migrator) Migrate3to4(ctx sdktypes.Context) error {
-	return v4.MigrateParams(ctx, m.providerKeeper, m.paramSpace)
+	v4.MigrateParams(ctx, m.paramSpace)
+	return nil
 }

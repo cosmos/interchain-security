@@ -18,7 +18,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -252,7 +251,8 @@ func (k Keeper) MakeConsumerGenesis(
 		return false
 	})
 
-	initialUpdates := []abci.ValidatorUpdate{}
+	var bondedValidators []stakingtypes.Validator
+
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
 		if err != nil {
@@ -266,19 +266,25 @@ func (k Keeper) MakeConsumerGenesis(
 			return gen, nil, errorsmod.Wrapf(err, "error getting validator from LastValidatorPowers")
 		}
 
-		tmProtoPk, err := val.CmtConsPublicKey()
-		if err != nil {
-			return gen, nil, err
-		}
+		// TODO: Remove this code block after main merge
+		// tmProtoPk, err := val.CmtConsPublicKey()
+		// if err != nil {
+		// 	return gen, nil, err
+		// }
 
-		initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
-			PubKey: tmProtoPk,
-			Power:  p.Power,
-		})
+		// initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
+		// 	PubKey: tmProtoPk,
+		// 	Power:  p.Power,
+		// })
+		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
+		bondedValidators = append(bondedValidators, val)
 	}
 
-	// Apply key assignments to the initial valset.
-	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
+	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
+	k.SetConsumerValSet(ctx, chainID, nextValidators)
+
+	// get the initial updates with the latest set consumer public keys
+	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)

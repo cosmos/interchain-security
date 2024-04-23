@@ -96,7 +96,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 				bondAmt := math.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
-				suite.providerChain.NextBlock()
+				suite.nextEpoch()
 
 				// Relay 1 VSC packet from provider to consumer
 				relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)
@@ -141,7 +141,7 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 				bondAmt := math.NewInt(100).Mul(sdk.DefaultPowerReduction)
 				delegateByIdx(suite, delAddr, bondAmt, valIdx)
 
-				suite.providerChain.NextBlock()
+				suite.nextEpoch()
 
 				// Relay 1 VSC packet from provider to consumer
 				relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)
@@ -180,6 +180,8 @@ func (suite *CCVTestSuite) TestSoftOptOut() {
 		// Setup validator power s.t. the bottom 5% is non-empty
 		validatorPowers := []int64{1000, 500, 50, 10}
 		suite.setupValidatorPowers(validatorPowers)
+
+		suite.nextEpoch()
 
 		// Relay 1 VSC packet from provider to consumer
 		relayAllCommittedPackets(suite, suite.providerChain, suite.path, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, 1)

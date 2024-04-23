@@ -116,6 +116,18 @@ func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
 	}
 }
 
+// GetProviderChain returns the provider chain struct
+// which is required to get context and have control over the blocks
+func (suite *CCVTestSuite) GetProviderChain() *ibctesting.TestChain {
+	return suite.providerChain
+}
+
+// GetCCVPath returns the CCV path which is
+// required to call SetupCCVChannel
+func (suite *CCVTestSuite) GetCCVPath() *ibctesting.Path {
+	return suite.path
+}
+
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
 	suite.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
@@ -125,6 +137,12 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.providerApp = suite.setupProviderCallback(suite.T())
 	suite.registerPacketSniffer(suite.providerChain)
 	providerKeeper := suite.providerApp.GetProviderKeeper()
+
+	// set `BlocksPerEpoch` to 10: a reasonable small value greater than 1 that prevents waiting for too
+	// many blocks and slowing down the integration tests
+	params := providerKeeper.GetParams(suite.providerCtx())
+	params.BlocksPerEpoch = 10
+	providerKeeper.SetParams(suite.providerCtx(), params)
 
 	// re-assign all validator keys for the first consumer chain
 	// this has to be done before:

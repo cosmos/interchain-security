@@ -197,6 +197,9 @@ message Params {
   // The fee required to be paid to add a reward denom
   cosmos.base.v1beta1.Coin consumer_reward_denom_registration_fee = 9
       [ (gogoproto.nullable) = false ];
+
+  // The number of blocks that comprise an epoch.
+  int64 blocks_per_epoch = 10;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators
@@ -303,4 +306,15 @@ message ConsumerAddrsToPrune {
   string chain_id = 1;
   uint64 vsc_id = 2;
   AddressList consumer_addrs = 3;
+}
+
+// ConsumerValidator is used to facilitate epoch-based transitions. It contains relevant info for
+// a validator that is expected to validate on a consumer chain during an epoch.
+message ConsumerValidator {
+  // validator's consensus address on the provider chain
+  bytes provider_cons_addr = 1;
+  // voting power the validator has during this epoch
+  int64 power = 2;
+  // public key the validator uses on the consumer chain during this epoch
+  tendermint.crypto.PublicKey consumer_public_key = 3;
 }

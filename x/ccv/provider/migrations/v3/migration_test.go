@@ -19,41 +19,41 @@ func TestMigrate2To3(t *testing.T) {
 	providerKeeper.SetConsumerClientId(ctx, "chain-3", "client-3")
 
 	// Queue some data for chain-1
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-1", 66, testutil.GetNewSlashPacketData())
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-1", 67, testutil.GetNewVSCMaturedPacketData())
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-1", 68, testutil.GetNewSlashPacketData())
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-1", 69, testutil.GetNewVSCMaturedPacketData())
 
 	// Queue some data for chain-2
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-2", 789, testutil.GetNewVSCMaturedPacketData())
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-2", 790, testutil.GetNewSlashPacketData())
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-2", 791, testutil.GetNewVSCMaturedPacketData())
 
 	// Queue some data for chain-3
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-3", 123, testutil.GetNewSlashPacketData())
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-3", 124, testutil.GetNewVSCMaturedPacketData())
-	providerKeeper.LegacyQueueThrottledPacketData( //nolint:staticcheck //  SA1019: used in migration tests
+	providerKeeper.LegacyQueueThrottledPacketData(
 		ctx, "chain-3", 125, testutil.GetNewVSCMaturedPacketData())
 
 	// Confirm getter methods return expected values
-	slash1, vscm1 := providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-1") //nolint:staticcheck //  SA1019: used in migration tests
+	slash1, vscm1 := providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-1")
 	require.Len(t, slash1, 2)
 	require.Len(t, vscm1, 2)
 
-	slash2, vscm2 := providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-2") //nolint:staticcheck //  SA1019: used in migration tests
+	slash2, vscm2 := providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-2")
 	require.Len(t, slash2, 1)
 	require.Len(t, vscm2, 2)
 
-	slash3, vscm3 := providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-3") //nolint:staticcheck //  SA1019: used in migration tests
+	slash3, vscm3 := providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-3")
 	require.Len(t, slash3, 1)
 	require.Len(t, vscm3, 2)
 
@@ -91,13 +91,13 @@ func TestMigrate2To3(t *testing.T) {
 	require.NoError(t, err)
 
 	// Confirm throttled data is now deleted
-	slash1, vscm1 = providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-1") //nolint:staticcheck //  SA1019: used in migration tests
+	slash1, vscm1 = providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-1")
 	require.Empty(t, slash1)
 	require.Empty(t, vscm1)
-	slash2, vscm2 = providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-2") //nolint:staticcheck //  SA1019: used in migration tests
+	slash2, vscm2 = providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-2")
 	require.Empty(t, slash2)
 	require.Empty(t, vscm2)
-	slash3, vscm3 = providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-3") //nolint:staticcheck //  SA1019: used in migration tests
+	slash3, vscm3 = providerKeeper.LegacyGetAllThrottledPacketData(ctx, "chain-3")
 	require.Empty(t, slash3)
 	require.Empty(t, vscm3)
 

@@ -48,7 +48,7 @@ Minimal example:
     "distribution_transmission_channel": "channel-123"
 }
 ```
-More examples can be found in the replicated security testnet repository [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/noble-1/start-proposal-noble-1.json).
+More examples can be found in the interchain security testnet repository [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/noble-1/start-proposal-noble-1.json).
 
 ## `ConsumerRemovalProposal`
 Proposal type used to suggest removing an existing consumer chain.

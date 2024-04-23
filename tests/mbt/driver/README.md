@@ -90,15 +90,16 @@ These are relatively minimal at the moment, but can be extended as needed.
 
 Right now, the statistics look, for example, like this, printed after running the traces:
 ```
-mbt_test.go:59: 499 traces run
-mbt_test.go:62: Highest observed voting power: 800
-mbt_test.go:63: Number of started chains: 1497
-mbt_test.go:64: Number of stopped chains: 279
-mbt_test.go:65: Number of timeouts: 317
-mbt_test.go:66: Number of sent packets: 15183
-mbt_test.go:67: Number of blocks: 196990
-mbt_test.go:68: Number of transactions: 20813
-mbt_test.go:69: Average summed block time delta passed per trace: 876h46m29.361303503s
+499 traces run
+Highest observed voting power: 800
+Number of started chains: 1497
+Number of stopped chains: 279
+Number of timeouts: 317
+Number of sent packets: 15183
+Number of blocks: 196990
+Number of transactions: 20813
+Number of slashes: 50
+Average summed block time delta passed per trace: 876h46m29.361303503s
 ```
 
 Some notes are:
@@ -132,3 +133,9 @@ Thus, to the coarse second precision, the timestamps match, but to the nanosecon
 they are different.
 This will cause problems in practice if we produce on the order of tens of millions of blocks in one trace,
 but as long as we produce only a few thousand blocks per trace, this should not be a problem.
+
+#### Slash Throttling
+
+Currently, slash throttling is implemented assuming an infinite slash meter.
+See https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-002-throttle.md and https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-008-throttle-retries.md
+for more information on slash throttling.
