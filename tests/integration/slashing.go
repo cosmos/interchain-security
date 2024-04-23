@@ -70,7 +70,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// convert validator to TM type
 	pk, err := stakingVal.ConsPubKey()
 	s.Require().NoError(err)
-	tmPk, err := cryptocodec.ToTmPubKeyInterface(pk)
+	tmPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
 	s.Require().NoError(err)
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
@@ -103,7 +103,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().NoError(err)
 	s.Require().Equal(heightBefore+2, heightAfter)
 
-	// We've now advanced two blocks.
+	// this call was added starging cosmos-sdk v0.50.x
+	s.nextEpoch()
 
 	// VSC packets should have been sent from provider during block N to each consumer
 	expectedSentValsetUpdateId := valsetUpdateIdN
@@ -187,7 +188,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	tmVal := s.consumerChain.Vals.Validators[0]
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
 	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.GetConsAddress(pubkey))
 	// map consumer consensus address to provider consensus address
@@ -205,7 +206,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	// convert validator to TM type
 	pk, err := stakingVal.ConsPubKey()
 	s.Require().NoError(err)
-	tmPk, err := cryptocodec.ToTmPubKeyInterface(pk)
+	tmPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
 	s.Require().NoError(err)
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
