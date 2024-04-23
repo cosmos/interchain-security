@@ -12,18 +12,15 @@ import (
 
 	"cosmossdk.io/math"
 
-<<<<<<< HEAD
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-=======
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
->>>>>>> main
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	"github.com/cosmos/interchain-security/v4/testutil/crypto"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
@@ -771,14 +768,10 @@ func TestEndBlockVSU(t *testing.T) {
 	var lastValidators []stakingtypes.Validator
 	var valAddresses []sdk.ValAddress
 	for i := 0; i < 4; i++ {
-<<<<<<< HEAD
 		validator := crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
 		lastValidators = append(lastValidators, validator)
 		valAddresses = append(valAddresses, validator.GetOperator())
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(i + 1)).AnyTimes()
-=======
-		lastValidators = append(lastValidators, cryptotestutil.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator())
->>>>>>> main
 	}
 
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()

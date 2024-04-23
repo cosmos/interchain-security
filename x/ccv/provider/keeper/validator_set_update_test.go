@@ -124,23 +124,12 @@ func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, ind
 	mocks.MockStakingKeeper.EXPECT().
 		GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
 
-<<<<<<< HEAD
 	return stakingtypes.Validator{
 		OperatorAddress: providerValidatorAddr.String(),
 		ConsensusPubkey: pkAny,
-=======
-		var providerValidatorAddr sdk.ValAddress = providerAddr.Address.Bytes()
-
-		mocks.MockStakingKeeper.EXPECT().
-			GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
-
-		return stakingtypes.Validator{
-			OperatorAddress: providerValidatorAddr.String(),
-			ConsensusPubkey: pkAny,
-		}
->>>>>>> main
 	}
 }
+
 func TestDiff(t *testing.T) {
 	// In what follows we create 6 validators: A, B, C, D, E, and F where currentValidators = {A, B, C, D, E}
 	// and nextValidators = {B, C, D, E, F}. For the validators {B, C, D, E} in the intersection we have:
@@ -402,7 +391,8 @@ func TestComputeNextEpochConsumerValSetConsiderOnlyOptIn(t *testing.T) {
 	expectedValAConsumerValidator := types.ConsumerValidator{
 		ProviderConsAddr:  types.NewProviderConsAddress(valAConsAddr).Address.Bytes(),
 		Power:             1,
-		ConsumerPublicKey: &valAPublicKey}
+		ConsumerPublicKey: &valAPublicKey,
+	}
 	expectedValidators = append(expectedValidators, expectedValAConsumerValidator)
 
 	// create a staking validator B that has set a consumer public key
