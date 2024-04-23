@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/kylelemons/godebug/pretty"
@@ -19,11 +20,9 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cosmos/interchain-security/v5/testutil/integration"
-
 	cmttypes "github.com/cometbft/cometbft/types"
-
 	"github.com/cosmos/interchain-security/v5/testutil/integration"
+
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -163,8 +162,8 @@ func RunItfTrace(t *testing.T, path string) {
 		trustingPeriodPerChain[ChainId(consumer)] = time.Duration(params["TrustingPeriodPerChain"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 		ccvTimeoutPerChain[ChainId(consumer)] = time.Duration(params["CcvTimeout"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 	}
-	downtimeSlashPercentage := sdk.NewDec(params["DowntimeSlashPercentage"].Value.(int64))
-	doubleSignSlashPercentage := sdk.NewDec(params["DoubleSignSlashPercentage"].Value.(int64))
+	downtimeSlashPercentage := math.LegacyNewDec(params["DowntimeSlashPercentage"].Value.(int64))
+	doubleSignSlashPercentage := math.LegacyNewDec(params["DoubleSignSlashPercentage"].Value.(int64))
 	downtimeJailDuration := time.Duration(params["DowntimeJailDuration"].Value.(int64)) * time.Second
 
 	modelParams := ModelParams{
@@ -222,7 +221,8 @@ func RunItfTrace(t *testing.T, path string) {
 		driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 	}
 
-	slashingParams := driver.providerSlashingKeeper().GetParams(driver.providerCtx())
+	slashingParams, err := driver.providerSlashingKeeper().GetParams(driver.providerCtx())
+	require.NoError(t, err, "Error getting slashing params")
 	slashingParams.DowntimeJailDuration = downtimeJailDuration
 	driver.providerSlashingKeeper().SetParams(driver.providerCtx(), slashingParams)
 
@@ -820,8 +820,8 @@ func CompareJailedValidators(
 		modelJailEndTime := modelJailEndTimes[i]
 
 		valConsAddr := sdk.ConsAddress(modelNamesToSystemConsAddr[modelJailedVal].Address)
-		valSigningInfo, found := driver.providerSlashingKeeper().GetValidatorSigningInfo(driver.providerCtx(), valConsAddr)
-		require.True(driver.t, found, "Error getting signing info for validator %v", modelJailedVal)
+		valSigningInfo, err := driver.providerSlashingKeeper().GetValidatorSigningInfo(driver.providerCtx(), valConsAddr)
+		require.NoError(driver.t, err, "Error getting signing info for validator %v", modelJailedVal)
 
 		systemJailEndTime := valSigningInfo.JailedUntil
 		actualTimeWithOffset := systemJailEndTime.Unix() - timeOffset.Unix()

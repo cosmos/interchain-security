@@ -366,8 +366,11 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 			continue
 		}
 
-		v, found := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
-		if !found {
+		v, err := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		// TODO: not sure why there was this code on ICS <= v5.x
+		// v, found := ...
+		// if !found { ... }
+		if err != nil {
 			continue
 		}
 		stakingValidators = append(stakingValidators, v)

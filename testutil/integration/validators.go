@@ -1,14 +1,11 @@
 package integration
 
 import (
-<<<<<<< HEAD
-=======
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 
->>>>>>> main
 	"github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
