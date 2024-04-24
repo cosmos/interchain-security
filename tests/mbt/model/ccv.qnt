@@ -607,7 +607,7 @@ module ccv {
         // acknowledge the packets to be acknowledged on endblock
         val newConsumerStates = currentState.consumerStates.keys().mapBy(
             (consumer) =>
-            val consumerState = currentState.consumerStates.get(consumer) 
+            val consumerState = currentState.consumerStates.get(consumer)
             val packetsToAck = currentProviderState.acksToSendOnEndBlock.getOrElse(consumer, List())
             val newConsumerState = packetsToAck.foldl(consumerState,
                 (state, packet) => deliverAck(state, packet)
@@ -615,9 +615,14 @@ module ccv {
             newConsumerState
         )
 
+        // clear the acksToSendOnEndBlock
+        val providerStateAfterAcking = providerStateAfterSending.with(
+            "acksToSendOnEndBlock", Map()
+        )
+
 
         // start/stop chains
-        val res = providerStateAfterSending.StartStopConsumers(
+        val res = providerStateAfterAcking.StartStopConsumers(
             consumersToStart,
             consumersToStop,
             timedOutConsumers
@@ -661,7 +666,7 @@ module ccv {
                 tmpState.consumerStates.keys().mapBy(
                     (consumer) => 
                     if (consumerAdditions.contains(consumer)) {
-                        val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
+                        val currentConsumerState: ConsumerState = newConsumerStates.get(consumer)
                         // correctly set the state for the new consumer
                         val newConsumerState: ConsumerState = currentConsumerState.with(
                             "chainState", currentConsumerState.chainState.with(
@@ -679,7 +684,7 @@ module ccv {
                         )
                         newConsumerState
                     } else {
-                        tmpState.consumerStates.get(consumer)
+                        newConsumerStates.get(consumer)
                     }
                 )
             val newState = tmpState.with(
