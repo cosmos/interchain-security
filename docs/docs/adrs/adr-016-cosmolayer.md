@@ -14,44 +14,25 @@ Draft
 > and why there is a problem. It should be as succinct as possible and introduce
 > the high level idea behind the solution.
 
-CosmoLayer enables re-staking of Ethereum tokens to Cosmos blockchains. By integrating CosmoLayer, a Cosmos blockchain can be secured by staked Ethereum and native tokens.
+CosmoLayer enables staking of tokens from external sources such as Ethereum or Bitcoin to Cosmos blockchains. By integrating CosmoLayer, a Cosmos blockchain can be secured by staked Ethereum and native tokens.
 
-CosmoLayer is based on 4 parts
+CosmoLayer solution consists of 4 parts
 
-- EigenLayer AVS contract (restaking, slashing of validators)
-- Oracle (tracks how much ETH has been delegated to each validator)
-- Cosmos modules (combines external and native stakes to derive power of each validator)
+- External staking solution such as Babylon or EigenLayer AVS contract
+- Oracle (tracks how much ETH has been delegated to each validator and provides price feeds for external tokens)
+- CosmoLayer: Cosmos modules (combines external and native stakes to derive power of each validator)
 - Bridge to EigenLayer (needed for rewards to be sent back to EigenLayer)
-where each part is described by its own ADR.
 
-Present [ADR](01-cosmolayer-cosmos_module.md) describes the Cosmos modules of the solution.
+External staking information is received from an oracle together with price information of related stakes.
+The CosmosLayer derives validator powers based on external and native staking information and initiates rewarding of external depositors.
 
-```
-- Any Cosmos blockchain can deploy an EigenLayer AVS
-
-- An EigenLayer allows Ethereum stakers to restake their Eth and other tokens to other systems (Cosmos chains)`
-```
+Present ADR describes the _Cosmos modules_ of the solution.
 
 ## Alternative Approaches
 
 > This section contains information around alternative options that are considered
 > before making a decision. It should contain a explanation on why the alternative
 > approach(es) were not chosen.
-
-### Reward Distribution
-
-1. External stakers rewarded with native cosmos-chain tokens
-    - No channel back to source of stakes (EigenLayer/Babylon) needed.
-    - Stakers are not rewarded in form of 'source' tokens
-    - Transfer of the rewards back to external stake is up to the user
-    - All external staker addresses need to be sent to cosmos chain
-    - External stakers need to have an address on th cosmos chain where their external staking address is mapped against
-2. External stakers rewarded with source stakes (EigenLayer/Babylon)
-This can be realized by a bridge transfering back rewards to stakers on Eigenlayer,
-wich requires
-    - a pool of tokens - with sufficient size - on EigenLayer to distribute rewards to Ethereum stakers.
-    - complex (distribution logic/contract on Eigenlayer/Babylon)
-    - bridge can be implemented by `Slinky Oracle` module or on cosmos-chain
 
 
 ## Decision
@@ -93,10 +74,10 @@ wich requires
 > - Does this change require coordination with the SDK or other?
 
 
------
+
 The `Cosmos Modules` are an integral part of the CosmoLayer solution and consist of a `Power Mixing` and a `Reward Handler` module.
-The `Power Mixing` module provides the capability of deriving validator power based on stake originated from Ethereum and the native staking module.
-The `Reward Handler` is in charge of sending rewards to external stakers on Ethereum EigenLayer.
+The `Power Mixing` module provides the capability of deriving validator power based on stake originated from external sources such as Ethereum/Bitcoin and the native staking module.
+The `Reward Handler` is in charge of sending rewards to external stakers.
 
 ---
 
@@ -110,10 +91,11 @@ Requirements:
 - validator updates are performed on each EndBlock
 - a validator's power is determined based on its native on-chain stakes and external stakes
 - price information of staked tokens is used to determine a validator’s power, e.g. price ratio (price of native on-chain token / price of external stake)
-- price information of native/external tokens are received from the `[Slinky Oracle](https://www.notion.so/informalsystems/02-cosmolayer-oracle.md)`
-- external staking information are received from the `Slinky Oracle`
+- price information of native/external tokens are received from `[Slinky Oracle](https://www.notion.so/informalsystems/02-cosmolayer-oracle.md)`
+- staking information of EigenLayer are received from the `Slinky Oracle`
+- staking information of Bitcoin are received from Babylon's Bitcoin staking protocol
 - native staking information are received from the `Cosmos SDK Staking Module`
-- Set of validator stakes from `Slinky Oracle` always have the current price, full set of validators, and current stakes
+- set of validator stakes from `Slinky Oracle` always have the current price, full set of validators, and current stakes
 
 The `Power Mixing` module implements:
 
@@ -128,27 +110,38 @@ update validator set on cometBFT ABCI (x/staking is doing this in ValidatorUpdat
 The following queries will be provided by `Slinky Oracle` (extension to current implementation)
 
 ```protobuf
-message ExtValidatorUpdates {
-  repeated ExtValPower powers;
-  PriceUpdate price;
+service Query {
+    rpc GetExtValidators(GetExtValidatorRequest) returns (ExtValidatorsResponse) {
+         option (google.api.http).get = "/slinky/oracle/v1/get_validators";
+    };
 }
 
+message GetExtValidatorRequest {}
+
+// ExtValidatorsResponse is the response from GetExtValidators queries
+message ExtValidatorsResponse {
+  repeated ExtValPower powers;
+}
+
+// ExtValPower represents a validator with its staking and token information,
+// where `stakes` is the total amount of stakes for a validator and `denom` is the
+// source token of the stake e.g. ETH,BTC.g
 message ExtValPower {
   string validator_address;
   uint64 stakes;
+  string denom;
 }
 
-// TBD if this is needed
-message GetExtDelegators {
-	string eth_address;
-	uint64 stakes;
-}
 ```
 
+current implementation of `Slinky Oracle` provides a query [GetPrice](https://github.com/skip-mev/slinky/blob/main/proto/slinky/oracle/v1/query.proto)
+to get the latest price feed for a currency pair.
+
 ```protobuf
-message PriceUpdate {
-  float ratio;
-  string denom;
+service Query {
+  rpc GetPrice(GetPriceRequest) returns (GetPriceResponse) {
+    option (google.api.http).get = "/slinky/oracle/v1/get_price";
+  };
 }
 ```
 
@@ -175,17 +168,10 @@ Only needed if rewards are issued locally?
 ### Reward Handler
 
 For native staked tokens the `Distribution Module` of the Cosmos SDK is taking care of sending the rewards to stakers.
-For stakes originated from Ethereum the `Reward Handler` module sends rewards to the AVS contract of the related Cosmos chain.
-The transfer of rewards is done using a [bridge](https://ethereum.org/en/bridges/) between the Cosmos chain and Ethereum Eigenlayer.
+For stakes originated from external chains (Ethereum/Bitcoin) the `Reward Handler` module sends rewards to EigenLayer/Babylon.
+The transfer of rewards is done using a [bridge](https://ethereum.org/en/bridges/) between the Cosmos chain and Eigenlayer/Babylon.
 
-**Alternative Solution**
-
-1. the `Reward Handler` sends rewards to the related Eigenlayer AVS of the chain via `Slinky Oracle` which establish a bridge to Ethereum.
-2. the `Reward Handler` issues rewards for external staker to their address on the Cosmos chain.
-This requires:
-    1. sending all external stakers to cosmos chain
-    2. mapping of restaker addresses to their registered addresses on cosmos chain
-
+Note: currently there's no support paying rewards on EigneLayer (see [here](https://www.coindesk.com/tech/2024/04/10/eigenlayer-cryptos-biggest-project-launch-this-year-is-still-missing-crucial-functionality/))
 
 ## Consequences
 
