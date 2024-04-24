@@ -1,6 +1,7 @@
 package simibc
 
 import (
+	"fmt"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -51,6 +52,11 @@ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Heade
 	}
 
 	// handle packets
+	fmt.Println("### ABCI Events ###")
+	// sdkEvents := ABCIToSDKEvents(res.Events)
+	// for _, e := range sdkEvents {
+	// 	fmt.Println("------- ABCI EVENT TO SDK", e.Type, e.Attributes)
+	// }
 	packets := ParsePacketsFromEvents(res.Events)
 	return c.LastHeader, packets
 }

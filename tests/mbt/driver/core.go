@@ -404,6 +404,7 @@ func (s *Driver) AssignKey(chain ChainId, valIndex int64, value crypto.PublicKey
 // It updates the client before delivering the packet.
 // Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
 func (s *Driver) DeliverPacketToConsumer(recipient ChainId, expectError bool) {
+	fmt.Println("## deliver TO consumer ##")
 	s.path(recipient).DeliverPackets(string(recipient), 1, expectError)
 }
 
@@ -411,6 +412,7 @@ func (s *Driver) DeliverPacketToConsumer(recipient ChainId, expectError bool) {
 // It updates the client before delivering the packet.
 // Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
 func (s *Driver) DeliverPacketFromConsumer(sender ChainId, expectError bool) {
+	fmt.Println("## deliver FROM consumer ##")
 	s.path(sender).DeliverPackets(PROVIDER, 1, expectError) // deliver to the provider
 }
 
