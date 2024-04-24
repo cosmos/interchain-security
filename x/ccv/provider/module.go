@@ -130,7 +130,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 3 -> 4", providertypes.ModuleName, err))
 	}
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 4, migrator.Migrate4to5); err != nil {
-		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 4 -> 4", providertypes.ModuleName, err))
+		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 4 -> 5", providertypes.ModuleName, err))
 	}
 }
 
