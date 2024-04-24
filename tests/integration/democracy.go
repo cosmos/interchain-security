@@ -271,6 +271,54 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
+func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
+	govKeeper := s.consumerApp.GetTestGovKeeper()
+	params, err := govKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+
+	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
+	bankKeeper := s.consumerApp.GetTestBankKeeper()
+	votingAccounts := s.consumerChain.SenderAccounts
+	bondDenom, err := stakingKeeper.BondDenom(s.consumerCtx())
+	s.Require().NoError(err)
+	depositAmount := params.MinDeposit
+	duration := (3 * time.Second)
+	params.VotingPeriod = &duration
+	err = govKeeper.Params.Set(s.consumerCtx(), params)
+	s.Assert().NoError(err)
+	proposer := s.consumerChain.SenderAccount
+	s.consumerChain.NextBlock()
+	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
+
+	oldParams := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
+	modifiedParams := oldParams
+	modifiedParams.RetryDelayPeriod = 7200 * time.Second
+	s.Require().NotEqual(oldParams.RetryDelayPeriod, modifiedParams.RetryDelayPeriod)
+
+	msg := &consumertypes.MsgUpdateParams{
+		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		Params:    modifiedParams,
+	}
+
+	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), []sdk.Msg{msg}, votingAccounts, proposer.GetAddress(), depositAmount)
+	s.Assert().NoError(err)
+	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
+	// once the proposal is added to the chain
+	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
+
+	s.consumerChain.NextBlock()
+
+	newParams := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
+	s.Assert().NotEqual(oldParams, newParams)
+	s.Assert().Equal(modifiedParams, newParams)
+	s.Assert().NotEqual(oldParams.RetryDelayPeriod, newParams.RetryDelayPeriod)
+	s.Assert().Equal(modifiedParams.RetryDelayPeriod, newParams.RetryDelayPeriod)
+
+	// deposit is refunded
+	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
+
+}
+
 func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
