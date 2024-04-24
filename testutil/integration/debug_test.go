@@ -69,6 +69,10 @@ func TestDemocracyGovernanceWhitelisting(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
 }
 
+func TestDemocracyMsgUpdateParams(t *testing.T) {
+	runConsumerDemocracyTestByName(t, "TestDemocracyMsgUpdateParams")
+}
+
 //
 // Distribution tests
 //

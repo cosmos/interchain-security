@@ -54,7 +54,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers module concrete types into protobuf Any.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	// ccv.RegisterInterfaces(registry)
+	consumertypes.RegisterInterfaces(registry)
 }
 
 // IsAppModule implements the appmodule.AppModule interface.
@@ -120,6 +120,7 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	consumertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(&am.keeper))
 	consumertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	m := keeper.NewMigrator(am.keeper, am.paramSpace)

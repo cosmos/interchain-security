@@ -39,13 +39,14 @@ var LegacyWhitelistedParams = map[legacyParamChangeKey]struct{}{
 
 // add whitelisted module param update messages [cosmos-sdk >= 0.47]
 var WhiteListModule = map[string]struct{}{
-	"/cosmos.gov.v1.MsgUpdateParams":                {},
-	"/cosmos.bank.v1beta1.MsgUpdateParams":          {},
-	"/cosmos.staking.v1beta1.MsgUpdateParams":       {},
-	"/cosmos.distribution.v1beta1.MsgUpdateParams":  {},
-	"/cosmos.mint.v1beta1.MsgUpdateParams":          {},
-	"/cosmos.gov.v1beta1.TextProposal":              {},
-	"/ibc.applications.transfer.v1.MsgUpdateParams": {},
+	"/cosmos.gov.v1.MsgUpdateParams":                       {},
+	"/cosmos.bank.v1beta1.MsgUpdateParams":                 {},
+	"/cosmos.staking.v1beta1.MsgUpdateParams":              {},
+	"/cosmos.distribution.v1beta1.MsgUpdateParams":         {},
+	"/cosmos.mint.v1beta1.MsgUpdateParams":                 {},
+	"/cosmos.gov.v1beta1.TextProposal":                     {},
+	"/ibc.applications.transfer.v1.MsgUpdateParams":        {},
+	"/interchain_security.ccv.consumer.v1.MsgUpdateParams": {},
 }
 
 func IsModuleWhiteList(typeUrl string) bool {
