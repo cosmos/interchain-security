@@ -47,7 +47,7 @@ type ProviderApp interface {
 	// Returns an account keeper interface with more capabilities than the expected_keepers interface
 	GetTestAccountKeeper() TestAccountKeeper
 
-	// GetTestGovKeeper() govkeeper.Keeper
+	GetTestGovKeeper() *govkeeper.Keeper
 }
 
 // The interface that any consumer app must implement to be compatible with integration tests

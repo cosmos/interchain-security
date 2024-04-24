@@ -923,6 +923,11 @@ func (app *App) GetTestAccountKeeper() testutil.TestAccountKeeper {
 	return app.AccountKeeper
 }
 
+// GetTestGovKeeper implements the ProviderApp interface.
+func (app *App) GetTestGovKeeper() *govkeeper.Keeper {
+	return app.GovKeeper
+}
+
 // TestingApp functions
 
 // GetBaseApp implements the TestingApp interface.
