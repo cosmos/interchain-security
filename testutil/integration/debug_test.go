@@ -281,6 +281,7 @@ func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing
 	runCCVTestByName(t, "TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations")
 }
 
+//
 // Throttle retry tests
 //
 
@@ -290,4 +291,16 @@ func TestSlashRetries(t *testing.T) {
 
 func TestKeyAssignment(t *testing.T) {
 	runCCVTestByName(t, "TestKeyAssignment")
+}
+
+//
+// Provider gov hooks test
+//
+
+func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
+	runCCVTestByName(t, "TestAfterPropSubmissionAndVotingPeriodEnded")
+}
+
+func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
+	runCCVTestByName(t, "TestGetConsumerAdditionLegacyPropFromProp")
 }
