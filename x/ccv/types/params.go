@@ -61,6 +61,14 @@ var (
 	KeyRetryDelayPeriod                  = []byte("RetryDelayPeriod")
 )
 
+// helper interface
+// sdk::paramtypes.ParamSpace implicitly implements this interface because it
+// implements the Get(ctx sdk.Context, key []byte, ptr interface{})
+// since only Get(...) is needed to migrate params we can ignore the other methods on paramtypes.ParamSpace.
+type LegacyParamSubspace interface {
+	Get(ctx sdktypes.Context, key []byte, ptr interface{})
+}
+
 // ParamKeyTable type declaration for parameters
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&ConsumerParams{})

@@ -1,16 +1,16 @@
-package v4
+package v5
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // MigrateParams migrates the provider module's parameters from the x/params to self store.
-func MigrateLegacyParams(ctx sdk.Context, keeper providerkeeper.Keeper, legacySubspace paramtypes.Subspace) error {
-	keeper.Logger(ctx).Info("starting provider legacy params migration")
-	params := providerkeeper.GetParamsLegacy(ctx, legacySubspace)
+func MigrateLegacyParams(ctx sdk.Context, keeper providerkeeper.Keeper, legacyParamspace ccvtypes.LegacyParamSubspace) error {
+	ctx.Logger().Info("starting provider legacy params migration")
+	params := GetParamsLegacy(ctx, legacyParamspace)
 	err := params.Validate()
 	if err != nil {
 		return err

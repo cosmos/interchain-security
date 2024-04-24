@@ -60,13 +60,11 @@ func (ps testLegacyParamSubspace) Get(ctx sdk.Context, key []byte, ptr interface
 	}
 }
 
-// MigrateParams migrates the consumers module's parameters from the x/params subspace to the
-// consumer modules store.
 func TestMigrateParams(t *testing.T) {
 	cdc := encoding.MakeTestEncodingConfig().Codec
-	govKey := storetypes.NewKVStoreKey("provider")
-	ctx := testutil.DefaultContext(govKey, storetypes.NewTransientStoreKey("transient_test"))
-	store := ctx.KVStore(govKey)
+	storeKey := storetypes.NewKVStoreKey("ccvconsumer")
+	ctx := testutil.DefaultContext(storeKey, storetypes.NewTransientStoreKey("transient_test"))
+	store := ctx.KVStore(storeKey)
 
 	defaultParams := ccvtypes.DefaultParams()
 	legacyParamSubspace := newTestLegacyParamsSubspace(defaultParams)

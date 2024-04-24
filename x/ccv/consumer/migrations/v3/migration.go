@@ -6,12 +6,14 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // MigrateLegacyParams migrates the consumers module's parameters from the x/params subspace to the
 // consumer modules store.
-func MigrateLegacyParams(ctx sdk.Context, cdc codec.BinaryCodec, store storetypes.KVStore, legacyParamspace ParamSubspace) error {
+func MigrateLegacyParams(ctx sdk.Context, cdc codec.BinaryCodec, store storetypes.KVStore, legacyParamspace ccvtypes.LegacyParamSubspace) error {
+	ctx.Logger().Info("starting consumer legacy params migration")
 	params := GetConsumerParamsLegacy(ctx, legacyParamspace)
 	err := params.Validate()
 	if err != nil {
@@ -19,7 +21,7 @@ func MigrateLegacyParams(ctx sdk.Context, cdc codec.BinaryCodec, store storetype
 	}
 
 	bz := cdc.MustMarshal(&params)
-	store.Set(types.ParametersKey(), bz)
+	store.Set(consumertypes.ParametersKey(), bz)
 	ctx.Logger().Info("successfully migrated consumer parameters")
 	return nil
 }
