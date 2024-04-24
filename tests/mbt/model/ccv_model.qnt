@@ -224,11 +224,14 @@ module ccv_model {
 
      // stepCommon is the core functionality of steps that does not have anything to do with time.
     action stepCommon = any {
-        nondet node = oneOf(nonJailedNodes(currentState.providerState))
-        // very restricted set of voting powers. exact values are not important,
-        // and this keeps the state space smaller.
-        nondet newVotingPower = oneOf(Set(-50, 50))
-        VotingPowerChange(node, newVotingPower),
+        all {
+            nonJailedNodes(currentState.providerState).size() > 0,
+            nondet node = oneOf(nonJailedNodes(currentState.providerState))
+            // very restricted set of voting powers. exact values are not important,
+            // and this keeps the state space smaller.
+            nondet newVotingPower = oneOf(Set(-50, 50))
+            VotingPowerChange(node, newVotingPower),
+        },
 
         // try to send a packet. we could filter by chains that can actually send,
         // but it's probably not much faster than just trying and failing.
@@ -1180,6 +1183,75 @@ module ccv_model {
                 // action does not matter
                 VotingPowerChange("node1", 50)
             }
+        )
+
+    // Ensure that SlashAcks are sent even when the validator set does not change due to the slash itself,
+    // i.e. the validator already had 0 power.
+    run DeliverSlashAckWithNoVSCUpdateTest = 
+        init
+        .then(
+            // start consumer 1
+            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1")), Set())
+        )
+        .then(
+            // change voting power for node 1 by 50
+            VotingPowerChange("node1", 50)
+        )
+        .then(
+            // end and begin a block on the provider
+            EndProviderEpoch(3 * Second, Set(), Set())
+        )
+        .then(
+            // deliver the vsc packet to consumer 1
+            DeliverVscPacket("consumer1")
+        )
+        .then(
+            // begin a new block on the consumer
+            EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+        )
+        .then(
+            // initiate a slash for downtime
+            ConsumerInitiatedSlashDet("consumer1", "node1", 0, true)
+        )
+        .then(
+            // end a block on the consumer to send the packet
+            EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+        )
+        .then(
+            all {
+                // consumer1 should have sent the slash packet
+                assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 1),
+                assert(currentState.consumerStates.get("consumer1").waitingForSlashPacketAck.size() == 1),
+                // set the power of node1 to 0 on the provider
+                VotingPowerChange("node1", -150)
+            }
+        )
+        .then(
+            all {
+                // node1 should have 0 power on the provider
+                assert(currentState.providerState.chainState.currentValidatorPowers.get("node1") == 0),
+                // end an epoch on the provider to send another vsc packet
+                EndProviderEpoch(3 * Second, Set(), Set())
+            }
+        )
+        .then(
+            // deliver the packet
+            DeliverVscPacket("consumer1")
+        )
+        .then(
+            // consumer1 should have sent a slash packet to the provider
+            all {
+                // deliver the slash request to the provider
+                DeliverPacketToProvider("consumer1")
+            }
+        )
+        .then(
+            // end an epoch on the provider to send the acknowledgement
+            EndProviderEpoch(1 * Second, Set(), Set())
+        )
+        .then(
+            // deliver the acknowledgement to the consumer
+            DeliverVscPacket("consumer1")
         )
 
     run SlashAckTest = 

@@ -227,7 +227,8 @@ module ccv_utils {
             (consumer) => 
             // if validator set changed or the key assignments for this chain changed, and the consumer is running, send a packet
             if ((providerState.consumersWithPowerChangesInThisEpoch.contains(consumer) or 
-                providerState.consumersWithAddrAssignmentChangesInThisEpoch.contains(consumer))
+                providerState.consumersWithAddrAssignmentChangesInThisEpoch.contains(consumer)
+                or providerState.downtimeSlashRequests.getOrElse(consumer, []) != [])
                 and 
                 isRunningConsumer(consumer, providerState)) {
                     // send a packet, i.e. use a list with one element (the packet to be sent)
