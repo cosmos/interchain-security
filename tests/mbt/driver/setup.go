@@ -185,7 +185,8 @@ func getAppBytesAndSenders(
 		stakingValidators = append(stakingValidators, validator)
 
 		// Store delegation from the model delegator account
-		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress().String(), val.Address.String(), delShares))
+		delegations = append(delegations,
+			stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress().String(), validator.GetOperator(), delShares))
 
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
@@ -268,16 +269,6 @@ func newChain(
 			Validators:      cmttypes.TM2PB.ValidatorUpdates(validators),
 			ConsensusParams: &protoConsParams,
 			AppStateBytes:   stateBytes,
-		},
-	)
-
-	app.Commit()
-
-	app.FinalizeBlock(
-		&abcitypes.RequestFinalizeBlock{
-			Hash:               app.LastCommitID().Hash,
-			Height:             app.LastBlockHeight() + 1,
-			NextValidatorsHash: validators.Hash(),
 		},
 	)
 
