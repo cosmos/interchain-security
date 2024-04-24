@@ -81,17 +81,17 @@ func (h Hooks) AfterUnbondingInitiated(goCtx context.Context, id uint64) error {
 	// check: https://github.com/cosmos/cosmos-sdk/pull/16043
 	//
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-	// if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, id); err != nil {
-	// 	// If there was an error putting the unbonding on hold, panic to end execution for
-	// 	// the current tx and prevent committal of this invalid state.
-	// 	//
-	// 	// Note: that in the case of a validator unbonding, AfterUnbondingInitiated is called
-	// 	// from staking.EndBlock, thus the following panic would halt the chain.
-	// 	// In this case PutUnbondingOnHold fails if either the unbonding operation was
-	// 	// not found or the UnbondingOnHoldRefCount is negative. In either cases,
-	// 	// the state of the x/staking module of cosmos-sdk is invalid.
-	// 	panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
-	// }
+	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, id); err != nil {
+		// If there was an error putting the unbonding on hold, panic to end execution for
+		// the current tx and prevent committal of this invalid state.
+		//
+		// Note: that in the case of a validator unbonding, AfterUnbondingInitiated is called
+		// from staking.EndBlock, thus the following panic would halt the chain.
+		// In this case PutUnbondingOnHold fails if either the unbonding operation was
+		// not found or the UnbondingOnHoldRefCount is negative. In either cases,
+		// the state of the x/staking module of cosmos-sdk is invalid.
+		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
+	}
 	return nil
 }
 
