@@ -275,7 +275,12 @@ func (tr TestConfig) getProposals(chain ChainID, modelState map[uint]Proposal) m
 func (tr TestConfig) getValPowers(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint {
 	actualState := map[ValidatorID]uint{}
 	for k := range modelState {
-		actualState[k] = tr.getValPower(chain, k)
+		version := tr.GetVersion(chain)
+		if version == "v5" {
+			actualState[k] = tr.getValPowerV5(chain, k)
+		} else {
+			actualState[k] = tr.getValPower(chain, k)
+		}
 	}
 
 	return actualState
@@ -561,6 +566,81 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 	return 0
 }
 
+func (tr TestConfig) getValPowerV5(chain ChainID, validator ValidatorID) uint {
+	if *verbose {
+		log.Println("getting validator power (v5.x) for chain: ", chain, " validator: ", validator)
+	}
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	command := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+
+		"query", "tendermint-validator-set",
+
+		`--node`, tr.getQueryNode(chain),
+	)
+	bz, err := command.CombinedOutput()
+	if err != nil {
+		log.Fatalf("encountered an error when executing command '%s': %v, output: %s", command.String(), err, string(bz))
+	}
+
+	type ValPubKey struct {
+		Value string `yaml:"value"`
+	}
+
+	type TmValidatorSetYaml_v5 struct {
+		BlockHeight string `yaml:"block_height"`
+		Pagination  struct {
+			NextKey string `yaml:"next_key"`
+			Total   string `yaml:"total"`
+		} `yaml:"pagination"`
+		Validators []struct {
+			Address     string    `yaml:"address"`
+			VotingPower string    `yaml:"voting_power"`
+			PubKey      ValPubKey `yaml:"pub_key"`
+		}
+	}
+
+	valset := TmValidatorSetYaml_v5{}
+
+	err = yaml.Unmarshal(bz, &valset)
+	if err != nil {
+		log.Fatalf("yaml.Unmarshal returned an error while unmarshalling validator set: %v, input: %s", err, string(bz))
+	}
+
+	total, err := strconv.Atoi(valset.Pagination.Total)
+	if err != nil {
+		log.Fatalf("strconv.Atoi returned an error while converting total for validator set: %v, input: %s, validator set: %s", err, valset.Pagination.Total, pretty.Sprint(valset))
+	}
+
+	if total != len(valset.Validators) {
+		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue. Validator set: %v",
+			valset.Pagination.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
+	}
+
+	for _, val := range valset.Validators {
+		if chain == ChainID("provi") {
+			// use binary with Bech32Prefix set to ProviderAccountPrefix
+			if val.Address != tr.validatorConfigs[validator].ValconsAddress {
+				continue
+			}
+		} else {
+			// use binary with Bech32Prefix set to ConsumerAccountPrefix
+			if val.Address != tr.validatorConfigs[validator].ValconsAddressOnConsumer &&
+				val.Address != tr.validatorConfigs[validator].ConsumerValconsAddress {
+				continue
+			}
+		}
+
+		votingPower, err := strconv.Atoi(val.VotingPower)
+		if err != nil {
+			log.Fatalf("strconv.Atoi returned an error while converting validator voting power: %v, voting power string: %s, validator set: %s", err, val.VotingPower, pretty.Sprint(valset))
+		}
+
+		return uint(votingPower)
+	}
+
+	// Validator not in set, its validator power is zero.
+	return 0
+}
 func (tr TestConfig) getValStakedTokens(chain ChainID, validator ValidatorID) uint {
 	valoperAddress := tr.validatorConfigs[validator].ValoperAddress
 	if chain != ChainID("provi") {

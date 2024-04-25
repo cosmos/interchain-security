@@ -211,6 +211,22 @@ func (tr *TestConfig) Initialize() {
 	tr.runningChains = make(map[ChainID]bool)
 }
 
+// GetVersion identifies the ICS version for a chain
+func (td *TestConfig) GetVersion(chainID ChainID) string {
+	version := ""
+	if td.chainConfigs[chainID].BinaryName == "interchain-security-pd" {
+		version = td.providerVersion
+	} else {
+		version = td.consumerVersion
+	}
+	ics := getIcsVersion(version)
+	if !semver.IsValid(ics) {
+		return ""
+	} else {
+		return semver.Major(ics)
+	}
+}
+
 // getIcsVersion returns earliest ICS version (relevant to config) a git reference is part of
 // This is needed for version dependent configs as CompatibilityConfig.
 // Note: if no matching version is found an empty string is returned
@@ -223,7 +239,7 @@ func getIcsVersion(reference string) string {
 		// remove build suffix
 		return semver.Canonical(reference)
 	}
-	for _, tag := range []string{"v2.0.0", "v2.4.0", "v2.4.0-lsm", "v3.1.0", "v3.2.0", "v3.3.0", "v4.0.0"} {
+	for _, tag := range []string{"v2.0.0", "v2.4.0-lsm", "v3.1.0", "v3.2.0", "v3.3.0", "v4.0.0", "v4.1.1", "v4.1.1-lsm", "v5.0.0-alpha1"} {
 		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
 		cmd := exec.Command("git", "merge-base", "--is-ancestor", reference, tag)
 		out, err := cmd.CombinedOutput()
