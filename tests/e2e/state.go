@@ -11,124 +11,32 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
 
+// type aliases
+type (
+	ChainState                = e2e.ChainState
+	Proposal                  = e2e.Proposal
+	Rewards                   = e2e.Rewards
+	TextProposal              = e2e.TextProposal
+	UpgradeProposal           = e2e.UpgradeProposal
+	ConsumerAdditionProposal  = e2e.ConsumerAdditionProposal
+	ConsumerRemovalProposal   = e2e.ConsumerRemovalProposal
+	IBCTransferParams         = e2e.IBCTransferParams
+	IBCTransferParamsProposal = e2e.IBCTransferParamsProposal
+	Param                     = e2e.Param
+	ParamsProposal            = e2e.ParamsProposal
+	TargetDriver              = e2e.TargetDriver
+)
+
 type State map[ChainID]ChainState
 
-type ChainState struct {
-	ValBalances                    *map[ValidatorID]uint
-	Proposals                      *map[uint]Proposal
-	ProposedConsumerChains         *[]string
-	ValPowers                      *map[ValidatorID]uint
-	StakedTokens                   *map[ValidatorID]uint
-	IBCTransferParams              *IBCTransferParams
-	Rewards                        *Rewards
-	ConsumerChains                 *map[ChainID]bool
-	AssignedKeys                   *map[ValidatorID]string
-	ProviderKeys                   *map[ValidatorID]string // validatorID: validator provider key
-	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
-	RegisteredConsumerRewardDenoms *[]string
-	ClientsFrozenHeights           *map[string]clienttypes.Height
-}
-
-type Proposal interface {
-	isProposal()
-}
-type TextProposal struct {
-	Title       string
-	Description string
-	Deposit     uint
-	Status      string
-}
-
-func (p TextProposal) isProposal() {}
-
-type IBCTransferParamsProposal struct {
-	Title   string
-	Deposit uint
-	Status  string
-	Params  IBCTransferParams
-}
-
-func (ibct IBCTransferParamsProposal) isProposal() {}
-
-type ConsumerAdditionProposal struct {
-	Deposit       uint
-	Chain         ChainID
-	SpawnTime     int
-	InitialHeight clienttypes.Height
-	Status        string
-}
-
-type UpgradeProposal struct {
-	Title         string
-	Description   string
-	UpgradeHeight uint64
-	Type          string
-	Deposit       uint
-	Status        string
-}
-
-func (p UpgradeProposal) isProposal() {}
-
-func (p ConsumerAdditionProposal) isProposal() {}
-
-type ConsumerRemovalProposal struct {
-	Deposit  uint
-	Chain    ChainID
-	StopTime int
-	Status   string
-}
-
-func (p ConsumerRemovalProposal) isProposal() {}
-
-type Rewards struct {
-	IsRewarded map[ValidatorID]bool
-	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
-	// otherwise it will calculate if it received any rewards since the 1st block
-	IsIncrementalReward bool
-	// if true checks rewards for "stake" token, otherwise checks rewards from
-	// other chains (e.g. false is used to check if provider received rewards from a consumer chain)
-	IsNativeDenom bool
-}
-
-type ParamsProposal struct {
-	Deposit  uint
-	Status   string
-	Subspace string
-	Key      string
-	Value    string
-}
-
-func (p ParamsProposal) isProposal() {}
-
-type Param struct {
-	Subspace string
-	Key      string
-	Value    string
-}
-
-type IBCTransferParams struct {
-	SendEnabled    bool `json:"send_enabled"`
-	ReceiveEnabled bool `json:"receive_enabled"`
-}
-
-func (tr TestConfig) getState(modelState State, verbose bool) State {
-	systemState := State{}
-	for k, modelState := range modelState {
-		if verbose {
-			fmt.Println("Getting model state for chain: ", k)
-		}
-		systemState[k] = tr.getChainState(k, modelState)
-	}
-
-	return systemState
-
 type Chain struct {
-	target     ExecutionTarget
+	target     e2e.TargetDriver
 	testConfig TestConfig
 }
 
@@ -163,7 +71,7 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 	}
 
 	if modelState.IBCTransferParams != nil {
-		params := tr.getIBCTransferParams(chain)
+		params := tr.target.GetIBCTransferParams(chain)
 		chainState.IBCTransferParams = &params
 	}
 
@@ -173,7 +81,7 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 	}
 
 	if modelState.ConsumerChains != nil {
-		chains := tr.GetConsumerChains(chain)
+		chains := tr.target.GetConsumerChains(chain)
 		chainState.ConsumerChains = &chains
 	}
 
@@ -188,7 +96,7 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 	}
 
 	if modelState.RegisteredConsumerRewardDenoms != nil {
-		registeredConsumerRewardDenoms := tr.GetRegisteredConsumerRewardDenoms(chain)
+		registeredConsumerRewardDenoms := tr.target.GetRegisteredConsumerRewardDenoms(chain)
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
 	}
 
@@ -201,7 +109,7 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 	}
 
 	if modelState.ConsumerPendingPacketQueueSize != nil {
-		pendingPacketQueueSize := tr.getPendingPacketQueueSize(chain)
+		pendingPacketQueueSize := tr.target.GetPendingPacketQueueSize(chain)
 		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
 	}
 
@@ -212,45 +120,22 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 	return chainState
 }
 
-func (tr Chain) getBlockHeight(chain ChainID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
-	bz, err := tr.target.ExecCommand(binaryName,
-
-		"query", "tendermint-validator-set",
-
-		`--node`, tr.getQueryNode(chain),
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	blockHeightRegex := regexp.MustCompile(`block_height: "(\d+)"`)
-	blockHeight, err := strconv.Atoi(blockHeightRegex.FindStringSubmatch(string(bz))[1])
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return uint(blockHeight)
-}
-
 func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 	if tr.testConfig.useCometmock {
 		// call advance_blocks method on cometmock
 		// curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"advance_blocks","params":{"num_blocks": "36000000"},"id":1}' 127.0.0.1:22331
-		tcpAddress := tr.getQueryNodeRPCAddress(chain)
+		tcpAddress := tr.target.GetQueryNodeRPCAddress(chain)
 		method := "advance_blocks"
 		params := fmt.Sprintf(`{"num_blocks": "%d"}`, blocks)
 
 		tr.curlJsonRPCRequest(method, params, tcpAddress)
 		return
 	}
-	startBlock := tr.getBlockHeight(chain)
+	startBlock := tr.target.GetBlockHeight(chain)
 
 	start := time.Now()
 	for {
-		thisBlock := tr.getBlockHeight(chain)
+		thisBlock := tr.target.GetBlockHeight(chain)
 		if thisBlock >= startBlock+blocks {
 			return
 		}
@@ -264,7 +149,7 @@ func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 func (tr Chain) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
 	start := time.Now()
 	for {
-		thisBlock := tr.getBlockHeight(chain)
+		thisBlock := tr.target.GetBlockHeight(chain)
 		if thisBlock >= block {
 			return
 		}
@@ -278,16 +163,26 @@ func (tr Chain) waitUntilBlock(chain ChainID, block uint, timeout time.Duration)
 func (tr Chain) GetBalances(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint {
 	actualState := map[ValidatorID]uint{}
 	for k := range modelState {
-		actualState[k] = tr.getBalance(chain, k)
+		actualState[k] = tr.target.GetBalance(chain, k)
 	}
 
 	return actualState
 }
 
+func (tr Chain) GetClientFrozenHeight(chain ChainID, clientID string) clienttypes.Height {
+	revNumber, revHeight := tr.target.GetClientFrozenHeight(chain, clientID)
+	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+}
+
+func (tr Chain) GetProposedConsumerChains(chain ChainID) []string {
+	tr.waitBlocks(chain, 1, 10*time.Second)
+	return tr.target.GetProposedConsumerChains(chain)
+}
+
 func (tr Chain) GetProposals(chain ChainID, modelState map[uint]Proposal) map[uint]Proposal {
 	actualState := map[uint]Proposal{}
 	for k := range modelState {
-		actualState[k] = tr.getProposal(chain, k)
+		actualState[k] = tr.target.GetProposal(chain, k)
 	}
 
 	return actualState
@@ -306,7 +201,7 @@ func (tr Chain) GetValPowers(chain ChainID, modelState map[ValidatorID]uint) map
 			valAddresses[validatorConfigs[k].ValconsAddressOnConsumer] = true
 			valAddresses[validatorConfigs[k].ConsumerValconsAddress] = true
 		}
-		actualState[k] = tr.getValPower(chain, k)
+		actualState[k] = tr.target.GetValPower(chain, k)
 	}
 
 	return actualState
@@ -314,32 +209,136 @@ func (tr Chain) GetValPowers(chain ChainID, modelState map[ValidatorID]uint) map
 
 func (tr Chain) GetStakedTokens(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint {
 	actualState := map[ValidatorID]uint{}
-	for k := range modelState {
-		actualState[k] = tr.getValStakedTokens(chain, k)
+	for validator := range modelState {
+		validatorConfigs := tr.testConfig.validatorConfigs
+		valoperAddress := validatorConfigs[validator].ValoperAddress
+		if chain != ChainID("provi") {
+			// use binary with Bech32Prefix set to ConsumerAccountPrefix
+			if validatorConfigs[validator].UseConsumerKey {
+				valoperAddress = validatorConfigs[validator].ConsumerValoperAddress
+			} else {
+				// use the same address as on the provider but with different prefix
+				valoperAddress = validatorConfigs[validator].ValoperAddressOnConsumer
+			}
+		}
+
+		actualState[validator] = tr.target.GetValStakedTokens(chain, valoperAddress)
 	}
 
 	return actualState
 }
 
-func (tr Chain) getRewards(chain ChainID, modelState Rewards) Rewards {
+func (tr Chain) GetRewards(chain ChainID, modelState Rewards) Rewards {
 	receivedRewards := map[ValidatorID]bool{}
 
-	currentBlock := tr.getBlockHeight(chain)
+	currentBlock := tr.target.GetBlockHeight(chain)
 	tr.waitBlocks(chain, 1, 10*time.Second)
-	nextBlock := tr.getBlockHeight(chain)
+	nextBlock := tr.target.GetBlockHeight(chain)
 	tr.waitBlocks(chain, 1, 10*time.Second)
 
 	if !modelState.IsIncrementalReward {
 		currentBlock = 1
 	}
 	for k := range modelState.IsRewarded {
-		receivedRewards[k] = tr.getReward(chain, k, nextBlock, modelState.IsNativeDenom) > tr.getReward(chain, k, currentBlock, modelState.IsNativeDenom)
+		receivedRewards[k] = tr.target.GetReward(chain, k, nextBlock, modelState.IsNativeDenom) > tr.target.GetReward(chain, k, currentBlock, modelState.IsNativeDenom)
 	}
 
 	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, IsNativeDenom: modelState.IsNativeDenom}
 }
 
-func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
+func (tr Chain) GetConsumerAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
+	actualState := map[ValidatorID]string{}
+	for k := range modelState {
+		actualState[k] = tr.target.GetConsumerAddress(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr Chain) GetProviderAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
+	actualState := map[ValidatorID]string{}
+	for k := range modelState {
+		actualState[k] = tr.target.GetProviderAddressFromConsumer(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr Chain) getValidatorNode(chain ChainID, validator ValidatorID) string {
+	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
+	if tr.testConfig.useCometmock {
+		return tr.target.GetQueryNode(chain)
+	}
+
+	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
+}
+
+func (tr Chain) getValidatorIP(chain ChainID, validator ValidatorID) string {
+	return tr.testConfig.chainConfigs[chain].IpPrefix + "." + tr.testConfig.validatorConfigs[validator].IpSuffix
+}
+
+func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
+	return `/` + string(tr.testConfig.chainConfigs[chain].ChainId) + `/validator` + fmt.Sprint(validator)
+}
+
+func (tr Chain) curlJsonRPCRequest(method, params, address string) {
+	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	//cmd := exec.Command("docker", "exec", tr.testConfig.containerConfig.InstanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
+	cmd := tr.target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
+
+	verbosity := false
+	e2e.ExecuteCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+}
+
+func uintPtr(i uint) *uint {
+	return &i
+}
+
+type DriverV5 struct {
+	containerConfig  ContainerConfig // FIXME only needed for 'Now' time tracking
+	validatorConfigs map[ValidatorID]ValidatorConfig
+	chainConfigs     map[ChainID]ChainConfig
+	target           e2e.PlatformDriver
+}
+
+func (tr DriverV5) ExecCommand(name string, arg ...string) *exec.Cmd {
+	return tr.target.ExecCommand(name, arg...)
+}
+
+func (tr DriverV5) ExecDetachedCommand(name string, args ...string) *exec.Cmd {
+	return tr.target.ExecDetachedCommand(name, args...)
+}
+
+func (tr DriverV5) GetTestScriptPath(isConsumer bool, script string) string {
+	return tr.target.GetTestScriptPath(isConsumer, script)
+}
+
+func (tr DriverV5) GetBlockHeight(chain ChainID) uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	binaryName := tr.chainConfigs[chain].BinaryName
+	bz, err := tr.target.ExecCommand(binaryName,
+
+		"query", "tendermint-validator-set",
+
+		`--node`, tr.GetQueryNode(chain),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	blockHeightRegex := regexp.MustCompile(`block_height: "(\d+)"`)
+	blockHeight, err := strconv.Atoi(blockHeightRegex.FindStringSubmatch(string(bz))[1])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return uint(blockHeight)
+}
+
+func (tr DriverV5) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
 	valCfg := tr.validatorConfigs[validator]
 	delAddresss := valCfg.DelAddress
 	if chain != ChainID("provi") {
@@ -353,11 +352,13 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	binaryName := tr.chainConfigs[chain].BinaryName
+	cmd := tr.target.ExecCommand(binaryName,
 		"query", "distribution", "delegation-total-rewards",
 		"--delegator-address", delAddresss,
 		`--height`, fmt.Sprint(blockHeight),
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	)
 
@@ -375,47 +376,16 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 	return gjson.Get(string(bz), denomCondition).Float()
 }
 
-func (tr TestConfig) getBalance(chain ChainID, validator ValidatorID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	valCfg := tr.validatorConfigs[validator]
-	valDelAddress := valCfg.DelAddress
-	if chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to ConsumerAccountPrefix
-		if valCfg.UseConsumerKey {
-			valDelAddress = valCfg.ConsumerDelAddress
-		} else {
-			// use the same address as on the provider but with different prefix
-			valDelAddress = valCfg.DelAddressOnConsumer
-		}
-	}
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-
-		"query", "bank", "balances",
-		valDelAddress,
-
-		`--node`, tr.getQueryNode(chain),
-		`-o`, `json`,
-	)
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal("getBalance() failed: ", cmd, ": ", err, "\n", string(bz))
-	}
-
-	amount := gjson.Get(string(bz), `balances.#(denom=="stake").amount`)
-
-	return uint(amount.Uint())
-}
-
-var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
-
 // interchain-securityd query gov proposals
-func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
+func (tr DriverV5) GetProposal(chain ChainID, proposal uint) Proposal {
+	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	binaryName := tr.chainConfigs[chain].BinaryName
+	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -518,7 +488,7 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 		}
 	}
 
-	log.Fatal("received unknosn proposal type: ", propType, "proposal JSON:", string(bz))
+	log.Fatal("received unknown proposal type: ", propType, "proposal JSON:", string(bz))
 
 	return nil
 }
@@ -541,18 +511,18 @@ type ValPubKey struct {
 }
 
 // TODO (mpoke) Return powers for multiple validators
-func (tr Chain) getValPower(chain ChainID, validator ValidatorID) uint {
+func (tr DriverV5) GetValPower(chain ChainID, validator ValidatorID) uint {
 	if *verbose {
 		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
 	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//command := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
+	binaryName := tr.chainConfigs[chain].BinaryName
 	command := tr.target.ExecCommand(binaryName,
 
 		"query", "tendermint-validator-set",
 
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 	)
 	bz, err := command.CombinedOutput()
 	if err != nil {
@@ -579,13 +549,13 @@ func (tr Chain) getValPower(chain ChainID, validator ValidatorID) uint {
 	for _, val := range valset.Validators {
 		if chain == ChainID("provi") {
 			// use binary with Bech32Prefix set to ProviderAccountPrefix
-			if val.Address != tr.testConfig.validatorConfigs[validator].ValconsAddress {
+			if val.Address != tr.validatorConfigs[validator].ValconsAddress {
 				continue
 			}
 		} else {
 			// use binary with Bech32Prefix set to ConsumerAccountPrefix
-			if val.Address != tr.testConfig.validatorConfigs[validator].ValconsAddressOnConsumer &&
-				val.Address != tr.testConfig.validatorConfigs[validator].ConsumerValconsAddress {
+			if val.Address != tr.validatorConfigs[validator].ValconsAddressOnConsumer &&
+				val.Address != tr.validatorConfigs[validator].ConsumerValconsAddress {
 				continue
 			}
 		}
@@ -602,45 +572,8 @@ func (tr Chain) getValPower(chain ChainID, validator ValidatorID) uint {
 	return 0
 }
 
-func (tr Chain) getReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
-	valCfg := tr.testConfig.validatorConfigs[validator]
-	delAddresss := valCfg.DelAddress
-	if chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to ConsumerAccountPrefix
-		if valCfg.UseConsumerKey {
-			delAddresss = valCfg.ConsumerDelAddress
-		} else {
-			// use the same address as on the provider but with different prefix
-			delAddresss = valCfg.DelAddressOnConsumer
-		}
-	}
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
-	bz, err := tr.target.ExecCommand(binaryName,
-
-		"query", "distribution", "rewards",
-		delAddresss,
-
-		`--height`, fmt.Sprint(blockHeight),
-		`--node`, tr.getQueryNode(chain),
-		`-o`, `json`,
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	denomCondition := `total.#(denom!="stake").amount`
-	if isNativeDenom {
-		denomCondition = `total.#(denom=="stake").amount`
-	}
-
-	return gjson.Get(string(bz), denomCondition).Float()
-}
-
-func (tr Chain) getBalance(chain ChainID, validator ValidatorID) uint {
-	valCfg := tr.testConfig.validatorConfigs[validator]
+func (tr DriverV5) GetBalance(chain ChainID, validator ValidatorID) uint {
+	valCfg := tr.validatorConfigs[validator]
 	valDelAddress := valCfg.DelAddress
 	if chain != ChainID("provi") {
 		// use binary with Bech32Prefix set to ConsumerAccountPrefix
@@ -653,13 +586,13 @@ func (tr Chain) getBalance(chain ChainID, validator ValidatorID) uint {
 	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
+	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "bank", "balances",
 		valDelAddress,
 
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	)
 	bz, err := cmd.CombinedOutput()
@@ -672,136 +605,17 @@ func (tr Chain) getBalance(chain ChainID, validator ValidatorID) uint {
 	return uint(amount.Uint())
 }
 
-// interchain-securityd query gov proposals
-func (tr Chain) getProposal(chain ChainID, proposal uint) Proposal {
-	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
-	bz, err := tr.target.ExecCommand(binaryName,
-
-		"query", "gov", "proposal",
-		fmt.Sprint(proposal),
-
-		`--node`, tr.getQueryNode(chain),
-		`-o`, `json`,
-	).CombinedOutput()
-
-	prop := TextProposal{}
-
-	if err != nil {
-		if noProposalRegex.Match(bz) {
-			return prop
-		}
-
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	propType := gjson.Get(string(bz), `messages.0.content.@type`).String()
-	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
-	status := gjson.Get(string(bz), `status`).String()
-
-	chainConfigs := tr.testConfig.chainConfigs
-	containerConfig := tr.testConfig.containerConfig
-
-	switch propType {
-	case "/cosmos.gov.v1beta1.TextProposal":
-		title := gjson.Get(string(bz), `content.title`).String()
-		description := gjson.Get(string(bz), `content.description`).String()
-
-		return TextProposal{
-			Deposit:     uint(deposit),
-			Status:      status,
-			Title:       title,
-			Description: description,
-		}
-	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		spawnTime := gjson.Get(string(bz), `messages.0.content.spawn_time`).Time().Sub(containerConfig.Now)
-
-		var chain ChainID
-		for i, conf := range chainConfigs {
-			if string(conf.ChainId) == chainId {
-				chain = i
-				break
-			}
-		}
-
-		return ConsumerAdditionProposal{
-			Deposit:   uint(deposit),
-			Status:    status,
-			Chain:     chain,
-			SpawnTime: int(spawnTime.Milliseconds()),
-			InitialHeight: clienttypes.Height{
-				RevisionNumber: gjson.Get(string(bz), `messages.0.content.initial_height.revision_number`).Uint(),
-				RevisionHeight: gjson.Get(string(bz), `messages.0.content.initial_height.revision_height`).Uint(),
-			},
-		}
-	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
-		height := gjson.Get(string(bz), `messages.0.content.plan.height`).Uint()
-		title := gjson.Get(string(bz), `messages.0.content.plan.name`).String()
-		return UpgradeProposal{
-			Deposit:       uint(deposit),
-			Status:        status,
-			UpgradeHeight: height,
-			Title:         title,
-			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
-		}
-	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		stopTime := gjson.Get(string(bz), `messages.0.content.stop_time`).Time().Sub(containerConfig.Now)
-
-		var chain ChainID
-		for i, conf := range chainConfigs {
-			if string(conf.ChainId) == chainId {
-				chain = i
-				break
-			}
-		}
-
-		return ConsumerRemovalProposal{
-			Deposit:  uint(deposit),
-			Status:   status,
-			Chain:    chain,
-			StopTime: int(stopTime.Milliseconds()),
-		}
-	case "/cosmos.params.v1beta1.ParameterChangeProposal":
-		return ParamsProposal{
-			Deposit:  uint(deposit),
-			Status:   status,
-			Subspace: gjson.Get(string(bz), `messages.0.content.changes.0.subspace`).String(),
-			Key:      gjson.Get(string(bz), `messages.0.content.changes.0.key`).String(),
-			Value:    gjson.Get(string(bz), `messages.0.content.changes.0.value`).String(),
-		}
-	}
-
-	log.Fatal("unknown proposal type", string(bz))
-
-	return nil
-}
-
-func (tr Chain) getValStakedTokens(chain ChainID, validator ValidatorID) uint {
-	validatorConfigs := tr.testConfig.validatorConfigs
-	valoperAddress := validatorConfigs[validator].ValoperAddress
-	if chain != ChainID("provi") {
-		// use binary with Bech32Prefix set to ConsumerAccountPrefix
-		if validatorConfigs[validator].UseConsumerKey {
-			valoperAddress = validatorConfigs[validator].ConsumerValoperAddress
-		} else {
-			// use the same address as on the provider but with different prefix
-			valoperAddress = validatorConfigs[validator].ValoperAddressOnConsumer
-		}
-	}
+func (tr DriverV5) GetValStakedTokens(chain ChainID, valoperAddress string) uint {
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
+	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 
 		"query", "staking", "validator",
 		valoperAddress,
 
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 	if err != nil {
@@ -813,17 +627,17 @@ func (tr Chain) getValStakedTokens(chain ChainID, validator ValidatorID) uint {
 	return uint(amount.Uint())
 }
 
-func (tr Chain) getParam(chain ChainID, param Param) string {
+func (tr DriverV5) GetParam(chain ChainID, param Param) string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
+	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "params", "subspace",
 		param.Subspace,
 		param.Key,
 
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 	if err != nil {
@@ -835,11 +649,13 @@ func (tr Chain) getParam(chain ChainID, param Param) string {
 	return value.String()
 }
 
-func (tr TestConfig) getIBCTransferParams(chain ChainID) IBCTransferParams {
+func (tr DriverV5) GetIBCTransferParams(chain ChainID) IBCTransferParams {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	binaryName := tr.chainConfigs[chain].BinaryName
+	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "ibc-transfer", "params",
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 	if err != nil {
@@ -856,14 +672,14 @@ func (tr TestConfig) getIBCTransferParams(chain ChainID) IBCTransferParams {
 
 // GetConsumerChains returns a list of consumer chains that're being secured by the provider chain,
 // determined by querying the provider chain.
-func (tr Chain) GetConsumerChains(chain ChainID) map[ChainID]bool {
+func (tr DriverV5) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
+	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "list-consumer-chains",
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	)
 
@@ -882,34 +698,16 @@ func (tr Chain) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	return chains
 }
 
-func (tr Chain) GetConsumerAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
-	actualState := map[ValidatorID]string{}
-	for k := range modelState {
-		actualState[k] = tr.getConsumerAddress(chain, k)
-	}
-
-	return actualState
-}
-
-func (tr Chain) GetProviderAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
-	actualState := map[ValidatorID]string{}
-	for k := range modelState {
-		actualState[k] = tr.getProviderAddressFromConsumer(chain, k)
-	}
-
-	return actualState
-}
-
-func (tr Chain) getConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
+func (tr DriverV5) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 
-	binaryName := tr.testConfig.chainConfigs[ChainID("provi")].BinaryName
+	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-consumer-key",
-		string(consumerChain), tr.testConfig.validatorConfigs[validator].ValconsAddress,
-		`--node`, tr.getQueryNode(ChainID("provi")),
+		string(consumerChain), tr.validatorConfigs[validator].ValconsAddress,
+		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
 	bz, err := cmd.CombinedOutput()
@@ -921,16 +719,16 @@ func (tr Chain) getConsumerAddress(consumerChain ChainID, validator ValidatorID)
 	return addr
 }
 
-func (tr Chain) getProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
+func (tr DriverV5) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[ChainID("provi")].BinaryName
+	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
 
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-provider-key",
-		string(consumerChain), tr.testConfig.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
-		`--node`, tr.getQueryNode(ChainID("provi")),
+		string(consumerChain), tr.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
+		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
 
@@ -944,15 +742,15 @@ func (tr Chain) getProviderAddressFromConsumer(consumerChain ChainID, validator 
 	return addr
 }
 
-func (tr Chain) getSlashMeter() int64 {
+func (tr DriverV5) GetSlashMeter() int64 {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec",
-	binaryName := tr.testConfig.chainConfigs[ChainID("provi")].BinaryName
+	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
 
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "throttle-state",
-		`--node`, tr.getQueryNode(ChainID("provi")),
+		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
 	bz, err := cmd.CombinedOutput()
@@ -964,15 +762,15 @@ func (tr Chain) getSlashMeter() int64 {
 	return slashMeter.Int()
 }
 
-func (tr Chain) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
+func (tr DriverV5) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
+	binaryName := tr.chainConfigs[chain].BinaryName
 
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "registered-consumer-reward-denoms",
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	)
 	bz, err := cmd.CombinedOutput()
@@ -989,14 +787,14 @@ func (tr Chain) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
 	return rewardDenoms
 }
 
-func (tr Chain) getPendingPacketQueueSize(chain ChainID) uint {
+func (tr DriverV5) GetPendingPacketQueueSize(chain ChainID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
+	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "ccvconsumer", "throttle-state",
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	)
 	bz, err := cmd.CombinedOutput()
@@ -1012,64 +810,15 @@ func (tr Chain) getPendingPacketQueueSize(chain ChainID) uint {
 	return uint(len(packetData))
 }
 
-func (tr Chain) getValidatorNode(chain ChainID, validator ValidatorID) string {
-	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
-	if tr.testConfig.useCometmock {
-		return tr.getQueryNode(chain)
-	}
-
-	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
-}
-
-func (tr Chain) getValidatorIP(chain ChainID, validator ValidatorID) string {
-	return tr.testConfig.chainConfigs[chain].IpPrefix + "." + tr.testConfig.validatorConfigs[validator].IpSuffix
-}
-
-func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
-	return `/` + string(tr.testConfig.chainConfigs[chain].ChainId) + `/validator` + fmt.Sprint(validator)
-}
-
-// getQueryNode returns query node tcp address on chain.
-func (tr Chain) getQueryNode(chain ChainID) string {
-	return fmt.Sprintf("tcp://%s", tr.getQueryNodeRPCAddress(chain))
-}
-
-func (tr Chain) getQueryNodeRPCAddress(chain ChainID) string {
-	return fmt.Sprintf("%s:26658", tr.getQueryNodeIP(chain))
-}
-
-// getQueryNodeIP returns query node IP for chain,
-// ipSuffix is hardcoded to be 253 on all query nodes
-// except for "sover" chain where there's only one node
-func (tr Chain) getQueryNodeIP(chain ChainID) string {
-	if chain == ChainID("sover") {
-		// return address of first and only validator
-		return fmt.Sprintf("%s.%s",
-			tr.testConfig.chainConfigs[chain].IpPrefix,
-			tr.testConfig.validatorConfigs[ValidatorID("alice")].IpSuffix)
-	}
-	return fmt.Sprintf("%s.253", tr.testConfig.chainConfigs[chain].IpPrefix)
-}
-
-func (tr Chain) curlJsonRPCRequest(method, params, address string) {
-	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.testConfig.containerConfig.InstanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
-
-	verbosity := false
-	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
-}
-
 // GetClientFrozenHeight returns the frozen height for a client with the given client ID
 // by querying the hosting chain with the given chainID
-func (tr Chain) GetClientFrozenHeight(chain ChainID, clientID string) clienttypes.Height {
+func (tr DriverV5) GetClientFrozenHeight(chain ChainID, clientID string) (uint64, uint64) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[ChainID("provi")].BinaryName
+	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 		"query", "ibc", "client", "state", clientID,
-		`--node`, tr.getQueryNode(ChainID("provi")),
+		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
 
@@ -1090,16 +839,17 @@ func (tr Chain) GetClientFrozenHeight(chain ChainID, clientID string) clienttype
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+	return uint64(revHeight), uint64(revNumber)
 }
 
-func (tc Chain) getTrustedHeight(
+func (tr DriverV5) GetTrustedHeight(
 	chain ChainID,
 	clientID string,
 	index int,
-) clienttypes.Height {
+) (uint64, uint64) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
+	//configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
+	configureNodeCmd := tr.target.ExecCommand("hermes",
 		"--json", "query", "client", "consensus", "--chain", string(chain),
 		`--client`, clientID,
 	)
@@ -1137,17 +887,16 @@ func (tc Chain) getTrustedHeight(
 	if err != nil {
 		log.Fatal(err)
 	}
-	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+	return uint64(revHeight), uint64(revNumber)
 }
 
-func (tr Chain) GetProposedConsumerChains(chain ChainID) []string {
-	tr.waitBlocks(chain, 1, 10*time.Second)
+func (tr DriverV5) GetProposedConsumerChains(chain ChainID) []string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-	binaryName := tr.testConfig.chainConfigs[chain].BinaryName
+	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "provider", "list-proposed-consumer-chains",
-		`--node`, tr.getQueryNode(chain),
+		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 	if err != nil {
@@ -1164,6 +913,24 @@ func (tr Chain) GetProposedConsumerChains(chain ChainID) []string {
 	return chains
 }
 
-func uintPtr(i uint) *uint {
-	return &i
+// getQueryNode returns query node tcp address on chain.
+func (tr DriverV5) GetQueryNode(chain ChainID) string {
+	return fmt.Sprintf("tcp://%s", tr.GetQueryNodeRPCAddress(chain))
+}
+
+func (tr DriverV5) GetQueryNodeRPCAddress(chain ChainID) string {
+	return fmt.Sprintf("%s:26658", tr.GetQueryNodeIP(chain))
+}
+
+// getQueryNodeIP returns query node IP for chain,
+// ipSuffix is hardcoded to be 253 on all query nodes
+// except for "sover" chain where there's only one node
+func (tr DriverV5) GetQueryNodeIP(chain ChainID) string {
+	if chain == ChainID("sover") {
+		// return address of first and only validator
+		return fmt.Sprintf("%s.%s",
+			tr.chainConfigs[chain].IpPrefix,
+			tr.validatorConfigs[ValidatorID("alice")].IpSuffix)
+	}
+	return fmt.Sprintf("%s.253", tr.chainConfigs[chain].IpPrefix)
 }

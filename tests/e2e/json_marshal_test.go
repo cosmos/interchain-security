@@ -9,6 +9,7 @@ import (
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -45,7 +46,7 @@ func TestProposalUnmarshal(t *testing.T) {
 		t.Errorf("Unexpected error while unmarshalling: %v", err)
 	}
 
-	actualProposal, err := UnmarshalProposalWithType(propAndType.RawProposal, propAndType.Type)
+	actualProposal, err := e2e.UnmarshalProposalWithType(propAndType.RawProposal, propAndType.Type)
 	if err != nil {
 		t.Errorf("Unexpected error while unmarshalling\n error: %v\n Raw proposal: %v\n Type: %v", err, spew.Sdump(propAndType.RawProposal), propAndType.Type)
 	}

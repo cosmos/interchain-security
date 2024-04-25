@@ -5,8 +5,9 @@ import (
 	"log"
 	"reflect"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	v4 "github.com/cosmos/interchain-security/v5/tests/e2e/v4"
 	"github.com/kylelemons/godebug/pretty"
+	"golang.org/x/mod/semver"
 )
 
 // TestCaseDriver knows how different TC can be executed
@@ -61,35 +62,56 @@ func (td *DefaultDriver) runStep(step Step) error {
 	return nil
 }
 
-type Target interface {
-	GetChainState(chain ChainID, modelState ChainState) ChainState
-	GetBalances(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint
-	GetProposals(chain ChainID, modelState map[uint]Proposal) map[uint]Proposal
-	GetValPowers(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint
-	GetParams(chain ChainID, modelState []Param) []Param
-	GetRewards(chain ChainID, modelState Rewards) Rewards
-	GetStakedTokens(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint
-	GetConsumerAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string
-	GetProviderAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string
-	GetRegisteredConsumerRewardDenoms(chain ChainID) []string
-	GetClientFrozenHeight(chain ChainID, clientID string) clienttypes.Height
+func (td *DefaultDriver) getIcsVersion(chainID ChainID) string {
+	version := ""
+	if td.testCfg.chainConfigs[chainID].BinaryName == "interchain-security-pd" {
+		version = td.testCfg.providerVersion
+	} else {
+		version = td.testCfg.providerVersion
+	}
+	ics := getIcsVersion(version)
+	if !semver.IsValid(ics) {
+		return ""
+	} else {
+		return semver.Major(ics)
+	}
 }
 
-func (td *DefaultDriver) getTargetDriver(chainID ChainID) (Target, error) {
-	target := Chain{target: td.target,
+func (td *DefaultDriver) getTargetDriver(chainID ChainID) Chain {
+	target := Chain{
 		testConfig: td.testCfg,
 	}
+	icsVersion := td.getIcsVersion(chainID)
+	switch icsVersion {
+	case "v4":
+		if td.verbose {
+			fmt.Println("Using 'v4' driver for chain ", chainID)
+		}
+		target.target = v4.DriverV4{
+			ContainerConfig:  td.testCfg.containerConfig,
+			ValidatorConfigs: td.testCfg.validatorConfigs,
+			ChainConfigs:     td.testCfg.chainConfigs,
+			Target:           td.target,
+		}
+	default:
+		target.target = DriverV5{
+			containerConfig:  td.testCfg.containerConfig,
+			validatorConfigs: td.testCfg.validatorConfigs,
+			chainConfigs:     td.testCfg.chainConfigs,
+			target:           td.target,
+		}
+		if td.verbose {
+			fmt.Println("Using default driver ", icsVersion, " for chain ", chainID)
+		}
+	}
 
-	return target, nil
+	return target
 }
 
 func (td *DefaultDriver) getState(modelState State) State {
 	systemState := State{}
 	for chainID, modelState := range modelState {
-		target, err := td.getTargetDriver(chainID)
-		if err != nil {
-			log.Panicln("no target driver found for chain ", chainID)
-		}
+		target := td.getTargetDriver(chainID)
 
 		if td.verbose {
 			fmt.Println("Getting model state for chain: ", chainID)
@@ -101,7 +123,7 @@ func (td *DefaultDriver) getState(modelState State) State {
 }
 
 func (td *DefaultDriver) runAction(action interface{}) error {
-	target := Chain{target: td.target, testConfig: td.testCfg}
+	target := td.getTargetDriver("")
 	switch action := action.(type) {
 	case StartChainAction:
 		target.startChain(action, td.verbose)

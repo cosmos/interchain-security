@@ -74,16 +74,15 @@ func (tc Chain) updateLightClient(
 	verbose bool,
 ) {
 	// retrieve a trusted height of the consumer light client
-	trustedHeight := tc.getTrustedHeight(action.HostChain, action.ClientID, 2)
+	revHeight, _ := tc.target.GetTrustedHeight(action.HostChain, action.ClientID, 2)
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
+	cmd := tc.target.ExecCommand("hermes",
 		"--config", action.RelayerConfig,
 		"update",
 		"client",
 		"--client", action.ClientID,
 		"--host-chain", string(action.HostChain),
-		"--trusted-height", strconv.Itoa(int(trustedHeight.RevisionHeight)),
+		"--trusted-height", strconv.Itoa(int(revHeight)),
 	)
 	if verbose {
 		log.Println("UpdateLightClientAction cmd:", cmd.String())

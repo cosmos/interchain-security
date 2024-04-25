@@ -19,6 +19,7 @@ import (
 	"github.com/tidwall/gjson"
 	"golang.org/x/mod/semver"
 
+	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
@@ -398,7 +399,6 @@ type SubmitEnableTransfersProposalAction struct {
 
 func (tr Chain) submitEnableTransfersProposalAction(
 	action SubmitEnableTransfersProposalAction,
-	target ExecutionTarget,
 	verbose bool,
 ) {
 	// gov signed addres got by checking the gov module acc address in the test container
@@ -432,7 +432,7 @@ func (tr Chain) submitEnableTransfersProposalAction(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	cmd := target.ExecCommand(
+	cmd := tr.target.ExecCommand(
 		tr.testConfig.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-proposal", "/params-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
@@ -533,7 +533,7 @@ func (tr *Chain) getConsumerGenesis(providerChain, consumerChain ChainID) string
 		"query", "provider", "consumer-genesis",
 		string(tr.testConfig.chainConfigs[consumerChain].ChainId),
 
-		`--node`, tr.getQueryNode(providerChain),
+		`--node`, tr.target.GetQueryNode(providerChain),
 		`-o`, `json`,
 	)
 
@@ -542,7 +542,7 @@ func (tr *Chain) getConsumerGenesis(providerChain, consumerChain ChainID) string
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	if tr.testConfig.transformGenesis || needsGenesisTransform(tr.target.GetTargetConfig()) {
+	if tr.testConfig.transformGenesis || needsGenesisTransform(tr.testConfig) {
 		return string(tr.transformConsumerGenesis(consumerChain, bz))
 	} else {
 		fmt.Println("No genesis transformation performed")
@@ -551,7 +551,7 @@ func (tr *Chain) getConsumerGenesis(providerChain, consumerChain ChainID) string
 }
 
 // needsGenesisTransform tries to identify if a genesis transformation should be performed
-func needsGenesisTransform(cfg TargetConfig) bool {
+func needsGenesisTransform(cfg TestConfig) bool {
 	// no genesis transformation needed for same versions
 	if cfg.consumerVersion == cfg.providerVersion {
 		return false
@@ -686,8 +686,7 @@ func (tr *Chain) transformConsumerGenesis(consumerChain ChainID, genesis []byte)
 		"interchain-security-transformer",
 		"genesis", "transform", "--to").CombinedOutput()
 	if err != nil && !strings.Contains(string(bz), "unknown flag: --to") {
-		cfg := tr.target.GetTargetConfig()
-		targetVersion, err := getTransformParameter(cfg.consumerVersion)
+		targetVersion, err := getTransformParameter(tr.testConfig.consumerVersion)
 		if err != nil {
 			log.Panic("Failed getting genesis transformation parameter: ", err)
 		}
@@ -726,7 +725,7 @@ func (tr Chain) changeoverChain(
 		"query", "provider", "consumer-genesis",
 		string(tr.testConfig.chainConfigs[action.SovereignChain].ChainId),
 
-		`--node`, tr.getQueryNode(action.ProviderChain),
+		`--node`, tr.target.GetQueryNode(action.ProviderChain),
 		`-o`, `json`,
 	)
 
@@ -879,7 +878,7 @@ func (tr Chain) addChainToGorelayer(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
-	queryNodeIP := tr.getQueryNodeIP(action.Chain)
+	queryNodeIP := tr.target.GetQueryNodeIP(action.Chain)
 	ChainId := tr.testConfig.chainConfigs[action.Chain].ChainId
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 
@@ -905,10 +904,10 @@ func (tr Chain) addChainToGorelayer(
 	}
 
 	addChainCommand := tr.target.ExecCommand("rly", "chains", "add", "--file", chainConfigFileName, string(ChainId))
-	executeCommand(addChainCommand, "add chain")
+	e2e.ExecuteCommand(addChainCommand, "add chain")
 
 	keyRestoreCommand := tr.target.ExecCommand("rly", "keys", "restore", string(ChainId), "default", tr.testConfig.validatorConfigs[action.Validator].Mnemonic)
-	executeCommand(keyRestoreCommand, "restore keys")
+	e2e.ExecuteCommand(keyRestoreCommand, "restore keys")
 }
 
 func (tr Chain) addChainToHermes(
@@ -927,7 +926,7 @@ func (tr Chain) addChainToHermes(
 	}
 
 	hermesVersion := match[1]
-	queryNodeIP := tr.getQueryNodeIP(action.Chain)
+	queryNodeIP := tr.target.GetQueryNodeIP(action.Chain)
 	hermesConfig := GetHermesConfig(hermesVersion, queryNodeIP, tr.testConfig.chainConfigs[action.Chain], action.IsConsumer)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, hermesConfig, "/root/.hermes/config.toml")
@@ -1014,7 +1013,7 @@ func (tr Chain) addIbcConnectionGorelayer(
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	pathConfigCommand := tr.target.ExecCommand("bash", "-c", bashCommand)
-	executeCommand(pathConfigCommand, "add path config")
+	e2e.ExecuteCommand(pathConfigCommand, "add path config")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newPathCommand := tr.target.ExecCommand("rly",
@@ -1025,12 +1024,12 @@ func (tr Chain) addIbcConnectionGorelayer(
 		"--file", pathConfigFileName,
 	)
 
-	executeCommand(newPathCommand, "new path")
+	e2e.ExecuteCommand(newPathCommand, "new path")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newClientsCommand := tr.target.ExecCommand("rly", "transact", "clients", pathName)
 
-	executeCommand(newClientsCommand, "new clients")
+	e2e.ExecuteCommand(newClientsCommand, "new clients")
 
 	tr.waitBlocks(action.ChainA, 1, 10*time.Second)
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
@@ -1038,7 +1037,7 @@ func (tr Chain) addIbcConnectionGorelayer(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newConnectionCommand := tr.target.ExecCommand("rly", "transact", "connection", pathName)
 
-	executeCommand(newConnectionCommand, "new connection")
+	e2e.ExecuteCommand(newConnectionCommand, "new connection")
 
 	tr.waitBlocks(action.ChainA, 1, 10*time.Second)
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
@@ -1205,7 +1204,7 @@ func (tr Chain) addIbcChannelGorelayer(
 		"--order", action.Order,
 		"--debug",
 	)
-	executeCommand(cmd, "addChannel")
+	e2e.ExecuteCommand(cmd, "addChannel")
 }
 
 func (tr Chain) addIbcChannelHermes(
@@ -1287,7 +1286,7 @@ func (tr Chain) transferChannelComplete(
 		"--src-port", action.PortA,
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelA),
 	)
-	executeCommand(chanOpenTryCmd, "transferChanOpenTry")
+	e2e.ExecuteCommand(chanOpenTryCmd, "transferChanOpenTry")
 
 	chanOpenAckCmd := tr.target.ExecCommand("hermes",
 		"tx", "chan-open-ack",
@@ -1300,7 +1299,7 @@ func (tr Chain) transferChannelComplete(
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelB),
 	)
 
-	executeCommand(chanOpenAckCmd, "transferChanOpenAck")
+	e2e.ExecuteCommand(chanOpenAckCmd, "transferChanOpenAck")
 
 	chanOpenConfirmCmd := tr.target.ExecCommand("hermes",
 		"tx", "chan-open-confirm",
@@ -1312,40 +1311,7 @@ func (tr Chain) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.ChannelB),
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelA),
 	)
-	executeCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
-}
-
-func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose bool) {
-	if verbose {
-		fmt.Println(cmdName+" cmd:", cmd.String())
-	}
-
-	cmdReader, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	cmd.Stderr = cmd.Stdout
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(cmdReader)
-
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println(cmdName + ": " + out)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-// Executes a command with verbosity specified by CLI flag
-func executeCommand(cmd *exec.Cmd, cmdName string) {
-	executeCommandWithVerbosity(cmd, cmdName, *verbose)
+	e2e.ExecuteCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
 }
 
 type RelayPacketsAction struct {
@@ -1435,8 +1401,8 @@ func (tr Chain) relayRewardPacketsToProvider(
 	action RelayRewardPacketsToProviderAction,
 	verbose bool,
 ) {
-	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
-	currentBlock := uint64(tr.getBlockHeight(action.ConsumerChain))
+	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.target.GetParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
+	currentBlock := uint64(tr.target.GetBlockHeight(action.ConsumerChain))
 	if currentBlock <= blockPerDistribution {
 		tr.waitBlocks(action.ConsumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
@@ -1729,7 +1695,7 @@ func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down 
 
 		method := "set_signing_status"
 		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorPrivateKeyAddress, lastArg)
-		address := tr.getQueryNodeRPCAddress(chain)
+		address := tr.target.GetQueryNodeRPCAddress(chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
 		tr.waitBlocks(chain, 1, 10*time.Second)
@@ -1860,7 +1826,7 @@ func (tr Chain) registerRepresentative(
 				log.Fatalf("Failed writing consumer genesis to file: %v", err)
 			}
 
-			containerInstance := tr.containerConfig.InstanceName
+			containerInstance := tr.testConfig.containerConfig.InstanceName
 			targetFile := fmt.Sprintf("/tmp/%s", fileName)
 			sourceFile := file.Name()
 			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -1871,7 +1837,7 @@ func (tr Chain) registerRepresentative(
 				log.Fatal(err, "\n", string(writeResult))
 			}
 
-			cmd := tr.target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
+			cmd := tr.target.ExecCommand(tr.testConfig.chainConfigs[action.Chain].BinaryName,
 				"tx", "staking", "create-validator",
 				targetFile,
 				`--from`, `validator`+fmt.Sprint(val),
@@ -1991,7 +1957,7 @@ func (tr Chain) invokeDoublesignSlash(
 		method := "cause_double_sign"
 		params := fmt.Sprintf(`{"private_key_address":"%s"}`, validatorPrivateKeyAddress)
 
-		address := tr.getQueryNodeRPCAddress(action.Chain)
+		address := tr.target.GetQueryNodeRPCAddress(action.Chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
 		tr.waitBlocks(action.Chain, 1, 10*time.Second)
@@ -2068,7 +2034,7 @@ func (tr Chain) lightClientAttack(
 	method := "cause_light_client_attack"
 	params := fmt.Sprintf(`{"private_key_address":"%s", "misbehaviour_type": "%s"}`, validatorPrivateKeyAddress, attackType)
 
-	address := tr.getQueryNodeRPCAddress(chain)
+	address := tr.target.GetQueryNodeRPCAddress(chain)
 
 	tr.curlJsonRPCRequest(method, params, address)
 	tr.waitBlocks(chain, 1, 10*time.Second)
@@ -2196,14 +2162,14 @@ func (tr Chain) waitForSlashMeterReplenishment(
 	verbose bool,
 ) {
 	timeout := time.Now().Add(action.Timeout)
-	initialSlashMeter := tr.getSlashMeter()
+	initialSlashMeter := tr.target.GetSlashMeter()
 
 	if initialSlashMeter >= 0 {
 		panic(fmt.Sprintf("No need to wait for slash meter replenishment, current value: %d", initialSlashMeter))
 	}
 
 	for {
-		slashMeter := tr.getSlashMeter()
+		slashMeter := tr.target.GetSlashMeter()
 		if verbose {
 			fmt.Printf("waiting for slash meter to be replenished, current value: %d\n", slashMeter)
 		}
@@ -2294,7 +2260,7 @@ func (tr Chain) AdvanceTimeForChain(chain ChainID, duration time.Duration) {
 	method := "advance_time"
 	params := fmt.Sprintf(`{"duration_in_seconds": "%d"}`, int(math.Ceil(duration.Seconds())))
 
-	address := tr.getQueryNodeRPCAddress(chain)
+	address := tr.target.GetQueryNodeRPCAddress(chain)
 
 	tr.curlJsonRPCRequest(method, params, address)
 
