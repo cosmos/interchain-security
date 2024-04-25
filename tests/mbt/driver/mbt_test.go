@@ -241,8 +241,6 @@ func RunItfTrace(t *testing.T, path string) {
 	t.Log("Reading the trace...")
 
 	for index, state := range trace.States {
-		t.Log("Height modulo epoch length:", driver.providerChain().CurrentHeader.Height%blocksPerEpoch)
-		t.Log("Model height modulo epoch length:", ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch)
 		t.Logf("Reading state %v of trace %v", index, path)
 
 		// store the height of the provider state before each step.
@@ -519,9 +517,6 @@ func RunItfTrace(t *testing.T, path string) {
 			t.Logf("Current actual state: %s", driver.getStateString())
 		}
 
-		// check that the actual state is the same as the model state
-		t.Logf("Comparing model state to actual state...")
-
 		// compare the running consumers
 		modelRunningConsumers := RunningConsumers(currentModelState)
 
@@ -611,8 +606,6 @@ func RunItfTrace(t *testing.T, path string) {
 			// we changed epoch during this step, so ensure that the model also changed epochs
 			require.True(t, ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch == 0, "Height in model did not change epoch, but did in system. increase blocksPerEpoch in the system")
 		}
-
-		t.Logf("State %v of trace %v is ok!", index, path)
 	}
 	t.Log("🟢 Trace is ok!")
 }
