@@ -75,9 +75,13 @@ There are no special requirements for executing this migration.
 
 ### Additions
 
-`rpc MsgUpdateParams` was added. `x/gov` module account is selected as the default `authority`.
+### MsgUpdateParams transaction
+
+`x/gov` module account is selected as the default `authority`.
 
 It is available when using `gov` CLI commands:
+
+Drafting a proposal:
 
 ```shell
 interchain-security-pd tx gov draft-proposal
@@ -85,8 +89,14 @@ interchain-security-pd tx gov draft-proposal
 # find and select "/interchain_security.ccv.provider.v1.MsgUpdateParams"
 ```
 
+Submitting a proposal:
 
-Check example below for more information.
+```shell
+interchain-security-pd tx gov submit-proposal <proposal-message.json>
+```
+
+Example `proposal-message.json`:
+
 ```json
 {
  "messages": [
@@ -116,9 +126,11 @@ Check example below for more information.
 }
 ```
 
+###
+
 When updating parameters **all** parameters fields must be specified. Make sure you are only changing parameters that you are interested in.
 
-To avoid inadvertantly changing parameters you can first check the provider params using:
+To avoid accidentally changing parameters you can first check the current on-chain provider params using:
 
 ```shell
 interchain-security-pd q provider params -o json
@@ -237,14 +249,24 @@ app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
 
 It is available when using `gov` CLI commands:
 
+Drafting a proposal:
+
 ```shell
-interchain-securitycpd tx gov draft-proposal
+interchain-security-cd tx gov draft-proposal
 # select "other"
 # find and select "/interchain_security.ccv.consumer.v1.MsgUpdateParams"
 ```
 
+Submitting a proposal:
+* **this proposal cannot be executed on chains without access to `x/gov` or other modules for managing governance**
 
-Check example below for more information.
+```shell
+
+interchain-security-cdd tx gov submit-proposal <proposal-message.json>
+
+```
+
+Example `proposal-message.json`.
 ```json
 {
  "messages": [
@@ -278,8 +300,9 @@ Check example below for more information.
 
 When updating parameters **all** parameters fields must be specified. Make sure you are only changing parameters that you are interested in.
 
-To avoid inadvertantly changing parameters you can first check the provider params using:
-```shel
+To avoid accidentally changing parameters you can first check the current on-chain consumer params using:
+
+```shell
 interchain-security-pd q ccvconsumer params -o json
 ```
 
