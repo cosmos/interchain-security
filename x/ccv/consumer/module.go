@@ -127,6 +127,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(consumertypes.ModuleName, 1, m.Migrate1to2); err != nil {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s", consumertypes.ModuleName, err))
 	}
+	if err := cfg.RegisterMigration(consumertypes.ModuleName, 2, m.Migrate2to3); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 2 -> 3", consumertypes.ModuleName, err))
+	}
 }
 
 // InitGenesis performs genesis initialization for the consumer module. It returns
@@ -146,7 +149,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 {
-	return 2
+	return 3
 }
 
 // BeginBlock implements the AppModule interface
