@@ -34,7 +34,6 @@ func (k Keeper) HandleLegacyConsumerRewardDenomProposal(ctx sdk.Context, p *type
 	return nil
 }
 
-// [DEPRECATED]
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
 // If the client can be successfully created in a cached context, it stores the proposal as a pending proposal.
 //
@@ -59,7 +58,6 @@ func (k Keeper) HandleLegacyConsumerAdditionProposal(ctx sdk.Context, p *types.C
 	return nil
 }
 
-// [DEPRECATED]
 // HandleConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the consumer can be successfully stopped in a cached context, it stores the proposal as a pending proposal.
 //
