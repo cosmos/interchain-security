@@ -221,7 +221,8 @@ func getIcsVersion(reference string) string {
 		// remove build suffix
 		return semver.Canonical(reference)
 	}
-	for _, tag := range []string{"v2.0.0", "v2.4.0", "v2.4.0-lsm", "v3.1.0", "v3.2.0", "v3.3.0", "v4.0.0"} {
+
+	for _, tag := range []string{"v2.0.0", "v2.4.0", "v2.4.0-lsm", "v3.1.0", "v3.2.0", "v3.3.0", "v4.0.0", "v4.1.1", "v4.1.1-lsm"} {
 		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
 		cmd := exec.Command("git", "merge-base", "--is-ancestor", reference, tag)
 		out, err := cmd.CombinedOutput()

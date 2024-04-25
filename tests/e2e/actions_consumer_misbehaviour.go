@@ -17,15 +17,15 @@ type ForkConsumerChainAction struct {
 	RelayerConfig string
 }
 
-func (tc TestConfig) forkConsumerChain(action ForkConsumerChainAction, verbose bool) {
-	valCfg := tc.validatorConfigs[action.Validator]
+func (tc Chain) forkConsumerChain(action ForkConsumerChainAction, verbose bool) {
+	valCfg := tc.testConfig.validatorConfigs[action.Validator]
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	configureNodeCmd := exec.Command("docker", "exec", tc.containerConfig.InstanceName, "/bin/bash",
-		"/testnet-scripts/fork-consumer.sh", tc.chainConfigs[action.ConsumerChain].BinaryName,
+	configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "/bin/bash",
+		"/testnet-scripts/fork-consumer.sh", tc.testConfig.chainConfigs[action.ConsumerChain].BinaryName,
 		string(action.Validator), string(action.ConsumerChain),
-		tc.chainConfigs[action.ConsumerChain].IpPrefix,
-		tc.chainConfigs[action.ProviderChain].IpPrefix,
+		tc.testConfig.chainConfigs[action.ConsumerChain].IpPrefix,
+		tc.testConfig.chainConfigs[action.ProviderChain].IpPrefix,
 		valCfg.Mnemonic,
 		action.RelayerConfig,
 	)
@@ -69,7 +69,7 @@ type UpdateLightClientAction struct {
 	ClientID      string
 }
 
-func (tc TestConfig) updateLightClient(
+func (tc Chain) updateLightClient(
 	action UpdateLightClientAction,
 	verbose bool,
 ) {
@@ -77,7 +77,7 @@ func (tc TestConfig) updateLightClient(
 	trustedHeight := tc.getTrustedHeight(action.HostChain, action.ClientID, 2)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tc.containerConfig.InstanceName, "hermes",
+	cmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
 		"--config", action.RelayerConfig,
 		"update",
 		"client",

@@ -5,6 +5,7 @@ import (
 	"log"
 	"reflect"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/kylelemons/godebug/pretty"
 )
 
@@ -47,7 +48,7 @@ func (td *DefaultDriver) runStep(step Step) error {
 		return err
 	}
 	modelState := step.State
-	actualState := td.testCfg.getState(modelState, td.verbose)
+	actualState := td.getState(modelState)
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
@@ -60,84 +61,124 @@ func (td *DefaultDriver) runStep(step Step) error {
 	return nil
 }
 
+type Target interface {
+	GetChainState(chain ChainID, modelState ChainState) ChainState
+	GetBalances(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint
+	GetProposals(chain ChainID, modelState map[uint]Proposal) map[uint]Proposal
+	GetValPowers(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint
+	GetParams(chain ChainID, modelState []Param) []Param
+	GetRewards(chain ChainID, modelState Rewards) Rewards
+	GetStakedTokens(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint
+	GetConsumerAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string
+	GetProviderAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string
+	GetRegisteredConsumerRewardDenoms(chain ChainID) []string
+	GetClientFrozenHeight(chain ChainID, clientID string) clienttypes.Height
+}
+
+func (td *DefaultDriver) getTargetDriver(chainID ChainID) (Target, error) {
+	target := Chain{target: td.target,
+		testConfig: td.testCfg,
+	}
+
+	return target, nil
+}
+
+func (td *DefaultDriver) getState(modelState State) State {
+	systemState := State{}
+	for chainID, modelState := range modelState {
+		target, err := td.getTargetDriver(chainID)
+		if err != nil {
+			log.Panicln("no target driver found for chain ", chainID)
+		}
+
+		if td.verbose {
+			fmt.Println("Getting model state for chain: ", chainID)
+		}
+		systemState[chainID] = target.GetChainState(chainID, modelState)
+	}
+
+	return systemState
+}
+
 func (td *DefaultDriver) runAction(action interface{}) error {
+	target := Chain{target: td.target, testConfig: td.testCfg}
 	switch action := action.(type) {
 	case StartChainAction:
-		td.testCfg.startChain(action, td.target, td.verbose)
+		target.startChain(action, td.verbose)
 	case StartSovereignChainAction:
-		td.testCfg.startSovereignChain(action, td.target, td.verbose)
+		target.startSovereignChain(action, td.verbose)
 	case LegacyUpgradeProposalAction:
-		td.testCfg.submitLegacyUpgradeProposal(action, td.target, td.verbose)
+		target.submitLegacyUpgradeProposal(action, td.verbose)
 	case WaitUntilBlockAction:
-		td.testCfg.waitUntilBlockOnChain(action)
+		target.waitUntilBlockOnChain(action)
 	case ChangeoverChainAction:
-		td.testCfg.changeoverChain(action, td.target, td.verbose)
+		target.changeoverChain(action, td.verbose)
 	case SendTokensAction:
-		td.testCfg.sendTokens(action, td.target, td.verbose)
+		target.sendTokens(action, td.verbose)
 	case SubmitTextProposalAction:
-		td.testCfg.submitTextProposal(action, td.target, td.verbose)
+		target.submitTextProposal(action, td.verbose)
 	case SubmitConsumerAdditionProposalAction:
-		td.testCfg.submitConsumerAdditionProposal(action, td.target, td.verbose)
+		target.submitConsumerAdditionProposal(action, td.verbose)
 	case SubmitConsumerRemovalProposalAction:
-		td.testCfg.submitConsumerRemovalProposal(action, td.target, td.verbose)
+		target.submitConsumerRemovalProposal(action, td.verbose)
 	case SubmitEnableTransfersProposalAction:
-		td.testCfg.submitEnableTransfersProposalAction(action, td.target, td.verbose)
+		target.submitEnableTransfersProposalAction(action, td.verbose)
 	case VoteGovProposalAction:
-		td.testCfg.voteGovProposal(action, td.target, td.verbose)
+		target.voteGovProposal(action, td.verbose)
 	case StartConsumerChainAction:
-		td.testCfg.startConsumerChain(action, td.target, td.verbose)
+		target.startConsumerChain(action, td.verbose)
 	case AddChainToRelayerAction:
-		td.testCfg.addChainToRelayer(action, td.target, td.verbose)
+		target.addChainToRelayer(action, td.verbose)
 	case CreateIbcClientsAction:
-		td.testCfg.createIbcClientsHermes(action, td.target, td.verbose)
+		target.createIbcClientsHermes(action, td.verbose)
 	case AddIbcConnectionAction:
-		td.testCfg.addIbcConnection(action, td.target, td.verbose)
+		target.addIbcConnection(action, td.verbose)
 	case AddIbcChannelAction:
-		td.testCfg.addIbcChannel(action, td.target, td.verbose)
+		target.addIbcChannel(action, td.verbose)
 	case TransferChannelCompleteAction:
-		td.testCfg.transferChannelComplete(action, td.target, td.verbose)
+		target.transferChannelComplete(action, td.verbose)
 	case RelayPacketsAction:
-		td.testCfg.relayPackets(action, td.target, td.verbose)
+		target.relayPackets(action, td.verbose)
 	case RelayRewardPacketsToProviderAction:
-		td.testCfg.relayRewardPacketsToProvider(action, td.target, td.verbose)
+		target.relayRewardPacketsToProvider(action, td.verbose)
 	case DelegateTokensAction:
-		td.testCfg.delegateTokens(action, td.target, td.verbose)
+		target.delegateTokens(action, td.verbose)
 	case UnbondTokensAction:
-		td.testCfg.unbondTokens(action, td.target, td.verbose)
+		target.unbondTokens(action, td.verbose)
 	case CancelUnbondTokensAction:
-		td.testCfg.cancelUnbondTokens(action, td.target, td.verbose)
+		target.cancelUnbondTokens(action, td.verbose)
 	case RedelegateTokensAction:
-		td.testCfg.redelegateTokens(action, td.target, td.verbose)
+		target.redelegateTokens(action, td.verbose)
 	case DowntimeSlashAction:
-		td.testCfg.invokeDowntimeSlash(action, td.target, td.verbose)
+		target.invokeDowntimeSlash(action, td.verbose)
 	case UnjailValidatorAction:
-		td.testCfg.unjailValidator(action, td.target, td.verbose)
+		target.unjailValidator(action, td.verbose)
 	case DoublesignSlashAction:
-		td.testCfg.invokeDoublesignSlash(action, td.target, td.verbose)
+		target.invokeDoublesignSlash(action, td.verbose)
 	case LightClientAmnesiaAttackAction:
-		td.testCfg.lightClientAmnesiaAttack(action, td.verbose)
+		target.lightClientAmnesiaAttack(action, td.verbose)
 	case LightClientEquivocationAttackAction:
-		td.testCfg.lightClientEquivocationAttack(action, td.verbose)
+		target.lightClientEquivocationAttack(action, td.verbose)
 	case LightClientLunaticAttackAction:
-		td.testCfg.lightClientLunaticAttack(action, td.verbose)
+		target.lightClientLunaticAttack(action, td.verbose)
 	case RegisterRepresentativeAction:
-		td.testCfg.registerRepresentative(action, td.target, td.verbose)
+		target.registerRepresentative(action, td.verbose)
 	case AssignConsumerPubKeyAction:
-		td.testCfg.assignConsumerPubKey(action, td.target, td.verbose)
+		target.assignConsumerPubKey(action, td.verbose)
 	case SlashMeterReplenishmentAction:
-		td.testCfg.waitForSlashMeterReplenishment(action, td.verbose)
+		target.waitForSlashMeterReplenishment(action, td.verbose)
 	case WaitTimeAction:
-		td.testCfg.waitForTime(action, td.verbose)
+		target.waitForTime(action, td.verbose)
 	case StartRelayerAction:
-		td.testCfg.startRelayer(action, td.target, td.verbose)
+		target.startRelayer(action, td.verbose)
 	case ForkConsumerChainAction:
-		td.testCfg.forkConsumerChain(action, td.verbose)
+		target.forkConsumerChain(action, td.verbose)
 	case UpdateLightClientAction:
-		td.testCfg.updateLightClient(action, td.verbose)
+		target.updateLightClient(action, td.verbose)
 	case StartConsumerEvidenceDetectorAction:
-		td.testCfg.startConsumerEvidenceDetector(action, td.target, td.verbose)
+		target.startConsumerEvidenceDetector(action, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
-		td.testCfg.submitChangeRewardDenomsProposal(action, td.target, td.verbose)
+		target.submitChangeRewardDenomsProposal(action, td.verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}
