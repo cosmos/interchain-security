@@ -939,22 +939,10 @@ module ccv {
             // if there is no entry for that validator, there is no key assignment
             .getOrElse(packet.validator, packet.validator)
         // if the packet is for double-sign, drop it without changing states
-        if (not(packet.downtime)) {
+        if (not(packet.downtime) or 
+        // same if the validator is already jailed: no double-jailing!
+            not(providerVal.in(nonJailedNodes(currentState.providerState)))) {
             Ok(currentState)
-        
-        } else if (
-            // if the validator is already jailed...
-            not(providerVal.in(nonJailedNodes(currentState.providerState))) or
-            // or it has 0 power...
-            currentState.providerState.chainState.currentValidatorPowers.getOrElse(providerVal, 0) == 0 or
-            // or it was not in the last valset we sent to the consumer
-            not(currentState.providerState.sentVscPacketsToConsumer.get(sender).head().validatorSet.keys().contains(providerVal))
-        ) {
-            // just store that we received the DowntimeSlashRequest, to acknowledge it on EndBlock
-            val newProviderState = currentState.providerState.with(
-                "downtimeSlashRequests", currentState.providerState.downtimeSlashRequests.put(sender, currentState.providerState.downtimeSlashRequests.getOrElse(sender, List()).append(packet.validator))
-            )
-            Ok(currentState.with("providerState", newProviderState))
         } else {
             val jailEndTime = ProviderBlockTime(currentState) + DowntimeJailTime
             // map the validator to its address on the provider
