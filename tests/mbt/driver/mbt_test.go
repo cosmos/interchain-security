@@ -544,7 +544,7 @@ func RunItfTrace(t *testing.T, path string) {
 
 		// check sent packets: we check that the package queues in the model and the system have the same length.
 		for _, consumer := range actualRunningConsumers {
-			ComparePacketQueues(t, driver, currentModelState, consumer, timeOffset)
+			ComparePacketQueues(t, driver, currentModelState, consumer, timeOffset, realAddrsToModelConsAddrs)
 		}
 		// compare that the sent packets on the proider match the model
 		CompareSentPacketsOnProvider(driver, currentModelState, timeOffset)
@@ -630,7 +630,7 @@ func CompareValidatorSets(
 	driver *Driver,
 	currentModelState map[string]itf.Expr,
 	consumers []string,
-	// a map from real addresses to the names of those consumer addresses in the model
+	// a map from real addresses to the names of those consensus addresses in the model
 	keyAddrsToModelConsAddrName map[string]string,
 ) {
 	t.Helper()
@@ -644,6 +644,9 @@ func CompareValidatorSets(
 		valName := val.Description.Moniker
 		actualValSet[valName] = val.Tokens.Int64()
 	}
+
+	fmt.Println("Model validator set:", modelValSet)
+	fmt.Println("Actual validator set:", actualValSet)
 
 	require.NoError(t, CompareValSet(modelValSet, actualValSet), "Validator sets do not match")
 
@@ -693,6 +696,7 @@ func ComparePacketQueues(
 	currentModelState map[string]itf.Expr,
 	consumer string,
 	timeOffset time.Time,
+	realConsAddrToModelValName map[string]string,
 ) {
 	t.Helper()
 	ComparePacketQueue(t, driver, currentModelState, PROVIDER, consumer, timeOffset)
@@ -739,6 +743,44 @@ func ComparePacketQueue(
 			actualPacket,
 			sender,
 			receiver)
+
+		// reconstruct a VSCPacket from the actual packet
+		var actualPacketData types.ValidatorSetChangePacketData
+		err := types.ModuleCdc.UnmarshalJSON(actualPacket.Packet.GetData(), &actualPacketData)
+		require.NoError(t, err, "Error unmarshalling packet data")
+
+		modelPacketValSet := modelPacket["validatorSet"].Value.(itf.MapExprType)
+
+		// check that for all validators in the actual packets validator updates,
+		// the model has the same power for the validator
+		// note: we cannot check equivalence, because the system sends only changes,
+		// whereas the model sends the full set.
+		for _, valUpdate := range actualPacketData.ValidatorUpdates {
+			// get the name of the validator in the valUpdate
+			valPubKey := valUpdate.PubKey
+			consAddr, err := types.TMCryptoPublicKeyToConsAddr(valPubKey)
+
+			require.NoError(t, err, "Error getting consensus address from pubkey")
+
+			// get the name of the validator in the model
+			val, found := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), consAddr)
+			require.True(t, found, "Error getting validator by consensus address")
+
+			modelValName := val.Description.Moniker
+
+			// get the power of the validator in the model
+			modelPower := modelPacketValSet[modelValName].Value.(int64)
+
+			// compare the power of the validator in the model to the power of the validator in the actual packet
+			require.Equal(t,
+				modelPower,
+				valUpdate.Power,
+				"Validator powers do not match for validator %v in packet %v, sender %v, receiver %v",
+				modelValName,
+				actualPacket,
+				sender,
+				receiver)
+		}
 	}
 }
 

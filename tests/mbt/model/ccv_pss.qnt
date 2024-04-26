@@ -94,7 +94,7 @@ module ccv_pss {
     // Returns true if the given validator is in the top N for the given consumer chain,
     // and false otherwise.
     pure def IsTopN(currentState: ProtocolState, validator: Node, consumer: Chain): bool = {
-        val proviValSet = currentState.providerState.chainState.currentValidatorPowers
+        val proviValSet = currentState.providerState.chainState.votingPowerHistory.head()
         val N = currentState.providerState.topNByConsumer.get(consumer)
 
         val topNValSet = GetTopNVals(proviValSet, N)

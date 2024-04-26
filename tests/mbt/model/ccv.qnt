@@ -615,80 +615,86 @@ module ccv {
             newConsumerState
         )
 
-        // clear the acksToSendOnEndBlock
-        val providerStateAfterAcking = providerStateAfterSending.with(
-            "acksToSendOnEndBlock", Map()
-        )
-
 
         // start/stop chains
-        val res = providerStateAfterAcking.StartStopConsumers(
+        val res = providerStateAfterSending.StartStopConsumers(
             consumersToStart,
             consumersToStop,
             timedOutConsumers
         )
-        val providerStateAfterConsumerAdvancement = res._1
         val err = res._2
+        val providerStateAfterConsumerAdvancement = res._1.with(
+            "downtimeSlashRequests", Map()
+        ).with(
+            "acksToSendOnEndBlock", Map()
+        )
 
-        val consumerAdditions = consumersToStart.map(consumer => consumer.chain)
+        val tmpState2 = tmpState.with(
+            "providerState", providerStateAfterConsumerAdvancement
+        ).with(
+            "consumerStates", newConsumerStates
+        )
 
         // for each running consumer chain, opt in validators that are in the top N
         val providerStateAfterPSS = providerStateAfterConsumerAdvancement.endBlockPSS()
 
+        // for each consumer chain, apply the key assignment to the current validator set
+        val currentValSets = ConsumerChains.mapBy(
+            (consumer) => 
+            val pssValSet = providerStateAfterPSS.GetPSSValidatorSet(
+                providerStateAfterPSS.chainState.votingPowerHistory.head(),
+                consumer)
+            providerStateAfterPSS.applyKeyAssignmentToValSet(
+                consumer, 
+                pssValSet
+            )
+        )
+        // store the current validator set with the key assignments applied in the history
+        val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
+            (consumer) => 
+            providerStateAfterPSS.keyAssignedValSetHistory
+                .getOrElse(consumer, List()) // get the existing history (empty list if no history yet)
+                .prepend(currentValSets.get(consumer)) // prepend the current validator set with key assignments applied
+        )
+
         if (err != "") {
             Err(err)
-        } else if (providerStateAfterConsumerAdvancement.chainState.votingPowerHistory.head().IsEmptyValSet()) {
+        } else if (providerStateAfterPSS.chainState.votingPowerHistory.head().IsEmptyValSet()) {
             Err("Validator set would be empty after ending this block!")
         } else {
-            // for each consumer chain, apply the key assignment to the current validator set
-            val currentValSets = getRunningConsumers(providerStateAfterPSS).mapBy(
-                (consumer) => 
-                providerStateAfterPSS.applyKeyAssignmentToValSet(
-                    consumer,
-                    // get the validator set after partial set security has been applied
-                    GetPSSValidatorSet(providerStateAfterPSS, curValSet, consumer)
-                )
-            )
-
-            // store the current validator set with the key assignments applied in the history
-            val newKeyAssignedValSetHistory = currentValSets.keys().mapBy(
-                (consumer) => 
-                providerStateAfterPSS.keyAssignedValSetHistory
-                    .getOrElse(consumer, List()) // get the existing history (empty list if no history yet)
-                    .prepend(currentValSets.get(consumer)) // prepend the current validator set with key assignments applied
-            )
-
-            val providerStateAfterStoringValSets = providerStateAfterPSS.with(
-                "keyAssignedValSetHistory", newKeyAssignedValSetHistory
-            )
+            // for each consumer we just set to running, set its initial validator set to be the current one on the provider...
+            val valSet = providerStateAfterPSS.chainState.votingPowerHistory.head()
 
             val newConsumerStateMap =
-                tmpState.consumerStates.keys().mapBy(
+                tmpState2.consumerStates.keys().mapBy(
                     (consumer) => 
-                    if (consumerAdditions.contains(consumer)) {
-                        val currentConsumerState: ConsumerState = newConsumerStates.get(consumer)
-                        // correctly set the state for the new consumer
+                    if (consumersToStart.map(consumer => consumer.chain).contains(consumer)) {
+                        // ...filtered by opted in validators
+                        val pssValSet = GetPSSValidatorSet(providerStateAfterPSS, valSet, consumer)
+                        // ...modified by the key assignments for the consumer
+                        val consValSet = applyKeyAssignmentToValSet(providerStateAfterPSS, consumer, pssValSet)
+                        val currentConsumerState: ConsumerState = tmpState2.consumerStates.get(consumer)
                         val newConsumerState: ConsumerState = currentConsumerState.with(
                             "chainState", currentConsumerState.chainState.with(
-                                "currentValidatorPowers", currentValSets.get(consumer)
+                                "currentValidatorPowers", consValSet
                             ).with(
                                 "votingPowerHistory",
-                                List(currentValSets.get(consumer))
+                                List(consValSet)
                             ).with(
                                 "lastTimestamp", 
-                                providerStateAfterStoringValSets.chainState.lastTimestamp
+                                providerStateAfterPSS.chainState.lastTimestamp
                             ).with(
                                 "runningTimestamp", 
-                                providerStateAfterStoringValSets.chainState.runningTimestamp
+                                providerStateAfterPSS.chainState.runningTimestamp
                             )
                         )
                         newConsumerState
                     } else {
-                        newConsumerStates.get(consumer)
+                        tmpState2.consumerStates.get(consumer)
                     }
                 )
             val newState = tmpState.with(
-                "providerState", providerStateAfterStoringValSets
+                "providerState", providerStateAfterPSS
             ).with(
                 "consumerStates", newConsumerStateMap
             )
@@ -845,8 +851,10 @@ module ccv {
                 pure val provValSet = currentState.providerState.chainState.currentValidatorPowers
                 pure val provValPower = if (provValSet.keys().contains(providerNode)) provValSet.get(providerNode) else 0
                 pure val consumersWithAddrAssignmentChangesInThisEpoch = 
-                    if (provValPower > 0 and providerNode.in(nonJailedNodes(currentState.providerState))) {
-                        // if the validator has positive power and is not jailed, the relevant key assignment for the consumer changed
+                    if (provValPower > 0 and providerNode.in(nonJailedNodes(currentState.providerState)) and currentState.providerState.optedInVals.getOrElse(consumer, Set()).contains(providerNode)) {
+                        // if the validator has positive power and is not jailed,
+                        // and the validator is opted in on the consumer, 
+                        // the relevant key assignment for the consumer changed
                         currentState.providerState.consumersWithAddrAssignmentChangesInThisEpoch.union(Set(consumer))
                     } else {
                         // otherwise, the consumer doesn't need to know about the change, so no change
