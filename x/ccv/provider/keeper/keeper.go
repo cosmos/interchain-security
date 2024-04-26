@@ -1259,9 +1259,7 @@ func (k Keeper) HasToValidate(
 
 	minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-	// Check if the validator's voting power is smaller
-	// than the minimum and hence not automatically opted in
-	if power < minPowerToOptIn {
+	if power > minPowerToOptIn {
 		return true, nil
 	}
 	return false, nil
