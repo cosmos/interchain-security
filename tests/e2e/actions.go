@@ -2319,8 +2319,9 @@ func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose b
 }
 
 type OptOutAction struct {
-	Chain     ChainID
-	Validator ValidatorID
+	Chain       ChainID
+	Validator   ValidatorID
+	ExpectError bool
 }
 
 func (tr TestConfig) optOut(action OptOutAction, target ExecutionTarget, verbose bool) {
@@ -2353,13 +2354,17 @@ func (tr TestConfig) optOut(action OptOutAction, target ExecutionTarget, verbose
 	}
 
 	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	if !tr.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
-		if verbose {
-			fmt.Printf("got expected error during opt out | err: %s | output: %s \n", err, string(bz))
+	if action.ExpectError {
+		if err != nil {
+			if verbose {
+				fmt.Printf("got expected error during opt out | err: %s | output: %s \n", err, string(bz))
+			}
+		} else {
+			log.Fatal("expected error during opt-out but got none")
+		}
+	} else {
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
 		}
 	}
 
