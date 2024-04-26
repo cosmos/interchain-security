@@ -604,15 +604,17 @@ func stepsTopNChain() []Step {
 		},
 		{
 			Action: OptOutAction{
-				Chain:     ChainID("consu"),
-				Validator: ValidatorID("carol"),
+				Chain:       ChainID("consu"),
+				Validator:   ValidatorID("carol"),
+				ExpectError: true,
 			},
 			State: State{},
 		},
 		{
 			Action: OptOutAction{
-				Chain:     ChainID("consu"),
-				Validator: ValidatorID("bob"),
+				Chain:       ChainID("consu"),
+				Validator:   ValidatorID("bob"),
+				ExpectError: true,
 			},
 			State: State{},
 		},
