@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -27,7 +26,7 @@ func (k Keeper) SetConsumerValidator(
 }
 
 // SetConsumerValSet resets the current consumer validators with the `nextValidators` computed by
-// `ComputeNextEpochConsumerValSet` and hence this method should only be called after `ComputeNextEpochConsumerValSet` has completed.
+// `FilterValidators` and hence this method should only be called after `FilterValidators` has completed.
 func (k Keeper) SetConsumerValSet(ctx sdk.Context, chainID string, nextValidators []types.ConsumerValidator) {
 	k.DeleteConsumerValSet(ctx, chainID)
 	for _, val := range nextValidators {
@@ -152,17 +151,22 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validat
 	}, nil
 }
 
-// ComputeNextEpochConsumerValSet returns the next validator set that is responsible for validating consumer
-// chain `chainID`. The next validator set corresponds to the `bondedValidator`s that `shouldConsider` evaluates to `true`.
-func (k Keeper) ComputeNextEpochConsumerValSet(
+// FilterValidators filters the provided `bondedValidators` according to `predicate` and returns
+// the filtered set.
+func (k Keeper) FilterValidators(
 	ctx sdk.Context,
 	chainID string,
 	bondedValidators []stakingtypes.Validator,
-	shouldConsider func(validator stakingtypes.Validator) bool,
+	predicate func(providerAddr types.ProviderConsAddress) bool,
 ) []types.ConsumerValidator {
 	var nextValidators []types.ConsumerValidator
 	for _, val := range bondedValidators {
-		if shouldConsider(val) {
+		consAddr, err := val.GetConsAddr()
+		if err != nil {
+			continue
+		}
+
+		if predicate(types.NewProviderConsAddress(consAddr)) {
 			nextValidator, err := k.CreateConsumerValidator(ctx, chainID, val)
 			if err != nil {
 				// this should never happen but is recoverable if we exclude this validator from the next validator set

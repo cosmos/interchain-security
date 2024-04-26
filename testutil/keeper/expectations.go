@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	time "time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -45,6 +46,10 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	).Return("clientID", nil).Times(1)
 	expectations = append(expectations, createClientExp)
 
+	mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(
+		cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator(), true).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(234)).AnyTimes()
+
 	return expectations
 }
 
@@ -52,13 +57,22 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 	unbondingTimeToInject time.Duration,
 ) []*gomock.Call {
+	mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(
+		cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator(), true).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(234)).AnyTimes()
+
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject).Times(1),
 
 		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
 			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
 
-		mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(1),
+		mocks.MockStakingKeeper.EXPECT().
+			IterateLastValidatorPowers(gomock.Any(), gomock.Any()).
+			Do(func(ctx sdk.Context, fn func(addr sdk.ValAddress, power int64) (stop bool)) {
+				fn(sdk.ValAddress("address"), 100)
+			}).
+			Return().AnyTimes(),
 	}
 }
 

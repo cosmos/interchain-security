@@ -229,10 +229,14 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
 		}
 
-		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators,
-			func(validator stakingtypes.Validator) bool {
-				return k.ShouldConsiderOnlyOptIn(ctx, chain.ChainId, validator)
+		nextValidators := k.FilterValidators(ctx, chain.ChainId, bondedValidators,
+			func(providerAddr providertypes.ProviderConsAddress) bool {
+				return k.FilterOptedInAndAllowAndDenylistedPredicate(ctx, chain.ChainId, providerAddr)
 			})
+
+		nextValidators = k.CapValidatorSet(ctx, chain.ChainId, nextValidators)
+		nextValidators = k.CapValidatorsPower(ctx, chain.ChainId, nextValidators)
+
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
 

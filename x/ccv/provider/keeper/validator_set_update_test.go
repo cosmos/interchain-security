@@ -324,8 +324,8 @@ func TestComputeNextEpochConsumerValSetConsiderAll(t *testing.T) {
 	chainID := "chainID"
 
 	// no consumer validators returned if we have no bonded validators
-	considerAll := func(validator stakingtypes.Validator) bool { return true }
-	require.Empty(t, providerKeeper.ComputeNextEpochConsumerValSet(ctx, chainID, []stakingtypes.Validator{}, considerAll))
+	considerAll := func(providerAddr types.ProviderConsAddress) bool { return true }
+	require.Empty(t, providerKeeper.FilterValidators(ctx, chainID, []stakingtypes.Validator{}, considerAll))
 
 	var expectedValidators []types.ConsumerValidator
 
@@ -353,7 +353,7 @@ func TestComputeNextEpochConsumerValSetConsiderAll(t *testing.T) {
 	})
 
 	bondedValidators := []stakingtypes.Validator{valA, valB}
-	actualValidators := providerKeeper.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators, considerAll)
+	actualValidators := providerKeeper.FilterValidators(ctx, chainID, bondedValidators, considerAll)
 	require.Equal(t, expectedValidators, actualValidators)
 }
 
@@ -364,9 +364,9 @@ func TestComputeNextEpochConsumerValSetConsiderOnlyOptIn(t *testing.T) {
 	chainID := "chainID"
 
 	// no consumer validators returned if we have no opted-in validators
-	require.Empty(t, providerKeeper.ComputeNextEpochConsumerValSet(ctx, chainID, []stakingtypes.Validator{},
-		func(validator stakingtypes.Validator) bool {
-			return providerKeeper.ShouldConsiderOnlyOptIn(ctx, chainID, validator)
+	require.Empty(t, providerKeeper.FilterValidators(ctx, chainID, []stakingtypes.Validator{},
+		func(providerAddr types.ProviderConsAddress) bool {
+			return providerKeeper.IsOptedIn(ctx, chainID, providerAddr)
 		}))
 
 	var expectedValidators []types.ConsumerValidator
@@ -401,9 +401,9 @@ func TestComputeNextEpochConsumerValSetConsiderOnlyOptIn(t *testing.T) {
 
 	// the expected actual validators are the opted-in validators but with the correct power and consumer public keys set
 	bondedValidators := []stakingtypes.Validator{valA, valB}
-	actualValidators := providerKeeper.ComputeNextEpochConsumerValSet(ctx, "chainID", bondedValidators,
-		func(validator stakingtypes.Validator) bool {
-			return providerKeeper.ShouldConsiderOnlyOptIn(ctx, "chainID", validator)
+	actualValidators := providerKeeper.FilterValidators(ctx, "chainID", bondedValidators,
+		func(providerAddr types.ProviderConsAddress) bool {
+			return providerKeeper.IsOptedIn(ctx, chainID, providerAddr)
 		})
 
 	// sort validators first to be able to compare
@@ -420,9 +420,9 @@ func TestComputeNextEpochConsumerValSetConsiderOnlyOptIn(t *testing.T) {
 	// create a staking validator C that is not opted in, hence `expectedValidators` remains the same
 	valC := createStakingValidator(ctx, mocks, 3, 3)
 	bondedValidators = []stakingtypes.Validator{valA, valB, valC}
-	actualValidators = providerKeeper.ComputeNextEpochConsumerValSet(ctx, "chainID", bondedValidators,
-		func(validator stakingtypes.Validator) bool {
-			return providerKeeper.ShouldConsiderOnlyOptIn(ctx, "chainID", validator)
+	actualValidators = providerKeeper.FilterValidators(ctx, "chainID", bondedValidators,
+		func(providerAddr types.ProviderConsAddress) bool {
+			return providerKeeper.IsOptedIn(ctx, chainID, providerAddr)
 		})
 
 	sortValidators(actualValidators)

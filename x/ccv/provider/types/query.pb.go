@@ -1647,7 +1647,7 @@ type QueryClient interface {
 	QueryAllPairsValConAddrByConsumerChainID(ctx context.Context, in *QueryAllPairsValConAddrByConsumerChainIDRequest, opts ...grpc.CallOption) (*QueryAllPairsValConAddrByConsumerChainIDResponse, error)
 	// QueryParams returns all current values of provider parameters
 	QueryParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// QueryConsumerChainOptedInValidators returns a list of validators consensus address
+	// QueryConsumerChainOptedInValidators returns a list of validators consensus addresses
 	// that opted-in to the given consumer chain
 	QueryConsumerChainOptedInValidators(ctx context.Context, in *QueryConsumerChainOptedInValidatorsRequest, opts ...grpc.CallOption) (*QueryConsumerChainOptedInValidatorsResponse, error)
 	// QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
@@ -1824,7 +1824,7 @@ type QueryServer interface {
 	QueryAllPairsValConAddrByConsumerChainID(context.Context, *QueryAllPairsValConAddrByConsumerChainIDRequest) (*QueryAllPairsValConAddrByConsumerChainIDResponse, error)
 	// QueryParams returns all current values of provider parameters
 	QueryParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// QueryConsumerChainOptedInValidators returns a list of validators consensus address
+	// QueryConsumerChainOptedInValidators returns a list of validators consensus addresses
 	// that opted-in to the given consumer chain
 	QueryConsumerChainOptedInValidators(context.Context, *QueryConsumerChainOptedInValidatorsRequest) (*QueryConsumerChainOptedInValidatorsResponse, error)
 	// QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains

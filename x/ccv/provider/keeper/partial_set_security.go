@@ -138,11 +138,126 @@ func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedVa
 	return 0
 }
 
-// ShouldConsiderOnlyOptIn returns true if `validator` is opted in, in `chainID.
-func (k Keeper) ShouldConsiderOnlyOptIn(ctx sdk.Context, chainID string, validator stakingtypes.Validator) bool {
-	consAddr, err := validator.GetConsAddr()
-	if err != nil {
-		return false
+// CapValidatorSet caps the provided `validators` if chain `chainID` is an Opt In chain with a validator-set cap. If cap
+// is `k`, `CapValidatorSet` returns the first `k` validators from `validators` with the highest power.
+func (k Keeper) CapValidatorSet(ctx sdk.Context, chainID string, validators []types.ConsumerValidator) []types.ConsumerValidator {
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+		// is a no-op if the chain is a Top N chain
+		return validators
 	}
-	return k.IsOptedIn(ctx, chainID, types.NewProviderConsAddress(consAddr))
+
+	if validatorSetCap, found := k.GetValidatorSetCap(ctx, chainID); found && validatorSetCap != 0 {
+		sort.Slice(validators, func(i, j int) bool {
+			return validators[i].Power > validators[j].Power
+		})
+
+		minNumberOfValidators := 0
+		if len(validators) < int(validatorSetCap) {
+			minNumberOfValidators = len(validators)
+		} else {
+			minNumberOfValidators = int(validatorSetCap)
+		}
+		return validators[:minNumberOfValidators]
+	} else {
+		return validators
+	}
+}
+
+// CapValidatorsPower caps the power of the validators on chain `chainID` and returns an updated slice of validators
+// with their new powers. Works on a best-basis effort because there are cases where we cannot guarantee that all validators
+// on the consumer chain have less power than the set validators-power cap. For example, if we have 10 validators and
+// the power cap is set to 5%, we need at least one validator to have more than 10% of the voting power on the consumer chain.
+func (k Keeper) CapValidatorsPower(ctx sdk.Context, chainID string, validators []types.ConsumerValidator) []types.ConsumerValidator {
+	if p, found := k.GetValidatorsPowerCap(ctx, chainID); found {
+		return NoMoreThanPercentOfTheSum(validators, p)
+	} else {
+		// is a no-op if power cap is not set for `chainID`
+		return validators
+	}
+}
+
+// sum is a helper function to sum all the validators' power
+func sum(validators []types.ConsumerValidator) int64 {
+	s := int64(0)
+	for _, v := range validators {
+		s = s + v.Power
+	}
+	return s
+}
+
+// NoMoreThanPercentOfTheSum returns a set of validators with updated powers such that no validator has more than the
+// provided `percent` of the sum of all validators' powers.
+func NoMoreThanPercentOfTheSum(validators []types.ConsumerValidator, percent uint32) []types.ConsumerValidator {
+	// The idea behind this algorithm is rather simple:
+	// - Compute the `maxPower` a validator must have so that it does not have more than `percent` of the voting power.
+	// - If a validator `v` has power `p`, then:
+	//     - if `p > maxPower` we set `v`'s power to `maxPower` and distribute the `p - maxPower` to validators that
+	//       have less than `maxPower` power
+	s := sum(validators)
+	maxPower := int64(float64(s) * (float64(percent) / 100.0))
+	if maxPower == 0 {
+		// edge case: set `maxPower` to 1 to avoid setting the power of a validator to 0
+		maxPower = 1
+	}
+
+	// Sort by `.Power` in decreasing order. This way, we improve the chances that if a validator `a` has more power
+	// than a validator `b` in `validators`, `a` has still more than `b` in the return validators.
+	sort.Slice(validators, func(i, j int) bool {
+		return validators[i].Power > validators[j].Power
+	})
+
+	// `remainingPower` is to be distributed to validators that have power less than `maxPower`
+	remainingPower := int64(0)
+	validatorsWithPowerLessThanMaxPower := 0
+	for _, v := range validators {
+		if v.Power >= maxPower {
+			remainingPower = remainingPower + (v.Power - maxPower)
+		} else {
+			validatorsWithPowerLessThanMaxPower++
+		}
+	}
+
+	updatedValidators := make([]types.ConsumerValidator, len(validators))
+
+	powerPerValidator := int64(0)
+	remainingValidators := int64(validatorsWithPowerLessThanMaxPower)
+	if remainingValidators != 0 {
+		// power to give to each validator in order to distribute the `remainingPower`
+		powerPerValidator = remainingPower / remainingValidators
+	}
+
+	for i, v := range validators {
+		if v.Power >= maxPower {
+			updatedValidators[i] = validators[i]
+			updatedValidators[i].Power = maxPower
+		} else if v.Power+powerPerValidator >= maxPower {
+			updatedValidators[i] = validators[i]
+			updatedValidators[i].Power = maxPower
+			remainingPower = remainingPower - (maxPower - v.Power)
+			remainingValidators--
+		} else {
+			updatedValidators[i] = validators[i]
+			updatedValidators[i].Power = v.Power + powerPerValidator
+			remainingPower = remainingPower - (updatedValidators[i].Power - validators[i].Power)
+			remainingValidators--
+		}
+		if remainingValidators == 0 {
+			continue
+		}
+		powerPerValidator = remainingPower / remainingValidators
+	}
+
+	return updatedValidators
+}
+
+// FilterOptedInAndAllowAndDenylistedPredicate filters the opted-in validators that are allowlisted and not denylisted
+func (k Keeper) FilterOptedInAndAllowAndDenylistedPredicate(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) bool {
+	// only consider opted-in validators
+	return k.IsOptedIn(ctx, chainID, providerAddr) &&
+		// if an allowlist is declared, only consider allowlisted validators
+		(k.IsAllowlistEmpty(ctx, chainID) ||
+			k.IsAllowlisted(ctx, chainID, providerAddr)) &&
+		// if a denylist is declared, only consider denylisted validators
+		(k.IsDenylistEmpty(ctx, chainID) ||
+			!k.IsDenylisted(ctx, chainID, providerAddr))
 }

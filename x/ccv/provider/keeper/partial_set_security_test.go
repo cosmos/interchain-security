@@ -2,6 +2,8 @@ package keeper_test
 
 import (
 	"bytes"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"math"
 	"sort"
 	"testing"
@@ -287,16 +289,198 @@ func TestComputeMinPowerToOptIn(t *testing.T) {
 	require.Equal(t, int64(math.MaxInt64), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 0))
 }
 
-// TestShouldConsiderOnlyOptIn returns true if `validator` is opted in, in `chainID.
-func TestShouldConsiderOnlyOptIn(t *testing.T) {
+// TestFilterOptedInAndAllowAndDenylistedPredicate returns true if `validator` is opted in, in `chainID.
+func TestFilterOptedInAndAllowAndDenylistedPredicate(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	validator := createStakingValidator(ctx, mocks, 0, 1)
 	consAddr, _ := validator.GetConsAddr()
+	providerAddr := types.NewProviderConsAddress(consAddr)
 
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr)))
+	// with no allowlist or denylist, the validator has to be opted in, in order to consider it
+	require.False(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
 	providerKeeper.SetOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr))
-	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr)))
+	require.True(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
 
+	// create an allow list but do not add the validator `providerAddr` to it
+	validatorA := createStakingValidator(ctx, mocks, 1, 1)
+	consAddrA, _ := validatorA.GetConsAddr()
+	providerKeeper.SetAllowlist(ctx, "chainID", types.NewProviderConsAddress(consAddrA))
+	require.False(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+	providerKeeper.SetAllowlist(ctx, "chainID", types.NewProviderConsAddress(consAddr))
+	require.True(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+
+	// create a denylist but do not add validator `providerAddr` to it
+	providerKeeper.SetDenylist(ctx, "chainID", types.NewProviderConsAddress(consAddrA))
+	require.True(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+	// add validator `providerAddr` to the denylist
+	providerKeeper.SetDenylist(ctx, "chainID", types.NewProviderConsAddress(consAddr))
+	require.False(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+}
+
+func TestCapValidatorSet(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	validatorA := types.ConsumerValidator{
+		ProviderConsAddr:  []byte("providerConsAddrA"),
+		Power:             1,
+		ConsumerPublicKey: &crypto.PublicKey{},
+	}
+
+	validatorB := types.ConsumerValidator{
+		ProviderConsAddr:  []byte("providerConsAddrB"),
+		Power:             2,
+		ConsumerPublicKey: &crypto.PublicKey{},
+	}
+
+	validatorC := types.ConsumerValidator{
+		ProviderConsAddr:  []byte("providerConsAddrC"),
+		Power:             3,
+		ConsumerPublicKey: &crypto.PublicKey{},
+	}
+	validators := []types.ConsumerValidator{validatorA, validatorB, validatorC}
+
+	consumerValidators := providerKeeper.CapValidatorSet(ctx, "chainID", validators)
+	require.Equal(t, validators, consumerValidators)
+
+	providerKeeper.SetValidatorSetCap(ctx, "chainID", 0)
+	consumerValidators = providerKeeper.CapValidatorSet(ctx, "chainID", validators)
+	require.Equal(t, validators, consumerValidators)
+
+	providerKeeper.SetValidatorSetCap(ctx, "chainID", 100)
+	consumerValidators = providerKeeper.CapValidatorSet(ctx, "chainID", validators)
+	require.Equal(t, validators, consumerValidators)
+
+	providerKeeper.SetValidatorSetCap(ctx, "chainID", 1)
+	consumerValidators = providerKeeper.CapValidatorSet(ctx, "chainID", validators)
+	require.Equal(t, []types.ConsumerValidator{validatorC}, consumerValidators)
+
+	providerKeeper.SetValidatorSetCap(ctx, "chainID", 2)
+	consumerValidators = providerKeeper.CapValidatorSet(ctx, "chainID", validators)
+	require.Equal(t, []types.ConsumerValidator{validatorC, validatorB}, consumerValidators)
+
+	providerKeeper.SetValidatorSetCap(ctx, "chainID", 3)
+	consumerValidators = providerKeeper.CapValidatorSet(ctx, "chainID", validators)
+	require.Equal(t, []types.ConsumerValidator{validatorC, validatorB, validatorA}, consumerValidators)
+}
+
+func TestCapValidatorsPower(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	validatorA := types.ConsumerValidator{
+		ProviderConsAddr:  []byte("providerConsAddrA"),
+		Power:             1,
+		ConsumerPublicKey: &crypto.PublicKey{},
+	}
+
+	validatorB := types.ConsumerValidator{
+		ProviderConsAddr:  []byte("providerConsAddrB"),
+		Power:             2,
+		ConsumerPublicKey: &crypto.PublicKey{},
+	}
+
+	validatorC := types.ConsumerValidator{
+		ProviderConsAddr:  []byte("providerConsAddrC"),
+		Power:             3,
+		ConsumerPublicKey: &crypto.PublicKey{},
+	}
+
+	validatorD := types.ConsumerValidator{
+		ProviderConsAddr:  []byte("providerConsAddrD"),
+		Power:             4,
+		ConsumerPublicKey: &crypto.PublicKey{},
+	}
+
+	validators := []types.ConsumerValidator{validatorA, validatorB, validatorC, validatorD}
+
+	expectedValidators := make([]types.ConsumerValidator, len(validators))
+	copy(expectedValidators, validators)
+	expectedValidators[0].Power = 2
+	expectedValidators[1].Power = 2
+	expectedValidators[2].Power = 3
+	expectedValidators[3].Power = 3
+
+	sortValidators := func(validators []types.ConsumerValidator) {
+		sort.Slice(validators, func(i, j int) bool {
+			return bytes.Compare(validators[i].ProviderConsAddr, validators[j].ProviderConsAddr) < 0
+		})
+	}
+
+	// no capping takes place because validators power-cap is not set
+	cappedValidators := providerKeeper.CapValidatorsPower(ctx, "chainID", validators)
+	sortValidators(validators)
+	sortValidators(cappedValidators)
+	require.Equal(t, validators, cappedValidators)
+
+	providerKeeper.SetValidatorsPowersCap(ctx, "chainID", 33)
+	cappedValidators = providerKeeper.CapValidatorsPower(ctx, "chainID", validators)
+	sortValidators(expectedValidators)
+	sortValidators(cappedValidators)
+	require.Equal(t, expectedValidators, cappedValidators)
+}
+
+func TestNoMoreThanPercentOfTheSum(t *testing.T) {
+	// returns `true` if no validator in `validators` corresponds to more than `percent` of the total sum of all
+	// validators' powers
+	noMoreThanPercent := func(validators []types.ConsumerValidator, percent uint32) bool {
+		sum := int64(0)
+		for _, v := range validators {
+			sum = sum + v.Power
+		}
+
+		for _, v := range validators {
+			if (float64(v.Power)/float64(sum))*100.0 > float64(percent) {
+				return false
+			}
+		}
+		return true
+	}
+
+	createConsumerValidators := func(powers []int64) []types.ConsumerValidator {
+		var validators []types.ConsumerValidator
+		for _, p := range powers {
+			validators = append(validators, types.ConsumerValidator{
+				ProviderConsAddr:  []byte("providerConsAddr"),
+				Power:             p,
+				ConsumerPublicKey: &crypto.PublicKey{},
+			})
+		}
+		return validators
+	}
+
+	// **impossible** case where we only have 9 powers, and we want that no number has more than 10% of the total sum
+	powers := []int64{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	percent := uint32(10)
+	require.False(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
+
+	powers = []int64{1, 2, 3, 4, 5}
+	percent = 20
+	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
+
+	powers = []int64{1, 2, 3, 4, 5}
+	percent = 21
+	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
+
+	powers = []int64{1, 2, 3, 4, 5}
+	percent = 25
+	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
+
+	powers = []int64{1, 2, 3, 4, 5}
+	percent = 32
+	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
+
+	powers = []int64{1, 2, 3, 4, 5}
+	percent = 33
+	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
+
+	powers = []int64{1, 2, 3, 4, 5}
+	percent = 34
+	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
+
+	powers = []int64{1, 2, 3, 4, 5}
+	percent = 50
+	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
 }

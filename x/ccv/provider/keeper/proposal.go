@@ -79,6 +79,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	if err != nil {
 		return err
 	}
+
 	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
 	if err != nil {
 		return err
@@ -295,10 +296,25 @@ func (k Keeper) MakeConsumerGenesis(
 		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 	}
 
-	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators,
-		func(validator stakingtypes.Validator) bool {
-			return k.ShouldConsiderOnlyOptIn(ctx, chainID, validator)
+	nextValidators := k.FilterValidators(ctx, chainID, bondedValidators,
+		func(providerAddr types.ProviderConsAddress) bool {
+			// only consider opted-in validators
+			return k.IsOptedIn(ctx, chainID, providerAddr) &&
+				// if an allowlist is declared, only consider allowlisted validators
+				(k.IsAllowlistEmpty(ctx, chainID) ||
+					k.IsAllowlisted(ctx, chainID, providerAddr)) &&
+				// if a denylist is declared, only consider denylisted validators
+				(k.IsDenylistEmpty(ctx, chainID) ||
+					!k.IsDenylisted(ctx, chainID, providerAddr))
 		})
+
+	// TODO: fixme .. use the cached ... no???
+	if prop.Top_N > 0 {
+		nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
+	}
+
+	nextValidators = k.CapValidatorsPower(ctx, chainID, nextValidators)
+
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
@@ -383,24 +399,48 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
-		if prop.Top_N == 0 && len(k.GetAllOptedIn(ctx, prop.ChainId)) == 0 {
+		// create consumer client in a cached context to handle errors
+		cachedCtx, writeFn := ctx.CacheContext()
+
+		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
+		k.SetValidatorSetCap(ctx, prop.ChainId, prop.ValidatorSetCap)
+		k.SetValidatorsPowersCap(ctx, prop.ChainId, prop.ValidatorsPowerCap)
+
+		for _, address := range prop.Allowlist {
+			consAddr, err := sdk.ConsAddressFromBech32(address)
+			if err != nil {
+				continue
+			}
+
+			k.SetAllowlist(ctx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+		}
+
+		for _, address := range prop.Denylist {
+			consAddr, err := sdk.ConsAddressFromBech32(address)
+			if err != nil {
+				continue
+			}
+
+			k.SetDenylist(ctx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+		}
+
+		err := k.CreateConsumerClient(cachedCtx, &prop)
+
+		consumerGenesis, _ := k.GetConsumerGenesis(cachedCtx, prop.ChainId)
+		providerInfo := consumerGenesis.GetProvider()
+
+		if len(providerInfo.GetInitialValSet()) == 0 {
 			// drop the proposal
-			ctx.Logger().Info("consumer client could not be created because no validator has"+
-				" opted in for the Opt-In chain: %s", prop.ChainId)
+			ctx.Logger().Info("consumer client could not be created because no validator exists in the"+
+				"initial validator set for chain: %s", prop.ChainId)
 			continue
 		}
 
-		// create consumer client in a cached context to handle errors
-		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created: %w", err)
 			continue
 		}
-
-		// Only set Top N at the moment a chain starts. If we were to do this earlier (e.g., during the proposal),
-		// then someone could create a bogus ConsumerAdditionProposal to override the Top N for a specific chain.
-		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context

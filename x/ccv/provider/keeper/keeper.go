@@ -1303,3 +1303,143 @@ func (k Keeper) DeleteConsumerCommissionRate(
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerCommissionRateKey(chainID, providerAddr))
 }
+
+// SetValidatorsPowersCap sets the power-cap value `p` associated to chain with `chainID`
+func (k Keeper) SetValidatorsPowersCap(
+	ctx sdk.Context,
+	chainID string,
+	p uint32,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, p)
+
+	store.Set(types.ValidatorsPowerCapKey(chainID), buf)
+}
+
+// DeleteValidatorsPowerCap removes the power-cap value associated to chain with `chainID`
+func (k Keeper) DeleteValidatorsPowerCap(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ValidatorsPowerCapKey(chainID))
+}
+
+// GetValidatorsPowerCap returns `(p, true)` if chain `chainID` has power cap `p` associated with it, and (0, false) otherwise
+func (k Keeper) GetValidatorsPowerCap(
+	ctx sdk.Context,
+	chainID string,
+) (uint32, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.ValidatorsPowerCapKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint32(buf), true
+}
+
+// SetValidatorSetCap stores the validator-set cap value `c` associated to chain with `chainID`
+func (k Keeper) SetValidatorSetCap(
+	ctx sdk.Context,
+	chainID string,
+	c uint32,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, c)
+
+	store.Set(types.ValidatorSetCapKey(chainID), buf)
+}
+
+// DeleteValidatorSetCap removes the validator-set cap value associated to chain with `chainID`
+func (k Keeper) DeleteValidatorSetCap(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ValidatorSetCapKey(chainID))
+}
+
+// GetValidatorSetCap returns `(c, true)` if chain `chainID` has validator-set cap `c` associated with it, and (0, false) otherwise
+func (k Keeper) GetValidatorSetCap(
+	ctx sdk.Context,
+	chainID string,
+) (uint32, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.ValidatorSetCapKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint32(buf), true
+}
+
+// SetDenylist denylists validator with `providerAddr` address on chain `chainID`
+func (k Keeper) SetDenylist(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.DenylistCapKey(chainID, providerAddr), []byte{})
+}
+
+// IsDenylisted returns `true` if validator with `providerAddr` has been denylisted on chain `chainID`
+func (k Keeper) IsDenylisted(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.DenylistCapKey(chainID, providerAddr))
+	return bz != nil
+}
+
+// SetAllowlist allowlists validator with `providerAddr` address on chain `chainID`
+func (k Keeper) SetAllowlist(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.AllowlistCapKey(chainID, providerAddr), []byte{})
+}
+
+// IsAllowlisted returns `true` if validator with `providerAddr` has been allowlisted on chain `chainID`
+func (k Keeper) IsAllowlisted(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.AllowlistCapKey(chainID, providerAddr))
+	return bz != nil
+}
+
+// IsAllowlistEmpty returns `true` if no validator is allowlisted on chain `chainID`
+func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, chainID string) bool {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
+	defer iterator.Close()
+
+	if iterator.Valid() {
+		return false
+	}
+
+	return true
+}
+
+// IsDenylistEmpty returns `true` if no validator is allowlisted on chain `chainID`
+func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
+	defer iterator.Close()
+
+	if iterator.Valid() {
+		return false
+	}
+
+	return true
+}

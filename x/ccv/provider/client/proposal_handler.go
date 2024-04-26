@@ -65,7 +65,11 @@ Where proposal.json contains:
     "ccv_timeout_period": 2419200000000000,
     "unbonding_period": 1728000000000000,
     "deposit": "10000stake",
-	"top_n": 0,
+    "top_n": 0,
+    "validators_power_cap": 32,
+    "validator_set_cap": 50,
+    "allowlist": [],
+    "denylist": ["validatorAConsensusAddress", "validatorBConsensusAddress"]
 }
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -87,7 +91,8 @@ Where proposal.json contains:
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
 				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission,
 				proposal.DistributionTransmissionChannel, proposal.HistoricalEntries,
-				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod, proposal.TopN)
+				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod, proposal.TopN,
+				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist)
 
 			from := clientCtx.GetFromAddress()
 
@@ -242,7 +247,12 @@ type ConsumerAdditionProposalJSON struct {
 	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
 
 	Deposit string `json:"deposit"`
-	TopN    uint32 `json:"top_N"`
+
+	TopN               uint32   `json:"top_N"`
+	ValidatorsPowerCap uint32   `json:"validators_power_cap"`
+	ValidatorSetCap    uint32   `json:"validator_set_cap"`
+	Allowlist          []string `json:"allowlist"`
+	Denylist           []string `json:"denylist"`
 }
 
 type ConsumerAdditionProposalReq struct {

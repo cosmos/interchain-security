@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"bytes"
 	"encoding/json"
+	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	"sort"
 	"testing"
 	"time"
@@ -65,6 +66,10 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				0,
+				0,
+				0,
+				nil,
+				nil,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -91,6 +96,10 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				0,
+				0,
+				0,
+				nil,
+				nil,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -927,6 +936,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -939,6 +952,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time not passed", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -951,6 +968,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "invalid proposal: chain id already exists", "chain2", clienttypes.NewHeight(4, 5), []byte{}, []byte{},
@@ -963,6 +984,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "opt-in chain with no validator opted in", "chain4", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -975,6 +1000,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			0,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "opt-in chain with at least one validator opted in", "chain5", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -987,6 +1016,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			0,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 	}
 
@@ -995,6 +1028,11 @@ func TestBeginBlockInit(t *testing.T) {
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain5", clienttypes.NewHeight(3, 4))...)
 
+	// consider at least one validator
+	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
+	mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(validator, true).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(123)).AnyTimes()
+
 	gomock.InOrder(expectedCalls...)
 
 	for _, prop := range pendingProps {
@@ -1002,7 +1040,8 @@ func TestBeginBlockInit(t *testing.T) {
 	}
 
 	// opt in a sample validator so the chain's proposal can successfully execute
-	providerKeeper.SetOptedIn(ctx, pendingProps[5].ChainId, providertypes.NewProviderConsAddress([]byte("providerAddr")))
+	consAddr, _ := validator.GetConsAddr()
+	providerKeeper.SetOptedIn(ctx, pendingProps[5].ChainId, providertypes.NewProviderConsAddress(consAddr))
 	providerKeeper.BeginBlockInit(ctx)
 
 	// first proposal is not pending anymore because its spawn time already passed and was executed
