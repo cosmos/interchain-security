@@ -87,14 +87,14 @@ func (td *DefaultDriver) getTargetDriver(chainID ChainID) Chain {
 		if td.verbose {
 			fmt.Println("Using 'v4' driver for chain ", chainID)
 		}
-		target.target = v4.DriverV4{
+		target.target = v4.Commands{
 			ContainerConfig:  td.testCfg.containerConfig,
 			ValidatorConfigs: td.testCfg.validatorConfigs,
 			ChainConfigs:     td.testCfg.chainConfigs,
 			Target:           td.target,
 		}
 	default:
-		target.target = DriverV5{
+		target.target = Commands{
 			containerConfig:  td.testCfg.containerConfig,
 			validatorConfigs: td.testCfg.validatorConfigs,
 			chainConfigs:     td.testCfg.chainConfigs,

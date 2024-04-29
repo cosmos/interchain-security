@@ -40,26 +40,26 @@ type (
 
 type State map[ChainID]ChainState
 
-type DriverV4 struct {
+type Commands struct {
 	ContainerConfig  ContainerConfig // FIXME only needed for 'Now' time tracking
 	ValidatorConfigs map[ValidatorID]ValidatorConfig
 	ChainConfigs     map[ChainID]ChainConfig
 	Target           e2e.PlatformDriver
 }
 
-func (tr DriverV4) ExecCommand(name string, arg ...string) *exec.Cmd {
+func (tr Commands) ExecCommand(name string, arg ...string) *exec.Cmd {
 	return tr.Target.ExecCommand(name, arg...)
 }
 
-func (tr DriverV4) ExecDetachedCommand(name string, args ...string) *exec.Cmd {
+func (tr Commands) ExecDetachedCommand(name string, args ...string) *exec.Cmd {
 	return tr.Target.ExecDetachedCommand(name, args...)
 }
 
-func (tr DriverV4) GetTestScriptPath(isConsumer bool, script string) string {
+func (tr Commands) GetTestScriptPath(isConsumer bool, script string) string {
 	return tr.Target.GetTestScriptPath(isConsumer, script)
 }
 
-func (tr DriverV4) GetBlockHeight(chain ChainID) uint {
+func (tr Commands) GetBlockHeight(chain ChainID) uint {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 
@@ -80,7 +80,7 @@ func (tr DriverV4) GetBlockHeight(chain ChainID) uint {
 	return uint(blockHeight)
 }
 
-func (tr DriverV4) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
+func (tr Commands) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
 	start := time.Now()
 	for {
 		thisBlock := tr.GetBlockHeight(chain)
@@ -107,7 +107,7 @@ type TmValidatorSetYaml struct {
 	}
 }
 
-func (tr DriverV4) GetValPower(chain ChainID, validator ValidatorID) uint {
+func (tr Commands) GetValPower(chain ChainID, validator ValidatorID) uint {
 	/* 	if *verbose {
 	   		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
 	   	}
@@ -167,7 +167,7 @@ func (tr DriverV4) GetValPower(chain ChainID, validator ValidatorID) uint {
 	return 0
 }
 
-func (tr DriverV4) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
+func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
 	valCfg := tr.ValidatorConfigs[validator]
 	delAddresss := valCfg.DelAddress
 	if chain != ChainID("provi") {
@@ -202,7 +202,7 @@ func (tr DriverV4) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 	return gjson.Get(string(bz), denomCondition).Float()
 }
 
-func (tr DriverV4) GetBalance(chain ChainID, validator ValidatorID) uint {
+func (tr Commands) GetBalance(chain ChainID, validator ValidatorID) uint {
 	valCfg := tr.ValidatorConfigs[validator]
 	valDelAddress := valCfg.DelAddress
 	if chain != ChainID("provi") {
@@ -235,7 +235,7 @@ func (tr DriverV4) GetBalance(chain ChainID, validator ValidatorID) uint {
 }
 
 // interchain-securityd query gov proposals
-func (tr DriverV4) GetProposal(chain ChainID, proposal uint) Proposal {
+func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.ChainConfigs[chain].BinaryName
@@ -348,7 +348,7 @@ func (tr DriverV4) GetProposal(chain ChainID, proposal uint) Proposal {
 	return nil
 }
 
-func (tr DriverV4) GetValStakedTokens(chain ChainID, valoperAddress string) uint {
+func (tr Commands) GetValStakedTokens(chain ChainID, valoperAddress string) uint {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 
@@ -367,7 +367,7 @@ func (tr DriverV4) GetValStakedTokens(chain ChainID, valoperAddress string) uint
 	return uint(amount.Uint())
 }
 
-func (tr DriverV4) GetParam(chain ChainID, param Param) string {
+func (tr Commands) GetParam(chain ChainID, param Param) string {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 		"query", "params", "subspace",
@@ -388,7 +388,7 @@ func (tr DriverV4) GetParam(chain ChainID, param Param) string {
 
 // GetConsumerChains returns a list of consumer chains that're being secured by the provider chain,
 // determined by querying the provider chain.
-func (tr DriverV4) GetConsumerChains(chain ChainID) map[ChainID]bool {
+func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 
@@ -411,7 +411,7 @@ func (tr DriverV4) GetConsumerChains(chain ChainID) map[ChainID]bool {
 
 	return chains
 }
-func (tr DriverV4) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
+func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 
@@ -429,7 +429,7 @@ func (tr DriverV4) GetConsumerAddress(consumerChain ChainID, validator Validator
 	return addr
 }
 
-func (tr DriverV4) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
+func (tr Commands) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 
@@ -449,7 +449,7 @@ func (tr DriverV4) GetProviderAddressFromConsumer(consumerChain ChainID, validat
 	return addr
 }
 
-func (tr DriverV4) GetSlashMeter() int64 {
+func (tr Commands) GetSlashMeter() int64 {
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 
@@ -466,7 +466,7 @@ func (tr DriverV4) GetSlashMeter() int64 {
 	return slashMeter.Int()
 }
 
-func (tr DriverV4) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
+func (tr Commands) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 		"query", "provider", "registered-consumer-reward-denoms",
@@ -487,7 +487,7 @@ func (tr DriverV4) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
 	return rewardDenoms
 }
 
-func (tr DriverV4) GetPendingPacketQueueSize(chain ChainID) uint {
+func (tr Commands) GetPendingPacketQueueSize(chain ChainID) uint {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 		"query", "ccvconsumer", "throttle-state",
@@ -507,23 +507,23 @@ func (tr DriverV4) GetPendingPacketQueueSize(chain ChainID) uint {
 	return uint(len(packetData))
 }
 
-func (tr DriverV4) GetValidatorIP(chain ChainID, validator ValidatorID) string {
+func (tr Commands) GetValidatorIP(chain ChainID, validator ValidatorID) string {
 	return tr.ChainConfigs[chain].IpPrefix + "." + tr.ValidatorConfigs[validator].IpSuffix
 }
 
 // getQueryNode returns query node tcp address on chain.
-func (tr DriverV4) GetQueryNode(chain ChainID) string {
+func (tr Commands) GetQueryNode(chain ChainID) string {
 	return fmt.Sprintf("tcp://%s", tr.GetQueryNodeRPCAddress(chain))
 }
 
-func (tr DriverV4) GetQueryNodeRPCAddress(chain ChainID) string {
+func (tr Commands) GetQueryNodeRPCAddress(chain ChainID) string {
 	return fmt.Sprintf("%s:26658", tr.GetQueryNodeIP(chain))
 }
 
 // getQueryNodeIP returns query node IP for chain,
 // ipSuffix is hardcoded to be 253 on all query nodes
 // except for "sover" chain where there's only one node
-func (tr DriverV4) GetQueryNodeIP(chain ChainID) string {
+func (tr Commands) GetQueryNodeIP(chain ChainID) string {
 	if chain == ChainID("sover") {
 		// return address of first and only validator
 		return fmt.Sprintf("%s.%s",
@@ -533,7 +533,7 @@ func (tr DriverV4) GetQueryNodeIP(chain ChainID) string {
 	return fmt.Sprintf("%s.253", tr.ChainConfigs[chain].IpPrefix)
 }
 
-func (tr DriverV4) curlJsonRPCRequest(method, params, address string) {
+func (tr Commands) curlJsonRPCRequest(method, params, address string) {
 	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
 	cmd := tr.Target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
@@ -543,7 +543,7 @@ func (tr DriverV4) curlJsonRPCRequest(method, params, address string) {
 
 // GetClientFrozenHeight returns the frozen height for a client with the given client ID
 // by querying the hosting chain with the given chainID
-func (tr DriverV4) GetClientFrozenHeight(chain ChainID, clientID string) (uint64, uint64) {
+func (tr Commands) GetClientFrozenHeight(chain ChainID, clientID string) (uint64, uint64) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
@@ -573,7 +573,7 @@ func (tr DriverV4) GetClientFrozenHeight(chain ChainID, clientID string) (uint64
 	return uint64(revHeight), uint64(revNumber)
 }
 
-func (tr DriverV4) GetTrustedHeight(
+func (tr Commands) GetTrustedHeight(
 	chain ChainID,
 	clientID string,
 	index int,
@@ -621,7 +621,7 @@ func (tr DriverV4) GetTrustedHeight(
 	return uint64(revHeight), uint64(revNumber)
 }
 
-func (tr DriverV4) GetProposedConsumerChains(chain ChainID) []string {
+func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
@@ -645,7 +645,7 @@ func (tr DriverV4) GetProposedConsumerChains(chain ChainID) []string {
 }
 
 // Breaking forward compatibility
-func (tr DriverV4) GetIBCTransferParams(chain ChainID) IBCTransferParams {
+func (tr Commands) GetIBCTransferParams(chain ChainID) IBCTransferParams {
 	panic("'GetIBCTransferParams' is not implemented in this version")
 }
 
