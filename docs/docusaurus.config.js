@@ -106,7 +106,7 @@ const config = {
             dropdownActiveClassDisabled: false,
             dropdownItemsAfter: [
               {
-                href: "http://localhost/interchain-security/legacy/",
+                href: "https://cosmos.github.io/interchain-security/legacy",
                 label: "<= v3.x",
                 target: "_blank",
               },
