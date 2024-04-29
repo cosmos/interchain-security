@@ -752,7 +752,8 @@ module ccv_model {
     action nondetKeyAssignment = 
         all {
             runningConsumers.size() > 0,
-            nondet node = oneOf(nodes)
+            nonJailedNodes(currentState.providerState).size() > 0,
+            nondet node = oneOf(nonJailedNodes(currentState.providerState))
             nondet consumerAddr = oneOf(consumerAddresses)
             nondet consumer = oneOf(runningConsumers)
             KeyAssignment(consumer, node, consumerAddr),
