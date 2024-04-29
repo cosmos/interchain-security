@@ -765,7 +765,7 @@ func stepsTopNChain() []Step {
 				},
 				ChainID("provi"): ChainState{
 					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {}, // alice has opted out and the epoch is over, so definitely doesnt have to validate anymore
+						ValidatorID("alice"): {}, // alice has opted out and the epoch is over, so definitely does not have to validate anymore
 						ValidatorID("bob"):   {"consu"},
 						ValidatorID("carol"): {"consu"},
 					},

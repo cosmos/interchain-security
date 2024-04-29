@@ -1259,10 +1259,10 @@ func (k Keeper) HasToValidate(
 
 	minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-	if power > minPowerToOptIn {
-		return true, nil
+	if power < minPowerToOptIn {
+		return false, nil
 	}
-	return false, nil
+	return true, nil
 }
 
 // SetConsumerCommissionRate sets a per-consumer chain commission rate
