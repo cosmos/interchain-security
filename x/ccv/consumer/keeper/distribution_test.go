@@ -110,3 +110,20 @@ func TestSetConsumerRewardsAllocation(t *testing.T) {
 	alloc := providerKeeper.GetConsumerRewardsAllocation(ctx, "consumer-1")
 	require.Equal(t, rewardAllocation, alloc)
 }
+
+func TestGetConsumerRewardsAllocationNil(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	ctx := keeperParams.Ctx
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mocks := testkeeper.NewMockedKeepers(ctrl)
+	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+
+	alloc := providerKeeper.GetConsumerRewardsAllocation(ctx, "consumer-1")
+
+	expectedRewardAllocation := providertypes.ConsumerRewardsAllocation{
+		Rewards: nil,
+	}
+	require.Equal(t, expectedRewardAllocation, alloc)
+}
