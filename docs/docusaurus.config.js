@@ -52,6 +52,7 @@ const config = {
             },
             "v4.1.0": {
               path: "/v4.1.0/",
+              banner: "none",
             },
             "v5.0.0-rc0": {
               banner: "unreleased",
