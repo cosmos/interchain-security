@@ -139,10 +139,6 @@ func RunItfTrace(t *testing.T, path string) {
 	// sort the keys
 	sort.Strings(consumerPrivValKeys)
 
-	// consumerAddrNames are the human readable names of consumer addresses in the model
-	// "realAddrs" are the addresses of the consumer keys on chain
-	// these maps relate the consumerAddrNames to the priv validators (from which one can get the real address)
-	// and from the real addresses to the consumerAddrNames to allow converting between the two easily
 	consumerAddrNamesToVals := make(map[string]*cmttypes.Validator, len(consumerAddressesExpr))
 	consumerAddrNamesToPrivVals := make(map[string]cmttypes.PrivValidator, len(consumerAddressesExpr))
 	realAddrsToModelConsAddrs := make(map[string]string, len(consumerAddressesExpr))
@@ -241,6 +237,8 @@ func RunItfTrace(t *testing.T, path string) {
 	t.Log("Reading the trace...")
 
 	for index, state := range trace.States {
+		t.Log("Height modulo epoch length:", driver.providerChain().CurrentHeader.Height%blocksPerEpoch)
+		t.Log("Model height modulo epoch length:", ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch)
 		t.Logf("Reading state %v of trace %v", index, path)
 
 		// store the height of the provider state before each step.
@@ -341,17 +339,14 @@ func RunItfTrace(t *testing.T, path string) {
 			driver.coordinator.CurrentTime = driver.runningTime("provider")
 			// start consumers
 			for _, consumer := range consumersToStart {
-				chainId := consumer.Value.(itf.MapExprType)["chain"].Value.(string)
-				topN := consumer.Value.(itf.MapExprType)["topN"].Value.(int64)
 				driver.setupConsumer(
-					chainId,
+					consumer.Value.(string),
 					modelParams,
 					driver.providerChain().Vals,
 					consumerSigners,
 					nodes,
 					valNames,
 					driver.providerChain(),
-					topN,
 				)
 			}
 
@@ -370,8 +365,7 @@ func RunItfTrace(t *testing.T, path string) {
 			// unless it was the last consumer to be started, in which case it already has the header
 			// as we called driver.setupConsumer
 			for _, consumer := range driver.runningConsumers() {
-				if len(consumersToStart) > 0 &&
-					consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(itf.MapExprType)["chain"].Value.(string) {
+				if len(consumersToStart) > 0 && consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(string) {
 					continue
 				}
 
@@ -448,31 +442,6 @@ func RunItfTrace(t *testing.T, path string) {
 
 			err = driver.AssignKey(ChainId(consumerChain), int64(valIndex), protoPubKey)
 			require.NoError(t, err, "Error assigning key")
-		case "OptIn":
-			consumerChain := lastAction["consumerChain"].Value.(string)
-			validator := lastAction["validator"].Value.(string)
-			t.Log("OptIn", consumerChain, validator)
-
-			valIndex := getIndexOfString(validator, valNames)
-
-			err := driver.OptIn(ChainId(consumerChain), int64(valIndex))
-			require.NoError(t, err, "Error opting in")
-
-		case "OptOut":
-			consumerChain := lastAction["consumerChain"].Value.(string)
-			validator := lastAction["validator"].Value.(string)
-			expectedError := lastAction["expectedError"].Value.(string)
-			t.Log("OptOut", consumerChain, validator, expectedError)
-
-			valIndex := getIndexOfString(validator, valNames)
-
-			err := driver.OptOut(ChainId(consumerChain), int64(valIndex))
-
-			if expectedError != "" {
-				require.Error(t, err, "Expected an error: %v", expectedError)
-			} else {
-				require.NoError(t, err, "Error opting out, but expected no error")
-			}
 		case "ConsumerInitiatedSlash":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			validatorName := lastAction["validator"].Value.(string)
@@ -517,6 +486,9 @@ func RunItfTrace(t *testing.T, path string) {
 			t.Logf("Current actual state: %s", driver.getStateString())
 		}
 
+		// check that the actual state is the same as the model state
+		t.Logf("Comparing model state to actual state...")
+
 		// compare the running consumers
 		modelRunningConsumers := RunningConsumers(currentModelState)
 
@@ -544,7 +516,7 @@ func RunItfTrace(t *testing.T, path string) {
 
 		// check sent packets: we check that the package queues in the model and the system have the same length.
 		for _, consumer := range actualRunningConsumers {
-			ComparePacketQueues(t, driver, currentModelState, consumer, timeOffset, realAddrsToModelConsAddrs)
+			ComparePacketQueues(t, driver, currentModelState, consumer, timeOffset)
 		}
 		// compare that the sent packets on the proider match the model
 		CompareSentPacketsOnProvider(driver, currentModelState, timeOffset)
@@ -606,6 +578,8 @@ func RunItfTrace(t *testing.T, path string) {
 			// we changed epoch during this step, so ensure that the model also changed epochs
 			require.True(t, ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch == 0, "Height in model did not change epoch, but did in system. increase blocksPerEpoch in the system")
 		}
+
+		t.Logf("State %v of trace %v is ok!", index, path)
 	}
 	t.Log("🟢 Trace is ok!")
 }
@@ -630,7 +604,7 @@ func CompareValidatorSets(
 	driver *Driver,
 	currentModelState map[string]itf.Expr,
 	consumers []string,
-	// a map from real addresses to the names of those consensus addresses in the model
+	// a map from real addresses to the names of those consumer addresses in the model
 	keyAddrsToModelConsAddrName map[string]string,
 ) {
 	t.Helper()
@@ -644,9 +618,6 @@ func CompareValidatorSets(
 		valName := val.Description.Moniker
 		actualValSet[valName] = val.Tokens.Int64()
 	}
-
-	fmt.Println("Model validator set:", modelValSet)
-	fmt.Println("Actual validator set:", actualValSet)
 
 	require.NoError(t, CompareValSet(modelValSet, actualValSet), "Validator sets do not match")
 
@@ -696,7 +667,6 @@ func ComparePacketQueues(
 	currentModelState map[string]itf.Expr,
 	consumer string,
 	timeOffset time.Time,
-	realConsAddrToModelValName map[string]string,
 ) {
 	t.Helper()
 	ComparePacketQueue(t, driver, currentModelState, PROVIDER, consumer, timeOffset)
@@ -743,44 +713,6 @@ func ComparePacketQueue(
 			actualPacket,
 			sender,
 			receiver)
-
-		// reconstruct a VSCPacket from the actual packet
-		var actualPacketData types.ValidatorSetChangePacketData
-		err := types.ModuleCdc.UnmarshalJSON(actualPacket.Packet.GetData(), &actualPacketData)
-		require.NoError(t, err, "Error unmarshalling packet data")
-
-		modelPacketValSet := modelPacket["validatorSet"].Value.(itf.MapExprType)
-
-		// check that for all validators in the actual packets validator updates,
-		// the model has the same power for the validator
-		// note: we cannot check equivalence, because the system sends only changes,
-		// whereas the model sends the full set.
-		for _, valUpdate := range actualPacketData.ValidatorUpdates {
-			// get the name of the validator in the valUpdate
-			valPubKey := valUpdate.PubKey
-			consAddr, err := types.TMCryptoPublicKeyToConsAddr(valPubKey)
-
-			require.NoError(t, err, "Error getting consensus address from pubkey")
-
-			// get the name of the validator in the model
-			val, found := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), consAddr)
-			require.True(t, found, "Error getting validator by consensus address")
-
-			modelValName := val.Description.Moniker
-
-			// get the power of the validator in the model
-			modelPower := modelPacketValSet[modelValName].Value.(int64)
-
-			// compare the power of the validator in the model to the power of the validator in the actual packet
-			require.Equal(t,
-				modelPower,
-				valUpdate.Power,
-				"Validator powers do not match for validator %v in packet %v, sender %v, receiver %v",
-				modelValName,
-				actualPacket,
-				sender,
-				receiver)
-		}
 	}
 }
 

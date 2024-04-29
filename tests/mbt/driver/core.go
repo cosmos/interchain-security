@@ -391,40 +391,12 @@ func (s *Driver) setTime(chain ChainId, newTime time.Time) {
 	testChain.App.BeginBlock(abcitypes.RequestBeginBlock{Header: testChain.CurrentHeader})
 }
 
-func (s *Driver) AssignKey(chain ChainId, valIndex int64, key crypto.PublicKey) error {
+func (s *Driver) AssignKey(chain ChainId, valIndex int64, value crypto.PublicKey) error {
 	stakingVal, found := s.stakingValidator(valIndex)
 	if !found {
 		return fmt.Errorf("validator with id %v not found on provider", valIndex)
 	}
-	return s.providerKeeper().AssignConsumerKey(s.providerCtx(), string(chain), stakingVal, key)
-}
-
-// Opts the given validator into the given consumer chain on the provider.
-func (s *Driver) OptIn(chain ChainId, valIndex int64) error {
-	stakingVal, found := s.stakingValidator(valIndex)
-	if !found {
-		return fmt.Errorf("validator with id %v not found on provider", valIndex)
-	}
-	consPubKey, err := stakingVal.ConsPubKey()
-	if err != nil {
-		return err
-	}
-	consAddr := sdk.GetConsAddress(consPubKey)
-	return s.providerKeeper().HandleOptIn(s.providerCtx(), string(chain), providertypes.NewProviderConsAddress(consAddr), nil)
-}
-
-// Opts the given validator out of the given consumer chain on the provider.
-func (s *Driver) OptOut(chain ChainId, valIndex int64) error {
-	stakingVal, found := s.stakingValidator(valIndex)
-	if !found {
-		return fmt.Errorf("validator with id %v not found on provider", valIndex)
-	}
-	consPubKey, err := stakingVal.ConsPubKey()
-	if err != nil {
-		return err
-	}
-	consAddr := sdk.GetConsAddress(consPubKey)
-	return s.providerKeeper().HandleOptOut(s.providerCtx(), string(chain), providertypes.NewProviderConsAddress(consAddr))
+	return s.providerKeeper().AssignConsumerKey(s.providerCtx(), string(chain), stakingVal, value)
 }
 
 // DeliverPacketToConsumer delivers a packet from the provider to the given consumer recipient.

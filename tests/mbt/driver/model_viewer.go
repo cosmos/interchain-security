@@ -117,12 +117,3 @@ func ProviderJailedValidators(curStateExpr itf.MapExprType) ([]string, []int64) 
 	}
 	return jailedValidators, jailEndTimes
 }
-
-func OptedInVals(curStateExpr itf.MapExprType, consumer string) []string {
-	optedInValExpr := ProviderState(curStateExpr)["optedInVals"].Value.(itf.MapExprType)[consumer].Value.(itf.ListExprType)
-	optedInVals := make([]string, len(optedInValExpr))
-	for i, valExpr := range optedInValExpr {
-		optedInVals[i] = valExpr.Value.(string)
-	}
-	return optedInVals
-}

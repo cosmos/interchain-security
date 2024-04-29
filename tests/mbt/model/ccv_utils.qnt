@@ -142,33 +142,26 @@ module ccv_utils {
         }
 
     pure def StartStopConsumers(
-        currentProviderState: ProviderState,
-        consumersToStart: Set[ConsumerAdditionMsg],
+        currentConsumerStatusMap: Chain -> str,
+        consumersToStart: Set[Chain],
         consumersToStop: Set[Chain],
         consumersToTimeout: Set[Chain]
-    ): (ProviderState, str) = {
-        val consumerAdditions = consumersToStart.map(
-                msg => msg.chain
-        )
+    ): (Chain -> str, str) = {
         // check if any consumer is both started and stopped
-        if (consumerAdditions.intersect(consumersToStop).size() > 0) {
-            (currentProviderState, "Cannot start and stop a consumer at the same time")
+        if (consumersToStart.intersect(consumersToStop).size() > 0) {
+            (currentConsumerStatusMap, "Cannot start and stop a consumer at the same time")
         } else {
-            val res1 = currentProviderState.consumerStatus.startConsumers(consumerAdditions)
+            val res1 = currentConsumerStatusMap.startConsumers(consumersToStart)
             val newConsumerStatus = res1._1
             val err1 = res1._2
             val res2 = newConsumerStatus.stopConsumers(consumersToStop, consumersToTimeout)
             val err2 = res2._2
-            // set the top N values in the provider correctly
-
             if (err1 != "") {
-                (currentProviderState, err1)
+                (currentConsumerStatusMap, err1)
             } else if (err2 != "") {
-                (currentProviderState, err2)
+                (currentConsumerStatusMap, err2)
             } else {
-                (currentProviderState
-                    .with("consumerStatus", res2._1)
-                    .SetTopNValues(consumersToStart), "")
+                (res2._1, "")
             }
         }
     }
@@ -227,8 +220,7 @@ module ccv_utils {
             (consumer) => 
             // if validator set changed or the key assignments for this chain changed, and the consumer is running, send a packet
             if ((providerState.consumersWithPowerChangesInThisEpoch.contains(consumer) or 
-                providerState.consumersWithAddrAssignmentChangesInThisEpoch.contains(consumer)
-                or providerState.downtimeSlashRequests.getOrElse(consumer, []) != [])
+                providerState.consumersWithAddrAssignmentChangesInThisEpoch.contains(consumer))
                 and 
                 isRunningConsumer(consumer, providerState)) {
                     // send a packet, i.e. use a list with one element (the packet to be sent)
@@ -429,29 +421,6 @@ module ccv_utils {
             }
         }
 
-    // Sets the top N values on the provider chain for the given consumer chains,
-    // taken as consumerAdditionMsgs = chains with the top N values.
-    // If a chain in the set is already present, the old value will be overwritten.
-    pure def SetTopNValues(providerState: ProviderState, consumers: Set[ConsumerAdditionMsg]): ProviderState =
-        providerState.with(
-            "topNByConsumer",
-            consumers.fold(
-                providerState.topNByConsumer,
-                (acc, consumer) => acc.put(consumer.chain, consumer.topN)
-            )
-        ) 
-
-    // From a validator set, removes all validators with zero power.
-    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
-        valSet.keys().fold(
-            Map(),
-            (acc, node) => 
-                if (valSet.get(node) == 0) {
-                    acc
-                } else {
-                    acc.put(node, valSet.get(node))
-                }
-        )
     // Transforms a list of VscPackets into a list of the generic
     // "packet" type.
     pure def VscPacketListToPacketList(original: List[VscPacket]): List[Packet] =

@@ -5,7 +5,6 @@ module ccv_boundeddrift {
     import ccv from "ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
-    import ccv_pss_model.* from "ccv_pss_model"
 
 
     // The boundeddrift module has its own step function.
@@ -61,41 +60,8 @@ module ccv_boundeddrift {
         stepCommon, // allow actions that do not influence time
 
         // advance a block for a consumer
-        stepBoundedDriftConsumer,
-        
-        // advance a block for the provider
-        stepBoundedDriftProvider
-    }
-
-    action stepBoundedDriftProvider: bool = {
-        stepBoundedDriftProvider_helper(allFullConsumers)
-    }
-
-    action stepBoundedDriftProviderPSS: bool = {
-        stepBoundedDriftProvider_helper(variousPossibleTopN)
-    }
-
-    // As an argument, takes a function that, when invoked, gives a top N value to use for a new consumer chain.
-    action stepBoundedDriftProvider_helper(topNOracle: Set[int]): bool = {
-        val maxAdv = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
-        val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
         all {
-            possibleAdvancements.size() > 0, // ensure there is a possible advancement, otherwise this action does not make sense
-            // advance a block for the provider
-            val consumerStatus = currentState.providerState.consumerStatus
-            nondet consumersToStart = oneOf(nonConsumers.powerset())
-            nondet topN = oneOf(topNOracle)
-            nondet consumerAdditions = consumersToStart.map(c => Ccvt::NewTopNConsumer(c, topN))
-            // make it so we stop consumers only with small likelihood:
-            nondet stopConsumersRand = oneOf(1.to(100))
-            nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
-            nondet timeAdvancement = oneOf(possibleAdvancements)
-            EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
-        }
-    }
-
-    action stepBoundedDriftConsumer = all {
-        runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
             nondet chain = runningConsumers.oneOf()
             val maxAdv = findMaxTimeAdvancement(GetChainState(chain), GetOtherChainStates(chain), maxDrift)
             val possibleAdvancements = timeAdvancements.filter(t => t <= maxAdv)
@@ -104,20 +70,7 @@ module ccv_boundeddrift {
                 nondet timeAdvancement = possibleAdvancements.oneOf()
                 EndAndBeginBlockForConsumer(chain, timeAdvancement),
             }
-    }
-
-    action stepBoundedDriftKeyAssignment = any {
-        stepBoundedDrift,
-        nondetKeyAssignment,
-    }
-
-    action stepBoundedDriftKeyAndPSS: bool = any {
-        stepCommon,
-        stepBoundedDriftProviderPSS,
-        stepBoundedDriftConsumer,
-        nondetKeyAssignment,
-        StepOptIn,
-        StepOptOut,
+        },
         
         // advance a block for the provider
         val maxAdv = findMaxTimeAdvancement(GetChainState(Ccvt::PROVIDER_CHAIN), GetOtherChainStates(Ccvt::PROVIDER_CHAIN), maxDrift)
@@ -127,14 +80,17 @@ module ccv_boundeddrift {
             // advance a block for the provider
             val consumerStatus = currentState.providerState.consumerStatus
             nondet consumersToStart = oneOf(nonConsumers.powerset())
-            nondet topN = oneOf(variousPossibleTopN)
-            nondet consumerAdditions = consumersToStart.map(c => Ccvt::NewTopNConsumer(c, topN))
             // make it so we stop consumers only with small likelihood:
             nondet stopConsumersRand = oneOf(1.to(100))
             nondet consumersToStop = if (stopConsumersRand <= consumerStopChance) oneOf(runningConsumers.powerset()) else Set()
             nondet timeAdvancement = oneOf(possibleAdvancements)
-            EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
+            EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
         }
+    }
+
+    action stepBoundedDriftKeyAssignment = any {
+        stepBoundedDrift,
+        nondetKeyAssignment,
     }
 
     // INVARIANT
