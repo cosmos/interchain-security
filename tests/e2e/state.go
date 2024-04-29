@@ -855,7 +855,6 @@ func (tr TestConfig) getHasToValidate(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-	log.Println("has-to-validate response: ", string(bz))
 
 	arr := gjson.Get(string(bz), "consumer_chain_ids").Array()
 	chains := []ChainID{}
