@@ -18,7 +18,7 @@ on:
 jobs:
   compatibility-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 200
     steps:
       - uses: actions/setup-go@v5
         with:
@@ -36,7 +36,7 @@ jobs:
         # Run compatibility tests for different consumer (-cv) and provider (-pv) versions.
         # Combination of all provider versions with consumer versions are tested.
         # For new versions to be tested add/modify -pc/-cv parameters.
-        run: go run ./tests/e2e/... --tc compatibility -pv latest -pv v4.0.0 -pv v3.3.3-lsm -cv latest -cv v4.0.0 -cv v3.3.0 -cv v3.2.0
+        run: go run ./tests/e2e/... --tc compatibility -pv latest -pv v4.1.1-lsm -pv v3.3.3-lsm -cv latest -cv v5.0.0-rc -cv v4.1.1 -cv v3.3.0 -cv v3.2.0
   happy-path-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
