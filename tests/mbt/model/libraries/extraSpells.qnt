@@ -139,72 +139,6 @@ module extraSpells {
         __set.fold(List(), (__l, __e) => __l.append(__e))
     }
 
-  /// The type of orderings between comparable things
-  // Follows https://hackage.haskell.org/package/base-4.19.0.0/docs/Data-Ord.html#t:Ordering
-  // and we think there are likely benefits to using 3 constant values rather than the more
-  // common integer range in Apalache.
-  type Ordering =
-    | EQ
-    | LT
-    | GT
-
-  /// Comparison of integers
-  pure def intCompare(__a: int, __b:int): Ordering = {
-    if (__a < __b)
-      { LT }
-    else if (__a > __b)
-      { GT }
-    else
-      { EQ }
-  }
-
-  /// Assuming `__l` is sorted according to `__cmp`, returns a list with the element `__x`
-  /// inserted in order.
-  ///
-  /// If `__l` is not sorted, `__x` will be inserted after the first element less than
-  /// or equal to it.
-  ///
-  /// - @param __l a sorted list
-  /// - @param __x an element to be inserted
-  /// - @param __cmp an operator defining an `Ordering` of the elemnts of type `a`
-  /// - @returns a sorted list that includes `__x`
-  pure def sortedListInsert(__l: List[a], __x: a, __cmp: (a, a) => Ordering): List[a] = {
-    // We need to track whether __x has been inserted, and the accumulator for the new list
-    val __init = { is_inserted: false, acc: List() }
-
-    val __result = __l.foldl(__init, (__state, __y) =>
-      if (__state.is_inserted)
-        { ...__state, acc: __state.acc.append(__y) }
-      else
-        match __cmp(__x, __y) {
-          | GT => { ...__state, acc: __state.acc.append(__y) }
-          | _  => { is_inserted: true, acc: __state.acc.append(__x).append(__y)  }
-        })
-
-    if (not(__result.is_inserted))
-      // If __x was not inserted, it was GT than every other element, so it goes at the end
-      __result.acc.append(__x)
-    else
-      __result.acc
-  }
-
-  run sortedListInsertTest = all {
-    assert(List().sortedListInsert(3, intCompare) == List(3)),
-    assert(List(1,2,4).sortedListInsert(3, intCompare) == List(1,2,3,4)),
-    assert(List(4,1,2).sortedListInsert(3, intCompare) == List(3,4,1,2)),
-    assert(List(1,2,3).sortedListInsert(4, intCompare) == List(1,2,3,4)),
-  }
-
-  //// Returns a list of all elements of a set.
-  //// The ordering will be arbitrary.
-  ////
-  //// - @param __set a set
-  //// - @param  __cmp an operator defining an `Ordering` of the elemnts of type `a`
-  //// - @returns a sorted list of all elements of __set
-  pure def toSortedList(__set: Set[a], __cmp: (a, a) => Ordering): List[a] = {
-      __set.fold(List(), (__l, __e) => __l.sortedListInsert(__e, __cmp))
-  }
-
     //// Returns a set of the elements in the list.
     ////
     //// - @param __list a list
@@ -274,58 +208,93 @@ module extraSpells {
         assert(listForAll(List(), __x => __x > 0)),
     }
 
-  /// Compute the sum of the values over all entries in a map.
-  ///
-  /// - @param myMap a map from keys to integers
-  /// - @returns the sum; when the map is empty, the sum is 0.
-  pure def mapValuesSum(myMap: a -> int): int = {
-    myMap.keys().fold(0, ((sum, i) => sum + myMap.get(i)))
-  }
+    /// listMap takes a list __list and a function __f returns a new list R, where
+    /// R.length() == __list.length() and
+    /// R[i] == __f(__list[i]) for all 0 <= i < __list.length()
+    ///
+    /// Parameters:
+    /// - __list: The list to check.
+    /// - __f: The transformation function to apply to each element in the list.
+    ///
+    /// Returns:
+    /// - the resulting list R
+    pure def listMap(__list: List[a], __f: a => b): List[b] = {
+      __list.foldl(List(), (acc, x) => acc.append(__f(x)))
+    }
 
-  run mapValuesSumTest = all {
-    assert(Map().mapValuesSum() == 0),
-    assert(2.to(5).mapBy(i => i * 2).mapValuesSum() == 28),
-    assert(Map(2 -> -4, 4 -> 2).mapValuesSum() == -2),
-  }
+    run listMapTest = 
+    all {
+      assert(listMap(List(1, 2, 3), __x => __x + 1) == List(2, 3, 4)),
+      assert(listMap(List(5, 2, 3), __x => __x * __x) == List(25, 4, 9)),
+      assert(listMap(List(1, 2, 3), __x => "a") == List("a", "a", "a")),
+      assert(listMap(List("a", "b", "c"), __x => __x) == List("a", "b", "c")),
+      assert(listMap(List(), __x => __x * __x) == List()),
+    }
 
-  /// Returns a map of a subset of keys and values from a map,
-  // where only those keys are included for which the given __f
-  // returns true.
-  pure def mapFilter(__map: a -> b, __f: a => bool): a -> b = {
-    __map.keys().filter(e => __f(e)).mapBy(__k => __map.get(__k))
-  }
+    /// Compute the maximum of two integers.
+    ///
+    /// - @param __i first integer
+    /// - @param __j second integer
+    /// - @returns the maximum of __i and __j
+    pure def max(__i: int, __j: int): int = {
+      if (__i > __j) __i else __j
+    }
 
-  /// Compute the maximum of two integers.
-  ///
-  /// - @param __i first integer
-  /// - @param __j second integer
-  /// - @returns the maximum of __i and __j
-  pure def max(__i: int, __j: int): int = {
-    if (__i > __j) __i else __j
-  }
+    run maxTest = all {
+      assert(max(3, 4) == 4),
+      assert(max(6, 3) == 6),
+      assert(max(10, 10) == 10),
+      assert(max(-3, -5) == -3),
+      assert(max(-5, -3) == -3),
+    }
 
-  run maxTest = all {
-    assert(max(3, 4) == 4),
-    assert(max(6, 3) == 6),
-    assert(max(10, 10) == 10),
-    assert(max(-3, -5) == -3),
-    assert(max(-5, -3) == -3),
-  }
+    /// Finds the index of the first element that satisfies the given predicate function.
+    ///
+    /// Parameters:
+    /// - __list: The list to search.
+    /// - __f: The predicate function to apply to each element in the list.
+    ///
+    /// Returns:
+    /// - The index of the first element that satisfies the predicate function, or -1 if no such element exists.
+    pure def firstIndex(__list: List[a], __f: a => bool): int = {
+        __list.indices().fold(
+            -1,
+            (acc, i) => if (acc == -1 and __f(__list[i])) i else acc
+        )
+    }
 
-  /// Compute the minimum of two integers.
-  ///
-  /// - @param __i first integer
-  /// - @param __j second integer
-  /// - @returns the minimum of __i and __j
-  pure def min(__i: int, __j: int): int = {
-    if (__i < __j) __i else __j
-  }
+    run firstIndexTest = all {
+        assert(firstIndex(List(1, 2, 3), __x => __x > 1) == 1),
+        assert(firstIndex(List(1, 2, 3), __x => __x > 3) == -1),
+        assert(firstIndex(List(1, 2, 3), __x => __x > 0) == 0),
+        assert(firstIndex(List(), __x => __x > 0) == -1),
+    }
 
-  run minTest = all {
-    assert(min(3, 4) == 3),
-    assert(min(6, 3) == 3),
-    assert(min(10, 10) == 10),
-    assert(min(-3, -5) == -5),
-    assert(min(-5, -3) == -5),
-  }
+    /// Splits a list right after the first occurrence of an element that satisfies the given predicate function.
+    ///
+    /// Parameters:
+    /// - __list: The list to split.
+    /// - __f: The predicate function to apply to each element in the list.
+    ///
+    /// Returns:
+    /// - A pair of lists (l1, l2) such that l1 ++ l2 == __list and
+    ///   l1.length() == firstIndex(__list, __f) + 1 and
+    ///   l2.length() == __list.length() - l1.length()
+    pure def splitAfterFirst(__list: List[a], __f: a => bool): (List[a], List[a]) = {
+        val i = firstIndex(__list, __f)
+        if (i == -1) {
+            (__list, List())
+        } else {
+            (__list.slice(0, i + 1), __list.slice(i + 1, __list.length()))
+        }
+    }
+
+    run splitAfterFirstTest = all {
+        assert(splitAfterFirst(List(1, 2, 3), __x => __x > 1) == (List(1, 2), List(3))),
+        assert(splitAfterFirst(List(1, 2, 3), __x => __x > 3) == (List(1, 2, 3), List())),
+        assert(splitAfterFirst(List(1, 2, 3), __x => __x < -1) == (List(1, 2, 3), List())),
+        assert(splitAfterFirst(List(1, 2, 3), __x => __x > 0) == (List(1), List(2, 3))),
+        assert(splitAfterFirst(List(), __x => __x > 0) == (List(), List())),
+    }
+      
 }

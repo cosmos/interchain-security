@@ -23,6 +23,9 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		case *types.MsgSubmitConsumerMisbehaviour:
 			res, err := msgServer.SubmitConsumerMisbehaviour(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgSubmitConsumerDoubleVoting:
+			res, err := msgServer.SubmitConsumerDoubleVoting(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgOptIn:
 			res, err := msgServer.OptIn(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)

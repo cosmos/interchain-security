@@ -94,7 +94,7 @@ module ccv_pss {
     // Returns true if the given validator is in the top N for the given consumer chain,
     // and false otherwise.
     pure def IsTopN(currentState: ProtocolState, validator: Node, consumer: Chain): bool = {
-        val proviValSet = currentState.providerState.chainState.currentValidatorSet
+        val proviValSet = currentState.providerState.chainState.votingPowerHistory.head()
         val N = currentState.providerState.topNByConsumer.get(consumer)
 
         val topNValSet = GetTopNVals(proviValSet, N)
@@ -144,7 +144,7 @@ module ccv_pss {
     // Runs the PSS logic for a single consumer.
     // Should only be run for running chains.
     pure def endBlockPSS_helper(providerState: ProviderState, consumer: Chain): ProviderState = {
-        val proviValSet = providerState.chainState.currentValidatorSet
+        val proviValSet = providerState.chainState.currentValidatorPowers
         val topNVals = GetTopNVals(proviValSet, providerState.topNByConsumer.get(consumer))
         val prevOptedInVals = providerState.optedInVals.getOrElse(consumer, Set())
         // opt in all the top N validators, i.e. union the top N vals with the previous opted in vals

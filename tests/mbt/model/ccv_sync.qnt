@@ -25,7 +25,7 @@ module ccv_sync {
     action initSync =
         all {
             init.then(
-                EndAndBeginBlockForProvider(1 * Second, consumerChains.map(c => ccvt::NewFullConsumer(c)), Set())
+                EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
             ),
             QueuedChainsToEndBlock' = consumerChainList.foldl(
                 List(),

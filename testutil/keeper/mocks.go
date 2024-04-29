@@ -49,6 +49,20 @@ func (m *MockStakingKeeper) EXPECT() *MockStakingKeeperMockRecorder {
 	return m.recorder
 }
 
+// BlockValidatorUpdates mocks base method.
+func (m *MockStakingKeeper) BlockValidatorUpdates(ctx types0.Context) []types.ValidatorUpdate {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BlockValidatorUpdates", ctx)
+	ret0, _ := ret[0].([]types.ValidatorUpdate)
+	return ret0
+}
+
+// BlockValidatorUpdates indicates an expected call of BlockValidatorUpdates.
+func (mr *MockStakingKeeperMockRecorder) BlockValidatorUpdates(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockValidatorUpdates", reflect.TypeOf((*MockStakingKeeper)(nil).BlockValidatorUpdates), ctx)
+}
+
 // BondDenom mocks base method.
 func (m *MockStakingKeeper) BondDenom(ctx types0.Context) string {
 	m.ctrl.T.Helper()
@@ -119,6 +133,21 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
 }
 
+// GetRedelegationByUnbondingID mocks base method.
+func (m *MockStakingKeeper) GetRedelegationByUnbondingID(ctx types0.Context, id uint64) (types5.Redelegation, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRedelegationByUnbondingID", ctx, id)
+	ret0, _ := ret[0].(types5.Redelegation)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetRedelegationByUnbondingID indicates an expected call of GetRedelegationByUnbondingID.
+func (mr *MockStakingKeeperMockRecorder) GetRedelegationByUnbondingID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRedelegationByUnbondingID", reflect.TypeOf((*MockStakingKeeper)(nil).GetRedelegationByUnbondingID), ctx, id)
+}
+
 // GetRedelegationsFromSrcValidator mocks base method.
 func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx types0.Context, valAddr types0.ValAddress) []types5.Redelegation {
 	m.ctrl.T.Helper()
@@ -131,6 +160,21 @@ func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx types0.Context,
 func (mr *MockStakingKeeperMockRecorder) GetRedelegationsFromSrcValidator(ctx, valAddr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRedelegationsFromSrcValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetRedelegationsFromSrcValidator), ctx, valAddr)
+}
+
+// GetUnbondingDelegationByUnbondingID mocks base method.
+func (m *MockStakingKeeper) GetUnbondingDelegationByUnbondingID(ctx types0.Context, id uint64) (types5.UnbondingDelegation, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnbondingDelegationByUnbondingID", ctx, id)
+	ret0, _ := ret[0].(types5.UnbondingDelegation)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetUnbondingDelegationByUnbondingID indicates an expected call of GetUnbondingDelegationByUnbondingID.
+func (mr *MockStakingKeeperMockRecorder) GetUnbondingDelegationByUnbondingID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingDelegationByUnbondingID", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingDelegationByUnbondingID), ctx, id)
 }
 
 // GetUnbondingDelegationsFromValidator mocks base method.
@@ -190,6 +234,21 @@ func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx types0.Context, consAddr 
 func (mr *MockStakingKeeperMockRecorder) GetValidatorByConsAddr(ctx, consAddr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByConsAddr", reflect.TypeOf((*MockStakingKeeper)(nil).GetValidatorByConsAddr), ctx, consAddr)
+}
+
+// GetValidatorByUnbondingID mocks base method.
+func (m *MockStakingKeeper) GetValidatorByUnbondingID(ctx types0.Context, id uint64) (types5.Validator, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorByUnbondingID", ctx, id)
+	ret0, _ := ret[0].(types5.Validator)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetValidatorByUnbondingID indicates an expected call of GetValidatorByUnbondingID.
+func (mr *MockStakingKeeperMockRecorder) GetValidatorByUnbondingID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByUnbondingID", reflect.TypeOf((*MockStakingKeeper)(nil).GetValidatorByUnbondingID), ctx, id)
 }
 
 // GetValidatorUpdates mocks base method.

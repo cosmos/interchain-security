@@ -10,8 +10,9 @@ module ccv_pss_test {
     import extraSpells.* from "./libraries/extraSpells"
     import ccv_utils.* from "./ccv_utils"
     import ccv_pss.* from "./ccv_pss"
+    import ccv.* from "./ccv"
 
-    run TopNTest = 
+    run TopN1Test = 
         val valSet =
             Map("d" -> 25, "c1" -> 15, "c" -> 15, "b2" -> 10, "b1" -> 10, "b" -> 10, "a2" -> 5, "a1" -> 5, "a" -> 5)
         // total power: 5*3 + 10*3 + 15*2 + 25 = 100
@@ -30,5 +31,31 @@ module ccv_pss_test {
             assert(GetTopNVals(valSet, 86) == valSet.keys()),
             assert(GetTopNVals(valSet, 95) == valSet.keys()),
             assert(GetTopNVals(valSet, 100) == valSet.keys()),
-        }
+        }    
+
+    val providerState = GetEmptyProviderState().with(
+            "chainState", GetEmptyChainState().with(
+                "currentValidatorPowers", Map(
+                    "a" -> 5,
+                    "a1" -> 5,
+                    "a2" -> 5,
+                    "b" -> 10,
+                    "b1" -> 10,
+                    "b2" -> 10,
+                    "c" -> 15,
+                    "c1" -> 15,
+                    "d" -> 25
+                )
+            )
+        ).with(
+            "consumerStatus", Map(
+                "consumer1" -> "running"
+            )
+        ).with(
+            "topNByConsumer", Map(
+                "consumer1" -> 80
+            )
+        )
+    run TopN2Test =
+        true
 }

@@ -117,9 +117,7 @@ func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, ind
 	providerAddr := types.NewProviderConsAddress(consAddr)
 	pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
 	pkAny, _ := codectypes.NewAnyWithValue(pk)
-
-	var providerValidatorAddr sdk.ValAddress
-	providerValidatorAddr = providerAddr.Address.Bytes()
+	providerValidatorAddr := sdk.ValAddress(providerAddr.Address.Bytes())
 
 	mocks.MockStakingKeeper.EXPECT().
 		GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
@@ -129,6 +127,7 @@ func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, ind
 		ConsensusPubkey: pkAny,
 	}
 }
+
 func TestDiff(t *testing.T) {
 	// In what follows we create 6 validators: A, B, C, D, E, and F where currentValidators = {A, B, C, D, E}
 	// and nextValidators = {B, C, D, E, F}. For the validators {B, C, D, E} in the intersection we have:
@@ -206,7 +205,11 @@ func TestDiffEdgeCases(t *testing.T) {
 	require.Empty(t, len(keeper.DiffValidators(validators, validators)))
 
 	// only have `nextValidators` that would generate validator updates for the validators to be added
-	expectedUpdates := []abci.ValidatorUpdate{{publicKeyA, 1}, {publicKeyB, 2}, {publicKeyC, 3}}
+	expectedUpdates := []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 1},
+		{PubKey: publicKeyB, Power: 2},
+		{PubKey: publicKeyC, Power: 3},
+	}
 	actualUpdates := keeper.DiffValidators([]types.ConsumerValidator{}, validators)
 	// sort validators first to be able to compare
 	sortUpdates := func(updates []abci.ValidatorUpdate) {
@@ -223,7 +226,11 @@ func TestDiffEdgeCases(t *testing.T) {
 	require.Equal(t, expectedUpdates, actualUpdates)
 
 	// only have `currentValidators` that would generate validator updates for the validators to be removed
-	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 0}, {publicKeyC, 0}}
+	expectedUpdates = []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 0},
+		{PubKey: publicKeyB, Power: 0},
+		{PubKey: publicKeyC, Power: 0},
+	}
 	actualUpdates = keeper.DiffValidators(validators, []types.ConsumerValidator{})
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)
@@ -231,7 +238,10 @@ func TestDiffEdgeCases(t *testing.T) {
 
 	// have nonempty `currentValidators` and `nextValidators`, but with empty intersection
 	// all old validators should be removed, all new validators should be added
-	expectedUpdates = []abci.ValidatorUpdate{{publicKeyA, 0}, {publicKeyB, 2}}
+	expectedUpdates = []abci.ValidatorUpdate{
+		{PubKey: publicKeyA, Power: 0},
+		{PubKey: publicKeyB, Power: 2},
+	}
 	actualUpdates = keeper.DiffValidators(validators[0:1], validators[1:2])
 	sortUpdates(expectedUpdates)
 	sortUpdates(actualUpdates)
@@ -379,7 +389,8 @@ func TestComputeNextEpochConsumerValSetConsiderOnlyOptIn(t *testing.T) {
 	expectedValAConsumerValidator := types.ConsumerValidator{
 		ProviderConsAddr:  types.NewProviderConsAddress(valAConsAddr).Address.Bytes(),
 		Power:             1,
-		ConsumerPublicKey: &valAPublicKey}
+		ConsumerPublicKey: &valAPublicKey,
+	}
 	expectedValidators = append(expectedValidators, expectedValAConsumerValidator)
 
 	// create a staking validator B that has set a consumer public key

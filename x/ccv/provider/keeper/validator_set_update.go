@@ -45,7 +45,10 @@ func (k Keeper) DeleteConsumerValidator(
 }
 
 // DeleteConsumerValSet deletes all the stored consumer validators for chain `chainID`
-func (k Keeper) DeleteConsumerValSet(ctx sdk.Context, chainID string) {
+func (k Keeper) DeleteConsumerValSet(
+	ctx sdk.Context,
+	chainID string,
+) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
@@ -68,7 +71,10 @@ func (k Keeper) IsConsumerValidator(ctx sdk.Context, chainID string, providerAdd
 }
 
 // GetConsumerValSet returns all the consumer validators for chain `chainID`
-func (k Keeper) GetConsumerValSet(ctx sdk.Context, chainID string) (validators []types.ConsumerValidator) {
+func (k Keeper) GetConsumerValSet(
+	ctx sdk.Context,
+	chainID string,
+) (validators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)

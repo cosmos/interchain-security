@@ -5,8 +5,10 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 

@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 // This file contains utility functions for ccv.qnt
 // that are not part of the API/core logic of ccv, but still relevant
 // for the functional logic of the protocol.
@@ -72,7 +73,7 @@ module ccv_utils {
     pure def AppendConsumerAddrToPrune(currentState: ProtocolState, oldConsAddr: ConsumerAddr, consumer: Chain): ProtocolState = {
         pure val vscId = currentState.providerState.runningVscId
         pure val consumerAddrsToPrune = currentState.providerState.consumerAddrsToPrune.getOrElse(consumer, Map())
-        pure val prevConsAddrs = consumerAddrsToPrune.getOrElse(oldConsAddr, Map()).getOrElse(vscId, [])
+        pure val prevConsAddrs = consumerAddrsToPrune.getOrElse(vscId, [])
 
         pure val newConsAddrsToPrune = consumerAddrsToPrune.put(vscId, prevConsAddrs.append(oldConsAddr))
 
@@ -141,45 +142,48 @@ module ccv_utils {
         }
 
     pure def StartStopConsumers(
-        currentProviderState: ProviderState,
-        consumersToStart: Set[ConsumerAdditionMsg],
+        currentConsumerStatusMap: Chain -> str,
+        consumersToStart: Set[Chain],
         consumersToStop: Set[Chain],
         consumersToTimeout: Set[Chain]
-    ): (ProviderState, str) = {
-        val consumerAdditions = consumersToStart.map(
-                msg => msg.chain
-        )
+    ): (Chain -> str, str) = {
         // check if any consumer is both started and stopped
-        if (consumerAdditions.intersect(consumersToStop).size() > 0) {
-            (currentProviderState, "Cannot start and stop a consumer at the same time")
+        if (consumersToStart.intersect(consumersToStop).size() > 0) {
+            (currentConsumerStatusMap, "Cannot start and stop a consumer at the same time")
         } else {
-            val res1 = currentProviderState.consumerStatus.startConsumers(consumerAdditions)
+            val res1 = currentConsumerStatusMap.startConsumers(consumersToStart)
             val newConsumerStatus = res1._1
             val err1 = res1._2
             val res2 = newConsumerStatus.stopConsumers(consumersToStop, consumersToTimeout)
             val err2 = res2._2
-            // set the top N values in the provider correctly
-
             if (err1 != "") {
-                (currentProviderState, err1)
+                (currentConsumerStatusMap, err1)
             } else if (err2 != "") {
-                (currentProviderState, err2)
+                (currentConsumerStatusMap, err2)
             } else {
-                (currentProviderState
-                    .with("consumerStatus", res2._1)
-                    .SetTopNValues(consumersToStart), "")
+                (res2._1, "")
             }
         }
     }
 
 
-    // Takes the currentValidatorSet and puts it as the newest set of the voting history
+    // Takes the currentValidatorPowers and puts it as the newest set of the voting history,
+    // omitting any validators that are jailed.
     pure def enterCurValSetIntoBlock(chainState: ChainState): ChainState = {
         chainState.with(
             "votingPowerHistory", chainState.votingPowerHistory.prepend(
-                removeZeroPowers(chainState.currentValidatorSet)
+                chainState.currentValidatorPowers.filterJailedVals(
+                    chainState.jailedUntil.keys()
+                )
             )
         )
+    }
+
+    pure def filterJailedVals(
+        valSet: ValidatorSet,
+        jailedValidators: Set[Node]
+    ): ValidatorSet = {
+        valSet.mapRemoveAll(jailedValidators)
     }
 
     // Advances the timestamp in the chainState by timeAdvancement
@@ -225,10 +229,11 @@ module ccv_utils {
                         // apply key assignment to the current validator set
                         validatorSet: providerState.applyKeyAssignmentToValSet(
                             consumer, 
-                            providerState.chainState.currentValidatorSet
+                            providerState.chainState.votingPowerHistory.head()
                         ),
                         sendingTime: sendingTimestamp,
-                        timeoutTime: sendingTimestamp + ccvTimeout
+                        timeoutTime: sendingTimestamp + ccvTimeout,
+                        downtimeSlashAcks: providerState.downtimeSlashRequests.getOrElse(consumer, [])
                 })
             } else {
                 // no packet to be sent, so empty list
@@ -238,7 +243,7 @@ module ccv_utils {
         val newOutstandingPacketsToConsumer = providerState.getConsumers().mapBy(
                 (consumer) => 
                 providerState.outstandingPacketsToConsumer.getOrElse(consumer, List()).concat(
-                    newSentPacketsPerConsumer.get(consumer)
+                    newSentPacketsPerConsumer.get(consumer).VscPacketListToPacketList()
                 )
             )
         val newSentVscPackets = providerState.getConsumers().mapBy(
@@ -264,12 +269,27 @@ module ccv_utils {
         }
     }
 
+    pure def recvPacketOnConsumer(
+        currentState: ProtocolState,
+        sender: Chain,
+        packet: Packet,
+        receiverUnbondingPeriod: Time): Result = {
+        if (not(isRunningConsumer(sender, currentState.providerState))) {
+            Err("Sender is not currently a consumer - must have 'running' status!")
+        } else {
+            match packet {
+                | Vsc(p) => recvVscPacketOnConsumer(currentState, sender, p, receiverUnbondingPeriod)
+                | _ => Err("Do not know how to handle this packet type")
+            }
+        }
+    }
+
     // receives a given packet (sent by the provider) on the consumer. The arguments are the consumer chain that is receiving the packet, and the packet itself,
     // as well as the unbonding period for the consumer chain.
     // To receive a packet, modify the running validator set (not the one entered into the block yet,
     // but the candidate that would be put into the block if it ended now)
     // and store the maturation time for the packet.
-    pure def recvPacketOnConsumer(
+    pure def recvVscPacketOnConsumer(
         currentState: ProtocolState,
         receiver: Chain,
         packet: VscPacket,
@@ -284,7 +304,7 @@ module ccv_utils {
                 {
                     ...currentConsumerState,
                     chainState: currentConsumerState.chainState.with(
-                        "currentValidatorSet", packet.validatorSet
+                        "currentValidatorPowers", packet.validatorSet
                     ),
                     maturationTimes: currentConsumerState.maturationTimes.append(
                         (
@@ -292,83 +312,16 @@ module ccv_utils {
                             currentConsumerState.chainState.runningTimestamp + receiverUnbondingPeriod
                         )
                     ),
-                    receivedVscPackets: currentConsumerState.receivedVscPackets.prepend(packet)
+                    receivedVscPackets: currentConsumerState.receivedVscPackets.prepend(packet),
+                    outstandingDowntime: currentConsumerState.outstandingDowntime.filter(
+                        validator => not(packet.downtimeSlashAcks.toSet().contains(validator))
+                    )
                 }
             val newConsumerStates = currentState.consumerStates.set(receiver, newConsumerState)
             val newState = currentState.with(
                 "consumerStates", newConsumerStates
             )
             Ok(newState)
-        }
-    }
-
-    // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
-    // To receive a packet, add it to the list of received maturations.
-    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
-        if (not(isRunningConsumer(sender, currentState.providerState))) {
-            Err("Sender is not currently a consumer - must have 'running' status!")
-        } else if (currentState.providerState.sentVscPacketsToConsumer.get(sender).head().id != packet.id) {
-            // the packet is not the oldest sentVscPacket, something went wrong
-            Err("Received maturation is not for the oldest sentVscPacket")
-        } else {
-            val currentReceivedMaturations = currentState.providerState.receivedMaturations
-            val newReceivedMaturations = currentReceivedMaturations.union(Set(packet))
-            val newProviderState = currentState.providerState.with(
-                "receivedMaturations", newReceivedMaturations
-            )
-            // prune the sentVscPacket
-            val newSentVscPacket = currentState.providerState.sentVscPacketsToConsumer.get(sender).tail()
-            val newState = currentState.with(
-                "providerState", 
-                    {...newProviderState,
-                    sentVscPacketsToConsumer: currentState.providerState.sentVscPacketsToConsumer.set(sender, newSentVscPacket)
-                    }
-            )
-
-            // prune assigned keys that are no longer needed
-
-            // get the keys that should be pruned
-            pure val consumerAddrsToPrune = 
-                currentState.providerState.consumerAddrsToPrune
-                    .getOrElse(sender, Map())
-                    .getOrElse(packet.id, List()).toSet()
-
-            // actually do the pruning
-            pure val senderValByConsAddr = 
-                // for the sender chain, get the consAddrToValidator mapping
-                newState.providerState.consumerAddrToValidator.getOrElse(sender, Map())
-            pure val newSenderValByConsAddr =
-                senderValByConsAddr.keys().filter(
-                    // filter out the assigned keys that should be pruned
-                    consAddr => not(consumerAddrsToPrune.contains(consAddr))
-                ).mapBy(
-                    // rebuild the map with the pruned keys removed
-                    consAddr => senderValByConsAddr.get(consAddr)
-                )
-
-            // update the provider state
-            pure val newProviderState2 = newState.providerState.with(
-                // update the consumerAddrToValidator map to remove the pruned keys
-                "consumerAddrToValidator", 
-                newState.providerState.consumerAddrToValidator.put(sender, newSenderValByConsAddr)
-            ).with(
-                // delete the consumer addresses to prune, since they are pruned now
-                "consumerAddrsToPrune", 
-                newState.providerState.consumerAddrsToPrune.put(
-                    sender, 
-                    newState.providerState.consumerAddrsToPrune.getOrElse(sender, Map()).put(
-                        packet.id, 
-                        List()
-                    )
-                )
-            )
-
-            // update the state
-            pure val newState2 = newState.with(
-                "providerState", newProviderState2
-            )
-
-            Ok(newState2)
         }
     }
 
@@ -407,7 +360,7 @@ module ccv_utils {
     // newValidatorSet.
     pure def setProviderValidatorSet(currentState: ProtocolState, newValidatorSet: ValidatorSet): ProtocolState = {
         pure val newChainState = currentState.providerState.chainState.with(
-            "currentValidatorSet", newValidatorSet
+            "currentValidatorPowers", newValidatorSet
         )
         currentState.with(
             "providerState", 
@@ -468,27 +421,125 @@ module ccv_utils {
             }
         }
 
-    // Sets the top N values on the provider chain for the given consumer chains,
-    // taken as consumerAdditionMsgs = chains with the top N values.
-    // If a chain in the set is already present, the old value will be overwritten.
-    pure def SetTopNValues(providerState: ProviderState, consumers: Set[ConsumerAdditionMsg]): ProviderState =
-        providerState.with(
-            "topNByConsumer",
-            consumers.fold(
-                providerState.topNByConsumer,
-                (acc, consumer) => acc.put(consumer.chain, consumer.topN)
-            )
-        ) 
-
-    // From a validator set, removes all validators with zero power.
-    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
-        valSet.keys().fold(
-            Map(),
-            (acc, node) => 
-                if (valSet.get(node) == 0) {
-                    acc
-                } else {
-                    acc.put(node, valSet.get(node))
-                }
+    // Transforms a list of VscPackets into a list of the generic
+    // "packet" type.
+    pure def VscPacketListToPacketList(original: List[VscPacket]): List[Packet] =
+        original.listMap(
+            elem => Vsc(elem)
         )
+
+    pure def GetPacketTimeout(packet: Packet): Time = {
+        match packet {
+            | Vsc(p) => p.timeoutTime
+            | Slash(p) => p.timeoutTime
+            | VscMatured(p) => p.timeoutTime
+            | _ => 0
+        }
+    }
+
+    pure def GetPacketSendingTime(packet: Packet): Time = {
+        match packet {
+            | Vsc(p) => p.sendingTime
+            | Slash(p) => p.sendingTime
+            | VscMatured(p) => p.sendingTime
+            | _ => 0
+        }
+    }
+
+    pure def IsVscPacket(packet: Packet): bool = {
+        match packet {
+            | Vsc(_) => true
+            | _ => false
+        }
+    }
+
+    pure def IsSlashPacket(packet: Packet): bool = {
+        match packet {
+            | Slash(_) => true
+            | _ => false
+        }
+    }
+
+    pure def IsVscMaturedPacket(packet: Packet): bool = {
+        match packet {
+            | VscMatured(_) => true
+            | _ => false
+        }
+    }
+
+    // Commits a packet on the consumer, which will then be sent when a block is ended.
+    // Internally, prepends the packet to the senders packetsToSendOnEndBlock list.
+    pure def commitPacketOnConsumer(senderState: ConsumerState, packet: Packet): ConsumerState = {
+        senderState.with(
+            "queuedPackets", senderState.queuedPackets.append(packet)
+        )
+    }
+
+    // Jails a validator until the given time.
+    // Note that they are not automatically unjailed afterwards,
+    // this must be done by another action. (TODO: currently not implemented)
+    pure def jailUntil(
+        providerState: ProviderState,
+        validator: Node,
+        jailEndTime: Time
+    ): ProviderState = {
+        val newChainState = providerState.chainState.with(
+            "jailedUntil", providerState.chainState.jailedUntil.put(validator, jailEndTime)
+        )
+        providerState.with(
+            "chainState", newChainState
+        )
+    }
+
+    // Slahes a given validator by the given percentage of the given power.
+    // The provided power is typically the power of the validator
+    // at the time of the infraction for which this slashes.
+    // The slash percentage should be a number between 0 and 100.
+    // Note that nodes cannot end up with negative power,
+    // so if their voting power is smaller than power * slashPercentage / 100,
+    // they will be set to 0.
+    pure def slash(
+        providerState: ProviderState,
+        validator: Node,
+        power: int,
+        slashPercentage: int
+    ): ProviderState = {
+        val slashAmount = power * slashPercentage / 100
+        val newChainState = providerState.chainState.with(
+            "currentValidatorPowers",
+            providerState.chainState.currentValidatorPowers.keys().mapBy(
+                node =>
+                val oldPower = providerState.chainState.currentValidatorPowers.get(node) 
+                if (node == validator) {
+                    max(0, oldPower - slashAmount)
+                } else {
+                    oldPower
+                }
+            )
+        )
+        providerState.with(
+            "chainState", newChainState
+        )
+    }
+
+    // Returns the set of all nodes that are not currently jailed on the provider.
+    pure def nonJailedNodes(
+        providerState: ProviderState
+    ): Set[Node] = {
+        providerState.chainState.currentValidatorPowers.keys().filter(
+            node => not(providerState.chainState.jailedUntil.keys().contains(node))
+        )
+    }
+
+    pure def IsEmptyValSet(valSet: ValidatorSet): bool = {
+        valSet.keys().filter(
+            node => valSet.get(node) > 0
+        ).size() == 0
+    }
+
+    pure def ProviderBlockTime(currentState: ProtocolState): Time = {
+        currentState.providerState.chainState.runningTimestamp
+    }
+
+
 }

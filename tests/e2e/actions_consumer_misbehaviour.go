@@ -94,5 +94,5 @@ func (tc TestConfig) updateLightClient(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tc.waitBlocks(action.HostChain, 5, 30*time.Second)
+	tc.waitBlocks(action.HostChain, 8, 30*time.Second)
 }

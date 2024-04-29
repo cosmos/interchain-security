@@ -179,8 +179,6 @@ type TargetConfig struct {
 	useGaia         bool
 	providerVersion string
 	consumerVersion string
-	providerImage   string
-	consumerImage   string
 }
 
 type TestConfig struct {
@@ -236,6 +234,7 @@ func getIcsVersion(reference string) string {
 				log.Printf("error identifying config version to use '%v': %s", err, string(out))
 				return ""
 			}
+			// reference is not part of this tag, try next one
 		}
 	}
 	return semver.Canonical(icsVersion)

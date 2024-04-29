@@ -12,6 +12,18 @@ This document outlines the release process for Interchain Security (ICS).
 
 For details on ICS releases, see [RELEASES.md](./RELEASES.md).
 
+The procedure of cutting a major or minor release consist of the following steps:
+
+- Create a new version section in the `CHANGELOG.md` (follow the procedure described [below](#changelog))
+- Create release notes, in `RELEASE_NOTES.md`, highlighting the new features and changes in the version. 
+  This info will be used to update the release notes when cutting the final release. 
+  > Note: release candidates do not need to have releases (tags are sufficient)
+- **(Only for major or minor releases)** Verify that the `UPGRADING.md` file is up 
+  to date and contains all the necessary information for upgrading to the new version.
+- Create a new annotated git tag in the release branch (follow the [Tagging Procedure](#tagging-procedure)).
+- **(Only for final releases)** Once the tag is created, use the GitHub interface 
+  to create a release and update the release notes with the information in `RELEASE_NOTES.md`.
+
 ## Changelog
 
 For PRs that are changing production code, please add a changelog entry in `.changelog` (for details, see [contributing guidelines](./CONTRIBUTING.md#changelog)). 
@@ -65,6 +77,7 @@ Before cutting a _**release candidate**_ (e.g., `v3.3.0-rc0`), the following ste
     ```md
     *December 5, 2023*
     ```
+    > Note: If necessary, more information can be added to the summary, but at least the date needs to be there.
 - update `CHANGELOG.md`, i.e.,
     ```bash
     unclog build > CHANGELOG.md

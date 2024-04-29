@@ -13,6 +13,11 @@ module ccv_model {
     pure val unbondingPeriods = chains.mapBy(chain => defUnbondingPeriod)
     pure val trustingPeriods = chains.mapBy(chain => defUnbondingPeriod - 1 * Hour)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
+    pure val downtimeJailTime = 5 * Day
+    
+    // taken from the sdk, jail time ends at maximum of a certain datatype
+    // see https://github.com/cosmos/cosmos-sdk/blob/03d578b9de5136ffc658f2b0c07434373b07b7da/x/evidence/types/params.go#L11 
+    pure val doubleSignJailEndTime = 253402300799
     pure val epochLength = 3
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
@@ -26,6 +31,10 @@ module ccv_model {
         UnbondingPeriodPerChain = unbondingPeriods,
         ConsumerChains = consumerChains,
         TrustingPeriodPerChain = trustingPeriods,
+        DowntimeJailTime = downtimeJailTime,
+        DoubleSignJailEndTime = doubleSignJailEndTime,
+        DowntimeSlashPercentage = 5,
+        DoubleSignSlashPercentage = 10,
         BlocksPerEpoch = epochLength
     ).* from "./ccv"
 
@@ -38,6 +47,9 @@ module ccv_model {
         Nodes: Set[Node],
         ConsumerAddresses: Set[ConsumerAddr],
         InitialValidatorSet: Node -> int,
+        DowntimeSlashPercentage: int,
+        DoubleSignSlashPercentage: int,
+        DowntimeJailDuration: Time,
         BlocksPerEpoch: int,
     }
 
@@ -49,13 +61,7 @@ module ccv_model {
 
     var currentState: ProtocolState
 
-    // a type storing the parameters used in actions,
-    // as well as return values that are not visible from the state,
-    // i.e. errors.
-    // Note that whether an error is returned,
-    // or whether the action is simply not possible when an error occurs, is
-    // a design choice that is different for each action,
-    // or can depend on the type of error.
+    // a type storing the parameters used in actions.
     // this is used in the trace to store
     // the name of the last action, plus the parameters we passed to it.
     // Note: This type holds ALL parameters that are used in ANY action,
@@ -65,12 +71,13 @@ module ccv_model {
             kind: str,
             consumerChain: Chain,
             timeAdvancement: Time,
-            consumersToStart: Set[ConsumerAdditionMsg],
+            consumersToStart: Set[Chain],
             consumersToStop: Set[Chain],
             validator: Node,
             changeAmount: int,
             consumerAddr: ConsumerAddr,
-            expectedError: str, // if the action returns an error, it goes here.
+            vscId: VscId,
+            isDowntime: bool,
         }
     
 
@@ -95,7 +102,8 @@ module ccv_model {
                 validator: "",
                 changeAmount: 0,
                 consumerAddr: "",
-                expectedError: "",
+                vscId: 0,
+                isDowntime: false,
             }
 
 
@@ -103,6 +111,8 @@ module ccv_model {
     val providerValidatorHistory = currentState.providerState.chainState.votingPowerHistory
     val runningConsumers = getRunningConsumers(currentState.providerState)
     val nonConsumers = getNonConsumers(currentState.providerState)
+
+    val providerCurValSet = currentState.providerState.chainState.currentValidatorPowers
 
     action init: bool = all {
         val providerState = GetEmptyProviderState
@@ -121,7 +131,7 @@ module ccv_model {
             "chainState", providerState.chainState.with(
                 "votingPowerHistory", List(InitialValidatorSet)
             ).with(
-                "currentValidatorSet", InitialValidatorSet
+                "currentValidatorPowers", InitialValidatorSet
             )
         ).with(
             "keyAssignedValSetHistory", ConsumerChains.mapBy(chain => List(InitialValidatorSet))
@@ -140,6 +150,9 @@ module ccv_model {
             InitialValidatorSet: InitialValidatorSet,
             TrustingPeriodPerChain: TrustingPeriodPerChain,
             ConsumerAddresses: consumerAddresses,
+            DowntimeSlashPercentage: DowntimeSlashPercentage,
+            DoubleSignSlashPercentage: DoubleSignSlashPercentage,
+            DowntimeJailDuration: DowntimeJailTime,
             BlocksPerEpoch: epochLength,
         }
     }
@@ -165,21 +178,21 @@ module ccv_model {
             params' = params,
         }
 
-    // The provider receives the next outstanding VscMaturedPacket from the sender.
+    // The provider receives the next outstanding packet from the sender.
     // This will time out the consumer if the packet timeout has passed on the provider.
-    action DeliverVscMaturedPacket(sender: Chain): bool =
+    action DeliverPacketToProvider(sender: Chain): bool =
         val resultAndTimeout = deliverPacketToProvider(currentState, sender)
         val result = resultAndTimeout._1
         all {
             result.hasError() == false,
             currentState' = result.newState,
-            trace' = trace.append(emptyAction.with("kind", "DeliverVscMaturedPacket").with("consumerChain", sender)),
+            trace' = trace.append(emptyAction.with("kind", "DeliverPacketToProvider").with("consumerChain", sender)),
             params' = params,
         }
 
     action EndAndBeginBlockForProvider(
         timeAdvancement: Time,
-        consumersToStart: Set[ConsumerAdditionMsg],
+        consumersToStart: Set[Chain],
         consumersToStop: Set[Chain]): bool = 
         val result = endAndBeginBlockForProvider(currentState, timeAdvancement, consumersToStart, consumersToStop)
         all {
@@ -203,18 +216,21 @@ module ccv_model {
 
      // stepCommon is the core functionality of steps that does not have anything to do with time.
     action stepCommon = any {
-        nondet node = oneOf(nodes)
-        // very restricted set of voting powers. exact values are not important,
-        // and this keeps the state space smaller.
-        nondet newVotingPower = oneOf(Set(-50, 50))
-        VotingPowerChange(node, newVotingPower),
+        all {
+            nonJailedNodes(currentState.providerState).size() > 0,
+            nondet node = oneOf(nonJailedNodes(currentState.providerState))
+            // very restricted set of voting powers. exact values are not important,
+            // and this keeps the state space smaller.
+            nondet newVotingPower = oneOf(Set(-50, 50))
+            VotingPowerChange(node, newVotingPower),
+        },
 
         // try to send a packet. we could filter by chains that can actually send,
         // but it's probably not much faster than just trying and failing.
         all {
             runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
             nondet sender = oneOf(runningConsumers)
-            DeliverVscMaturedPacket(sender),
+            DeliverPacketToProvider(sender),
         },
 
         // again, we could filter by chains that can actually receive,
@@ -224,6 +240,8 @@ module ccv_model {
             nondet receiver = oneOf(runningConsumers)
             DeliverVscPacket(receiver),
         },
+
+        ConsumerInitiatedSlash
     }
 
     // step allows the most generic nondeterminism, in particular it becomes relatively likely
@@ -240,10 +258,9 @@ module ccv_model {
 
         val consumerStatus = currentState.providerState.consumerStatus
         nondet consumersToStart = oneOf(nonConsumers.powerset())
-        val consumerAdditions = consumersToStart.map(chain => NewFullConsumer(chain))
         nondet consumersToStop = oneOf(runningConsumers.powerset())
         nondet timeAdvancement = oneOf(timeAdvancements)
-        EndAndBeginBlockForProvider(timeAdvancement, consumerAdditions, consumersToStop),
+        EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
 
         stepCommon
     }
@@ -255,7 +272,7 @@ module ccv_model {
     // As a a `Run`, it is only used in tests, not during simulation or verification.
     run EndProviderEpoch(
         timeAdvancement: Time,
-        consumersToStart: Set[ConsumerAdditionMsg],
+        consumersToStart: Set[Chain],
         consumersToStop: Set[Chain]
     ): bool =
         epochLength.reps(
@@ -270,12 +287,25 @@ module ccv_model {
     // ==================
     // UTILITY FUNCTIONS
     // ==================
+
+    pure def removeZeroPowers(valSet: ValidatorSet): ValidatorSet =
+        valSet.keys().fold(
+            Map(),
+            (acc, node) => 
+                if (valSet.get(node) == 0) {
+                    acc
+                } else {
+                    acc.put(node, valSet.get(node))
+                }
+        )
+
     pure def oldest(packets: Set[VscPacket]): VscPacket =
         val newestPossiblePacket: VscPacket = {
             id: 0,
             validatorSet: Map(),
             sendingTime: 9999999999999 * Second,
             timeoutTime: 9999999999999 * Second,
+            downtimeSlashAcks: List(),
         }
         packets.fold(
             newestPossiblePacket,
@@ -288,6 +318,7 @@ module ccv_model {
             validatorSet: Map(),
             sendingTime: -9999999999 * Second,
             timeoutTime: -9999999999 * Second,
+            downtimeSlashAcks: List(),
         }
         packets.fold(
             oldestPossiblePacket,
@@ -300,6 +331,7 @@ module ccv_model {
                 validatorSet: Map(),
                 sendingTime: 1 * Second,
                 timeoutTime: 1 * Second,
+                downtimeSlashAcks: List(),
             }
 
         val packet2 = {
@@ -307,6 +339,7 @@ module ccv_model {
             validatorSet: Map(),
             sendingTime: 2 * Second,
             timeoutTime: 2 * Second,
+            downtimeSlashAcks: List(),
         }
 
         val packet3 = {
@@ -314,6 +347,7 @@ module ccv_model {
             validatorSet: Map(),
             sendingTime: 3 * Second,
             timeoutTime: 3 * Second,
+            downtimeSlashAcks: List(),
         }
         all {
             assert(oldest(Set(packet1, packet2, packet3)) == packet1),
@@ -435,6 +469,13 @@ module ccv_model {
             }
         )
 
+    // for all consumers, waitingForSlashPacketAck is either empty or has a single element
+    val WaitingForSlashPacketAckInv = 
+        runningConsumers.forall(
+            consumer => 
+                currentState.consumerStates.get(consumer).waitingForSlashPacketAck.size() <= 1
+        )
+
 
     // =================
     // SANITY CHECKS
@@ -476,8 +517,28 @@ module ccv_model {
     val CanSendVscMaturedPackets =
         not(ConsumerChains.exists(
             consumer => 
-                currentState.consumerStates.get(consumer).outstandingPacketsToProvider.length() > 0
+                currentState.consumerStates.get(consumer)
+                    .outstandingPacketsToProvider
+                    .select(IsVscMaturedPacket).length() > 0
         ))
+
+    val CanSendSlashPacket = 
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.consumerStates.get(consumer)
+                    .outstandingPacketsToProvider
+                    .select(IsSlashPacket).length() > 0
+        ))
+
+    val CanJail =
+        not(
+            currentState.providerState.chainState.jailedUntil.keys().size() > 0
+        )
+
+    val CanJailMany =
+        not(
+            currentState.providerState.chainState.jailedUntil.keys().size() > 3
+        )
     
     val CanReceiveMaturations =
         not(ConsumerChains.exists(
@@ -518,7 +579,7 @@ module ccv_model {
                 )),
                 assert(currentState.consumerStates.keys() == consumerChains),
                 assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet)),
-                assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet),
+                assert(currentState.providerState.chainState.currentValidatorPowers == InitialValidatorSet),
                 assert(currentState.providerState.chainState.lastTimestamp == -1),
                 assert(currentState.providerState.chainState.runningTimestamp == 0),
                 VotingPowerChange("node1", 50)
@@ -526,9 +587,9 @@ module ccv_model {
             .then(
             all {
                 // the validator set has changed
-                assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet.put("node1", 150)),
+                assert(currentState.providerState.chainState.currentValidatorPowers == InitialValidatorSet.put("node1", 150)),
                 // start consumer1
-                EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1")), Set())
+                EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
             })
             .then(
                 all {
@@ -556,7 +617,7 @@ module ccv_model {
                     // ensure the maturation time was entered on the consumer
                     assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 1),
                     // the validator set was put as the current validator set
-                    assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 200)),
+                    assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorPowers == InitialValidatorSet.put("node1", 200)),
                     // advance time on provider and consumer until unbonding period is over - ensure that the consumer and provider
                     // stay in sync relative to each other
                     // We want to make sure the steps we make are shorter the trusting period,
@@ -588,7 +649,7 @@ module ccv_model {
                     // it was removed from the maturationTimes
                     assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 0),
                     // receive the packet on the provider
-                    DeliverVscMaturedPacket("consumer1")
+                    DeliverPacketToProvider("consumer1")
                 }
             )
             .then(
@@ -606,7 +667,7 @@ module ccv_model {
     run SameVscPacketsManualTest =
         init.then(
             // start all consumers except for consumer3
-            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1"), NewFullConsumer("consumer2")), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer1", "consumer2"), Set())
         ).then(
             // change voting power
             VotingPowerChange("node1", 50)
@@ -621,7 +682,7 @@ module ccv_model {
             DeliverVscPacket("consumer2")
         ).then(
             // start consumer3
-            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer3")), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
         ).then(
             // do another voting power change
             VotingPowerChange("node2", 50)
@@ -652,7 +713,7 @@ module ccv_model {
         init
         .then(
             // start all consumer chains
-            EndAndBeginBlockForProvider(1 * Second, ConsumerChains.map(c => NewFullConsumer(c)), Set())
+            EndAndBeginBlockForProvider(1 * Second, ConsumerChains, Set())
         )
         .then(
             // change voting power
@@ -691,7 +752,8 @@ module ccv_model {
     action nondetKeyAssignment = 
         all {
             runningConsumers.size() > 0,
-            nondet node = oneOf(nodes)
+            nonJailedNodes(currentState.providerState).size() > 0,
+            nondet node = oneOf(nonJailedNodes(currentState.providerState))
             nondet consumerAddr = oneOf(consumerAddresses)
             nondet consumer = oneOf(runningConsumers)
             KeyAssignment(consumer, node, consumerAddr),
@@ -716,6 +778,63 @@ module ccv_model {
             ),
             params' = params,
         }
+
+    // Make the consumer send a slash request for the given node
+    // (which must be the nodes address on the consumer)
+    // and a given validator set id, which indicates during which
+    // time period the infraction occurred.
+    action ConsumerInitiatedSlashDet(
+        consumer: Chain,
+        consumerNode: Node,
+        vscId: VscId,
+        isDowntime: bool
+    ): bool = {
+        val result = sendSlashRequest(currentState, consumer, consumerNode, vscId, isDowntime)
+        all {
+            hasError(result) == false,
+            currentState' = result.newState,
+            trace' = trace.append(
+                {...emptyAction,
+                kind: "ConsumerInitiatedSlash",
+                consumerChain: consumer,
+                validator: consumerNode,
+                vscId: vscId,
+                isDowntime: isDowntime
+                }
+            ),
+            params' = params,
+        }
+    }
+
+    // Nondeterministic version of consumer initiated slashing,
+    // which first chooses sensible arguments, and then invokes the deterministic version.
+    action ConsumerInitiatedSlash(): bool = {
+        all {
+            runningConsumers.size() > 0,
+            // pick a running consumer to slash from
+            nondet consumer = oneOf(runningConsumers)
+            // we want to be able to slash for past infractions,
+            // and we need both the validator address and the
+            // vsc id of the packet to send to the provider
+            // pick a validator to slash...
+            val consumerState = currentState.consumerStates.get(consumer)
+            // ...by getting all received vsc packets...
+            val rcvdVscPackets = consumerState.receivedVscPackets
+            all {
+                rcvdVscPackets.length() > 0,
+                // ...picking one of the packets...
+                nondet packet = oneOf(rcvdVscPackets.toSet())
+                val vscId = packet.id
+                val valSet = packet.validatorSet.keys()
+                // ...and picking one of the validators with non-zero power in the packet
+                nondet validator = oneOf(valSet.filter(node => packet.validatorSet.get(node) > 0))
+                // finally, choose whether to slash for downtime or double-signing
+                nondet isDowntime = oneOf(Set(true, false))
+                // then we can invoke the deterministic slash
+                ConsumerInitiatedSlashDet(consumer, validator, vscId, isDowntime)
+            }
+        }
+    }
 
     // invariants for key assignment - some invariants are in addition, some need to be adjusted from the original model
 
@@ -743,9 +862,9 @@ module ccv_model {
             implies
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
+        val providerState = currentState.providerState
         currentState.providerState.consumersWithPowerChangesInThisEpoch.forall(
             // ...the validator set under key assignment is in a sent packet...
-            val providerState = currentState.providerState
             consumer => providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
                 packet => 
                     packet.validatorSet == 
@@ -826,7 +945,7 @@ module ccv_model {
                     // either the key is the nodes key itself (B == A)
                     consAddr == node or
                     // or the consAddr must not be a validator on the provider
-                    not(currentState.providerState.chainState.currentValidatorSet.keys().contains(consAddr))
+                    not(currentState.providerState.chainState.currentValidatorPowers.keys().contains(consAddr))
             )
         )
 
@@ -855,7 +974,7 @@ module ccv_model {
     val CanHaveConsumerAddresses =
         not(consumerChains.exists(
             consumer => 
-                currentState.consumerStates.get(consumer).chainState.currentValidatorSet.keys().exists(
+                currentState.consumerStates.get(consumer).chainState.currentValidatorPowers.keys().exists(
                     addr => addr.in(consumerAddresses)
                 )
         ))
@@ -865,7 +984,7 @@ module ccv_model {
         init
         .then(
             // start all consumer chains
-            EndAndBeginBlockForProvider(1 * Second, consumerChains.map(c => NewFullConsumer(c)), Set())
+            EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
         )
         .then(
             // node 1 assigns a key on consumer1
@@ -886,9 +1005,9 @@ module ccv_model {
         .then(
             all {
                 // the key should be present in the valset on the consumer, and the node itself should not
-                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.getOrElse("node1", 0) == 0),
-                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet.get("consAddr1") == 100),
-                // try some key assignments that should fail/succeed without comitting to state
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorPowers.getOrElse("node1", 0) == 0),
+                assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorPowers.get("consAddr1") == 100),
+                // try some key assignments that should fail/succeed without committing to state
                 val res = assignConsumerKey(currentState, "consumer1", "node1", "consAddr1")
                 // fail - key already assigned (even if it is the same node)
                 assert(hasError(res)),
@@ -917,7 +1036,7 @@ module ccv_model {
         )
         .then(
             // deliver the vsc matured packet to the provider
-            DeliverVscMaturedPacket("consumer1")
+            DeliverPacketToProvider("consumer1")
         )
         .then(
             // the old key should have been pruned
@@ -937,12 +1056,171 @@ module ccv_model {
             VotingPowerChange("node1", 50)
         )
         .then(
-            EndAndBeginBlockForProvider(1 * Second, Set(NewFullConsumer("consumer1"), NewFullConsumer("consumer2")), Set())
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer1", "consumer2"), Set())
         ).then(
             all {
                 ValidatorSetHasExistedKeyAssignmentInv,
                 // action doesn't matter
                 VotingPowerChange("node1", 50)
+            }
+        )
+
+    // ======= tests for consumer initiated slashing =======
+
+    run DowntimeSlashTest = 
+        init.then(
+            // start all consumer chains
+            EndAndBeginBlockForProvider(1 * Second, consumerChains, Set())
+        ).then(
+            // change voting power
+            VotingPowerChange("node1", 50)
+        ).then(
+            // end a block on the provider
+            EndProviderEpoch(3 * Second, Set(), Set())
+        ).then(
+            val vscId = currentState.providerState.sentVscPacketsToConsumer.get("consumer1").head().id
+            // deliver the vsc packet to consumer1
+            DeliverVscPacket("consumer1").then(
+                // end a block on consumer 1
+                EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+            ).then(
+                // slash for downtime on consumer1
+                ConsumerInitiatedSlashDet("consumer1", "node1", vscId, true)
+            ).then(
+                // end a block on the consumer
+                EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+            )
+            .then(
+                // deliver the slash request to the provider
+                DeliverPacketToProvider("consumer1")
+            )
+            .then(
+                // the provider should have jailed node1
+                all {
+                    assert(currentState.providerState.chainState.jailedUntil.keys().contains("node1")),
+                    // action does not matter
+                    VotingPowerChange("node1", 50)
+                }
+            )
+        )
+
+    run SlashValSetInvTest = 
+        init
+        .then(
+            // start consumer 3
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
+        )
+        .then(
+            // change voting power for node 3 by 50
+            VotingPowerChange("node3", 50)
+        )
+        .then(
+            // start consumer 2
+            EndProviderEpoch(3 * Second, Set("consumer2"), Set())
+        )
+        .then(
+            // deliver a vsc packet to consumer 3
+            DeliverVscPacket("consumer3")
+        )
+        .then(
+            // consumer 3 slashes validator 1
+            ConsumerInitiatedSlashDet("consumer3", "node3", 0, true )
+        )
+        .then(
+            // end and begin a block for consumer 3
+            EndAndBeginBlockForConsumer("consumer3", 1 * Second)
+        )
+        .then(
+            // deliver the slash request to the provider
+            DeliverPacketToProvider("consumer3")
+        )
+        .then(
+            // start consumer 1
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+        )
+        .then(
+            all {
+                assert(ValidatorSetHasExistedInv),
+                // action does not matter
+                VotingPowerChange("node1", 50)
+            }
+        )
+        
+    run SlashValSetKeyAssignmentTest =
+        init
+        .then(
+            // start consumer 2
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer2"), Set())
+        )
+        .then(
+            // change vp of node 10 by -50
+            VotingPowerChange("node10", -50)
+        )
+        .then(
+            // end and begin a block on the provider
+            EndProviderEpoch(3 * Second, Set(), Set())
+        )
+        .then(
+            // deliver the vsc packet to consumer 2
+            DeliverVscPacket("consumer2")
+        )
+        .then(
+            // consumer 2 slashes validator 9
+            ConsumerInitiatedSlashDet("consumer2", "node9", 0, true )
+        )
+        .then(
+            // end and begin a block for consumer 2
+            EndAndBeginBlockForConsumer("consumer2", 1 * Second)
+        )
+        .then(
+            // deliver the slash request to the provider
+            DeliverPacketToProvider("consumer2")
+        )
+        .then(
+            // end and begin a block on the provider, starting consumer 3
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
+        )
+        .then(
+            // check the ValidatorSetHasExistedKeyAssignmentInv
+            all {
+                assert(ValidatorSetHasExistedKeyAssignmentInv),
+                // action does not matter
+                VotingPowerChange("node1", 50)
+            }
+        )
+
+    run SlashAckTest = 
+        init
+        .then(
+            // start consumer 1
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+        )
+        .then(
+            // change voting power for node 1 by 50
+            VotingPowerChange("node1", 50)
+        )
+        .then(
+            // end and begin a block on the provider
+            EndProviderEpoch(3 * Second, Set(), Set())
+        )
+        .then(
+            // deliver the vsc packet to consumer 1
+            DeliverVscPacket("consumer1")
+        )
+        .then(
+            // initiate a slash for downtime
+            ConsumerInitiatedSlashDet("consumer1", "node1", 0, true)
+        )
+        .then(
+            // end and begin a block for consumer 1 to send the packet
+            EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+        )
+        .then(
+            all {
+                assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 1),
+                assert(currentState.consumerStates.get("consumer1").waitingForSlashPacketAck.size() == 1),
+                // deliver the slash request to the provider
+                DeliverPacketToProvider("consumer1")
             }
         )
 }

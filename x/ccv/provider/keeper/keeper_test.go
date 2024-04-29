@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
+
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -670,19 +671,19 @@ func TestGetAllOptedIn(t *testing.T) {
 	expectedOptedInValidators := []types.ProviderConsAddress{
 		types.NewProviderConsAddress([]byte("providerAddr1")),
 		types.NewProviderConsAddress([]byte("providerAddr2")),
-		types.NewProviderConsAddress([]byte("providerAddr3"))}
+		types.NewProviderConsAddress([]byte("providerAddr3")),
+	}
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
 		providerKeeper.SetOptedIn(ctx, "chainID", expectedOptedInValidator)
-
 	}
 
 	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "chainID")
 
 	// sort validators first to be able to compare
-	sortOptedInValidators := func(addressess []types.ProviderConsAddress) {
-		sort.Slice(addressess, func(i int, j int) bool {
-			return bytes.Compare(addressess[i].ToSdkConsAddr(), addressess[j].ToSdkConsAddr()) < 0
+	sortOptedInValidators := func(addresses []types.ProviderConsAddress) {
+		sort.Slice(addressess, func(i, j int) bool {
+			return bytes.Compare(addresses[i].ToSdkConsAddr(), addresses[j].ToSdkConsAddr()) < 0
 		})
 	}
 	sortOptedInValidators(expectedOptedInValidators)

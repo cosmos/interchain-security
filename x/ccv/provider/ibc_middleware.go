@@ -116,17 +116,17 @@ func (im IBCMiddleware) OnRecvPacket(
 	// executes the IBC transfer OnRecv logic
 	ack := im.app.OnRecvPacket(ctx, packet, relayer)
 
-	// execute the middleware logic only if the sender is a consumer chain
-	consumerID, err := im.keeper.IdentifyConsumerChainIDFromIBCPacket(ctx, packet)
-	if err != nil {
-		return ack
-	}
-
 	// Note that inside the below if condition statement,
 	// we know that the IBC transfer succeeded. That entails
 	// that the packet data is valid and can be safely
 	// deserialized without checking errors.
 	if ack.Success() {
+		// execute the middleware logic only if the sender is a consumer chain
+		consumerID, err := im.keeper.IdentifyConsumerChainIDFromIBCPacket(ctx, packet)
+		if err != nil {
+			return ack
+		}
+
 		// extract the coin info received from the packet data
 		var data ibctransfertypes.FungibleTokenPacketData
 		_ = types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)

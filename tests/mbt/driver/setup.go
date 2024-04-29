@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"log"
+	"sort"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
@@ -57,9 +59,9 @@ var (
 // - a validator set
 // - a map from node names to validator objects and
 // - a map from validator addresses to private validators (signers)
-func CreateValSet(initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator, error) {
+func CreateValSet(initialValidatorSet map[string]int64, chainId string) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator, error) {
 	// create a valSet and signers, but the voting powers will not yet be right
-	valSet, _, signers, err := integration.CreateValidators(len(initialValidatorSet))
+	valSet, _, signers, err := integration.CreateValidators(len(initialValidatorSet), chainId)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -72,6 +74,8 @@ func CreateValSet(initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet,
 	for valName := range initialValidatorSet {
 		valNames = append(valNames, valName)
 	}
+	// sort the names so that the order is deterministic
+	sort.Strings(valNames)
 
 	// assign the validators from the created valSet to valNames in the chosen order
 	for i, valName := range valNames {
@@ -108,7 +112,7 @@ func getAppBytesAndSenders(
 
 	// Create genesis accounts.
 	for i := 0; i < len(nodes); i++ {
-		pk := secp256k1.GenPrivKey()
+		pk := secp256k1.GenPrivKeyFromSecret([]byte(chainID + valNames[i]))
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
 		// Give enough funds for many delegations
@@ -311,7 +315,7 @@ func newChain(
 // Creates a path for cross-chain validation from the consumer to the provider and configures the channel config of the endpoints
 // as well as the clients.
 // this function stops when there is an initialized, ready-to-relay channel between the provider and consumer.
-func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestChain, params ModelParams, topN uint32) *ibctesting.Path {
+func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestChain, params ModelParams) *ibctesting.Path {
 	consumerChainId := ChainId(consumerChain.ChainID)
 
 	path := ibctesting.NewPath(consumerChain, providerChain)
@@ -384,10 +388,8 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		consumerGenesisForProvider)
 	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
 
-	// set the top N percentage
-	// needs to be done before the provider queues the first vsc packet to the consumer
-	// TODO: might be able to move this into setupConsumer, need to test once more logic is here
-	s.providerKeeper().SetTopN(providerChain.GetContext(), consumerChain.ChainID, topN)
+	// set the top N percentage to 100 to simulate a full consumer
+	s.providerKeeper().SetTopN(providerChain.GetContext(), consumerChain.ChainID, 100)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.
@@ -429,7 +431,21 @@ func (s *Driver) setupProvider(
 	// set the CcvTimeoutPeriod
 	providerParams := s.providerKeeper().GetParams(s.ctx("provider"))
 	providerParams.CcvTimeoutPeriod = params.CcvTimeout[ChainId(providerChain.ChainID)]
+	providerParams.SlashMeterReplenishFraction = "1"
+	providerParams.SlashMeterReplenishPeriod = time.Nanosecond
 	s.providerKeeper().SetParams(s.ctx("provider"), providerParams)
+
+	// set the signing infos
+	for _, val := range nodes {
+		s.providerSlashingKeeper().SetValidatorSigningInfo(s.ctx("provider"), val.Address.Bytes(), slashingtypes.ValidatorSigningInfo{
+			Address:             val.Address.String(),
+			StartHeight:         0,
+			IndexOffset:         0,
+			JailedUntil:         time.Time{},
+			Tombstoned:          false,
+			MissedBlocksCounter: 0,
+		})
+	}
 
 	// produce a first block
 	simibc.EndBlock(providerChain, func() {})
@@ -444,12 +460,9 @@ func (s *Driver) setupConsumer(
 	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
 	valNames []string,
 	providerChain *ibctesting.TestChain,
-	topN int64,
 ) {
 	s.t.Logf("Starting consumer %v", chain)
 
-	// TODO: reuse the partial set computation logic to compute the initial validator set
-	// for top N chains
 	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
 
 	// start consumer chains
@@ -457,7 +470,7 @@ func (s *Driver) setupConsumer(
 	consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes, valNames)
 	s.coordinator.Chains[chain] = consumerChain
 
-	path := s.ConfigureNewPath(consumerChain, providerChain, params, uint32(topN))
+	path := s.ConfigureNewPath(consumerChain, providerChain, params)
 	s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
 }
 

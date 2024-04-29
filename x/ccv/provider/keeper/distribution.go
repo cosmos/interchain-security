@@ -17,7 +17,6 @@ import (
 
 // BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.
 func (k Keeper) BeginBlockRD(ctx sdk.Context, req abci.RequestBeginBlock) {
-
 	// TODO this is Tendermint-dependent
 	// ref https://github.com/cosmos/cosmos-sdk/issues/3095
 	if ctx.BlockHeight() > 1 {

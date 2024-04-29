@@ -113,7 +113,7 @@ The changeover procedure may be updated in the future to create a seamless way o
 
 This onboarding checklist is slightly different from the one under [Onboarding](./onboarding.md)
 
-Additionally, you can check the [testnet repo](https://github.com/cosmos/testnets/blob/master/replicated-security/CONSUMER_LAUNCH_GUIDE.md) for a comprehensive guide on preparing and launching consumer chains.
+Additionally, you can check the [testnet repo](https://github.com/cosmos/testnets/blob/master/interchain-security/CONSUMER_LAUNCH_GUIDE.md) for a comprehensive guide on preparing and launching consumer chains.
 
 ## 1. Complete testing & integration
 

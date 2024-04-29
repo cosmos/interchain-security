@@ -41,7 +41,8 @@ module ccv_pss_model {
     action OptOut_Deterministic(consumer: Chain, validator: Node): bool = {
         val res = OptOut(currentState, consumer, validator)
         all {
-            currentState' = res.newState,
+            // if we expect an error, this should be a noop
+            currentState' = if (res.error == "") res.newState else currentState,
             trace' = trace.append(
                 {
                     ...emptyAction,
@@ -59,7 +60,7 @@ module ccv_pss_model {
     val allFullConsumers: Set[int] = Set(100)
     val allOptIn: Set[int] = Set(0)
     // only choose a few values for top N here to not make the "edge cases" of 0 and 100 too unlikely
-    val variousPossibleTopN: Set[int] = Set(0, 50, 70, 80, 90, 100)
+    val variousPossibleTopN: Set[int] = Set(50, 70, 80, 90, 100)
 
     // INVARIANTS
 
@@ -68,7 +69,7 @@ module ccv_pss_model {
     val AtLeastTopNPower: bool = 
         runningConsumers.forall(consumer => {
             val topN = currentState.providerState.topNByConsumer.get(consumer)
-            val totalPowerConsu = currentState.consumerStates.get(consumer).chainState.currentValidatorSet.mapValuesSum()
+            val totalPowerConsu = currentState.consumerStates.get(consumer).chainState.currentValidatorPowers.mapValuesSum()
             currentState.providerState.chainState.votingPowerHistory.toSet().exists(
                 valSet => {
                     val totalPowerProvi = valSet.mapValuesSum()
