@@ -1222,7 +1222,8 @@ func (k Keeper) IsOptedIn(
 // GetAllOptedIn returns all the opted-in validators on chain `chainID`
 func (k Keeper) GetAllOptedIn(
 	ctx sdk.Context,
-	chainID string) (providerConsAddresses []types.ProviderConsAddress) {
+	chainID string,
+) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, key)
@@ -1267,8 +1268,7 @@ func (k Keeper) GetConsumerCommissionRate(
 
 	cr := sdk.Dec{}
 	if err := cr.Unmarshal(bz); err != nil {
-		k.Logger(ctx).Error("consumer commission rate unmarshalling failed: %s", err)
-		return sdk.ZeroDec(), false
+		panic(fmt.Sprintf("consumer commission rate unmarshalling failed: %s", err))
 	}
 
 	return cr, true
