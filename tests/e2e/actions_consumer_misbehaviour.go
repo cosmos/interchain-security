@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"log"
-	"os/exec"
 	"strconv"
 	"time"
 )
@@ -19,9 +18,7 @@ type ForkConsumerChainAction struct {
 
 func (tc Chain) forkConsumerChain(action ForkConsumerChainAction, verbose bool) {
 	valCfg := tc.testConfig.validatorConfigs[action.Validator]
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "/bin/bash",
+	configureNodeCmd := tc.target.ExecCommand("/bin/bash",
 		"/testnet-scripts/fork-consumer.sh", tc.testConfig.chainConfigs[action.ConsumerChain].BinaryName,
 		string(action.Validator), string(action.ConsumerChain),
 		tc.testConfig.chainConfigs[action.ConsumerChain].IpPrefix,

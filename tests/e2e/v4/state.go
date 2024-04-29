@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 	"gopkg.in/yaml.v2"
@@ -59,8 +60,6 @@ func (tr DriverV4) GetTestScriptPath(isConsumer bool, script string) string {
 }
 
 func (tr DriverV4) GetBlockHeight(chain ChainID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 
@@ -95,12 +94,24 @@ func (tr DriverV4) waitUntilBlock(chain ChainID, block uint, timeout time.Durati
 	}
 }
 
+type ValPubKey struct {
+	Value string `yaml:"value"`
+}
+
+type TmValidatorSetYaml struct {
+	Total      string `yaml:"total"`
+	Validators []struct {
+		Address     string    `yaml:"address"`
+		VotingPower string    `yaml:"voting_power"`
+		PubKey      ValPubKey `yaml:"pub_key"`
+	}
+}
+
 func (tr DriverV4) GetValPower(chain ChainID, validator ValidatorID) uint {
 	/* 	if *verbose {
 	   		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
 	   	}
-	*/ //#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//command := exec.Command("docker", "exec", st.containerConfig.InstanceName, st.chainConfigs[chain].BinaryName,
+	*/
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	command := tr.Target.ExecCommand(binaryName,
 
@@ -113,38 +124,21 @@ func (tr DriverV4) GetValPower(chain ChainID, validator ValidatorID) uint {
 		log.Fatalf("encountered an error when executing command '%s': %v, output: %s", command.String(), err, string(bz))
 	}
 
-	type ValPubKey struct {
-		Value string `yaml:"value"`
-	}
-
-	type TmValidatorSetYaml_v5 struct {
-		BlockHeight string `yaml:"block_height"`
-		Pagination  struct {
-			NextKey string `yaml:"next_key"`
-			Total   string `yaml:"total"`
-		} `yaml:"pagination"`
-		Validators []struct {
-			Address     string    `yaml:"address"`
-			VotingPower string    `yaml:"voting_power"`
-			PubKey      ValPubKey `yaml:"pub_key"`
-		}
-	}
-
-	valset := TmValidatorSetYaml_v5{}
-
+	valset := TmValidatorSetYaml{}
 	err = yaml.Unmarshal(bz, &valset)
 	if err != nil {
 		log.Fatalf("yaml.Unmarshal returned an error while unmarshalling validator set: %v, input: %s", err, string(bz))
 	}
 
-	total, err := strconv.Atoi(valset.Pagination.Total)
+	total, err := strconv.Atoi(valset.Total)
 	if err != nil {
-		log.Fatalf("strconv.Atoi returned an error while converting total for validator set: %v, input: %s, validator set: %s", err, valset.Pagination.Total, pretty.Sprint(valset))
+		log.Fatalf("v4: strconv.Atoi returned an error while converting total for validator set: %v, input: %s, validator set: %s, src: %s",
+			err, valset.Total, pretty.Sprint(valset), string(bz))
 	}
 
 	if total != len(valset.Validators) {
 		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue. Validator set: %v",
-			valset.Pagination.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
+			valset.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
 	}
 
 	for _, val := range valset.Validators {
@@ -186,8 +180,6 @@ func (tr DriverV4) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 		}
 	}
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 
@@ -222,8 +214,7 @@ func (tr DriverV4) GetBalance(chain ChainID, validator ValidatorID) uint {
 			valDelAddress = valCfg.DelAddressOnConsumer
 		}
 	}
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 
@@ -246,8 +237,7 @@ func (tr DriverV4) GetBalance(chain ChainID, validator ValidatorID) uint {
 // interchain-securityd query gov proposals
 func (tr DriverV4) GetProposal(chain ChainID, proposal uint) Proposal {
 	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 
@@ -271,6 +261,13 @@ func (tr DriverV4) GetProposal(chain ChainID, proposal uint) Proposal {
 	propType := gjson.Get(string(bz), `messages.0.content.@type`).String()
 	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
 	status := gjson.Get(string(bz), `status`).String()
+
+	// This is a breaking change in the query output for proposals: bug in SDK??
+	proposal_value, exists := gov.ProposalStatus_value[status]
+	if !exists {
+		panic("invalid proposal status value: " + status)
+	}
+	status = strconv.Itoa(int(proposal_value))
 
 	chainConfigs := tr.ChainConfigs
 	containerConfig := tr.ContainerConfig
@@ -352,8 +349,6 @@ func (tr DriverV4) GetProposal(chain ChainID, proposal uint) Proposal {
 }
 
 func (tr DriverV4) GetValStakedTokens(chain ChainID, valoperAddress string) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 
@@ -373,9 +368,6 @@ func (tr DriverV4) GetValStakedTokens(chain ChainID, valoperAddress string) uint
 }
 
 func (tr DriverV4) GetParam(chain ChainID, param Param) string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 		"query", "params", "subspace",
@@ -397,8 +389,6 @@ func (tr DriverV4) GetParam(chain ChainID, param Param) string {
 // GetConsumerChains returns a list of consumer chains that're being secured by the provider chain,
 // determined by querying the provider chain.
 func (tr DriverV4) GetConsumerChains(chain ChainID) map[ChainID]bool {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 
@@ -422,9 +412,6 @@ func (tr DriverV4) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	return chains
 }
 func (tr DriverV4) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
-
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 
@@ -443,10 +430,7 @@ func (tr DriverV4) GetConsumerAddress(consumerChain ChainID, validator Validator
 }
 
 func (tr DriverV4) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
-
 	cmd := tr.Target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-provider-key",
@@ -466,10 +450,7 @@ func (tr DriverV4) GetProviderAddressFromConsumer(consumerChain ChainID, validat
 }
 
 func (tr DriverV4) GetSlashMeter() int64 {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec",
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
-
 	cmd := tr.Target.ExecCommand(binaryName,
 
 		"query", "provider", "throttle-state",
@@ -486,10 +467,7 @@ func (tr DriverV4) GetSlashMeter() int64 {
 }
 
 func (tr DriverV4) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
-
 	cmd := tr.Target.ExecCommand(binaryName,
 		"query", "provider", "registered-consumer-reward-denoms",
 		`--node`, tr.GetQueryNode(chain),
@@ -510,8 +488,6 @@ func (tr DriverV4) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
 }
 
 func (tr DriverV4) GetPendingPacketQueueSize(chain ChainID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 		"query", "ccvconsumer", "throttle-state",
@@ -559,9 +535,6 @@ func (tr DriverV4) GetQueryNodeIP(chain ChainID) string {
 
 func (tr DriverV4) curlJsonRPCRequest(method, params, address string) {
 	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.testConfig.containerConfig.InstanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 	cmd := tr.Target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
 	verbosity := false

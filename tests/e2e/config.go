@@ -414,7 +414,7 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 				".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
 		}
-	} else if semver.Compare(providerVersion, "v5") < 0 {
+	} else if semver.Compare(providerVersion, "v5.0.0-alpha1") < 0 { //TODO: MOV THIS BACK TO "v5.0.0"
 		fmt.Println("Using provider chain config for v4.1.x")
 		providerConfig = ChainConfig{
 			ChainId:        ChainID("provi"),

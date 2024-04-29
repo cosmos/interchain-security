@@ -67,7 +67,7 @@ func (td *DefaultDriver) getIcsVersion(chainID ChainID) string {
 	if td.testCfg.chainConfigs[chainID].BinaryName == "interchain-security-pd" {
 		version = td.testCfg.providerVersion
 	} else {
-		version = td.testCfg.providerVersion
+		version = td.testCfg.consumerVersion
 	}
 	ics := getIcsVersion(version)
 	if !semver.IsValid(ics) {

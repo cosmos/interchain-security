@@ -284,8 +284,6 @@ func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
 func (tr Chain) curlJsonRPCRequest(method, params, address string) {
 	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.testConfig.containerConfig.InstanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 	cmd := tr.target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
 	verbosity := false
@@ -316,8 +314,6 @@ func (tr DriverV5) GetTestScriptPath(isConsumer bool, script string) string {
 }
 
 func (tr DriverV5) GetBlockHeight(chain ChainID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 
@@ -351,8 +347,6 @@ func (tr DriverV5) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 		}
 	}
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 		"query", "distribution", "delegation-total-rewards",
@@ -379,8 +373,7 @@ func (tr DriverV5) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 // interchain-securityd query gov proposals
 func (tr DriverV5) GetProposal(chain ChainID, proposal uint) Proposal {
 	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+
 	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "gov", "proposal",
@@ -515,8 +508,6 @@ func (tr DriverV5) GetValPower(chain ChainID, validator ValidatorID) uint {
 	if *verbose {
 		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
 	}
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//command := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
 	command := tr.target.ExecCommand(binaryName,
 
@@ -538,7 +529,8 @@ func (tr DriverV5) GetValPower(chain ChainID, validator ValidatorID) uint {
 
 	total, err := strconv.Atoi(valset.Pagination.Total)
 	if err != nil {
-		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Pagination.Total, pretty.Sprint(valset))
+		log.Fatalf("strconv.Atoi returned an error while converting total for validator set: %v, input: %s, validator set: %s, src:%s",
+			err, valset.Pagination.Total, pretty.Sprint(valset), string(bz))
 	}
 
 	if total != len(valset.Validators) {
@@ -584,8 +576,7 @@ func (tr DriverV5) GetBalance(chain ChainID, validator ValidatorID) uint {
 			valDelAddress = valCfg.DelAddressOnConsumer
 		}
 	}
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 
@@ -606,9 +597,6 @@ func (tr DriverV5) GetBalance(chain ChainID, validator ValidatorID) uint {
 }
 
 func (tr DriverV5) GetValStakedTokens(chain ChainID, valoperAddress string) uint {
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 
@@ -628,9 +616,6 @@ func (tr DriverV5) GetValStakedTokens(chain ChainID, valoperAddress string) uint
 }
 
 func (tr DriverV5) GetParam(chain ChainID, param Param) string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-
 	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "params", "subspace",
@@ -650,8 +635,6 @@ func (tr DriverV5) GetParam(chain ChainID, param Param) string {
 }
 
 func (tr DriverV5) GetIBCTransferParams(chain ChainID) IBCTransferParams {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "ibc-transfer", "params",
@@ -673,8 +656,6 @@ func (tr DriverV5) GetIBCTransferParams(chain ChainID) IBCTransferParams {
 // GetConsumerChains returns a list of consumer chains that're being secured by the provider chain,
 // determined by querying the provider chain.
 func (tr DriverV5) GetConsumerChains(chain ChainID) map[ChainID]bool {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 
@@ -699,9 +680,6 @@ func (tr DriverV5) GetConsumerChains(chain ChainID) map[ChainID]bool {
 }
 
 func (tr DriverV5) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
-
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 
@@ -720,10 +698,7 @@ func (tr DriverV5) GetConsumerAddress(consumerChain ChainID, validator Validator
 }
 
 func (tr DriverV5) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
-
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-provider-key",
@@ -743,10 +718,7 @@ func (tr DriverV5) GetProviderAddressFromConsumer(consumerChain ChainID, validat
 }
 
 func (tr DriverV5) GetSlashMeter() int64 {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec",
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
-
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "throttle-state",
@@ -763,10 +735,7 @@ func (tr DriverV5) GetSlashMeter() int64 {
 }
 
 func (tr DriverV5) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
-
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "registered-consumer-reward-denoms",
@@ -788,8 +757,6 @@ func (tr DriverV5) GetRegisteredConsumerRewardDenoms(chain ChainID) []string {
 }
 
 func (tr DriverV5) GetPendingPacketQueueSize(chain ChainID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 
@@ -813,8 +780,6 @@ func (tr DriverV5) GetPendingPacketQueueSize(chain ChainID) uint {
 // GetClientFrozenHeight returns the frozen height for a client with the given client ID
 // by querying the hosting chain with the given chainID
 func (tr DriverV5) GetClientFrozenHeight(chain ChainID, clientID string) (uint64, uint64) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 		"query", "ibc", "client", "state", clientID,
@@ -847,8 +812,6 @@ func (tr DriverV5) GetTrustedHeight(
 	clientID string,
 	index int,
 ) (uint64, uint64) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
 	configureNodeCmd := tr.target.ExecCommand("hermes",
 		"--json", "query", "client", "consensus", "--chain", string(chain),
 		`--client`, clientID,
@@ -891,8 +854,6 @@ func (tr DriverV5) GetTrustedHeight(
 }
 
 func (tr DriverV5) GetProposedConsumerChains(chain ChainID) []string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "provider", "list-proposed-consumer-chains",
