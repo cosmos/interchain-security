@@ -24,6 +24,23 @@ $ npm run build
 
 This command generates static content into the `build` directory and can be served using any static contents hosting service.
 
+
+# Adding versions
+
+To add/remove versions from the page you can modify `versions.json`.
+
+At the time of writing it looked like this:
+```json
+[
+    "v4.0.0",
+    "v4.1.0",
+    "v5.0.0-rc0"
+]
+```
+
+You can remove any version that you no longer need and the build process will remove it from the final page.
+
+
 # Accessing versioned docs locally
 
 ```shell
