@@ -195,7 +195,8 @@ func TestOptInTopNValidators(t *testing.T) {
 		types.NewProviderConsAddress(valAConsAddr),
 		types.NewProviderConsAddress(valBConsAddr),
 		types.NewProviderConsAddress(valCConsAddr),
-		types.NewProviderConsAddress(valDConsAddr)}
+		types.NewProviderConsAddress(valDConsAddr),
+	}
 	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "chainID")
 
 	// sort validators first to be able to compare
@@ -232,7 +233,8 @@ func TestOptInTopNValidators(t *testing.T) {
 	providerKeeper.OptInTopNValidators(ctx, "chainID", []stakingtypes.Validator{valA, valB, valC, valD}, 2)
 	expectedOptedInValidators = []types.ProviderConsAddress{
 		types.NewProviderConsAddress(valBConsAddr),
-		types.NewProviderConsAddress(valCConsAddr)}
+		types.NewProviderConsAddress(valCConsAddr),
+	}
 	actualOptedInValidators = providerKeeper.GetAllOptedIn(ctx, "chainID")
 
 	// sort validators first to be able to compare
@@ -298,5 +300,4 @@ func TestShouldConsiderOnlyOptIn(t *testing.T) {
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr)))
 	providerKeeper.SetOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr))
 	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr)))
-
 }

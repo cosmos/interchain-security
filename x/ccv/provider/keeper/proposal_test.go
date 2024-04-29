@@ -1034,7 +1034,7 @@ func TestBeginBlockInit(t *testing.T) {
 		ctx, pendingProps[3].SpawnTime, pendingProps[3].ChainId)
 	require.False(t, found)
 	// Note that we do not check that `GetConsumerGenesis(ctx, pendingProps[3].ChainId)` returns `false` here because
-	//`pendingProps[3]` is an invalid proposal due to the chain id already existing so the consumer genesis also exists
+	// `pendingProps[3]` is an invalid proposal due to the chain id already existing so the consumer genesis also exists
 
 	// fifth proposal is dropped due to it being an Opt-In chain with no validators opted in
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
