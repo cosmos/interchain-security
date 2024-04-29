@@ -10,19 +10,19 @@ Draft
 
 ## Context
 
-CosmoLayer enables staking of tokens from external sources such as Ethereum or Bitcoin to Cosmos blockchains. By integrating CosmoLayer, a Cosmos blockchain can be secured by staked Ethereum and native tokens.
+CosmoLayer enables staking of tokens from external sources such as Ethereum or Bitcoin to Cosmos blockchains. By integrating CosmoLayer, a Cosmos blockchain can be secured by both native tokens and external tokens (e.g., ETH, BTC).
 
-CosmoLayer solution consists of 4 parts
+CosmoLayer consists of the following four parts:
 
-- External staking solution such as Babylon or EigenLayer AVS contract
-- Oracle (tracks how much ETH has been delegated to each validator and provides price feeds for external tokens)
-- CosmoLayer: Cosmos modules (combines external and native stakes to derive power of each validator)
-- Bridge to EigenLayer (needed for rewards to be sent back to EigenLayer)
+- A mechanism for delegating external tokens to Cosmos validators, such as Babylon or EigenLayer AVS contract.
+- An oracle that tracks how much external stake has been delegated to each Cosmos validator and provides price feeds for external tokens.
+- Power mixing:  A mechanism to combine external and native stake to derive the power of each validator.
+- A bridge that enables sending back rewards to the external source.
 
 External staking information is received from an oracle together with price information of related stakes.
 The CosmosLayer derives validator powers based on external and native staking information and initiates rewarding of external depositors.
 
-Present ADR describes the _Cosmos modules_ of the solution.
+This ADR describes the _Cosmos modules_ of the solution.
 
 ## Alternative Approaches
 
@@ -45,7 +45,7 @@ The `Reward Handler` is in charge of sending rewards to external stakers.
 
 ### Power Mixing
 
-Power Mixing provides the final validator powers based on staking information of the native chain and the external stakes e.g. from Ethereum EigenLayer. The information about external staking and related price feeds are received from `Slinky Oracle`.
+Power Mixing provides the final validator powers based on staking information of the native chain and the external stakes. The information about external staking and related price feeds are received from an oracle.
 Once the final validator powers are determined the result is submitted to the underlying CometBFT consensus layer by [updating](https://docs.cometbft.com/v0.38/spec/abci/abci++_app_requirements#updating-the-validator-set) the validator set.
 
 Requirements:
