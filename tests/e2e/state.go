@@ -31,6 +31,7 @@ type ChainState struct {
 	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
 	RegisteredConsumerRewardDenoms *[]string
 	ClientsFrozenHeights           *map[string]clienttypes.Height
+	HasToValidate                  *map[ValidatorID][]ChainID // only relevant to provider chain
 }
 
 type Proposal interface {
@@ -178,6 +179,14 @@ func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainSt
 			chainClientsFrozenHeights[id] = tr.getClientFrozenHeight(chain, id)
 		}
 		chainState.ClientsFrozenHeights = &chainClientsFrozenHeights
+	}
+
+	if modelState.HasToValidate != nil {
+		hasToValidate := map[ValidatorID][]ChainID{}
+		for validatorId := range *modelState.HasToValidate {
+			hasToValidate[validatorId] = tr.getHasToValidate(validatorId)
+		}
+		chainState.HasToValidate = &hasToValidate
 	}
 
 	if modelState.ConsumerPendingPacketQueueSize != nil {
@@ -831,6 +840,29 @@ func (tc TestConfig) getClientFrozenHeight(chain ChainID, clientID string) clien
 	}
 
 	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+}
+
+func (tr TestConfig) getHasToValidate(
+	validatorId ValidatorID,
+) []ChainID {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
+		"query", "provider", "has-to-validate",
+		tr.validatorConfigs[validatorId].ValconsAddress,
+		`--node`, tr.getQueryNode(ChainID("provi")),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	arr := gjson.Get(string(bz), "consumer_chain_ids").Array()
+	chains := []ChainID{}
+	for _, c := range arr {
+		chains = append(chains, ChainID(c.String()))
+	}
+
+	return chains
 }
 
 func (tc TestConfig) getTrustedHeight(
