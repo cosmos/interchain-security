@@ -571,14 +571,14 @@ func ValidatorSetCapKey(chainID string) []byte {
 	return ChainIdWithLenKey(ValidatorSetCapPrefix, chainID)
 }
 
-// DenylistCapKey returns the key to a validator's slash log
-func DenylistCapKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	return append(ChainIdWithLenKey(DenylistPrefix, chainID), providerAddr.ToSdkConsAddr().Bytes()...)
-}
-
 // AllowlistCapKey returns the key to a validator's slash log
 func AllowlistCapKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	return append(ChainIdWithLenKey(AllowlistPrefix, chainID), providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// DenylistCapKey returns the key to a validator's slash log
+func DenylistCapKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	return append(ChainIdWithLenKey(DenylistPrefix, chainID), providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // OptedInKey returns the key used to store whether a validator is opted in on a consumer chain.

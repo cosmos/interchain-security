@@ -47,10 +47,6 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	).Return("clientID", nil).Times(1)
 	expectations = append(expectations, createClientExp)
 
-	mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(
-		cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator(), true).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(234)).AnyTimes()
-
 	return expectations
 }
 

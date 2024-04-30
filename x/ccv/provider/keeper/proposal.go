@@ -78,7 +78,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	if err != nil {
 		return err
 	}
-
 	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
 	if err != nil {
 		return err
