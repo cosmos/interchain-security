@@ -280,12 +280,10 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string,
 			"unknown consumer chain, with id: %s", chainID)
 	}
 	// set per-consumer chain commission rate for the validator address
-	k.SetConsumerCommissionRate(
+	return k.SetConsumerCommissionRate(
 		ctx,
 		chainID,
 		providerAddr,
 		commissionRate,
 	)
-
-	return nil
 }

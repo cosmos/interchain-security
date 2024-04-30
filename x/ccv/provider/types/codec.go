@@ -58,6 +58,10 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		(*exported.ClientMessage)(nil),
 		&tendermint.Misbehaviour{},
 	)
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgSetConsumerCommissionRate{},
+	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 

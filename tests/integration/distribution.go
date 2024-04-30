@@ -989,12 +989,13 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 			// set the same consumer commission rate for all consumer validators
 			for _, v := range consuVals {
 				provAddr := providertypes.NewProviderConsAddress(sdk.ConsAddress(v.ProviderConsAddr))
-				providerKeeper.SetConsumerCommissionRate(
+				err := providerKeeper.SetConsumerCommissionRate(
 					ctx,
 					chainID,
 					provAddr,
 					tc.rate,
 				)
+				s.Require().NoError(err)
 			}
 
 			// allocate tokens
