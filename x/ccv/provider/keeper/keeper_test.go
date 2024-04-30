@@ -682,7 +682,7 @@ func TestGetAllOptedIn(t *testing.T) {
 
 	// sort validators first to be able to compare
 	sortOptedInValidators := func(addresses []types.ProviderConsAddress) {
-		sort.Slice(addressess, func(i, j int) bool {
+		sort.Slice(addresses, func(i, j int) bool {
 			return bytes.Compare(addresses[i].ToSdkConsAddr(), addresses[j].ToSdkConsAddr()) < 0
 		})
 	}
