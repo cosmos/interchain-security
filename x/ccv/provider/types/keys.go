@@ -166,7 +166,7 @@ const (
 	// per validator per consumer chain
 	ConsumerCommissionRatePrefix
 
-	// ConsumerCommissionRateDenomPrefix is the byte prefix for storing the
+	// MinimumPowerInTopNBytePrefix is the byte prefix for storing the
 	// minimum power required to be in the top N per consumer chain.
 	MinimumPowerInTopNBytePrefix
 
