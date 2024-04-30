@@ -59,6 +59,10 @@ npm run start
 Remember to check back out to your working branch. Running `./sync_versions.sh` will leave you in a detached head state.
 (simply run `git checkout <working-branch>)
 
+## Note:
+The script will exit if you have uncommitted changes.
+The script switches branches while building the versioned docs - **please note that this could overwrite your local changes**.
+
 
 # Legacy documentation
 
