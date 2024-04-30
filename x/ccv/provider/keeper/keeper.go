@@ -1236,6 +1236,35 @@ func (k Keeper) GetAllOptedIn(
 	return providerConsAddresses
 }
 
+func (k Keeper) HasToValidate(
+	ctx sdk.Context,
+	provAddr types.ProviderConsAddress,
+	chainID string,
+) (bool, error) {
+	// if the validator is opted in or was sent as part of the packet in the last epoch, they have to validate
+	if k.IsOptedIn(ctx, chainID, provAddr) || k.IsConsumerValidator(ctx, chainID, provAddr) {
+		return true, nil
+	}
+	// otherwise, check whether the validator will be automatically opted in at the end of this epoch
+	// assuming all powers stay the same
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr.ToSdkConsAddr())
+	if !found {
+		return false, fmt.Errorf("validator not found for address %s", provAddr)
+	}
+	power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+	topN, found := k.GetTopN(ctx, chainID)
+	if !found || topN == 0 {
+		return false, nil
+	}
+
+	minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+
+	if power < minPowerToOptIn {
+		return false, nil
+	}
+	return true, nil
+}
+
 // SetConsumerCommissionRate sets a per-consumer chain commission rate
 // for the given validator address
 func (k Keeper) SetConsumerCommissionRate(
