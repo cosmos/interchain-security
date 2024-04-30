@@ -147,13 +147,12 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
-	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain the validators that
-	// are opted in but not necessarily the ones that are validating.
-	OptedInBytePrefix
-
 	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer
 	// validators in this epoch that are validating the consumer chain
 	ConsumerValidatorBytePrefix
+
+	// OptedInBytePrefix is the byte prefix for storing whether a validator is opted in to validate on a consumer chain
+	OptedInBytePrefix
 
 	// TopNBytePrefix is the byte prefix storing the mapping from a consumer chain to the N value of this chain,
 	// that corresponds to the N% of the top validators that have to validate this consumer chain
@@ -176,12 +175,12 @@ const (
 	// denylisted.
 	DenylistPrefix
 
-	// ConsumerRewardsAllocationBytePrefix is the byte prefix used when storing for each consumer the rewards
-	// it allocated to the consumer rewards pool
+	// ConsumerRewardsAllocationBytePrefix is the byte prefix for storing for each consumer the ICS rewards
+	// allocated to the consumer rewards pool
 	ConsumerRewardsAllocationBytePrefix
 
-	// ConsumerCommissionRatePrefix is the byte prefix used when storing a validator a per-consumer  chain commission rate
-	// for a validator address
+	// ConsumerCommissionRatePrefix is the byte prefix for storing the commission rate
+	// per validator per consumer chain
 	ConsumerCommissionRatePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
@@ -556,7 +555,8 @@ func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
 	return append(prefix, providerAddr...)
 }
 
-// TopNKey returns the key of consumer chain `chainID`
+// TopNKey returns the key used to store the Top N value per consumer chain.
+// This value corresponds to the N% of the top validators that have to validate the consumer chain.
 func TopNKey(chainID string) []byte {
 	return ChainIdWithLenKey(TopNBytePrefix, chainID)
 }
@@ -581,18 +581,18 @@ func AllowlistCapKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	return append(ChainIdWithLenKey(AllowlistPrefix, chainID), providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
-// OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+// OptedInKey returns the key used to store whether a validator is opted in on a consumer chain.
 func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
 	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
-// ConsumerModuleAccount returns the module account byte prefix for a consumer chain
+// ConsumerRewardsAllocationKey returns the key used to store the ICS rewards per consumer chain
 func ConsumerRewardsAllocationKey(chainID string) []byte {
 	return append([]byte{ConsumerRewardsAllocationBytePrefix}, []byte(chainID)...)
 }
 
-// ConsumerCommissionRateKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+// ConsumerCommissionRateKey returns the key used to store the commission rate per validator per consumer chain.
 func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	return ChainIdAndConsAddrKey(
 		ConsumerCommissionRatePrefix,

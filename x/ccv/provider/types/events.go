@@ -8,6 +8,8 @@ const (
 	EventTypeRemoveConsumerRewardDenom = "remove_consumer_reward_denom"
 	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
 	EventTypeSetConsumerCommissionRate = "set_consumer_commission_rate"
+	EventTypeOptIn                     = "opt_in"
+	EventTypeOptOut                    = "opt_out"
 	AttributeInfractionHeight          = "infraction_height"
 	AttributeInitialHeight             = "initial_height"
 	AttributeInitializationTimeout     = "initialization_timeout"

@@ -147,7 +147,7 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 
 	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
 	// Opt In chain) or in the range [50, 100] (for a Top N chain).
-	if cccp.Top_N != 0 && cccp.Top_N < 50 || cccp.Top_N > 100 {
+	if cccp.Top_N != 0 && (cccp.Top_N < 50 || cccp.Top_N > 100) {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "Top N can either be 0 or in the range [50, 100]")
 	}
 

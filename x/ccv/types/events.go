@@ -12,8 +12,6 @@ const (
 	EventTypeRemoveConsumerRewardDenom  = "remove_consumer_reward_denom"
 	EventTypeSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
 	EventTypeSubmitConsumerDoubleVoting = "submit_consumer_double_voting"
-	EventTypeOptIn                      = "opt_in"
-	EventTypeOptOut                     = "opt_out"
 	EventTypeExecuteConsumerChainSlash  = "execute_consumer_chain_slash"
 	EventTypeFeeDistribution            = "fee_distribution"
 	EventTypeConsumerSlashRequest       = "consumer_slash_request"
