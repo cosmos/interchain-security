@@ -320,16 +320,6 @@ func (k Keeper) OnRecvSlashPacket(
 	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
-	// Check that the validator belongs to the consumer chain valset
-	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
-		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
-			providerConsAddr.String(), chainID)
-		// drop packet but return a slash ack so that the consumer can send another slash packet
-		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
-
-		return ccv.SlashPacketHandledResult, nil
-	}
-
 	if data.Infraction == stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN {
 		// getMappedInfractionHeight is already checked in ValidateSlashPacket
 		infractionHeight, _ := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
@@ -346,6 +336,16 @@ func (k Keeper) OnRecvSlashPacket(
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
 		return ccv.V1Result, nil
+	}
+
+	// Check that the validator belongs to the consumer chain valset
+	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
+		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
+			providerConsAddr.String(), chainID)
+		// drop packet but return a slash ack so that the consumer can send another slash packet
+		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+
+		return ccv.SlashPacketHandledResult, nil
 	}
 
 	meter := k.GetSlashMeter(ctx)
