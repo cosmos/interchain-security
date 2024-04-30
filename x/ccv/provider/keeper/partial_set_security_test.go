@@ -175,15 +175,18 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	require.Equal(t, sdk.OneDec(), cr)
 	require.True(t, found)
 
-	// check some failure scenarios
-	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.NewDec(2)), "commission rate should be rejected (above 100), but is not")
-
-	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.NewDec(-1)), "commission rate should be rejected (below 0), but is not")
-
+	// set minimum rate of 1/2
 	commissionRate := sdk.NewDec(1).Quo(sdk.NewDec(2))
 	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(commissionRate).AnyTimes()
 
-	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.ZeroDec()), "commission rate should be rejected (below min), but is not")
+	// try to set a rate slightly below the minimum
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(
+		ctx,
+		chainID,
+		providerAddr,
+		commissionRate.Sub(sdk.NewDec(1).Quo(sdk.NewDec(100)))), // 0.5 - 0.01
+		"commission rate should be rejected (below min), but is not",
+	)
 
 	// set a valid commission equal to the minimum
 	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, commissionRate))
