@@ -279,6 +279,31 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string,
 			types.ErrUnknownConsumerChainId,
 			"unknown consumer chain, with id: %s", chainID)
 	}
+
+	// validate the commission rate
+
+	// check it is not more than 100%
+	if commissionRate.GT(sdk.OneDec()) {
+		return errorsmod.Wrapf(
+			stakingtypes.ErrCommissionHuge,
+			"commission rate %s is greater than 100%%", commissionRate.String())
+	}
+
+	// check it is not less than 0%
+	if commissionRate.LT(sdk.ZeroDec()) {
+		return errorsmod.Wrapf(
+			stakingtypes.ErrCommissionNegative,
+			"commission rate %s is less than 0%%", commissionRate.String())
+	}
+
+	// validate agains tthe minRate
+	minRate := k.stakingKeeper.MinCommissionRate(ctx)
+	if commissionRate.LT(minRate) {
+		return errorsmod.Wrapf(
+			stakingtypes.ErrCommissionLTMinRate,
+			"commission rate cannot be less than %s", minRate,
+		)
+	}
 	// set per-consumer chain commission rate for the validator address
 	k.SetConsumerCommissionRate(
 		ctx,

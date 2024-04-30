@@ -58,6 +58,7 @@ type StakingKeeper interface {
 	GetRedelegationsFromSrcValidator(ctx sdk.Context, valAddr sdk.ValAddress) (reds []stakingtypes.Redelegation)
 	GetUnbondingType(ctx sdk.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
 	BlockValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
+	MinCommissionRate(ctx sdk.Context) math.LegacyDec
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing

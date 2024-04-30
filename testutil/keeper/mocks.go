@@ -329,6 +329,20 @@ func (mr *MockStakingKeeperMockRecorder) MaxValidators(ctx interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxValidators", reflect.TypeOf((*MockStakingKeeper)(nil).MaxValidators), ctx)
 }
 
+// MinCommissionRate mocks base method.
+func (m *MockStakingKeeper) MinCommissionRate(ctx types0.Context) math.LegacyDec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MinCommissionRate", ctx)
+	ret0, _ := ret[0].(math.LegacyDec)
+	return ret0
+}
+
+// MinCommissionRate indicates an expected call of MinCommissionRate.
+func (mr *MockStakingKeeperMockRecorder) MinCommissionRate(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MinCommissionRate", reflect.TypeOf((*MockStakingKeeper)(nil).MinCommissionRate), ctx)
+}
+
 // PowerReduction mocks base method.
 func (m *MockStakingKeeper) PowerReduction(ctx types0.Context) math.Int {
 	m.ctrl.T.Helper()
