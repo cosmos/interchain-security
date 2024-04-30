@@ -186,6 +186,7 @@ func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, chainID string, propos
 }
 
 // GetProposedConsumerChain returns the proposed chainID for the given consumerAddition proposal ID.
+// This method is only used for testing.
 func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
 	consumerChain := store.Get(types.ProposedConsumerChainKey(proposalID))
