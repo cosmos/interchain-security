@@ -538,23 +538,24 @@ func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
 	return append(prefix, providerAddr...)
 }
 
-// TopNKey returns the key of consumer chain `chainID`
+// TopNKey returns the key used to store the Top N value per consumer chain.
+// This value corresponds to the N% of the top validators that have to validate the consumer chain.
 func TopNKey(chainID string) []byte {
 	return ChainIdWithLenKey(TopNBytePrefix, chainID)
 }
 
-// OptedInKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+// OptedInKey returns the key used to store whether a validator is opted in on a consumer chain.
 func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
 	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
-// ConsumerModuleAccount returns the module account byte prefix for a consumer chain
+// ConsumerRewardsAllocationKey returns the key used to store the ICS rewards per consumer chain
 func ConsumerRewardsAllocationKey(chainID string) []byte {
 	return append([]byte{ConsumerRewardsAllocationBytePrefix}, []byte(chainID)...)
 }
 
-// ConsumerCommissionRateKey returns the key of consumer chain `chainID` and validator with `providerAddr`
+// ConsumerCommissionRateKey returns the key used to store the commission rate per validator per consumer chain.
 func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	return ChainIdAndConsAddrKey(
 		ConsumerCommissionRatePrefix,
