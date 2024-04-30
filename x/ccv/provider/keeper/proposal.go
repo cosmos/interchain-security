@@ -307,9 +307,9 @@ func (k Keeper) MakeConsumerGenesis(
 	// get the initial updates with the latest set consumer public keys
 	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
 
-	if len(initialUpdatesWithConsumerKeys) == 0 {
-		return gen, nil, fmt.Errorf("unable to create a non-empty initial validator set")
-	}
+	//if len(initialUpdatesWithConsumerKeys) == 0 {
+	//	return gen, nil, fmt.Errorf("unable to create a non-empty initial validator set")
+	//}
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)

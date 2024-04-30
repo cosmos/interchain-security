@@ -113,8 +113,6 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
-		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "chainID")
-
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
 			gomock.InOrder(
@@ -189,8 +187,6 @@ func TestCreateConsumerClient(t *testing.T) {
 
 		// Test specific setup
 		tc.setup(&providerKeeper, ctx, &mocks)
-
-		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "chainID")
 
 		// Call method with same arbitrary values as defined above in mock expectations.
 		err := providerKeeper.CreateConsumerClient(ctx, testkeeper.GetTestConsumerAdditionProp())
@@ -480,8 +476,6 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
-
-		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "chainID")
 
 		// Mock expectations and setup for stopping the consumer chain, if applicable
 		// Note: when expAppendProp is false, no mocks are setup,
@@ -816,7 +810,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		HistoricalEntries:                 10000,
 		UnbondingPeriod:                   1728000000000000,
 	}
-	testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "testchain1")
 	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, &prop)
 	require.NoError(t, err)
 
@@ -997,22 +990,6 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
-			"title", "opt-in chain with no validator opted in", "chain4", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(-time.Hour*2).UTC(),
-			"0.75",
-			10,
-			"",
-			10000,
-			100000000000,
-			100000000000,
-			100000000000,
-			0,
-			0,
-			0,
-			nil,
-			nil,
-		).(*providertypes.ConsumerAdditionProposal),
-		providertypes.NewConsumerAdditionProposal(
 			"title", "opt-in chain with at least one validator opted in", "chain5", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
 			now.Add(-time.Hour*1).UTC(),
 			"0.75",
@@ -1030,26 +1007,24 @@ func TestBeginBlockInit(t *testing.T) {
 		).(*providertypes.ConsumerAdditionProposal),
 	}
 
-	// Expect client creation for only the first, second, and sixth proposals (spawn time already passed and valid)
+	// Expect client creation for only the first, second, and fifth proposals (spawn time already passed and valid)
 	expectedCalls := testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain5", clienttypes.NewHeight(3, 4))...)
 
-	// consider at least one validator
-	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
-	mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(validator, true).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(123)).AnyTimes()
-
 	gomock.InOrder(expectedCalls...)
-	testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)
 
 	for _, prop := range pendingProps {
 		providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
 	}
 
 	// opt in a sample validator so the chain's proposal can successfully execute
+	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
+	//mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(validator, true).AnyTimes()
+	//mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(123)).AnyTimes()
+
 	consAddr, _ := validator.GetConsAddr()
-	providerKeeper.SetOptedIn(ctx, pendingProps[5].ChainId, providertypes.NewProviderConsAddress(consAddr))
+	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
 
 	providerKeeper.BeginBlockInit(ctx)
 
@@ -1084,21 +1059,13 @@ func TestBeginBlockInit(t *testing.T) {
 	// Note that we do not check that `GetConsumerGenesis(ctx, pendingProps[3].ChainId)` returns `false` here because
 	// `pendingProps[3]` is an invalid proposal due to the chain id already existing so the consumer genesis also exists
 
-	// fifth proposal is dropped due to it being an Opt-In chain with no validators opted in
+	// fifth proposal corresponds to an Opt-In chain with one opted-in validator and hence the proposal gets
+	// successfully executed
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[4].SpawnTime, pendingProps[4].ChainId)
 	require.False(t, found)
-	// because the proposal is dropped, no consumer genesis was created
-	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[4].ChainId)
-	require.False(t, found)
-
-	// sixth proposal corresponds to an Opt-In chain with one opted-in validator and hence the proposal gets
-	// successfully executed
-	_, found = providerKeeper.GetPendingConsumerAdditionProp(
-		ctx, pendingProps[5].SpawnTime, pendingProps[5].ChainId)
-	require.False(t, found)
 	// sixth proposal was successfully executed and hence consumer genesis was created
-	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[5].ChainId)
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[4].ChainId)
 	require.True(t, found)
 
 	// test that Top N is set correctly
@@ -1158,7 +1125,6 @@ func TestBeginBlockCCR(t *testing.T) {
 		additionProp := testkeeper.GetTestConsumerAdditionProp()
 		additionProp.ChainId = prop.ChainId
 		additionProp.InitialHeight = clienttypes.NewHeight(2, 3)
-		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, prop.ChainId)
 
 		err := providerKeeper.CreateConsumerClient(ctx, additionProp)
 		require.NoError(t, err)

@@ -93,8 +93,6 @@ func TestProviderProposalHandler(t *testing.T) {
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
-		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "chainID")
-
 		// Mock expectations depending on expected outcome
 		switch {
 		case tc.expValidConsumerAddition:
