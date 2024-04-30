@@ -1313,7 +1313,7 @@ func (k Keeper) SetMinimumPowerInTopN(
 	buf := make([]byte, 8)
 	binary.BigEndian.PutUint64(buf, uint64(power))
 
-	store.Set(types.TopNKey(chainID), buf)
+	store.Set(types.MinimumPowerInTopNKey(chainID), buf)
 }
 
 // GetMinimumPowerInTopN returns the minimum power required for a validator to be in the top N
@@ -1323,7 +1323,7 @@ func (k Keeper) GetMinimumPowerInTopN(
 	chainID string,
 ) (int64, bool) {
 	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.TopNKey(chainID))
+	buf := store.Get(types.MinimumPowerInTopNKey(chainID))
 	if buf == nil {
 		return 0, false
 	}
