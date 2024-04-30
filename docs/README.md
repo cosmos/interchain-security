@@ -66,8 +66,8 @@ The script switches branches while building the versioned docs - **please note t
 
 # Legacy documentation
 
-`legacy-docs-page` [branch](https://github.com/cosmos/interchain-security/tree/legacy-docs-page) contains documentation for versions `<= v4.0.0`. These versions were built using docusaurus `v2.4.0` which is not compatible with docusaurus `v3.x` used at the time of writing. It was not feasible to port the legacy docs from `v2.4.0` because `v3.x` is not compatible with it and it required changing all release branches.
+`legacy-docs-page` [branch](https://github.com/cosmos/interchain-security/tree/legacy-docs-page) contains documentation for versions `<= v4.0.0`. These versions were built using docusaurus `v2.4.0` which is not compatible with docusaurus `v3.x` used at the time of writing. It was not feasible to port the legacy docs from `v2.4.0` because `v3.x` is not compatible with it and it required changing all release branches and cutting patch releases.
 
-The `legacy` directory on `legacy-docs-page` was created manually, by modifying `docusaurus.config.js` and `versions.json` on `https://github.com/cosmos/interchain-security/releases/v3.3.1-lsm` and generating the static pages manually using `npm run build`.
+The `./docs/legacy` directory on `legacy-docs-page` was created manually, by modifying `docusaurus.config.js` and `versions.json` on `https://github.com/cosmos/interchain-security/releases/v3.3.1-lsm` and generating the static pages manually using `npm run build`.
 
-The `legacy` directory gets included into the rest of the documentation using a simple `cp` command during the deploy process using the [build_deploy.sh](./build_deploy.sh) script. It is **not** included during local builds.
+The `./docs/legacy` directory gets included into the rest of the documentation using a simple `cp` command during the deploy process using the [build_deploy.sh](./build_deploy.sh) script. It is **not** included during local builds.
