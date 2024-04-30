@@ -125,11 +125,21 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
+	// Set consumer validator
+	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsumerValidator{
+		ProviderConsAddr: packetData.Validator.Address,
+	})
+
 	// Set slash meter to negative value and assert a bounce ack is returned
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(-5))
 	ackResult, err := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
 	require.Equal(t, ccv.SlashPacketBouncedResult, ackResult)
 	require.NoError(t, err)
+
+	// Set consumer validator
+	providerKeeper.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{
+		ProviderConsAddr: packetData.Validator.Address,
+	})
 
 	// Also bounced for chain-2
 	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
