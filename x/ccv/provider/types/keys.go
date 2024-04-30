@@ -183,6 +183,10 @@ const (
 	// per validator per consumer chain
 	ConsumerCommissionRatePrefix
 
+	// ConsumerCommissionRateDenomPrefix is the byte prefix for storing the
+	// minimum power required to be in the top N per consumer chain.
+	MinimumPowerInTopNBytePrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -599,6 +603,10 @@ func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress)
 		chainID,
 		providerAddr.ToSdkConsAddr(),
 	)
+}
+
+func MinimumPowerInTopNKey(chainID string) []byte {
+	return ChainIdWithLenKey(MinimumPowerInTopNBytePrefix, chainID)
 }
 
 //

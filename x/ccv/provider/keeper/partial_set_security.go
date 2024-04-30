@@ -63,6 +63,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
+<<<<<<< HEAD
 		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
 
 		if err != nil {
@@ -72,13 +73,25 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with power (%d) cannot opt out from Top N chain (%s) because the min power"+
 					" could not be computed: %s", power, chainID, err.Error())
 
+=======
+		minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, chainID)
+		if !found {
+			return errorsmod.Wrapf(
+				types.ErrUnknownConsumerChainId,
+				"could not find minimum power in top N for chain with id: %s", chainID)
+>>>>>>> 6e35b7a7 (Store the minimal power among the top N in EndBlock)
 		}
 
-		if power >= minPowerToOptIn {
+		if power >= minPowerInTopN {
 			return errorsmod.Wrapf(
 				types.ErrCannotOptOutFromTopN,
+<<<<<<< HEAD
 				"validator with power (%d) cannot opt out from Top N chain (%s) because all validators"+
 					" with at least %d power have to validate", power, chainID, minPowerToOptIn)
+=======
+				"validator with power (%d) cannot opt out from Top N chain because all validators"+
+					"with at least %d power have to validate", power, minPowerInTopN)
+>>>>>>> 6e35b7a7 (Store the minimal power among the top N in EndBlock)
 		}
 	}
 

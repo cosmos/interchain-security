@@ -831,3 +831,24 @@ func TestDenylist(t *testing.T) {
 	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 }
+
+func TestMinimumPowerInTopN(t *testing.T) {
+	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	chainID := "testChain"
+	minPower := int64(1000)
+
+	// Set the minimum power in top N
+	k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+
+	// Retrieve the minimum power in top N
+	gotMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
+	require.True(t, found)
+	require.Equal(t, minPower, gotMinPower)
+
+	// Test when the chain ID does not exist
+	nonExistentChainID := "nonExistentChain"
+	nonExistentMinPower, found := k.GetMinimumPowerInTopN(ctx, nonExistentChainID)
+	require.False(t, found)
+	require.Equal(t, int64(0), nonExistentMinPower)
+}

@@ -295,16 +295,12 @@ func (k Keeper) MakeConsumerGenesis(
 	// get the bonded validators from the staking module
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
-	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+	if prop.Top_N > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, prop.Top_N)
-		if err == nil {
-			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
-		} else {
-			return gen, nil, err
-		}
+		minPower := k.ComputeMinPowerInTopN(ctx, chainID, bondedValidators, prop.Top_N)
+		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 	}
-
 	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
