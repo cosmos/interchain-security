@@ -3,7 +3,6 @@ package ibc_testing
 import (
 	"encoding/json"
 	"fmt"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"testing"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -20,6 +19,7 @@ import (
 	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 type (

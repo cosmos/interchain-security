@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"bytes"
 	"encoding/json"
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	"sort"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -1020,9 +1020,6 @@ func TestBeginBlockInit(t *testing.T) {
 
 	// opt in a sample validator so the chain's proposal can successfully execute
 	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
-	//mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(validator, true).AnyTimes()
-	//mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(123)).AnyTimes()
-
 	consAddr, _ := validator.GetConsAddr()
 	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
 

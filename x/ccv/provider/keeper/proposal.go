@@ -307,7 +307,7 @@ func (k Keeper) MakeConsumerGenesis(
 	// get the initial updates with the latest set consumer public keys
 	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
 
-	//if len(initialUpdatesWithConsumerKeys) == 0 {
+	// if len(initialUpdatesWithConsumerKeys) == 0 {
 	//	return gen, nil, fmt.Errorf("unable to create a non-empty initial validator set")
 	//}
 
@@ -389,7 +389,7 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
-	for _, prop := range propsToExecute {
+	for i, prop := range propsToExecute {
 		// create consumer client in a cached context to handle errors
 		cachedCtx, writeFn := ctx.CacheContext()
 
@@ -415,7 +415,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 			k.SetDenylist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
 		}
 
-		err := k.CreateConsumerClient(cachedCtx, &prop)
+		err := k.CreateConsumerClient(cachedCtx, &propsToExecute[i])
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created: %w", err)

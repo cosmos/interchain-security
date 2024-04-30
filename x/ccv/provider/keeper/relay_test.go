@@ -823,7 +823,6 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, true).AnyTimes()
 	valD := createStakingValidator(ctx, mocks, 4, 8) // 25% of the total voting power
 	valDConsAddr, _ := valD.GetConsAddr()
-	//valDPubKey, _ := valD.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, true).AnyTimes()
 	valE := createStakingValidator(ctx, mocks, 5, 16) // 50% of the total voting power
 	valEConsAddr, _ := valE.GetConsAddr()

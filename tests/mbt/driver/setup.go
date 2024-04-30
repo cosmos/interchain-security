@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"log"
 	"sort"
 	"testing"
@@ -35,6 +34,7 @@ import (
 	"github.com/cosmos/interchain-security/v4/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 

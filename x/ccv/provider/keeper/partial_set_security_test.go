@@ -6,19 +6,19 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"pgregory.net/rapid"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"pgregory.net/rapid"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -507,14 +507,14 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 	// define properties to test
 
 	// capRespectedIfSatisfiable: if the cap can be respected, then it will be respected
-	capRespectedIfSatisfiable := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator, percent uint32) bool {
+	capRespectedIfSatisfiable := func(valsBefore, valsAfter []types.ConsumerValidator, percent uint32) bool {
 		if CapSatisfiable(valsBefore, percent) {
 			return noMoreThanPercent(valsAfter, percent)
 		}
 		return true
 	}
 
-	evenPowersIfCapCannotBeSatisfied := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator, percent uint32) bool {
+	evenPowersIfCapCannotBeSatisfied := func(valsBefore, valsAfter []types.ConsumerValidator, percent uint32) bool {
 		if !CapSatisfiable(valsBefore, percent) {
 			// if the cap cannot be satisfied, each validator should have the same power
 			for _, valAfter := range valsAfter {
@@ -528,7 +528,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 
 	// fairness: if before, v1 has more power than v2, then afterwards v1 will not have less power than v2
 	// (they might get the same power if they are both capped)
-	fairness := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator) bool {
+	fairness := func(valsBefore, valsAfter []types.ConsumerValidator) bool {
 		for i, v := range valsBefore {
 			// find the validator after with the same address
 			vAfter := findConsumerValidator(t, v, valsAfter)
@@ -557,7 +557,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 	}
 
 	// non-zero: v has non-zero power before IFF it has non-zero power after
-	nonZero := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator) bool {
+	nonZero := func(valsBefore, valsAfter []types.ConsumerValidator) bool {
 		for _, v := range valsBefore {
 			vAfter := findConsumerValidator(t, v, valsAfter)
 			if (v.Power == 0) != (vAfter.Power == 0) {
@@ -569,7 +569,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 
 	// equalSumIfCapSatisfiable: the sum of the powers of the validators will not change if the cap can be satisfied
 	// (except for small changes by rounding errors)
-	equalSumIfCapSatisfiable := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator, percent uint32) bool {
+	equalSumIfCapSatisfiable := func(valsBefore, valsAfter []types.ConsumerValidator, percent uint32) bool {
 		if CapSatisfiable(valsBefore, percent) {
 			difference := math.Abs(float64(sumPowers(valsBefore) - sumPowers(valsAfter)))
 			if difference > 1 {
@@ -581,7 +581,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 	}
 
 	// num validators: the number of validators will not change
-	equalNumVals := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator) bool {
+	equalNumVals := func(valsBefore, valsAfter []types.ConsumerValidator) bool {
 		return len(valsBefore) == len(valsAfter)
 	}
 
