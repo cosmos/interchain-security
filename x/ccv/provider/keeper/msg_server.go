@@ -169,7 +169,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			ccvtypes.EventTypeOptIn,
+			types.EventTypeOptIn,
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
 		),
@@ -205,7 +205,7 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			ccvtypes.EventTypeOptOut,
+			types.EventTypeOptOut,
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 		),
 	})
