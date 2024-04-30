@@ -147,8 +147,7 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
-	// OptedInBytePrefix is the byte prefix used when storing for each consumer chain the validators that
-	// are opted in but not necessarily the ones that are validating.
+	// OptedInBytePrefix is the byte prefix for storing whether a validator is opted in to validate on a consumer chain
 	OptedInBytePrefix
 
 	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer
@@ -159,12 +158,12 @@ const (
 	// that corresponds to the N% of the top validators that have to validate this consumer chain
 	TopNBytePrefix
 
-	// ConsumerRewardsAllocationBytePrefix is the byte prefix used when storing for each consumer the rewards
-	// it allocated to the consumer rewards pool
+	// ConsumerRewardsAllocationBytePrefix is the byte prefix for storing for each consumer the ICS rewards
+	// allocated to the consumer rewards pool
 	ConsumerRewardsAllocationBytePrefix
 
-	// ConsumerCommissionRatePrefix is the byte prefix used when storing a validator a per-consumer  chain commission rate
-	// for a validator address
+	// ConsumerCommissionRatePrefix is the byte prefix for storing the commission rate
+	// per validator per consumer chain
 	ConsumerCommissionRatePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
