@@ -151,7 +151,7 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 }
 
 func TestHandleSetConsumerCommissionRate(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
@@ -167,11 +167,29 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	_, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
 	require.False(t, found)
 
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(sdk.ZeroDec()).Times(1)
 	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.OneDec()))
 
 	// check that the commission rate is now set
 	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
 	require.Equal(t, sdk.OneDec(), cr)
+	require.True(t, found)
+
+	// check some failure scenarios
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.NewDec(2)), "commission rate should be rejected (above 100), but is not")
+
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.NewDec(-1)), "commission rate should be rejected (below 0), but is not")
+
+	commissionRate := sdk.NewDec(1).Quo(sdk.NewDec(2))
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(commissionRate).AnyTimes()
+
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.ZeroDec()), "commission rate should be rejected (below min), but is not")
+
+	// set a valid commission equal to the minimum
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, commissionRate))
+	// check that the rate was set
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
+	require.Equal(t, commissionRate, cr)
 	require.True(t, found)
 }
 

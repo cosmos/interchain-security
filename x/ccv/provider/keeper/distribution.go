@@ -296,7 +296,7 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string,
 			"commission rate %s is less than 0%%", commissionRate.String())
 	}
 
-	// validate agains tthe minRate
+	// validate agains the minRate
 	minRate := k.stakingKeeper.MinCommissionRate(ctx)
 	if commissionRate.LT(minRate) {
 		return errorsmod.Wrapf(
