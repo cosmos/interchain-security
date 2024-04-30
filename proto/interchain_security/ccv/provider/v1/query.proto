@@ -107,7 +107,7 @@ service Query {
     QueryConsumerChainOptedInValidatorsRequest)
     returns (QueryConsumerChainOptedInValidatorsResponse) {
       option (google.api.http).get =
-    "/interchain_security/ccv/provider/opted_in_validators";
+    "/interchain_security/ccv/provider/opted_in_validators/{chain_id}";
     }
 
   // QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
@@ -116,7 +116,7 @@ service Query {
     QueryConsumerChainsValidatorHasToValidateRequest)
     returns (QueryConsumerChainsValidatorHasToValidateResponse) {
       option (google.api.http).get =
-    "/interchain_security/ccv/provider/consumer_chains_per_validator";
+    "/interchain_security/ccv/provider/consumer_chains_per_validator/{provider_address}";
     }
 
    // QueryValidatorConsumerCommissionRate returns the commission rate a given
