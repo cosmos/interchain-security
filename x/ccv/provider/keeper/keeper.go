@@ -1243,14 +1243,17 @@ func (k Keeper) SetConsumerCommissionRate(
 	chainID string,
 	providerAddr types.ProviderConsAddress,
 	commissionRate sdk.Dec,
-) {
+) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := commissionRate.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("consumer commission rate marshalling failed: %s", err))
+		err = fmt.Errorf("consumer commission rate marshalling failed: %s", err)
+		k.Logger(ctx).Error(err.Error())
+		return err
 	}
 
 	store.Set(types.ConsumerCommissionRateKey(chainID, providerAddr), bz)
+	return nil
 }
 
 // GetConsumerCommissionRate returns the per-consumer commission rate set
@@ -1267,8 +1270,10 @@ func (k Keeper) GetConsumerCommissionRate(
 	}
 
 	cr := sdk.Dec{}
+	// handle error gracefully since it's called in BeginBlockRD
 	if err := cr.Unmarshal(bz); err != nil {
-		panic(fmt.Sprintf("consumer commission rate unmarshalling failed: %s", err))
+		k.Logger(ctx).Error("consumer commission rate unmarshalling failed: %s", err)
+		return sdk.ZeroDec(), false
 	}
 
 	return cr, true

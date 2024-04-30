@@ -125,7 +125,7 @@ service Query {
     QueryValidatorConsumerCommissionRateRequest)
     returns (QueryValidatorConsumerCommissionRateResponse) {
       option (google.api.http).get =
-    "/interchain_security/ccv/provider/consumer_commission_rate";
+    "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}";
     }
 
   // QueryOldestUnconfirmedVsc returns the send timestamp of the oldest unconfirmed VSCPacket for a given chainID
