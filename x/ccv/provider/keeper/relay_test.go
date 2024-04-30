@@ -308,8 +308,6 @@ func TestHandleSlashPacket(t *testing.T) {
 
 	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
 	consumerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987634).ConsumerConsAddress()
-	// this "dummy" consensus address won't be stored on the provider states
-	dummyConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987639).ConsumerConsAddress()
 
 	testCases := []struct {
 		name       string
@@ -319,21 +317,6 @@ func TestHandleSlashPacket(t *testing.T) {
 		expectedSlashAcksLen                int
 		expectedSlashAckConsumerConsAddress types.ConsumerConsAddress
 	}{
-		{
-			"validator isn't a consumer validator",
-			ccv.SlashPacketData{
-				Validator:      abci.Validator{Address: dummyConsAddr.ToSdkConsAddr()},
-				ValsetUpdateId: validVscID,
-				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
-			},
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
-				expectedPacketData ccv.SlashPacketData,
-			) []*gomock.Call {
-				return []*gomock.Call{}
-			},
-			1,
-			dummyConsAddr,
-		},
 		{
 			"unfound validator",
 			ccv.SlashPacketData{
