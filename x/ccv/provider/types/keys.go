@@ -147,12 +147,12 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
-	// OptedInBytePrefix is the byte prefix for storing whether a validator is opted in to validate on a consumer chain
-	OptedInBytePrefix
-
 	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer
 	// validators in this epoch that are validating the consumer chain
 	ConsumerValidatorBytePrefix
+
+	// OptedInBytePrefix is the byte prefix for storing whether a validator is opted in to validate on a consumer chain
+	OptedInBytePrefix
 
 	// TopNBytePrefix is the byte prefix storing the mapping from a consumer chain to the N value of this chain,
 	// that corresponds to the N% of the top validators that have to validate this consumer chain
