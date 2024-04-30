@@ -3,7 +3,7 @@
 # this script builds the docs for all versions in versions.json
 # all the versions are included in the docs webpage
 
-# exit if there are uncommited changes
+# exit if there are uncommitted changes
 if git diff-index --quiet HEAD --; then
     # initial branch
     COMMIT=$(git rev-parse HEAD)
