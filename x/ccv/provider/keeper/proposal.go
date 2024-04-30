@@ -294,7 +294,7 @@ func (k Keeper) MakeConsumerGenesis(
 				// if an allowlist is declared, only consider allowlisted validators
 				(k.IsAllowlistEmpty(ctx, chainID) ||
 					k.IsAllowlisted(ctx, chainID, providerAddr)) &&
-				// if a denylist is declared, only consider denylisted validators
+				// if a denylist is declared do not consider denylisted validators
 				(k.IsDenylistEmpty(ctx, chainID) ||
 					!k.IsDenylisted(ctx, chainID, providerAddr))
 		})
