@@ -1,17 +1,17 @@
 # Website
 
-This website is built using [Docusaurus 2](https://docusaurus.io/), a modern static website generator.
+This website is built using [Docusaurus 3](https://docusaurus.io/), a modern static website generator.
 
 ### Installation
 
 ```
-$ yarn
+$ npm install
 ```
 
 ### Local Development
 
 ```
-$ yarn start
+$ npm run start
 ```
 
 This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
@@ -19,23 +19,55 @@ This command starts a local development server and opens up a browser window. Mo
 ### Build
 
 ```
-$ yarn build
+$ npm run build
 ```
 
 This command generates static content into the `build` directory and can be served using any static contents hosting service.
 
-### Deployment
 
-Using SSH:
+# Adding versions
 
+To add/remove versions from the page you can modify `versions.json`.
+
+At the time of writing it looked like this:
+```json
+[
+    "v4.0.0",
+    "v4.1.0",
+    "v5.0.0-rc0"
+]
 ```
-$ USE_SSH=true yarn deploy
+
+You can remove any version that you no longer need and the build process will remove it from the final page.
+
+
+# Accessing versioned docs locally
+
+```shell
+# from interchain-security/docs run:
+./sync_versions.sh
 ```
 
-Not using SSH:
+The script above will create `versioned_docs` and `versioned_sidebars` directories inside `interchain-security/docs`.
 
-```
-$ GIT_USER=<Your GitHub username> yarn deploy
+To view the docs run:
+
+```shell
+npm run start
 ```
 
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+Remember to check back out to your working branch. Running `./sync_versions.sh` will leave you in a detached head state.
+(simply run `git checkout <working-branch>)
+
+## Note:
+The script will exit if you have uncommitted changes.
+The script switches branches while building the versioned docs - **please note that this could overwrite your local changes**.
+
+
+# Legacy documentation
+
+`legacy-docs-page` [branch](https://github.com/cosmos/interchain-security/tree/legacy-docs-page) contains documentation for versions `<= v4.0.0`. These versions were built using docusaurus `v2.4.0` which is not compatible with docusaurus `v3.x` used at the time of writing. It was not feasible to port the legacy docs from `v2.4.0` because `v3.x` is not compatible with it and it required changing all release branches.
+
+The `legacy` directory on `legacy-docs-page` was created manually, by modifying `docusaurus.config.js` and `versions.json` on `https://github.com/cosmos/interchain-security/releases/v3.3.1-lsm` and generating the static pages manually using `npm run build`.
+
+The `legacy` directory gets included into the rest of the documentation using a simple `cp` command during the deploy process using the [build_deploy.sh](./build_deploy.sh) script. It is **not** included during local builds.
