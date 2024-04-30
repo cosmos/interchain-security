@@ -2,11 +2,13 @@ package keeper_test
 
 import (
 	"bytes"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"math"
 	"sort"
 	"testing"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"pgregory.net/rapid"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -425,34 +427,6 @@ func TestCapValidatorsPower(t *testing.T) {
 }
 
 func TestNoMoreThanPercentOfTheSum(t *testing.T) {
-	// returns `true` if no validator in `validators` corresponds to more than `percent` of the total sum of all
-	// validators' powers
-	noMoreThanPercent := func(validators []types.ConsumerValidator, percent uint32) bool {
-		sum := int64(0)
-		for _, v := range validators {
-			sum = sum + v.Power
-		}
-
-		for _, v := range validators {
-			if (float64(v.Power)/float64(sum))*100.0 > float64(percent) {
-				return false
-			}
-		}
-		return true
-	}
-
-	createConsumerValidators := func(powers []int64) []types.ConsumerValidator {
-		var validators []types.ConsumerValidator
-		for _, p := range powers {
-			validators = append(validators, types.ConsumerValidator{
-				ProviderConsAddr:  []byte("providerConsAddr"),
-				Power:             p,
-				ConsumerPublicKey: &crypto.PublicKey{},
-			})
-		}
-		return validators
-	}
-
 	// **impossible** case where we only have 9 powers, and we want that no number has more than 10% of the total sum
 	powers := []int64{1, 2, 3, 4, 5, 6, 7, 8, 9}
 	percent := uint32(10)
@@ -485,4 +459,164 @@ func TestNoMoreThanPercentOfTheSum(t *testing.T) {
 	powers = []int64{1, 2, 3, 4, 5}
 	percent = 50
 	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
+}
+
+func createConsumerValidators(powers []int64) []types.ConsumerValidator {
+	var validators []types.ConsumerValidator
+	for _, p := range powers {
+		validators = append(validators, types.ConsumerValidator{
+			ProviderConsAddr:  []byte("providerConsAddr"),
+			Power:             p,
+			ConsumerPublicKey: &crypto.PublicKey{},
+		})
+	}
+	return validators
+}
+
+// returns `true` if no validator in `validators` corresponds to more than `percent` of the total sum of all
+// validators' powers
+func noMoreThanPercent(validators []types.ConsumerValidator, percent uint32) bool {
+	sum := int64(0)
+	for _, v := range validators {
+		sum = sum + v.Power
+	}
+
+	for _, v := range validators {
+		if (float64(v.Power)/float64(sum))*100.0 > float64(percent) {
+			return false
+		}
+	}
+	return true
+}
+
+func sumPowers(vals []types.ConsumerValidator) int64 {
+	sum := int64(0)
+	for _, v := range vals {
+		sum += v.Power
+	}
+	return sum
+}
+
+func CapSatisfiable(vals []types.ConsumerValidator, percent uint32) bool {
+	// 100 / len(vals) is what each validator gets if each has the same power.
+	// if this is more than the cap, it cannot be satisfied.
+	return float64(100)/float64(len(vals)) < float64(percent)
+}
+
+func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
+	// define properties to test
+
+	// capRespectedIfSatisfiable: if the cap can be respected, then it will be respected
+	capRespectedIfSatisfiable := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator, percent uint32) bool {
+		if CapSatisfiable(valsBefore, percent) {
+			return noMoreThanPercent(valsAfter, percent)
+		}
+		return true
+	}
+
+	evenPowersIfCapCannotBeSatisfied := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator, percent uint32) bool {
+		if !CapSatisfiable(valsBefore, percent) {
+			// if the cap cannot be satisfied, each validator should have the same power
+			for _, valAfter := range valsAfter {
+				if valAfter.Power != valsAfter[0].Power {
+					return false
+				}
+			}
+		}
+		return true
+	}
+
+	// fairness: if before, v1 has more power than v2, then afterwards v1 will not have less power than v2
+	// (they might get the same power if they are both capped)
+	fairness := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator) bool {
+		for i, v := range valsBefore {
+			// find the validator after with the same address
+			vAfter := findConsumerValidator(t, v, valsAfter)
+
+			// go through all other validators before (after this one, to avoid double checking)
+			for j := i + 1; j < len(valsBefore); j++ {
+				otherV := valsBefore[j]
+				otherVAfter := findConsumerValidator(t, otherV, valsAfter)
+
+				// v has at least as much power before
+				if v.Power >= otherV.Power {
+					// then otherV should not have more power after
+					if vAfter.Power < otherVAfter.Power {
+						return false
+					}
+				} else {
+					// v has less power before
+					// then v should not have more power after
+					if vAfter.Power > otherVAfter.Power {
+						return false
+					}
+				}
+			}
+		}
+		return true
+	}
+
+	// non-zero: v has non-zero power before IFF it has non-zero power after
+	nonZero := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator) bool {
+		for _, v := range valsBefore {
+			vAfter := findConsumerValidator(t, v, valsAfter)
+			if (v.Power == 0) != (vAfter.Power == 0) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// equalSumIfCapSatisfiable: the sum of the powers of the validators will not change if the cap can be satisfied
+	// (except for small changes by rounding errors)
+	equalSumIfCapSatisfiable := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator, percent uint32) bool {
+		if CapSatisfiable(valsBefore, percent) {
+			difference := math.Abs(float64(sumPowers(valsBefore) - sumPowers(valsAfter)))
+			if difference > 1 {
+				// if the difference is more than a rounding error, they are not equal
+				return false
+			}
+		}
+		return true
+	}
+
+	// num validators: the number of validators will not change
+	equalNumVals := func(valsBefore []types.ConsumerValidator, valsAfter []types.ConsumerValidator) bool {
+		return len(valsBefore) == len(valsAfter)
+	}
+
+	// test setup for pbt
+	rapid.Check(t, func(t *rapid.T) {
+		powers := rapid.SliceOf(rapid.Int64Range(1, 1000000000000)).Draw(t, "powers")
+		percent := uint32(rapid.Int32Range(1, 100).Draw(t, "percent"))
+
+		consumerValidators := createConsumerValidators(powers)
+		cappedValidators := keeper.NoMoreThanPercentOfTheSum(consumerValidators, percent)
+
+		t.Log("can the cap be satisfied: ", CapSatisfiable(consumerValidators, percent))
+		t.Log("before: ", consumerValidators)
+		t.Log("after: ", cappedValidators)
+
+		// check properties
+		require.True(t, capRespectedIfSatisfiable(consumerValidators, cappedValidators, percent))
+		require.True(t, evenPowersIfCapCannotBeSatisfied(consumerValidators, cappedValidators, percent))
+		require.True(t, fairness(consumerValidators, cappedValidators))
+		require.True(t, nonZero(consumerValidators, cappedValidators))
+		require.True(t, equalSumIfCapSatisfiable(consumerValidators, cappedValidators, percent), "sum before: %v, sum after: %v", sumPowers(consumerValidators), sumPowers(cappedValidators))
+		require.True(t, equalNumVals(consumerValidators, cappedValidators), "num before: %v, num after: %v", len(consumerValidators), len(cappedValidators))
+	})
+}
+
+func findConsumerValidator(t *testing.T, v types.ConsumerValidator, valsAfter []types.ConsumerValidator) *types.ConsumerValidator {
+	var vAfter *types.ConsumerValidator
+	for _, vA := range valsAfter {
+		if bytes.Equal(v.ProviderConsAddr, vA.ProviderConsAddr) {
+			vAfter = &vA
+			break
+		}
+	}
+	if vAfter == nil {
+		t.Fatalf("could not find validator with address %v in validators after \n validators after capping: %v", v.ProviderConsAddr, valsAfter)
+	}
+	return vAfter
 }
