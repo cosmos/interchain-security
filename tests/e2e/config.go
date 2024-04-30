@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 	"golang.org/x/mod/semver"
 )
 
@@ -69,10 +70,13 @@ var hermesTemplates = map[string]string{
 	`,
 }
 
-// TODO: Determine if user defined type (wrapping a primitive string) is desired in long run
+// type aliases for shared types from e2e package
 type (
-	ChainID     string
-	ValidatorID string
+	ChainID         = e2e.ChainID
+	ValidatorID     = e2e.ValidatorID
+	ValidatorConfig = e2e.ValidatorConfig
+	ChainConfig     = e2e.ChainConfig
+	ContainerConfig = e2e.ContainerConfig // will be moved back
 )
 
 // Supported Test configurations to be used with GetTestConfig
@@ -88,98 +92,6 @@ const (
 	ConsumerMisbehaviourTestCfg TestConfigType = "consumer-misbehaviour"
 	CompatibilityTestCfg        TestConfigType = "compatibility"
 )
-
-// Attributes that are unique to a validator. Allows us to map (part of)
-// the set of strings defined above to a set of viable validators
-type ValidatorConfig struct {
-	// Seed phrase to generate a secp256k1 key used by the validator on the provider
-	Mnemonic string
-	// Validator account address on provider marshaled to string using Bech32
-	// with Bech32Prefix = ProviderAccountPrefix
-	DelAddress string
-	// Validator account address on provider marshaled to string using Bech32
-	// with Bech32Prefix = ConsumerAccountPrefix
-	DelAddressOnConsumer string
-	// Validator operator address on provider marshaled to string using Bech32
-	// with Bech32Prefix = ProviderAccountPrefix
-	ValoperAddress string
-	// Validator operator address on provider marshaled to string using Bech32
-	// with Bech32Prefix = ConsumerAccountPrefix
-	ValoperAddressOnConsumer string
-	// Validator consensus address on provider marshaled to string using Bech32
-	// with Bech32Prefix = ProviderAccountPrefix. It matches the PrivValidatorKey below.
-	ValconsAddress string
-	// Validator consensus address on provider marshaled to string using Bech32
-	// with Bech32Prefix = ConsumerAccountPrefix.
-	ValconsAddressOnConsumer string
-	// Key used for consensus on provider
-	PrivValidatorKey string
-	NodeKey          string
-	// Must be an integer greater than 0 and less than 253
-	IpSuffix string
-
-	// consumer chain key assignment data
-	// keys are used on a new node
-
-	// Seed phrase to generate a secp256k1 key used by the validator on the consumer
-	ConsumerMnemonic string
-	// Validator account address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = ConsumerAccountPrefix
-	ConsumerDelAddress string
-	// Validator account address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = ProviderAccountPrefix
-	ConsumerDelAddressOnProvider string
-	// Validator operator address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = ConsumerAccountPrefix
-	ConsumerValoperAddress string
-	// Validator operator address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = ProviderAccountPrefix
-	ConsumerValoperAddressOnProvider string
-	// Validator consensus address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = ConsumerAccountPrefix. It matches the PrivValidatorKey below.
-	ConsumerValconsAddress string
-	// Validator consensus address on consumer marshaled to string using Bech32
-	// with Bech32Prefix = ProviderAccountPrefix.
-	ConsumerValconsAddressOnProvider string
-	ConsumerValPubKey                string
-	// Key used for consensus on consumer
-	ConsumerPrivValidatorKey string
-	ConsumerNodeKey          string
-	UseConsumerKey           bool // if true the validator node will start with consumer key
-}
-
-// Attributes that are unique to a chain. Allows us to map (part of)
-// the set of strings defined above to a set of viable chains
-type ChainConfig struct {
-	ChainId ChainID
-	// The account prefix configured on the chain. For example, on the Hub, this is "cosmos"
-	AccountPrefix string
-	// Must be unique per chain
-	IpPrefix       string
-	VotingWaitTime uint
-	// Any transformations to apply to the genesis file of all chains instantiated with this chain config, as a jq string.
-	// Example: ".app_state.gov.params.voting_period = \"5s\" | .app_state.slashing.params.signed_blocks_window = \"2\" | .app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\""
-	GenesisChanges string
-	BinaryName     string
-
-	// binary to use after upgrade height
-	UpgradeBinary string
-}
-
-type ContainerConfig struct {
-	ContainerName string
-	InstanceName  string
-	CcvVersion    string
-	Now           time.Time
-}
-
-type TargetConfig struct {
-	gaiaTag         string
-	localSdkPath    string
-	useGaia         bool
-	providerVersion string
-	consumerVersion string
-}
 
 type TestConfig struct {
 	// These are the non altered values during a typical test run, where multiple test runs can exist
@@ -221,7 +133,8 @@ func getIcsVersion(reference string) string {
 		// remove build suffix
 		return semver.Canonical(reference)
 	}
-	for _, tag := range []string{"v2.0.0", "v2.4.0", "v2.4.0-lsm", "v3.1.0", "v3.2.0", "v3.3.0", "v4.0.0"} {
+
+	for _, tag := range []string{"v2.0.0", "v2.4.0", "v2.4.0-lsm", "v3.1.0", "v3.2.0", "v3.3.0", "v4.0.0", "v4.1.1", "v4.1.1-lsm"} {
 		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
 		cmd := exec.Command("git", "merge-base", "--is-ancestor", reference, tag)
 		out, err := cmd.CombinedOutput()
@@ -412,7 +325,7 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 
 	var providerConfig, consumerConfig ChainConfig
 	if !semver.IsValid(consumerVersion) {
-		fmt.Println("Using default provider chain config")
+		fmt.Printf("Invalid sem-version '%s' for provider.Using default provider chain config\n", consumerVersion)
 		consumerConfig = testCfg.chainConfigs[ChainID("consu")]
 	} else if semver.Compare(consumerVersion, "v3.0.0") < 0 {
 		fmt.Println("Using consumer chain config for v2.0.0")
@@ -442,6 +355,20 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 		}
+	} else if semver.Compare(consumerVersion, "v5.0.0-alpha1") < 0 { // TODO: change this to first published v5 release - once it's out
+		fmt.Println("Using consumer chain config for v4.x.x")
+		consumerConfig = ChainConfig{
+			ChainId:        ChainID("consu"),
+			AccountPrefix:  ConsumerAccountPrefix,
+			BinaryName:     "interchain-security-cd",
+			IpPrefix:       "7.7.8",
+			VotingWaitTime: 20,
+			GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+				".app_state.slashing.params.signed_blocks_window = \"20\" | " +
+				".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+				".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+		}
 	} else {
 		fmt.Println("Using default consumer chain config")
 		consumerConfig = testCfg.chainConfigs[ChainID("consu")]
@@ -449,7 +376,7 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 
 	// Get the provider chain config for a specific version
 	if !semver.IsValid(providerVersion) {
-		fmt.Println("Using default provider chain config")
+		fmt.Printf("Invalid sem-version '%s' for provider. Using default provider chain config\n", providerVersion)
 		providerConfig = testCfg.chainConfigs[ChainID("provi")]
 	} else if semver.Compare(providerVersion, "v3.0.0") < 0 {
 		fmt.Println("Using provider chain config for v2.x.x")
@@ -486,6 +413,25 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 				".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
+		}
+	} else if semver.Compare(providerVersion, "v5.0.0-alpha1") < 0 { //TODO: MOV THIS BACK TO "v5.0.0"
+		fmt.Println("Using provider chain config for v4.1.x")
+		providerConfig = ChainConfig{
+			ChainId:        ChainID("provi"),
+			AccountPrefix:  ProviderAccountPrefix,
+			BinaryName:     "interchain-security-pd",
+			IpPrefix:       "7.7.7",
+			VotingWaitTime: 20,
+			GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+				// Custom slashing parameters for testing validator downtime functionality
+				// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+				".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+				".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+				".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+				".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
+				".app_state.provider.params.blocks_per_epoch = 3",
 		}
 	} else {
 		fmt.Println("Using default provider chain config")
@@ -944,7 +890,7 @@ func getValidatorConfigFromVersion(providerVersion, consumerVersion string) map[
 			},
 		}
 	case "v4.0.0":
-		fmt.Println("Using current default validator configs: ", providerVersion)
+		fmt.Println("Using current validator configs v4.0.0: ", providerVersion)
 		validatorCfg = map[ValidatorID]ValidatorConfig{
 			ValidatorID("alice"): {
 				Mnemonic:                 "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",

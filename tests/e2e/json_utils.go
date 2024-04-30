@@ -6,23 +6,6 @@ import (
 	"reflect"
 )
 
-// stores a proposal as a raw json, together with its type
-type ProposalAndType struct {
-	RawProposal json.RawMessage
-	Type        string
-}
-
-type (
-	// to have a ChainState object that does not have the overridden Marshal/Unmarshal method
-	ChainStateCopy ChainState
-
-	// duplicated from the ChainState with a minor change to the Proposals field
-	ChainStateWithProposalTypes struct {
-		ChainStateCopy
-		Proposals *map[uint]ProposalAndType // the only thing changed from the real ChainState
-	}
-)
-
 // MarshalJSON marshals a step into JSON while including the type of the action.
 func (step Step) MarshalJSON() ([]byte, error) {
 	actionType := reflect.TypeOf(step.Action)
@@ -296,91 +279,5 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 	default:
 		return nil, fmt.Errorf("unknown action type: %s", actionTypeString)
 	}
-	return nil, err
-}
-
-// custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info
-
-// MarshalJSON transforms the ChainState into a ChainStateWithProposalTypes by adding type info to the proposals
-func (c ChainState) MarshalJSON() ([]byte, error) {
-	chainStateCopy := ChainStateCopy(c)
-	chainStateWithProposalTypes := ChainStateWithProposalTypes{chainStateCopy, nil}
-	if c.Proposals != nil {
-		proposalsWithTypes := make(map[uint]ProposalAndType)
-		for k, v := range *c.Proposals {
-			rawMessage, err := json.Marshal(v)
-			if err != nil {
-				return nil, err
-			}
-			proposalsWithTypes[k] = ProposalAndType{rawMessage, reflect.TypeOf(v).String()}
-		}
-		chainStateWithProposalTypes.Proposals = &proposalsWithTypes
-	}
-	return json.Marshal(chainStateWithProposalTypes)
-}
-
-// UnmarshalJSON unmarshals the ChainStateWithProposalTypes into a ChainState by removing the type info from the proposals and getting back standard proposals
-func (c *ChainState) UnmarshalJSON(data []byte) error {
-	chainStateWithProposalTypes := ChainStateWithProposalTypes{}
-	err := json.Unmarshal(data, &chainStateWithProposalTypes)
-	if err != nil {
-		return err
-	}
-
-	chainState := ChainState(chainStateWithProposalTypes.ChainStateCopy)
-	*c = chainState
-
-	if chainStateWithProposalTypes.Proposals != nil {
-		proposals := make(map[uint]Proposal)
-		for k, v := range *chainStateWithProposalTypes.Proposals {
-			proposal, err := UnmarshalProposalWithType(v.RawProposal, v.Type)
-			if err != nil {
-				return err
-			}
-			proposals[k] = proposal
-		}
-		c.Proposals = &proposals
-	}
-	return nil
-}
-
-// UnmarshalProposalWithType takes a JSON object and a proposal type and marshals into an object of the corresponding proposal.
-func UnmarshalProposalWithType(inputMap json.RawMessage, proposalType string) (Proposal, error) {
-	var err error
-	switch proposalType {
-	case "main.TextProposal":
-		prop := TextProposal{}
-		err := json.Unmarshal(inputMap, &prop)
-		if err == nil {
-			return prop, nil
-		}
-	case "main.ConsumerAdditionProposal":
-		prop := ConsumerAdditionProposal{}
-		err := json.Unmarshal(inputMap, &prop)
-		if err == nil {
-			return prop, nil
-		}
-	case "main.UpgradeProposal":
-		prop := UpgradeProposal{}
-		err := json.Unmarshal(inputMap, &prop)
-		if err == nil {
-			return prop, nil
-		}
-	case "main.ConsumerRemovalProposal":
-		prop := ConsumerRemovalProposal{}
-		err := json.Unmarshal(inputMap, &prop)
-		if err == nil {
-			return prop, nil
-		}
-	case "main.IBCTransferParamsProposal":
-		prop := IBCTransferParamsProposal{}
-		err := json.Unmarshal(inputMap, &prop)
-		if err == nil {
-			return prop, nil
-		}
-	default:
-		return nil, fmt.Errorf("%s is not a known proposal type", proposalType)
-	}
-
 	return nil, err
 }

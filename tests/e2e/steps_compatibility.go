@@ -57,7 +57,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)), // breaking change in SDK: gov.ProposalStatus(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD).String(),
 						},
 					},
 					// not supported across major versions
@@ -138,7 +138,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)), //TODO: CHECK if this is bug on SDK SIDE!!!: should be as before gov.ProposalStatus(gov.ProposalStatus_PROPOSAL_STATUS_PASSED).String(),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{

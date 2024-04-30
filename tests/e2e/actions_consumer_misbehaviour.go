@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"log"
-	"os/exec"
 	"strconv"
 	"time"
 )
@@ -17,15 +16,13 @@ type ForkConsumerChainAction struct {
 	RelayerConfig string
 }
 
-func (tc TestConfig) forkConsumerChain(action ForkConsumerChainAction, verbose bool) {
-	valCfg := tc.validatorConfigs[action.Validator]
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	configureNodeCmd := exec.Command("docker", "exec", tc.containerConfig.InstanceName, "/bin/bash",
-		"/testnet-scripts/fork-consumer.sh", tc.chainConfigs[action.ConsumerChain].BinaryName,
+func (tc Chain) forkConsumerChain(action ForkConsumerChainAction, verbose bool) {
+	valCfg := tc.testConfig.validatorConfigs[action.Validator]
+	configureNodeCmd := tc.target.ExecCommand("/bin/bash",
+		"/testnet-scripts/fork-consumer.sh", tc.testConfig.chainConfigs[action.ConsumerChain].BinaryName,
 		string(action.Validator), string(action.ConsumerChain),
-		tc.chainConfigs[action.ConsumerChain].IpPrefix,
-		tc.chainConfigs[action.ProviderChain].IpPrefix,
+		tc.testConfig.chainConfigs[action.ConsumerChain].IpPrefix,
+		tc.testConfig.chainConfigs[action.ProviderChain].IpPrefix,
 		valCfg.Mnemonic,
 		action.RelayerConfig,
 	)
@@ -69,21 +66,20 @@ type UpdateLightClientAction struct {
 	ClientID      string
 }
 
-func (tc TestConfig) updateLightClient(
+func (tc Chain) updateLightClient(
 	action UpdateLightClientAction,
 	verbose bool,
 ) {
 	// retrieve a trusted height of the consumer light client
-	trustedHeight := tc.getTrustedHeight(action.HostChain, action.ClientID, 2)
+	revHeight, _ := tc.target.GetTrustedHeight(action.HostChain, action.ClientID, 2)
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tc.containerConfig.InstanceName, "hermes",
+	cmd := tc.target.ExecCommand("hermes",
 		"--config", action.RelayerConfig,
 		"update",
 		"client",
 		"--client", action.ClientID,
 		"--host-chain", string(action.HostChain),
-		"--trusted-height", strconv.Itoa(int(trustedHeight.RevisionHeight)),
+		"--trusted-height", strconv.Itoa(int(revHeight)),
 	)
 	if verbose {
 		log.Println("UpdateLightClientAction cmd:", cmd.String())
