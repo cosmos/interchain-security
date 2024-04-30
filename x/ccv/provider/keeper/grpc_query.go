@@ -284,7 +284,10 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 					return nil, status.Error(codes.InvalidArgument, "invalid provider address")
 				}
 				power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
-				minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+				minPowerToOptIn, found := k.GetMinimumPowerInTopN(ctx, chainID)
+				if !found {
+					return nil, status.Errorf(codes.InvalidArgument, "cannot find minimum power in top N for chain %v", chainID)
+				}
 
 				// Check if the validator's voting power is smaller
 				// than the minimum and hence not automatically opted in

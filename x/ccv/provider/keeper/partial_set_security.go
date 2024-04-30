@@ -63,13 +63,18 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+		minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, chainID)
+		if !found {
+			return errorsmod.Wrapf(
+				types.ErrUnknownConsumerChainId,
+				"could not find minimum power in top N for chain with id: %s", chainID)
+		}
 
-		if power >= minPowerToOptIn {
+		if power >= minPowerInTopN {
 			return errorsmod.Wrapf(
 				types.ErrCannotOptOutFromTopN,
 				"validator with power (%d) cannot opt out from Top N chain because all validators"+
-					"with at least %d power have to validate", power, minPowerToOptIn)
+					"with at least %d power have to validate", power, minPowerInTopN)
 		}
 	}
 
@@ -96,9 +101,9 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValid
 	}
 }
 
-// ComputeMinPowerToOptIn returns the minimum power needed for a validator (from the bonded validators)
+// ComputeMinPowerInTopN returns the minimum power needed for a validator (from the bonded validators)
 // to belong to the `topN` validators. `chainID` is only used for logging purposes.
-func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, topN uint32) int64 {
+func (k Keeper) ComputeMinPowerInTopN(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, topN uint32) int64 {
 	if topN == 0 {
 		// This should never happen but because `ComputeMinPowerToOptIn` is called during an `EndBlock` we do want
 		// to `panic` here. Instead, we log an error and return the maximum possible `int64`.

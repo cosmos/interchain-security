@@ -274,19 +274,19 @@ func TestComputeMinPowerToOptIn(t *testing.T) {
 		createStakingValidator(ctx, mocks, 5, 6),
 	}
 
-	require.Equal(t, int64(1), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 100))
-	require.Equal(t, int64(1), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 97))
-	require.Equal(t, int64(3), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 96))
-	require.Equal(t, int64(3), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 85))
-	require.Equal(t, int64(5), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 84))
-	require.Equal(t, int64(5), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 65))
-	require.Equal(t, int64(6), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 64))
-	require.Equal(t, int64(6), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 41))
-	require.Equal(t, int64(10), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 40))
-	require.Equal(t, int64(10), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 1))
+	require.Equal(t, int64(1), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 100))
+	require.Equal(t, int64(1), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 97))
+	require.Equal(t, int64(3), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 96))
+	require.Equal(t, int64(3), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 85))
+	require.Equal(t, int64(5), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 84))
+	require.Equal(t, int64(5), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 65))
+	require.Equal(t, int64(6), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 64))
+	require.Equal(t, int64(6), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 41))
+	require.Equal(t, int64(10), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 40))
+	require.Equal(t, int64(10), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 1))
 
 	// exceptional case when we erroneously call with `topN == 0`
-	require.Equal(t, int64(math.MaxInt64), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 0))
+	require.Equal(t, int64(math.MaxInt64), providerKeeper.ComputeMinPowerInTopN(ctx, "chainID", bondedValidators, 0))
 }
 
 // TestShouldConsiderOnlyOptIn returns true if `validator` is opted in, in `chainID.
