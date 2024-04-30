@@ -250,7 +250,7 @@ build-docs-deploy:
 	@cd docs && ./sync_versions.sh && ./build_deploy.sh
 
 build-docs-local:
-	@cd docs && ./sync_versions.sh && ./build_local.sh
+	@cd docs && ./build_local.sh
 
 ###############################################################################
 ### 							Test Traces									###
