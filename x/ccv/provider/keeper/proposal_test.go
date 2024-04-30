@@ -113,6 +113,8 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
+		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "chainID")
+
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
 			gomock.InOrder(
@@ -187,6 +189,8 @@ func TestCreateConsumerClient(t *testing.T) {
 
 		// Test specific setup
 		tc.setup(&providerKeeper, ctx, &mocks)
+
+		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "chainID")
 
 		// Call method with same arbitrary values as defined above in mock expectations.
 		err := providerKeeper.CreateConsumerClient(ctx, testkeeper.GetTestConsumerAdditionProp())
@@ -476,6 +480,8 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
+
+		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "chainID")
 
 		// Mock expectations and setup for stopping the consumer chain, if applicable
 		// Note: when expAppendProp is false, no mocks are setup,
@@ -810,6 +816,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		HistoricalEntries:                 10000,
 		UnbondingPeriod:                   1728000000000000,
 	}
+	testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "testchain1")
 	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, &prop)
 	require.NoError(t, err)
 
@@ -1034,6 +1041,7 @@ func TestBeginBlockInit(t *testing.T) {
 	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(123)).AnyTimes()
 
 	gomock.InOrder(expectedCalls...)
+	testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)
 
 	for _, prop := range pendingProps {
 		providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
@@ -1042,6 +1050,7 @@ func TestBeginBlockInit(t *testing.T) {
 	// opt in a sample validator so the chain's proposal can successfully execute
 	consAddr, _ := validator.GetConsAddr()
 	providerKeeper.SetOptedIn(ctx, pendingProps[5].ChainId, providertypes.NewProviderConsAddress(consAddr))
+
 	providerKeeper.BeginBlockInit(ctx)
 
 	// first proposal is not pending anymore because its spawn time already passed and was executed
@@ -1149,6 +1158,8 @@ func TestBeginBlockCCR(t *testing.T) {
 		additionProp := testkeeper.GetTestConsumerAdditionProp()
 		additionProp.ChainId = prop.ChainId
 		additionProp.InitialHeight = clienttypes.NewHeight(2, 3)
+		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, prop.ChainId)
+
 		err := providerKeeper.CreateConsumerClient(ctx, additionProp)
 		require.NoError(t, err)
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")

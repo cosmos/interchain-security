@@ -170,7 +170,7 @@ func (k Keeper) CapValidatorSet(ctx sdk.Context, chainID string, validators []ty
 // on the consumer chain have less power than the set validators-power cap. For example, if we have 10 validators and
 // the power cap is set to 5%, we need at least one validator to have more than 10% of the voting power on the consumer chain.
 func (k Keeper) CapValidatorsPower(ctx sdk.Context, chainID string, validators []types.ConsumerValidator) []types.ConsumerValidator {
-	if p, found := k.GetValidatorsPowerCap(ctx, chainID); found {
+	if p, found := k.GetValidatorsPowerCap(ctx, chainID); found && p > 0 {
 		return NoMoreThanPercentOfTheSum(validators, p)
 	} else {
 		// is a no-op if power cap is not set for `chainID`
@@ -188,22 +188,49 @@ func sum(validators []types.ConsumerValidator) int64 {
 }
 
 // NoMoreThanPercentOfTheSum returns a set of validators with updated powers such that no validator has more than the
-// provided `percent` of the sum of all validators' powers.
+// provided `percent` of the sum of all validators' powers. Operates on a best-effort basis.
 func NoMoreThanPercentOfTheSum(validators []types.ConsumerValidator, percent uint32) []types.ConsumerValidator {
-	// The idea behind this algorithm is rather simple:
+	// Algorithm's idea
+	// ----------------
+	// Consider the validators' powers to be `a_1, a_2, ... a_n` and `p` to be the percent in [1, 100]. Now, consider
+	// the sum `s = a_1 + a_2 + ... + a_n`. Then `maxPower = s * p / 100 <=> 100 * maxPower = s * p`.
+	// The problem of capping the validators' powers to be no more than `p` has no solution if `(100 / n) > p`. For example,
+	// for n = 10 and p = 5 we do not have a solution. We would need at least one validator with power greater than 10%
+	// for a solution to exist.
+	// So, if `(100 / n) > p` there's no solution. We know that `100 * maxPower = s * p` and so `(100 / n) > (100 * maxPower) / s`
+	// `100 * s > 100 * maxPower * n <=> s > maxPower * n`. Thus, we do not have a solution if `s > n * maxPower`.
+
+	// If `s <= n * maxPower` the idea of the algorithm is rather simple.
 	// - Compute the `maxPower` a validator must have so that it does not have more than `percent` of the voting power.
 	// - If a validator `v` has power `p`, then:
 	//     - if `p > maxPower` we set `v`'s power to `maxPower` and distribute the `p - maxPower` to validators that
-	//       have less than `maxPower` power
-	s := sum(validators)
-	maxPower := int64(float64(s) * (float64(percent) / 100.0))
+	//       have less than `maxPower` power. This way, the total sum remains the same and no validator has more than
+	//       `maxPower` and so the power capping is satisfied.
+	// - Note that in order to avoid setting multiple validators to `maxPower`, we first compute all the `remainingPower`
+	// we have to distribute and then attempt to add `remainingPower / validatorsWithPowerLessThanMaxPower` to each validator.
+	// To guarantee that the sum remains the same after the distribution of powers, we sort the powers in descending
+	// order. This way, we first attempt to add `remainingPower / validatorsWithPowerLessThanMaxPower` to validators
+	// with greater power and if we cannot add the `remainingPower / validatorsWithPowerLessThanMaxPower` without
+	// exceeding `maxPower`, we just add enough to reach `maxPower` and add the remaining power to validators with smaller
+	// power.
+
+	// If `s > n * maxPower` there's no solution and the algorithm would set everything to `maxPower`.
+	// ----------------
+
+	// Computes `(sum(validators) * percent) / 100`. Because `sdk.Dec` does not provide a `Floor` function, but only
+	// a `Ceil` one, we use `Ceil` and subtract one.
+	maxPower := sdk.NewDec(sum(validators)).Mul(sdk.NewDec(int64(percent))).QuoInt64(100).Ceil().RoundInt64() - 1
+
 	if maxPower == 0 {
 		// edge case: set `maxPower` to 1 to avoid setting the power of a validator to 0
 		maxPower = 1
 	}
 
-	// Sort by `.Power` in decreasing order. This way, we improve the chances that if a validator `a` has more power
-	// than a validator `b` in `validators`, `a` has still more than `b` in the return validators.
+	// Sort by `.Power` in decreasing order. Sorting in descending order is needed because otherwise we would have cases
+	// like this `powers =[60, 138, 559]` and `p = 35%` where sum is `757` and `maxValue = 264`.
+	// Because `559 - 264 = 295` we have to distribute 295 to the first 2 numbers (`295/2 = 147` to each number). However,
+	// note that `138 + 147 > 264`. If we were to add 147 to 60 first, then we cannot give the remaining 147 to 138.
+	// So, the idea is to first give `126 (= 264 - 138)` to 138, so it becomes 264, and then add `21 (=147 - 26) + 147` to 60.
 	sort.Slice(validators, func(i, j int) bool {
 		return validators[i].Power > validators[j].Power
 	})

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	time "time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -53,14 +54,26 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	return expectations
 }
 
+func MockOneOptedInValidator(ctx sdk.Context, mocks *MockedKeepers, providerKeeper keeper.Keeper, chainID string) {
+	// consider at least one opted-in validator in order to be able to create the consumer genesis
+	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
+	consAddr, _ := validator.GetConsAddr()
+	providerKeeper.SetOptedIn(ctx, chainID, providertypes.NewProviderConsAddress(consAddr))
+	mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(validator, true).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(123)).AnyTimes()
+
+	mocks.MockStakingKeeper.EXPECT().
+		IterateLastValidatorPowers(gomock.Any(), gomock.Any()).
+		Do(func(ctx sdk.Context, fn func(addr sdk.ValAddress, power int64) (stop bool)) {
+			fn(sdk.ValAddress("address"), 100)
+		}).
+		Return().AnyTimes()
+}
+
 // GetMocksForMakeConsumerGenesis returns mock expectations needed to call MakeConsumerGenesis().
 func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 	unbondingTimeToInject time.Duration,
 ) []*gomock.Call {
-	mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), gomock.Any()).Return(
-		cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator(), true).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), gomock.Any()).Return(int64(234)).AnyTimes()
-
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject).Times(1),
 

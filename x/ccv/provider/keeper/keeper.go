@@ -1376,27 +1376,6 @@ func (k Keeper) GetValidatorSetCap(
 	return binary.BigEndian.Uint32(buf), true
 }
 
-// SetDenylist denylists validator with `providerAddr` address on chain `chainID`
-func (k Keeper) SetDenylist(
-	ctx sdk.Context,
-	chainID string,
-	providerAddr types.ProviderConsAddress,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.DenylistCapKey(chainID, providerAddr), []byte{})
-}
-
-// IsDenylisted returns `true` if validator with `providerAddr` has been denylisted on chain `chainID`
-func (k Keeper) IsDenylisted(
-	ctx sdk.Context,
-	chainID string,
-	providerAddr types.ProviderConsAddress,
-) bool {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.DenylistCapKey(chainID, providerAddr))
-	return bz != nil
-}
-
 // SetAllowlist allowlists validator with `providerAddr` address on chain `chainID`
 func (k Keeper) SetAllowlist(
 	ctx sdk.Context,
@@ -1418,6 +1397,22 @@ func (k Keeper) IsAllowlisted(
 	return bz != nil
 }
 
+// DeleteAllowlist deletes all allowlisted validators
+func (k Keeper) DeleteAllowlist(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+}
+
 // IsAllowlistEmpty returns `true` if no validator is allowlisted on chain `chainID`
 func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, chainID string) bool {
 	store := ctx.KVStore(k.storeKey)
@@ -1429,6 +1424,43 @@ func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, chainID string) bool {
 	}
 
 	return true
+}
+
+// SetDenylist denylists validator with `providerAddr` address on chain `chainID`
+func (k Keeper) SetDenylist(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.DenylistCapKey(chainID, providerAddr), []byte{})
+}
+
+// IsDenylisted returns `true` if validator with `providerAddr` has been denylisted on chain `chainID`
+func (k Keeper) IsDenylisted(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.DenylistCapKey(chainID, providerAddr))
+	return bz != nil
+}
+
+// DeleteDenylist deletes all denylisted validators
+func (k Keeper) DeleteDenylist(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
 }
 
 // IsDenylistEmpty returns `true` if no validator is allowlisted on chain `chainID`

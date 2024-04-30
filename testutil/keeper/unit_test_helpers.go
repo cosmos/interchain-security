@@ -222,6 +222,7 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	gomock.InOrder(expectations...)
 
 	prop := GetTestConsumerAdditionProp()
+	MockOneOptedInValidator(ctx, &mocks, *providerKeeper, "chainID")
 	err := providerKeeper.CreateConsumerClient(ctx, prop)
 	require.NoError(t, err)
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")

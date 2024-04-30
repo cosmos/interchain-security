@@ -221,6 +221,10 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	}
 
 	k.DeleteTopN(ctx, chainID)
+	k.DeleteValidatorsPowerCap(ctx, chainID)
+	k.DeleteValidatorSetCap(ctx, chainID)
+	k.DeleteAllowlist(ctx, chainID)
+	k.DeleteDenylist(ctx, chainID)
 
 	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
@@ -278,7 +282,7 @@ func (k Keeper) MakeConsumerGenesis(
 		bondedValidators = append(bondedValidators, val)
 	}
 
-	if prop.Top_N > 0 {
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, prop.Top_N)
 		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
@@ -296,17 +300,17 @@ func (k Keeper) MakeConsumerGenesis(
 					!k.IsDenylisted(ctx, chainID, providerAddr))
 		})
 
-	// TODO: fixme .. use the cached ... no???
-	if prop.Top_N > 0 {
-		nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
-	}
-
+	nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
 	nextValidators = k.CapValidatorsPower(ctx, chainID, nextValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
 	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
+
+	if len(initialUpdatesWithConsumerKeys) == 0 {
+		return gen, nil, fmt.Errorf("unable to create a non-empty initial validator set")
+	}
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
@@ -391,8 +395,8 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		cachedCtx, writeFn := ctx.CacheContext()
 
 		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
-		k.SetValidatorSetCap(ctx, prop.ChainId, prop.ValidatorSetCap)
-		k.SetValidatorsPowersCap(ctx, prop.ChainId, prop.ValidatorsPowerCap)
+		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
+		k.SetValidatorsPowersCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
 
 		for _, address := range prop.Allowlist {
 			consAddr, err := sdk.ConsAddressFromBech32(address)
@@ -400,7 +404,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 				continue
 			}
 
-			k.SetAllowlist(ctx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+			k.SetAllowlist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
 		}
 
 		for _, address := range prop.Denylist {
@@ -409,21 +413,10 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 				continue
 			}
 
-			k.SetDenylist(ctx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+			k.SetDenylist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
 		}
 
 		err := k.CreateConsumerClient(cachedCtx, &prop)
-
-		consumerGenesis, _ := k.GetConsumerGenesis(cachedCtx, prop.ChainId)
-		providerInfo := consumerGenesis.GetProvider()
-
-		if len(providerInfo.GetInitialValSet()) == 0 {
-			// drop the proposal
-			ctx.Logger().Info("consumer client could not be created because no validator exists in the"+
-				"initial validator set for chain: %s", prop.ChainId)
-			continue
-		}
-
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created: %w", err)

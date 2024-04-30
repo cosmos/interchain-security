@@ -75,7 +75,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		{
 			name: "unsupported proposal type",
 			// lint rule disabled because this is a test case for an unsupported proposal type
-			
+
 			content: &distributiontypes.CommunityPoolSpendProposal{
 				Title:       "title",
 				Description: "desc",
@@ -92,6 +92,8 @@ func TestProviderProposalHandler(t *testing.T) {
 		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
+
+		testkeeper.MockOneOptedInValidator(ctx, &mocks, providerKeeper, "chainID")
 
 		// Mock expectations depending on expected outcome
 		switch {
