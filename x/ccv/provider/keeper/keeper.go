@@ -1346,7 +1346,7 @@ func (k Keeper) DeleteConsumerCommissionRate(
 }
 
 // SetValidatorsPowersCap sets the power-cap value `p` associated to chain with `chainID`
-func (k Keeper) SetValidatorsPowersCap(
+func (k Keeper) SetValidatorsPowerCap(
 	ctx sdk.Context,
 	chainID string,
 	p uint32,
