@@ -97,19 +97,19 @@ type ConsumerAdditionProposal struct {
 	// have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
 	// A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
 	Top_N uint32 `protobuf:"varint,15,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
-	// Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For example, if
-	// `validators_power_cap` is set to `32`, it means that no validator can have more than 32% of the voting power on the
-	// consumer chain. Note that this might not be feasible. For instance, think of a consumer chain with only
+	// Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
+	// `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
+	// consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
 	// 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
-	// to have more than 20% of the total voting power.
+	// to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
 	ValidatorsPowerCap uint32 `protobuf:"varint,16,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
 	// Corresponds to the maximum number of validators that can validate a consumer chain.
-	// Only applicable to Opt In chains an is a no-op if set for a Top N chain.
+	// Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
 	ValidatorSetCap uint32 `protobuf:"varint,17,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
-	// Corresponds to a list of the provider consensus addresses of validators that are the ONLY ones that can validate
+	// Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
 	// the consumer chain.
 	Allowlist []string `protobuf:"bytes,18,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
-	// Corresponds to a list of the provider consensus addresses of validators that CANNOT validate the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,19,rep,name=denylist,proto3" json:"denylist,omitempty"`
 }
 

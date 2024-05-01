@@ -22,7 +22,6 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/cometbft/cometbft/libs/log"
-
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"

@@ -276,9 +276,10 @@ type MsgOptIn struct {
 	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// the validator address on the provider
 	ProviderAddr string `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty" yaml:"address"`
-	// (optional) the consensus public key to use on the consumer in json string format corresponding to proto-any,
-	// for example `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`
-	// we can set `consumer_key = ""` if we do not consider the `consumer_key`
+	// (optional) The consensus public key to use on the consumer in json string format corresponding to proto-any,
+	// for example `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`.
+	// This field is optional and can remain empty (i.e., `consumer_key = ""`). A validator can always change the
+	// consumer public key at a later stage by issuing a `MsgAssignConsumerKey` message.
 	ConsumerKey string `protobuf:"bytes,3,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
 }
 

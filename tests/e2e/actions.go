@@ -2309,8 +2309,8 @@ func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose b
 	}
 
 	if !tr.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
-		if verbose {
-			fmt.Printf("got expected error during opt in | err: %s | output: %s \n", err, string(bz))
+		if err != nil && verbose {
+			fmt.Printf("got error during opt in | err: %s | output: %s \n", err, string(bz))
 		}
 	}
 
