@@ -220,6 +220,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	}
 
 	k.DeleteTopN(ctx, chainID)
+	k.DeleteAllOptedIn(ctx, chainID)
+	k.DeleteConsumerValSet(ctx, chainID)
 
 	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
