@@ -27,11 +27,11 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/types"
+	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -249,10 +249,15 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 
 	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID))
 
+	// in case the chain was successfully stopped, it should not contain a Top N associated to it
+	_, found = providerKeeper.GetTopN(ctx, expectedChainID)
+	require.False(t, found)
+
 	// test key assignment state is cleaned
 	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID))
 	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
 	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
+	require.Empty(t, providerKeeper.GetAllCommissionRateValidators(ctx, expectedChainID))
 }
 
 func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
@@ -271,6 +276,11 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		types.DefaultCCVTimeoutPeriod,
 		types.DefaultTransferTimeoutPeriod,
 		types.DefaultConsumerUnbondingPeriod,
+		0,
+		0,
+		0,
+		nil,
+		nil,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop

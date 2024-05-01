@@ -14,11 +14,11 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	testcrypto "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
-	keeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	testcrypto "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
+	keeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 func TestInvalidMsg(t *testing.T) {
@@ -33,6 +33,10 @@ func TestInvalidMsg(t *testing.T) {
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
 	providerConsAddr := providerCryptoId.ProviderConsAddress()
+
+	// a different providerConsAddr, to simulate different validators having assigned keys
+	providerCryptoId2 := testcrypto.NewCryptoIdentityFromIntSeed(10)
+	providerConsAddr2 := providerCryptoId2.ProviderConsAddress()
 
 	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
@@ -101,7 +105,32 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			chainID:  "chainid",
 		},
 		{
-			name: "fail: consumer key in use",
+			name: "fail: consumer key in use by other validator",
+			setup: func(ctx sdk.Context,
+				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+			) {
+				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
+					ChainId: "chainid",
+				})
+				// Use the consumer key already used by some other validator
+				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr2)
+
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidator(
+						ctx, providerCryptoId.SDKValOpAddress(),
+						// validator should not be missing
+					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerConsAddr.ToSdkConsAddr(),
+						// return false - no other validator uses the consumer key to validate *on the provider*
+					).Return(stakingtypes.Validator{}, false),
+				)
+			},
+			expError: true,
+			chainID:  "chainid",
+		},
+		{
+			name: "success: consumer key in use, but by the same validator",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
@@ -121,7 +150,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},
-			expError: true,
+			expError: false,
 			chainID:  "chainid",
 		},
 	}

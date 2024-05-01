@@ -15,6 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -41,6 +42,9 @@ type StakingKeeper interface {
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) math.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
+	GetUnbondingDelegationByUnbondingID(ctx sdk.Context, id uint64) (ubd stakingtypes.UnbondingDelegation, found bool)
+	GetRedelegationByUnbondingID(ctx sdk.Context, id uint64) (red stakingtypes.Redelegation, found bool)
+	GetValidatorByUnbondingID(ctx sdk.Context, id uint64) (val stakingtypes.Validator, found bool)
 	IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
 	Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
 	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
@@ -53,6 +57,7 @@ type StakingKeeper interface {
 	GetUnbondingDelegationsFromValidator(ctx sdk.Context, valAddr sdk.ValAddress) (ubds []stakingtypes.UnbondingDelegation)
 	GetRedelegationsFromSrcValidator(ctx sdk.Context, valAddr sdk.ValAddress) (reds []stakingtypes.Redelegation)
 	GetUnbondingType(ctx sdk.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
+	MinCommissionRate(ctx sdk.Context) math.LegacyDec
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
@@ -109,6 +114,10 @@ type ClientKeeper interface {
 // DistributionKeeper defines the expected interface of the distribution keeper
 type DistributionKeeper interface {
 	FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
+	GetFeePool(ctx sdk.Context) distrtypes.FeePool
+	SetFeePool(ctx sdk.Context, feePool distrtypes.FeePool)
+	GetCommunityTax(ctx sdk.Context) math.LegacyDec
+	AllocateTokensToValidator(ctx sdk.Context, validator stakingtypes.ValidatorI, reward sdk.DecCoins)
 }
 
 // ConsumerHooks event hooks for newly bonded cross-chain validators

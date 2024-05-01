@@ -10,7 +10,7 @@ import (
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	types "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	types "github.com/cosmos/interchain-security/v5/x/ccv/types"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v4/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v5/x/ccv/provider/types";
 
 import "interchain_security/ccv/v1/wire.proto";
 import "gogoproto/gogo.proto";
@@ -13,6 +13,8 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos/evidence/v1beta1/evidence.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "amino/amino.proto";
+
 
 //
 // Note any type defined in this file is ONLY used internally to the provider CCV module.
@@ -83,6 +85,25 @@ message ConsumerAdditionProposal {
   // chain. it is most relevant for chains performing a sovereign to consumer
   // changeover in order to maintain the existing ibc transfer channel
   string distribution_transmission_channel = 14;
+  // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
+  // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
+  // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
+  // A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
+  uint32 top_N = 15;
+  // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
+  // `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
+  // consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
+  // 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
+  // to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
+  uint32 validators_power_cap = 16;
+  // Corresponds to the maximum number of validators that can validate a consumer chain.
+  // Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+  uint32 validator_set_cap = 17;
+  // Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
+  // the consumer chain.
+  repeated string allowlist = 18;
+  // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+  repeated string denylist = 19;
 }
 
 // ConsumerRemovalProposal is a governance proposal on the provider chain to
@@ -308,4 +329,14 @@ message ConsumerValidator {
   int64 power = 2;
   // public key the validator uses on the consumer chain during this epoch
   tendermint.crypto.PublicKey consumer_public_key = 3;
+}
+// ConsumerRewardsAllocation stores the rewards allocated by a consumer chain
+// to the consumer rewards pool. It is used to allocate the tokens to the consumer 
+// opted-in validators and the community pool during BeginBlock.
+message ConsumerRewardsAllocation {
+  repeated cosmos.base.v1beta1.DecCoin rewards = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"
+  ];
 }

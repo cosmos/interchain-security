@@ -15,9 +15,9 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {
@@ -123,11 +123,13 @@ func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
 
 	k.Hooks().AfterProposalSubmission(ctx, prop.Id)
 	// verify that the proposal ID is created
-	require.NotEmpty(t, k.GetProposedConsumerChain(ctx, prop.Id))
+	_, found := k.GetProposedConsumerChain(ctx, prop.Id)
+	require.True(t, found)
 
 	k.Hooks().AfterProposalVotingPeriodEnded(ctx, prop.Id)
 	// verify that the proposal ID is deleted
-	require.Empty(t, k.GetProposedConsumerChain(ctx, prop.Id))
+	_, found = k.GetProposedConsumerChain(ctx, prop.Id)
+	require.False(t, found)
 }
 
 func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {

@@ -15,7 +15,7 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
@@ -36,6 +36,11 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				100000000000,
 				100000000000,
 				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
 			),
 			true,
 		},
@@ -48,7 +53,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			true,
 		},
 		{
@@ -60,7 +71,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -72,7 +89,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -104,7 +127,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -116,7 +145,12 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil),
 			false,
 		},
 		{
@@ -128,7 +162,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -140,7 +180,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -152,7 +198,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				100000000000,
 				10000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -164,7 +216,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -176,7 +234,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				-2,
 				100000000000,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -188,7 +252,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				0,
 				100000000000,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -200,7 +270,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				0,
-				100000000000),
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 		{
@@ -212,7 +288,13 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				10000,
 				100000000000,
 				100000000000,
-				0),
+				0,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
 			false,
 		},
 	}
@@ -236,7 +318,12 @@ func TestMarshalConsumerAdditionProposal(t *testing.T) {
 		10000,
 		100000000000,
 		100000000000,
-		100000000000)
+		100000000000,
+		0,
+		0,
+		0,
+		nil,
+		nil)
 
 	cccp, ok := content.(*types.ConsumerAdditionProposal)
 	require.True(t, ok)
@@ -278,7 +365,12 @@ func TestConsumerAdditionProposalString(t *testing.T) {
 		500000,
 		100000000000,
 		10000000000,
-		100000000000)
+		100000000000,
+		0,
+		0,
+		0,
+		[]string{},
+		[]string{})
 
 	expect := fmt.Sprintf(`CreateConsumerChain Proposal
 	Title: title

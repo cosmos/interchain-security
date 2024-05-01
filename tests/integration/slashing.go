@@ -18,9 +18,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	keepertestutil "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	keepertestutil "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed
@@ -405,6 +405,15 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// Check expected behavior for handling SlashPackets for downtime infractions
 	slashPacketData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
+
+	// Expect packet to be handled if the validator didn't opt in
+	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
+	suite.Require().NoError(err, "no error expected")
+	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
+
+	providerKeeper.SetConsumerValidator(ctx, firstBundle.Chain.ChainID, providertypes.ConsumerValidator{
+		ProviderConsAddr: validAddress,
+	})
 
 	// Expect the packet to bounce if the slash meter is negative
 	providerKeeper.SetSlashMeter(ctx, sdk.NewInt(-1))

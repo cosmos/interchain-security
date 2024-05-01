@@ -19,10 +19,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client/cli"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client/cli"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 var (
@@ -137,7 +137,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 4 }
+func (AppModule) ConsensusVersion() uint64 { return 5 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
@@ -147,6 +147,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	am.keeper.BeginBlockCCR(ctx)
 	// Check for replenishing slash meter before any slash packets are processed for this block
 	am.keeper.BeginBlockCIS(ctx)
+	// BeginBlock logic need for the  Reward Distribution sub-protocol
+	am.keeper.BeginBlockRD(ctx, req)
 }
 
 // EndBlock implements the AppModule interface
@@ -158,8 +160,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	am.keeper.EndBlockCCR(ctx)
 	// EndBlock logic needed for the Validator Set Update sub-protocol
 	am.keeper.EndBlockVSU(ctx)
-	// EndBlock logic need for the  Reward Distribution sub-protocol
-	am.keeper.EndBlockRD(ctx)
 
 	return []abci.ValidatorUpdate{}
 }

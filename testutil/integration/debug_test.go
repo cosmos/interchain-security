@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v4/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
-	integr "github.com/cosmos/interchain-security/v4/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v5/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v5/app/provider"
+	integr "github.com/cosmos/interchain-security/v5/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite
@@ -282,4 +282,24 @@ func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing
 
 func TestSlashRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSlashRetries")
+}
+
+func TestIBCTransferMiddleware(t *testing.T) {
+	runCCVTestByName(t, "TestIBCTransferMiddleware")
+}
+
+func TestAllocateTokens(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokens")
+}
+
+func TestTransferConsumerRewardsToDistributionModule(t *testing.T) {
+	runCCVTestByName(t, "TransferConsumerRewardsToDistributionModule")
+}
+
+func TestAllocateTokensToValidator(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokensToValidator")
+}
+
+func TestMultiConsumerRewardsDistribution(t *testing.T) {
+	runCCVTestByName(t, "TestMultiConsumerRewardsDistribution")
 }

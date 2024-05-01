@@ -8,7 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 type Status int
@@ -147,8 +147,41 @@ const (
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
 
-	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer validators in this epoch
+	// ConsumerValidatorBytePrefix is the byte prefix used when storing for each consumer chain all the consumer
+	// validators in this epoch that are validating the consumer chain
 	ConsumerValidatorBytePrefix
+
+	// OptedInBytePrefix is the byte prefix for storing whether a validator is opted in to validate on a consumer chain
+	OptedInBytePrefix
+
+	// TopNBytePrefix is the byte prefix storing the mapping from a consumer chain to the N value of this chain,
+	// that corresponds to the N% of the top validators that have to validate this consumer chain
+	TopNBytePrefix
+
+	// ValidatorsPowerCapPrefix is the byte prefix storing the mapping from a consumer chain to the power-cap value of this chain,
+	// that corresponds to p% such that no validator can have more than p% of the voting power on the consumer chain.
+	// Operates on a best-effort basis.
+	ValidatorsPowerCapPrefix
+
+	// ValidatorSetCapPrefix is the byte prefix storing the mapping from a consumer chain to the validator-set cap value
+	// of this chain.
+	ValidatorSetCapPrefix
+
+	// AllowlistPrefix is the byte prefix storing the mapping from a consumer chain to the set of validators that are
+	// allowlisted.
+	AllowlistPrefix
+
+	// DenylistPrefix is the byte prefix storing the mapping from a consumer chain to the set of validators that are
+	// denylisted.
+	DenylistPrefix
+
+	// ConsumerRewardsAllocationBytePrefix is the byte prefix for storing for each consumer the ICS rewards
+	// allocated to the consumer rewards pool
+	ConsumerRewardsAllocationBytePrefix
+
+	// ConsumerCommissionRatePrefix is the byte prefix for storing the commission rate
+	// per validator per consumer chain
+	ConsumerCommissionRatePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -520,6 +553,52 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
 	prefix := ChainIdWithLenKey(ConsumerValidatorBytePrefix, chainID)
 	return append(prefix, providerAddr...)
+}
+
+// TopNKey returns the key used to store the Top N value per consumer chain.
+// This value corresponds to the N% of the top validators that have to validate the consumer chain.
+func TopNKey(chainID string) []byte {
+	return ChainIdWithLenKey(TopNBytePrefix, chainID)
+}
+
+// ValidatorSetPowerKey returns the key of consumer chain `chainID`
+func ValidatorsPowerCapKey(chainID string) []byte {
+	return ChainIdWithLenKey(ValidatorsPowerCapPrefix, chainID)
+}
+
+// ValidatorSetCapKey returns the key of consumer chain `chainID`
+func ValidatorSetCapKey(chainID string) []byte {
+	return ChainIdWithLenKey(ValidatorSetCapPrefix, chainID)
+}
+
+// AllowlistCapKey returns the key to a validator's slash log
+func AllowlistCapKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	return append(ChainIdWithLenKey(AllowlistPrefix, chainID), providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// DenylistCapKey returns the key to a validator's slash log
+func DenylistCapKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	return append(ChainIdWithLenKey(DenylistPrefix, chainID), providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// OptedInKey returns the key used to store whether a validator is opted in on a consumer chain.
+func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	prefix := ChainIdWithLenKey(OptedInBytePrefix, chainID)
+	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// ConsumerRewardsAllocationKey returns the key used to store the ICS rewards per consumer chain
+func ConsumerRewardsAllocationKey(chainID string) []byte {
+	return append([]byte{ConsumerRewardsAllocationBytePrefix}, []byte(chainID)...)
+}
+
+// ConsumerCommissionRateKey returns the key used to store the commission rate per validator per consumer chain.
+func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress) []byte {
+	return ChainIdAndConsAddrKey(
+		ConsumerCommissionRatePrefix,
+		chainID,
+		providerAddr.ToSdkConsAddr(),
+	)
 }
 
 //

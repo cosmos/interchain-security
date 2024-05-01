@@ -216,11 +216,14 @@ module ccv_model {
 
      // stepCommon is the core functionality of steps that does not have anything to do with time.
     action stepCommon = any {
-        nondet node = oneOf(nonJailedNodes(currentState.providerState))
-        // very restricted set of voting powers. exact values are not important,
-        // and this keeps the state space smaller.
-        nondet newVotingPower = oneOf(Set(-50, 50))
-        VotingPowerChange(node, newVotingPower),
+        all {
+            currentState.providerState.validatorsWithPower().size() > 0,
+            nondet node = oneOf(currentState.providerState.validatorsWithPower())
+            // very restricted set of voting powers. exact values are not important,
+            // and this keeps the state space smaller.
+            nondet newVotingPower = oneOf(Set(-50, 50))
+            VotingPowerChange(node, newVotingPower),
+        },
 
         // try to send a packet. we could filter by chains that can actually send,
         // but it's probably not much faster than just trying and failing.
@@ -749,7 +752,8 @@ module ccv_model {
     action nondetKeyAssignment = 
         all {
             runningConsumers.size() > 0,
-            nondet node = oneOf(nodes)
+            currentState.providerState.validatorsWithPower().size() > 0,
+            nondet node = oneOf(currentState.providerState.validatorsWithPower())
             nondet consumerAddr = oneOf(consumerAddresses)
             nondet consumer = oneOf(runningConsumers)
             KeyAssignment(consumer, node, consumerAddr),

@@ -19,9 +19,9 @@ import (
 	"github.com/tidwall/gjson"
 	"golang.org/x/mod/semver"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const (
@@ -260,6 +260,7 @@ type SubmitConsumerAdditionProposalAction struct {
 	SpawnTime           uint
 	InitialHeight       clienttypes.Height
 	DistributionChannel string
+	TopN                uint32
 }
 
 func (tr TestConfig) submitConsumerAdditionProposal(
@@ -285,6 +286,7 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 		UnbondingPeriod:                   params.UnbondingPeriod,
 		Deposit:                           fmt.Sprint(action.Deposit) + `stake`,
 		DistributionTransmissionChannel:   action.DistributionChannel,
+		TopN:                              action.TopN,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -298,9 +300,15 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 	}
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	bz, err = target.ExecCommand(
+	cmd := target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
-	).CombinedOutput()
+	)
+	bz, err = cmd.CombinedOutput()
+
+	if verbose {
+		log.Println("submitConsumerAdditionProposal cmd: ", cmd.String())
+	}
+
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1498,11 +1506,9 @@ func (tr TestConfig) delegateTokens(
 	}
 
 	cmd := target.ExecCommand(tr.chainConfigs[action.Chain].BinaryName,
-
 		"tx", "staking", "delegate",
 		validatorAddress,
 		fmt.Sprint(action.Amount)+`stake`,
-
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
@@ -1689,7 +1695,6 @@ func (tr TestConfig) redelegateTokens(action RedelegateTokensAction, target Exec
 
 	cmd := target.ExecCommand(
 		tr.chainConfigs[action.Chain].BinaryName,
-
 		"tx", "staking", "redelegate",
 		redelegateSrc,
 		redelegateDst,
@@ -2262,6 +2267,109 @@ func (tc TestConfig) startConsumerEvidenceDetector(
 		log.Fatal(err, "\n", string(bz))
 	}
 	tc.waitBlocks("provi", 10, 2*time.Minute)
+}
+
+type OptInAction struct {
+	Chain     ChainID
+	Validator ValidatorID
+}
+
+func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose bool) {
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
+	gas := "auto"
+	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
+	if tr.useCometmock {
+		gas = "9000000"
+	}
+
+	// Use: "opt-in [consumer-chain-id] [consumer-pubkey]",
+	optIn := fmt.Sprintf(
+		`%s tx provider opt-in %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		tr.chainConfigs[ChainID("provi")].BinaryName,
+		string(tr.chainConfigs[action.Chain].ChainId),
+		action.Validator,
+		tr.chainConfigs[ChainID("provi")].ChainId,
+		tr.getValidatorHome(ChainID("provi"), action.Validator),
+		tr.getValidatorNode(ChainID("provi"), action.Validator),
+		gas,
+	)
+
+	cmd := target.ExecCommand(
+		"/bin/bash", "-c",
+		optIn,
+	)
+
+	if verbose {
+		fmt.Println("optIn cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	if !tr.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+		if err != nil && verbose {
+			fmt.Printf("got error during opt in | err: %s | output: %s \n", err, string(bz))
+		}
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
+}
+
+type OptOutAction struct {
+	Chain       ChainID
+	Validator   ValidatorID
+	ExpectError bool
+}
+
+func (tr TestConfig) optOut(action OptOutAction, target ExecutionTarget, verbose bool) {
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
+	gas := "auto"
+	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
+	if tr.useCometmock {
+		gas = "9000000"
+	}
+
+	// Use: "opt-out [consumer-chain-id]",
+	optIn := fmt.Sprintf(
+		`%s tx provider opt-out %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		tr.chainConfigs[ChainID("provi")].BinaryName,
+		string(tr.chainConfigs[action.Chain].ChainId),
+		action.Validator,
+		tr.chainConfigs[ChainID("provi")].ChainId,
+		tr.getValidatorHome(ChainID("provi"), action.Validator),
+		tr.getValidatorNode(ChainID("provi"), action.Validator),
+		gas,
+	)
+
+	cmd := target.ExecCommand(
+		"/bin/bash", "-c",
+		optIn,
+	)
+
+	if verbose {
+		fmt.Println("optOut cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if action.ExpectError {
+		if err != nil {
+			if verbose {
+				fmt.Printf("got expected error during opt out | err: %s | output: %s \n", err, string(bz))
+			}
+		} else {
+			log.Fatal("expected error during opt-out but got none")
+		}
+	} else {
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
 }
 
 // WaitTime waits for the given duration.

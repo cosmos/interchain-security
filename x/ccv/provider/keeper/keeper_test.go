@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"testing"
@@ -10,14 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const consumer = "consumer"
@@ -400,8 +402,10 @@ func TestGetAllConsumerChains(t *testing.T) {
 	expectedGetAllOrder := []types.Chain{}
 	for i, chainID := range chainIDs {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+		topN := uint32(i)
 		pk.SetConsumerClientId(ctx, chainID, clientID)
-		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID})
+		pk.SetTopN(ctx, chainID, topN)
+		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID, Top_N: topN})
 	}
 	// sorting by chainID
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
@@ -550,7 +554,7 @@ func TestSetProposedConsumerChains(t *testing.T) {
 
 	for _, test := range tests {
 		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
-		cID := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
+		cID, _ := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
 		require.Equal(t, cID, test.chainID)
 	}
 }
@@ -572,9 +576,9 @@ func TestDeleteProposedConsumerChainInStore(t *testing.T) {
 	for _, test := range tests {
 		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
 		providerKeeper.DeleteProposedConsumerChainInStore(ctx, test.deleteProposalID)
-		cID := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
+		cID, found := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
 		if test.ok {
-			require.Equal(t, cID, "")
+			require.False(t, found)
 		} else {
 			require.Equal(t, cID, test.chainID)
 		}
@@ -627,4 +631,209 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 			providerKeeper.DeleteProposedConsumerChainInStore(ctx, tc.ProposalID)
 		}
 	}
+}
+
+// TestTopN tests the `SetTopN`, `GetTopN`, `IsTopN`, and `IsOptIn` methods
+func TestTopN(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	tests := []struct {
+		chainID string
+		N       uint32
+		isOptIn bool
+	}{
+		{chainID: "TopNChain1", N: 50, isOptIn: false},
+		{chainID: "TopNChain2", N: 100, isOptIn: false},
+		{chainID: "OptInChain", N: 0, isOptIn: true},
+	}
+
+	for _, test := range tests {
+		providerKeeper.SetTopN(ctx, test.chainID, test.N)
+		topN, found := providerKeeper.GetTopN(ctx, test.chainID)
+		require.Equal(t, test.N, topN)
+		require.True(t, found)
+
+		if test.isOptIn {
+			require.True(t, providerKeeper.IsOptIn(ctx, test.chainID))
+			require.False(t, providerKeeper.IsTopN(ctx, test.chainID))
+		} else {
+			require.False(t, providerKeeper.IsOptIn(ctx, test.chainID))
+			require.True(t, providerKeeper.IsTopN(ctx, test.chainID))
+		}
+	}
+}
+
+func TestGetAllOptedIn(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	expectedOptedInValidators := []types.ProviderConsAddress{
+		types.NewProviderConsAddress([]byte("providerAddr1")),
+		types.NewProviderConsAddress([]byte("providerAddr2")),
+		types.NewProviderConsAddress([]byte("providerAddr3")),
+	}
+
+	for _, expectedOptedInValidator := range expectedOptedInValidators {
+		providerKeeper.SetOptedIn(ctx, "chainID", expectedOptedInValidator)
+	}
+
+	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "chainID")
+
+	// sort validators first to be able to compare
+	sortOptedInValidators := func(addresses []types.ProviderConsAddress) {
+		sort.Slice(addresses, func(i, j int) bool {
+			return bytes.Compare(addresses[i].ToSdkConsAddr(), addresses[j].ToSdkConsAddr()) < 0
+		})
+	}
+	sortOptedInValidators(expectedOptedInValidators)
+	sortOptedInValidators(actualOptedInValidators)
+	require.Equal(t, expectedOptedInValidators, actualOptedInValidators)
+}
+
+// TestOptedIn tests the `SetOptedIn`, `IsOptedIn`, `DeleteOptedIn` and `DeleteAllOptedIn` methods
+func TestOptedIn(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	optedInValidator1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	optedInValidator2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator1)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", optedInValidator1)
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator1)
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator2)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator2))
+	providerKeeper.DeleteAllOptedIn(ctx, "chainID")
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator2))
+}
+
+// TestConsumerCommissionRate tests the `SetConsumerCommissionRate`, `GetConsumerCommissionRate`, and `DeleteConsumerCommissionRate` methods
+func TestConsumerCommissionRate(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+
+	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	require.False(t, found)
+	require.Equal(t, sdk.ZeroDec(), cr)
+
+	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr1, sdk.OneDec())
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	require.True(t, found)
+	require.Equal(t, sdk.OneDec(), cr)
+
+	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr2, sdk.ZeroDec())
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
+	require.True(t, found)
+	require.Equal(t, sdk.ZeroDec(), cr)
+
+	provAddrs := providerKeeper.GetAllCommissionRateValidators(ctx, "chainID")
+	require.Len(t, provAddrs, 2)
+
+	for _, addr := range provAddrs {
+		providerKeeper.DeleteConsumerCommissionRate(ctx, "chainID", addr)
+	}
+
+	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	require.False(t, found)
+
+	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
+	require.False(t, found)
+}
+
+// TestValidatorsPowerCap tests the `SetValidatorsPowerCap`, `GetValidatorsPowerCap`, and `DeleteValidatorsPowerCap` methods
+func TestValidatorsPowerCap(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	expectedPowerCap := uint32(10)
+	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", expectedPowerCap)
+	powerCap, found := providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
+	require.Equal(t, expectedPowerCap, powerCap)
+	require.True(t, found)
+
+	providerKeeper.DeleteValidatorsPowerCap(ctx, "chainID")
+	_, found = providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
+	require.False(t, found)
+}
+
+// TestValidatorSetCap tests the `SetValidatorSetCap`, `GetValidatorSetCap`, and `DeleteValidatorSetCap` methods
+func TestValidatorSetCap(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	expectedPowerCap := uint32(10)
+	providerKeeper.SetValidatorSetCap(ctx, "chainID", expectedPowerCap)
+	powerCap, found := providerKeeper.GetValidatorSetCap(ctx, "chainID")
+	require.Equal(t, expectedPowerCap, powerCap)
+	require.True(t, found)
+
+	providerKeeper.DeleteValidatorSetCap(ctx, "chainID")
+	_, found = providerKeeper.GetValidatorSetCap(ctx, "chainID")
+	require.False(t, found)
+}
+
+// TestAllowlist tests the `SetAllowlist`, `IsAllowlisted`, `DeleteAllowlist`, and `IsAllowlistEmpty` methods
+func TestAllowlist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
+
+	// no validator was allowlisted and hence the allowlist is empty
+	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+
+	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerKeeper.SetAllowlist(ctx, chainID, providerAddr1)
+	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
+
+	// allowlist is not empty anymore
+	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+
+	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerKeeper.SetAllowlist(ctx, chainID, providerAddr2)
+	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
+	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+
+	providerKeeper.DeleteAllowlist(ctx, chainID)
+	require.False(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
+	require.False(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
+	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+}
+
+// TestDenylist tests the `SetDenylist`, `IsDenylisted`, `DeleteDenylist`, and `IsDenylistEmpty` methods
+func TestDenylist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
+
+	// no validator was denylisted and hence the denylist is empty
+	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+
+	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerKeeper.SetDenylist(ctx, chainID, providerAddr1)
+	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
+
+	// denylist is not empty anymore
+	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+
+	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerKeeper.SetDenylist(ctx, chainID, providerAddr2)
+	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
+	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+
+	providerKeeper.DeleteDenylist(ctx, chainID)
+	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
+	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
+	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 }

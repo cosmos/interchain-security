@@ -14,7 +14,7 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const (
@@ -49,6 +49,11 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 	ccvTimeoutPeriod time.Duration,
 	transferTimeoutPeriod time.Duration,
 	unbondingPeriod time.Duration,
+	topN uint32,
+	validatorsPowerCap uint32,
+	validatorSetCap uint32,
+	allowlist []string,
+	denylist []string,
 ) govv1beta1.Content {
 	return &ConsumerAdditionProposal{
 		Title:                             title,
@@ -65,6 +70,11 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		UnbondingPeriod:                   unbondingPeriod,
+		Top_N:                             topN,
+		ValidatorsPowerCap:                validatorsPowerCap,
+		ValidatorSetCap:                   validatorSetCap,
+		Allowlist:                         allowlist,
+		Denylist:                          denylist,
 	}
 }
 
@@ -133,6 +143,16 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 
 	if err := ccvtypes.ValidateDuration(cccp.UnbondingPeriod); err != nil {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
+	}
+
+	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
+	// Opt In chain) or in the range [50, 100] (for a Top N chain).
+	if cccp.Top_N != 0 && (cccp.Top_N < 50 || cccp.Top_N > 100) {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "Top N can either be 0 or in the range [50, 100]")
+	}
+
+	if cccp.ValidatorsPowerCap != 0 && cccp.ValidatorSetCap > 100 {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "validators' power cap has to be in the range [1, 100]")
 	}
 
 	return nil

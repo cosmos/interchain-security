@@ -16,9 +16,10 @@ import (
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 type (
@@ -30,10 +31,16 @@ type (
 // and/or democracy consumer app.go implementation. You should not need to modify or replicate this file
 // to run integration tests against your app.go implementations!
 
+const (
+	// Default number of consumer chains
+	NumConsumers = 5
+)
+
 var (
 	FirstConsumerChainID string
 	provChainID          string
 	democConsumerChainID string
+	consumerTopNParams   [NumConsumers]uint32
 )
 
 func init() {
@@ -42,6 +49,9 @@ func init() {
 	FirstConsumerChainID = ibctesting.GetChainID(2)
 	provChainID = ibctesting.GetChainID(1)
 	democConsumerChainID = ibctesting.GetChainID(5000)
+	// TopN parameter values per consumer chain initiated
+	// sorted in ascending order i.e. testchain2, testchain3, ..., testchain6
+	consumerTopNParams = [NumConsumers]uint32{100, 100, 100, 100, 100}
 }
 
 // ConsumerBundle serves as a way to store useful in-mem consumer app chain state
@@ -51,6 +61,7 @@ type ConsumerBundle struct {
 	App          testutil.ConsumerApp
 	Path         *ibctesting.Path
 	TransferPath *ibctesting.Path
+	TopN         uint32
 }
 
 // GetCtx returns the context for the ConsumerBundle
@@ -116,6 +127,9 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	index int,
 	appIniter ValSetAppIniter,
 ) *ConsumerBundle {
+	// check index isn't bigger that the number of consumers
+	s.Require().LessOrEqual(index, NumConsumers)
+
 	// consumer chain ID
 	chainID := ibctesting.GetChainID(index + 2)
 
@@ -126,6 +140,14 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 
 	prop := testkeeper.GetTestConsumerAdditionProp()
 	prop.ChainId = chainID
+	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
+
+	// opt-in all validators
+	for _, v := range providerApp.GetTestStakingKeeper().GetLastValidators(providerChain.GetContext()) {
+		consAddr, _ := v.GetConsAddr()
+		providerKeeper.SetOptedIn(providerChain.GetContext(), chainID, providertypes.NewProviderConsAddress(consAddr))
+	}
+
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
 	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
@@ -134,6 +156,10 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		prop,
 	)
 	s.Require().NoError(err)
+
+	// set the consumer TopN here since the test suite setup only used the consumer addition prop
+	// to create the consumer genesis, see BeginBlockInit in /x/ccv/provider/keeper/proposal.go.
+	providerKeeper.SetTopN(providerChain.GetContext(), chainID, prop.Top_N)
 
 	// commit the state on the provider chain
 	coordinator.CommitBlock(providerChain)
@@ -174,5 +200,6 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	return &ConsumerBundle{
 		Chain: testChain,
 		App:   consumerToReturn,
+		TopN:  prop.Top_N,
 	}
 }

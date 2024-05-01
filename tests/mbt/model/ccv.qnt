@@ -908,14 +908,18 @@ module ccv {
             // (in general, the validator is a consumer address and could be an assigned one)
 
             val slashFactor = DowntimeSlashPercentage
+
+            val curValPowerIsZero = currentState.providerState.chainState.currentValidatorPowers.get(providerVal) == 0
             
-            val newProviderState = currentState.providerState
-                .jailUntil(providerVal, jailEndTime)
+            val newProviderState = if (not(curValPowerIsZero)) 
+                currentState.providerState
+                .jailUntil(providerVal, jailEndTime) else 
+                currentState.providerState // validators with zero power are not jailed
                 // // slashing is currently not enabled in ICS 
                 // .slash(packet.validator, packet.valPower, slashFactor)
 
             // if the validator did not have voting power of 0 or was already jailed before, the validator set will change due to the slash
-            val valSetChanged = currentState.providerState.chainState.currentValidatorPowers.get(providerVal) != 0 
+            val valSetChanged = not(curValPowerIsZero)
 
             // add the consumer address to the list of acknowledged slashes
             // for the sender chain of this slash packet and indicate that we need to send a packet at endblock

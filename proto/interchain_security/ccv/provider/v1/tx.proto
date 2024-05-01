@@ -1,7 +1,7 @@
 syntax = "proto3";
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v4/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v5/x/ccv/provider/types";
 
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
@@ -15,6 +15,9 @@ service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
   rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
   rpc SubmitConsumerDoubleVoting(MsgSubmitConsumerDoubleVoting) returns (MsgSubmitConsumerDoubleVotingResponse);
+  rpc OptIn(MsgOptIn) returns (MsgOptInResponse);
+  rpc OptOut(MsgOptOut) returns (MsgOptOutResponse);
+  rpc SetConsumerCommissionRate(MsgSetConsumerCommissionRate) returns (MsgSetConsumerCommissionRateResponse);
 }
 
 message MsgAssignConsumerKey {
@@ -61,3 +64,50 @@ message MsgSubmitConsumerDoubleVoting {
 }
 
 message MsgSubmitConsumerDoubleVotingResponse {}
+
+message MsgOptIn {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  // the chain id of the consumer chain to opt in to
+  string chain_id = 1;
+  // the validator address on the provider
+  string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // (optional) The consensus public key to use on the consumer in json string format corresponding to proto-any,
+  // for example `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`.
+  // This field is optional and can remain empty (i.e., `consumer_key = ""`). A validator can always change the
+  // consumer public key at a later stage by issuing a `MsgAssignConsumerKey` message.
+  string consumer_key = 3;
+}
+
+message MsgOptInResponse {}
+
+message MsgOptOut {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  // the chain id of the consumer chain to opt out from
+  string chain_id = 1;
+  // the validator address on the provider
+  string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+}
+
+message MsgOptOutResponse {}
+
+// MsgSetConsumerCommissionRate allows validators to set 
+// a per-consumer chain commission rate
+message MsgSetConsumerCommissionRate {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+   // The validator address on the provider
+   string provider_addr = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The chain id of the consumer chain to set a commission rate
+  string chain_id = 2;
+  // The rate to charge delegators on the consumer chain, as a fraction
+  string rate = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false 
+  ];
+}
+
+
+message MsgSetConsumerCommissionRateResponse {}

@@ -20,9 +20,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // The interface that any provider app must implement to be compatible with ccv integration tests.
@@ -142,6 +142,7 @@ type TestDistributionKeeper interface {
 	GetValidatorOutstandingRewards(ctx sdk.Context,
 		val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards)
 	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
+	WithdrawValidatorCommission(ctx sdk.Context, valAddr sdk.ValAddress) (sdk.Coins, error)
 }
 
 type TestMintKeeper interface {

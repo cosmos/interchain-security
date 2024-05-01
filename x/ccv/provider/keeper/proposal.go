@@ -18,8 +18,8 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
@@ -189,6 +189,12 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	}
 
+	// delete consumer commission rate
+	provAddrs := k.GetAllCommissionRateValidators(ctx, chainID)
+	for _, addr := range provAddrs {
+		k.DeleteConsumerCommissionRate(ctx, chainID, addr)
+	}
+
 	k.DeleteInitChainHeight(ctx, chainID)
 	k.DeleteSlashAcks(ctx, chainID)
 	k.DeletePendingVSCPackets(ctx, chainID)
@@ -212,6 +218,15 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.AppendMaturedUnbondingOps(ctx, maturedIds)
 		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
 	}
+
+	k.DeleteTopN(ctx, chainID)
+	k.DeleteValidatorsPowerCap(ctx, chainID)
+	k.DeleteValidatorSetCap(ctx, chainID)
+	k.DeleteAllowlist(ctx, chainID)
+	k.DeleteDenylist(ctx, chainID)
+
+	k.DeleteAllOptedIn(ctx, chainID)
+	k.DeleteConsumerValSet(ctx, chainID)
 
 	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
@@ -269,7 +284,16 @@ func (k Keeper) MakeConsumerGenesis(
 		bondedValidators = append(bondedValidators, val)
 	}
 
-	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+		// in a Top-N chain, we automatically opt in all validators that belong to the top N
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, prop.Top_N)
+		if err == nil {
+			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		}
+	}
+
+	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
+
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
@@ -353,14 +377,39 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
-	for _, prop := range propsToExecute {
+	for i, prop := range propsToExecute {
 		// create consumer client in a cached context to handle errors
-		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
+		cachedCtx, writeFn := ctx.CacheContext()
+
+		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
+		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
+		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
+
+		for _, address := range prop.Allowlist {
+			consAddr, err := sdk.ConsAddressFromBech32(address)
+			if err != nil {
+				continue
+			}
+
+			k.SetAllowlist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+		}
+
+		for _, address := range prop.Denylist {
+			consAddr, err := sdk.ConsAddressFromBech32(address)
+			if err != nil {
+				continue
+			}
+
+			k.SetDenylist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+		}
+
+		err := k.CreateConsumerClient(cachedCtx, &propsToExecute[i])
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created: %w", err)
 			continue
 		}
+
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())

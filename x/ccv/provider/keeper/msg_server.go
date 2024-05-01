@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"encoding/base64"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -10,11 +9,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 type msgServer struct {
@@ -45,45 +43,9 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, stakingtypes.ErrNoValidatorFound
 	}
 
-	// parse consumer key as long as it's in the right format
-	pkType, keyStr, err := types.ParseConsumerKeyFromJson(msg.ConsumerKey)
+	consumerTMPublicKey, err := k.ParseConsumerKey(msg.ConsumerKey)
 	if err != nil {
 		return nil, err
-	}
-
-	// Note: the correct way to decide if a key type is supported is to check the
-	// consensus params. However this functionality was disabled in https://github.com/cosmos/interchain-security/pull/916
-	// as a quick way to get ed25519 working, avoiding amino/proto-any marshalling issues.
-
-	// make sure the consumer key type is supported
-	// cp := ctx.ConsensusParams()
-	// if cp != nil && cp.Validator != nil {
-	// 	if !tmstrings.StringInSlice(pkType, cp.Validator.PubKeyTypes) {
-	// 		return nil, errorsmod.Wrapf(
-	// 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
-	// 			"got: %s, expected one of: %s", pkType, cp.Validator.PubKeyTypes,
-	// 		)
-	// 	}
-	// }
-
-	// For now, only accept ed25519.
-	// TODO: decide what types should be supported.
-	if pkType != "/cosmos.crypto.ed25519.PubKey" {
-		return nil, errorsmod.Wrapf(
-			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
-			"got: %s, expected: %s", pkType, "/cosmos.crypto.ed25519.PubKey",
-		)
-	}
-
-	pubKeyBytes, err := base64.StdEncoding.DecodeString(keyStr)
-	if err != nil {
-		return nil, err
-	}
-
-	consumerTMPublicKey := tmprotocrypto.PublicKey{
-		Sum: &tmprotocrypto.PublicKey_Ed25519{
-			Ed25519: pubKeyBytes,
-		},
 	}
 
 	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
@@ -173,4 +135,115 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 	})
 
 	return &types.MsgSubmitConsumerDoubleVotingResponse{}, nil
+}
+
+func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.MsgOptInResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	valAddress, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidator(ctx, valAddress)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
+	}
+
+	consAddrTmp, err := validator.GetConsAddr()
+	if err != nil {
+		return nil, err
+	}
+	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
+
+	if msg.ConsumerKey != "" {
+		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, &msg.ConsumerKey)
+	} else {
+		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, nil)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeOptIn,
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
+		),
+	})
+
+	return &types.MsgOptInResponse{}, nil
+}
+
+func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.MsgOptOutResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	valAddress, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidator(ctx, valAddress)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
+	}
+
+	consAddrTmp, err := validator.GetConsAddr()
+	if err != nil {
+		return nil, err
+	}
+	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
+
+	err = k.Keeper.HandleOptOut(ctx, msg.ChainId, providerConsAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeOptOut,
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+		),
+	})
+
+	return &types.MsgOptOutResponse{}, nil
+}
+
+func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.MsgSetConsumerCommissionRate) (*types.MsgSetConsumerCommissionRateResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
+	}
+
+	consAddr, err := validator.GetConsAddr()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ChainId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeSetConsumerCommissionRate,
+			sdk.NewAttribute(types.AttributeConsumerChainID, msg.ChainId),
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
+		),
+	})
+
+	return &types.MsgSetConsumerCommissionRateResponse{}, nil
 }

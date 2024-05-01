@@ -18,7 +18,7 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -34,6 +34,9 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
 	cmd.AddCommand(NewSubmitConsumerMisbehaviourCmd())
 	cmd.AddCommand(NewSubmitConsumerDoubleVotingCmd())
+	cmd.AddCommand(NewOptInCmd())
+	cmd.AddCommand(NewOptOutCmd())
+	cmd.AddCommand(NewSetConsumerCommissionRateCmd())
 
 	return cmd
 }
@@ -188,6 +191,135 @@ Example:
 			if err != nil {
 				return err
 			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewOptInCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "opt-in [consumer-chain-id] [consumer-pubkey]",
+		Short: "opts in validator to the consumer chain, and if given uses the " +
+			"provided consensus public key for this consumer chain",
+		Args: cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			providerValAddr := clientCtx.GetFromAddress()
+
+			var consumerPubKey string
+			if len(args) == 2 {
+				// consumer public key was provided
+				consumerPubKey = args[1]
+			} else {
+				consumerPubKey = ""
+			}
+			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewOptOutCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "opt-out [consumer-chain-id]",
+		Short: "opts out validator from this consumer chain",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			providerValAddr := clientCtx.GetFromAddress()
+
+			msg, err := types.NewMsgOptOut(args[0], sdk.ValAddress(providerValAddr))
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewSetConsumerCommissionRateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set-consumer-commission-rate [consumer-chain-id] [commission-rate]",
+		Short: "set a per-consumer chain commission",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Note that the "commission-rate" argument is a fraction and should be in the range [0,1].
+			Example:
+			%s set-consumer-commission-rate consumer-1 0.5 --from node0 --home ../node0`,
+				version.AppName),
+		),
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			providerValAddr := clientCtx.GetFromAddress()
+
+			commission, err := sdk.NewDecFromStr(args[1])
+			if err != nil {
+				return err
+			}
+			msg := types.NewMsgSetConsumerCommissionRate(args[0], commission, sdk.ValAddress(providerValAddr))
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

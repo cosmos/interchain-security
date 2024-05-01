@@ -17,11 +17,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const ChainID = "chainID"
@@ -768,7 +768,10 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				})
 			}
 
-			nextValidators := k.ComputeNextEpochConsumerValSet(ctx, CHAINID, bondedValidators)
+			nextValidators := k.FilterValidators(ctx, CHAINID, bondedValidators,
+				func(providerAddr types.ProviderConsAddress) bool {
+					return true
+				})
 			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, CHAINID), nextValidators)
 			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
 

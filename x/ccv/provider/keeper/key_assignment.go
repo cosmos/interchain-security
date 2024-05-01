@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
@@ -10,9 +11,56 @@ import (
 
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
+
+// ParseConsumerKey parses the ED25519 PubKey`consumerKey` from a JSON string
+// and constructs its corresponding `tmprotocrypto.PublicKey`
+func (k Keeper) ParseConsumerKey(consumerKey string) (tmprotocrypto.PublicKey, error) {
+	// parse consumer key as long as it's in the right format
+	pkType, keyStr, err := types.ParseConsumerKeyFromJson(consumerKey)
+	if err != nil {
+		return tmprotocrypto.PublicKey{}, err
+	}
+
+	// Note: the correct way to decide if a key type is supported is to check the
+	// consensus params. However this functionality was disabled in https://github.com/cosmos/interchain-security/pull/916
+	// as a quick way to get ed25519 working, avoiding amino/proto-any marshalling issues.
+
+	// make sure the consumer key type is supported
+	// cp := ctx.ConsensusParams()
+	// if cp != nil && cp.Validator != nil {
+	// 	if !tmstrings.StringInSlice(pkType, cp.Validator.PubKeyTypes) {
+	// 		return nil, errorsmod.Wrapf(
+	// 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
+	// 			"got: %s, expected one of: %s", pkType, cp.Validator.PubKeyTypes,
+	// 		)
+	// 	}
+	// }
+
+	// For now, only accept ed25519.
+	// TODO: decide what types should be supported.
+	if pkType != "/cosmos.crypto.ed25519.PubKey" {
+		return tmprotocrypto.PublicKey{}, errorsmod.Wrapf(
+			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
+			"got: %s, expected: %s", pkType, "/cosmos.crypto.ed25519.PubKey",
+		)
+	}
+
+	pubKeyBytes, err := base64.StdEncoding.DecodeString(keyStr)
+	if err != nil {
+		return tmprotocrypto.PublicKey{}, err
+	}
+
+	consumerTMPublicKey := tmprotocrypto.PublicKey{
+		Sum: &tmprotocrypto.PublicKey_Ed25519{
+			Ed25519: pubKeyBytes,
+		},
+	}
+
+	return consumerTMPublicKey, nil
+}
 
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
 func (k Keeper) GetValidatorConsumerPubKey(
@@ -323,12 +371,24 @@ func (k Keeper) AssignConsumerKey(
 		}
 	}
 
-	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
+	if existingProviderAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
 		// consumer key is already in use
-		// prevent multiple validators from assigning the same key
-		return errorsmod.Wrapf(
-			types.ErrConsumerKeyInUse, "a validator has assigned the consumer key already",
-		)
+		if providerAddr.Address.Equals(existingProviderAddr.Address) {
+			// the validator itself is the one already using the consumer key,
+			// just do a noop
+			k.Logger(ctx).Info("tried to assign a consumer key that is already assigned to the validator",
+				"consumer chainID", chainID,
+				"validator", providerAddr.String(),
+				"consumer consensus addr", consumerAddr.String(),
+			)
+			return nil
+		} else {
+			// the validators are different -> throw an error to
+			// prevent multiple validators from assigning the same key
+			return errorsmod.Wrapf(
+				types.ErrConsumerKeyInUse, "a validator has assigned the consumer key already",
+			)
+		}
 	}
 
 	// get the previous key assigned for this validator on this consumer chain

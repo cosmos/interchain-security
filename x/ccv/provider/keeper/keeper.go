@@ -23,9 +23,9 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
@@ -186,9 +186,14 @@ func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, chainID string, propos
 }
 
 // GetProposedConsumerChain returns the proposed chainID for the given consumerAddition proposal ID.
-func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) string {
+// This method is only used for testing.
+func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.ProposedConsumerChainKey(proposalID)))
+	consumerChain := store.Get(types.ProposedConsumerChainKey(proposalID))
+	if consumerChain != nil {
+		return string(consumerChain), true
+	}
+	return "", false
 }
 
 // DeleteProposedConsumerChainInStore deletes the consumer chainID from store
@@ -248,9 +253,12 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 		chainID := string(iterator.Key()[1:])
 		clientID := string(iterator.Value())
 
+		topN, _ := k.GetTopN(ctx, chainID)
+
 		chains = append(chains, types.Chain{
 			ChainId:  chainID,
 			ClientId: clientID,
+			Top_N:    topN,
 		})
 	}
 
@@ -1135,4 +1143,395 @@ func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 	allConsumerChains = append(allConsumerChains, pendingChainIDs...)
 
 	return allConsumerChains
+}
+
+// SetTopN stores the N value associated to chain with `chainID`
+func (k Keeper) SetTopN(
+	ctx sdk.Context,
+	chainID string,
+	N uint32,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, N)
+
+	store.Set(types.TopNKey(chainID), buf)
+}
+
+// DeleteTopN removes the N value associated to chain with `chainID`
+func (k Keeper) DeleteTopN(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.TopNKey(chainID))
+}
+
+// GetTopN returns (N, true) if chain `chainID` has a top N associated, and (0, false) otherwise.
+func (k Keeper) GetTopN(
+	ctx sdk.Context,
+	chainID string,
+) (uint32, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.TopNKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint32(buf), true
+}
+
+// IsTopN returns true if chain with `chainID` is a Top-N chain (i.e., enforces at least one validator to validate chain `chainID`)
+func (k Keeper) IsTopN(ctx sdk.Context, chainID string) bool {
+	topN, found := k.GetTopN(ctx, chainID)
+	return found && topN > 0
+}
+
+// IsOptIn returns true if chain with `chainID` is an Opt-In chain (i.e., no validator is forced to validate chain `chainID`)
+func (k Keeper) IsOptIn(ctx sdk.Context, chainID string) bool {
+	topN, found := k.GetTopN(ctx, chainID)
+	return !found || topN == 0
+}
+
+func (k Keeper) SetOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerConsAddress types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.OptedInKey(chainID, providerConsAddress), []byte{})
+}
+
+func (k Keeper) DeleteOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.OptedInKey(chainID, providerAddr))
+}
+
+func (k Keeper) IsOptedIn(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Get(types.OptedInKey(chainID, providerAddr)) != nil
+}
+
+// GetAllOptedIn returns all the opted-in validators on chain `chainID`
+func (k Keeper) GetAllOptedIn(
+	ctx sdk.Context,
+	chainID string,
+) (providerConsAddresses []types.ProviderConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerConsAddresses = append(providerConsAddresses, types.NewProviderConsAddress(iterator.Key()[len(key):]))
+	}
+
+	return providerConsAddresses
+}
+
+// DeleteAllOptedIn deletes all the opted-in validators for chain with `chainID`
+func (k Keeper) DeleteAllOptedIn(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+
+	var keysToDel [][]byte
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
+	}
+}
+
+func (k Keeper) HasToValidate(
+	ctx sdk.Context,
+	provAddr types.ProviderConsAddress,
+	chainID string,
+) (bool, error) {
+	// if the validator was sent as part of the packet in the last epoch, it has to validate
+	if k.IsConsumerValidator(ctx, chainID, provAddr) {
+		return true, nil
+	}
+
+	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
+	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+		// in a Top-N chain, we automatically opt in all validators that belong to the top N
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, topN)
+		if err == nil {
+			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		}
+	}
+
+	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
+	// the validator would have to validate in the next epoch
+	if k.IsOptedIn(ctx, chainID, provAddr) {
+		nextValidators := k.ComputeNextValidators(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx))
+		for _, v := range nextValidators {
+			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
+			if provAddr.ToSdkConsAddr().Equals(consAddr) {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
+// SetConsumerCommissionRate sets a per-consumer chain commission rate
+// for the given validator address
+func (k Keeper) SetConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+	commissionRate sdk.Dec,
+) error {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := commissionRate.Marshal()
+	if err != nil {
+		err = fmt.Errorf("consumer commission rate marshalling failed: %s", err)
+		k.Logger(ctx).Error(err.Error())
+		return err
+	}
+
+	store.Set(types.ConsumerCommissionRateKey(chainID, providerAddr), bz)
+	return nil
+}
+
+// GetConsumerCommissionRate returns the per-consumer commission rate set
+// for the given validator address
+func (k Keeper) GetConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) (sdk.Dec, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerCommissionRateKey(chainID, providerAddr))
+	if bz == nil {
+		return sdk.ZeroDec(), false
+	}
+
+	cr := sdk.Dec{}
+	// handle error gracefully since it's called in BeginBlockRD
+	if err := cr.Unmarshal(bz); err != nil {
+		k.Logger(ctx).Error("consumer commission rate unmarshalling failed: %s", err)
+		return sdk.ZeroDec(), false
+	}
+
+	return cr, true
+}
+
+// GetAllCommissionRateValidators returns all the validator address
+// that set a commission rate for the given chain ID
+func (k Keeper) GetAllCommissionRateValidators(
+	ctx sdk.Context,
+	chainID string,
+) (addresses []types.ProviderConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.ConsumerCommissionRatePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerAddr := types.NewProviderConsAddress(iterator.Key()[len(key):])
+		addresses = append(addresses, providerAddr)
+	}
+
+	return addresses
+}
+
+// DeleteConsumerCommissionRate the per-consumer chain commission rate
+// associated to the given validator address
+func (k Keeper) DeleteConsumerCommissionRate(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerCommissionRateKey(chainID, providerAddr))
+}
+
+// SetValidatorsPowerCap sets the power-cap value `p` associated to chain with `chainID`
+func (k Keeper) SetValidatorsPowerCap(
+	ctx sdk.Context,
+	chainID string,
+	p uint32,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, p)
+
+	store.Set(types.ValidatorsPowerCapKey(chainID), buf)
+}
+
+// DeleteValidatorsPowerCap removes the power-cap value associated to chain with `chainID`
+func (k Keeper) DeleteValidatorsPowerCap(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ValidatorsPowerCapKey(chainID))
+}
+
+// GetValidatorsPowerCap returns `(p, true)` if chain `chainID` has power cap `p` associated with it, and (0, false) otherwise
+func (k Keeper) GetValidatorsPowerCap(
+	ctx sdk.Context,
+	chainID string,
+) (uint32, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.ValidatorsPowerCapKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint32(buf), true
+}
+
+// SetValidatorSetCap stores the validator-set cap value `c` associated to chain with `chainID`
+func (k Keeper) SetValidatorSetCap(
+	ctx sdk.Context,
+	chainID string,
+	c uint32,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, c)
+
+	store.Set(types.ValidatorSetCapKey(chainID), buf)
+}
+
+// DeleteValidatorSetCap removes the validator-set cap value associated to chain with `chainID`
+func (k Keeper) DeleteValidatorSetCap(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ValidatorSetCapKey(chainID))
+}
+
+// GetValidatorSetCap returns `(c, true)` if chain `chainID` has validator-set cap `c` associated with it, and (0, false) otherwise
+func (k Keeper) GetValidatorSetCap(
+	ctx sdk.Context,
+	chainID string,
+) (uint32, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.ValidatorSetCapKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint32(buf), true
+}
+
+// SetAllowlist allowlists validator with `providerAddr` address on chain `chainID`
+func (k Keeper) SetAllowlist(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.AllowlistCapKey(chainID, providerAddr), []byte{})
+}
+
+// IsAllowlisted returns `true` if validator with `providerAddr` has been allowlisted on chain `chainID`
+func (k Keeper) IsAllowlisted(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.AllowlistCapKey(chainID, providerAddr))
+	return bz != nil
+}
+
+// DeleteAllowlist deletes all allowlisted validators
+func (k Keeper) DeleteAllowlist(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+}
+
+// IsAllowlistEmpty returns `true` if no validator is allowlisted on chain `chainID`
+func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, chainID string) bool {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
+	defer iterator.Close()
+
+	if iterator.Valid() {
+		return false
+	}
+
+	return true
+}
+
+// SetDenylist denylists validator with `providerAddr` address on chain `chainID`
+func (k Keeper) SetDenylist(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.DenylistCapKey(chainID, providerAddr), []byte{})
+}
+
+// IsDenylisted returns `true` if validator with `providerAddr` has been denylisted on chain `chainID`
+func (k Keeper) IsDenylisted(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.DenylistCapKey(chainID, providerAddr))
+	return bz != nil
+}
+
+// DeleteDenylist deletes all denylisted validators
+func (k Keeper) DeleteDenylist(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+}
+
+// IsDenylistEmpty returns `true` if no validator is denylisted on chain `chainID`
+func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
+	defer iterator.Close()
+
+	if iterator.Valid() {
+		return false
+	}
+
+	return true
 }
