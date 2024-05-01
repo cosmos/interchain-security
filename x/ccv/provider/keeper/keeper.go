@@ -1504,7 +1504,7 @@ func (k Keeper) DeleteDenylist(ctx sdk.Context, chainID string) {
 	}
 }
 
-// IsDenylistEmpty returns `true` if no validator is allowlisted on chain `chainID`
+// IsDenylistEmpty returns `true` if no validator is denylisted on chain `chainID`
 func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
