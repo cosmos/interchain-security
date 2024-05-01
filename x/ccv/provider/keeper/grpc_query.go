@@ -278,11 +278,7 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
 		chainID := consumer.ChainId
 
-		hasToValidate, err := k.HasToValidate(ctx, provAddr, chainID)
-		if err != nil {
-			return nil, err
-		}
-		if hasToValidate {
+		if hasToValidate, err := k.HasToValidate(ctx, provAddr, chainID); err == nil && hasToValidate {
 			consumersToValidate = append(consumersToValidate, chainID)
 		}
 	}

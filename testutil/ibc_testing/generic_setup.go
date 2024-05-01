@@ -19,6 +19,7 @@ import (
 	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 type (
@@ -140,6 +141,13 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	prop := testkeeper.GetTestConsumerAdditionProp()
 	prop.ChainId = chainID
 	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
+
+	// opt-in all validators
+	for _, v := range providerApp.GetTestStakingKeeper().GetLastValidators(providerChain.GetContext()) {
+		consAddr, _ := v.GetConsAddr()
+		providerKeeper.SetOptedIn(providerChain.GetContext(), chainID, providertypes.NewProviderConsAddress(consAddr))
+	}
+
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
 	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}

@@ -231,10 +231,8 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			}
 		}
 
-		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators,
-			func(validator stakingtypes.Validator) bool {
-				return k.ShouldConsiderOnlyOptIn(ctx, chain.ChainId, validator)
-			})
+		nextValidators := k.ComputeNextValidators(ctx, chain.ChainId, bondedValidators)
+
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
 

@@ -17,6 +17,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -65,6 +66,10 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				0,
+				0,
+				0,
+				nil,
+				nil,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -91,6 +96,10 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				0,
+				0,
+				0,
+				nil,
+				nil,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -927,6 +936,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -939,6 +952,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time not passed", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -951,6 +968,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "invalid proposal: chain id already exists", "chain2", clienttypes.NewHeight(4, 5), []byte{}, []byte{},
@@ -963,18 +984,10 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			50,
-		).(*providertypes.ConsumerAdditionProposal),
-		providertypes.NewConsumerAdditionProposal(
-			"title", "opt-in chain with no validator opted in", "chain4", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(-time.Hour*2).UTC(),
-			"0.75",
-			10,
-			"",
-			10000,
-			100000000000,
-			100000000000,
-			100000000000,
 			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "opt-in chain with at least one validator opted in", "chain5", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -987,10 +1000,14 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			0,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 	}
 
-	// Expect client creation for only the first, second, and sixth proposals (spawn time already passed and valid)
+	// Expect client creation for only the first, second, and fifth proposals (spawn time already passed and valid)
 	expectedCalls := testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain5", clienttypes.NewHeight(3, 4))...)
@@ -1002,7 +1019,10 @@ func TestBeginBlockInit(t *testing.T) {
 	}
 
 	// opt in a sample validator so the chain's proposal can successfully execute
-	providerKeeper.SetOptedIn(ctx, pendingProps[5].ChainId, providertypes.NewProviderConsAddress([]byte("providerAddr")))
+	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
+	consAddr, _ := validator.GetConsAddr()
+	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
+
 	providerKeeper.BeginBlockInit(ctx)
 
 	// first proposal is not pending anymore because its spawn time already passed and was executed
@@ -1036,21 +1056,13 @@ func TestBeginBlockInit(t *testing.T) {
 	// Note that we do not check that `GetConsumerGenesis(ctx, pendingProps[3].ChainId)` returns `false` here because
 	// `pendingProps[3]` is an invalid proposal due to the chain id already existing so the consumer genesis also exists
 
-	// fifth proposal is dropped due to it being an Opt-In chain with no validators opted in
+	// fifth proposal corresponds to an Opt-In chain with one opted-in validator and hence the proposal gets
+	// successfully executed
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[4].SpawnTime, pendingProps[4].ChainId)
 	require.False(t, found)
-	// because the proposal is dropped, no consumer genesis was created
-	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[4].ChainId)
-	require.False(t, found)
-
-	// sixth proposal corresponds to an Opt-In chain with one opted-in validator and hence the proposal gets
-	// successfully executed
-	_, found = providerKeeper.GetPendingConsumerAdditionProp(
-		ctx, pendingProps[5].SpawnTime, pendingProps[5].ChainId)
-	require.False(t, found)
 	// sixth proposal was successfully executed and hence consumer genesis was created
-	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[5].ChainId)
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[4].ChainId)
 	require.True(t, found)
 
 	// test that Top N is set correctly
@@ -1110,6 +1122,7 @@ func TestBeginBlockCCR(t *testing.T) {
 		additionProp := testkeeper.GetTestConsumerAdditionProp()
 		additionProp.ChainId = prop.ChainId
 		additionProp.InitialHeight = clienttypes.NewHeight(2, 3)
+
 		err := providerKeeper.CreateConsumerClient(ctx, additionProp)
 		require.NoError(t, err)
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")

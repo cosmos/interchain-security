@@ -277,6 +277,10 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		types.DefaultTransferTimeoutPeriod,
 		types.DefaultConsumerUnbondingPeriod,
 		0,
+		0,
+		0,
+		nil,
+		nil,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop

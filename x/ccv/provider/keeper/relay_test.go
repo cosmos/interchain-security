@@ -794,3 +794,81 @@ func TestEndBlockVSU(t *testing.T) {
 	providerKeeper.EndBlockVSU(ctx)
 	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
 }
+
+// TestQueueVSCPacketsWithPowerCapping tests queueing validator set updates with power capping
+func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerKeeper.SetValidatorSetUpdateId(ctx, 1)
+
+	valA := createStakingValidator(ctx, mocks, 1, 1) // 3.125% of the total voting power
+	valAConsAddr, _ := valA.GetConsAddr()
+	valAPubKey, _ := valA.TmConsPublicKey()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, true).AnyTimes()
+	valB := createStakingValidator(ctx, mocks, 2, 3) // 9.375% of the total voting power
+	valBConsAddr, _ := valB.GetConsAddr()
+	valBPubKey, _ := valB.TmConsPublicKey()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, true).AnyTimes()
+	valC := createStakingValidator(ctx, mocks, 3, 4) // 12.5% of the total voting power
+	valCConsAddr, _ := valC.GetConsAddr()
+	valCPubKey, _ := valC.TmConsPublicKey()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, true).AnyTimes()
+	valD := createStakingValidator(ctx, mocks, 4, 8) // 25% of the total voting power
+	valDConsAddr, _ := valD.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, true).AnyTimes()
+	valE := createStakingValidator(ctx, mocks, 5, 16) // 50% of the total voting power
+	valEConsAddr, _ := valE.GetConsAddr()
+	valEPubKey, _ := valE.TmConsPublicKey()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, true).AnyTimes()
+
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD, valE}).AnyTimes()
+
+	// add a consumer chain
+	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+
+	providerKeeper.SetTopN(ctx, "chainID", 50) // would opt in E
+
+	// opt in all validators
+	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
+	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
+	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valCConsAddr))
+	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valDConsAddr))
+
+	// denylist validator D
+	providerKeeper.SetDenylist(ctx, "chainID", providertypes.NewProviderConsAddress(valDConsAddr))
+
+	// set a power-capping of 40%
+	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", 40)
+
+	providerKeeper.QueueVSCPackets(ctx)
+
+	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, "chainID")
+	expectedQueuedVSCPackets := []ccv.ValidatorSetChangePacketData{
+		ccv.NewValidatorSetChangePacketData(
+			[]abci.ValidatorUpdate{
+				// validator D is not here because it was denylisted
+				// powers have changed because of power capping
+				{
+					PubKey: valEPubKey,
+					Power:  9,
+				},
+				{
+					PubKey: valCPubKey,
+					Power:  6,
+				},
+				{
+					PubKey: valBPubKey,
+					Power:  5,
+				},
+				{
+					PubKey: valAPubKey,
+					Power:  4,
+				},
+			},
+			1,
+			nil),
+	}
+
+	require.Equal(t, expectedQueuedVSCPackets, actualQueuedVSCPackets)
+}

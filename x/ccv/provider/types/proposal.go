@@ -50,6 +50,10 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 	transferTimeoutPeriod time.Duration,
 	unbondingPeriod time.Duration,
 	topN uint32,
+	validatorsPowerCap uint32,
+	validatorSetCap uint32,
+	allowlist []string,
+	denylist []string,
 ) govv1beta1.Content {
 	return &ConsumerAdditionProposal{
 		Title:                             title,
@@ -67,6 +71,10 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		UnbondingPeriod:                   unbondingPeriod,
 		Top_N:                             topN,
+		ValidatorsPowerCap:                validatorsPowerCap,
+		ValidatorSetCap:                   validatorSetCap,
+		Allowlist:                         allowlist,
+		Denylist:                          denylist,
 	}
 }
 
@@ -141,6 +149,10 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 	// Opt In chain) or in the range [50, 100] (for a Top N chain).
 	if cccp.Top_N != 0 && (cccp.Top_N < 50 || cccp.Top_N > 100) {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "Top N can either be 0 or in the range [50, 100]")
+	}
+
+	if cccp.ValidatorsPowerCap != 0 && cccp.ValidatorSetCap > 100 {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "validators' power cap has to be in the range [1, 100]")
 	}
 
 	return nil

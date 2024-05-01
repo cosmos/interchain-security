@@ -749,3 +749,91 @@ func TestConsumerCommissionRate(t *testing.T) {
 	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
 	require.False(t, found)
 }
+
+// TestValidatorsPowerCap tests the `SetValidatorsPowerCap`, `GetValidatorsPowerCap`, and `DeleteValidatorsPowerCap` methods
+func TestValidatorsPowerCap(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	expectedPowerCap := uint32(10)
+	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", expectedPowerCap)
+	powerCap, found := providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
+	require.Equal(t, expectedPowerCap, powerCap)
+	require.True(t, found)
+
+	providerKeeper.DeleteValidatorsPowerCap(ctx, "chainID")
+	_, found = providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
+	require.False(t, found)
+}
+
+// TestValidatorSetCap tests the `SetValidatorSetCap`, `GetValidatorSetCap`, and `DeleteValidatorSetCap` methods
+func TestValidatorSetCap(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	expectedPowerCap := uint32(10)
+	providerKeeper.SetValidatorSetCap(ctx, "chainID", expectedPowerCap)
+	powerCap, found := providerKeeper.GetValidatorSetCap(ctx, "chainID")
+	require.Equal(t, expectedPowerCap, powerCap)
+	require.True(t, found)
+
+	providerKeeper.DeleteValidatorSetCap(ctx, "chainID")
+	_, found = providerKeeper.GetValidatorSetCap(ctx, "chainID")
+	require.False(t, found)
+}
+
+// TestAllowlist tests the `SetAllowlist`, `IsAllowlisted`, `DeleteAllowlist`, and `IsAllowlistEmpty` methods
+func TestAllowlist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
+
+	// no validator was allowlisted and hence the allowlist is empty
+	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+
+	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerKeeper.SetAllowlist(ctx, chainID, providerAddr1)
+	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
+
+	// allowlist is not empty anymore
+	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+
+	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerKeeper.SetAllowlist(ctx, chainID, providerAddr2)
+	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
+	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+
+	providerKeeper.DeleteAllowlist(ctx, chainID)
+	require.False(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
+	require.False(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
+	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+}
+
+// TestDenylist tests the `SetDenylist`, `IsDenylisted`, `DeleteDenylist`, and `IsDenylistEmpty` methods
+func TestDenylist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
+
+	// no validator was denylisted and hence the denylist is empty
+	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+
+	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerKeeper.SetDenylist(ctx, chainID, providerAddr1)
+	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
+
+	// denylist is not empty anymore
+	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+
+	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerKeeper.SetDenylist(ctx, chainID, providerAddr2)
+	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
+	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+
+	providerKeeper.DeleteDenylist(ctx, chainID)
+	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
+	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
+	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+}

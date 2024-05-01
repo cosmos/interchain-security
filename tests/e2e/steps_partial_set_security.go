@@ -343,7 +343,7 @@ func stepsOptInChain() []Step {
 						ValidatorID("carol"): 300,
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {"consu"}, // but alice still is in the consumer valset so has to validate
+						ValidatorID("alice"): {}, // alice is jailed on the provider and does not have to validate
 						ValidatorID("bob"):   {"consu"},
 						ValidatorID("carol"): {"consu"},
 					},
@@ -367,7 +367,7 @@ func stepsOptInChain() []Step {
 						ValidatorID("carol"): 300,
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {"consu"},
+						ValidatorID("alice"): {}, // alice is jailed on the provider and does not have to validate
 						ValidatorID("bob"):   {"consu"},
 						ValidatorID("carol"): {"consu"},
 					},
@@ -397,7 +397,7 @@ func stepsOptInChain() []Step {
 						ValidatorID("carol"): 300,
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {"consu"},
+						ValidatorID("alice"): {"consu"}, // alice is unjailed and hence has to validate again
 						ValidatorID("bob"):   {"consu"},
 						ValidatorID("carol"): {"consu"},
 					},
@@ -477,7 +477,7 @@ func stepsOptInChain() []Step {
 						ValidatorID("carol"): 300,
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {"consu"},
+						ValidatorID("alice"): {}, // alice is jailed on the provider and does not have to validate
 						ValidatorID("bob"):   {"consu"},
 						ValidatorID("carol"): {"consu"},
 					},
@@ -508,7 +508,7 @@ func stepsOptInChain() []Step {
 						ValidatorID("carol"): 300,
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {"consu"},
+						ValidatorID("alice"): {}, // alice is jailed on the provider and does not have to validate
 						ValidatorID("bob"):   {"consu"},
 						ValidatorID("carol"): {"consu"},
 					},

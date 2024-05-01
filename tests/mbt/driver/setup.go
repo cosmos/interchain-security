@@ -34,6 +34,7 @@ import (
 	"github.com/cosmos/interchain-security/v4/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
@@ -377,7 +378,8 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators, func(validator stakingtypes.Validator) bool { return true })
+	considerAll := func(providerAddr types.ProviderConsAddress) bool { return true }
+	nextValidators := s.providerKeeper().FilterValidators(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
 	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
 
 	err = s.providerKeeper().SetConsumerGenesis(

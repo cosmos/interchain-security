@@ -220,6 +220,11 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	}
 
 	k.DeleteTopN(ctx, chainID)
+	k.DeleteValidatorsPowerCap(ctx, chainID)
+	k.DeleteValidatorSetCap(ctx, chainID)
+	k.DeleteAllowlist(ctx, chainID)
+	k.DeleteDenylist(ctx, chainID)
+
 	k.DeleteAllOptedIn(ctx, chainID)
 	k.DeleteConsumerValSet(ctx, chainID)
 
@@ -279,7 +284,7 @@ func (k Keeper) MakeConsumerGenesis(
 		bondedValidators = append(bondedValidators, val)
 	}
 
-	if prop.Top_N > 0 {
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, prop.Top_N)
 		if err == nil {
@@ -287,10 +292,8 @@ func (k Keeper) MakeConsumerGenesis(
 		}
 	}
 
-	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators,
-		func(validator stakingtypes.Validator) bool {
-			return k.ShouldConsiderOnlyOptIn(ctx, chainID, validator)
-		})
+	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
+
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
@@ -374,25 +377,38 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
-	for _, prop := range propsToExecute {
-		if prop.Top_N == 0 && len(k.GetAllOptedIn(ctx, prop.ChainId)) == 0 {
-			// drop the proposal
-			ctx.Logger().Info("consumer client could not be created because no validator has"+
-				" opted in for the Opt-In chain: %s", prop.ChainId)
-			continue
+	for i, prop := range propsToExecute {
+		// create consumer client in a cached context to handle errors
+		cachedCtx, writeFn := ctx.CacheContext()
+
+		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
+		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
+		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
+
+		for _, address := range prop.Allowlist {
+			consAddr, err := sdk.ConsAddressFromBech32(address)
+			if err != nil {
+				continue
+			}
+
+			k.SetAllowlist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
 		}
 
-		// create consumer client in a cached context to handle errors
-		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
+		for _, address := range prop.Denylist {
+			consAddr, err := sdk.ConsAddressFromBech32(address)
+			if err != nil {
+				continue
+			}
+
+			k.SetDenylist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+		}
+
+		err := k.CreateConsumerClient(cachedCtx, &propsToExecute[i])
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created: %w", err)
 			continue
 		}
-
-		// Only set Top N at the moment a chain starts. If we were to do this earlier (e.g., during the proposal),
-		// then someone could create a bogus ConsumerAdditionProposal to override the Top N for a specific chain.
-		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
