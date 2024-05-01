@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"math"
+	"fmt"
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
@@ -63,9 +63,9 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-		if power >= minPowerToOptIn {
+		if err != nil || power >= minPowerToOptIn {
 			return errorsmod.Wrapf(
 				types.ErrCannotOptOutFromTopN,
 				"validator with power (%d) cannot opt out from Top N chain because all validators"+
@@ -98,13 +98,10 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValid
 
 // ComputeMinPowerToOptIn returns the minimum power needed for a validator (from the bonded validators)
 // to belong to the `topN` validators. `chainID` is only used for logging purposes.
-func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, topN uint32) int64 {
-	if topN == 0 {
-		// This should never happen but because `ComputeMinPowerToOptIn` is called during an `EndBlock` we do want
-		// to `panic` here. Instead, we log an error and return the maximum possible `int64`.
-		k.Logger(ctx).Error("trying to compute minimum power to opt in for a non-Top-N chain",
-			"chainID", chainID)
-		return math.MaxInt64
+func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, topN uint32) (int64, error) {
+	if topN == 0 || topN > 100 {
+		return 0, fmt.Errorf("trying to compute minimum power with an incorrect topN value (%d)."+
+			"topN has to be between (0, 100]", topN)
 	}
 
 	totalPower := sdk.ZeroDec()
@@ -126,18 +123,13 @@ func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedVa
 	for _, power := range powers {
 		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(power)))
 		if powerSum.Quo(totalPower).GTE(topNThreshold) {
-			return power
+			return power, nil
 		}
 	}
 
 	// We should never reach this point because the topN can be up to 1.0 (100%) and in the above `for` loop we
-	// perform an equal comparison as well (`GTE`). In any case, we do not have to panic here because we can return 0
-	// as the smallest possible power.
-	k.Logger(ctx).Error("should never reach this point",
-		"topN", topN,
-		"totalPower", totalPower,
-		"powerSum", powerSum)
-	return 0
+	// perform an equal comparison as well (`GTE`).
+	return 0, fmt.Errorf("should never reach this point with topN (%d), totalPower (%d), and powerSum (%d)", topN, totalPower, powerSum)
 }
 
 // CapValidatorSet caps the provided `validators` if chain `chainID` is an Opt In chain with a validator-set cap. If cap

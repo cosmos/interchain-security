@@ -225,8 +225,10 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 		if topN, found := k.GetTopN(ctx, chain.ChainId); found && topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			minPower := k.ComputeMinPowerToOptIn(ctx, chain.ChainId, bondedValidators, topN)
-			k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
+			minPower, err := k.ComputeMinPowerToOptIn(ctx, chain.ChainId, bondedValidators, topN)
+			if err == nil {
+				k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
+			}
 		}
 
 		nextValidators := k.ComputeNextValidators(ctx, chain.ChainId, bondedValidators)
@@ -336,6 +338,16 @@ func (k Keeper) OnRecvSlashPacket(
 		return ccv.V1Result, nil
 	}
 
+	// Check that the validator belongs to the consumer chain valset
+	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
+		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
+			providerConsAddr.String(), chainID)
+		// drop packet but return a slash ack so that the consumer can send another slash packet
+		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+
+		return ccv.SlashPacketHandledResult, nil
+	}
+
 	meter := k.GetSlashMeter(ctx)
 	// Return bounce ack if meter is negative in value
 	if meter.IsNegative() {
@@ -398,15 +410,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
-
-	// Check that the validator belongs to the consumer chain valset
-	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
-		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
-			providerConsAddr.String(), chainID)
-		// drop packet but return a slash ack so that the consumer can send another slash packet
-		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
-		return
-	}
 
 	// Obtain validator from staking keeper
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())

@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"bytes"
-	"math"
 	"sort"
 	"testing"
 
@@ -155,7 +154,7 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 }
 
 func TestHandleSetConsumerCommissionRate(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
@@ -171,11 +170,32 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	_, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
 	require.False(t, found)
 
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(sdk.ZeroDec()).Times(1)
 	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.OneDec()))
 
 	// check that the commission rate is now set
 	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
 	require.Equal(t, sdk.OneDec(), cr)
+	require.True(t, found)
+
+	// set minimum rate of 1/2
+	commissionRate := sdk.NewDec(1).Quo(sdk.NewDec(2))
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(commissionRate).AnyTimes()
+
+	// try to set a rate slightly below the minimum
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(
+		ctx,
+		chainID,
+		providerAddr,
+		commissionRate.Sub(sdk.NewDec(1).Quo(sdk.NewDec(100)))), // 0.5 - 0.01
+		"commission rate should be rejected (below min), but is not",
+	)
+
+	// set a valid commission equal to the minimum
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, commissionRate))
+	// check that the rate was set
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
+	require.Equal(t, commissionRate, cr)
 	require.True(t, found)
 }
 
@@ -278,19 +298,52 @@ func TestComputeMinPowerToOptIn(t *testing.T) {
 		createStakingValidator(ctx, mocks, 5, 6),
 	}
 
-	require.Equal(t, int64(1), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 100))
-	require.Equal(t, int64(1), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 97))
-	require.Equal(t, int64(3), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 96))
-	require.Equal(t, int64(3), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 85))
-	require.Equal(t, int64(5), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 84))
-	require.Equal(t, int64(5), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 65))
-	require.Equal(t, int64(6), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 64))
-	require.Equal(t, int64(6), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 41))
-	require.Equal(t, int64(10), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 40))
-	require.Equal(t, int64(10), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 1))
+	m, err := providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 100)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), m)
 
-	// exceptional case when we erroneously call with `topN == 0`
-	require.Equal(t, int64(math.MaxInt64), providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 0))
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 97)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), m)
+
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 96)
+	require.NoError(t, err)
+	require.Equal(t, int64(3), m)
+
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 85)
+	require.NoError(t, err)
+	require.Equal(t, int64(3), m)
+
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 84)
+	require.NoError(t, err)
+	require.Equal(t, int64(5), m)
+
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 65)
+	require.NoError(t, err)
+	require.Equal(t, int64(5), m)
+
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 64)
+	require.NoError(t, err)
+	require.Equal(t, int64(6), m)
+
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 41)
+	require.NoError(t, err)
+	require.Equal(t, int64(6), m)
+
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 40)
+	require.NoError(t, err)
+	require.Equal(t, int64(10), m)
+
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 1)
+	require.NoError(t, err)
+	require.Equal(t, int64(10), m)
+
+	// exceptional case when we erroneously call with `topN == 0` or `topN > 100`
+	_, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 0)
+	require.Error(t, err)
+
+	_, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 101)
+	require.Error(t, err)
 }
 
 // TestFilterOptedInAndAllowAndDenylistedPredicate returns true if `validator` is opted in, in `chainID.

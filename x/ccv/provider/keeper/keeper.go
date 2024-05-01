@@ -185,6 +185,7 @@ func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, chainID string, propos
 }
 
 // GetProposedConsumerChain returns the proposed chainID for the given consumerAddition proposal ID.
+// This method is only used for testing.
 func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
 	consumerChain := store.Get(types.ProposedConsumerChainKey(proposalID))
@@ -1233,6 +1234,25 @@ func (k Keeper) GetAllOptedIn(
 	}
 
 	return providerConsAddresses
+}
+
+// DeleteAllOptedIn deletes all the opted-in validators for chain with `chainID`
+func (k Keeper) DeleteAllOptedIn(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+
+	var keysToDel [][]byte
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
+	}
 }
 
 func (k Keeper) HasToValidate(

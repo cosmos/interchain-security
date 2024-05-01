@@ -219,11 +219,14 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
 	}
 
-	k.DeleteTopN(ctx, chainID)
+	k.DeleteTopN(ctx, chainID)  
 	k.DeleteValidatorsPowerCap(ctx, chainID)
 	k.DeleteValidatorSetCap(ctx, chainID)
 	k.DeleteAllowlist(ctx, chainID)
 	k.DeleteDenylist(ctx, chainID)
+
+  k.DeleteAllOptedIn(ctx, chainID)
+	k.DeleteConsumerValSet(ctx, chainID)
 
 	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
@@ -283,8 +286,10 @@ func (k Keeper) MakeConsumerGenesis(
 
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, prop.Top_N)
-		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, prop.Top_N)
+		if err == nil {
+			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		}
 	}
 
 	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
