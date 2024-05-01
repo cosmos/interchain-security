@@ -71,35 +71,40 @@ The `Power Mixing` implementation
 and from oracle (see below).
 - calculates power updates by mixing power values of external an internal sources
 
+Following pseudo code snippet shows a possible implementation of how power mixing
+feature works.
 ```golang
+// PowerSource is an abstract entity providing validator powers which
+// are used by the mixer. This can be an oracle, staking module or an
+// IBC connected bridge.
+type PowerSource interface {
+  GetValPowers() []abci.ValidatorUpdate
+}
+
 // MixPowers calculates power updates by mixing validator powers from different sources
 func (k *Keeper) MixPowers(source ...PowerSource) []abci.ValidatorUpdate {
   var valUpdate []abci.ValidatorUpdate
-  for _, ps := source {
+  for _, ps := range source {
     valUpdate = mixPower(valUpdate, ps)
   }
   return valUpdate
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-
-  // GetRegisteredPowerSources (including local staking module)
-  registeredPowerSource := am.keeper.GetRegisteredPowerSource()
-  valUpdate := am.keeper.GetValidatorUpdates(registeredPowerSource...)
-  on_chain_validator_updates := am.staking_keeper.BlockValidatorUpdates(ctx)
-  oracle_validator_updates := am.orakle_keeper.GetExtValidators(ctx)
-  return oracle_validator_updates
+func (k *keeper) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+  // GetPowerSources (including local staking module)
+  registeredPowerSource := GetPowerSources()
+  return am.keeper.MixPowers(registeredPowerSource...)
 }
 ```
 
 #### Integration with `ICS provider`
-The provider module updates the validator set on CometBFT instead of the SDK staking module (x/staking). The provider implementation will intervene in this behavior and ensure that the validator updates are taken from the `Power Mixing` feature
+The provider module updates the validator set on CometBFT instead of the SDK staking module (x/staking). The provider implementation will intervene in this behavior and ensure that the validator updates are taken from the `Power Mixing` feature.
 
-External power sources are registered/enrolled by `Governance Proposal` and managed by the provider module. Only registered power sources can provide input to the `Power Mixing` feature.
-Power sources will be assigned a unique identifier which will be used by the oracle, provider module and power mixing and rewarding feature.
+External power sources are managed by the provider module. Only registered power sources can provide input to the `Power Mixing` feature.
+Power sources will be assigned a unique identifier which will be used by the oracle, provider module and the power mixing and rewarding feature.
 
 Updates with the next validator set are sent to consumer chains on each epoch (see `EndBlockVSU()`).
-When collecting the validator updates for each consumer chain (see `QueueVSCPackets()`), the validator powers of the bonded validators will be updated with the validator powers from the external sources using the `Power Mixing` module.
+When collecting the validator updates for each consumer chain (see [`QueueVSCPackets()`](https://pkg.go.dev/github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper#Keeper.QueueVSCPackets)), the validator powers of the bonded validators will be updated with the validator powers from the external sources using the `Power Mixing` module.
 These updates are sent as part of the VSC packets to all registered consumer chains.
 
 #### Integration with `ICS consumer`
@@ -152,13 +157,12 @@ message ExtValidatorsResponse {
 // `stakes` is the total amount of stakes for a validator
 // `denom` is the source token of the stake e.g. ETH,BTC
 // `price_ratio` is the ratio of price of the external token to the price of the 'local' token
-//
 message ExtValPower {
   string power_source_identifier;
   string validator_address;
   uint64 stakes;
   string denom;
-  float price_ratio;
+  float  price_ratio;
 }
 
 // GetPrice returns a price feed for a given token
@@ -169,13 +173,13 @@ service Query {
 }
 ```
 
-For security reasons the amount of external stakes needs to be limited. Limitation of external staking will be driven by a `Governance Proposal`.
+For security reasons the amount of external stakes needs to be limited. Limitation of external staking could be driven by governance and is not subject of this version of the ADR.
 
 ### Reward Handler
 
 For native staked tokens the `Distribution Module` of the Cosmos SDK is taking care of sending the rewards to stakers.
 For stakes originated from external chains (Ethereum/Bitcoin) the `Reward Handler` module sends rewards to EigenLayer/Babylon.
-The transfer of rewards is done using a [bridge](https://ethereum.org/en/bridges/) between the Cosmos chain and EigenLayer/Babylon.
+The transfer of rewards is done using a bridge between the Cosmos chain and the external provider chain.
 
 Note: currently there's no support paying rewards on EigenLayer (see [here](https://www.coindesk.com/tech/2024/04/10/eigenlayer-cryptos-biggest-project-launch-this-year-is-still-missing-crucial-functionality/))
 
@@ -196,8 +200,6 @@ Note: currently there's no support paying rewards on EigenLayer (see [here](http
 * Additional complexity for staking
 
 ## Questions:
-
-- Determinism of the price feed? → yes, but capability of backtracking how a price was determined by oracle needs to be checked (TODO)
 - Slashing: subject of this ADR? (Defined but [not activated](https://www.coindesk.com/tech/2024/04/10/eigenlayer-cryptos-biggest-project-launch-this-year-is-still-missing-crucial-functionality/) currently on EigenLayer).
 
 ## References
