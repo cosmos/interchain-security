@@ -22,6 +22,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/cometbft/cometbft/libs/log"
+
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
@@ -1269,8 +1270,10 @@ func (k Keeper) HasToValidate(
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, topN)
-		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, topN)
+		if err == nil {
+			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		}
 	}
 
 	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes

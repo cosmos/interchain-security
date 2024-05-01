@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"bytes"
+	"math"
 	"sort"
 	"testing"
 
