@@ -279,6 +279,15 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string,
 			types.ErrUnknownConsumerChainId,
 			"unknown consumer chain, with id: %s", chainID)
 	}
+
+	// validate against the minimum commission rate
+	minRate := k.stakingKeeper.MinCommissionRate(ctx)
+	if commissionRate.LT(minRate) {
+		return errorsmod.Wrapf(
+			stakingtypes.ErrCommissionLTMinRate,
+			"commission rate cannot be less than %s", minRate,
+		)
+	}
 	// set per-consumer chain commission rate for the validator address
 	return k.SetConsumerCommissionRate(
 		ctx,
