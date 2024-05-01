@@ -49,20 +49,6 @@ func (m *MockStakingKeeper) EXPECT() *MockStakingKeeperMockRecorder {
 	return m.recorder
 }
 
-// BlockValidatorUpdates mocks base method.
-func (m *MockStakingKeeper) BlockValidatorUpdates(ctx types0.Context) []types.ValidatorUpdate {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BlockValidatorUpdates", ctx)
-	ret0, _ := ret[0].([]types.ValidatorUpdate)
-	return ret0
-}
-
-// BlockValidatorUpdates indicates an expected call of BlockValidatorUpdates.
-func (mr *MockStakingKeeperMockRecorder) BlockValidatorUpdates(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockValidatorUpdates", reflect.TypeOf((*MockStakingKeeper)(nil).BlockValidatorUpdates), ctx)
-}
-
 // BondDenom mocks base method.
 func (m *MockStakingKeeper) BondDenom(ctx types0.Context) string {
 	m.ctrl.T.Helper()

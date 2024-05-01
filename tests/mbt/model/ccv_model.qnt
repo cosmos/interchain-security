@@ -217,8 +217,8 @@ module ccv_model {
      // stepCommon is the core functionality of steps that does not have anything to do with time.
     action stepCommon = any {
         all {
-            nonJailedNodes(currentState.providerState).size() > 0,
-            nondet node = oneOf(nonJailedNodes(currentState.providerState))
+            currentState.providerState.validatorsWithPower().size() > 0,
+            nondet node = oneOf(currentState.providerState.validatorsWithPower())
             // very restricted set of voting powers. exact values are not important,
             // and this keeps the state space smaller.
             nondet newVotingPower = oneOf(Set(-50, 50))
@@ -752,8 +752,8 @@ module ccv_model {
     action nondetKeyAssignment = 
         all {
             runningConsumers.size() > 0,
-            nonJailedNodes(currentState.providerState).size() > 0,
-            nondet node = oneOf(nonJailedNodes(currentState.providerState))
+            currentState.providerState.validatorsWithPower().size() > 0,
+            nondet node = oneOf(currentState.providerState.validatorsWithPower())
             nondet consumerAddr = oneOf(consumerAddresses)
             nondet consumer = oneOf(runningConsumers)
             KeyAssignment(consumer, node, consumerAddr),

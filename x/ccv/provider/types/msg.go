@@ -244,7 +244,7 @@ func (msg MsgOptIn) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
 	}
-	// It is possible to assign keys for consumer chains that are not yet approved.
+	// It is possible to opt in to validate on consumer chains that are not yet approved.
 	// This can only be done by a signing validator, but it is still sensible
 	// to limit the chainID size to prevent abuse.
 	if 128 < len(msg.ChainId) {

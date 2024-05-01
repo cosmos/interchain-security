@@ -45,6 +45,11 @@ func stepsOptInChain() []Step {
 							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
 						},
 					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
 				},
 			},
 		},
@@ -56,14 +61,30 @@ func stepsOptInChain() []Step {
 				Chain:     ChainID("consu"),
 				Validator: ValidatorID("alice"),
 			},
-			State: State{},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {}, // chain is not running yet
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
 		},
 		{
 			Action: OptInAction{
 				Chain:     ChainID("consu"),
 				Validator: ValidatorID("bob"),
 			},
-			State: State{},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
 		},
 		{
 			Action: VoteGovProposalAction{
@@ -149,6 +170,13 @@ func stepsOptInChain() []Step {
 						ValidatorID("carol"): 0,
 					},
 				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
+				},
 			},
 		},
 		{
@@ -177,6 +205,13 @@ func stepsOptInChain() []Step {
 						ValidatorID("bob"):   200,
 						// carol has now opted in
 						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 			},
@@ -213,6 +248,13 @@ func stepsOptInChain() []Step {
 						ValidatorID("carol"): 300,
 					},
 				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {"consu"},
+					},
+				},
 			},
 		},
 		{
@@ -228,6 +270,11 @@ func stepsOptInChain() []Step {
 						// "bob" has not yet been opted in to the consumer chain because the VSCPacket has not yet been relayed
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 300,
+					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"}, // but has to validate is true because bob opted in on the provider
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 			},
@@ -271,6 +318,11 @@ func stepsOptInChain() []Step {
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 300,
 					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
 				},
 			},
 		},
@@ -290,6 +342,11 @@ func stepsOptInChain() []Step {
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 300,
 					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"}, // but alice still is in the consumer valset so has to validate
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
 				},
 			},
 		},
@@ -308,6 +365,11 @@ func stepsOptInChain() []Step {
 						ValidatorID("alice"): 0,
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 300,
+					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 				ChainID("consu"): ChainState{
@@ -333,6 +395,11 @@ func stepsOptInChain() []Step {
 						ValidatorID("alice"): 100,
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 300,
+					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 				// still 0 power on the consumer
@@ -385,6 +452,11 @@ func stepsOptInChain() []Step {
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 300,
 					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
 				},
 			},
 		},
@@ -403,6 +475,11 @@ func stepsOptInChain() []Step {
 						ValidatorID("alice"): 0,
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 300,
+					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 			},
@@ -429,6 +506,11 @@ func stepsOptInChain() []Step {
 						ValidatorID("alice"): 0,
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 300,
+					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 			},
@@ -582,6 +664,13 @@ func stepsTopNChain() []Step {
 						ValidatorID("carol"): 500,
 					},
 				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
+				},
 			},
 		},
 		{
@@ -616,7 +705,15 @@ func stepsTopNChain() []Step {
 				Validator:   ValidatorID("bob"),
 				ExpectError: true,
 			},
-			State: State{},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
+				},
+			},
 		},
 		{
 			// opting out "bob" or "carol" does not work because they belong to the Top N validators
@@ -632,6 +729,13 @@ func stepsTopNChain() []Step {
 						ValidatorID("alice"): 200,
 						ValidatorID("bob"):   300,
 						ValidatorID("carol"): 500,
+					},
+				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 			},
@@ -659,6 +763,13 @@ func stepsTopNChain() []Step {
 						ValidatorID("carol"): 500,
 					},
 				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {}, // alice has opted out and the epoch is over, so definitely does not have to validate anymore
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
+				},
 			},
 		},
 		// opt alice back in
@@ -667,7 +778,15 @@ func stepsTopNChain() []Step {
 				Chain:     ChainID("consu"),
 				Validator: ValidatorID("alice"),
 			},
-			State: State{},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"}, // alice has to validate again
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
+				},
+			},
 		},
 		{
 			Action: RelayPacketsAction{
@@ -683,6 +802,13 @@ func stepsTopNChain() []Step {
 						ValidatorID("alice"): 200,
 						ValidatorID("bob"):   300,
 						ValidatorID("carol"): 500,
+					},
+				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 			},
