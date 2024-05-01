@@ -691,18 +691,27 @@ func TestGetAllOptedIn(t *testing.T) {
 	require.Equal(t, expectedOptedInValidators, actualOptedInValidators)
 }
 
-// TestOptedIn tests the `SetOptedIn`, `IsOptedIn`, and `RemoveOptedIn` methods
+// TestOptedIn tests the `SetOptedIn`, `IsOptedIn`, `DeleteOptedIn` and `DeleteAllOptedIn` methods
 func TestOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	optedInValidator := types.NewProviderConsAddress([]byte("providerAddr"))
+	optedInValidator1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	optedInValidator2 := types.NewProviderConsAddress([]byte("providerAddr2"))
 
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator))
-	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator)
-	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator))
-	providerKeeper.DeleteOptedIn(ctx, "chainID", optedInValidator)
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator1)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	providerKeeper.DeleteOptedIn(ctx, "chainID", optedInValidator1)
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator1)
+	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator2)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator2))
+	providerKeeper.DeleteAllOptedIn(ctx, "chainID")
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator2))
 }
 
 // TestConsumerCommissionRate tests the `SetConsumerCommissionRate`, `GetConsumerCommissionRate`, and `DeleteConsumerCommissionRate` methods

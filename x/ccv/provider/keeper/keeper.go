@@ -1237,6 +1237,25 @@ func (k Keeper) GetAllOptedIn(
 	return providerConsAddresses
 }
 
+// DeleteAllOptedIn deletes all the opted-in validators for chain with `chainID`
+func (k Keeper) DeleteAllOptedIn(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+
+	var keysToDel [][]byte
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
+	}
+}
+
 func (k Keeper) HasToValidate(
 	ctx sdk.Context,
 	provAddr types.ProviderConsAddress,
@@ -1258,9 +1277,9 @@ func (k Keeper) HasToValidate(
 		return false, nil
 	}
 
-	minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+	minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-	if power < minPowerToOptIn {
+	if err != nil || power < minPowerToOptIn {
 		return false, nil
 	}
 	return true, nil
