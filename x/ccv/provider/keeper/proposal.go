@@ -287,29 +287,12 @@ func (k Keeper) MakeConsumerGenesis(
 		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 	}
 
-	nextValidators := k.FilterValidators(ctx, chainID, bondedValidators,
-		func(providerAddr types.ProviderConsAddress) bool {
-			// only consider opted-in validators
-			return k.IsOptedIn(ctx, chainID, providerAddr) &&
-				// if an allowlist is declared, only consider allowlisted validators
-				(k.IsAllowlistEmpty(ctx, chainID) ||
-					k.IsAllowlisted(ctx, chainID, providerAddr)) &&
-				// if a denylist is declared do not consider denylisted validators
-				(k.IsDenylistEmpty(ctx, chainID) ||
-					!k.IsDenylisted(ctx, chainID, providerAddr))
-		})
-
-	nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
-	nextValidators = k.CapValidatorsPower(ctx, chainID, nextValidators)
+	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
 	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
-
-	// if len(initialUpdatesWithConsumerKeys) == 0 {
-	//	return gen, nil, fmt.Errorf("unable to create a non-empty initial validator set")
-	//}
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)

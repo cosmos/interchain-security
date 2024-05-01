@@ -1241,28 +1241,35 @@ func (k Keeper) HasToValidate(
 	provAddr types.ProviderConsAddress,
 	chainID string,
 ) (bool, error) {
-	// if the validator is opted in or was sent as part of the packet in the last epoch, they have to validate
-	if k.IsOptedIn(ctx, chainID, provAddr) || k.IsConsumerValidator(ctx, chainID, provAddr) {
+	// operate on a cached context, so we do not write (e.g., opt-in validators) to the state
+	cachedCtx, _ := ctx.CacheContext()
+
+	// if the validator was sent as part of the packet in the last epoch, it has to validate
+	if k.IsConsumerValidator(cachedCtx, chainID, provAddr) {
 		return true, nil
 	}
-	// otherwise, check whether the validator will be automatically opted in at the end of this epoch
-	// assuming all powers stay the same
-	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr.ToSdkConsAddr())
-	if !found {
-		return false, fmt.Errorf("validator not found for address %s", provAddr)
-	}
-	power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
-	topN, found := k.GetTopN(ctx, chainID)
-	if !found || topN == 0 {
-		return false, nil
+
+	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
+	bondedValidators := k.stakingKeeper.GetLastValidators(cachedCtx)
+	if topN, found := k.GetTopN(cachedCtx, chainID); found && topN > 0 {
+		// in a Top-N chain, we automatically opt in all validators that belong to the top N
+		minPower := k.ComputeMinPowerToOptIn(cachedCtx, chainID, bondedValidators, topN)
+		k.OptInTopNValidators(cachedCtx, chainID, bondedValidators, minPower)
 	}
 
-	minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
-
-	if power < minPowerToOptIn {
-		return false, nil
+	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
+	// the validator would have to validate in the next epoch
+	if k.IsOptedIn(cachedCtx, chainID, provAddr) {
+		nextValidators := k.ComputeNextValidators(cachedCtx, chainID, k.stakingKeeper.GetLastValidators(cachedCtx))
+		for _, v := range nextValidators {
+			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
+			if provAddr.ToSdkConsAddr().Equals(consAddr) {
+				return true, nil
+			}
+		}
 	}
-	return true, nil
+
+	return false, nil
 }
 
 // SetConsumerCommissionRate sets a per-consumer chain commission rate

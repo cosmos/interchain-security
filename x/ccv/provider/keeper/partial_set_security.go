@@ -290,3 +290,14 @@ func (k Keeper) FilterOptedInAndAllowAndDenylistedPredicate(ctx sdk.Context, cha
 		(k.IsDenylistEmpty(ctx, chainID) ||
 			!k.IsDenylisted(ctx, chainID, providerAddr))
 }
+
+// ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
+func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsumerValidator {
+	nextValidators := k.FilterValidators(ctx, chainID, bondedValidators,
+		func(providerAddr types.ProviderConsAddress) bool {
+			return k.FilterOptedInAndAllowAndDenylistedPredicate(ctx, chainID, providerAddr)
+		})
+
+	nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
+	return k.CapValidatorsPower(ctx, chainID, nextValidators)
+}
