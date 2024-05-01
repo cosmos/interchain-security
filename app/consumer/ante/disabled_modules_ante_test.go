@@ -12,8 +12,8 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
-	"github.com/cosmos/interchain-security/v4/app/consumer/ante"
-	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
+	"github.com/cosmos/interchain-security/v5/app/consumer/ante"
+	appencoding "github.com/cosmos/interchain-security/v5/app/encoding"
 )
 
 func TestDisabledModulesDecorator(t *testing.T) {

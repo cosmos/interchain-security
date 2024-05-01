@@ -14,7 +14,7 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // provider message types
