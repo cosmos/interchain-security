@@ -270,31 +270,21 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	provAddr := types.NewProviderConsAddress(consAddr)
+
 	// get all the consumer chains for which the validator is either already
 	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
 	consumersToValidate := []string{}
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
 		chainID := consumer.ChainId
-		provAddr := types.NewProviderConsAddress(consAddr)
-		if !k.IsOptedIn(ctx, chainID, provAddr) && !k.IsConsumerValidator(ctx, chainID, provAddr) {
-			// check that the validator voting power isn't in the TopN
-			if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
-				val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-				if !found {
-					return nil, status.Error(codes.InvalidArgument, "invalid provider address")
-				}
-				power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
-				minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-				// Check if the validator's voting power is smaller
-				// than the minimum and hence not automatically opted in
-				if power < minPowerToOptIn {
-					continue
-				}
-			}
+		hasToValidate, err := k.HasToValidate(ctx, provAddr, chainID)
+		if err != nil {
+			return nil, err
 		}
-
-		consumersToValidate = append(consumersToValidate, chainID)
+		if hasToValidate {
+			consumersToValidate = append(consumersToValidate, chainID)
+		}
 	}
 
 	return &types.QueryConsumerChainsValidatorHasToValidateResponse{
