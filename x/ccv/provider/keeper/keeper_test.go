@@ -741,13 +741,13 @@ func TestConsumerCommissionRate(t *testing.T) {
 	require.False(t, found)
 }
 
-// TestValidatorsPowersCap tests the `SetValidatorsPowerCap`, `GetValidatorsPowerCap`, and `DeleteValidatorsPowerCap` methods
-func TestValidatorsPowersCap(t *testing.T) {
+// TestValidatorsPowerCap tests the `SetValidatorsPowerCap`, `GetValidatorsPowerCap`, and `DeleteValidatorsPowerCap` methods
+func TestValidatorsPowerCap(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	expectedPowerCap := uint32(10)
-	providerKeeper.SetValidatorsPowersCap(ctx, "chainID", expectedPowerCap)
+	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", expectedPowerCap)
 	powerCap, found := providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
 	require.Equal(t, expectedPowerCap, powerCap)
 	require.True(t, found)

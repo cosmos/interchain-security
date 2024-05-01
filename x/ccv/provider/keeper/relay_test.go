@@ -846,7 +846,7 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	providerKeeper.SetDenylist(ctx, "chainID", providertypes.NewProviderConsAddress(valDConsAddr))
 
 	// set a power-capping of 40%
-	providerKeeper.SetValidatorsPowersCap(ctx, "chainID", 40)
+	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", 40)
 
 	providerKeeper.QueueVSCPackets(ctx)
 

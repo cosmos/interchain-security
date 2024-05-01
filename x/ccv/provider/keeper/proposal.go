@@ -378,7 +378,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 
 		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
-		k.SetValidatorsPowersCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
+		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
 
 		for _, address := range prop.Allowlist {
 			consAddr, err := sdk.ConsAddressFromBech32(address)

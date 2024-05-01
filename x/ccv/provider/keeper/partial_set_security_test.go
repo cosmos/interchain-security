@@ -419,7 +419,7 @@ func TestCapValidatorsPower(t *testing.T) {
 	sortValidators(cappedValidators)
 	require.Equal(t, validators, cappedValidators)
 
-	providerKeeper.SetValidatorsPowersCap(ctx, "chainID", 33)
+	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", 33)
 	cappedValidators = providerKeeper.CapValidatorsPower(ctx, "chainID", validators)
 	sortValidators(expectedValidators)
 	sortValidators(cappedValidators)
