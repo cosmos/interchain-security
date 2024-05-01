@@ -2,6 +2,17 @@
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
+## [v5.0.x-provider](https://github.com/cosmos/interchain-security/releases/tag/v5.0.0-provider-rc1)
+
+### Provider
+
+Upgrading a provider from `v4.1.0` or `v4.1.0-lsm` to `v5.0.0-provider-lsm` requires state migrations, see relevant pull request [here](https://github.com/cosmos/interchain-security/pull/1809)
+for the corresponding migrators.
+
+### Consumer
+
+***Note that consumer chains should not use this version of ICS***
+
 ## [v4.1.x](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-rc2) and [v4.1.x-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-lsm-rc2)
 
 ### Provider
