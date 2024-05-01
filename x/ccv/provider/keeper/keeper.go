@@ -1241,26 +1241,23 @@ func (k Keeper) HasToValidate(
 	provAddr types.ProviderConsAddress,
 	chainID string,
 ) (bool, error) {
-	// operate on a cached context, so we do not write (e.g., opt-in validators) to the state
-	cachedCtx, _ := ctx.CacheContext()
-
 	// if the validator was sent as part of the packet in the last epoch, it has to validate
-	if k.IsConsumerValidator(cachedCtx, chainID, provAddr) {
+	if k.IsConsumerValidator(ctx, chainID, provAddr) {
 		return true, nil
 	}
 
 	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
-	bondedValidators := k.stakingKeeper.GetLastValidators(cachedCtx)
-	if topN, found := k.GetTopN(cachedCtx, chainID); found && topN > 0 {
+	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower := k.ComputeMinPowerToOptIn(cachedCtx, chainID, bondedValidators, topN)
-		k.OptInTopNValidators(cachedCtx, chainID, bondedValidators, minPower)
+		minPower := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, topN)
+		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 	}
 
 	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
 	// the validator would have to validate in the next epoch
-	if k.IsOptedIn(cachedCtx, chainID, provAddr) {
-		nextValidators := k.ComputeNextValidators(cachedCtx, chainID, k.stakingKeeper.GetLastValidators(cachedCtx))
+	if k.IsOptedIn(ctx, chainID, provAddr) {
+		nextValidators := k.ComputeNextValidators(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx))
 		for _, v := range nextValidators {
 			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 			if provAddr.ToSdkConsAddr().Equals(consAddr) {
