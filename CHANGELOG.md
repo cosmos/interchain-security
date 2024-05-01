@@ -35,5 +35,5 @@ May 1, 2024
 
 ## Previous Versions
 
-    [CHANGELOG of previous versions](https://github.com/cosmos/interchain-security/blob/main/CHANGELOG.md)
+[CHANGELOG of previous versions](https://github.com/cosmos/interchain-security/blob/main/CHANGELOG.md)
 
