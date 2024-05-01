@@ -1258,9 +1258,9 @@ func (k Keeper) HasToValidate(
 		return false, nil
 	}
 
-	minPowerToOptIn := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+	minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-	if power < minPowerToOptIn {
+	if err != nil || power < minPowerToOptIn {
 		return false, nil
 	}
 	return true, nil
