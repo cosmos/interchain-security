@@ -30,6 +30,8 @@ May 1, 2024
     ([\#1732](https://github.com/cosmos/interchain-security/pull/1732))
   - Adding the Partial Set Security feature cf. [ADR 015](https://cosmos.github.io/interchain-security/adrs/adr-015-partial-set-security).
     ([\#1809](https://github.com/cosmos/interchain-security/pull/1809))
+  - Introduce power-shaping features for consumer chains. The features: (i) allow us to cap the total number of validators that can validate the consumer chain, (ii) set a cap on the maximum voting power (percentage-wise) a validator can have on a consumer chain, and (iii) introduce allowlist and denylists to restrict which validators are allowed or not to validate a consumer chain.
+    ([\#1830](https://github.com/cosmos/interchain-security/pull/1830))
 
 ## Previous Versions
 
