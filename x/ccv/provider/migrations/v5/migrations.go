@@ -1,9 +1,9 @@
-package vPSS
+package v5
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 )
 
 // This migration only takes already registered chains into account.
