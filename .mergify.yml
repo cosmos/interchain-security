@@ -10,30 +10,6 @@ queue_rules:
       - "#approved-reviews-by>1"
 
 pull_request_rules:
-  - name: Backport patches to the release/v3.2.x branch
-    conditions:
-      - base=main
-      - label=A:backport/v3.2.x
-    actions:
-      backport:
-        branches:
-          - release/v3.2.x
-  - name: Backport patches to the release/v3.3.x branch
-    conditions:
-      - base=main
-      - label=A:backport/v3.3.x
-    actions:
-      backport:
-        branches:
-          - release/v3.3.x
-  - name: Backport patches to the release/v4.0.x branch
-    conditions:
-      - base=main
-      - label=A:backport/v4.0.x
-    actions:
-      backport:
-        branches:
-          - release/v4.0.x
   - name: Backport patches to the release/v4.1.x branch
     conditions:
       - base=main
@@ -50,6 +26,22 @@ pull_request_rules:
       backport:
         branches:
           - release/v4.1.x-lsm
+  - name: Backport patches to the release/v4.2.x branch
+    conditions:
+      - base=main
+      - label=A:backport/v4.2.x
+    actions:
+      backport:
+        branches:
+          - release/v4.2.x
+  - name: Backport patches to the release/v4.2.x-lsm branch
+    conditions:
+      - base=main
+      - label=A:backport/v4.2.x-lsm
+    actions:
+      backport:
+        branches:
+          - release/v4.2.x-lsm
   - name: Backport patches to the release/v5.x branch
     conditions:
       - base=main
@@ -58,11 +50,3 @@ pull_request_rules:
       backport:
         branches:
           - release/v5.x
-  - name: Backport patches to the release/v5.0.x-provider branch
-    conditions:
-      - base=main
-      - label=A:backport/v5.0.x-provider
-    actions:
-      backport:
-        branches:
-          - release/v5.0.x-provider
