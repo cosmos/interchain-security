@@ -357,11 +357,11 @@ func RunItfTrace(t *testing.T, path string) {
 				driver.stopConsumer(ChainId(consumer.Value.(string)))
 			}
 
-			// reset the times for the consumers that were not stopped or started just now
-			// their times were messed up by the coordinator
-			for consumer, timestamp := range lastTimestamps {
-				driver.setTime(consumer, timestamp)
-			}
+			// // reset the times for the consumers that were not stopped or started just now
+			// // their times were messed up by the coordinator
+			// for consumer, timestamp := range lastTimestamps {
+			// 	driver.setTime(consumer, timestamp)
+			// }
 
 			// for all connected consumers, update the clients...
 			// unless it was the last consumer to be started, in which case it already has the header
@@ -401,12 +401,14 @@ func RunItfTrace(t *testing.T, path string) {
 			var expectError bool
 			if ConsumerStatus(currentModelState, consumerChain) == TIMEDOUT_STATUS {
 				expectError = true
+				fmt.Println("## delivet packet to consumer 1111", consumerChain, "expect error", expectError)
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
 
 				// stop the consumer chain
 				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, expectError)
 			} else {
 				expectError = false
+				fmt.Println("## delivet packet to consumer 222", consumerChain, "expect error", expectError)
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
 			}
 		case "DeliverPacketToProvider":
@@ -651,7 +653,6 @@ func CompareValidatorSets(
 				// get the validator for that address on the provider
 				providerVal, err := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), providerConsAddr.Address)
 				require.Nil(t, err, "Error getting provider validator")
-				require.True(t, found, "Error getting provider validator")
 
 				// use the moniker of that validator
 				consumerCurValSet[providerVal.GetMoniker()] = val.Power

@@ -1,6 +1,10 @@
 package simibc
 
-import channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+import (
+	"fmt"
+
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+)
 
 // The number of blocks to wait before a packet or ack is available for delivery
 // after it has been committed on the chain.
@@ -59,6 +63,7 @@ func MakeOrderedOutbox() OrderedOutbox {
 
 // AddPacket adds an outbound packet from the sender.
 func (n OrderedOutbox) AddPacket(sender string, packet channeltypes.Packet) {
+	fmt.Println("## ADDED PACKET", sender, packet.DestinationChannel, packet.DestinationPort, packet.Sequence)
 	n.OutboxPackets[sender] = append(n.OutboxPackets[sender], Packet{packet, 0})
 }
 

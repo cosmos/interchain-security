@@ -185,7 +185,8 @@ func getAppBytesAndSenders(
 		stakingValidators = append(stakingValidators, validator)
 
 		// Store delegation from the model delegator account
-		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress().String(), val.Address.String(), delShares))
+		delegations = append(delegations,
+			stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress().String(), validator.GetOperator(), delShares))
 
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
@@ -268,16 +269,6 @@ func newChain(
 			Validators:      cmttypes.TM2PB.ValidatorUpdates(validators),
 			ConsensusParams: &protoConsParams,
 			AppStateBytes:   stateBytes,
-		},
-	)
-
-	app.Commit()
-
-	app.FinalizeBlock(
-		&abcitypes.RequestFinalizeBlock{
-			Hash:               app.LastCommitID().Hash,
-			Height:             app.LastBlockHeight() + 1,
-			NextValidatorsHash: validators.Hash(),
 		},
 	)
 
@@ -367,9 +358,6 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		}
 
 		v, err := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
-		// TODO: not sure why there was this code on ICS <= v5.x
-		// v, found := ...
-		// if !found { ... }
 		if err != nil {
 			continue
 		}
@@ -399,19 +387,6 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// we model a blank slate: a provider and consumer that have fully established
 	// their channel, and are ready for anything to happen.
 	s.consumerKeeper(consumerChainId).SetProviderChannel(s.ctx(consumerChainId), consumerEndPoint.ChannelID)
-
-	// TODO: @MSalopek remove if not needed post main merge on release/v5.x branch
-	// Commit a block on both chains, giving us two committed headers from
-	// the same time and height. This is the starting point for all our
-	// data driven testing.
-	// lastConsumerHeader, _ := simibc.FinalizeBlock(consumerChain, 5)
-	// lastProviderHeader, _ := simibc.FinalizeBlock(providerChain, 5)
-
-	// // Update clients to the latest header.
-	// err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader, false)
-	// require.NoError(s.t, err, "Error updating client on consumer for chain %v", consumerChain.ChainID)
-	// err = simibc.UpdateReceiverClient(providerEndPoint, consumerEndPoint, lastProviderHeader, false)
-	// require.NoError(s.t, err, "Error updating client on provider for chain %v", consumerChain.ChainID)
 
 	// path is ready to go
 	return path

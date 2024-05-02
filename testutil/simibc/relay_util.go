@@ -74,7 +74,8 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 
 	RPmsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
-	resWithAck, err := simapp.SignAndDeliver(
+	ctx := receiver.Chain.GetContext()
+	resWithAck, err := simapp.SignAndDeliverXXXX(
 		receiver.Chain.TB,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
@@ -83,8 +84,8 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
 		!expectError,
-		receiver.Chain.GetContext().BlockHeader().Time,
-		receiver.Chain.GetContext().BlockHeader().NextValidatorsHash,
+		ctx.BlockHeader().Time,
+		ctx.BlockHeader().NextValidatorsHash,
 		receiver.Chain.SenderPrivKey,
 	)
 
@@ -98,7 +99,7 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		return nil, setSequenceErr
 	}
 
-	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
+	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents().ToABCIEvents())
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,8 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
 
 	ackMsg := channeltypes.NewMsgAcknowledgement(p, ack, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
-	_, err = simapp.SignAndDeliver(
+	ctx := receiver.Chain.GetContext()
+	_, err = simapp.SignAndDeliverXXXX(
 		receiver.Chain.TB,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
@@ -128,8 +130,8 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
 		true,
-		receiver.Chain.GetContext().BlockHeader().Time,
-		receiver.Chain.GetContext().BlockHeader().NextValidatorsHash,
+		ctx.BlockHeader().Time,
+		ctx.BlockHeader().NextValidatorsHash,
 		receiver.Chain.SenderPrivKey,
 	)
 
