@@ -120,7 +120,7 @@ func (im IBCMiddleware) OnRecvPacket(
 	// we know that the IBC transfer succeeded. That entails
 	// that the packet data is valid and can be safely
 	// deserialized without checking errors.
-	if ack.Success() {
+	if ack == nil {
 		// execute the middleware logic only if the sender is a consumer chain
 		consumerID, err := im.keeper.IdentifyConsumerChainIDFromIBCPacket(ctx, packet)
 		if err != nil {
