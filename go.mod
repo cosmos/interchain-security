@@ -209,4 +209,8 @@ require (
 replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.47.13-ics-lsm
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+
+	// stick with compatible version or x/exp in v0.47.x line
+	// the version specified in requirements will break the build
+	golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
 )
