@@ -4,10 +4,10 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	v3 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v3"
-	v4 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v4"
-	v5 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v5"
+	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	v3 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v3"
+	v4 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v4"
+	v5 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v5"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -41,9 +41,9 @@ func (m Migrator) Migrate3to4(ctx sdktypes.Context) error {
 	return nil
 }
 
-// MigrateXtoY migrates x/ccvprovider state from consensus version X to Y.
+// MigrateXtoY migrates x/ccvprovider state from consensus version 4 to 5.
 // The migration consists of setting a top N of 95 for all registered consumer chains.
-func (m Migrator) MigrateXtoY(ctx sdktypes.Context) error {
+func (m Migrator) Migrate4to5(ctx sdktypes.Context) error {
 	v5.MigrateTopNForRegisteredChains(ctx, m.providerKeeper)
 	return nil
 }

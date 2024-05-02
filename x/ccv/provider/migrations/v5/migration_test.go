@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	testutil "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	testutil "github.com/cosmos/interchain-security/v4/testutil/keeper"
 )
 
 func TestMigrateParams(t *testing.T) {

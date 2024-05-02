@@ -10,7 +10,7 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 // Obtains the effective validator power relevant to a validator consensus address.
