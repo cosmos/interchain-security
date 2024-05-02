@@ -292,7 +292,7 @@ func (k Keeper) MakeConsumerGenesis(
 		}
 	}
 
-	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
+	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 

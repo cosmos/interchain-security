@@ -1279,7 +1279,7 @@ func (k Keeper) HasToValidate(
 	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
 	// the validator would have to validate in the next epoch
 	if k.IsOptedIn(ctx, chainID, provAddr) {
-		nextValidators := k.ComputeNextValidators(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx))
+		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx))
 		for _, v := range nextValidators {
 			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 			if provAddr.ToSdkConsAddr().Equals(consAddr) {

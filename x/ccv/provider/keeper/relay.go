@@ -231,7 +231,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			}
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, chain.ChainId, bondedValidators)
+		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
