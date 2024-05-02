@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	testutil "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	testutil "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 func TestPacketSendingPermitted(t *testing.T) {

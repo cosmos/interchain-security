@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // TestParams tests getters/setters for consumer params

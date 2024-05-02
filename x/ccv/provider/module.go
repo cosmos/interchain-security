@@ -19,10 +19,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client/cli"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/client/cli"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 var (
@@ -113,6 +113,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
 	}
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 3, m.Migrate3to4); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(providertypes.ModuleName, 4, m.Migrate4to5); err != nil {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
 	}
 }
