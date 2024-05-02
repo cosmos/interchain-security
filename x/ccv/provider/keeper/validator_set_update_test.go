@@ -327,7 +327,7 @@ func TestSetConsumerValSet(t *testing.T) {
 	require.Equal(t, nextValidators, nextCurrentValidators)
 }
 
-func TestComputeNextEpochConsumerValSetConsiderAll(t *testing.T) {
+func TestFilterValidatorsConsiderAll(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -367,7 +367,7 @@ func TestComputeNextEpochConsumerValSetConsiderAll(t *testing.T) {
 	require.Equal(t, expectedValidators, actualValidators)
 }
 
-func TestComputeNextEpochConsumerValSetConsiderOnlyOptIn(t *testing.T) {
+func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
