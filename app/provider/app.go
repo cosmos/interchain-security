@@ -100,13 +100,13 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appencoding "github.com/cosmos/interchain-security/v5/app/encoding"
-	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
-	ibcprovider "github.com/cosmos/interchain-security/v5/x/ccv/provider"
-	ibcproviderclient "github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
-	ibcproviderkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	appencoding "github.com/cosmos/interchain-security/v4/app/encoding"
+	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
+	ibcprovider "github.com/cosmos/interchain-security/v4/x/ccv/provider"
+	ibcproviderclient "github.com/cosmos/interchain-security/v4/x/ccv/provider/client"
+	ibcproviderkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 const (
