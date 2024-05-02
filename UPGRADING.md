@@ -2,11 +2,11 @@
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
-## [v4.2.x](https://github.com/cosmos/interchain-security/releases/tag/v4.2.x-rc0)
+## [v4.2.x](https://github.com/cosmos/interchain-security/releases/tag/v4.2.0-rc0)
 
 ### Provider
 
-Upgrading a provider from `v4.1.0` or `v4.1.0-lsm` to `v5.0.0-provider-lsm` requires state migrations, see relevant pull request [here](https://github.com/cosmos/interchain-security/pull/1809)
+Upgrading a provider from `v4.1.0` or `v4.1.0-lsm` to `v4.2.0` or `v4.2.0-lsm` requires state migrations, see relevant pull request [here](https://github.com/cosmos/interchain-security/pull/1809)
 for the corresponding migrators.
 
 ### Consumer
