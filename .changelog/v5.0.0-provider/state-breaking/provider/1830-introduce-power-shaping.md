@@ -1,2 +1,0 @@
-- Introduce power-shaping features for consumer chains. The features: (i) allow us to cap the total number of validators that can validate the consumer chain, (ii) set a cap on the maximum voting power (percentage-wise) a validator can have on a consumer chain, and (iii) introduce allowlist and denylists to restrict which validators are allowed or not to validate a consumer chain.
-  ([\#1830](https://github.com/cosmos/interchain-security/pull/1830))
