@@ -34,5 +34,7 @@ reviews:
         drafts: false
         base_branches:
             - "main"
+            - "feat/*"
+            - "release/*"
 chat:
     auto_reply: true
