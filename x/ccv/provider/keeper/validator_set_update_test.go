@@ -16,10 +16,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 
 // TestConsumerValidator tests the `SetConsumerValidator`, `IsConsumerValidator`, and `DeleteConsumerValidator` methods

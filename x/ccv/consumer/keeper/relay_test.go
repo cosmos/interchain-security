@@ -21,11 +21,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/bytes"
 
-	"github.com/cosmos/interchain-security/v5/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v4/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // TestOnRecvVSCPacket tests the behavior of OnRecvVSCPacket over various packet scenarios

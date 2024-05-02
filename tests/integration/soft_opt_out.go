@@ -10,8 +10,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	consumerKeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	consumerKeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
 // TestSoftOptOut tests the soft opt-out feature
