@@ -14,13 +14,13 @@ module ccv_pss_model {
     }
 
     action OptIn_Deterministic(consumer: Chain, validator: Node): bool = {
-        val res = OptIn(currentState, consumer, validator)
+        val res = option(currentState, consumer, validator)
         all {
             currentState' = res.newState,
             trace' = trace.append(
                 {
                     ...emptyAction,
-                    kind: "OptIn",
+                    kind: "option",
                     consumerChain: consumer,
                     validator: validator
                 }
@@ -83,7 +83,7 @@ module ccv_pss_model {
 
     val CanOptIn = {
         not(
-            trace[length(trace)-1].kind == "OptIn"
+            trace[length(trace)-1].kind == "option"
             and
             trace[length(trace)-1].expectedError == ""
         )

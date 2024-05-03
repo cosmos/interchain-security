@@ -139,7 +139,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case SubmitChangeRewardDenomsProposalAction:
 		td.testCfg.submitChangeRewardDenomsProposal(action, td.target, td.verbose)
 	case OptInAction:
-		td.testCfg.optIn(action, td.target, td.verbose)
+		td.testCfg.option(action, td.target, td.verbose)
 	case OptOutAction:
 		td.testCfg.optOut(action, td.target, td.verbose)
 	default:

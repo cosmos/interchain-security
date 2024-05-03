@@ -15,7 +15,7 @@ service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
   rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
   rpc SubmitConsumerDoubleVoting(MsgSubmitConsumerDoubleVoting) returns (MsgSubmitConsumerDoubleVotingResponse);
-  rpc OptIn(MsgOptIn) returns (MsgOptInResponse);
+  rpc option(MsgOptIn) returns (MsgOptInResponse);
   rpc OptOut(MsgOptOut) returns (MsgOptOutResponse);
   rpc SetConsumerCommissionRate(MsgSetConsumerCommissionRate) returns (MsgSetConsumerCommissionRateResponse);
 }
