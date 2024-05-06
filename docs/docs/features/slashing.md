@@ -21,6 +21,9 @@ Instead of slashing, the provider will only jail offending validator for the dur
 [Slash throttling](../adrs/adr-002-throttle.md) (sometimes called jail throttling) mechanism ensures that only a fraction of the validator set can be jailed at any one time to prevent malicious consumer chains from harming the provider.
 :::
 
+Note that validators are only jailed for downtime on consumer chains that they opted-in to validate on,
+or in the case of Top N chains, where they are automatically opted in by being in the Top N% of the validator set on the provider.
+
 ## Equivocation Infractions
 
 Equivocation infractions are reported by external agents (e.g., relayers) that can submit to the provider evidence of light client or double signing attacks observed on a consumer chain. 
