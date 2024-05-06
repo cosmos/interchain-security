@@ -104,3 +104,7 @@ You can check the [Key Assignment Guide](./features/key-assignment.md) for speci
 
 In order for a validator to keep track of all the chains it has to validate, the validator can use the
 [`has-to-validate` query](validators/partial-set-security-for-validators.md#which-chains-does-a-validator-have-to-validate).
+
+## How many chains can a validator opt in to?
+
+There is **no** limit in the number of consumers chains a validator can choose to opt in to.

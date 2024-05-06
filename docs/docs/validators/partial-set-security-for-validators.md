@@ -109,7 +109,6 @@ getting jailed for downtime.
 :::
 
 
-
 ### How to get all the opted-in validators on a consumer chain?
 With the following query:
 ```bash
