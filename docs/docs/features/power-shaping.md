@@ -1,7 +1,7 @@
 # Power Shaping
 
-To give consumer chains more flexibility in choosing their validator set, Interchain Security v2
-introduces several "power shaping" mechanisms.
+To give consumer chains more flexibility in choosing their validator set, Interchain Security offers
+several "power shaping" mechanisms for consumer chains.
 
 These are:
 1) **Capping the size of the validator set**: The consumer chain can specify a maximum number of validators it
