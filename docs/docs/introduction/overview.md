@@ -6,7 +6,7 @@ sidebar_position: 1
 :::info
 Interchain Security is an open sourced IBC application which allows cosmos blockchains to lease their proof-of-stake security to one another.
 <br></br>
-Interchain Security allows anyone to launch a "consumer" blockchain using a subset of, or even the whole, validator set from the "provider" blockchain by creating a governance proposal. If the proposal is accepted, provider chain validators start validating the consumer chain as well. Consumer chains will therefore inherit security and decentralization from the provider.
+Interchain Security allows anyone to launch a "consumer" blockchain using a subset, or even the entire, validator set from the "provider" blockchain by creating a governance proposal. If the proposal is accepted, provider chain validators start validating the consumer chain as well. Consumer chains will therefore inherit security and decentralization from the provider.
 :::
 
 
