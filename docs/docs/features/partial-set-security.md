@@ -8,7 +8,7 @@ Partial Set Security (PSS) allows consumer chains to leverage only a subset of v
 
     * Top N: Requires the top N% validators from the provider chain to secure the consumer chain. This guarantees that the validators with the most power on the provider will validate the consumer chain, while others can voluntarily opt in.
 
-    * Opt-In: If the top_N parameter is set to zero, no validator is mandated to secure the consumer chain. Instead, any validator from the provider chain can opt in using a dedicated transaction.
+    * Opt-In: If the `top_N` parameter is set to zero, no validator is mandated to secure the consumer chain. Instead, any validator from the provider chain can opt in using a dedicated transaction.
 
 An advantage of a Top N chain is that the consumer chain is guaranteed to receive at least a certain fraction of the market cap of the provider chain in security. In turn, this chain needs to be approved by governance, since validators will be forced to run the chain. Thus, Top N chains should typically expect to need to provide a strong case for why they should be added to the provider chain, and they should make sure they offer enough rewards to incentivize validators and delegators to vote for their proposal.
 
