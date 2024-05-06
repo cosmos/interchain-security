@@ -16,5 +16,5 @@ Opt-In chains, on the other hand, are more flexible. While for technical reasons
 However, opt in chains do not get a fixed amount of security as a relation of the market cap of the provider as top N chains do, so opt in chains might want to keep an eye on how many validators have opted in to validate their chain and adjust their reward emissions accordingly to incentivize validators.
 
 :::tip
-Partial Set Security is handled only by the provider chain - the consumer chains are simply sent validator sets, and they are not aware that this represents only a subset of the provider chains validator set.
+Partial Set Security is handled only by the provider chain - the consumer chains are simply sent validator sets, and they are not aware that this represents only a subset of the provider chain's validator set.
 :::
