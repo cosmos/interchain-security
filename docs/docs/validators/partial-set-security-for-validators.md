@@ -40,7 +40,7 @@ interchain-security-pd query provider list-proposed-consumer-chains
 
 
 :::tip
-By setting the `consumer-pub-key`, a validator can both opt in to a chain, as well as, assign a
+By setting the `consumer-pub-key`, a validator can both opt in to a chain as well as assign a
 public key on a consumer chain. Note that a validator can always issue a [key assignment](../features/key-assignment.md)
 at a later stage to assign a new consumer public key on a chain. The key-assignment [rules](../features/key-assignment.md#rules)
 still apply when setting `consumer-pub-key` when opting in.
