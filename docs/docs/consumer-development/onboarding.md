@@ -41,7 +41,7 @@ Additionally, reach out to the community via the [forum](https://forum.cosmos.ne
 - [ ] determine consumer chain parameters to be put in the proposal
 - [ ] take note to include a link to your onboarding repository
 - [ ] describe the purpose and benefits of running your chain
-- [ ] determine whether your chain should be an Opt In chain or a Top N chain (see [Partial Set Security](../features/partial-set-security.md))
+- [ ] determine whether your chain should be an Opt-In chain or a Top N chain (see [Partial Set Security](../features/partial-set-security.md))
 - [ ] if desired, decide on power-shaping parameters (see [Power Shaping](../features/power-shaping.md))
 
 Example of a consumer chain addition proposal.
@@ -127,7 +127,7 @@ Example of a consumer chain addition proposal.
 
 The consumer chain starts after at least 66.67% of its voting power comes online,
 i.e. a Top N chain, the consumer chain starts after at least 66.67% of the `top_N`% of the provider chain's voting power comes online;
-for an Opt In chain, it starts after 66.67% of the validators that opted-in while the consumer chain was being proposed come online.
+for an Opt-In chain, it starts after 66.67% of the validators that opted-in while the consumer chain was being proposed come online.
 The consumer chain is considered interchain secured once the appropriate CCV channels are established and the first validator set update is propagated from the provider to the consumer
 
 - [ ] provide a repo with onboarding instructions for validators (it should already be listed in the proposal)
