@@ -47,7 +47,7 @@ still apply when setting `consumer-pub-key` when opting in.
 :::
 
 :::info
-A validator is only eligible for consumer rewards from a consumer chain if the validator is opted in on that chain.
+A validator is only eligible for consumer rewards from a consumer chain if the validator is opted into that chain.
 :::
 
 ### How to opt out from a consumer chain?
