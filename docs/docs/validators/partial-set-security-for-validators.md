@@ -70,7 +70,7 @@ not have to validate the consumer chain any longer.
 :::
 
 :::warning
-If all validators opt out from an Opt-In chain, then the chain would halt.
+If all validators opt out from an Opt-In chain, the chain will halt with a consensus failure upon receiving the VSCPacket with an empty validator set.
 :::
 
 ### How to set specific per consumer chain commission rate?
