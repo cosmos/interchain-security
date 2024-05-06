@@ -3,7 +3,7 @@ sidebar_position: 6
 ---
 
 # Partial Set Security
-[Partial Set Security](../features/partial-set-security.md) allows consumer chain to join as Opt-In or Top N.
+[Partial Set Security](../features/partial-set-security.md) allows consumer chains to join as Opt-In or Top N.
 Here, we show how a validator can opt in, opt out, or set a custom commission rate on a consumer chain, as well
 as useful queries that a validator can use to figure out which chains it has to validate, etc.
 
