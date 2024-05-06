@@ -4,13 +4,9 @@ title: "Frequently Asked Questions"
 slug: /faq
 ---
 
-## What is the meaning of Validator Set Replication?
-
-VSR simply means that the same validator set is used to secure both the provider and consumer chains. VSR is ensured through ICS protocol which keeps consumers up to date with the validator set of the provider.
-
 ## What is a consumer chain?
 
-Consumer chain is blockchain operated by the same validator operators as the provider chain. The ICS protocol ensures the validator set replication properties (informs consumer chain about the current state of the validator set on the provider)
+Consumer chain is blockchain operated by (a subset of) the validators of the provider chain. The ICS protocol ensures that the consumer chain gets information about which validators should run it (informs consumer chain about the current state of the validator set and the opted in validators for this consumer chain on the provider).
 
 Consumer chains are run on infrastructure (virtual or physical machines) distinct from the provider, have their own configurations and operating requirements.
 
@@ -29,7 +25,7 @@ At the very least, the consumer chain could replace the validator set, remove th
 ## What happens to provider if consumer is down?
 
 Consumer chains do not impact the provider chain.
-The ICS protocol is concerned only with validator set replication and the only communication that the provider requires from the consumer is information about validator activity (essentially keeping the provider informed about slash events).
+The ICS protocol is concerned only with validator set management and the only communication that the provider requires from the consumer is information about validator activity (essentially keeping the provider informed about slash events).
 
 ## Can I run the provider and consumer chains on the same machine?
 
@@ -107,3 +103,9 @@ Currently supported versions:
 ## How does key delegation work in ICS?
 
 You can check the [Key Assignment Guide](./features/key-assignment.md) for specific instructions.
+
+## How does Partial Set Security work?
+
+Partial Set Security allows a provider chain to share only a subset of its validator set with a consumer chain. This subset can be determined by the top N% validators by voting power, or by validators opting in to validate the consumer chain. Partial Set Security allows for flexible tradeoffs between security, decentralization, and the budget a consumer chain spends on rewards to validators.
+
+See the [Partial Set Security](./features/partial-set-security.md) section for more information.
