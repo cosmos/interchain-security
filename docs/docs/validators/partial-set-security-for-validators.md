@@ -60,7 +60,7 @@ where
 - `consumer-chain-id` is the string identifier of the consumer chain.
 
 :::warning
-A validator cannot opt out from a Top N chain if it belongs to the top N% validators on that chain.
+A validator cannot opt out from a Top N chain if it belongs to the top N% validators of the provider.
 :::
 
 :::warning
