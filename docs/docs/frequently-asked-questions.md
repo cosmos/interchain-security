@@ -66,7 +66,7 @@ Validators can also be representatives but representatives are not required to r
 
 This feature discerns between validator operators (infrastructure) and governance representatives which further democratizes the ecosystem. This also reduces the pressure on validators to be involved in on-chain governance.
 
-## Can validators opt out of replicated security?
+## Can validators opt out of validating a consumer chain?
 
 A validator can always opt out from an Opt-In consumer chain.
 A validator can only opt out from a Top N chain if the validator does not belong to the top N% validators.
