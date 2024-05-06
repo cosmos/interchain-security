@@ -10,11 +10,11 @@ be useful for chains that want to have a smaller validator set for faster blocks
 *Note*: This is only applicable to Opt In chains (chains with Top N = 0).
 1) **Capping the fraction of power any single validator can have**: The consumer chain can specify a maximum fraction
 of the total voting power that any single validator in its validator set should have.
-This is a security measure with the intention of making it harder for a single validator to have disproportionate power on the consumer chain. This mitigates the risk of an Opt In chain with only a few validators being dominated by a validator with a large amount of voting power opting in.
+This is a security measure with the intention of making it harder for a single large validator to take over a consumer chain. This mitigates the risk of an Opt In chain with only a few validators being dominated by a validator with a large amount of voting power opting in.
 For example, setting this fraction to e.g. 20% would mean that no single validator can have more than 20% of the total voting power,
 and thus there is no single validator who would stop the chain by going offline.
 Note that this is a soft cap, and the actual power of a validator can exceed this fraction if the validator set is small (e.g. there are only 3 validators and the cap is 20%).
-1) **Allowlist and denylist**: The consumer chain can specify a list of validators that are allowed or disallowed from participating in the validator set. If an allowlist is set, all validators not on the allowlist are not able to validate the consumer chain. If a validator is on both lists, the denylist takes precedence, that is, they are not able to validate the consumer chain. If neither list is set, all validators are able to validate the consumer chain.
+1) **Allowlist and denylist**: The consumer chain can specify a list of validators that are allowed or disallowed from participating in the validator set. If an allowlist is set, all validators not on the allowlist cannot validate the consumer chain. If a validator is on both lists, the denylist takes precedence, that is, they cannot validate the consumer chain. If neither list is set, all validators are able to validate the consumer chain.
 
 All these mechanisms are set by the consumer chain in the `ConsumerAdditionProposal`. They operate *solely on the provider chain*, meaning the consumer chain simply receives the validator set after these rules have been applied and does not have any knowledge about whether they are applied.
 

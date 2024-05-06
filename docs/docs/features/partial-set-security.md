@@ -18,3 +18,11 @@ However, opt in chains do not get a fixed amount of security as a relation of th
 :::tip
 Partial Set Security is handled only by the provider chain - the consumer chains are simply sent validator sets, and they are not aware that this represents only a subset of the provider chain's validator set.
 :::
+
+:::caution
+Both Opt In and Top N chains currently require a governance proposal to be added to the provider chain.
+
+For Top N chains, this is also the long term vision for how they are launched.
+
+For Opt In chains, this is a temporary measure to prevent issues around chain ID squatting. Eventually, the plan is to allow launching Opt In chains permissionlessly without going through governance, with quality control being handled by the market of validators deciding which chains they would like to validate on.
+:::
