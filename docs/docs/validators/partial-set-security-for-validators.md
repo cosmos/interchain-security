@@ -69,6 +69,9 @@ query (see [below](./partial-set-security-for-validators.md#which-chains-does-a-
 not have to validate the consumer chain any longer.
 :::
 
+:::warning
+If all validators opt out from an Opt-In chain, then the chain would halt.
+:::
 
 ### How to set specific per consumer chain commission rate?
 A validator can choose to set a different commission rate on each of the consumer chains it validates.
