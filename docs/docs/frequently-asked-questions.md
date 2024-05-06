@@ -66,22 +66,15 @@ Validators can also be representatives but representatives are not required to r
 
 This feature discerns between validator operators (infrastructure) and governance representatives which further democratizes the ecosystem. This also reduces the pressure on validators to be involved in on-chain governance.
 
-## Can validators opt-out of replicated security?
+## Can validators opt out of replicated security?
 
-At present, the validators cannot opt-out of validating consumer chains.
+A validator can always opt out from an Opt-In consumer chain.
+A validator can only opt out from a Top N chain if the validator does not belong to the top N% validators.
 
-There are multiple opt-out mechanisms under active research.
+## How does Slashing work?
 
-## How does Equivocation Governance Slashing work?
-
-To avoid potential attacks directed at provider chain validators, a new mechanism was introduced:
-
-When a validator double-signs on the consumer chain, a special type of slash packet is relayed to the provider chain. The provider will store information about the double signing validator and allow a governance proposal to be submitted.
-If the double-signing proposal passes, the offending validator will be slashed on the provider chain and tombstoned. Tombstoning will permanently exclude the validator from the active set of the provider.
-
-:::caution
-An equivocation proposal cannot be submitted for a validator that did not double sign on any of the consumer chains.
-:::
+Validators that perform an equivocation or a light-client attack on a consumer chain are slashed on the provider chain.
+We achieve this by submitting the proof of the equivocation or the light-client attack to the provider chain (see [slashing](features/slashing.md)).
 
 ## Can Consumer Chains perform Software Upgrades?
 
@@ -102,8 +95,12 @@ To become a consumer chain use this [checklist](./consumer-development/onboardin
 Currently supported versions:
 
 - Hermes 1.4.1
-- Support for the CCV module was added to the Go [relayer](https://github.com/cosmos/relayer) in v2.2.0 but v2.4.0 has significant performance fixes which makes it the earliest suggested version to use.
 
 ## How does key delegation work in ICS?
 
 You can check the [Key Assignment Guide](./features/key-assignment.md) for specific instructions.
+
+## How does a validator know which consumers chains it has to validate?
+
+In order for a validator to keep track of all the chains it has to validate, the validator can use the
+[`has-to-validate` query](validators/partial-set-security-for-validators.md#which-chains-does-a-validator-have-to-validate).
