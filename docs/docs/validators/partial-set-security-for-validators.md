@@ -25,8 +25,8 @@ interchain-security-pd tx provider opt-in <consumer-chain-id> <optional consumer
 
 where
 - `consumer-chain-id` is the string identifier of the consumer chain the validator wants to opt in to;
-- `consumer-pub-key` is an **optional** field that corresponds to the public key the validator wants to use on the
-consumer chain, and it has the following format `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"<key>"}`.
+- `consumer-pub-key` corresponds to the public key the validator wants to use on the consumer chain, and it has the
+following format `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"<key>"}`.
 
 A validator can opt in to an existing consumer chain that is already running, or to a [proposed](../features/proposals.md)
 consumer chain that is still being voted on. A validator can use the following command to retrieve the currently existing
@@ -41,9 +41,9 @@ interchain-security-pd query provider list-proposed-consumer-chains
 
 
 :::tip
-By setting the `consumer-pub-key`, a validator can both opt in to a chain as well as assign a
-public key on a consumer chain. Note that a validator can always issue a [key assignment](../features/key-assignment.md)
-at a later stage to assign a new consumer public key on a chain. The key-assignment [rules](../features/key-assignment.md#rules)
+By setting the `consumer-pub-key`, a validator can both opt in to a chain and assign a
+public key on a consumer chain. Note that a validator can always [assign](../features/key-assignment.md)
+a new consumer key at a later stage. The key-assignment [rules](../features/key-assignment.md#rules)
 still apply when setting `consumer-pub-key` when opting in.
 :::
 
@@ -101,7 +101,13 @@ We introduce the following query:
 interchain-security-pd query provider has-to-validate <provider-validator-address>
 ```
 that can be used by validator with `provider-validator-address` address to retrieve the list of chains that it has to validate.
-If a validator is automatically opted in to a Top N chain, then this is reflected in the results of the query.
+
+
+:::tip
+As a validator, the list of chains returned by `has-to-validate` is the list of chains you **should** be validating to avoid
+getting jailed for downtime.
+:::
+
 
 
 ### How to get all the opted-in validators on a consumer chain?
