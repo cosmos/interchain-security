@@ -6,7 +6,7 @@ slug: /faq
 
 ## What is a consumer chain?
 
-Consumer chain is blockchain operated by (a subset of) the validators of the provider chain. The ICS protocol ensures that the consumer chain gets information about which validators should run it (informs consumer chain about the current state of the validator set and the opted in validators for this consumer chain on the provider).
+Consumer chain is a blockchain operated by (a subset of) the validators of the provider chain. The ICS protocol ensures that the consumer chain gets information about which validators should run it (informs consumer chain about the current state of the validator set and the opted in validators for this consumer chain on the provider).
 
 Consumer chains are run on infrastructure (virtual or physical machines) distinct from the provider, have their own configurations and operating requirements.
 
