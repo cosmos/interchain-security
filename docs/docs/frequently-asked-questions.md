@@ -114,7 +114,7 @@ There is **no** limit in the number of consumers chains a validator can choose t
 ## Can validators assign a consensus keys while a consumer-addition proposal is in voting period?
 Yes, see the [Key Assignment Guide](./features/key-assignment.md) for more information.
 
-## Can validators assign a consensus key during the voting period for a consumer-addition proposal if I am not in the top N?
+## Can validators assign a consensus key during the voting period for a consumer-addition proposal if they are not in the top N?
 Yes.
 
 ## Can validators opt in to an Opt-in chain after its consumer-addition proposal voting period is over but before the spawn time?
