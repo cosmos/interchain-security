@@ -25,7 +25,7 @@ At the very least, the consumer chain could replace the validator set, remove th
 ## What happens to provider if consumer is down?
 
 Consumer chains do not impact the provider chain.
-The ICS protocol is concerned only with validator set management and the only communication that the provider requires from the consumer is information about validator activity (essentially keeping the provider informed about slash events).
+The ICS protocol is concerned only with validator set management, and the only communication that the provider requires from the consumer is information about validator activity (essentially keeping the provider informed about slash events).
 
 ## Can I run the provider and consumer chains on the same machine?
 
