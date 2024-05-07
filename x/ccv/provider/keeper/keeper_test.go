@@ -426,13 +426,57 @@ func TestGetAllConsumerChains(t *testing.T) {
 		50,  // everyone is in the top 100%
 	}
 
+	validatorSetCaps := []uint32{0, 5, 10, 20}
+	validatorPowerCaps := []uint32{0, 5, 10, 33}
+	allowlists := [][]types.ProviderConsAddress{
+		{},
+		{types.NewProviderConsAddress([]byte("providerAddr1")), types.NewProviderConsAddress([]byte("providerAddr2"))},
+		{types.NewProviderConsAddress([]byte("providerAddr3"))},
+		{},
+	}
+
+	denylists := [][]types.ProviderConsAddress{
+		{types.NewProviderConsAddress([]byte("providerAddr4")), types.NewProviderConsAddress([]byte("providerAddr5"))},
+		{},
+		{types.NewProviderConsAddress([]byte("providerAddr6"))},
+		{},
+	}
+
 	expectedGetAllOrder := []types.Chain{}
 	for i, chainID := range chainIDs {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
 		topN := topNs[i]
 		pk.SetConsumerClientId(ctx, chainID, clientID)
 		pk.SetTopN(ctx, chainID, topN)
-		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID, Top_N: topN, MinPowerInTop_N: expectedMinPowerInTopNs[i]})
+		pk.SetValidatorSetCap(ctx, chainID, validatorSetCaps[i])
+		pk.SetValidatorsPowerCap(ctx, chainID, validatorPowerCaps[i])
+		for _, addr := range allowlists[i] {
+			pk.SetAllowlist(ctx, chainID, addr)
+		}
+		for _, addr := range denylists[i] {
+			pk.SetDenylist(ctx, chainID, addr)
+		}
+		strAllowlist := make([]string, len(allowlists[i]))
+		for j, addr := range allowlists[i] {
+			strAllowlist[j] = addr.String()
+		}
+
+		strDenylist := make([]string, len(denylists[i]))
+		for j, addr := range denylists[i] {
+			strDenylist[j] = addr.String()
+		}
+
+		expectedGetAllOrder = append(expectedGetAllOrder,
+			types.Chain{
+				ChainId:            chainID,
+				ClientId:           clientID,
+				Top_N:              topN,
+				MinPowerInTop_N:    expectedMinPowerInTopNs[i],
+				ValidatorSetCap:    validatorSetCaps[i],
+				ValidatorsPowerCap: validatorPowerCaps[i],
+				Allowlist:          strAllowlist,
+				Denylist:           strDenylist,
+			})
 	}
 	// sorting by chainID
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
