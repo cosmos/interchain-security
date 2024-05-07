@@ -268,11 +268,29 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 			minPowerInTopN = -1
 		}
 
+		validatorSetCap, _ := k.GetValidatorSetCap(ctx, chainID)
+		validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, chainID)
+		allowlist := k.GetAllowList(ctx, chainID)
+		strAllowlist := make([]string, len(allowlist))
+		for i, addr := range allowlist {
+			strAllowlist[i] = addr.String()
+		}
+
+		denylist := k.GetDenyList(ctx, chainID)
+		strDenylist := make([]string, len(denylist))
+		for i, addr := range denylist {
+			strDenylist[i] = addr.String()
+		}
+
 		chains = append(chains, types.Chain{
-			ChainId:         chainID,
-			ClientId:        clientID,
-			Top_N:           topN,
-			MinPowerInTop_N: minPowerInTopN,
+			ChainId:            chainID,
+			ClientId:           clientID,
+			Top_N:              topN,
+			MinPowerInTop_N:    minPowerInTopN,
+			ValidatorSetCap:    validatorSetCap,
+			ValidatorsPowerCap: validatorsPowerCap,
+			Allowlist:          strAllowlist,
+			Denylist:           strDenylist,
 		})
 	}
 
@@ -1460,6 +1478,23 @@ func (k Keeper) SetAllowlist(
 	store.Set(types.AllowlistCapKey(chainID, providerAddr), []byte{})
 }
 
+// GetAllowList returns all allowlisted validators
+func (k Keeper) GetAllowList(
+	ctx sdk.Context,
+	chainID string,
+) (providerConsAddresses []types.ProviderConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.AllowlistPrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerConsAddresses = append(providerConsAddresses, types.NewProviderConsAddress(iterator.Key()[len(key):]))
+	}
+
+	return providerConsAddresses
+}
+
 // IsAllowlisted returns `true` if validator with `providerAddr` has been allowlisted on chain `chainID`
 func (k Keeper) IsAllowlisted(
 	ctx sdk.Context,
@@ -1508,6 +1543,23 @@ func (k Keeper) SetDenylist(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.DenylistCapKey(chainID, providerAddr), []byte{})
+}
+
+// GetDenyList returns all denylisted validators
+func (k Keeper) GetDenyList(
+	ctx sdk.Context,
+	chainID string,
+) (providerConsAddresses []types.ProviderConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.ChainIdWithLenKey(types.DenylistPrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerConsAddresses = append(providerConsAddresses, types.NewProviderConsAddress(iterator.Key()[len(key):]))
+	}
+
+	return providerConsAddresses
 }
 
 // IsDenylisted returns `true` if validator with `providerAddr` has been denylisted on chain `chainID`
