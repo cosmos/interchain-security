@@ -113,14 +113,25 @@ There is **no** limit in the number of consumers chains a validator can choose t
 
 ## Can validators assign a consensus keys while a consumer-addition proposal is in voting period?
 Yes, see the [Key Assignment Guide](./features/key-assignment.md) for more information.
+
 ## Can validators assign a consensus key during the voting period for a consumer-addition proposal if I am not in the top N?
 Yes.
+
 ## Can validators opt in to an Opt-in chain after its consumer-addition proposal voting period is over but before the spawn time?
 Yes.
+
 ## Can validators opt in to an Opt-in chain after the spawn time if nobody else opted in?
 No, the consumer chain will not be added if nobody opted in by the spawn time. At least one validator, regardless of its voting power, must opt in before the spawn time arrives in order for the chain can start.
+
 ## Can all validators opt out of an Opt-in chain?
 Yes, the consumer chain will halt with an ERR CONSENSUS FAILURE error after the opt-out message for the last validator is received.
+
 ## Can validators set a commission rate for chains they have not opted in to?
 Yes, and this is useful for validators that are not in the top N% of the provider chain, but might move into the top N% in the future.
 By setting the commission rate ahead of time, they can make sure that they immediately have a commission rate of their choosing as soon as they are in the top N%.
+
+## On how many consumer chains can a validator opt-in at the same time?
+
+There is no limit to the number of consumer chains a validator can opt in to.
+However, some consumer chains may restrict the validators actually getting to validate there, for example consumer chains can set up denylists to stop certain validators from validating there.
+See the [Power Shaping](./features/power-shaping.md) section for more information. 
