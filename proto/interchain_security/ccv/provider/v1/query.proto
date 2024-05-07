@@ -134,6 +134,13 @@ service Query {
       option (google.api.http).get =
       "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}";
     }
+
+  // QueryConsumerChainConsumerValidators returns the latest set consumer-validator set for a given chainID
+  rpc QueryConsumerChainConsumerValidators(QueryConsumerChainConsumerValidatorsRequest)
+      returns (QueryConsumerChainConsumerValidatorsResponse) {
+        option (google.api.http).get =
+            "/interchain_security/ccv/provider/consumer_validators/{chain_id}";
+  }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -262,7 +269,6 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
-
 message QueryConsumerChainOptedInValidatorsRequest {
   string chain_id = 1;
 }
@@ -272,6 +278,22 @@ message QueryConsumerChainOptedInValidatorsResponse {
   repeated string validators_provider_addresses = 1;
 }
 
+message QueryConsumerChainConsumerValidatorsRequest {
+  string chain_id = 1;
+}
+
+message QueryConsumerChainConsumerValidator {
+  // The consensus address of the validator on the provider chain
+  string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The consumer public key of the validator used on the consumer chain
+  tendermint.crypto.PublicKey consumer_key = 2;
+  // The power of the validator used on the consumer chain
+  int64 power = 3;
+}
+
+message QueryConsumerChainConsumerValidatorsResponse {
+  repeated QueryConsumerChainConsumerValidator validators = 1;
+}
 
 message QueryConsumerChainsValidatorHasToValidateRequest {
   // The consensus address of the validator on the provider chain
