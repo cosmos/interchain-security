@@ -423,7 +423,7 @@ func TestGetAllConsumerChains(t *testing.T) {
 		-1,  // Top N is 0, so not a Top N chain
 		300, // 500 and 300 are in Top 70%
 		150, // 150 is also in the top 90%,
-		50,  // everyone is in the top 50
+		50,  // everyone is in the top 100%
 	}
 
 	expectedGetAllOrder := []types.Chain{}
