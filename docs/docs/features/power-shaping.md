@@ -16,6 +16,12 @@ and thus there is no single validator who would stop the chain by going offline.
 Note that this is a soft cap, and the actual power of a validator can exceed this fraction if the validator set is small (e.g. there are only 3 validators and the cap is 20%).
 1) **Allowlist and denylist**: The consumer chain can specify a list of validators that are allowed or disallowed from participating in the validator set. If an allowlist is set, all validators not on the allowlist cannot validate the consumer chain. If a validator is on both lists, the denylist takes precedence, that is, they cannot validate the consumer chain. If neither list is set, all validators are able to validate the consumer chain.
 
+:::warning
+Note that if denylisting is used in a Top N consumer chain, then the chain might not be secured by N% of the total provider's
+power. For example, consider that the top validator `V` on the provider chain has 10% of the voting power, and we have a Top 50% consumer chain,
+then if `V` is denylisted, the consumer chain would only be secured by at least 40% of the provider's power.
+:::
+
 All these mechanisms are set by the consumer chain in the `ConsumerAdditionProposal`. They operate *solely on the provider chain*, meaning the consumer chain simply receives the validator set after these rules have been applied and does not have any knowledge about whether they are applied.
 
 Each of these mechanisms is *set during the consumer addition proposal* (see [Onboarding](../consumer-development/onboarding.md#3-submit-a-governance-proposal)), and is currently *immutable* after the chain has been added.
