@@ -65,6 +65,11 @@ A validator cannot opt out from a Top N chain if it belongs to the top N% valida
 :::
 
 :::warning
+If a validator moves from the Top N to outside of the top N% of the validators on the provider, it will **not**
+be automatically opted-out. The validator has to manually opt out.
+:::
+
+:::warning
 A validator can stop its node on a consumer chain **only** after opting out and confirming through the `has-to-validate`
 query (see [below](./partial-set-security-for-validators.md#which-chains-does-a-validator-have-to-validate)) that it does
 not have to validate the consumer chain any longer.
