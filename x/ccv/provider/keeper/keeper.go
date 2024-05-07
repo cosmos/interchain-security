@@ -253,12 +253,26 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 		chainID := string(iterator.Key()[1:])
 		clientID := string(iterator.Value())
 
-		topN, _ := k.GetTopN(ctx, chainID)
+		topN, found := k.GetTopN(ctx, chainID)
+
+		var minPowerInTopN int64
+		if found && topN > 0 {
+			res, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+			if err != nil {
+				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+				minPowerInTopN = -1
+			} else {
+				minPowerInTopN = res
+			}
+		} else {
+			minPowerInTopN = -1
+		}
 
 		chains = append(chains, types.Chain{
-			ChainId:  chainID,
-			ClientId: clientID,
-			Top_N:    topN,
+			ChainId:         chainID,
+			ClientId:        clientID,
+			Top_N:           topN,
+			MinPowerInTop_N: minPowerInTopN,
 		})
 	}
 

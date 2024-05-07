@@ -164,6 +164,9 @@ message Chain {
   string client_id = 2;
   // If chain with `chainID` is a Top-N chain, i.e., enforces at least one validator to validate chain `chainID`
   uint32 top_N = 3;
+  // If the chain is a Top-N chain, this is the minimum power required to be in the top N.
+  // Otherwise, this is -1.
+  int64 min_power_in_top_N = 4;
 }
 
 message QueryValidatorConsumerAddrRequest {
