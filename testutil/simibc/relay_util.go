@@ -38,7 +38,7 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		return err
 	}
 
-	_, err = simapp.SignAndDeliver(
+	res, err := simapp.SignAndDeliver(
 		receiver.Chain.TB,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
@@ -51,6 +51,12 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		receiver.Chain.GetContext().BlockHeader().NextValidatorsHash,
 		receiver.Chain.SenderPrivKey,
 	)
+
+	for _, txRes := range res.TxResults {
+		if txRes.Code != 0 {
+			return fmt.Errorf("tx failed with code %d, tx result: %s", txRes.Code, txRes)
+		}
+	}
 
 	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {

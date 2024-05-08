@@ -590,7 +590,7 @@ func UpdateProviderClientOnConsumer(t *testing.T, driver *Driver, consumerChainI
 	t.Helper()
 	driver.path(ChainId(consumerChainId)).AddClientHeader(PROVIDER, driver.providerHeader())
 	err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
-	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
+	require.True(t, err == nil, "Error updating client from %v on consumer: %v", consumerChainId, err)
 }
 
 func UpdateConsumerClientOnProvider(t *testing.T, driver *Driver, consumerChain string) {
