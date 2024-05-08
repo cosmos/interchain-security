@@ -1,4 +1,4 @@
-# ADR 016: CosmoLayer
+# ADR 016: Security aggregation
 
 ## Changelog
 
@@ -10,14 +10,14 @@ Draft
 
 ## Context
 
-CosmoLayer enables staking of tokens from external sources such as Ethereum or Bitcoin to Cosmos blockchains. By integrating CosmoLayer, a Cosmos blockchain can be secured by both native tokens and external tokens (e.g., ETH, BTC).
+Security Aggregation enables staking of tokens from external sources such as Ethereum or Bitcoin to Cosmos blockchains. By integrating Security Aggregation, a Cosmos blockchain can be secured by both native tokens and external tokens (e.g. ETH, BTC).
 
-CosmoLayer consists of the following four parts:
+Security Aggregation consists of the following parts:
 
 - A mechanism for delegating external tokens to Cosmos validators, such as Babylon or EigenLayer AVS contract.
 - An oracle that tracks how much external stake has been delegated to each Cosmos validator and provides price feeds for external tokens.
-- Power mixing:  A mechanism to combine external and native stake to derive the power of each validator.
-- A bridge that enables sending back rewards to the external source.
+- Power mixing:  a mechanism to combine external and native stake to derive the power of each validator.
+- A reward distribution protocol that enables sending back rewards to the external source.
 
 External staking information is received from an oracle together with price information of related stakes.
 The CosmosLayer derives validator powers based on external and native staking information and initiates rewarding of external depositors.
@@ -47,7 +47,7 @@ Rewards will be sent back to external chains instead of paying rewards for exter
 
 ## Detailed Design
 
-The `Power Mixing` feature and `Reward Distribution` protocol are an integral part of the CosmoLayer solution.
+The `Power Mixing` feature and `Reward Distribution` protocol are an integral part of the Security Aggregation solution.
 The `Power Mixing` module provides the capability of deriving validator power based on stake originated from external sources such as Ethereum/Bitcoin and the native staking module.
 The `Reward Distribution` is in charge of sending rewards to external stakers.
 
