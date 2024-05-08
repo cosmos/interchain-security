@@ -27,13 +27,13 @@ This ADR describes the _Cosmos modules_ of the solution.
 ## Alternative Approaches
 
 ### Rewards
-As an alternative for sending rewards back to the external chains, stakers could be rewarded on the Cosmos chain.
+As an alternative to sending rewards back to the external chains, stakers could be rewarded on the Cosmos chain.
 This would require a mapping of external addresses to addresses on Cosmos chain for each staker on external source.
-In addition detailed external staking information such as staking addresses, amount of stakes per staker and validator, etc have to be provided by the oracle.
+In addition detailed external staking information such as staking addresses, amount of stakes per staker and validator, etc. have to be provided by the oracle.
 
 ## Decision
 
-### Rewards
+### Rewards will be sent back to external chains instead of paying rewards for external stakers on Cosmos chain
 Rewards will be sent back to external chains instead of paying rewards for external stakers on Cosmos chain
 - due to amount of additional staking information to be sent and tracked by the oracle
 - due to the additional complexity of managing external and Cosmos addresses
@@ -42,7 +42,7 @@ Rewards will be sent back to external chains instead of paying rewards for exter
 
 The `Power Mixing` feature and `Reward Distribution` protocol are an integral part of the Security Aggregation solution.
 The `Power Mixing` module provides the capability of deriving validator power based on stake originated from external sources such as Ethereum/Bitcoin and the native staking module.
-The `Reward Distribution` is in charge of sending rewards to external stakers.
+The `Reward Distribution` manages the process of sending rewards to external stakers.
 
 ### Power Mixing
 
@@ -62,9 +62,8 @@ Requirements:
 The `Power Mixing` implementation
 - queries current validators and their powers from [x/staking](https://github.com/cosmos/cosmos-sdk/blob/a6f3fbfbeb7ea94bda6369a7163a523e118a123c/x/staking/types/staking.pb.go#L415)
 and from oracle (see below).
-- calculates power updates by mixing power values of external an internal sources
-
-Following pseudo code snippet shows a possible implementation of how power mixing
+- calculates power updates by mixing power values of external and internal sources
+Following pseudocode snippet shows a possible implementation of how power mixing
 feature works.
 ```golang
 // PowerSource is an abstract entity providing validator powers which
