@@ -71,14 +71,16 @@ feature works.
 // are used by the mixer. This can be an oracle, staking module or an
 // IBC connected bridge.
 type PowerSource interface {
-  GetValPowers() []abci.ValidatorUpdate
+  GetValidatorUpdates() []abci.ValidatorUpdate
 }
 
 // MixPowers calculates power updates by mixing validator powers from different sources
 func (k *Keeper) MixPowers(source ...PowerSource) []abci.ValidatorUpdate {
   var valUpdate []abci.ValidatorUpdate
   for _, ps := range source {
-    valUpdate = mixPower(valUpdate, ps)
+    // mix powers from two sets of validator updates an return set of validator updates
+    // with aggregated powers
+    valUpdate = mixPower(valUpdate, ps.GetValidatorUpdates())
   }
   return valUpdate
 }
@@ -86,7 +88,7 @@ func (k *Keeper) MixPowers(source ...PowerSource) []abci.ValidatorUpdate {
 func (k *keeper) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
   // GetPowerSources (including local staking module)
   registeredPowerSource := GetPowerSources()
-  return am.keeper.MixPowers(registeredPowerSource...)
+  return k.MixPowers(registeredPowerSource...)
 }
 ```
 
