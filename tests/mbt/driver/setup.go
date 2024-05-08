@@ -26,6 +26,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/cometbft/cometbft/abci/types"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -336,27 +337,14 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		[]string{"upgrade", "upgradedIBCState"},
 	)
 
-	consumerGenesis := createConsumerGenesis(params, providerChain, consumerClientState)
-
-	s.consumerKeeper(consumerChainId).InitGenesis(s.ctx(consumerChainId), consumerGenesis)
-
-	consumerGenesisForProvider := ccvtypes.ConsumerGenesisState{
-		Params:   consumerGenesis.Params,
-		Provider: consumerGenesis.Provider,
-		NewChain: consumerGenesis.NewChain,
-	}
-
 	var stakingValidators []stakingtypes.Validator
 
 	// set up the current consumer validators by utilizing the initial validator set
-	for _, val := range consumerGenesisForProvider.Provider.InitialValSet {
+	for _, val := range providerChain.Vals.Validators {
 		pubKey := val.PubKey
-		consAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(pubKey)
-		if err != nil {
-			continue
-		}
+		address := sdk.ConsAddress(pubKey.Address())
 
-		v, err := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		v, err := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), address)
 		// TODO: not sure why there was this code on ICS <= v5.x
 		// v, found := ...
 		// if !found { ... }
@@ -368,6 +356,21 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 
 	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators)
 	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
+	// convert the nextValidators to ValUpdates
+	valUpdates := make([]types.ValidatorUpdate, 0)
+	for _, val := range nextValidators {
+		valUpdates = append(valUpdates, types.ValidatorUpdate{PubKey: *val.ConsumerPublicKey, Power: val.Power})
+	}
+
+	consumerGenesis := createConsumerGenesis(params, providerChain, consumerClientState, &valUpdates)
+
+	s.consumerKeeper(consumerChainId).InitGenesis(s.ctx(consumerChainId), consumerGenesis)
+
+	consumerGenesisForProvider := ccvtypes.ConsumerGenesisState{
+		Params:   consumerGenesis.Params,
+		Provider: consumerGenesis.Provider,
+		NewChain: consumerGenesis.NewChain,
+	}
 
 	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),
@@ -394,14 +397,14 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	// Commit a block on both chains, giving us two committed headers from
 	// the same time and height. This is the starting point for all our
 	// data driven testing.
-	// lastConsumerHeader, _ := simibc.FinalizeBlock(consumerChain, 5)
-	// lastProviderHeader, _ := simibc.FinalizeBlock(providerChain, 5)
+	lastConsumerHeader, _ := simibc.FinalizeBlock(consumerChain, 5)
+	lastProviderHeader, _ := simibc.FinalizeBlock(providerChain, 5)
 
-	// // Update clients to the latest header.
-	// err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader, false)
-	// require.NoError(s.t, err, "Error updating client on consumer for chain %v", consumerChain.ChainID)
-	// err = simibc.UpdateReceiverClient(providerEndPoint, consumerEndPoint, lastProviderHeader, false)
-	// require.NoError(s.t, err, "Error updating client on provider for chain %v", consumerChain.ChainID)
+	// Update clients to the latest header.
+	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader, false)
+	require.NoError(s.t, err, "Error updating client on consumer for chain %v", consumerChain.ChainID)
+	err = simibc.UpdateReceiverClient(providerEndPoint, consumerEndPoint, lastProviderHeader, false)
+	require.NoError(s.t, err, "Error updating client on provider for chain %v", consumerChain.ChainID)
 
 	// path is ready to go
 	return path
@@ -470,10 +473,9 @@ func (s *Driver) setupConsumer(
 	s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
 }
 
-func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState) *consumertypes.GenesisState {
+func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState, initialValUpdates *[]abcitypes.ValidatorUpdate) *consumertypes.GenesisState {
 	providerConsState := providerChain.LastHeader.ConsensusState()
 
-	valUpdates := cmttypes.TM2PB.ValidatorUpdates(providerChain.Vals)
 	params := ccvtypes.NewParams(
 		true,
 		1000, // ignore distribution
@@ -490,5 +492,5 @@ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.Te
 		ccvtypes.DefaultRetryDelayPeriod,
 	)
 
-	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, valUpdates, params)
+	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, *initialValUpdates, params)
 }
