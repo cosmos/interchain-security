@@ -26,19 +26,12 @@ This ADR describes the _Cosmos modules_ of the solution.
 
 ## Alternative Approaches
 
-> This section contains information around alternative options that are considered
-> before making a decision. It should contain a explanation on why the alternative
-> approach(es) were not chosen.
 ### Rewards
 As an alternative for sending rewards back to the external chains, stakers could be rewarded on the Cosmos chain.
 This would require a mapping of external addresses to addresses on Cosmos chain for each staker on external source.
 In addition detailed external staking information such as staking addresses, amount of stakes per staker and validator, etc have to be provided by the oracle.
 
 ## Decision
-
-> This section records the decision that was made.
-> It is best to record as much info as possible from the discussion that happened.
-> This aids in not having to go back to the Pull Request to get the needed information.
 
 ### Rewards
 Rewards will be sent back to external chains instead of paying rewards for external stakers on Cosmos chain
@@ -185,9 +178,6 @@ Note: currently there's no support paying rewards on EigenLayer (see [here](http
 
 ## Consequences
 
-> This section describes the consequences, after applying the decision. All
-> consequences should be summarized here, not just the "positive" ones.
-
 ### Positive
 
 * Allow external depositors to stake their tokens to secure a Cosmos chain
@@ -203,9 +193,6 @@ Note: currently there's no support paying rewards on EigenLayer (see [here](http
 - Slashing: subject of this ADR? (Defined but [not activated](https://www.coindesk.com/tech/2024/04/10/eigenlayer-cryptos-biggest-project-launch-this-year-is-still-missing-crucial-functionality/) currently on EigenLayer).
 
 ## References
-
-> Are there any relevant PR comments, issues that led up to this, or articles
-> referenced for why we made the given design choice? If so link them here!
 
 - [EigenLayer](https://docs.eigenlayer.xyz/)
 - [Babylon](https://babylonchain.io/)
