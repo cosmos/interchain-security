@@ -1,6 +1,8 @@
 package simibc
 
 import (
+	"fmt"
+
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
@@ -98,9 +100,14 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		return nil, setSequenceErr
 	}
 
+	for _, txRes := range resWithAck.TxResults {
+		fmt.Println("## txRes")
+		fmt.Println(txRes)
+	}
+
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse ack from events: %w", err)
 	}
 
 	return ack, nil
