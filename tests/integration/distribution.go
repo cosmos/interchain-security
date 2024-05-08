@@ -1117,7 +1117,7 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 				bundle.GetCtx(),
 				accountKeeper.GetModuleAccount(bundle.GetCtx(), consumertypes.ConsumerToSendToProviderName).GetAddress(),
 			)
-			s.Require().Len(pool, 1, "consumer reward pool cannot have mutiple token denoms")
+			s.Require().Len(pool, 1, "consumer reward pool cannot have multiple token denoms")
 			rewardsPerConsumer = pool[0]
 		}
 
