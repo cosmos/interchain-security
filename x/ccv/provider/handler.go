@@ -27,7 +27,7 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 			res, err := msgServer.SubmitConsumerDoubleVoting(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgOptIn:
-			res, err := msgServer.OptIn(sdk.WrapSDKContext(ctx), msg)
+			res, err := msgServer.option(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgOptOut:
 			res, err := msgServer.OptOut(sdk.WrapSDKContext(ctx), msg)

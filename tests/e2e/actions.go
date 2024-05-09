@@ -2274,7 +2274,7 @@ type OptInAction struct {
 	Validator ValidatorID
 }
 
-func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose bool) {
+func (tr TestConfig) option(action OptInAction, target ExecutionTarget, verbose bool) {
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
@@ -2283,7 +2283,7 @@ func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose b
 	}
 
 	// Use: "opt-in [consumer-chain-id] [consumer-pubkey]",
-	optIn := fmt.Sprintf(
+	option := fmt.Sprintf(
 		`%s tx provider opt-in %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
 		tr.chainConfigs[ChainID("provi")].BinaryName,
 		string(tr.chainConfigs[action.Chain].ChainId),
@@ -2296,11 +2296,11 @@ func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose b
 
 	cmd := target.ExecCommand(
 		"/bin/bash", "-c",
-		optIn,
+		option,
 	)
 
 	if verbose {
-		fmt.Println("optIn cmd:", cmd.String())
+		fmt.Println("option cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()
@@ -2333,7 +2333,7 @@ func (tr TestConfig) optOut(action OptOutAction, target ExecutionTarget, verbose
 	}
 
 	// Use: "opt-out [consumer-chain-id]",
-	optIn := fmt.Sprintf(
+	option := fmt.Sprintf(
 		`%s tx provider opt-out %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
 		tr.chainConfigs[ChainID("provi")].BinaryName,
 		string(tr.chainConfigs[action.Chain].ChainId),
@@ -2346,7 +2346,7 @@ func (tr TestConfig) optOut(action OptOutAction, target ExecutionTarget, verbose
 
 	cmd := target.ExecCommand(
 		"/bin/bash", "-c",
-		optIn,
+		option,
 	)
 
 	if verbose {

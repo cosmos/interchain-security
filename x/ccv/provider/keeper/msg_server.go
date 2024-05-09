@@ -137,7 +137,7 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 	return &types.MsgSubmitConsumerDoubleVotingResponse{}, nil
 }
 
-func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.MsgOptInResponse, error) {
+func (k msgServer) option(goCtx context.Context, msg *types.MsgOptIn) (*types.MsgOptInResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	valAddress, err := sdk.ValAddressFromBech32(msg.ProviderAddr)

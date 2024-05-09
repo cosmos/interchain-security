@@ -55,7 +55,7 @@ func stepsOptInChain() []Step {
 		},
 		// Οpt in "alice" and "bob" so the chain is not empty when it is about to start. Note, that "alice" and "bob" use
 		// the provider's public key (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not
-		// need a consumer-key assigment.
+		// need a consumer-key assignment.
 		{
 			Action: OptInAction{
 				Chain:     ChainID("consu"),
