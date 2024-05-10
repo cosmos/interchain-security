@@ -25,3 +25,23 @@ then if `V` is denylisted, the consumer chain would only be secured by at least 
 All these mechanisms are set by the consumer chain in the `ConsumerAdditionProposal`. They operate *solely on the provider chain*, meaning the consumer chain simply receives the validator set after these rules have been applied and does not have any knowledge about whether they are applied.
 
 Each of these mechanisms is *set during the consumer addition proposal* (see [Onboarding](../consumer-development/onboarding.md#3-submit-a-governance-proposal)), and is currently *immutable* after the chain has been added.
+
+## Guidelines for setting power shaping parameters
+
+When setting power shaping parameters, please consider the following guidelines:
+* Do not cap the validator set size too low: Notice that this number is the **maximum* number of validators that will ever validate the consumer chain. If this number is too low, the chain will be very limited in the
+amount of stake that secures it. The validator set size cap should only be used if there are strong reasons to prefer fewer validators. Consider that setting the cap will mean that
+even if the whole validator set of the provider wants to validate on the chain, some validators will simply not be able to.
+* Capping the fraction of power any single validator can have is a decent security measure, but it's good to be aware of the interactions with the size of the validator set.
+For example, if there are only 3 validators, and the cap is 20%, this will not be possible (since even splitting the power fairly would mean that each validator has 33% of the power, so is above the cap).
+However, the cap can be a good measure to prevent a single large validator from essentially taking over the chain.
+In general, values under 33% make sense (since a validator that has 33% of the chains power would halt the chain if they go offline).
+Notice that the smaller this value is, the more the original voting power gets distorted, which could discourage large validators from deciding to opt in to the chain.
+* If the allowlist is *empty*, all validators can validate the chain. If it is *non empty*, then *only* validators on the allowlist can validate the chain.
+Thus, an allowlist containing too few validators is a security risk. In particular, consider that if the validators on the allowlist lose a lot of stake or stop being validators,
+an allowlist that is too short can very quickly become outdated and leave too few validators, or validators with too little stake, to secure the chain in a decentralized way.
+* If the denylist is too full, this can likewise be problematic. If too many large validators are denylisted, the chain might not be secured by a large enough fraction of the provider's power, in particular when
+the power distribution on the provider shifts and the denylisted validators gain more power.
+
+In general, when setting these parameters, consider that the voting power distribution in the future might be very different from the one right now,
+and that the chain should be secure even if the power distribution changes significantly.
