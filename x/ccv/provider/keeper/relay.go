@@ -12,6 +12,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -254,6 +256,37 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	}
 
 	k.IncrementValidatorSetUpdateId(ctx)
+}
+
+func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
+	// get the bonded validators from the staking module
+	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+
+	// get the last validator set sent to consensus
+	currentValidators := k.GetConsumerValSet(ctx, "cosmoshub-4") // TODO: This is DEFINITELY not safe for production, need a dedicated function for the provider valset
+
+	MAX_CONSENSUS_VALIDATORS := 180 // TODO: make this a parameter
+
+	nextValidators := []types.ConsumerValidator{}
+	for _, val := range bondedValidators[:MAX_CONSENSUS_VALIDATORS] {
+		nextValidator, err := k.CreateConsumerValidator(ctx, "cosmoshub-4", val)
+		if err != nil {
+			// this should never happen but is recoverable if we exclude this validator from the next validator set
+			k.Logger(ctx).Error("could not create consumer validator",
+				"validator", val.GetOperator().String(),
+				"error", err)
+			continue
+		}
+
+		nextValidators = append(nextValidators, nextValidator)
+	}
+
+	// save the next validator set
+	k.SetConsumerValSet(ctx, "cosmoshub-4", nextValidators)
+
+	valUpdates := DiffValidators(currentValidators, nextValidators)
+
+	return valUpdates
 }
 
 // BeginBlockCIS contains the BeginBlock logic needed for the Consumer Initiated Slashing sub-protocol.

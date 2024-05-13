@@ -164,7 +164,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// EndBlock logic needed for the Validator Set Update sub-protocol
 	am.keeper.EndBlockVSU(ctx)
 
-	return []abci.ValidatorUpdate{}
+	return am.keeper.ProviderValidatorUpdates(ctx)
 }
 
 // AppModuleSimulation functions
