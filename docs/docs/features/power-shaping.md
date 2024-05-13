@@ -26,6 +26,11 @@ All these mechanisms are set by the consumer chain in the `ConsumerAdditionPropo
 
 Each of these mechanisms is *set during the consumer addition proposal* (see [Onboarding](../consumer-development/onboarding.md#3-submit-a-governance-proposal)), and is currently *immutable* after the chain has been added.
 
+The values can be seen by querying the list of consumer chains:
+```bash
+interchain-security-pd query provider list-consumer-chains
+```
+
 ## Guidelines for setting power shaping parameters
 
 When setting power shaping parameters, please consider the following guidelines:

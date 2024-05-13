@@ -113,6 +113,22 @@ As a validator, the list of chains returned by `has-to-validate` is the list of 
 getting jailed for downtime.
 :::
 
+### How do you know how much voting power you need to have to be in the top N for a chain?
+This can be seen as part of the `list-consumer-chains` query:
+```bash
+interchain-security-pd query provider list-consumer-chains
+```
+where the `min_power_in_top_N` field shows the minimum voting power required to be
+automatically opted in to the chain.
+
+:::tip
+`list-consumer-chains` shows the minimal voting power *right now*, but
+the automatic opt-in happens only when epochs end on the provider.
+In consequence, a validators power might be large enough to be automatically opted in
+during an epoch, but if their power is sufficiently decreased before the epoch ends,
+they will not be opted in automatically.
+:::
+
 
 ### How to get all the opted-in validators on a consumer chain?
 With the following query:
