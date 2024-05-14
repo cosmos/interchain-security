@@ -91,6 +91,10 @@ where
 - `comission-rate` decimal in `[minRate, 1]` where `minRate` corresponds to the minimum commission rate set on the
 provider chain (see `min_commission_rate` in `interchain-security-pd query staking params`).
 
+'''tip
+If a validator does not set a commission rate on a consumer chain, the commission rate defaults to their commission rate on the provider chain.
+'''
+
 
 ## Queries
 Partial Set Security introduces a number of queries to assist validators determine which consumer chains they have to
