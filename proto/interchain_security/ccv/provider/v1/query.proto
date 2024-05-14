@@ -164,6 +164,19 @@ message Chain {
   string client_id = 2;
   // If chain with `chainID` is a Top-N chain, i.e., enforces at least one validator to validate chain `chainID`
   uint32 top_N = 3;
+  // If the chain is a Top-N chain, this is the minimum power required to be in the top N.
+  // Otherwise, this is -1.
+  int64 min_power_in_top_N = 4;
+  // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain.
+  uint32 validators_power_cap = 5;
+  // Corresponds to the maximum number of validators that can validate a consumer chain.
+  // Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+  uint32 validator_set_cap = 6;
+  // Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
+  // the consumer chain.
+  repeated string allowlist = 7;
+  // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+  repeated string denylist = 8;
 }
 
 message QueryValidatorConsumerAddrRequest {
