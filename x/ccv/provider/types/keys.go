@@ -183,6 +183,10 @@ const (
 	// per validator per consumer chain
 	ConsumerCommissionRatePrefix
 
+	// LastProviderConsensusValsPrefix is byte prefix for storing the last validator set
+	// sent to the consensus engine of the provider chain
+	LastProviderConsensusValsPrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -599,6 +603,12 @@ func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress)
 		chainID,
 		providerAddr.ToSdkConsAddr(),
 	)
+}
+
+// LastProviderConsensusValidatorKey returns the key of the validator with `providerAddr`
+// in the last validator set sent to the consensus engine of the provider chain
+func LastProviderConsensusValidatorKey(providerAddr []byte) []byte {
+	return append([]byte{LastProviderConsensusValsPrefix}, providerAddr...)
 }
 
 //

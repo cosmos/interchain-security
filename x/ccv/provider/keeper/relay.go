@@ -281,7 +281,7 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 		nextValidators = append(nextValidators, nextValidator)
 	}
 
-	// save the next validator set
+	// store the validator set we will send to consensus
 	k.SetConsumerValSet(ctx, "cosmoshub-4", nextValidators)
 
 	valUpdates := DiffValidators(currentValidators, nextValidators)
