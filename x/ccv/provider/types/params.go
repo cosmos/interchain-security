@@ -41,6 +41,10 @@ const (
 	// an epoch corresponds to 1 hour (6 * 600 = 3600 seconds).
 	// forcing int64 as the Params KeyTable expects an int64 and not int.
 	DefaultBlocksPerEpoch = int64(600)
+
+	// DefaultMaxProviderConsensusValidators is the default maximum number of validators that will
+	// be passed on from the staking module to the consensus engine on the provider.
+	DefaultMaxProviderConsensusValidators = 180
 )
 
 // Reflection based keys for params subspace
@@ -53,6 +57,7 @@ var (
 	KeySlashMeterReplenishFraction        = []byte("SlashMeterReplenishFraction")
 	KeyConsumerRewardDenomRegistrationFee = []byte("ConsumerRewardDenomRegistrationFee")
 	KeyBlocksPerEpoch                     = []byte("BlocksPerEpoch")
+	KeyMaxProviderConsensusValidators     = []byte("MaxProviderConsensusValidators")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -71,6 +76,7 @@ func NewParams(
 	slashMeterReplenishFraction string,
 	consumerRewardDenomRegistrationFee sdk.Coin,
 	blocksPerEpoch int64,
+	maxProviderConsensusValidators int64,
 ) Params {
 	return Params{
 		TemplateClient:                     cs,
@@ -82,6 +88,7 @@ func NewParams(
 		SlashMeterReplenishFraction:        slashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: consumerRewardDenomRegistrationFee,
 		BlocksPerEpoch:                     blocksPerEpoch,
+		MaxProviderConsensusValidators:     maxProviderConsensusValidators,
 	}
 }
 
@@ -113,6 +120,7 @@ func DefaultParams() Params {
 			Amount: sdk.NewInt(10000000),
 		},
 		DefaultBlocksPerEpoch,
+		DefaultMaxProviderConsensusValidators,
 	)
 }
 
@@ -163,6 +171,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
 		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyMaxProviderConsensusValidators, p.MaxProviderConsensusValidators, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

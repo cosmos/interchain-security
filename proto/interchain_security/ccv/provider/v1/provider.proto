@@ -212,6 +212,10 @@ message Params {
 
   // The number of blocks that comprise an epoch.
   int64 blocks_per_epoch = 10;
+
+  // The maximal number of validators that will be passed
+  // to the consensus engine on the provider.
+  int64 max_provider_consensus_validators = 11;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators

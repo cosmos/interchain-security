@@ -85,6 +85,12 @@ func (k Keeper) GetBlocksPerEpoch(ctx sdk.Context) int64 {
 	return b
 }
 
+func (k Keeper) GetMaxProviderConsensusValidators(ctx sdk.Context) int64 {
+	var m int64
+	k.paramSpace.Get(ctx, types.KeyMaxProviderConsensusValidators, &m)
+	return m
+}
+
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
@@ -97,6 +103,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetSlashMeterReplenishFraction(ctx),
 		k.GetConsumerRewardDenomRegistrationFee(ctx),
 		k.GetBlocksPerEpoch(ctx),
+		k.GetMaxProviderConsensusValidators(ctx),
 	)
 }
 
