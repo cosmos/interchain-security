@@ -265,10 +265,8 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	// get the last validator set sent to consensus
 	currentValidators := k.GetLastProviderConsensusValSet(ctx)
 
-	MAX_CONSENSUS_VALIDATORS := 180 // TODO: make this a parameter
-
 	nextValidators := []types.ConsumerValidator{}
-	for _, val := range bondedValidators[:MAX_CONSENSUS_VALIDATORS] {
+	for _, val := range bondedValidators[:k.GetMaxProviderConsensusValidators(ctx)] {
 		// create the validator from the staking validator
 		consAddr, err := val.GetConsAddr()
 		if err != nil {
