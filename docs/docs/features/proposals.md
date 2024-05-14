@@ -42,10 +42,13 @@ Minimal example:
     "blocks_per_distribution_transmission": 1000,
     "historical_entries": 10000,
     "genesis_hash": "d86d756e10118e66e6805e9cc476949da2e750098fcc7634fd0cc77f57a0b2b0",
-    "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1"
-    // relevant for chains performing a standalone to consumer changeover
-    // in order to maintain the existing ibc transfer channel
-    "distribution_transmission_channel": "channel-123"
+    "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1",
+    "distribution_transmission_channel": "channel-123",
+    "top_N": 95,
+    "validators_power_cap": 0,
+    "validator_set_cap": 0,
+    "allowlist": [],
+    "denylist": []
 }
 ```
 More examples can be found in the interchain security testnet repository [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/noble-1/start-proposal-noble-1.json).
