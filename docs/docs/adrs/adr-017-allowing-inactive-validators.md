@@ -5,7 +5,6 @@ title: ADR Template
 # ADR [17]: [Allowing validators outside the active set to validate on consumer chains]
 
 ## Changelog
-* [date]: [changelog]
 
 ## Status
 
