@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	cometbfted25519 "github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -296,4 +297,22 @@ func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
 	validator, err := consumertypes.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
 	require.NoError(t, err)
 	return validator
+}
+
+// CreateStakingValidator helper function to generate a validator with the given power and with a provider address based on index
+func CreateStakingValidator(ctx sdk.Context, mocks MockedKeepers, index int, power int64) stakingtypes.Validator {
+	providerConsPubKey := cometbfted25519.GenPrivKeyFromSecret([]byte{byte(index)}).PubKey()
+	consAddr := sdk.ConsAddress(providerConsPubKey.Address())
+	providerAddr := providertypes.NewProviderConsAddress(consAddr)
+	pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
+	pkAny, _ := codectypes.NewAnyWithValue(pk)
+	providerValidatorAddr := sdk.ValAddress(providerAddr.Address.Bytes())
+
+	mocks.MockStakingKeeper.EXPECT().
+		GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
+
+	return stakingtypes.Validator{
+		OperatorAddress: providerValidatorAddr.String(),
+		ConsensusPubkey: pkAny,
+	}
 }

@@ -15,6 +15,8 @@ import (
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // Tests the provider's InitGenesis implementation against the spec.
@@ -138,12 +140,15 @@ func TestInitGenesis(t *testing.T) {
 			)
 		}
 
-		// Last total power is queried in InitGenesis, only if method has not
+		// Staking validators are queried in InitGenesis, only if method has not
 		// already panicked from unowned capability.
 		if !tc.expPanic {
 			orderedCalls = append(orderedCalls,
-				mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-					ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
+				mocks.MockStakingKeeper.EXPECT().GetLastValidators(
+					ctx).Return(
+					[]stakingtypes.Validator{
+						testkeeper.CreateStakingValidator(ctx, mocks, 1, 100),
+					}).Times(1), // Return total voting power as 100
 			)
 		}
 

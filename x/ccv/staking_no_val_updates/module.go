@@ -1,6 +1,8 @@
 package staking
 
 import (
+	"encoding/json"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -44,6 +46,17 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper,
 		accKeeper:  ak,
 		bankKeeper: bk,
 	}
+}
+
+// InitGenesis delegates the InitGenesis call to the underlying x/staking module,
+// however, it returns no validator updates as validator updates will be provided by the provider module.
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+	var genesisState types.GenesisState
+
+	cdc.MustUnmarshalJSON(data, &genesisState)
+	_ = am.keeper.InitGenesis(ctx, &genesisState)
+
+	return []abci.ValidatorUpdate{}
 }
 
 // EndBlock delegates the EndBlock call to the underlying x/staking module,

@@ -102,6 +102,39 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	k.SetParams(ctx, genState.Params)
+	// get the staking validator set
+	valSet := k.stakingKeeper.GetLastValidators(ctx)
+
+	// restrict the set to the first MaxProviderConsensusValidators
+	maxVals := k.GetParams(ctx).MaxProviderConsensusValidators
+	if int64(len(valSet)) > maxVals {
+		valSet = valSet[:maxVals]
+	}
+
+	reducedValSet := make([]types.ConsumerValidator, len(valSet))
+	for i, val := range valSet {
+		consAddr, err := val.GetConsAddr()
+		if err != nil {
+			k.Logger(ctx).Error("could not create consumer validator",
+				"validator", val.GetOperator().String(),
+				"error", err)
+			continue
+		}
+		pubKey, err := val.TmConsPublicKey()
+		if err != nil {
+			k.Logger(ctx).Error("could not create consumer validator",
+				"validator", val.GetOperator().String(),
+				"error", err)
+			continue
+		}
+		reducedValSet[i] = types.ConsumerValidator{
+			ProviderConsAddr:  consAddr,
+			Power:             k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator()),
+			ConsumerPublicKey: &pubKey,
+		}
+	}
+
+	k.SetLastProviderConsensusValSet(ctx, reducedValSet)
 	k.InitializeSlashMeter(ctx)
 }
 
