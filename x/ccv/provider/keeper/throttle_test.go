@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
@@ -48,7 +48,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -62,11 +62,15 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.SetParams(ctx, params)
 
 		// Mock total power from staking keeper using test case value
-		// Any ctx is accepted, and the method will be called multiple times during the tests
-		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).AnyTimes(),
-		)
+		// we just set the last provider consensus validator set to have the desired total power
+		providerKeeper.SetLastProviderConsensusValSet(ctx,
+			[]providertypes.ConsumerValidator{
+				{
+					ProviderConsAddr:  []byte("providerConsAddr"),
+					Power:             tc.totalPower.Int64(),
+					ConsumerPublicKey: &crypto.PublicKey{},
+				},
+			})
 
 		// Now we can initialize the slash meter (this would happen in InitGenesis)
 		providerKeeper.InitializeSlashMeter(ctx)
@@ -129,7 +133,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 // Tests that the slash meter exhibits desired behavior when multiple replenishments are needed
 // to restore it to a full value.
 func TestConsecutiveReplenishments(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -142,13 +146,15 @@ func TestConsecutiveReplenishments(t *testing.T) {
 	params.SlashMeterReplenishFraction = "0.05"
 	providerKeeper.SetParams(ctx, params)
 
-	// Mock total power from staking keeper using test case value
-	// Any ctx is accepted, and the method will be called multiple times during the tests
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			gomock.Any()).Return(sdktypes.NewInt(1000)).AnyTimes(),
-	)
-
+	// Set a mocked last consensus validator set with the desired total power
+	providerKeeper.SetLastProviderConsensusValSet(ctx,
+		[]providertypes.ConsumerValidator{
+			{
+				ProviderConsAddr:  []byte("providerConsAddr"),
+				Power:             1000,
+				ConsumerPublicKey: &crypto.PublicKey{},
+			},
+		})
 	// Now we can initialize the slash meter (this would happen in InitGenesis)
 	providerKeeper.InitializeSlashMeter(ctx)
 
@@ -204,7 +210,7 @@ func TestConsecutiveReplenishments(t *testing.T) {
 // TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
 // when total voting power becomes higher and lower.
 func TestTotalVotingPowerChanges(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now()
@@ -216,11 +222,14 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 	providerKeeper.SetParams(ctx, params)
 
 	// Mock total power to be 1000
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			// Expect two calls, once for initialization, once for allowance check
-			ctx).Return(sdktypes.NewInt(1000)).Times(2),
-	)
+	providerKeeper.SetLastProviderConsensusValSet(ctx,
+		[]providertypes.ConsumerValidator{
+			{
+				ProviderConsAddr:  []byte("providerConsAddr"),
+				Power:             1000,
+				ConsumerPublicKey: &crypto.PublicKey{},
+			},
+		})
 
 	// Initialize the slash meter (this would happen in InitGenesis)
 	providerKeeper.InitializeSlashMeter(ctx)
@@ -231,11 +240,15 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 
 	// Mutate context so mocked total power is less than before
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Microsecond)) // Don't add enough time for replenishment
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			// Expect two calls, once for replenish check, once for allowance check
-			ctx).Return(sdktypes.NewInt(500)).Times(2),
-	)
+	// expect the total power to be less to simulate slashes
+	providerKeeper.SetLastProviderConsensusValSet(ctx,
+		[]providertypes.ConsumerValidator{
+			{
+				ProviderConsAddr:  []byte("providerConsAddr"),
+				Power:             500,
+				ConsumerPublicKey: &crypto.PublicKey{},
+			},
+		})
 
 	// Replenishment should not happen here, but slash meter should be decremented to new allowance
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
@@ -245,12 +258,15 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 	// Mutate context so mocked total power is again less than before,
 	// with ctx time set to a time that will replenish meter
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Hour))
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			// Expect three calls, once for replenish check,
-			// once for replenishment, once for allowance check
-			ctx).Return(sdktypes.NewInt(100)).Times(3),
-	)
+	// expect the total power to be even less
+	providerKeeper.SetLastProviderConsensusValSet(ctx,
+		[]providertypes.ConsumerValidator{
+			{
+				ProviderConsAddr:  []byte("providerConsAddr"),
+				Power:             100,
+				ConsumerPublicKey: &crypto.PublicKey{},
+			},
+		})
 
 	// Replenishment should happen here, slash meter should be decremented to new allowance regardless
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
@@ -259,11 +275,14 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 
 	// Mutate context so mocked total power is now more than before
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Microsecond)) // Don't add enough time for replenishment
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			// Expect two calls, once for replenish check, once for allowance check
-			ctx).Return(sdktypes.NewInt(5000)).Times(2),
-	)
+	providerKeeper.SetLastProviderConsensusValSet(ctx,
+		[]providertypes.ConsumerValidator{
+			{
+				ProviderConsAddr:  []byte("providerConsAddr"),
+				Power:             5000,
+				ConsumerPublicKey: &crypto.PublicKey{},
+			},
+		})
 
 	//
 	// Important: Without a replenishment, the meter should remain at its previous value
@@ -277,12 +296,14 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 	// Mutate context so mocked total power is again more than before,
 	// with ctx time set to a time that will replenish meter
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Hour))
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			// Expect three calls, once for replenish check,
-			// once for replenishment, once for allowance check
-			ctx).Return(sdktypes.NewInt(10000)).Times(3),
-	)
+	providerKeeper.SetLastProviderConsensusValSet(ctx,
+		[]providertypes.ConsumerValidator{
+			{
+				ProviderConsAddr:  []byte("providerConsAddr"),
+				Power:             10000,
+				ConsumerPublicKey: &crypto.PublicKey{},
+			},
+		})
 
 	// Replenishment should happen here, slash meter should be set to new allowance
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
@@ -337,7 +358,7 @@ func TestNegativeSlashMeter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -345,19 +366,30 @@ func TestNegativeSlashMeter(t *testing.T) {
 		params.SlashMeterReplenishFraction = tc.replenishFraction
 		providerKeeper.SetParams(ctx, params)
 
-		// Return mocked values: total power once,
+		// Return mocked values by setting the provider consensus validator set: total power once,
 		// then total power minus slashed power any amount of times
-		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).Times(1),
-			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower.Sub(tc.slashedPower)).AnyTimes(),
-		)
+		providerKeeper.SetLastProviderConsensusValSet(ctx,
+			[]providertypes.ConsumerValidator{
+				{
+					ProviderConsAddr:  []byte("providerConsAddr"),
+					Power:             tc.totalPower.Int64(),
+					ConsumerPublicKey: &crypto.PublicKey{},
+				},
+			})
 
 		// Initialize the slash meter (using first mocked value)
 		providerKeeper.InitializeSlashMeter(ctx)
 
-		// remaining calls to GetLastTotalPower should return the second mocked value.
+		// remaining calls to to the valiodator set should return total power - slashed power
+		// to simulate the validator being slashes
+		providerKeeper.SetLastProviderConsensusValSet(ctx,
+			[]providertypes.ConsumerValidator{
+				{
+					ProviderConsAddr:  []byte("providerConsAddr"),
+					Power:             tc.totalPower.Int64() - tc.slashedPower.Int64(),
+					ConsumerPublicKey: &crypto.PublicKey{},
+				},
+			})
 
 		// Confirm that meter is initialized to expected initial allowance
 		decFrac, err := sdktypes.NewDecFromStr(tc.replenishFraction)
@@ -447,14 +479,20 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).Times(1),
-		)
+		// Mock total power by creating a validator with the desired total power
+		// and setting it as the last provider consensus validator set
+		providerKeeper.SetLastProviderConsensusValSet(ctx,
+			[]providertypes.ConsumerValidator{
+				{
+					ProviderConsAddr:  []byte("providerConsAddr"),
+					Power:             tc.totalPower.Int64(),
+					ConsumerPublicKey: &crypto.PublicKey{},
+				},
+			})
 
 		// Set desired params
 		params := providertypes.DefaultParams()

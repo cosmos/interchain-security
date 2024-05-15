@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
@@ -136,8 +137,11 @@ func TestInitAndExportGenesis(t *testing.T) {
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
 			ctx, host.PortPath(ccv.ProviderPortID),
 		).Return(nil, true).Times(1),
-		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
+		mocks.MockStakingKeeper.EXPECT().GetLastValidators(
+			ctx).Return(
+			[]stakingtypes.Validator{
+				testkeeper.CreateStakingValidator(ctx, mocks, 1, 100),
+			}).Times(1), // Return total voting power as 100
 	)
 
 	// init provider chain

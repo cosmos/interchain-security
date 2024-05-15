@@ -95,7 +95,7 @@ func (k Keeper) getValSet(
 }
 
 func (k Keeper) getTotalPower(ctx sdk.Context, prefix []byte) math.Int {
-	var totalPower math.Int
+	totalPower := math.ZeroInt()
 	validators := k.getValSet(ctx, prefix)
 	for _, val := range validators {
 		totalPower = totalPower.Add(math.NewInt(val.Power))
