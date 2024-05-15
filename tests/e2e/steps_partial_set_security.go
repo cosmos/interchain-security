@@ -1715,7 +1715,7 @@ func stepsValidatorsDenylistedChain() []Step {
 				SpawnTime:     0,
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 				TopN:          0,
-				// only "bob" is allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
+				// only "bob" is denylisted (see `getDefaultValidators` in `tests/e2e/config.go`)
 				Denylist: []string{"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"},
 			},
 			State: State{
