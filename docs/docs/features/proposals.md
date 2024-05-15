@@ -81,7 +81,7 @@ Minimal example:
 Before the introduction of Partial Set Security, consumer chains typically included a "soft opt-out mechanism"
 which allows the bottom N% of the provider's validators to not validate the consumer chain, without being jailed for downtime on the provider.
 After the introduction of Partial Set Security, the use of the soft opt-out mechanism is discouraged, and consumer chains are
-encouraged to use the topN parameter to allow validators with little power to opt-out.
+encouraged to use the topN parameter to not force validators with little stake to validate the chain.
 :::
 
 ## ChangeRewardDenomProposal
