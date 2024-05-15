@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -10,7 +11,7 @@ import (
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.
-func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
+func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abci.ValidatorUpdate {
 	k.SetPort(ctx, ccv.ProviderPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -136,6 +137,15 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 	k.SetLastProviderConsensusValSet(ctx, reducedValSet)
 	k.InitializeSlashMeter(ctx)
+
+	valUpdates := make([]abci.ValidatorUpdate, len(reducedValSet))
+	for i, val := range reducedValSet {
+		valUpdates[i] = abci.ValidatorUpdate{
+			PubKey: *val.ConsumerPublicKey,
+			Power:  val.Power,
+		}
+	}
+	return valUpdates
 }
 
 // ExportGenesis returns the CCV provider module's exported genesis
