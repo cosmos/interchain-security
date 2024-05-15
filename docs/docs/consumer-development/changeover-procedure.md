@@ -167,7 +167,6 @@ Example of a consumer chain addition proposal (compare with the [ConsumerAdditio
     // Must be unique from all other consumer chain ids of the executing provider chain.
     "chain_id": "standalone-1",
     // Initial height of new consumer chain.
-    // For a completely new chain, this will be {0,1}.
     "initial_height" : {
         // must correspond to current revision number of standalone chain
         // e.g. standalone-1 => "revision_number": 1
