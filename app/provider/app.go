@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	stdlog "log"
@@ -108,6 +109,8 @@ import (
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 
 	wrapped_staking "github.com/cosmos/interchain-security/v4/x/ccv/staking_no_val_updates"
+
+	sdkmoduletypes "github.com/cosmos/cosmos-sdk/types/module"
 )
 
 const (
@@ -725,7 +728,45 @@ func (app *App) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.Res
 
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.MM.GetVersionMap())
 
-	return app.MM.InitGenesis(ctx, app.appCodec, genesisState)
+	return InitGenesis(app.MM, ctx, app.appCodec, genesisState)
+}
+
+// InitGenesis performs init genesis functionality for modules. Exactly one
+// module must return a non-empty validator set update to correctly initialize
+// the chain.
+func InitGenesis(m *sdkmoduletypes.Manager, ctx sdk.Context, cdc codec.JSONCodec, genesisData map[string]json.RawMessage) abci.ResponseInitChain {
+	var validatorUpdates []abci.ValidatorUpdate
+	ctx.Logger().Info("initializing blockchain state from genesis.json")
+	for _, moduleName := range m.OrderInitGenesis {
+		if genesisData[moduleName] == nil {
+			continue
+		}
+
+		if module, ok := m.Modules[moduleName].(sdkmoduletypes.HasGenesis); ok {
+			ctx.Logger().Debug("running initialization for module", "module", moduleName)
+
+			moduleValUpdates := module.InitGenesis(ctx, cdc, genesisData[moduleName])
+
+			// use these validator updates if provided, the module manager assumes
+			// only one module will update the validator set
+			if len(moduleValUpdates) > 0 {
+				fmt.Println("val updates by module", moduleName)
+				if len(validatorUpdates) > 0 {
+					panic("validator InitGenesis updates already set by a previous module")
+				}
+				validatorUpdates = moduleValUpdates
+			}
+		}
+	}
+
+	// a chain must initialize with a non-empty validator set
+	if len(validatorUpdates) == 0 {
+		panic(fmt.Sprintf("validator set is empty after InitGenesis, please ensure at least one validator is initialized with a delegation greater than or equal to the DefaultPowerReduction (%d)", sdk.DefaultPowerReduction))
+	}
+
+	return abci.ResponseInitChain{
+		Validators: validatorUpdates,
+	}
 }
 
 // LoadHeight loads a particular height
