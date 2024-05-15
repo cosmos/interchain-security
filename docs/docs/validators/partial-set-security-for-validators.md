@@ -80,7 +80,7 @@ If all validators opt out from an Opt-In chain, the chain will halt with a conse
 :::
 
 ### How to set specific per consumer chain commission rate?
-A validator can choose to set a different commission rate on each of the consumer chains it validates.
+A validator can choose to set a different commission rate on each of the consumer chains.
 This can be done with the following command:
 ```bash
 interchain-security-pd tx provider set-consumer-commission-rate <consumer-chain-id> <commission-rate>
@@ -91,8 +91,17 @@ where
 - `comission-rate` decimal in `[minRate, 1]` where `minRate` corresponds to the minimum commission rate set on the
 provider chain (see `min_commission_rate` in `interchain-security-pd query staking params`).
 
-:::tip
+
 If a validator does not set a commission rate on a consumer chain, the commission rate defaults to their commission rate on the provider chain.
+
+:::tip
+Validators can set their commission rate even for consumer chains that they are not currently opted in on, and the commission rate will be applied when they opt in. This is particularly useful for Top N chains, where validators might be opted in automatically,
+so validators can set the commission rate in advance.
+:::
+
+:::tip
+If a validator opts out and then back in, this will *not* reset their commission rate back to the default. Instead, their
+set commission rate still applies.
 :::
 
 
