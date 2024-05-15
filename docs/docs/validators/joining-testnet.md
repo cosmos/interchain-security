@@ -133,7 +133,7 @@ Additional scripts to setup your nodes are available [here](https://github.com/c
 :::tip
 Once you reach the active set on the provider chain, you will be required to validate all available consumer chains.
 
-You can use the same consensus key on all consumer chains, or opt to use a different key on each consumer chain.
+We strongly recomment that you assign a separate key for each consumer chain.
 Check out this [guide](../features/key-assignment.md) to learn more about key assignment in interchain security.
 :::
 
