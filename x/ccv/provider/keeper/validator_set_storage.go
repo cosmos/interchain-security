@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -91,4 +92,13 @@ func (k Keeper) getValSet(
 	}
 
 	return validators
+}
+
+func (k Keeper) getTotalPower(ctx sdk.Context, prefix []byte) math.Int {
+	var totalPower math.Int
+	validators := k.getValSet(ctx, prefix)
+	for _, val := range validators {
+		totalPower = totalPower.Add(math.NewInt(val.Power))
+	}
+	return totalPower
 }

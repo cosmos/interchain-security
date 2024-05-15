@@ -102,7 +102,9 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) math.Int {
 
 	// Compute allowance in units of tendermint voting power (integer),
 	// noting that total power changes over time
-	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
+
+	// Get total total power of the last consensus validator set on the provider
+	totalPower := k.GetLastTotalProviderConsensusPower(ctx)
 
 	roundedInt := sdktypes.NewInt(decFrac.MulInt(totalPower).RoundInt64())
 	if roundedInt.IsZero() {

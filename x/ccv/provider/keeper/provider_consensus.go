@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -44,4 +45,12 @@ func (k Keeper) GetLastProviderConsensusValSet(
 	ctx sdk.Context,
 ) []types.ConsumerValidator {
 	return k.getValSet(ctx, []byte{types.LastProviderConsensusValsPrefix})
+}
+
+// GetLastTotalProviderConsensusPower returns the total power of the last stored
+// validator set sent to the consensus engine on the provider
+func (k Keeper) GetLastTotalProviderConsensusPower(
+	ctx sdk.Context,
+) math.Int {
+	return k.getTotalPower(ctx, []byte{types.LastProviderConsensusValsPrefix})
 }
