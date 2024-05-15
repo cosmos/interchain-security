@@ -69,7 +69,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/evidence"
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
@@ -108,7 +107,8 @@ import (
 	ibcproviderkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 
-	wrapped_staking "github.com/cosmos/interchain-security/v4/x/ccv/staking_no_val_updates"
+	wrapped_genutil "github.com/cosmos/interchain-security/v4/x/ccv/wrapped_genutil"
+	wrapped_staking "github.com/cosmos/interchain-security/v4/x/ccv/wrapped_staking"
 
 	sdkmoduletypes "github.com/cosmos/cosmos-sdk/types/module"
 )
@@ -130,7 +130,7 @@ var (
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
 		auth.AppModuleBasic{},
-		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+		wrapped_genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
 		// staking.AppModuleBasic{},
@@ -503,7 +503,7 @@ func New(
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.MM = module.NewManager(
-		genutil.NewAppModule(
+		wrapped_genutil.NewAppModule(
 			app.AccountKeeper,
 			app.StakingKeeper,
 			app.BaseApp.DeliverTx,

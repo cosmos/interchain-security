@@ -179,7 +179,7 @@ func TestInitGenesis(t *testing.T) {
 		}
 		require.Equal(t, len(tc.consumerStates), numStatesCounted)
 
-		require.Empty(t, valUpdates, "InitGenesis should return no validator updates")
+		require.NotEmpty(t, valUpdates, "InitGenesis should return validator updates")
 
 		// Expect slash meter to be initialized to it's allowance value
 		// (replenish fraction * mocked value defined above)
