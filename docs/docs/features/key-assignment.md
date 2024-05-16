@@ -81,6 +81,11 @@ To change your key, simply repeat all of the steps listed above. Take note that 
 
 To remove a key, simply switch it back to the consensus key you have assigned on the provider chain by following steps in the `Adding a key` section and using your provider consensus key.
 
+:::warning
+Validators are strongly recommended to assign a separate key for each consumer chain
+and **not** reuse the provider key across consumer chains for security reasons.
+:::
+
 ## Querying proposed consumer chains
 
 To query the consumer addition proposals that are in the voting period, you can use the following command on the provider:
