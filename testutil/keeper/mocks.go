@@ -481,6 +481,20 @@ func (mr *MockStakingKeeperMockRecorder) ValidatorByConsAddr(ctx, consAddr inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidatorByConsAddr", reflect.TypeOf((*MockStakingKeeper)(nil).ValidatorByConsAddr), ctx, consAddr)
 }
 
+// ValidatorsPowerStoreIterator mocks base method.
+func (m *MockStakingKeeper) ValidatorsPowerStoreIterator(ctx types0.Context) types0.Iterator {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidatorsPowerStoreIterator", ctx)
+	ret0, _ := ret[0].(types0.Iterator)
+	return ret0
+}
+
+// ValidatorsPowerStoreIterator indicates an expected call of ValidatorsPowerStoreIterator.
+func (mr *MockStakingKeeperMockRecorder) ValidatorsPowerStoreIterator(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidatorsPowerStoreIterator", reflect.TypeOf((*MockStakingKeeper)(nil).ValidatorsPowerStoreIterator), ctx)
+}
+
 // MockSlashingKeeper is a mock of SlashingKeeper interface.
 type MockSlashingKeeper struct {
 	ctrl     *gomock.Controller
