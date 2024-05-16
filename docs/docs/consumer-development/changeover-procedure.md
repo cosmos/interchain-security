@@ -150,7 +150,7 @@ Additionally, reach out to the community via the [forum](https://forum.cosmos.ne
 - [ ] determine consumer chain parameters to be put in the proposal
 - [ ] take note to include a link to your onboarding repository
 
-Example of a consumer chain addition proposal.
+Example of a consumer chain addition proposal (compare with the [ConsumerAdditionProposal](./onboarding.md#3-submit-a-governance-proposal) in the ICS Provider Proposals section for chains that *launch* as consumers):
 
 ```js
 // ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain or add a standalone chain.
@@ -167,7 +167,6 @@ Example of a consumer chain addition proposal.
     // Must be unique from all other consumer chain ids of the executing provider chain.
     "chain_id": "standalone-1",
     // Initial height of new consumer chain.
-    // For a completely new chain, this will be {0,1}.
     "initial_height" : {
         // must correspond to current revision number of standalone chain
         // e.g. standalone-1 => "revision_number": 1

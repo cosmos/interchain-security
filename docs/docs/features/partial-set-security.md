@@ -24,5 +24,5 @@ Both Opt In and Top N chains currently require a governance proposal to be added
 
 For Top N chains, this is also the long term vision for how they are launched.
 
-For Opt In chains, this is a temporary measure to prevent issues around chain ID squatting. Eventually, the plan is to allow launching Opt In chains permissionlessly without going through governance, with quality control being handled by the market of validators deciding which chains they would like to validate on.
+For Opt In chains, this is a temporary measure to prevent issues around chain ID squatting, i.e. someone could spuriously register many desirable chain IDs of upcoming consumer chain and simply deny legitimate consumer chains from using them. Eventually, the plan is to allow launching Opt In chains permissionlessly without going through governance, with quality control being handled by the market of validators deciding which chains they would like to validate on.
 :::
