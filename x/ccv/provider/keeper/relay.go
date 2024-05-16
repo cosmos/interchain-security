@@ -217,8 +217,30 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
-	// get the bonded validators from the staking module
-	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	// get all validators from the staking module
+	validatorIterator := k.stakingKeeper.ValidatorsPowerStoreIterator(ctx)
+
+	// get the first N validators
+	// TODO make this a param
+	maxTotalValidators := 500
+
+	validators := make([]stakingtypes.Validator, 0, maxTotalValidators)
+	defer validatorIterator.Close()
+
+	i := 0
+	for ; validatorIterator.Valid() && i < int(maxTotalValidators); validatorIterator.Next() {
+		address := validatorIterator.Value()
+		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, address)
+		if !found {
+			k.Logger(ctx).Error("validator not found", "address", address.String())
+			continue
+		}
+
+		if validator.IsBonded() {
+			validators[i] = validator
+			i++
+		}
+	}
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
