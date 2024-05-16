@@ -5,4 +5,4 @@ the native module in that it simply embeds the native module. However, it
 overrides `EndBlock` which will return no validator set updates. Instead,
 it is assumed that some other module will provide the validator set updates.
 */
-package staking
+package genutil

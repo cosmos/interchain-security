@@ -1,4 +1,4 @@
-package staking
+package genutil
 
 import (
 	"encoding/json"
@@ -15,17 +15,8 @@ import (
 
 var (
 	_ module.AppModuleGenesis = AppModule{}
-	_ module.AppModuleBasic   = AppModuleBasic{}
+	_ module.AppModuleBasic   = genutil.AppModuleBasic{}
 )
-
-// AppModule embeds the Cosmos SDK's x/genutil AppModuleBasic.
-type AppModuleBasic struct {
-	genutil.AppModuleBasic
-}
-
-func NewAppModuleBasic(validator types.MessageValidator) AppModuleBasic {
-	return AppModuleBasic{genutil.NewAppModuleBasic(validator)}
-}
 
 // AppModule implements an application module for the genutil module.
 type AppModule struct {
