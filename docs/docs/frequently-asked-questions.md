@@ -90,7 +90,7 @@ To become a consumer chain use this [checklist](./consumer-development/onboardin
 
 Currently supported versions:
 
-- Hermes 1.4.1
+- Hermes 1.8.0
 
 ## How does key delegation work in ICS?
 
@@ -117,7 +117,7 @@ Yes, see the [Key Assignment Guide](./features/key-assignment.md) for more infor
 ## Can validators assign a consensus key during the voting period for a consumer-addition proposal if they are not in the top N?
 Yes.
 
-## Can validators opt in to an Opt-in chain after its consumer-addition proposal voting period is over but before the spawn time?
+## Can validators opt in to an Opt-in or Top N chain after its consumer-addition proposal voting period is over but before the spawn time?
 Yes.
 
 ## Can validators opt in to an Opt-in chain after the spawn time if nobody else opted in?
@@ -129,9 +129,3 @@ Yes, the consumer chain will halt with an ERR CONSENSUS FAILURE error after the 
 ## Can validators set a commission rate for chains they have not opted in to?
 Yes, and this is useful for validators that are not in the top N% of the provider chain, but might move into the top N% in the future.
 By setting the commission rate ahead of time, they can make sure that they immediately have a commission rate of their choosing as soon as they are in the top N%.
-
-## On how many consumer chains can a validator opt-in at the same time?
-
-There is no limit to the number of consumer chains a validator can opt in to.
-However, some consumer chains may restrict the validators actually getting to validate there, for example consumer chains can set up denylists to stop certain validators from validating there.
-See the [Power Shaping](./features/power-shaping.md) section for more information. 
