@@ -36,7 +36,7 @@ To facilitate this, the provider module will need to:
 
 Extra considerations:
 * Migration: In the migration, the last consensus validator set would just be sent to the last active validator set from the view of the staking module. Existing consumer chains need to be migrated to have a validator set size cap (otherwise, they could end up with a huge validator set including all the staking-but-not-consensus-active validators from the provider chain)
-* Slashing: Validators that are not part of the active set on the provider chain can still be slashed on the consumer chain, but they *should not* be slashed for downtime on the provider chain. Will those validators accrue missed blocks? If yes, we probably need to make changes in the slashing module to not continuously slash them for downtime on the provider
+* Slashing: Validators that are not part of the active set on the provider chain can still be slashed for downtime on a consumer chain, but they *should not* be slashed for downtime on the provider chain. Will those validators accrue missed blocks? If yes, we probably need to make changes in the slashing module to not continuously slash them for downtime on the provider
 
 At first glance, does not look problematic. When slashing, this gets the last commit info, which afaict is set by CometBFT according to what validator set was given to it.
 See https://github.com/cosmos/cosmos-sdk/blob/2f89b04b1430f244bcbaa3a1a68ef6d700e04dbe/x/slashing/abci.go#L22 for who accrues missed blocks.
