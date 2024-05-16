@@ -37,6 +37,10 @@ To facilitate this, the provider module will need to:
 Extra considerations:
 * Migration: In the migration, the last consensus validator set would just be sent to the last active validator set from the view of the staking module. Existing consumer chains need to be migrated to have a validator set size cap (otherwise, they could end up with a huge validator set including all the staking-but-not-consensus-active validators from the provider chain)
 * Slashing: Validators that are not part of the active set on the provider chain can still be slashed on the consumer chain, but they *should not* be slashed for downtime on the provider chain. Will those validators accrue missed blocks? If yes, we probably need to make changes in the slashing module to not continuously slash them for downtime on the provider
+
+At first glance, does not look problematic. When slashing, this gets the last commit info, which afaict is set by CometBFT according to what validator set was given to it.
+See https://github.com/cosmos/cosmos-sdk/blob/2f89b04b1430f244bcbaa3a1a68ef6d700e04dbe/x/slashing/abci.go#L22 for who accrues missed blocks.
+
 * Rewards: Validators that are not part of the active set on the provider chain can still receive rewards on the consumer chain, but they *should not* receive rewards on the provider chain.
 * Where else might the staking module validators be used? We need to carefully assess whether we need to change these references and direct them to the "actual active set" of the provider chain instead, or whether they can still go to the staking module
 
@@ -59,10 +63,22 @@ Comms:
 
 ## Alternative considerations
 
+### Modifying the staking module
+
 We could instead adapt the *staking module* with a similar change.
 This might be better if it turns out that the staking module active set is used in many other places.
 
+### Allowing unbonding validators to validate
+
+Instead of increasing the active set size, we could allow validators that are unbonded (but still exist on the provider) to validate consumer chains.
+For this, we would need to:
+* Modify the VSC updates to consider the set of all validators, even unbonded ones, instead of just active ones
+* Make sure our downtime jailing/equivocation slashing logic works correctly with unbonded validators (likely needs adjustments, and we might need to explicitly recreate parts of the slashing logic in the provider module)
+* It seems possible that unbonded validators might be deleted from the staking module even before all unbonding delegations from them have completed, see https://github.com/cosmos/cosmos-sdk/blob/2f89b04b1430f244bcbaa3a1a68ef6d700e04dbe/x/staking/keeper/delegation.go#L766
+
+
+
 ## References
 
-* [adr-016-securityaggregation.md] has similar concerns where the staking validator set will differ from the consensus validator set
+* [Security Aggregation](./adr-016-securityaggregation.md) has similar concerns where the staking validator set will differ from the consensus validator set
 * 
