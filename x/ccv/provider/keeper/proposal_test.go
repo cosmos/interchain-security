@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"bytes"
 	"encoding/json"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"sort"
 	"testing"
 	"time"
@@ -115,6 +116,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
+			mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 			gomock.InOrder(
 				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
 			)
@@ -158,6 +160,7 @@ func TestCreateConsumerClient(t *testing.T) {
 			description: "No state mutation, new client should be created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
 				// Valid client creation is asserted with mock expectations here
+				mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 				gomock.InOrder(
 					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
 				)
@@ -796,6 +799,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	//
 	ctx = ctx.WithChainID("testchain1") // chainID is obtained from ctx
 	ctx = ctx.WithBlockHeight(5)        // RevisionHeight obtained from ctx
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
 
 	// matches params from jsonString
@@ -1021,6 +1025,8 @@ func TestBeginBlockInit(t *testing.T) {
 	// opt in a sample validator so the chain's proposal can successfully execute
 	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
 	consAddr, _ := validator.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return([]stakingtypes.Validator{validator}).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(1)).AnyTimes()
 	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
 
 	providerKeeper.BeginBlockInit(ctx)
@@ -1104,6 +1110,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	expectations := []*gomock.Call{}
 	for _, prop := range pendingProps {
 		// A consumer chain is setup corresponding to each prop, making these mocks necessary
+		mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
 			prop.ChainId, clienttypes.NewHeight(2, 3))...)
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
