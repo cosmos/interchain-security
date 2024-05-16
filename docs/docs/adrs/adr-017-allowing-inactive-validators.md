@@ -75,6 +75,7 @@ For this, we would need to:
 * Modify the VSC updates to consider the set of all validators, even unbonded ones, instead of just active ones
 * Make sure our downtime jailing/equivocation slashing logic works correctly with unbonded validators (likely needs adjustments, and we might need to explicitly recreate parts of the slashing logic in the provider module)
 * It seems possible that unbonded validators might be deleted from the staking module even before all unbonding delegations from them have completed, see https://github.com/cosmos/cosmos-sdk/blob/2f89b04b1430f244bcbaa3a1a68ef6d700e04dbe/x/staking/keeper/delegation.go#L766
+Thus, we need to be careful that validators that are unbonded can disappear (but the delegations seem to remain slashable while they are unbonding)
 
 
 
