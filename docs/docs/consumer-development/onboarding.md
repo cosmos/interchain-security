@@ -125,9 +125,8 @@ Example of a consumer chain addition proposal.
 
 ## 4. Launch
 
-The consumer chain starts after at least 66.67% of its voting power comes online,
-i.e. a Top N chain, the consumer chain starts after at least 66.67% of the `top_N`% of the provider chain's voting power comes online;
-for an Opt-In chain, it starts after 66.67% of the validators that opted-in while the consumer chain was being proposed come online.
+The consumer chain starts after at least 66.67% of its voting power comes online.
+Note that this means 66.67% of the voting power in the *consumer* validator set, which will be comprised of all validators that either opted in to the chain or are part of the top N% of the provider chain (and are thus automatically opted in).
 The consumer chain is considered interchain secured once the appropriate CCV channels are established and the first validator set update is propagated from the provider to the consumer
 
 - [ ] provide a repo with onboarding instructions for validators (it should already be listed in the proposal)
