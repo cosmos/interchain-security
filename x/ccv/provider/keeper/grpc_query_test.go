@@ -135,18 +135,18 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 	require.Equal(t, &expectedResponse, res)
 }
 
-func TestQueryConsumerChainConsumerValidators(t *testing.T) {
+func TestQueryConsumerValidators(t *testing.T) {
 	chainID := "chainID"
 
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	req := types.QueryConsumerChainConsumerValidatorsRequest{
+	req := types.QueryConsumerValidatorsRequest{
 		ChainId: chainID,
 	}
 
 	// error returned from not-started chain
-	_, err := pk.QueryConsumerChainConsumerValidators(ctx, &req)
+	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
@@ -157,8 +157,8 @@ func TestQueryConsumerChainConsumerValidators(t *testing.T) {
 	consumerKey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
 	consumerValidator2 := types.ConsumerValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, ConsumerPublicKey: &consumerKey2}
 
-	expectedResponse := types.QueryConsumerChainConsumerValidatorsResponse{
-		Validators: []*types.QueryConsumerChainConsumerValidator{
+	expectedResponse := types.QueryConsumerValidatorsResponse{
+		Validators: []*types.QueryConsumerValidatorsValidator{
 			{providerAddr1.String(), &consumerKey1, 1},
 			{providerAddr2.String(), &consumerKey2, 2},
 		},
@@ -168,7 +168,7 @@ func TestQueryConsumerChainConsumerValidators(t *testing.T) {
 	pk.SetConsumerClientId(ctx, chainID, "clientID")
 	pk.SetConsumerValSet(ctx, chainID, []types.ConsumerValidator{consumerValidator1, consumerValidator2})
 
-	res, err := pk.QueryConsumerChainConsumerValidators(ctx, &req)
+	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expectedResponse, res)
 }

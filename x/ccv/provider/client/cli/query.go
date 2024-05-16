@@ -36,7 +36,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
 	cmd.AddCommand(CmdProviderParameters())
 	cmd.AddCommand(CmdConsumerChainOptedInValidators())
-	cmd.AddCommand(CmdConsumerChainConsumerValidators())
+	cmd.AddCommand(CmdConsumerValidators())
 	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	cmd.AddCommand(CmdOldestUnconfirmedVsc())
@@ -450,7 +450,7 @@ $ %s consumer-opted-in-validators foochain
 }
 
 // Command to query the consumer validators by consumer chain ID
-func CmdConsumerChainConsumerValidators() *cobra.Command {
+func CmdConsumerValidators() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-validators [chainid]",
 		Short: "Query the last set consumer-validator set for a given consumer chain",
@@ -469,8 +469,8 @@ $ %s consumer-validators foochain
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			res, err := queryClient.QueryConsumerChainConsumerValidators(cmd.Context(),
-				&types.QueryConsumerChainConsumerValidatorsRequest{ChainId: args[0]})
+			res, err := queryClient.QueryConsumerValidators(cmd.Context(),
+				&types.QueryConsumerValidatorsRequest{ChainId: args[0]})
 			if err != nil {
 				return err
 			}

@@ -135,9 +135,11 @@ service Query {
       "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}";
     }
 
-  // QueryConsumerChainConsumerValidators returns the latest set consumer-validator set for a given chainID
-  rpc QueryConsumerChainConsumerValidators(QueryConsumerChainConsumerValidatorsRequest)
-      returns (QueryConsumerChainConsumerValidatorsResponse) {
+  // QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
+  // Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
+  // because a VSCPacket could be delayed to be delivered on the consumer chain.
+  rpc QueryConsumerValidators(QueryConsumerValidatorsRequest)
+      returns (QueryConsumerValidatorsResponse) {
         option (google.api.http).get =
             "/interchain_security/ccv/provider/consumer_validators/{chain_id}";
   }
@@ -278,11 +280,11 @@ message QueryConsumerChainOptedInValidatorsResponse {
   repeated string validators_provider_addresses = 1;
 }
 
-message QueryConsumerChainConsumerValidatorsRequest {
+message QueryConsumerValidatorsRequest {
   string chain_id = 1;
 }
 
-message QueryConsumerChainConsumerValidator {
+message QueryConsumerValidatorsValidator {
   // The consensus address of the validator on the provider chain
   string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // The consumer public key of the validator used on the consumer chain
@@ -291,8 +293,8 @@ message QueryConsumerChainConsumerValidator {
   int64 power = 3;
 }
 
-message QueryConsumerChainConsumerValidatorsResponse {
-  repeated QueryConsumerChainConsumerValidator validators = 1;
+message QueryConsumerValidatorsResponse {
+  repeated QueryConsumerValidatorsValidator validators = 1;
 }
 
 message QueryConsumerChainsValidatorHasToValidateRequest {

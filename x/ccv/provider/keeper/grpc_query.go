@@ -252,8 +252,8 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	}, nil
 }
 
-// QueryConsumerChainConsumerValidators returns all validators that are consumer validators in a given consumer chain
-func (k Keeper) QueryConsumerChainConsumerValidators(goCtx context.Context, req *types.QueryConsumerChainConsumerValidatorsRequest) (*types.QueryConsumerChainConsumerValidatorsResponse, error) {
+// QueryConsumerValidators returns all validators that are consumer validators in a given consumer chain
+func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryConsumerValidatorsRequest) (*types.QueryConsumerValidatorsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -270,16 +270,16 @@ func (k Keeper) QueryConsumerChainConsumerValidators(goCtx context.Context, req 
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("no started consumer chain: %s", consumerChainID))
 	}
 
-	var validators []*types.QueryConsumerChainConsumerValidator
+	var validators []*types.QueryConsumerValidatorsValidator
 	for _, v := range k.GetConsumerValSet(ctx, consumerChainID) {
-		validators = append(validators, &types.QueryConsumerChainConsumerValidator{
+		validators = append(validators, &types.QueryConsumerValidatorsValidator{
 			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
 			ConsumerKey:     v.ConsumerPublicKey,
 			Power:           v.Power,
 		})
 	}
 
-	return &types.QueryConsumerChainConsumerValidatorsResponse{
+	return &types.QueryConsumerValidatorsResponse{
 		Validators: validators,
 	}, nil
 }
