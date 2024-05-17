@@ -2,14 +2,12 @@ module github.com/cosmos/interchain-security/v4
 
 go 1.21.1
 
-toolchain go1.21.6
-
 require (
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/math v1.3.0
-	github.com/cometbft/cometbft v0.37.6
+	github.com/cometbft/cometbft v0.37.5
 	github.com/cometbft/cometbft-db v0.11.0
-	github.com/cosmos/cosmos-sdk v0.47.10
+	github.com/cosmos/cosmos-sdk v0.47.11
 	github.com/cosmos/gogoproto v1.4.10
 	github.com/cosmos/ibc-go/v7 v7.4.0
 	github.com/cosmos/ics23/go v0.10.0
@@ -167,7 +165,7 @@ require (
 
 require (
 	github.com/informalsystems/itf-go v0.0.1
-	github.com/spf13/viper v1.18.1
+	github.com/spf13/viper v1.18.2
 	golang.org/x/mod v0.17.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
 )
