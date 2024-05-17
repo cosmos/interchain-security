@@ -410,6 +410,19 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 			continue
 		}
 
+		consumerGenesis, found := k.GetConsumerGenesis(cachedCtx, prop.ChainId)
+		if !found {
+			// drop the proposal
+			ctx.Logger().Info("consumer genesis could not be created")
+			continue
+		}
+
+		if len(consumerGenesis.Provider.InitialValSet) == 0 {
+			// drop the proposal
+			ctx.Logger().Info("consumer genesis initial validator set is empty - no validators opted in")
+			continue
+		}
+
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())

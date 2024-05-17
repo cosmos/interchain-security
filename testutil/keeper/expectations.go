@@ -57,8 +57,11 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 
 		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
 			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
+<<<<<<< HEAD
 
 		mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(1),
+=======
+>>>>>>> a0645d8 (fix!: drop chain proposals with empty validator set at spawn time (#1888))
 	}
 }
 
