@@ -2,13 +2,15 @@
 
 ## v4.2.0
 
-May 1, 2024
+May 17, 2024
 
 ### API BREAKING
 
 - [Provider](x/ccv/provider)
   - Assigning a key that is already assigned by the same validator will now be a no-op instead of throwing an error.
     ([\#1732](https://github.com/cosmos/interchain-security/pull/1732))
+  - Changes the `list-consumer-chains` query to include a `min_power_in_top_N` field, as well as fields for all power shaping parameters of the consumer.
+    ([\#1863](https://github.com/cosmos/interchain-security/pull/1863))
 
 ### FEATURES
 
@@ -20,6 +22,10 @@ May 1, 2024
     ([\#1809](https://github.com/cosmos/interchain-security/pull/1809))
   - Introduce power-shaping features for consumer chains. The features: (i) allow us to cap the total number of validators that can validate the consumer chain, (ii) set a cap on the maximum voting power (percentage-wise) a validator can have on a consumer chain, and (iii) introduce allowlist and denylists to restrict which validators are allowed or not to validate a consumer chain.
     ([\#1830](https://github.com/cosmos/interchain-security/pull/1830))
+  - Changes the `list-consumer-chains` query to include a `min_power_in_top_N` field, as well as fields for all power shaping parameters of the consumer.
+    ([\#1863](https://github.com/cosmos/interchain-security/pull/1863))
+  - Introduces the `consumer-validators` query to retrieve the latest set consumer-validator set for a consumer chain.
+    ([\#1863](https://github.com/cosmos/interchain-security/pull/1867))
 
 ### STATE BREAKING
 
