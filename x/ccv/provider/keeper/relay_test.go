@@ -814,7 +814,7 @@ func MockAllValidatorsAsLastValidators(mocks testkeeper.MockedKeepers, validator
 	mocks.MockStakingKeeper.EXPECT().ValidatorsPowerStoreIterator(gomock.Any()).Return(teststore.NewMockIterator(keySlice, valsSlice)).AnyTimes()
 
 	for i, val := range validators {
-		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), sdk.ConsAddress(val.GetOperator())).Return(validators[i], true).AnyTimes()
+		mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), val.GetOperator()).Return(validators[i], true).AnyTimes()
 	}
 }
 

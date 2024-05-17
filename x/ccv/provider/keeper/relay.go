@@ -229,10 +229,10 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 	i := 0
 	for ; validatorIterator.Valid() && i < int(maxTotalValidators); validatorIterator.Next() {
-		address := sdk.ConsAddress(validatorIterator.Value())
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, address)
+		address := validatorIterator.Value()
+		validator, found := k.stakingKeeper.GetValidator(ctx, address)
 		if !found {
-			k.Logger(ctx).Error("validator not found", "address", address.String())
+			k.Logger(ctx).Error("validator not found", "address", address)
 			continue
 		}
 
