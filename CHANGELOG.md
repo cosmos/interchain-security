@@ -12,6 +12,15 @@ May 17, 2024
   - Changes the `list-consumer-chains` query to include a `min_power_in_top_N` field, as well as fields for all power shaping parameters of the consumer.
     ([\#1863](https://github.com/cosmos/interchain-security/pull/1863))
 
+### DEPENDENCIES
+
+- Bump [CometBFT](https://github.com/cometbft/cometbft) to
+  [v0.37.6](https://github.com/cometbft/cometbft/releases/tag/v0.37.6).
+  ([\#1876](https://github.com/cosmos/interchain-security/pull/1876))
+- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+  [v0.47.11](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.11).
+  ([\#1876](https://github.com/cosmos/interchain-security/pull/1876))
+
 ### FEATURES
 
 - [Provider](x/ccv/provider)
