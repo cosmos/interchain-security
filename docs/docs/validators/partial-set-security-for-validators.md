@@ -143,12 +143,29 @@ they will not be opted in automatically.
 :::
 
 
-### How to get all the opted-in validators on a consumer chain?
+### How to retrieve all the opted-in validators on a consumer chain?
 With the following query:
 ```bash
 interchain-security-pd query provider consumer-opted-in-validators <consumer-chain-id>
 ```
 we can see all the opted-in validators on `consumer-chain-id` that were manually or automatically opted in.
+
+### How to retrieve all the consumer validators on a consumer chain?
+With the following query:
+```bash
+interchain-security-pd query provider consumer-validators <consumer-chain-id>
+```
+we can see all the _consumer validators_ (i.e., validator set) of `consumer-chain-id`. The consumer validators are the 
+ones that are currently (or in the future, see warning) validate the consumer chain. A _consumer validator_ is an opted-in
+validator but not vice versa. For example, an opted-in validator `V` might not be a consumer validator because `V` is
+denylisted or because `V` is removed due to a validator-set cap. 
+
+:::warning
+The returned consumer validators from this query do not necessarily correspond to the validator set that is 
+validating the consumer chain at this exact moment. This is because the `VSCPacket` sent to a consumer chain might be
+delayed and hence this query might return the validator set that the consumer chain would have at some future
+point in time.
+:::
 
 ### How can we see the commission rate a validator has set on a consumer chain?
 Using the following query:
