@@ -45,14 +45,6 @@ const config = {
               label: "main",
               banner: "unreleased",
             },
-            "v4.0.0": {
-              path: "/v4.0.0/",
-              banner: "none",
-            },
-            "v4.1.0": {
-              path: "/v4.1.0/",
-              banner: "none",
-            },
             "v4.2.0": {
               path: "/v4.2.0/",
               banner: "none",
