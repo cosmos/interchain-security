@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
@@ -460,4 +461,41 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 
 	// Check that ccv unbonding op has been deleted
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
+}
+
+func (s *CCVTestSuite) TestTooManyLastValidators() {
+	sk := s.providerApp.GetTestStakingKeeper()
+	p := sk.GetParams(s.providerCtx())
+	fmt.Printf("MaxValidators: %v\nLast Bonded Validators: %v\n",
+		p.MaxValidators, len(sk.GetLastValidators(s.providerCtx())))
+
+	val := sk.GetAllValidators(s.providerCtx())[0]
+	consAddr, err := val.GetConsAddr()
+	valAddr := val.GetOperator()
+	s.Require().NoError(err)
+
+	fmt.Println("Jailing: ", valAddr.String())
+	sk.Jail(s.providerCtx(), consAddr)
+
+	fmt.Println("Last bonded validators:", len(sk.GetLastValidators(s.providerCtx())))
+
+	sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx())
+
+	fmt.Println("Last bonded validators:", len(sk.GetLastValidators(s.providerCtx())))
+
+	p.MaxValidators = uint32(len(sk.GetLastValidators(s.providerCtx())))
+	sk.SetParams(s.providerCtx(), p)
+
+	sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx())
+
+	fmt.Println("validators status:")
+	for _, v := range sk.GetAllValidators(s.providerCtx()) {
+		fmt.Println(v.GetOperator().String(), v.Status)
+	}
+
+	fmt.Println("Unjailing:", valAddr.String())
+	sk.Unjail(s.providerCtx(), consAddr)
+
+	fmt.Println("Last bonded validators:", len(sk.GetLastValidators(s.providerCtx())))
+	sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx())
 }
