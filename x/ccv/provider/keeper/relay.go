@@ -224,23 +224,27 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	// TODO make this a param
 	maxTotalValidators := 500
 
-	validators := make([]stakingtypes.Validator, 0, maxTotalValidators)
+	allValidators := make([]stakingtypes.Validator, maxTotalValidators)
 	defer validatorIterator.Close()
 
 	i := 0
 	for ; validatorIterator.Valid() && i < int(maxTotalValidators); validatorIterator.Next() {
-		address := validatorIterator.Value()
+		address := sdk.ConsAddress(validatorIterator.Value())
 		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, address)
 		if !found {
 			k.Logger(ctx).Error("validator not found", "address", address.String())
 			continue
 		}
 
-		if validator.IsBonded() {
-			validators[i] = validator
-			i++
-		}
+		allValidators[i] = validator
+		i++
 	}
+
+	// truncate all validators
+	allValidators = allValidators[:i]
+
+	// get the bonded validators to compute the top N to opt in
+	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
@@ -253,7 +257,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			}
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, chain.ChainId, bondedValidators)
+		nextValidators := k.ComputeNextValidators(ctx, chain.ChainId, allValidators)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)

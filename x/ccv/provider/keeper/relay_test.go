@@ -23,6 +23,7 @@ import (
 	"github.com/cosmos/interchain-security/v4/testutil/crypto"
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
+	teststore "github.com/cosmos/interchain-security/v4/testutil/store"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
@@ -71,6 +72,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		defer ctrl.Finish()
 		mocks := testkeeper.NewMockedKeepers(ctrl)
 		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Times(1)
+		mocks.MockStakingKeeper.EXPECT().ValidatorsPowerStoreIterator(ctx).Return(teststore.NewMockIterator([][]byte{}, [][]byte{})).Times(1)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
@@ -769,6 +771,9 @@ func TestEndBlockVSU(t *testing.T) {
 
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
 
+	// set the mock to return the last validators we built also as the set of all validators
+	MockAllValidatorsAsLastValidators(mocks, lastValidators)
+
 	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, chainID, "clientID")
 
@@ -793,6 +798,24 @@ func TestEndBlockVSU(t *testing.T) {
 	ctx = ctx.WithBlockHeight(15)
 	providerKeeper.EndBlockVSU(ctx)
 	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+}
+
+// MockAllValidatorsAsLastValidators mocks the staking keeper to return the given validators
+// when prompted for the whole validator set.
+// The mocks are set up to mock the calls made during the `EndBlockVSU` method.
+func MockAllValidatorsAsLastValidators(mocks testkeeper.MockedKeepers, validators []stakingtypes.Validator) {
+	keySlice := make([][]byte, len(validators))
+	valsSlice := make([][]byte, len(validators))
+	for i, val := range validators {
+		keySlice[i] = []byte{}
+		valsSlice[i] = val.GetOperator()
+	}
+
+	mocks.MockStakingKeeper.EXPECT().ValidatorsPowerStoreIterator(gomock.Any()).Return(teststore.NewMockIterator(keySlice, valsSlice)).AnyTimes()
+
+	for i, val := range validators {
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), sdk.ConsAddress(val.GetOperator())).Return(validators[i], true).AnyTimes()
+	}
 }
 
 // TestQueueVSCPacketsWithPowerCapping tests queueing validator set updates with power capping
@@ -822,7 +845,11 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	valEPubKey, _ := valE.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, true).AnyTimes()
 
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD, valE}).AnyTimes()
+	vals := []stakingtypes.Validator{valA, valB, valC, valD, valE}
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return(vals).AnyTimes()
+
+	// set the mock to return the last validators we built also as the set of all validators
+	MockAllValidatorsAsLastValidators(mocks, vals)
 
 	// add a consumer chain
 	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
