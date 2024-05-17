@@ -176,7 +176,7 @@ func TestCreateConsumerClient(t *testing.T) {
 				mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
 				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 				mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(), gomock.Any()).Times(0)
-				mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(0)
+				mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(0)
 			},
 			expClientCreated: false,
 		},
