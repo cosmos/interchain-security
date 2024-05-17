@@ -23,7 +23,7 @@ reviews:
               "Assess the unit test code assessing sufficient code coverage for the changes associated in the pull request"
         - path: "**/*.md"
           instructions: |
-              "Assess the documentation for misspellings, grammatical errors, missing documentation and correctness"
+              "Assess the documentation for misspellings, grammatical errors, missing documentation and correctness. Please DO NOT report any missing or superfluous newlines, in particular at the end or beginning of files."
         - path: ".changelog/*"
           instructions: |
               "Assess the changes in the changelog for correctness and completeness, particularly flagging missing changes"
