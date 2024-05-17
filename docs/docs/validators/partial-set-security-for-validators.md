@@ -156,7 +156,7 @@ With the following query:
 interchain-security-pd query provider consumer-validators <consumer-chain-id>
 ```
 we can see all the _consumer validators_ (i.e., validator set) of `consumer-chain-id`. The consumer validators are the 
-ones that are currently (or in the future, see warning) validate the consumer chain. A _consumer validator_ is an opted-in
+ones that are currently (or in the future, see warning) validating the consumer chain. A _consumer validator_ is an opted-in
 validator but not vice versa. For example, an opted-in validator `V` might not be a consumer validator because `V` is
 denylisted or because `V` is removed due to a validator-set cap. 
 
