@@ -5,11 +5,7 @@ go 1.21.1
 require (
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/math v1.3.0
-<<<<<<< HEAD
-	github.com/cometbft/cometbft v0.37.5
-=======
 	github.com/cometbft/cometbft v0.37.6
->>>>>>> 36a2876 (build(deps): bump comet to v0.37.6 (#1876))
 	github.com/cometbft/cometbft-db v0.11.0
 	github.com/cosmos/cosmos-sdk v0.47.11
 	github.com/cosmos/gogoproto v1.4.10
@@ -208,7 +204,6 @@ require (
 )
 
 // following versions might cause unexpected behavior
-<<<<<<< HEAD
 replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.47.13-ics-lsm
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
@@ -217,8 +212,3 @@ replace (
 	// the version specified in requirements will break the build
 	golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
 )
-=======
-replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-
-replace golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
->>>>>>> 36a2876 (build(deps): bump comet to v0.37.6 (#1876))
