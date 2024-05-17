@@ -397,7 +397,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 
 		if len(consumerGenesis.Provider.InitialValSet) == 0 {
 			// drop the proposal
-			ctx.Logger().Info("consumer genesis initial validator set cannot be empty")
+			ctx.Logger().Info("consumer genesis initial validator set is empty - no validators opted in")
 			continue
 		}
 
