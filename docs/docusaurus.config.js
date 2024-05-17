@@ -47,6 +47,7 @@ const config = {
             },
             "v4.2.0-docs": {
               path: "/v4.2.0/",
+              label: "v4.2.0",
               banner: "none",
             },
             "v5.0.0": {
