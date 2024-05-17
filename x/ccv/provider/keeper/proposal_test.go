@@ -1009,12 +1009,32 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 			nil,
 		).(*providertypes.ConsumerAdditionProposal),
+		providertypes.NewConsumerAdditionProposal(
+			"title", "opt-in chain with no validator opted in", "chain6", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.Add(-time.Minute).UTC(),
+			"0.75",
+			10,
+			"",
+			10000,
+			100000000000,
+			100000000000,
+			100000000000,
+			0,
+			0,
+			0,
+			nil,
+			nil,
+		).(*providertypes.ConsumerAdditionProposal),
 	}
 
 	// Expect client creation for only the first, second, and fifth proposals (spawn time already passed and valid)
 	expectedCalls := testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain5", clienttypes.NewHeight(3, 4))...)
+
+	// The sixth proposal would have spawn time passed and hence needs the mocks but the client will not be
+	// created because `chain6` is an Opt In chain and has no validator opted in
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain6", clienttypes.NewHeight(3, 4))...)
 
 	gomock.InOrder(expectedCalls...)
 
@@ -1067,9 +1087,29 @@ func TestBeginBlockInit(t *testing.T) {
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[4].SpawnTime, pendingProps[4].ChainId)
 	require.False(t, found)
-	// sixth proposal was successfully executed and hence consumer genesis was created
+	// fifth proposal was successfully executed and hence consumer genesis was created
 	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[4].ChainId)
 	require.True(t, found)
+
+	// sixth proposal corresponds to an Opt-In chain with no opted-in validators and hence the
+	// proposal is not successful
+	_, found = providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[5].SpawnTime, pendingProps[5].ChainId)
+	// the proposal was dropped and deleted
+	require.False(t, found)
+	// no consumer genesis is created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	// no consumer client is associated with this chain
+	_, found = providerKeeper.GetConsumerClientId(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	// no fields should be set for this (check some of them)
+	_, found = providerKeeper.GetTopN(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	_, found = providerKeeper.GetValidatorsPowerCap(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	_, found = providerKeeper.GetValidatorSetCap(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
 
 	// test that Top N is set correctly
 	require.True(t, providerKeeper.IsTopN(ctx, "chain1"))
