@@ -2,7 +2,7 @@
 sidebar_position: 18
 title: ADR Template
 ---
-# ADR 17: Allowing validators outside the active set to validate on consumer chains
+# ADR 017: Allowing validators outside the active set to validate on consumer chains
 
 ## Changelog
 * 15th May 2024: Initial draft
