@@ -14,8 +14,8 @@ Proposed
 
 ## Context
 
-Currently, only validators in the active set on the provider can validate on consumer chains.
-This limits the number of validators that can validate on consumer chains. Validators outside of the active set might be willing
+Currently, only validators in the active set on the provider can validate on consumer chains, which limits the number of validators that can participate in Interchain Security (ICS). 
+Validators outside of the active set might be willing
 to validate on consumer chains, but we might not want to make the provider validator set larger, e.g. to not put more strain on the consensus engine.
 This runs the risk of leaving consumer chains with too few validators.
 
