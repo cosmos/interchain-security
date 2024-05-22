@@ -1,3 +1,7 @@
+---
+sidebar_position: 17
+title: Security aggregation
+---
 # ADR 016: Security aggregation
 
 ## Changelog
@@ -6,7 +10,7 @@
 
 ## Status
 
-Draft
+Proposed
 
 ## Context
 
