@@ -1,6 +1,6 @@
 ---
 sidebar_position: 18
-title: ADR Template
+title: Allowing validators outside the active set to validate on consumer chains
 ---
 # ADR 017: Allowing validators outside the active set to validate on consumer chains
 
