@@ -328,14 +328,14 @@ func (tr TestConfig) getRewards(chain ChainID, modelState Rewards) Rewards {
 
 func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
 	valCfg := tr.validatorConfigs[validator]
-	delAddresss := valCfg.DelAddress
+	delAddress := valCfg.DelAddress
 	if chain != ChainID("provi") {
 		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if valCfg.UseConsumerKey {
-			delAddresss = valCfg.ConsumerDelAddress
+			delAddress = valCfg.ConsumerDelAddress
 		} else {
 			// use the same address as on the provider but with different prefix
-			delAddresss = valCfg.DelAddressOnConsumer
+			delAddress = valCfg.DelAddressOnConsumer
 		}
 	}
 
@@ -343,7 +343,7 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 
 		"query", "distribution", "rewards",
-		delAddresss,
+		delAddress,
 
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.getQueryNode(chain),
@@ -356,6 +356,11 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 	denomCondition := `total.#(denom!="stake").amount`
 	if isNativeDenom {
 		denomCondition = `total.#(denom=="stake").amount`
+	}
+
+	if *verbose {
+		log.Println("Getting reward for chain: ", chain, " validator: ", validator, " block: ", blockHeight)
+		log.Println("Reward response: ", string(bz))
 	}
 
 	return gjson.Get(string(bz), denomCondition).Float()

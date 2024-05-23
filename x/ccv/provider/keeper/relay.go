@@ -260,7 +260,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 	// get the bonded validators from the staking module
-	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
 
 	// get the last validator set sent to consensus
 	currentValidators := k.GetLastProviderConsensusValSet(ctx)
@@ -275,7 +275,7 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 		// create the validator from the staking validator
 		consAddr, err := val.GetConsAddr()
 		if err != nil {
-			k.Logger(ctx).Error("could not create consumer validator",
+			k.Logger(ctx).Error("could not create validator",
 				"validator", val.GetOperator().String(),
 				"error", err)
 			continue

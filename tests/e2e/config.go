@@ -87,6 +87,7 @@ const (
 	MulticonsumerTestCfg        TestConfigType = "multi-consumer"
 	ConsumerMisbehaviourTestCfg TestConfigType = "consumer-misbehaviour"
 	CompatibilityTestCfg        TestConfigType = "compatibility"
+	InactiveValsCfg             TestConfigType = "inactive-vals"
 )
 
 // Attributes that are unique to a validator. Allows us to map (part of)
@@ -264,6 +265,8 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = ConsumerMisbehaviourTestConfig()
 	case CompatibilityTestCfg:
 		testCfg = CompatibilityTestConfig(pv, cv)
+	case InactiveValsCfg:
+		testCfg = InactiveValsConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -498,6 +501,17 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 		testCfg.containerConfig.InstanceName,
 		consumerVersion, providerVersion)
 	return testCfg
+}
+
+func InactiveValsConfig() TestConfig {
+	tr := DefaultTestConfig()
+	tr.name = "InactiveValsConfig"
+	// set the MaxProviderConsensusValidators param to 2
+	proviConfig := tr.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += " | .app_state.provider.params.max_provider_consensus_validators = \"2\""
+	tr.chainConfigs[ChainID("provi")] = proviConfig
+
+	return tr
 }
 
 func DefaultTestConfig() TestConfig {
