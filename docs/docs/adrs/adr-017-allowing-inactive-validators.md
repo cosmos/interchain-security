@@ -22,6 +22,8 @@ This runs the risk of leaving consumer chains with too few validators.
 The purpose of this ADR is to allow validators that are *not* part of the consensus process on the provider chain (because they are inactive)
 to validate on consumer chains.
 
+In the context of this ADR, "consensus validator set" is the set of validators participating in the consensus protocol, and "staking validator set" is the set of validators viewed as active by the staking module.
+
 ## Decision
 
 The proposed solution is to:
