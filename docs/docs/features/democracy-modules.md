@@ -119,7 +119,7 @@ var (
 		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
--       sdkstaking.AppModuleBasic{},
+-		sdkstaking.AppModuleBasic{},
 +		ccvstaking.AppModuleBasic{},  // replace sdkstaking
         ...
     )
@@ -194,33 +194,33 @@ func NewApp(...) {
 +	)
 +
 +	// Setting the standalone staking keeper is only needed for standalone to consumer changeover chains
-+   // New chains using the democracy/staking do not need to set this
++  	// New chains using the democracy/staking do not need to set this
 +	app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
 
 
 
-    // change the slashing keeper dependency
+	// change the slashing keeper dependency
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,
 		legacyAmino,
 		keys[slashingtypes.StoreKey],
--       app.StakingKeeper,
+-		app.StakingKeeper,
 +		&app.ConsumerKeeper,  // ConsumerKeeper implements StakingKeeper interface
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-    // register slashing module StakingHooks to the consumer keeper
+	// register slashing module StakingHooks to the consumer keeper
 +	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
 +	consumerModule := consumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(consumertypes.ModuleName))
 
 	    // register the module with module manager
     // replace the x/staking module
 	app.MM = module.NewManager(
-        ...
--        sdkstaking.NewAppModule(appCodec, &app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		...
+-		sdkstaking.NewAppModule(appCodec, &app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 +		ccvstaking.NewAppModule(appCodec, *app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-        ...
-    )
+		...
+	)
 }
 ```
 
@@ -440,9 +440,9 @@ func NewApp(...) {
     // register the module with module manager
     // replace the x/gov module
 	app.MM = module.NewManager(
--        sdkgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, app.GetSubspace(govtypes.ModuleName), IsModuleWhiteList),
+-		sdkgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, app.GetSubspace(govtypes.ModuleName), IsModuleWhiteList),
 +		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, app.GetSubspace(govtypes.ModuleName), IsModuleWhiteList),
-        ...
+		...
     )
 }
 ```
@@ -462,9 +462,9 @@ Second, the remaining rewards get distributed to the consumer chain's Governator
 :::info
 The % that is sent to the provider chain corresponds to `1 - ConsumerRedistributionFraction`.
 
-e.g.
+e.g. `ConsumerRedistributionFraction = "0.75"`
 
-`ConsumerRedistributionFraction = "0.75"` means that the consumer chain retains 75% of the rewards while 25% gets sent to the provider chain to be distributed to provider chain validators.
+means that the consumer chain retains 75% of the rewards while 25% gets sent to the provider chain to be distributed as rewards to provider chain validators.
 :::
 
 #### Integration
@@ -490,7 +490,7 @@ var (
 		capability.AppModuleBasic{},
 		ccvstaking.AppModuleBasic{}, // make sure you first swap the staking keeper
 		mint.AppModuleBasic{},
--       sdkdistr.AppModuleBasic{},
+-		sdkdistr.AppModuleBasic{},
 +		ccvdistr.AppModuleBasic{},
     )
 )
@@ -511,11 +511,11 @@ func NewApp(...) {
     // register with the module manager
 	app.MM = module.NewManager(
 		...
--        sdkdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper, authtypes.FeeCollectorName,     app.GetSubspace(distrtypes.ModuleName)),
+-		sdkdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper, authtypes.FeeCollectorName,     app.GetSubspace(distrtypes.ModuleName)),
 
 +		ccvdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper, authtypes.FeeCollectorName, app.GetSubspace(distrtypes.ModuleName)),
 		ccvstaking.NewAppModule(appCodec, *app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-        ...
+		...
     )
 }
 ```
