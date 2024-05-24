@@ -1266,13 +1266,14 @@ func (k Keeper) HasToValidate(
 		return true, nil
 	}
 
+	validators := k.GetLastProviderConsensusValSet(ctx)
+
 	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
-	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, topN)
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, validators, topN)
 		if err == nil {
-			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+			k.OptInTopNValidators(ctx, chainID, validators, minPower)
 		}
 	}
 

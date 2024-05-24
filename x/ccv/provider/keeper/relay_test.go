@@ -760,14 +760,20 @@ func TestEndBlockVSU(t *testing.T) {
 	// create 4 sample lastValidators
 	var lastValidators []stakingtypes.Validator
 	var valAddresses []sdk.ValAddress
+	var lastConsensusValidators []types.ConsumerValidator
 	for i := 0; i < 4; i++ {
 		validator := crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
 		lastValidators = append(lastValidators, validator)
 		valAddresses = append(valAddresses, validator.GetOperator())
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(i + 1)).AnyTimes()
+		consVal, err := providerKeeper.CreateConsumerValidator(ctx, "chainId", validator)
+		require.NoError(t, err)
+		lastConsensusValidators = append(lastConsensusValidators, consVal)
+
 	}
 
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
+	providerKeeper.SetLastProviderConsensusValSet(ctx, lastConsensusValidators)
 
 	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, chainID, "clientID")
@@ -823,6 +829,15 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, true).AnyTimes()
 
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD, valE}).AnyTimes()
+
+	// create the consensus validators
+	providerKeeper.SetLastProviderConsensusValSet(ctx, []types.ConsumerValidator{
+		{ProviderConsAddr: valAConsAddr, Power: 1},
+		{ProviderConsAddr: valBConsAddr, Power: 3},
+		{ProviderConsAddr: valCConsAddr, Power: 4},
+		{ProviderConsAddr: valDConsAddr, Power: 8},
+		{ProviderConsAddr: valEConsAddr, Power: 16},
+	})
 
 	// add a consumer chain
 	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")

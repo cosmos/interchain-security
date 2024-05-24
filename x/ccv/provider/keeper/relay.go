@@ -219,7 +219,8 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
-	// get the bonded validators from the staking module
+	// get the last validator set sent to consensus
+	consensusValidators := k.GetLastProviderConsensusValSet(ctx)
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
@@ -227,9 +228,9 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 		if topN, found := k.GetTopN(ctx, chain.ChainId); found && topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			minPower, err := k.ComputeMinPowerToOptIn(ctx, chain.ChainId, bondedValidators, topN)
+			minPower, err := k.ComputeMinPowerToOptIn(ctx, chain.ChainId, consensusValidators, topN)
 			if err == nil {
-				k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
+				k.OptInTopNValidators(ctx, chain.ChainId, consensusValidators, minPower)
 			}
 		}
 

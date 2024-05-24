@@ -509,7 +509,12 @@ func InactiveValsConfig() TestConfig {
 	// set the MaxProviderConsensusValidators param to 2
 	proviConfig := tr.chainConfigs[ChainID("provi")]
 	proviConfig.GenesisChanges += " | .app_state.provider.params.max_provider_consensus_validators = \"2\""
+
+	consuConfig := tr.chainConfigs[ChainID("consu")]
+	// set the soft_opt_out threshold to 0% to make sure all validators are slashed for downtime
+	consuConfig.GenesisChanges += " | .app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.0\""
 	tr.chainConfigs[ChainID("provi")] = proviConfig
+	tr.chainConfigs[ChainID("consu")] = consuConfig
 
 	return tr
 }

@@ -63,7 +63,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.GetLastProviderConsensusValSet(ctx), topN)
 
 		if err != nil || power >= minPowerToOptIn {
 			return errorsmod.Wrapf(
@@ -78,27 +78,18 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 }
 
 // OptInTopNValidators opts in to `chainID` all the `bondedValidators` that have at least `minPowerToOptIn` power
-func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, minPowerToOptIn int64) {
+func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValidators []types.ConsumerValidator, minPowerToOptIn int64) {
 	for _, val := range bondedValidators {
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
-		if power >= minPowerToOptIn {
-			consAddr, err := val.GetConsAddr()
-			if err != nil {
-				k.Logger(ctx).Error("could not retrieve validators consensus address",
-					"validator", val,
-					"error", err)
-				continue
-			}
-
+		if val.Power >= minPowerToOptIn {
 			// if validator already exists it gets overwritten
-			k.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(consAddr))
+			k.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(val.ProviderConsAddr))
 		} // else validators that do not belong to the top N validators but were opted in, remain opted in
 	}
 }
 
 // ComputeMinPowerToOptIn returns the minimum power needed for a validator (from the bonded validators)
 // to belong to the `topN` validators. `chainID` is only used for logging purposes.
-func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, topN uint32) (int64, error) {
+func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedValidators []types.ConsumerValidator, topN uint32) (int64, error) {
 	if topN == 0 || topN > 100 {
 		return 0, fmt.Errorf("trying to compute minimum power with an incorrect topN value (%d)."+
 			"topN has to be between (0, 100]", topN)
@@ -108,9 +99,8 @@ func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedVa
 	var powers []int64
 
 	for _, val := range bondedValidators {
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
-		powers = append(powers, power)
-		totalPower = totalPower.Add(sdk.NewDecFromInt(sdk.NewInt(power)))
+		powers = append(powers, val.Power)
+		totalPower = totalPower.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
 	}
 
 	// sort by powers descending

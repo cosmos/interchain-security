@@ -3,6 +3,13 @@ package main
 import clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
 // stepsOptInChain starts a provider chain and an Opt-In chain and opts in and out validators
+// high-level, this test does:
+// - start the provider chain
+// - start a consumer chain
+// - check that non-consensus validators do not get slashed for downtime; and that they don't get rewards
+// - check that active validators *do* get slashed for downtime, and don't get rewards while they are down
+// - check that non-consensus validators *do* get jailed for downtime on consumer chains
+// - check that non-consensus validators *become* consensus validators when they have enough power
 func stepsInactiveValidatorsOnConsumer() []Step {
 	s := concatSteps(
 		[]Step{
@@ -61,16 +68,6 @@ func stepsInactiveValidatorsOnConsumer() []Step {
 							ValidatorID("bob"):   200000000,
 							ValidatorID("carol"): 300000000,
 						},
-						// check that bob and carol get rewards, but alice does not
-						Rewards: &Rewards{
-							IsNativeDenom:       true, // check for rewards in the provider denom
-							IsIncrementalReward: true, // check rewards since block 1
-							IsRewarded: map[ValidatorID]bool{
-								ValidatorID("alice"): false,
-								ValidatorID("bob"):   true,
-								ValidatorID("carol"): true,
-							},
-						},
 					},
 				},
 			},
@@ -78,7 +75,7 @@ func stepsInactiveValidatorsOnConsumer() []Step {
 			{
 				Action: DelegateTokensAction{
 					Chain:  ChainID("provi"),
-					From:   ValidatorID("bob"),
+					From:   ValidatorID("carol"),
 					To:     ValidatorID("carol"),
 					Amount: 200000000, // carol needs to have more than 2/3rds of power(carol) + power(bob), so if bob has 200 power, carol needs at least 401, so we just go for 500
 				},
@@ -93,6 +90,16 @@ func stepsInactiveValidatorsOnConsumer() []Step {
 							ValidatorID("alice"): 100000000,
 							ValidatorID("bob"):   200000000,
 							ValidatorID("carol"): 500000000,
+						},
+						// check that bob and carol get rewards, but alice does not
+						Rewards: &Rewards{
+							IsNativeDenom:       true, // check for rewards in the provider denom
+							IsIncrementalReward: true, // check rewards since block 1
+							IsRewarded: map[ValidatorID]bool{
+								ValidatorID("alice"): false,
+								ValidatorID("bob"):   true,
+								ValidatorID("carol"): true,
+							},
 						},
 					},
 				},
@@ -115,16 +122,6 @@ func stepsInactiveValidatorsOnConsumer() []Step {
 							ValidatorID("bob"):   198000000, // 1% slash
 							ValidatorID("carol"): 500000000,
 						},
-						// check that now every validator got rewarded since the first block
-						Rewards: &Rewards{
-							IsNativeDenom:       true, // check for rewards in the provider denom
-							IsIncrementalReward: true, // check rewards for currently produced blocks only
-							IsRewarded: map[ValidatorID]bool{
-								ValidatorID("alice"): true,  // alice is participating right now, so gets rewards
-								ValidatorID("bob"):   false, // bob does not get rewards since he is not participating in consensus
-								ValidatorID("carol"): true,
-							},
-						},
 					},
 				},
 			},
@@ -137,6 +134,18 @@ func stepsInactiveValidatorsOnConsumer() []Step {
 					Channel: 0,
 				},
 				State: State{
+					ChainID("provi"): ChainState{
+						// check that now every validator got rewarded since the first block
+						Rewards: &Rewards{
+							IsNativeDenom:       true, // check for rewards in the provider denom
+							IsIncrementalReward: true, // check rewards for currently produced blocks only
+							IsRewarded: map[ValidatorID]bool{
+								ValidatorID("alice"): true,  // alice is participating right now, so gets rewards
+								ValidatorID("bob"):   false, // bob does not get rewards since he is not participating in consensus
+								ValidatorID("carol"): true,
+							},
+						},
+					},
 					ChainID("consu"): ChainState{
 						ValPowers: &map[ValidatorID]uint{
 							ValidatorID("alice"): 100,
@@ -193,6 +202,144 @@ func stepsInactiveValidatorsOnConsumer() []Step {
 						ValPowers: &map[ValidatorID]uint{
 							ValidatorID("alice"): 100,
 							ValidatorID("bob"):   198,
+							ValidatorID("carol"): 500,
+						},
+					},
+				},
+			},
+			// alice goes offline on the consumer chain
+			{
+				Action: DowntimeSlashAction{
+					Chain:     ChainID("consu"),
+					Validator: ValidatorID("alice"),
+				},
+				State: State{
+					ChainID("consu"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 100, // power not affected yet
+							ValidatorID("bob"):   198,
+							ValidatorID("carol"): 500,
+						},
+					},
+					ChainID("provi"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 0, // alice is not consensus-active anyways, since we allow two vals at maximum
+							ValidatorID("bob"):   198,
+							ValidatorID("carol"): 500,
+						},
+					},
+				},
+			},
+			// relay the packets so that the provider chain knows about alice's downtime
+			{
+				Action: RelayPacketsAction{
+					ChainA:  ChainID("consu"),
+					ChainB:  ChainID("provi"),
+					Port:    "consumer",
+					Channel: 0,
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 0, // alice is still not in the active set, and should now be jailed too
+							ValidatorID("bob"):   198,
+							ValidatorID("carol"): 500,
+						},
+					},
+				},
+			},
+			// we need to double-check that alice is actually jailed, so we get bob jailed, too, which usually would mean alice gets into power
+			{
+				Action: DowntimeSlashAction{
+					Chain:     ChainID("provi"),
+					Validator: ValidatorID("bob"),
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 0, // alice is jailed
+							ValidatorID("bob"):   0, // bob is jailed
+							ValidatorID("carol"): 500,
+						},
+					},
+				},
+			},
+			// relay the packets so that the consumer chain is in sync again
+			{
+				Action: RelayPacketsAction{
+					ChainA:  ChainID("provi"),
+					ChainB:  ChainID("consu"),
+					Port:    "provider",
+					Channel: 0,
+				},
+				State: State{
+					ChainID("consu"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 0, // alice is jailed
+							ValidatorID("bob"):   0, // bob is jailed
+							ValidatorID("carol"): 500,
+						},
+					},
+					ChainID("provi"): ChainState{
+						// check that alice and bob don't get consumer rewards
+						Rewards: &Rewards{
+							IsNativeDenom:       false, // check for rewards from consumer
+							IsIncrementalReward: true,  // check rewards for currently produced blocks only
+							IsRewarded: map[ValidatorID]bool{
+								ValidatorID("alice"): false,
+								ValidatorID("bob"):   false,
+								ValidatorID("carol"): true,
+							},
+						},
+					},
+				},
+			},
+
+			// unjail alice
+			{
+				Action: UnjailValidatorAction{
+					Provider:  ChainID("provi"),
+					Validator: ValidatorID("alice"),
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 100, // alice is back as an active consensus validator
+							ValidatorID("bob"):   0,   // bob is still jailed
+							ValidatorID("carol"): 500,
+						},
+					},
+				},
+			},
+			// unjail bob
+			{
+				Action: UnjailValidatorAction{
+					Provider:  ChainID("provi"),
+					Validator: ValidatorID("bob"),
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 0,   // alice is back out because only 2 validators can be active in consensus
+							ValidatorID("bob"):   196, // bob is back as an active consensus validator and lost 2 more power due to the second downtime
+							ValidatorID("carol"): 500,
+						},
+					},
+				},
+			},
+			// relay the packets so that the consumer chain is in sync again
+			{
+				Action: RelayPacketsAction{
+					ChainA:  ChainID("provi"),
+					ChainB:  ChainID("consu"),
+					Port:    "provider",
+					Channel: 0,
+				},
+				State: State{
+					ChainID("consu"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 100, // both alice and bob are validating the consumer
+							ValidatorID("bob"):   196,
 							ValidatorID("carol"): 500,
 						},
 					},
