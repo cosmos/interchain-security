@@ -2,7 +2,9 @@ package main
 
 import clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
-// stepsOptInChain starts a provider chain and an Opt-In chain and opts in and out validators
+// stepsInactiveValidatorsOnConsumer tests situations where validators that are *not* in the active set on the
+// provider chain validate on the consumer chain.
+// The provider chain is set to have at most *2* validators active in consensus, and there are 3 validators in total.
 // high-level, this test does:
 // - start the provider chain
 // - start a consumer chain
