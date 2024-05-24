@@ -174,7 +174,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
-        additionalLanguages: ["protobuf", "go-module"], // https://prismjs.com/#supported-languages
+        additionalLanguages: ["protobuf", "go-module", "diff", "go"], // https://prismjs.com/#supported-languages
       },
       // algolia: {
       //   appId: "QLS2QSP47E",
