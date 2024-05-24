@@ -464,7 +464,7 @@ The % that is sent to the provider chain corresponds to `1 - ConsumerRedistribut
 
 e.g. `ConsumerRedistributionFraction = "0.75"`
 
-means that the consumer chain retains 75% of the rewards while 25% gets sent to the provider chain to be distributed as rewards to provider chain validators.
+means that the consumer chain retains 75% of the rewards, while 25% gets sent to the provider chain to be distributed as rewards to provider chain validators.
 :::
 
 #### Integration
