@@ -39,7 +39,7 @@ With these changes, Governators can become community advocates that can speciali
 
 Additionally, Governators can choose to provide additional infrastructure such as RPC/API access points, archive nodes, indexers and similar software.
 
-### Tokenomics
+#### Tokenomics
 
 The consumer chain's token will remain a governance and reward token. The token's parameters (inflation, max supply, burn rate) are not affected.
 
@@ -47,7 +47,7 @@ The consumer chain's token will remain a governance and reward token. The token'
 Staking rewards are distributed to all Governators and their delegators after distributing the rewards to the provider chain's validator set.
 :::
 
-## Integration
+### Integration
 
 The `x/ccv/democracy/staking` module provides these `x/staking` overrides:
 
@@ -76,7 +76,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 
 To integrate the `democracy/staking` follow this guide:
 
-### 1. confirm that no modules are returning validator updates
+#### 1. confirm that no modules are returning validator updates
 
 :::tip
 Only the `x/ccv/consumer` module should be returning validator updates.
@@ -224,7 +224,7 @@ func NewApp(...) {
 }
 ```
 
-### Governance
+## Governance
 
 The `x/ccv/democracy/governance` module extends the `x/governance` module with the functionality to filter proposals.
 
@@ -234,7 +234,7 @@ Consumer chains can limit in the types of governance proposals that can be execu
 
 The module uses `AnteHandler` to limit the types of proposals that can be executed.
 
-#### Integrating governance
+### Integration
 
 Add new `AnteHandler` to your `app`.
 
@@ -447,13 +447,13 @@ func NewApp(...) {
 }
 ```
 
-### Distribution
+## Distribution
 
 :::tip
 The `democracy/distribution` module allows the consumer chain to send rewards to the provider chain while retaining the `x/distribution` module for internal reward distribution to Governators and stakers.
 :::
 
-#### How it works
+### How it works
 
 First, a % of rewards to be distributed to the provider chain's validator set is calculated and sent to the provider chain. Only opted-in validators from the provider chain will receive the consumer rewards.
 
@@ -467,7 +467,7 @@ e.g. `ConsumerRedistributionFraction = "0.75"`
 means that the consumer chain retains 75% of the rewards, while 25% gets sent to the provider chain to be distributed as rewards to provider chain validators.
 :::
 
-#### Integration
+### Integration
 
 Change the wiring in `app.go`
 
