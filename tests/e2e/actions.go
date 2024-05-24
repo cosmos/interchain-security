@@ -261,6 +261,10 @@ type SubmitConsumerAdditionProposalAction struct {
 	InitialHeight       clienttypes.Height
 	DistributionChannel string
 	TopN                uint32
+	ValidatorsPowerCap  uint32
+	ValidatorSetCap     uint32
+	Allowlist           []string
+	Denylist            []string
 }
 
 func (tr TestConfig) submitConsumerAdditionProposal(
@@ -287,6 +291,10 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 		Deposit:                           fmt.Sprint(action.Deposit) + `stake`,
 		DistributionTransmissionChannel:   action.DistributionChannel,
 		TopN:                              action.TopN,
+		ValidatorsPowerCap:                action.ValidatorsPowerCap,
+		ValidatorSetCap:                   action.ValidatorSetCap,
+		Allowlist:                         action.Allowlist,
+		Denylist:                          action.Denylist,
 	}
 
 	bz, err := json.Marshal(prop)
