@@ -417,6 +417,15 @@ func TestGetAllConsumerChains(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), val.GetOperator()).Return(powers[i]).AnyTimes()
 	}
 
+	consensusValSet := []types.ConsumerValidator{
+		{ProviderConsAddr: []byte("providerAddr1"), Power: 50},
+		{ProviderConsAddr: []byte("providerAddr2"), Power: 150},
+		{ProviderConsAddr: []byte("providerAddr3"), Power: 300},
+		{ProviderConsAddr: []byte("providerAddr4"), Power: 500},
+	}
+
+	pk.SetLastProviderConsensusValSet(ctx, consensusValSet)
+
 	// set Top N parameters, client ids and expected result
 	topNs := []uint32{0, 70, 90, 100}
 	expectedMinPowerInTopNs := []int64{
