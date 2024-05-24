@@ -8,7 +8,7 @@ The modules are plug-and-play and only require small wiring changes to be enable
 
 For a full integration check the `consumer-democracy` [example app](https://github.com/cosmos/interchain-security/blob/main/app/consumer-democracy/app.go).
 
-### Staking
+## Staking
 
 The democracy staking module allows the cosmos-sdk `x/staking` module to be used alongside the interchain security `consumer` module.
 
