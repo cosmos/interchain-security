@@ -76,7 +76,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 
 To integrate the `democracy/staking` follow this guide:
 
-#### 1. confirm that no modules are returning validator updates
+### 1. confirm that no modules are returning validator updates
 
 :::tip
 Only the `x/ccv/consumer` module should be returning validator updates.
