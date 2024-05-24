@@ -3,10 +3,11 @@ package keeper_test
 import (
 	"bytes"
 	"encoding/json"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"sort"
 	"testing"
 	"time"
+
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
@@ -21,6 +22,7 @@ import (
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -1049,6 +1051,14 @@ func TestBeginBlockInit(t *testing.T) {
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return([]stakingtypes.Validator{validator}).AnyTimes()
 	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(1)).AnyTimes()
 	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
+
+	providerKeeper.SetLastProviderConsensusValSet(ctx, []types.ConsumerValidator{
+		{
+			ProviderConsAddr: consAddr,
+			Power:            1,
+		},
+	},
+	)
 
 	providerKeeper.BeginBlockInit(ctx)
 
