@@ -86,6 +86,7 @@ For validators in the active set, we typically assume that if they would misbeha
 
 #### Additional negative consequences
 * Validators outside of the active set become bonded, even if they are not validating on any consumer chains
+* This will impact how future modules are integrated, since we will need to consider whether those modules should consider the consensus validators or the bonded validators (which other modules might assume to be the same)
 
 ### Neutral
 
