@@ -191,6 +191,9 @@ const (
 	// sent to the consensus engine of the provider chain
 	LastProviderConsensusValsPrefix
 
+	// MinStakePrefix is the byte prefix for storing the mapping from consumer chains to the minimum stake required to be a validator on the consumer chain
+	MinStakePrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
