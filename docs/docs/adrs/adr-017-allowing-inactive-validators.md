@@ -26,7 +26,7 @@ In the context of this ADR, "consensus validator set" is the set of validators p
 
 Currently, the staking module, provider module, and CometBFT interact in this way:
 
-![inactivevals_before.png](../../inactivevals_before.png)
+![inactivevals_before.png](../../figures/inactivevals_before.png)
 
 The staking module keeps a list of bonded validators. It sends these validators to CometBFT to inform which validators make up the next consensus validators, that is, the set of validators participating in the consensus process. Separately, the provider module reads the list of bonded validators and sends this to the consumer chain, after shaping it according to which validators are opted in and the parameters set by the consumer chain for allowlist, denylist, etc.
 
@@ -45,7 +45,7 @@ c) use the enlarged list of bonded validators from the staking module as basis f
 
 In consequence, the provider chain can keep a reasonably-sized validator set, while giving consumer chains a much larger pool of potential validators.
 
-![inactivevals_after.png](../../inactivevals_after.png)
+![inactivevals_after.png](../../figures/inactivevals_after.png)
 
 
 Some additional considerations:
