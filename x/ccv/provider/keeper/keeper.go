@@ -759,13 +759,9 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId u
 	bz := store.Get(types.ValidatorSetUpdateIdKey())
 
 	if bz == nil {
-		validatorSetUpdateId = 0
-	} else {
-		// Unmarshal
-		validatorSetUpdateId = binary.BigEndian.Uint64(bz)
+		return 0
 	}
-
-	return validatorSetUpdateId
+	return binary.BigEndian.Uint64(bz)
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
@@ -1528,11 +1524,7 @@ func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, chainID string) bool {
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
 	defer iterator.Close()
 
-	if iterator.Valid() {
-		return false
-	}
-
-	return true
+	return !iterator.Valid()
 }
 
 // SetDenylist denylists validator with `providerAddr` address on chain `chainID`
@@ -1595,9 +1587,5 @@ func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
 	defer iterator.Close()
 
-	if iterator.Valid() {
-		return false
-	}
-
-	return true
+	return !iterator.Valid()
 }
