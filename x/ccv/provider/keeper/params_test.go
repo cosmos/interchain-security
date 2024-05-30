@@ -49,6 +49,7 @@ func TestParams(t *testing.T) {
 			Amount: sdk.NewInt(10000000),
 		},
 		600,
+		24,
 	)
 	providerKeeper.SetParams(ctx, newParams)
 	params = providerKeeper.GetParams(ctx)

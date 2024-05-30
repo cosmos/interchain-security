@@ -85,6 +85,14 @@ func (k Keeper) GetBlocksPerEpoch(ctx sdk.Context) int64 {
 	return b
 }
 
+// GetNumberOfEpochsToStartReceivingRewards returns the number of epochs needed by a validator to continuously validate
+// to start receiving rewards
+func (k Keeper) GetNumberOfEpochsToStartReceivingRewards(ctx sdk.Context) int64 {
+	var b int64
+	k.paramSpace.Get(ctx, types.KeyNumberOfEpochsToStartReceivingRewards, &b)
+	return b
+}
+
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
@@ -97,6 +105,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetSlashMeterReplenishFraction(ctx),
 		k.GetConsumerRewardDenomRegistrationFee(ctx),
 		k.GetBlocksPerEpoch(ctx),
+		k.GetNumberOfEpochsToStartReceivingRewards(ctx),
 	)
 }
 

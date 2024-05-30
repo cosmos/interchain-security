@@ -935,7 +935,7 @@ func (s *CCVTestSuite) prepareRewardDist() {
 	s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
 }
 
-func (s *CCVTestSuite) TestAllocateTokensToValidator() {
+func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
 	bankKeeper := s.providerApp.GetTestBankKeeper()
@@ -1058,6 +1058,114 @@ func (s *CCVTestSuite) TestAllocateTokensToValidator() {
 				}
 			}
 		})
+	}
+}
+
+// TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights tests `AllocateTokensToConsumerValidators` with
+// consumer validators that have different heights. Specifically, test that validators that have been consumer validators
+// for some time receive rewards, while validators that recently became consumer validators do not receive rewards.
+func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights() {
+	// Note this test is an adaptation of a `TestAllocateTokensToConsumerValidators` testcase.
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
+	bankKeeper := s.providerApp.GetTestBankKeeper()
+
+	chainID := s.consumerChain.ChainID
+
+	tokens := sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))}
+	rate := sdk.OneDec()
+	expAllocated := sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))}
+
+	ctx, _ := s.providerCtx().CacheContext()
+	// If the provider chain has not yet reached `GetNumberOfEpochsToStartReceivingRewards * GetBlocksPerEpoch` block height,
+	// then all validators receive rewards. In this test, we want to check whether validators receive rewards or not based on how
+	// long they have been consumer validators. Because of this, we increase the block height.
+	ctx = ctx.WithBlockHeight(providerKeeper.GetNumberOfEpochsToStartReceivingRewards(ctx)*providerKeeper.GetBlocksPerEpoch(ctx) + 1)
+
+	// update the consumer validators
+	consuVals := providerKeeper.GetConsumerValSet(ctx, chainID)
+	// first 2 validators were consumer validators since block height 1 and hence get rewards
+	consuVals[0].Height = 1
+	consuVals[1].Height = 1
+	// last 2 validators were consumer validators since block height 2 and hence do not get rewards because they
+	// have not been consumer validators for `GetNumberOfEpochsToStartReceivingRewards * GetBlocksPerEpoch` blocks
+	consuVals[2].Height = 2
+	consuVals[3].Height = 2
+	providerKeeper.SetConsumerValSet(ctx, chainID, consuVals)
+
+	providerKeeper.DeleteConsumerValSet(ctx, chainID)
+	providerKeeper.SetConsumerValSet(ctx, chainID, consuVals)
+	consuVals = providerKeeper.GetConsumerValSet(ctx, chainID)
+
+	// set the same consumer commission rate for all consumer validators
+	for _, v := range consuVals {
+		provAddr := providertypes.NewProviderConsAddress(sdk.ConsAddress(v.ProviderConsAddr))
+		err := providerKeeper.SetConsumerCommissionRate(
+			ctx,
+			chainID,
+			provAddr,
+			rate,
+		)
+		s.Require().NoError(err)
+	}
+
+	// allocate tokens
+	res := providerKeeper.AllocateTokensToConsumerValidators(
+		ctx,
+		chainID,
+		tokens,
+	)
+
+	// check that the expected result is returned
+	s.Require().Equal(expAllocated, res)
+
+	// rewards are expected to be allocated evenly between validators 3 and 4
+	rewardsPerVal := expAllocated.QuoDec(sdk.NewDec(int64(2)))
+
+	// assert that the rewards are allocated to the first 2 validators
+	for _, v := range consuVals[0:2] {
+		valAddr := sdk.ValAddress(v.ProviderConsAddr)
+		rewards := s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(
+			ctx,
+			valAddr,
+		)
+		s.Require().Equal(rewardsPerVal, rewards.Rewards)
+
+		// send rewards to the distribution module
+		valRewardsTrunc, _ := rewards.Rewards.TruncateDecimal()
+		err := bankKeeper.SendCoinsFromAccountToModule(
+			ctx,
+			s.providerChain.SenderAccount.GetAddress(),
+			distrtypes.ModuleName,
+			valRewardsTrunc)
+		s.Require().NoError(err)
+
+		// check that validators can withdraw their rewards
+		withdrawnCoins, err := distributionKeeper.WithdrawValidatorCommission(
+			ctx,
+			valAddr,
+		)
+		s.Require().NoError(err)
+
+		// check that the withdrawn coins is equal to the entire reward amount
+		// times the set consumer commission rate
+		commission := rewards.Rewards.MulDec(rate)
+		c, _ := commission.TruncateDecimal()
+		s.Require().Equal(withdrawnCoins, c)
+
+		// check that validators get rewards in their balance
+		s.Require().Equal(withdrawnCoins, bankKeeper.GetAllBalances(ctx, sdk.AccAddress(valAddr)))
+	}
+
+	// assert that no rewards are allocated to the last 2 validators because they have not been consumer validators
+	// for at least `GetNumberOfEpochsToStartReceivingRewards * GetBlocksPerEpoch` blocks
+	for _, v := range consuVals[2:4] {
+		valAddr := sdk.ValAddress(v.ProviderConsAddr)
+		rewards := s.providerApp.GetTestDistributionKeeper().GetValidatorOutstandingRewards(
+			ctx,
+			valAddr,
+		)
+		s.Require().Zero(rewards.Rewards)
 	}
 }
 

@@ -2,6 +2,8 @@ package v6
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 )
@@ -29,5 +31,15 @@ func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper
 			}
 			providerKeeper.SetMinimumPowerInTopN(ctx, chain, minPower)
 		}
+	}
+}
+
+// MigrateParams adds missing provider chain params to the param store.
+func MigrateParams(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
+	if paramsSubspace.HasKeyTable() {
+		paramsSubspace.Set(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, providertypes.DefaultNumberOfEpochsToStartReceivingRewards)
+	} else {
+		paramsSubspace.WithKeyTable(providertypes.ParamKeyTable())
+		paramsSubspace.Set(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, providertypes.DefaultNumberOfEpochsToStartReceivingRewards)
 	}
 }

@@ -72,6 +72,23 @@ func (k Keeper) IsConsumerValidator(ctx sdk.Context, chainID string, providerAdd
 	return store.Get(types.ConsumerValidatorKey(chainID, providerAddr.ToSdkConsAddr())) != nil
 }
 
+// GetConsumerValidator returns the consumer validator with `providerAddr` if it exists for chain `chainID`
+func (k Keeper) GetConsumerValidator(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) (types.ConsumerValidator, bool) {
+	store := ctx.KVStore(k.storeKey)
+	marshalledConsumerValidator := store.Get(types.ConsumerValidatorKey(chainID, providerAddr.ToSdkConsAddr()))
+
+	if marshalledConsumerValidator == nil {
+		return types.ConsumerValidator{}, false
+	}
+
+	var validator types.ConsumerValidator
+	if err := validator.Unmarshal(marshalledConsumerValidator); err != nil {
+		panic(fmt.Errorf("failed to unmarshal ConsumerValidator: %w", err))
+	}
+
+	return validator, true
+}
+
 // GetConsumerValSet returns all the consumer validators for chain `chainID`
 func (k Keeper) GetConsumerValSet(
 	ctx sdk.Context,
@@ -152,10 +169,18 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validat
 		}
 	}
 
+	height := ctx.BlockHeight()
+	if v, found := k.GetConsumerValidator(ctx, chainID, types.ProviderConsAddress{Address: consAddr}); found {
+		// if validator was already a consumer validator, then do not update the height set the first time
+		// the validator became a consumer validator
+		height = v.Height
+	}
+
 	return types.ConsumerValidator{
 		ProviderConsAddr:  consAddr,
 		Power:             power,
 		ConsumerPublicKey: &consumerPublicKey,
+		Height:            height,
 	}, nil
 }
 
