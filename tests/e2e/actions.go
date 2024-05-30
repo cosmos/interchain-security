@@ -305,11 +305,9 @@ func (tr Chain) submitConsumerAdditionProposal(
 	}
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	bz, err = tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
-	)
+	cmd := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"))
 	bz, err = cmd.CombinedOutput()
-
 	if verbose {
 		log.Println("submitConsumerAdditionProposal cmd: ", cmd.String())
 	}
@@ -319,7 +317,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 	}
 
 	// CONSUMER ADDITION PROPOSAL
-	cmd := tr.target.ExecCommand(
+	cmd = tr.target.ExecCommand(
 		tr.testConfig.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
