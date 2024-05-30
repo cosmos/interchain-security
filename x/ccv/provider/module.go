@@ -131,6 +131,12 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 4, migrator.Migrate4to5); err != nil {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 4 -> 5", providertypes.ModuleName, err))
 	}
+	if err := cfg.RegisterMigration(providertypes.ModuleName, 4, migrator.Migrate4to5); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(providertypes.ModuleName, 5, migrator.Migrate5to6); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
+	}
 }
 
 // InitGenesis performs genesis initialization for the provider module. It returns no validator updates.
@@ -162,6 +168,8 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	am.keeper.BeginBlockCCR(sdkCtx)
 	// Check for replenishing slash meter before any slash packets are processed for this block
 	am.keeper.BeginBlockCIS(sdkCtx)
+	// BeginBlock logic needed for the  Reward Distribution sub-protocol
+	am.keeper.BeginBlockRD(sdkCtx)
 
 	return nil
 }
@@ -177,8 +185,6 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 	am.keeper.EndBlockCCR(sdkCtx)
 	// EndBlock logic needed for the Validator Set Update sub-protocol
 	am.keeper.EndBlockVSU(sdkCtx)
-	// EndBlock logic need for the  Reward Distribution sub-protocol
-	am.keeper.EndBlockRD(sdkCtx)
 
 	return nil
 }

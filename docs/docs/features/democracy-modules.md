@@ -229,7 +229,7 @@ func NewApp(...) {
 The `x/ccv/democracy/governance` module extends the `x/governance` module with the functionality to filter proposals.
 
 :::tip
-Consumer chains can limit in the types of governance proposals that can be executed on chain to avoid inadvertant changes to interchain security protocol that could affect security properties.
+Consumer chains can limit in the types of governance proposals that can be executed on chain to avoid inadvertent changes to interchain security protocol that could affect security properties.
 :::
 
 The module uses `AnteHandler` to limit the types of proposals that can be executed.

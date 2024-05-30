@@ -41,12 +41,15 @@ Additionally, reach out to the community via the [forum](https://forum.cosmos.ne
 - [ ] determine consumer chain parameters to be put in the proposal
 - [ ] take note to include a link to your onboarding repository
 - [ ] describe the purpose and benefits of running your chain
+- [ ] determine whether your chain should be an Opt-In chain or a Top N chain (see [Partial Set Security](../features/partial-set-security.md))
+- [ ] if desired, decide on power-shaping parameters (see [Power Shaping](../features/power-shaping.md))
 
 Example of a consumer chain addition proposal.
 
 ```js
 // ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
-// If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time.
+// If it passes, if the top_N parameter is not equal to 0, the top N% of validators by voting power on the provider chain are expected to validate the consumer chain at spawn time.
+// Otherwise, only validators that opted in during the proposal period are expected to validate the consumer chain at spawn time.
 // It is recommended that spawn time occurs after the proposal end time.
 {
     // Title of the proposal
@@ -69,7 +72,7 @@ Example of a consumer chain addition proposal.
     // Hash of the consumer chain binary that should be run by validators on chain initialization.
     // It is used for off-chain confirmation of binary validity by validators and other parties.
     "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1",
-    // Time on the provider chain at which the consumer chain genesis is finalized and all validators
+    // Time on the provider chain at which the consumer chain genesis is finalized and validators
     // will be responsible for starting their consumer chain validator node.
     "spawn_time": "2023-02-28T20:40:00.000000Z",
     // Unbonding period for the consumer chain.
@@ -97,13 +100,34 @@ Example of a consumer chain addition proposal.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
     // it is most relevant for chains performing a standalone to consumer changeover
     // in order to maintain the existing ibc transfer channel
-    "distribution_transmission_channel": "channel-123"
+    "distribution_transmission_channel": "channel-123",
+    // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
+    // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
+    // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
+    // A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
+    "top_N": 95,
+    // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
+    // `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
+    // consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
+    // 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
+    // to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
+    "validators_power_cap": 0,
+    // Corresponds to the maximum number of validators that can validate a consumer chain.
+    // Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+    "validator_set_cap": 0,
+    // Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
+    // the consumer chain.
+    "allowlist": [],
+    // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+    "denylist": []
 }
 ```
 
 ## 4. Launch
 
-The consumer chain starts after at least 66.67% of all provider's voting power comes online. The consumer chain is considered interchain secured once the appropriate CCV channels are established and the first validator set update is propagated from the provider to the consumer
+The consumer chain starts after at least 66.67% of its voting power comes online.
+Note that this means 66.67% of the voting power in the *consumer* validator set, which will be comprised of all validators that either opted in to the chain or are part of the top N% of the provider chain (and are thus automatically opted in).
+The consumer chain is considered interchain secured once the appropriate CCV channels are established and the first validator set update is propagated from the provider to the consumer
 
 - [ ] provide a repo with onboarding instructions for validators (it should already be listed in the proposal)
 - [ ] genesis.json with ccv data populated (MUST contain the initial validator set)

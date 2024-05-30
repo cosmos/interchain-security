@@ -376,7 +376,8 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators)
+	considerAll := func(providerAddr types.ProviderConsAddress) bool { return true }
+	nextValidators := s.providerKeeper().FilterValidators(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
 	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
 
 	err = s.providerKeeper().SetConsumerGenesis(
@@ -384,6 +385,9 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		string(consumerChainId),
 		consumerGenesisForProvider)
 	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
+
+	// set the top N percentage to 100 to simulate a full consumer
+	s.providerKeeper().SetTopN(providerChain.GetContext(), consumerChain.ChainID, 100)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.

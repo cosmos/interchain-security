@@ -8,21 +8,22 @@ import (
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
+	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
-
-	evidencekeeper "cosmossdk.io/x/evidence/keeper"
-	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // The interface that any provider app must implement to be compatible with ccv integration tests.
@@ -140,4 +141,17 @@ type TestDistributionKeeper interface {
 	GetDistributionAccount(ctx context.Context) sdk.ModuleAccountI
 	GetValidatorOutstandingRewards(ctx context.Context, val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards, err error)
 	GetCommunityTax(ctx context.Context) (math.LegacyDec, error)
+	WithdrawValidatorCommission(ctx context.Context, valAddr sdk.ValAddress) (sdk.Coins, error)
+}
+
+type TestMintKeeper interface {
+	GetParams(ctx sdk.Context) (params minttypes.Params)
+}
+
+type TestGovKeeper interface {
+	GetParams(ctx sdk.Context) govv1.Params
+	SetParams(ctx sdk.Context, params govv1.Params) error
+	SubmitProposal(ctx sdk.Context, messages []sdk.Msg, metadata, title, summary string, proposer sdk.AccAddress) (govv1.Proposal, error)
+	AddDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress, depositAmount sdk.Coins) (bool, error)
+	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govv1.WeightedVoteOptions, metadata string) error
 }

@@ -35,6 +35,12 @@ type ConsumerAdditionProposalJSON struct {
 	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
 
 	Deposit string `json:"deposit"`
+
+	TopN               uint32   `json:"top_N"`
+	ValidatorsPowerCap uint32   `json:"validators_power_cap"`
+	ValidatorSetCap    uint32   `json:"validator_set_cap"`
+	Allowlist          []string `json:"allowlist"`
+	Denylist           []string `json:"denylist"`
 }
 
 type ConsumerAdditionProposalReq struct {
@@ -145,7 +151,8 @@ func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time
 	providerUnbondingTime := res.Params.UnbondingTime
 
 	if providerUnbondingTime < propUnbondingPeriod {
-		fmt.Printf(
+		fmt.Fprintf(
+			os.Stderr,
 			`consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.
 This is not a security risk, but will effectively lengthen the unbonding period on the provider.
 consumer unbonding: %s

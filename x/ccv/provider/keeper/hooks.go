@@ -38,9 +38,65 @@ func (h Hooks) AfterUnbondingInitiated(goCtx context.Context, id uint64) error {
 	var consumerChainIDS []string
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	for _, chain := range h.k.GetAllConsumerChains(ctx) {
 
-		consumerChainIDS = append(consumerChainIDS, chain.ChainId)
+	// get validator address from unbonding operation
+	unbondingType, err := h.k.stakingKeeper.GetUnbondingType(ctx, id)
+	vadAddrBech32 := ""
+	if err != nil {
+		ctx.Logger().Error("undefined type for unbonding operation: id: %d: %s", id, err)
+		return nil
+	}
+
+	switch unbondingType {
+	case stakingtypes.UnbondingType_UnbondingDelegation:
+		ubd, err := h.k.stakingKeeper.GetUnbondingDelegationByUnbondingID(ctx, id)
+		if err != nil {
+			ctx.Logger().Error("unfound ubonding delegation for unbonding id: %d: %s", id, err)
+			return nil
+		}
+		vadAddrBech32 = ubd.ValidatorAddress
+	case stakingtypes.UnbondingType_Redelegation:
+		red, err := h.k.stakingKeeper.GetRedelegationByUnbondingID(ctx, id)
+		if err != nil {
+			ctx.Logger().Error("unfound relegation for unbonding operation id: %d: %s", id, err)
+			return nil
+		}
+		vadAddrBech32 = red.ValidatorSrcAddress
+	case stakingtypes.UnbondingType_ValidatorUnbonding:
+		val, err := h.k.stakingKeeper.GetValidatorByUnbondingID(ctx, id)
+		if err != nil {
+			ctx.Logger().Error("unfound validator for unbonding operation id: %d: %s", id, err)
+			return nil
+		}
+		vadAddrBech32 = val.OperatorAddress
+	default:
+		ctx.Logger().Error("invalid unbonding operation type: %s", unbondingType)
+		return nil
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(vadAddrBech32)
+	if err != nil {
+		ctx.Logger().Error(err.Error())
+		return nil
+	}
+
+	validator, err := h.k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		ctx.Logger().Error("unfound validator for validator address: %s: %s", vadAddrBech32, err)
+		return nil
+	}
+
+	consAddr, err := validator.GetConsAddr()
+	if err != nil {
+		ctx.Logger().Error(err.Error())
+		return nil
+	}
+
+	// get all consumers where the validator is in the validator set
+	for _, chain := range h.k.GetAllConsumerChains(ctx) {
+		if h.k.IsConsumerValidator(ctx, chain.ChainId, providertypes.NewProviderConsAddress(consAddr)) {
+			consumerChainIDS = append(consumerChainIDS, chain.ChainId)
+		}
 	}
 
 	if len(consumerChainIDS) == 0 {

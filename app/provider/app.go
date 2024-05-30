@@ -519,12 +519,14 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	ibcmodule := transfer.NewIBCModule(app.TransferKeeper)
+	// Add an IBC middleware callback to track the consumer rewards
+	var transferStack porttypes.IBCModule
+	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = ibcprovider.NewIBCMiddleware(transferStack, app.ProviderKeeper)
 
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
 	ibcRouter.AddRoute(providertypes.ModuleName, providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -556,7 +558,7 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		ibctm.NewAppModule(),
 		params.NewAppModule(app.ParamsKeeper),
-		transferModule,
+		transfer.NewAppModule(app.TransferKeeper),
 		providerModule,
 	)
 

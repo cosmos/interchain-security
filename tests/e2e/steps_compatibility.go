@@ -44,6 +44,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 				ConsumerChain: ChainID(consumerName),
 				SpawnTime:     0,
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          100,
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -87,18 +88,6 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 					},
 				},
 			},
-		},
-		{
-			// op should fail - key already assigned by the same validator
-			Action: AssignConsumerPubKeyAction{
-				Chain:           ChainID(consumerName),
-				Validator:       ValidatorID("carol"),
-				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
-				ReconfigureNode: false,
-				ExpectError:     true,
-				ExpectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
-			},
-			State: State{},
 		},
 		{
 			// op should fail - key already assigned by another validator

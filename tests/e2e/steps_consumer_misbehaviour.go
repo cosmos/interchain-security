@@ -39,6 +39,7 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 				ConsumerChain: ChainID(consumerName),
 				SpawnTime:     0,
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          100,
 			},
 			State: State{
 				ChainID("provi"): ChainState{

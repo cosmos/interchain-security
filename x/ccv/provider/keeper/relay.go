@@ -227,7 +227,17 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
-		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators)
+
+		if topN, found := k.GetTopN(ctx, chain.ChainId); found && topN > 0 {
+			// in a Top-N chain, we automatically opt in all validators that belong to the top N
+			minPower, err := k.ComputeMinPowerToOptIn(ctx, chain.ChainId, bondedValidators, topN)
+			if err == nil {
+				k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
+			}
+		}
+
+		nextValidators := k.ComputeNextValidators(ctx, chain.ChainId, bondedValidators)
+
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
 
@@ -331,6 +341,16 @@ func (k Keeper) OnRecvSlashPacket(
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
 		return ccv.V1Result, nil
+	}
+
+	// Check that the validator belongs to the consumer chain valset
+	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
+		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
+			providerConsAddr.String(), chainID)
+		// drop packet but return a slash ack so that the consumer can send another slash packet
+		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+
+		return ccv.SlashPacketHandledResult, nil
 	}
 
 	meter := k.GetSlashMeter(ctx)

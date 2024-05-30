@@ -4,7 +4,8 @@ BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
 # Fetch tags and get the latest ICS version by filtering tags by vX.Y.Z and vX.Y.Z-lsm
 # using lazy set to only execute commands when variable is used
-LATEST_RELEASE ?= $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm | head -n 1)
+# Note: v.5.0.0 is currently excluded from the list as it's a pre-release and will be added back once it's out of pre-release status
+LATEST_RELEASE ?= $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm --no-contains v5.0.0 | head -n 1)
 
 # don't override user values
 ifeq (,$(VERSION))
@@ -246,10 +247,11 @@ proto-update-deps:
 ###                              Documentation                              ###
 ###############################################################################
 
-build-docs:
-	@cd docs && ./build.sh
+build-docs-deploy:
+	@cd docs && ./sync_versions.sh && ./build_deploy.sh
 
-.PHONY: build-docs
+build-docs-local:
+	@cd docs && ./build_local.sh
 
 ###############################################################################
 ### 							Test Traces									###

@@ -4,19 +4,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// MigrateParams migrates the provider module's parameters from the x/params to self store.
-func MigrateLegacyParams(ctx sdk.Context, keeper providerkeeper.Keeper, legacyParamspace ccvtypes.LegacyParamSubspace) error {
-	ctx.Logger().Info("starting provider legacy params migration")
-	params := GetParamsLegacy(ctx, legacyParamspace)
-	err := params.Validate()
-	if err != nil {
-		return err
-	}
+// This migration only takes already registered chains into account.
+// If a chain is in voting while the upgrade happens, this is not sufficient,
+// and a migration to rewrite the proposal is needed.
+func MigrateTopNForRegisteredChains(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
+	// get all consumer chains
+	registeredConsumerChains := providerKeeper.GetAllConsumerChains(ctx)
 
-	keeper.SetParams(ctx, params)
-	keeper.Logger(ctx).Info("successfully migrated legacy provider parameters")
-	return nil
+	// Set the topN of each chain to 95
+	for _, chain := range registeredConsumerChains {
+		providerKeeper.SetTopN(ctx, chain.ChainId, 95)
+	}
 }
+
+// // If there are consumer addition proposals in the voting period at the upgrade time, they may need the topN value updated.
+// func MigrateTopNForVotingPeriodChains(ctx sdk.Context, govKeeper govkeeper.Keeper, providerKeeper providerkeeper.Keeper) {
+// }
