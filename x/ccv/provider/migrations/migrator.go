@@ -54,5 +54,6 @@ func (m Migrator) Migrate4to5(ctx sdktypes.Context) error {
 func (m Migrator) Migrate5to6(ctx sdktypes.Context) error {
 	v6.MigrateMinPowerInTopN(ctx, m.providerKeeper)
 	v6.MigrateParams(ctx, m.paramSpace)
+	v6.MigrateMinPowerInTopN(ctx, m.providerKeeper)
 	return nil
 }
