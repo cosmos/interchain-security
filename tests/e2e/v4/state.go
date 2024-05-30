@@ -649,6 +649,10 @@ func (tr Commands) GetIBCTransferParams(chain ChainID) IBCTransferParams {
 	panic("'GetIBCTransferParams' is not implemented in this version")
 }
 
+func (tr Commands) GetHasToValidate(validator ValidatorID) []ChainID {
+	panic("''GetHasToValidate' is not implemented in this version")
+}
+
 func uintPtr(i uint) *uint {
 	return &i
 }

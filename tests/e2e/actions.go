@@ -2252,21 +2252,21 @@ type OptInAction struct {
 	Validator ValidatorID
 }
 
-func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose bool) {
+func (tr Chain) optIn(action OptInAction, target ExecutionTarget, verbose bool) {
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
-	if tr.useCometmock {
+	if tr.testConfig.useCometmock {
 		gas = "9000000"
 	}
 
 	// Use: "opt-in [consumer-chain-id] [consumer-pubkey]",
 	optIn := fmt.Sprintf(
 		`%s tx provider opt-in %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
-		tr.chainConfigs[ChainID("provi")].BinaryName,
-		string(tr.chainConfigs[action.Chain].ChainId),
+		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
+		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
 		action.Validator,
-		tr.chainConfigs[ChainID("provi")].ChainId,
+		tr.testConfig.chainConfigs[ChainID("provi")].ChainId,
 		tr.getValidatorHome(ChainID("provi"), action.Validator),
 		tr.getValidatorNode(ChainID("provi"), action.Validator),
 		gas,
@@ -2286,7 +2286,7 @@ func (tr TestConfig) optIn(action OptInAction, target ExecutionTarget, verbose b
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	if !tr.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+	if !tr.testConfig.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if err != nil && verbose {
 			fmt.Printf("got error during opt in | err: %s | output: %s \n", err, string(bz))
 		}
@@ -2302,21 +2302,21 @@ type OptOutAction struct {
 	ExpectError bool
 }
 
-func (tr TestConfig) optOut(action OptOutAction, target ExecutionTarget, verbose bool) {
+func (tr Chain) optOut(action OptOutAction, target ExecutionTarget, verbose bool) {
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
-	if tr.useCometmock {
+	if tr.testConfig.useCometmock {
 		gas = "9000000"
 	}
 
 	// Use: "opt-out [consumer-chain-id]",
 	optIn := fmt.Sprintf(
 		`%s tx provider opt-out %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
-		tr.chainConfigs[ChainID("provi")].BinaryName,
-		string(tr.chainConfigs[action.Chain].ChainId),
+		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
+		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
 		action.Validator,
-		tr.chainConfigs[ChainID("provi")].ChainId,
+		tr.testConfig.chainConfigs[ChainID("provi")].ChainId,
 		tr.getValidatorHome(ChainID("provi"), action.Validator),
 		tr.getValidatorNode(ChainID("provi"), action.Validator),
 		gas,
