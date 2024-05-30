@@ -41,18 +41,30 @@ const (
 	// an epoch corresponds to 1 hour (6 * 600 = 3600 seconds).
 	// forcing int64 as the Params KeyTable expects an int64 and not int.
 	DefaultBlocksPerEpoch = int64(600)
+
+	// DefaultNumberOfEpochsToStartReceivingRewards defines the default minimum number of epochs required by a validator to validate
+	// during so that the validator can start receiving rewards. This would mean that a validator has to be a consumer validator for at least
+	// `DefaultNumberOfEpochsToStartReceivingRewards * DefaultBlocksPerEpoch` on a consumer chain to stat receiving rewards from the chain.
+	// Note that after a validator starts receiving rewards, the validator would keep receiving rewards every time the
+	// consumer chain sends an IBC transfer over to the provider. This value only sets a constraint on when a validator
+	// can first start receiving rewards to avoid cases where a validator just opts in to receive rewards and then opts out
+	// immediately afterward.
+	// Current default values for blocks per epoch corresponds to about 1 hour, so with 24 being the
+	// minimum amount of epochs, this would imply that a validator has to validate at least for 1 day to receive rewards.
+	DefaultNumberOfEpochsToStartReceivingRewards = int64(24)
 )
 
 // Reflection based keys for params subspace
 var (
-	KeyTemplateClient                     = []byte("TemplateClient")
-	KeyTrustingPeriodFraction             = []byte("TrustingPeriodFraction")
-	KeyInitTimeoutPeriod                  = []byte("InitTimeoutPeriod")
-	KeyVscTimeoutPeriod                   = []byte("VscTimeoutPeriod")
-	KeySlashMeterReplenishPeriod          = []byte("SlashMeterReplenishPeriod")
-	KeySlashMeterReplenishFraction        = []byte("SlashMeterReplenishFraction")
-	KeyConsumerRewardDenomRegistrationFee = []byte("ConsumerRewardDenomRegistrationFee")
-	KeyBlocksPerEpoch                     = []byte("BlocksPerEpoch")
+	KeyTemplateClient                        = []byte("TemplateClient")
+	KeyTrustingPeriodFraction                = []byte("TrustingPeriodFraction")
+	KeyInitTimeoutPeriod                     = []byte("InitTimeoutPeriod")
+	KeyVscTimeoutPeriod                      = []byte("VscTimeoutPeriod")
+	KeySlashMeterReplenishPeriod             = []byte("SlashMeterReplenishPeriod")
+	KeySlashMeterReplenishFraction           = []byte("SlashMeterReplenishFraction")
+	KeyConsumerRewardDenomRegistrationFee    = []byte("ConsumerRewardDenomRegistrationFee")
+	KeyBlocksPerEpoch                        = []byte("BlocksPerEpoch")
+	KeyNumberOfEpochsToStartReceivingRewards = []byte("NumberOfEpochsToStartReceivingRewards")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -71,17 +83,19 @@ func NewParams(
 	slashMeterReplenishFraction string,
 	consumerRewardDenomRegistrationFee sdk.Coin,
 	blocksPerEpoch int64,
+	numberOfEpochsToStartReceivingRewards int64,
 ) Params {
 	return Params{
-		TemplateClient:                     cs,
-		TrustingPeriodFraction:             trustingPeriodFraction,
-		CcvTimeoutPeriod:                   ccvTimeoutPeriod,
-		InitTimeoutPeriod:                  initTimeoutPeriod,
-		VscTimeoutPeriod:                   vscTimeoutPeriod,
-		SlashMeterReplenishPeriod:          slashMeterReplenishPeriod,
-		SlashMeterReplenishFraction:        slashMeterReplenishFraction,
-		ConsumerRewardDenomRegistrationFee: consumerRewardDenomRegistrationFee,
-		BlocksPerEpoch:                     blocksPerEpoch,
+		TemplateClient:                        cs,
+		TrustingPeriodFraction:                trustingPeriodFraction,
+		CcvTimeoutPeriod:                      ccvTimeoutPeriod,
+		InitTimeoutPeriod:                     initTimeoutPeriod,
+		VscTimeoutPeriod:                      vscTimeoutPeriod,
+		SlashMeterReplenishPeriod:             slashMeterReplenishPeriod,
+		SlashMeterReplenishFraction:           slashMeterReplenishFraction,
+		ConsumerRewardDenomRegistrationFee:    consumerRewardDenomRegistrationFee,
+		BlocksPerEpoch:                        blocksPerEpoch,
+		NumberOfEpochsToStartReceivingRewards: numberOfEpochsToStartReceivingRewards,
 	}
 }
 
@@ -113,6 +127,7 @@ func DefaultParams() Params {
 			Amount: sdk.NewInt(10000000),
 		},
 		DefaultBlocksPerEpoch,
+		DefaultNumberOfEpochsToStartReceivingRewards,
 	)
 }
 
@@ -145,8 +160,11 @@ func (p Params) Validate() error {
 	if err := ValidateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
 		return fmt.Errorf("consumer reward denom registration fee is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateInt64(p.BlocksPerEpoch); err != nil {
+	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerEpoch); err != nil {
 		return fmt.Errorf("blocks per epoch is invalid: %s", err)
+	}
+	if err := ccvtypes.ValidatePositiveInt64(p.NumberOfEpochsToStartReceivingRewards); err != nil {
+		return fmt.Errorf("number of epochs to start received rewards is invalid: %s", err)
 	}
 	return nil
 }
@@ -163,6 +181,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
 		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyNumberOfEpochsToStartReceivingRewards, p.NumberOfEpochsToStartReceivingRewards, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

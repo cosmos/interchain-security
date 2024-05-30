@@ -23,6 +23,11 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	// `ComputeConsumerTotalVotingPower` used in this test retrieves the blocks per epoch, so we need to set this param
+	params := providertypes.DefaultParams()
+	params.BlocksPerEpoch = 1
+	keeper.SetParams(ctx, params)
+
 	createVal := func(power int64) tmtypes.Validator {
 		signer := tmtypes.NewMockPV()
 		val := tmtypes.NewValidator(signer.PrivKey.PubKey(), power)

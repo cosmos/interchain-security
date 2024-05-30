@@ -147,6 +147,13 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 	// Allocate tokens by iterating over the consumer validators
 	for _, consumerVal := range k.GetConsumerValSet(ctx, chainID) {
+
+		// do not distribute rewards to a validator that has not been validating long enough
+		numberOfBlocksToStartReceivingRewards := k.GetNumberOfEpochsToStartReceivingRewards(ctx) * k.GetBlocksPerEpoch(ctx)
+		if ctx.BlockHeight() >= numberOfBlocksToStartReceivingRewards && ctx.BlockHeight()-consumerVal.Height < numberOfBlocksToStartReceivingRewards {
+			continue
+		}
+
 		consAddr := sdk.ConsAddress(consumerVal.ProviderConsAddr)
 
 		// get the validator tokens fraction using its voting power
@@ -240,6 +247,13 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
 	// sum the opted-in validators set voting powers
 	for _, v := range k.GetConsumerValSet(ctx, chainID) {
+
+		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
+		numberOfBlocksToStartReceivingRewards := k.GetNumberOfEpochsToStartReceivingRewards(ctx) * k.GetBlocksPerEpoch(ctx)
+		if ctx.BlockHeight() >= numberOfBlocksToStartReceivingRewards && ctx.BlockHeight()-v.Height < numberOfBlocksToStartReceivingRewards {
+			continue
+		}
+
 		totalPower += v.Power
 	}
 
