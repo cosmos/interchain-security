@@ -6,7 +6,9 @@ several "power shaping" mechanisms for consumer chains.
 These are:
 1) **Capping the size of the validator set**: The consumer chain can specify a maximum number of validators it
 wants to have in its validator set. This can be used to limit the number of validators in the set, which can
-be useful for chains that want to have a smaller validator set for faster blocks or lower overhead.
+be useful for chains that want to have a smaller validator set for faster blocks or lower overhead. If more validators
+than the maximum size have opted in on a consumer chain, only the validators with the highest power, up to the specified
+maximum, will validate the consumer chain.
 :::info
 This is only applicable to Opt In chains (chains with Top N = 0).
 :::
