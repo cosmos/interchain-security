@@ -275,3 +275,24 @@ func TestGetConsumerRewardsAllocationNil(t *testing.T) {
 	}
 	require.Equal(t, expectedRewardAllocation, alloc)
 }
+
+func TestIsEligibleForConsumerRewards(t *testing.T) {
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	params := providertypes.DefaultParams()
+	params.NumberOfEpochsToStartReceivingRewards = 10
+	params.BlocksPerEpoch = 5
+	keeper.SetParams(ctx, params)
+
+	numberOfBlocks := params.NumberOfEpochsToStartReceivingRewards * params.BlocksPerEpoch
+
+	// if the provider's chain block height is less than `numberOfBlocks`, then irrespectively of the height of a consumer
+	// validator, the validator is eligible for rewards
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks-1), numberOfBlocks-1))
+
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks), 0))
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 0))
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 1))
+	require.False(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 2))
+}

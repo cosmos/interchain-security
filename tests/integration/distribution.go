@@ -1078,8 +1078,8 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 
 	ctx, _ := s.providerCtx().CacheContext()
 	// If the provider chain has not yet reached `GetNumberOfEpochsToStartReceivingRewards * GetBlocksPerEpoch` block height,
-	// then all validators receive rewards. In this test, we want to check whether validators receive rewards or not based on how
-	// long they have been consumer validators. Because of this, we increase the block height.
+	// then all validators receive rewards (see `IsEligibleForConsumerRewards`). In this test, we want to check whether
+	// validators receive rewards or not based on how long they have been consumer validators. Because of this, we increase the block height.
 	ctx = ctx.WithBlockHeight(providerKeeper.GetNumberOfEpochsToStartReceivingRewards(ctx)*providerKeeper.GetBlocksPerEpoch(ctx) + 1)
 
 	// update the consumer validators

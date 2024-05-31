@@ -36,10 +36,8 @@ func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper
 
 // MigrateParams adds missing provider chain params to the param store.
 func MigrateParams(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
-	if paramsSubspace.HasKeyTable() {
-		paramsSubspace.Set(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, providertypes.DefaultNumberOfEpochsToStartReceivingRewards)
-	} else {
+	if !paramsSubspace.HasKeyTable() {
 		paramsSubspace.WithKeyTable(providertypes.ParamKeyTable())
-		paramsSubspace.Set(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, providertypes.DefaultNumberOfEpochsToStartReceivingRewards)
 	}
+	paramsSubspace.Set(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, providertypes.DefaultNumberOfEpochsToStartReceivingRewards)
 }

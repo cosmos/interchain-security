@@ -127,6 +127,23 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	}
 }
 
+// IsEligibleForConsumerRewards returns `true` if the validator with `consumerValidatorHeight` has been a consumer
+// validator for a long period of time and hence is eligible to receive rewards, and false otherwise
+func (k Keeper) IsEligibleForConsumerRewards(ctx sdk.Context, consumerValidatorHeight int64) bool {
+	numberOfBlocksToStartReceivingRewards := k.GetNumberOfEpochsToStartReceivingRewards(ctx) * k.GetBlocksPerEpoch(ctx)
+
+	// Note that at the beginning of the chain's life (e.g., when the block height of the chain is still small), no validator
+	// could have been a consumer validator for more than `NumberOfEpochsToStartReceivingRewards` epochs and hence in this
+	// case all validators are eligible for rewards, even though they might have not been a consumer validator on the
+	// consumer chain for more than a single epoch.
+	isChainStillNew := ctx.BlockHeight() < numberOfBlocksToStartReceivingRewards
+
+	// a validator is eligible for rewards if it has been a consumer validator for `NumberOfEpochsToStartReceivingRewards` epochs
+	hasBeenConsumerValidatorForLongEnough := (ctx.BlockHeight() - consumerValidatorHeight) >= numberOfBlocksToStartReceivingRewards
+
+	return isChainStillNew || hasBeenConsumerValidatorForLongEnough
+}
+
 // AllocateTokensToConsumerValidators allocates tokens
 // to the given consumer chain's validator set
 func (k Keeper) AllocateTokensToConsumerValidators(
@@ -147,10 +164,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 	// Allocate tokens by iterating over the consumer validators
 	for _, consumerVal := range k.GetConsumerValSet(ctx, chainID) {
-
-		// do not distribute rewards to a validator that has not been validating long enough
-		numberOfBlocksToStartReceivingRewards := k.GetNumberOfEpochsToStartReceivingRewards(ctx) * k.GetBlocksPerEpoch(ctx)
-		if ctx.BlockHeight() >= numberOfBlocksToStartReceivingRewards && ctx.BlockHeight()-consumerVal.Height < numberOfBlocksToStartReceivingRewards {
+		if !k.IsEligibleForConsumerRewards(ctx, consumerVal.Height) {
 			continue
 		}
 
@@ -249,8 +263,7 @@ func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string)
 	for _, v := range k.GetConsumerValSet(ctx, chainID) {
 
 		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
-		numberOfBlocksToStartReceivingRewards := k.GetNumberOfEpochsToStartReceivingRewards(ctx) * k.GetBlocksPerEpoch(ctx)
-		if ctx.BlockHeight() >= numberOfBlocksToStartReceivingRewards && ctx.BlockHeight()-v.Height < numberOfBlocksToStartReceivingRewards {
+		if !k.IsEligibleForConsumerRewards(ctx, v.Height) {
 			continue
 		}
 

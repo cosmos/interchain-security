@@ -88,7 +88,7 @@ func TestQueueVSCPackets(t *testing.T) {
 }
 
 // TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights checks that the heights of consumer validators are not
-// getting correctly updated
+// getting incorrectly updated
 func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
