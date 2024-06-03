@@ -111,7 +111,7 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 	if modelState.HasToValidate != nil {
 		hasToValidate := map[ValidatorID][]ChainID{}
 		for validatorId := range *modelState.HasToValidate {
-			hasToValidate[validatorId] = tr.getHasToValidate(validatorId)
+			hasToValidate[validatorId] = tr.target.GetHasToValidate(validatorId)
 		}
 		chainState.HasToValidate = &hasToValidate
 	}
@@ -815,14 +815,14 @@ func (tr Commands) GetClientFrozenHeight(chain ChainID, clientID string) (uint64
 	return uint64(revHeight), uint64(revNumber)
 }
 
-func (tr TestConfig) getHasToValidate(
+func (tr Commands) GetHasToValidate(
 	validatorId ValidatorID,
 ) []ChainID {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
+	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	bz, err := tr.target.ExecCommand(binaryName,
 		"query", "provider", "has-to-validate",
 		tr.validatorConfigs[validatorId].ValconsAddress,
-		`--node`, tr.getQueryNode(ChainID("provi")),
+		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	).CombinedOutput()
 	if err != nil {
@@ -838,7 +838,7 @@ func (tr TestConfig) getHasToValidate(
 	return chains
 }
 
-func (tc TestConfig) GetTrustedHeight(
+func (tr Commands) GetTrustedHeight(
 	chain ChainID,
 	clientID string,
 	index int,

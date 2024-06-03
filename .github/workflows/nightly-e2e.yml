@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # get all history for all branches and tags
@@ -31,7 +31,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E compatibility test
         # Run compatibility tests for different consumer (-cv) and provider (-pv) versions.
         # Combination of all provider versions with consumer versions are tested.
@@ -43,14 +43,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E happy-path test
         run: go run ./tests/e2e/... --tc happy-path
   changeover-test:
@@ -59,14 +59,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E changeover test
         run: go run ./tests/e2e/... --tc changeover
   democracy-reward-test:
@@ -75,14 +75,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E democracy-reward tests
         run: go run ./tests/e2e/... --tc democracy-reward
   democracy-test:
@@ -91,14 +91,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E democracy tests
         run: go run ./tests/e2e/... --tc democracy
   slash-throttle-test:
@@ -107,14 +107,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E slash-throttle tests
         run: go run ./tests/e2e/... --tc slash-throttle
   multiconsumer-test:
@@ -123,14 +123,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E multi-consumer tests
         run: go run ./tests/e2e/... --tc multiconsumer
   consumer-misbehaviour-test:
@@ -139,14 +139,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E consumer-misbehaviour tests
         run: go run ./tests/e2e/... --tc consumer-misbehaviour
   consumer-double-sign-test:
@@ -155,14 +155,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E consumer-double-sign tests
         run: go run ./tests/e2e/... --tc consumer-double-sign
   consumer-double-downtime-test:
@@ -171,14 +171,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E consumer-double-downtime tests
         run: go run ./tests/e2e/... --tc consumer-double-downtime
   partial-set-security-opt-in-test:
@@ -187,14 +187,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E partial set security opt-in chain
         run: go run ./tests/e2e/... --tc partial-set-security-opt-in
   partial-set-security-top-n-test:
@@ -203,14 +203,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E partial set security Top N chain
         run: go run ./tests/e2e/... --tc partial-set-security-top-n
   partial-set-security-validator-set-cap-test:
@@ -219,14 +219,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E partial set security validator-set cap
         run: go run ./tests/e2e/... --tc partial-set-security-validator-set-cap
   partial-set-security-validators-power-cap-test:
@@ -235,14 +235,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E partial set security validators-power cap
         run: go run ./tests/e2e/... --tc partial-set-security-validators-power-cap
   partial-set-security-validators-allowlisted-test:
@@ -251,14 +251,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E partial set security allowlist
         run: go run ./tests/e2e/... --tc partial-set-security-validators-allowlisted
   partial-set-security-validators-denylisted-test:
@@ -267,14 +267,14 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/checkout@v4
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # The Go version to download (if necessary) and use.
+          go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E partial set security denylist
         run: go run ./tests/e2e/... --tc partial-set-security-validators-denylisted
 
