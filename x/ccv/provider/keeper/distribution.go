@@ -76,24 +76,17 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 
 	// Iterate over all registered consumer chains
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
+		// transfer the consumer rewards to the distribution module account
 		// note that the rewards transferred are only consumer whitelisted denoms
-		// Get coins of the consumer rewards allocation
-		allocation := k.GetConsumerRewardsAllocation(ctx, consumer.ChainId)
-		if allocation.Rewards.IsZero() {
+		rewardsCollected, err := k.TransferConsumerRewardsToDistributionModule(ctx, consumer.ChainId)
+		if err != nil {
+			k.Logger(ctx).Error(
+				"fail to transfer rewards to distribution module for chain %s: %s",
+				consumer.ChainId,
+				err,
+			)
 			continue
 		}
-
-		// Truncate coin rewards
-		rewardsCollected := sdk.Coins{}
-		rewardsCollected, _ = allocation.Rewards.TruncateDecimal()
-
-		// NOTE the consumer rewards allocation isn't a module account, however its coins
-		// are held in the consumer reward pool module account. Thus the consumer
-		// rewards allocation must be reduced separately from the FundCommunityPool call.
-
-		// Update consumer rewards allocation with the remaining decimal coins
-		allocation.Rewards = allocation.Rewards.Sub(sdk.NewDecCoinsFromCoins(rewardsCollected...))
-		k.SetConsumerRewardsAllocation(ctx, consumer.ChainId, allocation)
 
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
@@ -101,6 +94,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if rewardsCollected.IsZero() {
 			continue
 		}
+		rewardsCollectedDec := sdk.NewDecCoinsFromCoins(rewardsCollected...)
 
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
@@ -110,7 +104,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		}
 
 		// calculate the reward allocations
-		rewardsCollectedDec := sdk.NewDecCoinsFromCoins(rewardsCollected...)
 		remaining := rewardsCollectedDec
 		communityTax, err := k.distributionKeeper.GetCommunityTax(ctx)
 		if err != nil {
@@ -192,8 +185,9 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	return allocated
 }
 
-// GetConsumerRewardsCollected get the consumer rewards pool to a the distribution module
-func (k Keeper) GetConsumerRewardsCollected(
+// TransferConsumerRewardsToDistributionModule transfers the rewards allocation of the given consumer chain
+// from the consumer rewards pool to a the distribution module
+func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	ctx sdk.Context,
 	chainID string,
 ) (sdk.Coins, error) {

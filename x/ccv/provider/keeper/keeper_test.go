@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -411,10 +412,12 @@ func TestGetAllConsumerChains(t *testing.T) {
 		{OperatorAddress: "cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3"}, // 500 power
 	}
 	powers := []int64{50, 150, 300, 500} // sum = 1000
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(vals).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(vals, nil).AnyTimes()
 
 	for i, val := range vals {
-		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), val.GetOperator()).Return(powers[i]).AnyTimes()
+		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+		require.NoError(t, err)
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).Return(powers[i], nil).AnyTimes()
 	}
 
 	// set Top N parameters, client ids and expected result

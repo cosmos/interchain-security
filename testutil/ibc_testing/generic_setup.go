@@ -142,26 +142,28 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	prop.ChainId = chainID
 	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
 
+	// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
+	// using time.Now() could set the spawn time to be too far in the past or too far in the future
+	prop.SpawnTime = coordinator.CurrentTime
+	// NOTE: the initial height passed to CreateConsumerClient
+	// must be the height on the consumer when InitGenesis is called
+	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
+
+	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), prop)
+	props := providerKeeper.GetAllPendingConsumerAdditionProps(providerChain.GetContext())
+	s.Require().Len(props, 1, "unexpected len consumer addition proposals in AddConsumer")
+
 	// opt-in all validators
-	for _, v := range providerApp.GetTestStakingKeeper().GetLastValidators(providerChain.GetContext()) {
+	lastVals, err := providerApp.GetTestStakingKeeper().GetLastValidators(providerChain.GetContext())
+	s.Require().NoError(err)
+
+	for _, v := range lastVals {
 		consAddr, _ := v.GetConsAddr()
 		providerKeeper.SetOptedIn(providerChain.GetContext(), chainID, providertypes.NewProviderConsAddress(consAddr))
 	}
 
-	// NOTE: the initial height passed to CreateConsumerClient
-	// must be the height on the consumer when InitGenesis is called
-	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
-	err := providerKeeper.CreateConsumerClient(
-		providerChain.GetContext(),
-		prop,
-	)
-	s.Require().NoError(err)
-
-	// set the consumer TopN here since the test suite setup only used the consumer addition prop
-	// to create the consumer genesis, see BeginBlockInit in /x/ccv/provider/keeper/proposal.go.
-	providerKeeper.SetTopN(providerChain.GetContext(), chainID, prop.Top_N)
-
 	// commit the state on the provider chain
+	// and create the client and genesis of consumer
 	coordinator.CommitBlock(providerChain)
 
 	// get genesis state created by the provider

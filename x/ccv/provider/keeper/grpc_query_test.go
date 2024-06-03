@@ -178,11 +178,11 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	val := createStakingValidator(ctx, mocks, 1, 1)
+	val := createStakingValidator(ctx, mocks, 1, 1, 1)
 	valConsAddr, _ := val.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(valConsAddr)
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, true).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{val}).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{val}, nil).AnyTimes()
 
 	req := types.QueryConsumerChainsValidatorHasToValidateRequest{
 		ProviderAddress: providerAddr.String(),
@@ -246,7 +246,7 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
 	val := stakingtypes.Validator{Commission: stakingtypes.Commission{CommissionRates: stakingtypes.CommissionRates{Rate: expectedCommissionRate}}}
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-		ctx, providerAddr.ToSdkConsAddr()).Return(val, true).Times(1)
+		ctx, providerAddr.ToSdkConsAddr()).Return(val, nil).Times(1)
 	res, _ = pk.QueryValidatorConsumerCommissionRate(ctx, &req)
 	require.Equal(t, expectedCommissionRate, res.Rate)
 }

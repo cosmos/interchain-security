@@ -914,8 +914,9 @@ func TestBeginBlockInit(t *testing.T) {
 	// opt in a sample validator so the chain's proposal can successfully execute
 	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
 	consAddr, _ := validator.GetConsAddr()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return([]stakingtypes.Validator{validator}).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(1)).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return([]stakingtypes.Validator{validator}, nil).AnyTimes()
+	valAdrr, _ := sdk.ValAddressFromBech32(validator.GetOperator())
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAdrr).Return(int64(1), nil).AnyTimes()
 	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
 
 	providerKeeper.BeginBlockInit(ctx)
