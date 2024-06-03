@@ -21,6 +21,8 @@ func NewProviderProposalHandler(k keeper.Keeper) govv1beta1.Handler {
 			return k.HandleConsumerAdditionProposal(ctx, c)
 		case *types.ConsumerRemovalProposal:
 			return k.HandleConsumerRemovalProposal(ctx, c)
+		case *types.ConsumerModificationProposal:
+			return k.HandleConsumerModificationProposal(ctx, c)
 		case *types.ChangeRewardDenomsProposal:
 			return k.HandleConsumerRewardDenomProposal(ctx, c)
 		default:

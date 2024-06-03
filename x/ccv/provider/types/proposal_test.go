@@ -297,6 +297,60 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			),
 			false,
 		},
+		{
+			"top N is invalid",
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
+				"0.75",
+				10,
+				"",
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
+				10,
+				0,
+				0,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"validators power cap is invalid",
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
+				"0.75",
+				10,
+				"",
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
+				50,
+				101,
+				0,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"valid proposal with PSS features",
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
+				"0.75",
+				10,
+				"",
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
+				0,
+				34,
+				101,
+				[]string{"addr1"},
+				[]string{"addr2", "addr3"},
+			),
+			true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -444,5 +498,79 @@ func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 			}
 			require.NoError(t, err)
 		})
+	}
+}
+
+func TestConsumerModificationProposalValidateBasic(t *testing.T) {
+	testCases := []struct {
+		name     string
+		proposal govv1beta1.Content
+		expPass  bool
+	}{
+		{
+			"success",
+			types.NewConsumerModificationProposal("title", "description", "chainID",
+				50,
+				100,
+				34,
+				[]string{"addr1"},
+				nil,
+			),
+			true,
+		},
+		{
+			"invalid chain id",
+			types.NewConsumerModificationProposal("title", "description", "  ",
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"top N is invalid",
+			types.NewConsumerModificationProposal("title", "description", "chainID",
+				10,
+				0,
+				0,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"validators power cap is invalid",
+			types.NewConsumerModificationProposal("title", "description", "chainID",
+				50,
+				101,
+				0,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"valid proposal",
+			types.NewConsumerModificationProposal("title", "description", "chainID",
+				0,
+				34,
+				101,
+				[]string{"addr1"},
+				[]string{"addr2", "addr3"},
+			),
+			true,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		err := tc.proposal.ValidateBasic()
+		if tc.expPass {
+			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)
+		} else {
+			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
+		}
 	}
 }

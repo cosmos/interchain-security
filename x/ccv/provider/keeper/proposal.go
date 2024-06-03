@@ -144,6 +144,39 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 	return nil
 }
 
+// HandleConsumerModificationProposal modifies a running consumer chain
+func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, p *types.ConsumerModificationProposal) error {
+	if _, found := k.GetConsumerClientId(ctx, p.ChainId); !found {
+		return fmt.Errorf("consumer chain (%s) is not runnig", p.ChainId)
+	}
+
+	k.SetTopN(ctx, p.ChainId, p.Top_N)
+	k.SetValidatorsPowerCap(ctx, p.ChainId, p.ValidatorsPowerCap)
+	k.SetValidatorSetCap(ctx, p.ChainId, p.ValidatorSetCap)
+
+	k.DeleteAllowlist(ctx, p.ChainId)
+	for _, address := range p.Allowlist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetAllowlist(ctx, p.ChainId, types.NewProviderConsAddress(consAddr))
+	}
+
+	k.DeleteDenylist(ctx, p.ChainId)
+	for _, address := range p.Denylist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetDenylist(ctx, p.ChainId, types.NewProviderConsAddress(consAddr))
+	}
+
+	return nil
+}
+
 // StopConsumerChain cleans up the states for the given consumer chain ID and
 // completes the outstanding unbonding operations on the consumer chain.
 //

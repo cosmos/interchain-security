@@ -24,9 +24,10 @@ import (
 )
 
 var (
-	ConsumerAdditionProposalHandler   = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd)
-	ConsumerRemovalProposalHandler    = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd)
-	ChangeRewardDenomsProposalHandler = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd)
+	ConsumerAdditionProposalHandler     = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd)
+	ConsumerRemovalProposalHandler      = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd)
+	ConsumerModificationProposalHandler = govclient.NewProposalHandler(SubmitConsumerModificationProposalTxCmd)
+	ChangeRewardDenomsProposalHandler   = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd)
 )
 
 // SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
@@ -158,6 +159,70 @@ Where proposal.json contains:
 			}
 
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+}
+
+// SubmitConsumerModificationProposalTxCmd returns a CLI command handler for submitting
+// a consumer modification proposal via a transaction.
+func SubmitConsumerModificationProposalTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "consumer-modification [proposal-file]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a consumer modification proposal",
+		Long: `
+Submit a consumer modification proposal along with an initial deposit.
+The proposal details must be supplied via a JSON file.
+
+Example:
+$ <appd> tx gov submit-legacy-proposal consumer-modification <path/to/proposal.json> --from=<key_or_address>
+
+Where proposal.json contains:
+
+{
+    "title": "Modify FooChain",
+    "summary": "Make it an Opt IN chain",
+    "chain_id": "foochain",
+    "top_n": 0,
+    "validators_power_cap": 32,
+    "validator_set_cap": 50,
+    "allowlist": [],
+    "denylist": ["validatorAConsensusAddress", "validatorBConsensusAddress"]
+}
+		`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposal, err := ParseConsumerModificationProposalJSON(args[0])
+			if err != nil {
+				return err
+			}
+
+			content := types.NewConsumerModificationProposal(
+				proposal.Title, proposal.Summary, proposal.ChainId, proposal.TopN,
+				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist)
+
+			from := clientCtx.GetFromAddress()
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 			if err != nil {
 				return err
 			}
@@ -313,6 +378,35 @@ type ConsumerRemovalProposalReq struct {
 
 func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
 	proposal := ConsumerRemovalProposalJSON{}
+
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
+	if err != nil {
+		return proposal, err
+	}
+
+	if err := json.Unmarshal(contents, &proposal); err != nil {
+		return proposal, err
+	}
+
+	return proposal, nil
+}
+
+type ConsumerModificationProposalJSON struct {
+	Title   string `json:"title"`
+	Summary string `json:"summary"`
+	ChainId string `json:"chain_id"`
+
+	TopN               uint32   `json:"top_N"`
+	ValidatorsPowerCap uint32   `json:"validators_power_cap"`
+	ValidatorSetCap    uint32   `json:"validator_set_cap"`
+	Allowlist          []string `json:"allowlist"`
+	Denylist           []string `json:"denylist"`
+
+	Deposit string `json:"deposit"`
+}
+
+func ParseConsumerModificationProposalJSON(proposalFile string) (ConsumerModificationProposalJSON, error) {
+	proposal := ConsumerModificationProposalJSON{}
 
 	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
