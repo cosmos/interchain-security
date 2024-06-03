@@ -574,3 +574,17 @@ func TestConsumerModificationProposalValidateBasic(t *testing.T) {
 		}
 	}
 }
+
+func TestValidatePSSFeatures(t *testing.T) {
+	require.NoError(t, types.ValidatePSSFeatures(0, 0, types.ErrInvalidConsumerRemovalProp))
+	require.NoError(t, types.ValidatePSSFeatures(50, 0, types.ErrInvalidConsumerRemovalProp))
+	require.NoError(t, types.ValidatePSSFeatures(100, 0, types.ErrInvalidConsumerRemovalProp))
+	require.NoError(t, types.ValidatePSSFeatures(0, 10, types.ErrInvalidConsumerRemovalProp))
+	require.NoError(t, types.ValidatePSSFeatures(0, 100, types.ErrInvalidConsumerRemovalProp))
+	require.NoError(t, types.ValidatePSSFeatures(50, 100, types.ErrInvalidConsumerRemovalProp))
+
+	require.Error(t, types.ValidatePSSFeatures(10, 0, types.ErrInvalidConsumerRemovalProp))
+	require.Error(t, types.ValidatePSSFeatures(49, 0, types.ErrInvalidConsumerRemovalProp))
+	require.Error(t, types.ValidatePSSFeatures(101, 0, types.ErrInvalidConsumerRemovalProp))
+	require.Error(t, types.ValidatePSSFeatures(50, 101, types.ErrInvalidConsumerRemovalProp))
+}

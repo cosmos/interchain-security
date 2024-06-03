@@ -95,6 +95,21 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 	return ProposalTypeConsumerAddition
 }
 
+// ValidatePSSFeatures returns an error if the `topN` and `validatorsPowerCap` parameters are no in the correct ranges
+func ValidatePSSFeatures(topN uint32, validatorsPowerCap uint32, error *errorsmod.Error) error {
+	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
+	// Opt In chain) or in the range [50, 100] (for a Top N chain).
+	if topN != 0 && (topN < 50 || topN > 100) {
+		return errorsmod.Wrap(error, "Top N can either be 0 or in the range [50, 100]")
+	}
+
+	if validatorsPowerCap != 0 && validatorsPowerCap > 100 {
+		return errorsmod.Wrap(error, "validators' power cap has to be in the range [1, 100]")
+	}
+
+	return nil
+}
+
 // ValidateBasic runs basic stateless validity checks
 func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 	if err := govv1beta1.ValidateAbstract(cccp); err != nil {
@@ -148,17 +163,7 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
 	}
 
-	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
-	// Opt In chain) or in the range [50, 100] (for a Top N chain).
-	if cccp.Top_N != 0 && (cccp.Top_N < 50 || cccp.Top_N > 100) {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "Top N can either be 0 or in the range [50, 100]")
-	}
-
-	if cccp.ValidatorsPowerCap != 0 && cccp.ValidatorsPowerCap > 100 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "validators' power cap has to be in the range [1, 100]")
-	}
-
-	return nil
+	return ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap, ErrInvalidConsumerAdditionProposal)
 }
 
 // String returns the string representation of the ConsumerAdditionProposal.
@@ -261,20 +266,10 @@ func (cccp *ConsumerModificationProposal) ValidateBasic() error {
 	}
 
 	if strings.TrimSpace(cccp.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "consumer chain id must not be blank")
+		return errorsmod.Wrap(ErrInvalidConsumerModificationProposal, "consumer chain id must not be blank")
 	}
 
-	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
-	// Opt In chain) or in the range [50, 100] (for a Top N chain).
-	if cccp.Top_N != 0 && (cccp.Top_N < 50 || cccp.Top_N > 100) {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "Top N can either be 0 or in the range [50, 100]")
-	}
-
-	if cccp.ValidatorsPowerCap != 0 && cccp.ValidatorsPowerCap > 100 {
-		return errorsmod.Wrap(ErrInvalidConsumerModificationProposal, "validators' power cap has to be in the range [1, 100]")
-	}
-
-	return nil
+	return ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap, ErrInvalidConsumerModificationProposal)
 }
 
 // NewEquivocationProposal creates a new equivocation proposal.
