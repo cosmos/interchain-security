@@ -290,6 +290,7 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedVal
 			return k.FilterOptedInAndAllowAndDenylistedPredicate(ctx, chainID, providerAddr)
 		})
 
+	// if ELYS ... to 50 ..
 	nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
 	return k.CapValidatorsPower(ctx, chainID, nextValidators)
 }
