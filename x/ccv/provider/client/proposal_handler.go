@@ -191,7 +191,7 @@ Where proposal.json contains:
 
 {
     "title": "Modify FooChain",
-    "summary": "Make it an Opt IN chain",
+    "summary": "Make it an Opt In chain",
     "chain_id": "foochain",
     "top_n": 0,
     "validators_power_cap": 32,
