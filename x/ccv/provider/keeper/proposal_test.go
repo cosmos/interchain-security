@@ -984,6 +984,7 @@ func TestBeginBlockInit(t *testing.T) {
 	// test that Top N is set correctly
 	require.True(t, providerKeeper.IsTopN(ctx, "chain1"))
 	topN, found := providerKeeper.GetTopN(ctx, "chain1")
+	require.True(t, found)
 	require.Equal(t, uint32(50), topN)
 
 	require.True(t, providerKeeper.IsOptIn(ctx, "chain4"))
