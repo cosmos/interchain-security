@@ -12,9 +12,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	// sdkdistrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-
 	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"

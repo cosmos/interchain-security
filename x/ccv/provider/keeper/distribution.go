@@ -94,7 +94,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if rewardsCollected.IsZero() {
 			continue
 		}
-		rewardsCollectedDec := sdk.NewDecCoinsFromCoins(rewardsCollected...)
 
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
@@ -104,6 +103,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		}
 
 		// calculate the reward allocations
+		rewardsCollectedDec := sdk.NewDecCoinsFromCoins(rewardsCollected...)
 		remaining := rewardsCollectedDec
 		communityTax, err := k.distributionKeeper.GetCommunityTax(ctx)
 		if err != nil {
