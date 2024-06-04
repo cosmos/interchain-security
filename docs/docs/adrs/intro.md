@@ -1,13 +1,13 @@
 ---
 sidebar_position: 1
-title: ADRs
+title: Overview
 ---
 
-# Architecture Decision Records (ADR)
+# Overview
 
 This is a location to record all high-level architecture decisions in the Interchain Security project.
 
-You can read more about the ADR concept in this [blog post](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t).
+You can read more about the Architecture Decision Record (ADR) concept in this [blog post](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t).
 
 An ADR should provide:
 
@@ -26,7 +26,7 @@ If recorded decisions turned out to be lacking, convene a discussion, record the
 
 Note the context/background should be written in the present tense.
 
-To suggest an ADR, please make use of the [ADR template](./adr-template.md) provided.
+To suggest an ADR, please make use of the [ADR template](https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/_adr-template.md) provided.
 
 ## Table of Contents
 
