@@ -1301,6 +1301,8 @@ func (k Keeper) HasToValidate(
 		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, topN)
 		if err == nil {
 			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		} else {
+			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 		}
 	}
 

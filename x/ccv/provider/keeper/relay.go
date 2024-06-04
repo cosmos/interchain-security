@@ -228,6 +228,9 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			minPower, err := k.ComputeMinPowerToOptIn(ctx, chain.ChainId, bondedValidators, chain.Top_N)
 			if err == nil {
 				k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
+			} else {
+				// we just log here and do not panic because panic-ing would halt the provider chain
+				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chain.ChainId, "error", err)
 			}
 		}
 

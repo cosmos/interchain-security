@@ -65,11 +65,20 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
 		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-		if err != nil || power >= minPowerToOptIn {
+		if err != nil {
+			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 			return errorsmod.Wrapf(
 				types.ErrCannotOptOutFromTopN,
-				"validator with power (%d) cannot opt out from Top N chain because all validators"+
-					"with at least %d power have to validate", power, minPowerToOptIn)
+				"validator with power (%d) cannot opt out from Top N chain (%s) because the min power"+
+					" could not be computed: %w", power, chainID, err)
+
+		}
+
+		if power >= minPowerToOptIn {
+			return errorsmod.Wrapf(
+				types.ErrCannotOptOutFromTopN,
+				"validator with power (%d) cannot opt out from Top N chain (%s) because all validators"+
+					" with at least %d power have to validate", power, chainID, minPowerToOptIn)
 		}
 	}
 

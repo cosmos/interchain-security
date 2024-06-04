@@ -267,6 +267,8 @@ func (k Keeper) MakeConsumerGenesis(
 		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, prop.Top_N)
 		if err == nil {
 			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		} else {
+			return gen, nil, err
 		}
 	}
 
