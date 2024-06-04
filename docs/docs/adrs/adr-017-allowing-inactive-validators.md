@@ -74,6 +74,7 @@ Additional risk mitigations are to increase the active set size slowly, and to m
 Allowing validators from the inactive set brings with it some additional risks.
 In general, consumer chains will now face some of the problems also faced by standalone chains. It’s reasonable to assume that the validator set on the hub has a minimal amount of operational quality due to being battle tested and decentralized, and consumer chains with validators from outside the hub active set cannot rely on this as much anymore.
 
+
 #### Sybil attacks
 
 With the restricted size of the active set today, it’s clear that the set is at least minimally competitive and it is not trivial to spin up multiple nodes as a validator.
@@ -86,6 +87,7 @@ For validators in the active set, we typically assume that if they would misbeha
 
 #### Additional negative consequences
 * Validators outside of the active set become bonded, even if they are not validating on any consumer chains
+* The provider keeper will need to implement the staking keeper interface, and modules need to be wired up to either the staking or provider keeper, depending on whether they need the consensus or staking validator set
 * This will impact how future modules are integrated, since we will need to consider whether those modules should consider the consensus validators or the bonded validators (which other modules might assume to be the same)
 
 ### Neutral
