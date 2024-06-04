@@ -1,6 +1,6 @@
 ---
 sidebar_position: 18
-title: Allowing validators outside the active set to validate on consumer chains
+title: ICS with Inactive Provider Validators
 ---
 # ADR 017: Allowing validators outside the active set to validate on consumer chains
 
