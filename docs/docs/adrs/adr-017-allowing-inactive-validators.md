@@ -28,22 +28,19 @@ Currently, the staking module, provider module, and CometBFT interact in this wa
 
 ![inactivevals_before.png](../../figures/inactivevals_before.png)
 
-The staking module keeps a list of bonded validators. It sends these validators to CometBFT to inform which validators make up the next consensus validators, that is, the set of validators participating in the consensus process. Separately, the provider module reads the list of bonded validators and sends this to the consumer chain, after shaping it according to which validators are opted in and the parameters set by the consumer chain for allowlist, denylist, etc.
+The staking module keeps a list of validators. The `MaxValidators` validators with the largest amount of stake are "active" validators. `MaxValidators` is a parameter of the staking module. The staking module sends these validators to CometBFT to inform which validators make up the next consensus validators, that is, the set of validators participating in the consensus process. Separately, the provider module reads the list of bonded validators and sends this to the consumer chain, after shaping it according to which validators are opted in and the parameters set by the consumer chain for allowlist, denylist, etc.
 
 ## Decision
 
-The proposed solution to allow validators that are not participating in the consensus process on the provider (inactive validators) is to:
+The proposed solution to allow validators that are not participating in the consensus process on the provider (inactive validators) is to change 3 main things:
 
-a) increase the number of bonded validators in the staking module to a large number, e.g. 500 (vs 180 today).
-This would usually mean that all those 500 validators take part in the consensus process on the provider, and we do not want this (since it slows down consensus and dilutes rewards),
-so to handle this, we also:
+a) increase the `MaxValidators` parameter of the staking module
 
-b) do *not* take the updates for CometBFT directly from the bonded validators in the staking module, and instead *filter* the bonded validators to send only the first `MaxProviderConsensusValidators` (sorted by largest amount of stake first) many validators to CometBFT. Practically, we achieve this by repurposing the provider module, reading the bonded validators from the staking module, and simply filtering that list before sending it to CometBFT.
+b) do *not* take the updates for CometBFT directly from the bonded validators in the staking module, by wrapping the staking modules `EndBlocker` with a dummy EndBlocker that doesn't return any validator updates. Instead, we adjust the provider module to return validator updates on its EndBlocker. These validator updates are obtained by *filtering* the bonded validators to send only the first `MaxProviderConsensusValidators` (sorted by largest amount of stake first) many validators to CometBFT
 
-Then lastly, we
 c) use the enlarged list of bonded validators from the staking module as basis for the validator set that the provider module sends to consumer chains (again after applying power shaping and filtering out validatiors that are not opted in).
 
-In consequence, the provider chain can keep a reasonably-sized validator set, while giving consumer chains a much larger pool of potential validators.
+In consequence, the provider chain can keep a reasonably-sized consensus validator set, while giving consumer chains a much larger pool of potential validators.
 
 ![inactivevals_after.png](../../figures/inactivevals_after.png)
 
