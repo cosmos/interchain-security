@@ -70,7 +70,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 			return errorsmod.Wrapf(
 				types.ErrCannotOptOutFromTopN,
 				"validator with power (%d) cannot opt out from Top N chain (%s) because the min power"+
-					" could not be computed: %w", power, chainID, err)
+					" could not be computed: %s", power, chainID, err.Error())
 
 		}
 
