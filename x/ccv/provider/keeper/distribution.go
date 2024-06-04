@@ -186,7 +186,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 }
 
 // TransferConsumerRewardsToDistributionModule transfers the rewards allocation of the given consumer chain
-// from the consumer rewards pool to a the distribution module
+// from the consumer rewards pool to the distribution module
 func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	ctx sdk.Context,
 	chainID string,
