@@ -51,10 +51,10 @@ In consequence, the provider chain can keep a reasonably-sized validator set, wh
 Some additional considerations:
 
 * Migration: In the migration, the last consensus validator set will be set to the last active validator set from the view of the staking module. Existing consumer chains are migrated to have a validator set size cap (otherwise, they could end up with a huge validator set including all the staking-but-not-consensus-active validators from the provider chain)
-* Slashing: Validators that are not part of the active set on the provider chain can still be slashed for downtime on a consumer chain, but they *are not* slashed for downtime on the provider chain.
-This is achieved without any additional changes to the slashing module, because the slashing module checks for downtime by looking at the consensus participants reported by CometBFT, and thus with the proposed solution, validators that are not part of the consensus validators on the provider chain are not considered for downtime slashing.
+* Slashing: Validators that are not part of the active set on the provider chain can still be jailed for downtime on a consumer chain (via an Interchain Security SlashPacket sent to the provider, who will then jail the validator), but they *are not* slashed for downtime on the provider chain.
+This is achieved without any additional changes to the slashing module, because the slashing module checks for downtime by looking at the consensus participants reported by CometBFT, and thus with the proposed solution, validators that are not part of the consensus validators on the provider chain are not considered for downtime slashing (see https://github.com/cosmos/cosmos-sdk/blob/b68da64d8e38caa0438dbf3b065d864d91e03c4b/x/slashing/abci.go#L22).
 * Rewards: Validators that are not part of the active set on the provider chain can still receive rewards on the consumer chain, but they *do not* receive rewards from the provider chain. This change is
-achieved without further changes to staking or reward distributions, because similar to downtime, rewards are based on the consensus validator set.
+achieved without further changes to staking or reward distributions, because similar to downtime, rewards are based on the consensus validator set (see https://github.com/cosmos/cosmos-sdk/blob/b68da64d8e38caa0438dbf3b065d864d91e03c4b/x/distribution/abci.go#L28)
 
 ## Risk Mitigations
 
@@ -68,6 +68,7 @@ Additional risk mitigations are to increase the active set size slowly, and to m
 
 * Validators outside of the active set can validate on consumer chains without having an impact on the consensus engine of the provider chain
 * Consumer chains can have a much larger validator set than the provider chain if they prefer this e.g. for decentralization reasons
+* Consumer chain teams can, with much less cost than today, start up their own consumer chain node to keep the chain running (in a centralized manner) even if no hub validators have opted in to validate on the chain. This is useful to stop the chain from ending up with an empty validator set and becoming recoverable only with a hardfork
 
 ### Negative
 
@@ -86,11 +87,12 @@ When we make the “potential validator set” much larger, we should assume tha
 For validators in the active set, we typically assume that if they would misbehave, they pay a large reputational cost. This represents delegators deciding to switch validators (potentially even on chains other than the one the misbehaviour happened on), and loss of credibility in the ecosystem. With the much larger active set, it seems prudent to assume that reputational damage is not a deterrent for many validators. They might only have minimal amounts of delegated stake and control most of it themselves, so they might not be deterred from performing actions that would usually bring reputational damage.
 
 #### Additional negative consequences
-* Validators outside of the active set become bonded, even if they are not validating on any consumer chains
 * The provider keeper will need to implement the staking keeper interface, and modules need to be wired up to either the staking or provider keeper, depending on whether they need the consensus or staking validator set
 * This will impact how future modules are integrated, since we will need to consider whether those modules should consider the consensus validators or the bonded validators (which other modules might assume to be the same)
 
 ### Neutral
+
+* There might be validators that are bonded, but not validating on any chain at all. This is not a problem, but it might be a bit confusing.
 
 ## Alternative considerations
 
@@ -104,7 +106,7 @@ This might be better if it turns out that the staking module active set is used 
 Instead of increasing the active set size, we could allow validators that are unbonded (but still exist on the provider) to validate consumer chains.
 For this, we would need to:
 * Modify the VSC updates to consider the set of all validators, even unbonded ones, instead of just active ones
-* Adjust our downtime jailing/equivocation slashing logic to work correctly with unbonded validators
+* Adjust our downtime jailing/equivocation slashing logic to work correctly with unbonded validators. This is very hard, because redelegations are not usually tracked for unbonded validators.
 
 ## References
 
