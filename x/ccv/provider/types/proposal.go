@@ -104,7 +104,7 @@ func ValidatePSSFeatures(topN uint32, validatorsPowerCap uint32, error *errorsmo
 	}
 
 	if validatorsPowerCap != 0 && validatorsPowerCap > 100 {
-		return errorsmod.Wrap(error, "validators' power cap has to be in the range [1, 100]")
+		return errorsmod.Wrap(error, "validators' power cap must has to be in the range [0, 100]")
 	}
 
 	return nil
