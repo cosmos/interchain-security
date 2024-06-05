@@ -96,15 +96,15 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 }
 
 // ValidatePSSFeatures returns an error if the `topN` and `validatorsPowerCap` parameters are no in the correct ranges
-func ValidatePSSFeatures(topN uint32, validatorsPowerCap uint32, error *errorsmod.Error) error {
+func ValidatePSSFeatures(topN uint32, validatorsPowerCap uint32) error {
 	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
 	// Opt In chain) or in the range [50, 100] (for a Top N chain).
 	if topN != 0 && (topN < 50 || topN > 100) {
-		return errorsmod.Wrap(error, "Top N can either be 0 or in the range [50, 100]")
+		return fmt.Errorf("Top N can either be 0 or in the range [50, 100]")
 	}
 
 	if validatorsPowerCap != 0 && validatorsPowerCap > 100 {
-		return errorsmod.Wrap(error, "validators' power cap must be in the range [0, 100]")
+		return fmt.Errorf("validators' power cap has to be in the range [1, 100]")
 	}
 
 	return nil
@@ -163,7 +163,11 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
 	}
 
-	return ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap, ErrInvalidConsumerAdditionProposal)
+	err := ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "invalid PSS features: %s", err.Error())
+	}
+	return nil
 }
 
 // String returns the string representation of the ConsumerAdditionProposal.
@@ -269,7 +273,11 @@ func (cccp *ConsumerModificationProposal) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidConsumerModificationProposal, "consumer chain id must not be blank")
 	}
 
-	return ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap, ErrInvalidConsumerModificationProposal)
+	err := ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
+	}
+	return nil
 }
 
 // NewEquivocationProposal creates a new equivocation proposal.
