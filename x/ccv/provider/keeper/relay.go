@@ -225,7 +225,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 		if chain.Top_N > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			minPower, err := k.ComputeMinPowerToOptIn(ctx, chain.ChainId, bondedValidators, chain.Top_N)
+			minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, chain.Top_N)
 			if err == nil {
 				k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
 			} else {
