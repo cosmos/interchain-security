@@ -49,9 +49,9 @@ Some additional considerations:
 
 * Migration: In the migration, the last consensus validator set will be set to the last active validator set from the view of the staking module. Existing consumer chains are migrated to have a validator set size cap (otherwise, they could end up with a huge validator set including all the staking-but-not-consensus-active validators from the provider chain)
 * Slashing: Validators that are not part of the active set on the provider chain can still be jailed for downtime on a consumer chain (via an Interchain Security SlashPacket sent to the provider, who will then jail the validator), but they *are not* slashed for downtime on the provider chain.
-This is achieved without any additional changes to the slashing module, because the slashing module checks for downtime by looking at the consensus participants reported by CometBFT, and thus with the proposed solution, validators that are not part of the consensus validators on the provider chain are not considered for downtime slashing (see https://github.com/cosmos/cosmos-sdk/blob/b68da64d8e38caa0438dbf3b065d864d91e03c4b/x/slashing/abci.go#L22).
+This is achieved without any additional changes to the slashing module, because the slashing module checks for downtime by looking at the consensus participants reported by CometBFT, and thus with the proposed solution, validators that are not part of the consensus validators on the provider chain are not considered for downtime slashing (see https://github.com/cosmos/cosmos-sdk/blob/v0.47.11/x/slashing/abci.go#L22).
 * Rewards: Validators that are not part of the active set on the provider chain can still receive rewards on the consumer chain, but they *do not* receive rewards from the provider chain. This change is
-achieved without further changes to staking or reward distributions, because similar to downtime, rewards are based on the consensus validator set (see https://github.com/cosmos/cosmos-sdk/blob/b68da64d8e38caa0438dbf3b065d864d91e03c4b/x/distribution/abci.go#L28)
+achieved without further changes to staking or reward distributions, because similar to downtime, rewards are based on the consensus validator set (see https://github.com/cosmos/cosmos-sdk/blob/v0.47.11/x/distribution/abci.go#L28)
 
 
 ### Changes to the state
@@ -66,6 +66,8 @@ set of consumer chains.
 ## Risk Mitigations
 
 To mitigate risks from validators with little stake, we introduce a minimum stake requirement for validators to be able to validate on consumer chains, which can be set by each consumer chain independently, with a default value set by the provider chain.
+
+Additionally, we indepdently allow individual consumer chains to disable this feature, which will disallow validators from outside the provider active set from validating on the consumer chain and revert them to the previous behaviour of only considering validators of the provider that are part of the active consensus validator set.
 
 Additional risk mitigations are to increase the active set size slowly, and to monitor the effects on the network closely. For the first iteration, we propose to increase the active set size to 200 validators (while keeping the consensus validators to 180), thus letting the 20 validators with the most stake outside of the active set validate on consumer chains.
 
