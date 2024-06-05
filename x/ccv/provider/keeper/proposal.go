@@ -147,7 +147,7 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 // HandleConsumerModificationProposal modifies a running consumer chain
 func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, p *types.ConsumerModificationProposal) error {
 	if _, found := k.GetConsumerClientId(ctx, p.ChainId); !found {
-		return fmt.Errorf("consumer chain (%s) is not runnig", p.ChainId)
+		return fmt.Errorf("consumer chain (%s) is not running", p.ChainId)
 	}
 
 	k.SetTopN(ctx, p.ChainId, p.Top_N)

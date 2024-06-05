@@ -67,7 +67,7 @@ set of consumer chains.
 
 To mitigate risks from validators with little stake, we introduce a minimum stake requirement for validators to be able to validate on consumer chains, which can be set by each consumer chain independently, with a default value set by the provider chain.
 
-Additionally, we indepdently allow individual consumer chains to disable this feature, which will disallow validators from outside the provider active set from validating on the consumer chain and revert them to the previous behaviour of only considering validators of the provider that are part of the active consensus validator set.
+Additionally, we independently allow individual consumer chains to disable this feature, which will disallow validators from outside the provider active set from validating on the consumer chain and revert them to the previous behaviour of only considering validators of the provider that are part of the active consensus validator set.
 
 Additional risk mitigations are to increase the active set size slowly, and to monitor the effects on the network closely. For the first iteration, we propose to increase the active set size to 200 validators (while keeping the consensus validators to 180), thus letting the 20 validators with the most stake outside of the active set validate on consumer chains.
 
