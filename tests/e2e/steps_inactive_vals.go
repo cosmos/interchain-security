@@ -306,7 +306,8 @@ func stepsInactiveValidatorsOnConsumer() []Step {
 				State: State{
 					ChainID("provi"): ChainState{
 						ValPowers: &map[ValidatorID]uint{
-							ValidatorID("alice"): 100, // alice is back as an active consensus validator
+							// alice was not slashed because consumer downtime just jails without slashing tokens
+							ValidatorID("alice"): 100, // alice is back as an active consensus validator.
 							ValidatorID("bob"):   0,   // bob is still jailed
 							ValidatorID("carol"): 500,
 						},
