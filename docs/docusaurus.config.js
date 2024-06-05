@@ -39,22 +39,18 @@ const config = {
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
           routeBasePath: "/",
-          lastVersion: "v4.1.0",
           versions: {
             current: {
               path: "/",
               label: "main",
               banner: "unreleased",
             },
-            "v4.0.0": {
-              path: "/v4.0.0/",
+            "v4.2.0-docs": {
+              path: "/v4.2.0/",
+              label: "v4.2.0",
               banner: "none",
             },
-            "v4.1.0": {
-              path: "/v4.1.0/",
-              banner: "none",
-            },
-            "v5.0.0-rc0": {
+            "v5.0.0": {
               banner: "unreleased",
             },
           },
@@ -194,7 +190,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
-        additionalLanguages: ["protobuf", "go-module"], // https://prismjs.com/#supported-languages
+        additionalLanguages: ["protobuf", "go-module", "diff", "go"], // https://prismjs.com/#supported-languages
       },
       // algolia: {
       //   appId: "QLS2QSP47E",

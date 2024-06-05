@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"bytes"
 	"encoding/json"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"sort"
 	"testing"
 	"time"
@@ -115,6 +116,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
+			mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 			gomock.InOrder(
 				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
 			)
@@ -158,6 +160,7 @@ func TestCreateConsumerClient(t *testing.T) {
 			description: "No state mutation, new client should be created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
 				// Valid client creation is asserted with mock expectations here
+				mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 				gomock.InOrder(
 					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
 				)
@@ -796,6 +799,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	//
 	ctx = ctx.WithChainID("testchain1") // chainID is obtained from ctx
 	ctx = ctx.WithBlockHeight(5)        // RevisionHeight obtained from ctx
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
 
 	// matches params from jsonString
@@ -1005,12 +1009,32 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 			nil,
 		).(*providertypes.ConsumerAdditionProposal),
+		providertypes.NewConsumerAdditionProposal(
+			"title", "opt-in chain with no validator opted in", "chain6", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.Add(-time.Minute).UTC(),
+			"0.75",
+			10,
+			"",
+			10000,
+			100000000000,
+			100000000000,
+			100000000000,
+			0,
+			0,
+			0,
+			nil,
+			nil,
+		).(*providertypes.ConsumerAdditionProposal),
 	}
 
 	// Expect client creation for only the first, second, and fifth proposals (spawn time already passed and valid)
 	expectedCalls := testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain5", clienttypes.NewHeight(3, 4))...)
+
+	// The sixth proposal would have spawn time passed and hence needs the mocks but the client will not be
+	// created because `chain6` is an Opt In chain and has no validator opted in
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain6", clienttypes.NewHeight(3, 4))...)
 
 	gomock.InOrder(expectedCalls...)
 
@@ -1021,6 +1045,8 @@ func TestBeginBlockInit(t *testing.T) {
 	// opt in a sample validator so the chain's proposal can successfully execute
 	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
 	consAddr, _ := validator.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return([]stakingtypes.Validator{validator}).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(1)).AnyTimes()
 	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
 
 	providerKeeper.BeginBlockInit(ctx)
@@ -1061,9 +1087,29 @@ func TestBeginBlockInit(t *testing.T) {
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[4].SpawnTime, pendingProps[4].ChainId)
 	require.False(t, found)
-	// sixth proposal was successfully executed and hence consumer genesis was created
+	// fifth proposal was successfully executed and hence consumer genesis was created
 	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[4].ChainId)
 	require.True(t, found)
+
+	// sixth proposal corresponds to an Opt-In chain with no opted-in validators and hence the
+	// proposal is not successful
+	_, found = providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[5].SpawnTime, pendingProps[5].ChainId)
+	// the proposal was dropped and deleted
+	require.False(t, found)
+	// no consumer genesis is created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	// no consumer client is associated with this chain
+	_, found = providerKeeper.GetConsumerClientId(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	// no fields should be set for this (check some of them)
+	_, found = providerKeeper.GetTopN(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	_, found = providerKeeper.GetValidatorsPowerCap(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	_, found = providerKeeper.GetValidatorSetCap(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
 
 	// test that Top N is set correctly
 	require.True(t, providerKeeper.IsTopN(ctx, "chain1"))
@@ -1104,6 +1150,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	expectations := []*gomock.Call{}
 	for _, prop := range pendingProps {
 		// A consumer chain is setup corresponding to each prop, making these mocks necessary
+		mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
 			prop.ChainId, clienttypes.NewHeight(2, 3))...)
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)

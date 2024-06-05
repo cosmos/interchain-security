@@ -36,6 +36,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
 	cmd.AddCommand(CmdProviderParameters())
 	cmd.AddCommand(CmdConsumerChainOptedInValidators())
+	cmd.AddCommand(CmdConsumerValidators())
 	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	cmd.AddCommand(CmdOldestUnconfirmedVsc())
@@ -435,6 +436,41 @@ $ %s consumer-opted-in-validators foochain
 
 			res, err := queryClient.QueryConsumerChainOptedInValidators(cmd.Context(),
 				&types.QueryConsumerChainOptedInValidatorsRequest{ChainId: args[0]})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// Command to query the consumer validators by consumer chain ID
+func CmdConsumerValidators() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "consumer-validators [chainid]",
+		Short: "Query the last set consumer-validator set for a given consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the last set consumer-validator set for a given consumer chain.
+Note that this does not necessarily mean that the consumer chain is currently using this validator set because a VSCPacket could be delayed, etc.
+Example:
+$ %s consumer-validators foochain
+		`, version.AppName),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.QueryConsumerValidators(cmd.Context(),
+				&types.QueryConsumerValidatorsRequest{ChainId: args[0]})
 			if err != nil {
 				return err
 			}

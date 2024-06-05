@@ -252,6 +252,38 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	}, nil
 }
 
+// QueryConsumerValidators returns all validators that are consumer validators in a given consumer chain
+func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryConsumerValidatorsRequest) (*types.QueryConsumerValidatorsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	consumerChainID := req.ChainId
+	if consumerChainID == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty chainId")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if _, found := k.GetConsumerClientId(ctx, consumerChainID); !found {
+		// chain has to have started; consumer client id is set for a chain during the chain's spawn time
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("no started consumer chain: %s", consumerChainID))
+	}
+
+	var validators []*types.QueryConsumerValidatorsValidator
+	for _, v := range k.GetConsumerValSet(ctx, consumerChainID) {
+		validators = append(validators, &types.QueryConsumerValidatorsValidator{
+			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
+			ConsumerKey:     v.ConsumerPublicKey,
+			Power:           v.Power,
+		})
+	}
+
+	return &types.QueryConsumerValidatorsResponse{
+		Validators: validators,
+	}, nil
+}
+
 // QueryConsumerChainsValidatorHasToValidate returns all consumer chains that the given validator has to validate now
 // or in the next epoch if nothing changes.
 func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context, req *types.QueryConsumerChainsValidatorHasToValidateRequest) (*types.QueryConsumerChainsValidatorHasToValidateResponse, error) {
