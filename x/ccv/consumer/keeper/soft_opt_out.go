@@ -55,7 +55,7 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	// get total power in set
 	totalPower := sdk.ZeroDec()
 	for _, val := range valset {
-		totalPower = totalPower.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
+		totalPower = totalPower.Add(sdk.NewDec(val.Power))
 	}
 
 	// get power of the smallest validator that cannot soft opt out

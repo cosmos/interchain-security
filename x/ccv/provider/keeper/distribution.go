@@ -140,8 +140,8 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	}
 
 	// get the total voting power of the consumer valset
-	totalPower := k.ComputeConsumerTotalVotingPower(ctx, chainID)
-	if totalPower == 0 {
+	totalPower := math.LegacyNewDec(k.ComputeConsumerTotalVotingPower(ctx, chainID))
+	if totalPower.IsZero() {
 		return allocated
 	}
 
@@ -150,7 +150,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		consAddr := sdk.ConsAddress(consumerVal.ProviderConsAddr)
 
 		// get the validator tokens fraction using its voting power
-		powerFraction := math.LegacyNewDec(consumerVal.Power).QuoTruncate(math.LegacyNewDec(totalPower))
+		powerFraction := math.LegacyNewDec(consumerVal.Power).QuoTruncate(totalPower)
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
 		// get the validator type struct for the consensus address
@@ -190,14 +190,14 @@ func (k Keeper) TransferConsumerRewardsToDistributionModule(
 	}
 
 	// Truncate coin rewards
-	rewardsToSend, _ := allocation.Rewards.TruncateDecimal()
+	rewardsToSend, remRewards := allocation.Rewards.TruncateDecimal()
 
 	// NOTE the consumer rewards allocation isn't a module account, however its coins
 	// are held in the consumer reward pool module account. Thus the consumer
 	// rewards allocation must be reduced separately from the SendCoinsFromModuleToAccount call.
 
 	// Update consumer rewards allocation with the remaining decimal coins
-	allocation.Rewards = allocation.Rewards.Sub(sdk.NewDecCoinsFromCoins(rewardsToSend...))
+	allocation.Rewards = remRewards
 
 	// Send coins to distribution module account
 	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, rewardsToSend)
@@ -238,7 +238,7 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 // ComputeConsumerTotalVotingPower returns the validator set total voting power
 // for the given consumer chain
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
-	// sum the opted-in validators set voting powers
+	// sum the consumer validators set voting powers
 	for _, v := range k.GetConsumerValSet(ctx, chainID) {
 		totalPower += v.Power
 	}

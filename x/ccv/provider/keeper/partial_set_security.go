@@ -14,7 +14,7 @@ import (
 
 // HandleOptIn prepares validator `providerAddr` to opt in to `chainID` with an optional `consumerKey` consumer public key.
 // Note that the validator only opts in at the end of an epoch.
-func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, consumerKey *string) error {
+func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, consumerKey string) error {
 	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerChainId,
@@ -23,8 +23,8 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 
 	k.SetOptedIn(ctx, chainID, providerAddr)
 
-	if consumerKey != nil {
-		consumerTMPublicKey, err := k.ParseConsumerKey(*consumerKey)
+	if consumerKey != "" {
+		consumerTMPublicKey, err := k.ParseConsumerKey(consumerKey)
 		if err != nil {
 			return err
 		}
@@ -63,13 +63,22 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
 
-		if err != nil || power >= minPowerToOptIn {
+		if err != nil {
+			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 			return errorsmod.Wrapf(
 				types.ErrCannotOptOutFromTopN,
-				"validator with power (%d) cannot opt out from Top N chain because all validators"+
-					"with at least %d power have to validate", power, minPowerToOptIn)
+				"validator with power (%d) cannot opt out from Top N chain (%s) because the min power"+
+					" could not be computed: %s", power, chainID, err.Error())
+
+		}
+
+		if power >= minPowerToOptIn {
+			return errorsmod.Wrapf(
+				types.ErrCannotOptOutFromTopN,
+				"validator with power (%d) cannot opt out from Top N chain (%s) because all validators"+
+					" with at least %d power have to validate", power, chainID, minPowerToOptIn)
 		}
 	}
 
@@ -97,11 +106,14 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValid
 }
 
 // ComputeMinPowerToOptIn returns the minimum power needed for a validator (from the bonded validators)
-// to belong to the `topN` validators. `chainID` is only used for logging purposes.
-func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, topN uint32) (int64, error) {
+// to belong to the `topN` validators for a Top N chain.
+func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, bondedValidators []stakingtypes.Validator, topN uint32) (int64, error) {
 	if topN == 0 || topN > 100 {
-		return 0, fmt.Errorf("trying to compute minimum power with an incorrect topN value (%d)."+
-			"topN has to be between (0, 100]", topN)
+		// Note that Top N chains have a lower limit on `topN`, namely that topN cannot be less than 50.
+		// However, we can envision that this method could be used for other (future) reasons where this might not
+		// be the case. For this, this method operates for `topN`s in (0, 100].
+		return 0, fmt.Errorf("trying to compute minimum power with an incorrect"+
+			" topN value (%d). topN has to be in (0, 100]", topN)
 	}
 
 	totalPower := sdk.ZeroDec()
@@ -110,7 +122,7 @@ func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedVa
 	for _, val := range bondedValidators {
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
 		powers = append(powers, power)
-		totalPower = totalPower.Add(sdk.NewDecFromInt(sdk.NewInt(power)))
+		totalPower = totalPower.Add(sdk.NewDec(power))
 	}
 
 	// sort by powers descending
@@ -118,10 +130,10 @@ func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, chainID string, bondedVa
 		return powers[i] > powers[j]
 	})
 
-	topNThreshold := sdk.NewDecFromInt(sdk.NewInt(int64(topN))).QuoInt64(int64(100))
+	topNThreshold := sdk.NewDec(int64(topN)).QuoInt64(int64(100))
 	powerSum := sdk.ZeroDec()
 	for _, power := range powers {
-		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(power)))
+		powerSum = powerSum.Add(sdk.NewDec(power))
 		if powerSum.Quo(totalPower).GTE(topNThreshold) {
 			return power, nil
 		}
@@ -140,18 +152,12 @@ func (k Keeper) CapValidatorSet(ctx sdk.Context, chainID string, validators []ty
 		return validators
 	}
 
-	if validatorSetCap, found := k.GetValidatorSetCap(ctx, chainID); found && validatorSetCap != 0 {
+	if validatorSetCap, found := k.GetValidatorSetCap(ctx, chainID); found && validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
 		sort.Slice(validators, func(i, j int) bool {
 			return validators[i].Power > validators[j].Power
 		})
 
-		minNumberOfValidators := 0
-		if len(validators) < int(validatorSetCap) {
-			minNumberOfValidators = len(validators)
-		} else {
-			minNumberOfValidators = int(validatorSetCap)
-		}
-		return validators[:minNumberOfValidators]
+		return validators[:int(validatorSetCap)]
 	} else {
 		return validators
 	}
@@ -209,9 +215,8 @@ func NoMoreThanPercentOfTheSum(validators []types.ConsumerValidator, percent uin
 	// If `s > n * maxPower` there's no solution and the algorithm would set everything to `maxPower`.
 	// ----------------
 
-	// Computes `(sum(validators) * percent) / 100`. Because `sdk.Dec` does not provide a `Floor` function, but only
-	// a `Ceil` one, we use `Ceil` and subtract one.
-	maxPower := sdk.NewDec(sum(validators)).Mul(sdk.NewDec(int64(percent))).QuoInt64(100).Ceil().RoundInt64() - 1
+	// Computes `floor((sum(validators) * percent) / 100)`
+	maxPower := sdk.NewDec(sum(validators)).Mul(sdk.NewDec(int64(percent))).QuoInt64(100).TruncateInt64()
 
 	if maxPower == 0 {
 		// edge case: set `maxPower` to 1 to avoid setting the power of a validator to 0
@@ -271,8 +276,9 @@ func NoMoreThanPercentOfTheSum(validators []types.ConsumerValidator, percent uin
 	return updatedValidators
 }
 
-// FilterOptedInAndAllowAndDenylistedPredicate filters the opted-in validators that are allowlisted and not denylisted
-func (k Keeper) FilterOptedInAndAllowAndDenylistedPredicate(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) bool {
+// CanValidateChain returns true if the validator `providerAddr` is opted-in to chain `chainID` and the allowlist and
+// denylist do not prevent the validator from validating the chain.
+func (k Keeper) CanValidateChain(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) bool {
 	// only consider opted-in validators
 	return k.IsOptedIn(ctx, chainID, providerAddr) &&
 		// if an allowlist is declared, only consider allowlisted validators
@@ -287,7 +293,7 @@ func (k Keeper) FilterOptedInAndAllowAndDenylistedPredicate(ctx sdk.Context, cha
 func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsumerValidator {
 	nextValidators := k.FilterValidators(ctx, chainID, bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
-			return k.FilterOptedInAndAllowAndDenylistedPredicate(ctx, chainID, providerAddr)
+			return k.CanValidateChain(ctx, chainID, providerAddr)
 		})
 
 	nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)

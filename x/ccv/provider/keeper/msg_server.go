@@ -157,12 +157,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 	}
 	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	if msg.ConsumerKey != "" {
-		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, &msg.ConsumerKey)
-	} else {
-		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, nil)
-	}
-
+	err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, msg.ConsumerKey)
 	if err != nil {
 		return nil, err
 	}

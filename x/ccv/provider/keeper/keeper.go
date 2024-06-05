@@ -257,7 +257,7 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 
 		var minPowerInTopN int64
 		if found && topN > 0 {
-			res, err := k.ComputeMinPowerToOptIn(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx), topN)
+			res, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
 			if err != nil {
 				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 				minPowerInTopN = -1
@@ -759,13 +759,9 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId u
 	bz := store.Get(types.ValidatorSetUpdateIdKey())
 
 	if bz == nil {
-		validatorSetUpdateId = 0
-	} else {
-		// Unmarshal
-		validatorSetUpdateId = binary.BigEndian.Uint64(bz)
+		return 0
 	}
-
-	return validatorSetUpdateId
+	return binary.BigEndian.Uint64(bz)
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
@@ -1302,9 +1298,11 @@ func (k Keeper) HasToValidate(
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, topN)
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
 		if err == nil {
 			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		} else {
+			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 		}
 	}
 
@@ -1528,11 +1526,7 @@ func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, chainID string) bool {
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
 	defer iterator.Close()
 
-	if iterator.Valid() {
-		return false
-	}
-
-	return true
+	return !iterator.Valid()
 }
 
 // SetDenylist denylists validator with `providerAddr` address on chain `chainID`
@@ -1595,9 +1589,5 @@ func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
 	defer iterator.Close()
 
-	if iterator.Valid() {
-		return false
-	}
-
-	return true
+	return !iterator.Valid()
 }
