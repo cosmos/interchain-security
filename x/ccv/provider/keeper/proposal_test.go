@@ -517,6 +517,55 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 	}
 }
 
+func TestHandleConsumerModificationProposal(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
+
+	// set up a consumer client, so it seems that "chainID" is running
+	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+
+	// set PSS-related fields to update them later on
+	providerKeeper.SetTopN(ctx, chainID, 50)
+	providerKeeper.SetValidatorSetCap(ctx, chainID, 10)
+	providerKeeper.SetValidatorsPowerCap(ctx, chainID, 34)
+	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
+	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
+	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
+
+	expectedTopN := uint32(75)
+	expectedValidatorsPowerCap := uint32(67)
+	expectedValidatorSetCap := uint32(20)
+	expectedAllowlistedValidator := "cosmosvalcons1wpex7anfv3jhystyv3eq20r35a"
+	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	proposal := providertypes.NewConsumerModificationProposal("title", "description", chainID,
+		expectedTopN,
+		expectedValidatorsPowerCap,
+		expectedValidatorSetCap,
+		[]string{expectedAllowlistedValidator},
+		[]string{expectedDenylistedValidator},
+	).(*providertypes.ConsumerModificationProposal)
+
+	err := providerKeeper.HandleConsumerModificationProposal(ctx, proposal)
+	require.NoError(t, err)
+
+	actualTopN, _ := providerKeeper.GetTopN(ctx, chainID)
+	require.Equal(t, expectedTopN, actualTopN)
+	actualValidatorsPowerCap, _ := providerKeeper.GetValidatorsPowerCap(ctx, chainID)
+	require.Equal(t, expectedValidatorsPowerCap, actualValidatorsPowerCap)
+	actualValidatorSetCap, _ := providerKeeper.GetValidatorSetCap(ctx, chainID)
+	require.Equal(t, expectedValidatorSetCap, actualValidatorSetCap)
+
+	allowlistedValidator, err := sdk.ConsAddressFromBech32(expectedAllowlistedValidator)
+	require.Equal(t, 1, len(providerKeeper.GetAllowList(ctx, chainID)))
+	require.Equal(t, providertypes.NewProviderConsAddress(allowlistedValidator), providerKeeper.GetAllowList(ctx, chainID)[0])
+
+	denylistedValidator, err := sdk.ConsAddressFromBech32(expectedDenylistedValidator)
+	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, chainID)))
+	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, chainID)[0])
+}
+
 // Tests the StopConsumerChain method against the spec,
 // with more granularity than what's covered in TestHandleConsumerRemovalProposal, or integration tests.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1

@@ -18,15 +18,17 @@ import (
 )
 
 const (
-	ProposalTypeConsumerAddition   = "ConsumerAddition"
-	ProposalTypeConsumerRemoval    = "ConsumerRemoval"
-	ProposalTypeEquivocation       = "Equivocation"
-	ProposalTypeChangeRewardDenoms = "ChangeRewardDenoms"
+	ProposalTypeConsumerAddition     = "ConsumerAddition"
+	ProposalTypeConsumerRemoval      = "ConsumerRemoval"
+	ProposalTypeConsumerModification = "ConsumerModification"
+	ProposalTypeEquivocation         = "Equivocation"
+	ProposalTypeChangeRewardDenoms   = "ChangeRewardDenoms"
 )
 
 var (
 	_ govv1beta1.Content = &ConsumerAdditionProposal{}
 	_ govv1beta1.Content = &ConsumerRemovalProposal{}
+	_ govv1beta1.Content = &ConsumerModificationProposal{}
 	_ govv1beta1.Content = &ChangeRewardDenomsProposal{}
 	_ govv1beta1.Content = &EquivocationProposal{}
 )
@@ -34,6 +36,7 @@ var (
 func init() {
 	govv1beta1.RegisterProposalType(ProposalTypeConsumerAddition)
 	govv1beta1.RegisterProposalType(ProposalTypeConsumerRemoval)
+	govv1beta1.RegisterProposalType(ProposalTypeConsumerModification)
 	govv1beta1.RegisterProposalType(ProposalTypeChangeRewardDenoms)
 	govv1beta1.RegisterProposalType(ProposalTypeEquivocation)
 }
@@ -92,6 +95,21 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 	return ProposalTypeConsumerAddition
 }
 
+// ValidatePSSFeatures returns an error if the `topN` and `validatorsPowerCap` parameters are no in the correct ranges
+func ValidatePSSFeatures(topN uint32, validatorsPowerCap uint32) error {
+	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
+	// Opt In chain) or in the range [50, 100] (for a Top N chain).
+	if topN != 0 && (topN < 50 || topN > 100) {
+		return fmt.Errorf("Top N can either be 0 or in the range [50, 100]")
+	}
+
+	if validatorsPowerCap != 0 && validatorsPowerCap > 100 {
+		return fmt.Errorf("validators' power cap has to be in the range [1, 100]")
+	}
+
+	return nil
+}
+
 // ValidateBasic runs basic stateless validity checks
 func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 	if err := govv1beta1.ValidateAbstract(cccp); err != nil {
@@ -145,16 +163,10 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
 	}
 
-	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
-	// Opt In chain) or in the range [50, 100] (for a Top N chain).
-	if cccp.Top_N != 0 && (cccp.Top_N < 50 || cccp.Top_N > 100) {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "Top N can either be 0 or in the range [50, 100]")
+	err := ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "invalid PSS features: %s", err.Error())
 	}
-
-	if cccp.ValidatorsPowerCap != 0 && cccp.ValidatorSetCap > 100 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "validators' power cap has to be in the range [1, 100]")
-	}
-
 	return nil
 }
 
@@ -219,6 +231,51 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 
 	if sccp.StopTime.IsZero() {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
+	}
+	return nil
+}
+
+// NewConsumerModificationProposal creates a new consumer modificaton proposal.
+func NewConsumerModificationProposal(title, description, chainID string,
+	topN uint32,
+	validatorsPowerCap uint32,
+	validatorSetCap uint32,
+	allowlist []string,
+	denylist []string,
+) govv1beta1.Content {
+	return &ConsumerModificationProposal{
+		Title:              title,
+		Description:        description,
+		ChainId:            chainID,
+		Top_N:              topN,
+		ValidatorsPowerCap: validatorsPowerCap,
+		ValidatorSetCap:    validatorSetCap,
+		Allowlist:          allowlist,
+		Denylist:           denylist,
+	}
+}
+
+// ProposalRoute returns the routing key of a consumer modification proposal.
+func (cccp *ConsumerModificationProposal) ProposalRoute() string { return RouterKey }
+
+// ProposalType returns the type of the consumer modification proposal.
+func (cccp *ConsumerModificationProposal) ProposalType() string {
+	return ProposalTypeConsumerModification
+}
+
+// ValidateBasic runs basic stateless validity checks
+func (cccp *ConsumerModificationProposal) ValidateBasic() error {
+	if err := govv1beta1.ValidateAbstract(cccp); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(cccp.ChainId) == "" {
+		return errorsmod.Wrap(ErrInvalidConsumerModificationProposal, "consumer chain id must not be blank")
+	}
+
+	err := ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
 	}
 	return nil
 }
