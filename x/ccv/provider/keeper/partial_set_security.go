@@ -64,7 +64,6 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
 		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
-
 		if err != nil {
 			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 			return errorsmod.Wrapf(
@@ -298,4 +297,33 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedVal
 
 	nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
 	return k.CapValidatorsPower(ctx, chainID, nextValidators)
+}
+
+func (k Keeper) GetLastValidators(ctx sdk.Context) []stakingtypes.Validator {
+	var lastPowers []stakingtypes.LastValidatorPower
+
+	i := 0
+	k.stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
+		lastPowers = append(lastPowers, stakingtypes.LastValidatorPower{Address: addr.String(), Power: power})
+		i++
+		return i >= int(k.stakingKeeper.MaxValidators(ctx))
+	})
+
+	var bondedValidators []stakingtypes.Validator
+
+	for _, p := range lastPowers {
+		addr, err := sdk.ValAddressFromBech32(p.Address)
+		if err != nil {
+			continue
+		}
+
+		val, found := k.stakingKeeper.GetValidator(ctx, addr)
+		if !found {
+			continue
+		}
+
+		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
+		bondedValidators = append(bondedValidators, val)
+	}
+	return bondedValidators
 }
