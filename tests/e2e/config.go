@@ -516,6 +516,11 @@ func InactiveValsConfig() TestConfig {
 	tr.chainConfigs[ChainID("provi")] = proviConfig
 	tr.chainConfigs[ChainID("consu")] = consuConfig
 
+	// make is to that carol does not use a consumer key
+	carolConfig := tr.validatorConfigs[ValidatorID("carol")]
+	carolConfig.UseConsumerKey = false
+	tr.validatorConfigs[ValidatorID("carol")] = carolConfig
+
 	return tr
 }
 
