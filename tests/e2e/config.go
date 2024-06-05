@@ -265,6 +265,8 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = ConsumerMisbehaviourTestConfig()
 	case CompatibilityTestCfg:
 		testCfg = CompatibilityTestConfig(pv, cv)
+	case TooManyValidatorsTestCfg:
+		testCfg = TooManyValidatorsTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -606,10 +608,20 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 	return tr
 }
 
-func TooManyValidatorsTestCfg() TestConfig {
+func TooManyValidatorsTestConfig() TestConfig {
 	cfg := DefaultTestConfig()
 
 	// set the MaxValidators to 2
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges = ".app_state.staking.params.max_validators = 2"
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
+
+	carolConfig := cfg.validatorConfigs["carol"]
+	// make carol use her own key
+	carolConfig.UseConsumerKey = false
+	cfg.validatorConfigs["carol"] = carolConfig
+
+	return cfg
 }
 
 func MultiConsumerTestConfig() TestConfig {
