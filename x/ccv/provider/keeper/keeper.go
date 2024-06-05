@@ -257,7 +257,7 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 
 		var minPowerInTopN int64
 		if found && topN > 0 {
-			res, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
+			res, err := k.ComputeMinPowerToOptIn(ctx, k.GetLastValidators(ctx), topN)
 			if err != nil {
 				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 				minPowerInTopN = -1
@@ -1295,7 +1295,7 @@ func (k Keeper) HasToValidate(
 	}
 
 	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
-	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators := k.GetLastValidators(ctx)
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
@@ -1309,7 +1309,7 @@ func (k Keeper) HasToValidate(
 	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
 	// the validator would have to validate in the next epoch
 	if k.IsOptedIn(ctx, chainID, provAddr) {
-		nextValidators := k.ComputeNextValidators(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx))
+		nextValidators := k.ComputeNextValidators(ctx, chainID, k.GetLastValidators(ctx))
 		for _, v := range nextValidators {
 			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 			if provAddr.ToSdkConsAddr().Equals(consAddr) {

@@ -63,7 +63,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
+		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, k.GetLastValidators(ctx), topN)
 		if err != nil {
 			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 			return errorsmod.Wrapf(
@@ -300,6 +300,12 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedVal
 }
 
 func (k Keeper) GetLastValidators(ctx sdk.Context) []stakingtypes.Validator {
+	k.stakingKeeper.GetLastValidators(ctx)
+
+	// return GetLastValidatorsSafe
+}
+
+func (k Keeper) GetLastValidatorsSafe(ctx sdk.Context) []stakingtypes.Validator {
 	var lastPowers []stakingtypes.LastValidatorPower
 
 	i := 0
