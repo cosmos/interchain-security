@@ -53,6 +53,16 @@ This is achieved without any additional changes to the slashing module, because 
 * Rewards: Validators that are not part of the active set on the provider chain can still receive rewards on the consumer chain, but they *do not* receive rewards from the provider chain. This change is
 achieved without further changes to staking or reward distributions, because similar to downtime, rewards are based on the consensus validator set (see https://github.com/cosmos/cosmos-sdk/blob/b68da64d8e38caa0438dbf3b065d864d91e03c4b/x/distribution/abci.go#L28)
 
+
+### Changes to the state
+
+The following changes to the state are required:
+
+* Introduce the `MaxProviderConsensusValidators` parameter to the provider module, which is the number of validators that the provider module will send to consumer chains.
+* Store the provider consensus validator set in the provider module state under the `LastProviderConsensusValsPrefix` key. This is the last set of validators that the provider sent to the consensus engine. This is needed to compute the ValUpdates to send to the consensus engine (by diffing the current set with this last sent set).
+* Increase the `MaxValidators` parameter of the staking module to the desired size of the potential validator
+set of consumer chains.
+
 ## Risk Mitigations
 
 To mitigate risks from validators with little stake, we introduce a minimum stake requirement for validators to be able to validate on consumer chains, which can be set by each consumer chain independently, with a default value set by the provider chain.
