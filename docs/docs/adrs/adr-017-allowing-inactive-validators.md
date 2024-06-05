@@ -1,8 +1,8 @@
 ---
 sidebar_position: 18
-title: Allowing validators outside the active set to validate on consumer chains
+title: ICS with Inactive Provider Validators
 ---
-# ADR 017: Allowing validators outside the active set to validate on consumer chains
+# ADR 017: ICS with Inactive Provider Validators
 
 ## Changelog
 * 15th May 2024: Initial draft
@@ -80,7 +80,7 @@ Additional risk mitigations are to increase the active set size slowly, and to m
 ### Negative
 
 Allowing validators from the inactive set brings with it some additional risks.
-In general, consumer chains will now face some of the problems also faced by standalone chains. It’s reasonable to assume that the validator set on the hub has a minimal amount of operational quality due to being battle tested and decentralized, and consumer chains with validators from outside the hub active set cannot rely on this as much anymore.
+In general, consumer chains will now face some of the problems also faced by standalone chains. It’s reasonable to assume that the validator set on the hub has a minimum amount of operational quality due to being battle tested and decentralized, and consumer chains with validators from outside the hub active set cannot rely on this as much anymore.
 
 
 #### Sybil attacks
