@@ -484,7 +484,7 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	// Start first unbonding without any consumers registered
 	var unbondingOpId uint64 = 1
 	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_Undefined, false),
+		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_Undefined, stakingtypes.ErrNoUnbondingType),
 	)
 
 	err := pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
@@ -518,13 +518,13 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	// Start second unbonding
 	unbondingOpId = 2
 	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_UnbondingDelegation, true),
+		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_UnbondingDelegation, nil),
 		mocks.MockStakingKeeper.EXPECT().GetUnbondingDelegationByUnbondingID(ctx, unbondingOpId).Return(
 			stakingtypes.UnbondingDelegation{
 				ValidatorAddress: sdk.ValAddress([]byte{1}).String(),
-			}, true),
+			}, nil),
 		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-			Return(vals[0], true),
+			Return(vals[0], nil),
 		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
 	)
 	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
@@ -556,13 +556,13 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	unbondingOpIds := []uint64{3, 4}
 	for _, id := range unbondingOpIds {
 		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, id).Return(stakingtypes.UnbondingType_Redelegation, true),
+			mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, id).Return(stakingtypes.UnbondingType_Redelegation, nil),
 			mocks.MockStakingKeeper.EXPECT().GetRedelegationByUnbondingID(ctx, id).Return(
 				stakingtypes.Redelegation{
 					ValidatorSrcAddress: sdk.ValAddress([]byte{1}).String(),
-				}, true),
+				}, nil),
 			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-				Return(vals[0], true),
+				Return(vals[0], nil),
 			mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, id).Return(nil),
 		)
 		err = pk.Hooks().AfterUnbondingInitiated(ctx, id)
@@ -590,13 +590,13 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	// Start fith unbonding
 	unbondingOpId = 5
 	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_ValidatorUnbonding, true),
+		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_ValidatorUnbonding, nil),
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByUnbondingID(ctx, unbondingOpId).Return(
 			stakingtypes.Validator{
 				OperatorAddress: sdk.ValAddress([]byte{1}).String(),
-			}, true),
+			}, nil),
 		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-			Return(vals[1], true),
+			Return(vals[1], nil),
 		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
 	)
 	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
@@ -772,14 +772,12 @@ func TestEndBlockVSU(t *testing.T) {
 
 	// create 4 sample lastValidators
 	var lastValidators []stakingtypes.Validator
-	var valAddresses []sdk.ValAddress
 	for i := 0; i < 4; i++ {
 		validator := crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
 		lastValidators = append(lastValidators, validator)
-		valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
+		valAdrr, err := sdk.ValAddressFromBech32(validator.GetOperator())
 		require.NoError(t, err)
-		valAddresses = append(valAddresses, valAddr)
-		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(i + 1)).AnyTimes()
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAdrr).Return(int64(i+1), nil).AnyTimes()
 	}
 
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators, nil).AnyTimes()
@@ -817,27 +815,27 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 
 	providerKeeper.SetValidatorSetUpdateId(ctx, 1)
 
-	valA := createStakingValidator(ctx, mocks, 1, 1) // 3.125% of the total voting power
+	valA := createStakingValidator(ctx, mocks, 1, 1, 1) // 3.125% of the total voting power
 	valAConsAddr, _ := valA.GetConsAddr()
 	valAPubKey, _ := valA.TmConsPublicKey()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, true).AnyTimes()
-	valB := createStakingValidator(ctx, mocks, 2, 3) // 9.375% of the total voting power
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
+	valB := createStakingValidator(ctx, mocks, 2, 3, 2) // 9.375% of the total voting power
 	valBConsAddr, _ := valB.GetConsAddr()
 	valBPubKey, _ := valB.TmConsPublicKey()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, true).AnyTimes()
-	valC := createStakingValidator(ctx, mocks, 3, 4) // 12.5% of the total voting power
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
+	valC := createStakingValidator(ctx, mocks, 3, 4, 3) // 12.5% of the total voting power
 	valCConsAddr, _ := valC.GetConsAddr()
 	valCPubKey, _ := valC.TmConsPublicKey()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, true).AnyTimes()
-	valD := createStakingValidator(ctx, mocks, 4, 8) // 25% of the total voting power
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, nil).AnyTimes()
+	valD := createStakingValidator(ctx, mocks, 4, 8, 4) // 25% of the total voting power
 	valDConsAddr, _ := valD.GetConsAddr()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, true).AnyTimes()
-	valE := createStakingValidator(ctx, mocks, 5, 16) // 50% of the total voting power
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, nil).AnyTimes()
+	valE := createStakingValidator(ctx, mocks, 5, 16, 5) // 50% of the total voting power
 	valEConsAddr, _ := valE.GetConsAddr()
 	valEPubKey, _ := valE.TmConsPublicKey()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, true).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, nil).AnyTimes()
 
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD, valE}).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD, valE}, nil).AnyTimes()
 
 	// add a consumer chain
 	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")

@@ -106,6 +106,7 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
+			mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 			gomock.InOrder(
 				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
 			)
@@ -233,8 +234,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 		// meaning no external keeper methods are allowed to be called.
 		if tc.expAppendProp {
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
-
-			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+			// Valid client creation is asserted with mock expectations here
 			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		}
 

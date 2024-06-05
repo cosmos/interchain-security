@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
@@ -39,8 +41,8 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.
 		HistoricalEntries:                 proposal.HistoricalEntries,
 		DistributionTransmissionChannel:   proposal.DistributionTransmissionChannel,
 	}
-	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)
 
+	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)
 }
 
 // Wrapper for the new proposal message MsgConsumerRemoval
@@ -50,8 +52,8 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.M
 		ChainId:  proposal.ChainId,
 		StopTime: proposal.StopTime,
 	}
-	return k.HandleLegacyConsumerRemovalProposal(ctx, &p)
 
+	return k.HandleLegacyConsumerRemovalProposal(ctx, &p)
 }
 
 // Wrapper for the new proposal message MsgChangeRewardDenoms
@@ -61,6 +63,7 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 		DenomsToAdd:    proposal.DenomsToAdd,
 		DenomsToRemove: proposal.DenomsToRemove,
 	}
+
 	return k.HandleLegacyConsumerRewardDenomProposal(ctx, &p)
 }
 
@@ -260,7 +263,7 @@ func (k Keeper) MakeConsumerGenesis(
 	// get the bonded validators from the staking module
 	bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
 	if err != nil {
-		return gen, nil, err
+		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 	}
 
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
