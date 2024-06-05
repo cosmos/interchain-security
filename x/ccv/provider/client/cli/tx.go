@@ -236,7 +236,9 @@ func NewOptInCmd() *cobra.Command {
 			} else {
 				consumerPubKey = ""
 			}
-			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
+
+			signer := clientCtx.GetFromAddress().String()
+			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey, signer)
 			if err != nil {
 				return err
 			}
@@ -274,7 +276,8 @@ func NewOptOutCmd() *cobra.Command {
 
 			providerValAddr := clientCtx.GetFromAddress()
 
-			msg, err := types.NewMsgOptOut(args[0], sdk.ValAddress(providerValAddr))
+			signer := clientCtx.GetFromAddress().String()
+			msg, err := types.NewMsgOptOut(args[0], sdk.ValAddress(providerValAddr), signer)
 			if err != nil {
 				return err
 			}
