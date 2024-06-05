@@ -87,6 +87,7 @@ const (
 	MulticonsumerTestCfg        TestConfigType = "multi-consumer"
 	ConsumerMisbehaviourTestCfg TestConfigType = "consumer-misbehaviour"
 	CompatibilityTestCfg        TestConfigType = "compatibility"
+	TooManyValidatorsTestCfg    TestConfigType = "too-many-validators"
 )
 
 // Attributes that are unique to a validator. Allows us to map (part of)
@@ -603,6 +604,12 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 	}
 	tr.Initialize()
 	return tr
+}
+
+func TooManyValidatorsTestCfg() TestConfig {
+	cfg := DefaultTestConfig()
+
+	// set the MaxValidators to 2
 }
 
 func MultiConsumerTestConfig() TestConfig {
