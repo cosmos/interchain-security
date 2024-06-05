@@ -1055,7 +1055,7 @@ func stepsValidatorSetCappedChain() []Step {
 			},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
-		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assigment.
+		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
 		{
 			Action: OptInAction{
 				Chain:     ChainID("consu"),
@@ -1064,7 +1064,7 @@ func stepsValidatorSetCappedChain() []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					HasToValidate: &map[ValidatorID][]ChainID{
-						// chain is not running yet and hence noone has to validate
+						// chain is not running yet and hence no one has to validate
 						ValidatorID("alice"): {},
 						ValidatorID("bob"):   {},
 						ValidatorID("carol"): {},
@@ -1292,7 +1292,7 @@ func stepsValidatorsPowerCappedChain() []Step {
 			},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
-		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assigment.
+		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
 		{
 			Action: OptInAction{
 				Chain:     ChainID("consu"),
@@ -1529,7 +1529,7 @@ func stepsValidatorsAllowlistedChain() []Step {
 			},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
-		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assigment.
+		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
 		{
 			Action: OptInAction{
 				Chain:     ChainID("consu"),
@@ -1738,7 +1738,7 @@ func stepsValidatorsDenylistedChain() []Step {
 			},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
-		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assigment.
+		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
 		{
 			Action: OptInAction{
 				Chain:     ChainID("consu"),

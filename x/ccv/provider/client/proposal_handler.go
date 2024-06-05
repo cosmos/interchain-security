@@ -363,7 +363,8 @@ func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time
 	providerUnbondingTime := res.Params.UnbondingTime
 
 	if providerUnbondingTime < propUnbondingPeriod {
-		fmt.Printf(
+		fmt.Fprintf(
+			os.Stderr,
 			`consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.
 This is not a security risk, but will effectively lengthen the unbonding period on the provider.
 consumer unbonding: %s

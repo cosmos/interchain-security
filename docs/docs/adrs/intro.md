@@ -40,12 +40,13 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 - [ADR 009: Soft Opt-Out](./adr-009-soft-opt-out.md)
 - [ADR 010: Standalone to Consumer Changeover](./adr-010-standalone-changeover.md)
 - [ADR 013: Slashing on the provider for consumer equivocation](./adr-013-equivocation-slashing.md)
+- [ADR 014: Epochs](./adr-014-epochs.md)
+- [ADR 015: Partial Set Security](./adr-015-partial-set-security.md)
 
 ### Proposed
 
 - [ADR 011: Improving testing and increasing confidence](./adr-011-improving-test-confidence.md)
-- [ADR 014: Epochs](./adr-014-epochs.md)
-- [ADR 015: Partial Set Security](./adr-015-partial-set-security.md)
+- [ADR 016: Security aggregation](./adr-016-securityaggregation.md)
 
 ### Rejected
 
