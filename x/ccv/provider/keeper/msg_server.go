@@ -312,7 +312,7 @@ func (k msgServer) ConsumerModification(goCtx context.Context, msg *types.MsgCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	err := k.Keeper.HandleConsumerModificationProposal(ctx, msg)
 	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
+		return nil, errorsmod.Wrapf(err, "failed handling ConsumerModification proposal")
 	}
 
 	return &types.MsgConsumerModificationResponse{}, nil

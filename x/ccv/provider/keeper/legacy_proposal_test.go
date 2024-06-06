@@ -306,10 +306,12 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	require.Equal(t, expectedValidatorSetCap, actualValidatorSetCap)
 
 	allowlistedValidator, err := sdk.ConsAddressFromBech32(expectedAllowlistedValidator)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(providerKeeper.GetAllowList(ctx, chainID)))
 	require.Equal(t, providertypes.NewProviderConsAddress(allowlistedValidator), providerKeeper.GetAllowList(ctx, chainID)[0])
 
 	denylistedValidator, err := sdk.ConsAddressFromBech32(expectedDenylistedValidator)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, chainID)))
 	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, chainID)[0])
 }
