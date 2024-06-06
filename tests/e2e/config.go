@@ -613,7 +613,7 @@ func TooManyValidatorsTestConfig() TestConfig {
 
 	// set the MaxValidators to 2
 	proviConfig := cfg.chainConfigs[ChainID("provi")]
-	proviConfig.GenesisChanges = ".app_state.staking.params.max_validators = 2"
+	proviConfig.GenesisChanges += "| .app_state.staking.params.max_validators = 2"
 	cfg.chainConfigs[ChainID("provi")] = proviConfig
 
 	carolConfig := cfg.validatorConfigs["carol"]

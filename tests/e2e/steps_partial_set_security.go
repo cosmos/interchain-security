@@ -1904,7 +1904,7 @@ func stepsTooManyValidators() []Step {
 				Validators: []StartChainValidator{
 					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
 					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
-					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 700000000, Allocation: 10000000000},
 				},
 			},
 			State: State{
@@ -1912,7 +1912,7 @@ func stepsTooManyValidators() []Step {
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 0,
 						ValidatorID("bob"):   200,
-						ValidatorID("carol"): 300,
+						ValidatorID("carol"): 700,
 					},
 				},
 			},
@@ -1997,8 +1997,8 @@ func stepsTooManyValidators() []Step {
 		{
 			Action: VoteGovProposalAction{
 				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
-				Vote:       []string{"yes", "yes"},
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
 				PropNumber: 1,
 			},
 			State: State{
@@ -2024,7 +2024,7 @@ func stepsTooManyValidators() []Step {
 				Validators: []StartChainValidator{
 					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
 					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
-					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 700000000, Allocation: 10000000000},
 				},
 				// For consumers that're launching with the provider being on an earlier version
 				// of ICS before the soft opt-out threshold was introduced, we need to set the
@@ -2033,15 +2033,7 @@ func stepsTooManyValidators() []Step {
 				// values from the genesis file.
 				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
-			State: State{
-				ChainID("consu"): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 0,
-						ValidatorID("bob"):   200,
-						ValidatorID("carol"): 300,
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: AddIbcConnectionAction{
@@ -2074,7 +2066,7 @@ func stepsTooManyValidators() []Step {
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100, // alice goes into the active set
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 300,
+						ValidatorID("carol"): 700,
 					},
 				},
 			},
@@ -2089,8 +2081,8 @@ func stepsTooManyValidators() []Step {
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 0,   // alice goes back out of the active set
-						ValidatorID("bob"):   200, // bob goes back into the active set
-						ValidatorID("carol"): 300,
+						ValidatorID("bob"):   198, // bob goes back into the active set
+						ValidatorID("carol"): 700,
 					},
 				},
 			},
