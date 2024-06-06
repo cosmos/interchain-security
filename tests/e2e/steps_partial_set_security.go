@@ -1925,7 +1925,7 @@ func stepsTooManyValidators() []Step {
 				ConsumerChain: ChainID("consu"),
 				SpawnTime:     0,
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				TopN:          50,
 			},
 			State: State{
 				ChainID("provi"): ChainState{
