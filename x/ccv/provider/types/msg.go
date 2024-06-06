@@ -307,11 +307,12 @@ func (msg *MsgConsumerRemoval) ValidateBasic() error {
 }
 
 // NewMsgOptIn creates a new NewMsgOptIn instance.
-func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey string) (*MsgOptIn, error) {
+func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
 	return &MsgOptIn{
 		ChainId:      chainID,
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
+		Signer:       signer,
 	}, nil
 }
 
@@ -359,10 +360,11 @@ func (msg MsgOptIn) ValidateBasic() error {
 }
 
 // NewMsgOptOut creates a new NewMsgOptIn instance.
-func NewMsgOptOut(chainID string, providerValidatorAddress sdk.ValAddress) (*MsgOptOut, error) {
+func NewMsgOptOut(chainID string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
 	return &MsgOptOut{
 		ChainId:      chainID,
 		ProviderAddr: providerValidatorAddress.String(),
+		Signer:       signer,
 	}, nil
 }
 

@@ -63,15 +63,15 @@ message MsgSubmitConsumerMisbehaviour {
   option (gogoproto.goproto_getters) = false;
 
   string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  // The Misbehaviour of the consumer chain wrapping 
-  // two conflicting IBC headers 
+  // The Misbehaviour of the consumer chain wrapping
+  // two conflicting IBC headers
   ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 2;
 }
 
 message MsgSubmitConsumerMisbehaviourResponse {}
 
 
-// MsgSubmitConsumerDoubleVoting defines a message that reports 
+// MsgSubmitConsumerDoubleVoting defines a message that reports
 // a double signing infraction observed on a consumer chain
 message MsgSubmitConsumerDoubleVoting {
   option (cosmos.msg.v1.signer) = "submitter";
@@ -79,7 +79,7 @@ message MsgSubmitConsumerDoubleVoting {
   option (gogoproto.goproto_getters) = false;
 
   string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  // The equivocation of the consumer chain wrapping 
+  // The equivocation of the consumer chain wrapping
   // an evidence of a validator that signed two conflicting votes
   tendermint.types.DuplicateVoteEvidence duplicate_vote_evidence = 2;
   // The light client header of the infraction block
@@ -229,9 +229,11 @@ message MsgChangeRewardDenoms {
 
 // MsgChangeRewardDenomsResponse defines response type for MsgChangeRewardDenoms messages
 message MsgChangeRewardDenomsResponse {}
+
 message MsgOptIn {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "signer";
   // the chain id of the consumer chain to opt in to
   string chain_id = 1;
   // the validator address on the provider
@@ -241,6 +243,9 @@ message MsgOptIn {
   // This field is optional and can remain empty (i.e., `consumer_key = ""`). A validator can always change the
   // consumer public key at a later stage by issuing a `MsgAssignConsumerKey` message.
   string consumer_key = 3;
+  // signer address
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
 }
 
 message MsgOptInResponse {}
@@ -248,15 +253,19 @@ message MsgOptInResponse {}
 message MsgOptOut {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "signer";
   // the chain id of the consumer chain to opt out from
   string chain_id = 1;
   // the validator address on the provider
   string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // signer address
+  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
 }
 
 message MsgOptOutResponse {}
 
-// MsgSetConsumerCommissionRate allows validators to set 
+// MsgSetConsumerCommissionRate allows validators to set
 // a per-consumer chain commission rate
 message MsgSetConsumerCommissionRate {
   option (gogoproto.equal) = false;
