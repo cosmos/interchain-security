@@ -2065,6 +2065,7 @@ func stepsTooManyValidators() []Step {
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100, // alice goes into the active set
+						// THIS WILL MAKE THE TEST FAIL AND THE PROVIDER NODES PANIC
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 700,
 					},
