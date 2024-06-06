@@ -382,10 +382,6 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 	require.Equal(t, expectedGetAllOrder, result)
 }
 
-//
-// Consumer Chain Removal sub-protocol related tests of proposal.go
-//
-
 // Tests the StopConsumerChain method against the spec,
 // with more granularity than what's covered in TestHandleLegacyConsumerRemovalProposal, or integration tests.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1

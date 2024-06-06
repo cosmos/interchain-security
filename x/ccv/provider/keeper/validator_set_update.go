@@ -102,12 +102,12 @@ func DiffValidators(
 ) []abci.ValidatorUpdate {
 	var updates []abci.ValidatorUpdate
 
-	isCurrentValidator := make(map[string]types.ConsumerValidator)
+	isCurrentValidator := make(map[string]types.ConsumerValidator, len(currentValidators))
 	for _, val := range currentValidators {
 		isCurrentValidator[val.ConsumerPublicKey.String()] = val
 	}
 
-	isNextValidator := make(map[string]types.ConsumerValidator)
+	isNextValidator := make(map[string]types.ConsumerValidator, len(nextValidators))
 	for _, val := range nextValidators {
 		isNextValidator[val.ConsumerPublicKey.String()] = val
 	}

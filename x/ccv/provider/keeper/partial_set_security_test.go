@@ -33,11 +33,11 @@ func TestHandleOptIn(t *testing.T) {
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
 	// trying to opt in to a non-proposed and non-registered chain returns an error
-	require.Error(t, providerKeeper.HandleOptIn(ctx, "unknownChainID", providerAddr, nil))
+	require.Error(t, providerKeeper.HandleOptIn(ctx, "unknownChainID", providerAddr, ""))
 
 	providerKeeper.SetProposedConsumerChain(ctx, "chainID", 1)
 	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", providerAddr))
-	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, nil)
+	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, "")
 	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", providerAddr))
 }
 
@@ -75,7 +75,7 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	expectedConsumerPubKey, err := providerKeeper.ParseConsumerKey(consumerKey)
 	require.NoError(t, err)
 
-	err = providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, &consumerKey)
+	err = providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, consumerKey)
 	require.NoError(t, err)
 
 	// assert that the consumeKey was assigned to `providerAddr` validator on chain with id `chainID`
@@ -303,56 +303,55 @@ func TestComputeMinPowerToOptIn(t *testing.T) {
 		createStakingValidator(ctx, mocks, 5, 6, 5),
 	}
 
-	m, err := providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 100)
+	m, err := providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 100)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 97)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 97)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 96)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 96)
 	require.NoError(t, err)
 	require.Equal(t, int64(3), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 85)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 85)
 	require.NoError(t, err)
 	require.Equal(t, int64(3), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 84)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 84)
 	require.NoError(t, err)
 	require.Equal(t, int64(5), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 65)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 65)
 	require.NoError(t, err)
 	require.Equal(t, int64(5), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 64)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 64)
 	require.NoError(t, err)
 	require.Equal(t, int64(6), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 41)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 50)
 	require.NoError(t, err)
 	require.Equal(t, int64(6), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 40)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 40)
 	require.NoError(t, err)
 	require.Equal(t, int64(10), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 1)
+	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 1)
 	require.NoError(t, err)
 	require.Equal(t, int64(10), m)
 
-	// exceptional case when we erroneously call with `topN == 0` or `topN > 100`
-	_, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 0)
+	_, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 0)
 	require.Error(t, err)
 
-	_, err = providerKeeper.ComputeMinPowerToOptIn(ctx, "chainID", bondedValidators, 101)
+	_, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 101)
 	require.Error(t, err)
 }
 
-// TestFilterOptedInAndAllowAndDenylistedPredicate returns true if `validator` is opted in, in `chainID.
-func TestFilterOptedInAndAllowAndDenylistedPredicate(t *testing.T) {
+// TestCanValidateChain returns true if `validator` is opted in, in `chainID.
+func TestCanValidateChain(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -361,24 +360,24 @@ func TestFilterOptedInAndAllowAndDenylistedPredicate(t *testing.T) {
 	providerAddr := types.NewProviderConsAddress(consAddr)
 
 	// with no allowlist or denylist, the validator has to be opted in, in order to consider it
-	require.False(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+	require.False(t, providerKeeper.CanValidateChain(ctx, "chainID", providerAddr))
 	providerKeeper.SetOptedIn(ctx, "chainID", types.NewProviderConsAddress(consAddr))
-	require.True(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+	require.True(t, providerKeeper.CanValidateChain(ctx, "chainID", providerAddr))
 
 	// create an allow list but do not add the validator `providerAddr` to it
 	validatorA := createStakingValidator(ctx, mocks, 1, 1, 2)
 	consAddrA, _ := validatorA.GetConsAddr()
 	providerKeeper.SetAllowlist(ctx, "chainID", types.NewProviderConsAddress(consAddrA))
-	require.False(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+	require.False(t, providerKeeper.CanValidateChain(ctx, "chainID", providerAddr))
 	providerKeeper.SetAllowlist(ctx, "chainID", types.NewProviderConsAddress(consAddr))
-	require.True(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+	require.True(t, providerKeeper.CanValidateChain(ctx, "chainID", providerAddr))
 
 	// create a denylist but do not add validator `providerAddr` to it
 	providerKeeper.SetDenylist(ctx, "chainID", types.NewProviderConsAddress(consAddrA))
-	require.True(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+	require.True(t, providerKeeper.CanValidateChain(ctx, "chainID", providerAddr))
 	// add validator `providerAddr` to the denylist
 	providerKeeper.SetDenylist(ctx, "chainID", types.NewProviderConsAddress(consAddr))
-	require.False(t, providerKeeper.FilterOptedInAndAllowAndDenylistedPredicate(ctx, "chainID", providerAddr))
+	require.False(t, providerKeeper.CanValidateChain(ctx, "chainID", providerAddr))
 }
 
 func TestCapValidatorSet(t *testing.T) {
@@ -540,7 +539,7 @@ func noMoreThanPercent(validators []types.ConsumerValidator, percent uint32) boo
 	}
 
 	for _, v := range validators {
-		if (float64(v.Power)/float64(sum))*100.0 > float64(percent) {
+		if float64(v.Power)*100.0 > float64(percent)*float64(sum) {
 			return false
 		}
 	}

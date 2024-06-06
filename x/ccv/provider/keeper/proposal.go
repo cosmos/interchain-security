@@ -67,6 +67,22 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 	return k.HandleLegacyConsumerRewardDenomProposal(ctx, &p)
 }
 
+// HandleConsumerModificationProposal modifies a running consumer chain
+func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *types.MsgConsumerModification) error {
+	p := types.ConsumerModificationProposal{
+		Title:              proposal.Title,
+		Description:        proposal.Description,
+		ChainId:            proposal.ChainId,
+		Top_N:              proposal.Top_N,
+		ValidatorsPowerCap: proposal.ValidatorsPowerCap,
+		ValidatorSetCap:    proposal.ValidatorSetCap,
+		Allowlist:          proposal.Allowlist,
+		Denylist:           proposal.Denylist,
+	}
+
+	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
+}
+
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
 //
@@ -268,9 +284,11 @@ func (k Keeper) MakeConsumerGenesis(
 
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerToOptIn(ctx, chainID, bondedValidators, prop.Top_N)
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, prop.Top_N)
 		if err == nil {
 			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		} else {
+			return gen, nil, err
 		}
 	}
 

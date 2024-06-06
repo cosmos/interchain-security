@@ -161,3 +161,32 @@ provider unbonding: %s`,
 			providerUnbondingTime)
 	}
 }
+
+type ConsumerModificationProposalJSON struct {
+	Title   string `json:"title"`
+	Summary string `json:"summary"`
+	ChainId string `json:"chain_id"`
+
+	TopN               uint32   `json:"top_N"`
+	ValidatorsPowerCap uint32   `json:"validators_power_cap"`
+	ValidatorSetCap    uint32   `json:"validator_set_cap"`
+	Allowlist          []string `json:"allowlist"`
+	Denylist           []string `json:"denylist"`
+
+	Deposit string `json:"deposit"`
+}
+
+func ParseConsumerModificationProposalJSON(proposalFile string) (ConsumerModificationProposalJSON, error) {
+	proposal := ConsumerModificationProposalJSON{}
+
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
+	if err != nil {
+		return proposal, err
+	}
+
+	if err := json.Unmarshal(contents, &proposal); err != nil {
+		return proposal, err
+	}
+
+	return proposal, nil
+}

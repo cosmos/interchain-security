@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -78,6 +79,39 @@ func (k Keeper) HandleLegacyConsumerRemovalProposal(ctx sdk.Context, p *types.Co
 		"title", p.Title,
 		"stop time", p.StopTime.UTC(),
 	)
+
+	return nil
+}
+
+// HandleConsumerModificationProposal modifies a running consumer chain
+func (k Keeper) HandleLegacyConsumerModificationProposal(ctx sdk.Context, p *types.ConsumerModificationProposal) error {
+	if _, found := k.GetConsumerClientId(ctx, p.ChainId); !found {
+		return errorsmod.Wrapf(types.ErrInvalidConsumerChainID, "consumer %s chain is not running", p.ChainId)
+	}
+
+	k.SetTopN(ctx, p.ChainId, p.Top_N)
+	k.SetValidatorsPowerCap(ctx, p.ChainId, p.ValidatorsPowerCap)
+	k.SetValidatorSetCap(ctx, p.ChainId, p.ValidatorSetCap)
+
+	k.DeleteAllowlist(ctx, p.ChainId)
+	for _, address := range p.Allowlist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetAllowlist(ctx, p.ChainId, types.NewProviderConsAddress(consAddr))
+	}
+
+	k.DeleteDenylist(ctx, p.ChainId)
+	for _, address := range p.Denylist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetDenylist(ctx, p.ChainId, types.NewProviderConsAddress(consAddr))
+	}
 
 	return nil
 }
