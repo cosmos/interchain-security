@@ -166,10 +166,10 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 // If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
 func (k Keeper) SendVSCPackets(ctx sdk.Context) {
-	for _, chain := range k.GetAllConsumerChains(ctx) {
+	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
 		// check if CCV channel is established and send
-		if channelID, found := k.GetChainToChannel(ctx, chain.ChainId); found {
-			k.SendVSCPacketsToChain(ctx, chain.ChainId, channelID)
+		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+			k.SendVSCPacketsToChain(ctx, chainID, channelID)
 		}
 	}
 }
@@ -220,35 +220,36 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	// get the bonded validators from the staking module
 	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
 
-	for _, chain := range k.GetAllConsumerChains(ctx) {
-		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
+	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+		currentValidators := k.GetConsumerValSet(ctx, chainID)
+		topN, _ := k.GetTopN(ctx, chainID)
 
-		if chain.Top_N > 0 {
+		if topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, chain.Top_N)
+			minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
 			if err == nil {
-				k.OptInTopNValidators(ctx, chain.ChainId, bondedValidators, minPower)
+				k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 			} else {
 				// we just log here and do not panic because panic-ing would halt the provider chain
-				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chain.ChainId, "error", err)
+				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 			}
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, chain.ChainId, bondedValidators)
+		nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
-		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
+		k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
-		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chain.ChainId, valUpdateID)
+		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
-			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chain.ChainId))
-			k.AppendPendingVSCPackets(ctx, chain.ChainId, packet)
+			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
+			k.AppendPendingVSCPackets(ctx, chainID, packet)
 			k.Logger(ctx).Info("VSCPacket enqueued:",
-				"chainID", chain.ChainId,
+				"chainID", chainID,
 				"vscID", valUpdateID,
 				"len updates", len(valUpdates),
 				"len unbonding ops", len(unbondingOps),
