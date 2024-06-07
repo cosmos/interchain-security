@@ -60,3 +60,7 @@ the power distribution on the provider shifts and the denylisted validators gain
 
 In general, when setting these parameters, consider that the voting power distribution in the future might be very different from the one right now,
 and that the chain should be secure even if the power distribution changes significantly.
+
+:::tip
+The power shaping parameters of a running consumer chain can be changed through a [`ConsumerModificationProposal`](proposals#consumermodificationproposal).
+:::

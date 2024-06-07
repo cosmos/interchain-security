@@ -129,3 +129,9 @@ Yes, the consumer chain will halt with an ERR CONSENSUS FAILURE error after the 
 ## Can validators set a commission rate for chains they have not opted in to?
 Yes, and this is useful for validators that are not in the top N% of the provider chain, but might move into the top N% in the future.
 By setting the commission rate ahead of time, they can make sure that they immediately have a commission rate of their choosing as soon as they are in the top N%.
+
+## Can a consumer chain modify its power shaping parameters?
+Yes, by issuing a [`ConsumerModificationProposal`](features/proposals#consumermodificationproposal).
+
+## Can a Top N consumer chain become Opt-In or vice versa? 
+Yes, by issuing a [`ConsumerModificationProposal`](features/proposals#consumermodificationproposal).
