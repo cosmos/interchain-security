@@ -239,7 +239,11 @@ func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
 
 // GetAllConsumerChainIDs gets all of the consumer chain ID, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
-func (k Keeper) GetAllConsumerChainIDs(ctx sdk.Context) []string {
+//
+// Note that the registered consumer chains are stored under keys with the following format:
+// ChainToClientBytePrefix | chainID
+// Thus, the returned array is in ascending order of chainIDs.
+func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
 	chainIDs := []string{}
 
 	store := ctx.KVStore(k.storeKey)
@@ -253,66 +257,6 @@ func (k Keeper) GetAllConsumerChainIDs(ctx sdk.Context) []string {
 	}
 
 	return chainIDs
-}
-
-// GetAllConsumerChains gets all of the consumer chains, for which the provider module
-// created IBC clients. Consumer chains with created clients are also referred to as registered.
-//
-// Note that the registered consumer chains are stored under keys with the following format:
-// ChainToClientBytePrefix | chainID
-// Thus, the returned array is in ascending order of chainIDs.
-func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		// remove 1 byte prefix from key to retrieve chainID
-		chainID := string(iterator.Key()[1:])
-		clientID := string(iterator.Value())
-
-		topN, found := k.GetTopN(ctx, chainID)
-
-		var minPowerInTopN int64
-		if found && topN > 0 {
-			res, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
-			if err != nil {
-				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
-				minPowerInTopN = -1
-			} else {
-				minPowerInTopN = res
-			}
-		} else {
-			minPowerInTopN = -1
-		}
-
-		validatorSetCap, _ := k.GetValidatorSetCap(ctx, chainID)
-		validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, chainID)
-		allowlist := k.GetAllowList(ctx, chainID)
-		strAllowlist := make([]string, len(allowlist))
-		for i, addr := range allowlist {
-			strAllowlist[i] = addr.String()
-		}
-
-		denylist := k.GetDenyList(ctx, chainID)
-		strDenylist := make([]string, len(denylist))
-		for i, addr := range denylist {
-			strDenylist[i] = addr.String()
-		}
-
-		chains = append(chains, types.Chain{
-			ChainId:            chainID,
-			ClientId:           clientID,
-			Top_N:              topN,
-			MinPowerInTop_N:    minPowerInTopN,
-			ValidatorSetCap:    validatorSetCap,
-			ValidatorsPowerCap: validatorsPowerCap,
-			Allowlist:          strAllowlist,
-			Denylist:           strDenylist,
-		})
-	}
-
-	return chains
 }
 
 // SetChannelToChain sets the mapping from the CCV channel ID to the consumer chainID.
@@ -1177,10 +1121,7 @@ func (k Keeper) BondDenom(ctx sdk.Context) string {
 
 func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 	allConsumerChains := []string{}
-	consumerChains := k.GetAllConsumerChains(ctx)
-	for _, consumerChain := range consumerChains {
-		allConsumerChains = append(allConsumerChains, consumerChain.ChainId)
-	}
+	allConsumerChains = append(allConsumerChains, k.GetAllRegisteredConsumerChainIDs(ctx)...)
 	proposedChains := k.GetAllProposedConsumerChainIDs(ctx)
 	for _, proposedChain := range proposedChains {
 		allConsumerChains = append(allConsumerChains, proposedChain.ChainID)

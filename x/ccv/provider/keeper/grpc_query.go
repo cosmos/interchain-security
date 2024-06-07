@@ -47,13 +47,71 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	chains := []*types.Chain{}
-	for _, chain := range k.GetAllConsumerChains(ctx) {
+	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
 		// prevent implicit memory aliasing
-		c := chain
+		c, err := k.GetConsumerChain(ctx, chainID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		chains = append(chains, &c)
 	}
 
 	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
+}
+
+// GetConsumerChain returns a Chain data structure with all the necessary fields
+func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, error) {
+	// Get ClientId
+	clientID, found := k.GetConsumerClientId(ctx, chainID)
+	if !found {
+		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", chainID)
+	}
+
+	// Get Top_N
+	topN, found := k.GetTopN(ctx, chainID)
+
+	// Get MinPowerInTop_N
+	var minPowerInTopN int64
+	if found && topN > 0 {
+		res, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
+		if err != nil {
+			return types.Chain{}, fmt.Errorf("failed to compute min power to opt in for chain (%s): %s", chainID, err.Error())
+		}
+		minPowerInTopN = res
+	} else {
+		minPowerInTopN = -1
+	}
+
+	// Get ValidatorSetCap
+	validatorSetCap, _ := k.GetValidatorSetCap(ctx, chainID)
+
+	// Get ValidatorsPowerCap
+	validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, chainID)
+
+	// Get Allowlist
+	allowlist := k.GetAllowList(ctx, chainID)
+	strAllowlist := make([]string, len(allowlist))
+	for i, addr := range allowlist {
+		strAllowlist[i] = addr.String()
+	}
+
+	// Get Denylist
+	denylist := k.GetDenyList(ctx, chainID)
+	strDenylist := make([]string, len(denylist))
+	for i, addr := range denylist {
+		strDenylist[i] = addr.String()
+	}
+
+	return types.Chain{
+		ChainId:            chainID,
+		ClientId:           clientID,
+		Top_N:              topN,
+		MinPowerInTop_N:    minPowerInTopN,
+		ValidatorSetCap:    validatorSetCap,
+		ValidatorsPowerCap: validatorsPowerCap,
+		Allowlist:          strAllowlist,
+		Denylist:           strDenylist,
+	}, nil
 }
 
 func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
@@ -307,11 +365,9 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	// get all the consumer chains for which the validator is either already
 	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
 	consumersToValidate := []string{}
-	for _, consumer := range k.GetAllConsumerChains(ctx) {
-		chainID := consumer.ChainId
-
-		if hasToValidate, err := k.HasToValidate(ctx, provAddr, chainID); err == nil && hasToValidate {
-			consumersToValidate = append(consumersToValidate, chainID)
+	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+		if hasToValidate, err := k.HasToValidate(ctx, provAddr, consumerChainID); err == nil && hasToValidate {
+			consumersToValidate = append(consumersToValidate, consumerChainID)
 		}
 	}
 
