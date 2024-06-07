@@ -192,8 +192,8 @@ var stepChoices = map[string]StepChoice{
 		description: "test partial set security for an Opt-In chain that has a validator denylisted",
 		testConfig:  DefaultTestCfg,
 	},
-	"too-many-validators": {
-		name:        "too-many-validators",
+	"active-set-changes": {
+		name:        "active-set-changes",
 		steps:       stepsActiveSetChanges(),
 		description: "",
 		testConfig:  SmallMaxValidatorsTestCfg,
