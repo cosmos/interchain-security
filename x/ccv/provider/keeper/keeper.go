@@ -266,13 +266,15 @@ func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
 	return chainIDs
 }
 
-// GetAllConsumerChains gets all of the consumer chains, for which the provider module
+// GetAllRegisteredConsumerChainIDs gets all of the consumer chain IDs, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
 // Note that the registered consumer chains are stored under keys with the following format:
 // ChainToClientBytePrefix | chainID
 // Thus, the returned array is in ascending order of chainIDs.
-func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
+func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
+	chainIDs := []string{}
+
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
@@ -280,56 +282,10 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 	for ; iterator.Valid(); iterator.Next() {
 		// remove 1 byte prefix from key to retrieve chainID
 		chainID := string(iterator.Key()[1:])
-		clientID := string(iterator.Value())
-
-		topN, found := k.GetTopN(ctx, chainID)
-
-		var minPowerInTopN int64
-		if found && topN > 0 {
-			lastVals, err := k.stakingKeeper.GetLastValidators(ctx)
-			if err != nil {
-				k.Logger(ctx).Error("failed to get last validators", "chain", chainID, "error", err)
-				minPowerInTopN = -1
-			} else {
-				res, err := k.ComputeMinPowerToOptIn(ctx, lastVals, topN)
-				if err != nil {
-					k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
-					minPowerInTopN = -1
-				} else {
-					minPowerInTopN = res
-				}
-			}
-		} else {
-			minPowerInTopN = -1
-		}
-
-		validatorSetCap, _ := k.GetValidatorSetCap(ctx, chainID)
-		validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, chainID)
-		allowlist := k.GetAllowList(ctx, chainID)
-		strAllowlist := make([]string, len(allowlist))
-		for i, addr := range allowlist {
-			strAllowlist[i] = addr.String()
-		}
-
-		denylist := k.GetDenyList(ctx, chainID)
-		strDenylist := make([]string, len(denylist))
-		for i, addr := range denylist {
-			strDenylist[i] = addr.String()
-		}
-
-		chains = append(chains, types.Chain{
-			ChainId:            chainID,
-			ClientId:           clientID,
-			Top_N:              topN,
-			MinPowerInTop_N:    minPowerInTopN,
-			ValidatorSetCap:    validatorSetCap,
-			ValidatorsPowerCap: validatorsPowerCap,
-			Allowlist:          strAllowlist,
-			Denylist:           strDenylist,
-		})
+		chainIDs = append(chainIDs, chainID)
 	}
 
-	return chains
+	return chainIDs
 }
 
 // SetChannelToChain sets the mapping from the CCV channel ID to the consumer chainID.
@@ -1195,10 +1151,7 @@ func (k Keeper) BondDenom(ctx sdk.Context) (string, error) {
 
 func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 	allConsumerChains := []string{}
-	consumerChains := k.GetAllConsumerChains(ctx)
-	for _, consumerChain := range consumerChains {
-		allConsumerChains = append(allConsumerChains, consumerChain.ChainId)
-	}
+	allConsumerChains = append(allConsumerChains, k.GetAllRegisteredConsumerChainIDs(ctx)...)
 	proposedChains := k.GetAllProposedConsumerChainIDs(ctx)
 	for _, proposedChain := range proposedChains {
 		allConsumerChains = append(allConsumerChains, proposedChain.ChainID)
@@ -1318,50 +1271,6 @@ func (k Keeper) DeleteAllOptedIn(
 	for _, delKey := range keysToDel {
 		store.Delete(delKey)
 	}
-}
-
-func (k Keeper) HasToValidate(
-	ctx sdk.Context,
-	provAddr types.ProviderConsAddress,
-	chainID string,
-) (bool, error) {
-	// if the validator was sent as part of the packet in the last epoch, it has to validate
-	if k.IsConsumerValidator(ctx, chainID, provAddr) {
-		return true, nil
-	}
-
-	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
-	bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
-	if err != nil {
-		return false, err
-	}
-	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
-		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
-		if err == nil {
-			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
-		} else {
-			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
-		}
-	}
-
-	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
-	// the validator would have to validate in the next epoch
-	if k.IsOptedIn(ctx, chainID, provAddr) {
-		lastVals, err := k.stakingKeeper.GetLastValidators(ctx)
-		if err != nil {
-			return false, err
-		}
-		nextValidators := k.ComputeNextValidators(ctx, chainID, lastVals)
-		for _, v := range nextValidators {
-			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
-			if provAddr.ToSdkConsAddr().Equals(consAddr) {
-				return true, nil
-			}
-		}
-	}
-
-	return false, nil
 }
 
 // SetConsumerCommissionRate sets a per-consumer chain commission rate

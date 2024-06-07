@@ -69,11 +69,11 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 		if err != nil {
 			return err
 		}
-		lastVals, err := k.stakingKeeper.GetLastValidators(ctx)
+		bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
 		if err != nil {
-			return err
+			return errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 		}
-		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, lastVals, topN)
+		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
 		if err != nil {
 			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
 			return errorsmod.Wrapf(

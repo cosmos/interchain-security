@@ -75,14 +75,14 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	}
 
 	// Iterate over all registered consumer chains
-	for _, consumer := range k.GetAllConsumerChains(ctx) {
+	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
 		// transfer the consumer rewards to the distribution module account
 		// note that the rewards transferred are only consumer whitelisted denoms
-		rewardsCollected, err := k.TransferConsumerRewardsToDistributionModule(ctx, consumer.ChainId)
+		rewardsCollected, err := k.TransferConsumerRewardsToDistributionModule(ctx, consumerChainID)
 		if err != nil {
 			k.Logger(ctx).Error(
 				"fail to transfer rewards to distribution module for chain %s: %s",
-				consumer.ChainId,
+				consumerChainID,
 				err,
 			)
 			continue
@@ -97,12 +97,12 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
-		if k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId) == 0 {
+		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
 			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsCollected, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 			if err != nil {
 				k.Logger(ctx).Error(
 					"fail to allocate rewards from consumer chain %s to community pool: %s",
-					consumer.ChainId,
+					consumerChainID,
 					err,
 				)
 			}
@@ -116,7 +116,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if err != nil {
 			k.Logger(ctx).Error(
 				"cannot get community tax while allocating rewards from consumer chain %s: %s",
-				consumer.ChainId,
+				consumerChainID,
 				err,
 			)
 			continue
@@ -127,7 +127,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		// allocate tokens to consumer validators
 		feeAllocated := k.AllocateTokensToConsumerValidators(
 			ctx,
-			consumer.ChainId,
+			consumerChainID,
 			feeMultiplier,
 		)
 		remaining = remaining.Sub(feeAllocated)
@@ -138,7 +138,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if err != nil {
 			k.Logger(ctx).Error(
 				"fail to allocate rewards from consumer chain %s to community pool: %s",
-				consumer.ChainId,
+				consumerChainID,
 				err,
 			)
 			continue
