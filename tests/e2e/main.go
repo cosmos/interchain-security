@@ -194,7 +194,7 @@ var stepChoices = map[string]StepChoice{
 	},
 	"too-many-validators": {
 		name:        "too-many-validators",
-		steps:       stepsTooManyValidators(),
+		steps:       stepsActiveSetChanges(),
 		description: "",
 		testConfig:  TooManyValidatorsTestCfg,
 	},
