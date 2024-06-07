@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
@@ -465,37 +464,44 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 
 func (s *CCVTestSuite) TestTooManyLastValidators() {
 	sk := s.providerApp.GetTestStakingKeeper()
+
+	// get current staking params
 	p := sk.GetParams(s.providerCtx())
-	fmt.Printf("MaxValidators: %v\nLast Bonded Validators: %v\n",
-		p.MaxValidators, len(sk.GetLastValidators(s.providerCtx())))
 
-	val := sk.GetAllValidators(s.providerCtx())[0]
+	// get validators, which are all active atm
+	vals := sk.GetAllValidators(s.providerCtx())
+	s.Require().Equal(len(vals), len(sk.GetLastValidators(s.providerCtx())))
+
+	// jail a validator
+	val := vals[0]
 	consAddr, err := val.GetConsAddr()
-	valAddr := val.GetOperator()
 	s.Require().NoError(err)
-
-	fmt.Println("Jailing: ", valAddr.String())
 	sk.Jail(s.providerCtx(), consAddr)
 
-	fmt.Println("Last bonded validators:", len(sk.GetLastValidators(s.providerCtx())))
+	// save the current number of bonded vals
+	lastVals := sk.GetLastValidators(s.providerCtx())
 
-	sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx())
+	// pass one block to apply the validator set changes
+	// (calls ApplyAndReturnValidatorSetUpdates in the the staking module EndBlock)
+	s.providerChain.NextBlock()
 
-	fmt.Println("Last bonded validators:", len(sk.GetLastValidators(s.providerCtx())))
+	// verify that the number of bonded validators is decreased by one
+	s.Require().Equal(len(lastVals)-1, len(sk.GetLastValidators(s.providerCtx())))
 
+	// update maximum validator to the equal number of bonded validators
 	p.MaxValidators = uint32(len(sk.GetLastValidators(s.providerCtx())))
 	sk.SetParams(s.providerCtx(), p)
 
-	sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx())
+	// pass one block to apply validator set changes
+	s.providerChain.NextBlock()
 
-	fmt.Println("validators status:")
-	for _, v := range sk.GetAllValidators(s.providerCtx()) {
-		fmt.Println(v.GetOperator().String(), v.Status)
-	}
-
-	fmt.Println("Unjailing:", valAddr.String())
+	// unjail validator
 	sk.Unjail(s.providerCtx(), consAddr)
 
-	fmt.Println("Last bonded validators:", len(sk.GetLastValidators(s.providerCtx())))
-	sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx())
+	// pass another block to update the validator set
+	// which causes a panic due to a GetLastValidator call in
+	// ApplyAndReturnValidatorSetUpdates where the staking module has a inconsistent state
+	s.Require().Panics(s.providerChain.NextBlock)
+	s.Require().Panics(func() { sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx()) })
+	s.Require().Panics(func() { sk.GetLastValidators(s.providerCtx()) })
 }
