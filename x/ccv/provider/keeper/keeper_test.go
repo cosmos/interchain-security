@@ -408,7 +408,7 @@ func TestGetAllRegisteredConsumerChainIDs(t *testing.T) {
 
 	result := pk.GetAllRegisteredConsumerChainIDs(ctx)
 	require.Len(t, result, len(chainIDs))
-	require.Equal(t, result, expectedChainIDs)
+	require.Equal(t, expectedChainIDs, result)
 }
 
 // TestGetAllChannelToChains tests GetAllChannelToChains behaviour correctness

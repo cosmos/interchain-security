@@ -237,7 +237,7 @@ func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
 	return chainIDs
 }
 
-// GetAllConsumerChainIDs gets all of the consumer chain ID, for which the provider module
+// GetAllRegisteredConsumerChainIDs gets all of the consumer chain IDs, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
 // Note that the registered consumer chains are stored under keys with the following format:

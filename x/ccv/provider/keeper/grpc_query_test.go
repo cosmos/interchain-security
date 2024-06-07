@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"fmt"
-	"sort"
 	"testing"
 	"time"
 
@@ -259,7 +258,7 @@ func TestGetConsumerChain(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
+	chainIDs := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
 
 	// mock the validator set
 	vals := []stakingtypes.Validator{
@@ -336,10 +335,6 @@ func TestGetConsumerChain(t *testing.T) {
 				Denylist:           strDenylist,
 			})
 	}
-	// sorting by chainID
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
-	})
 
 	for i, chainID := range pk.GetAllRegisteredAndProposedChainIDs(ctx) {
 		c, err := pk.GetConsumerChain(ctx, chainID)

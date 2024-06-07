@@ -48,7 +48,6 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	chains := []*types.Chain{}
 	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
-		// prevent implicit memory aliasing
 		c, err := k.GetConsumerChain(ctx, chainID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -61,13 +60,11 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
 func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, error) {
-	// Get ClientId
 	clientID, found := k.GetConsumerClientId(ctx, chainID)
 	if !found {
 		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", chainID)
 	}
 
-	// Get Top_N
 	topN, found := k.GetTopN(ctx, chainID)
 
 	// Get MinPowerInTop_N
@@ -75,27 +72,23 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, 
 	if found && topN > 0 {
 		res, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
 		if err != nil {
-			return types.Chain{}, fmt.Errorf("failed to compute min power to opt in for chain (%s): %s", chainID, err.Error())
+			return types.Chain{}, fmt.Errorf("failed to compute min power to opt in for chain (%s): %w", chainID, err)
 		}
 		minPowerInTopN = res
 	} else {
 		minPowerInTopN = -1
 	}
 
-	// Get ValidatorSetCap
 	validatorSetCap, _ := k.GetValidatorSetCap(ctx, chainID)
 
-	// Get ValidatorsPowerCap
 	validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, chainID)
 
-	// Get Allowlist
 	allowlist := k.GetAllowList(ctx, chainID)
 	strAllowlist := make([]string, len(allowlist))
 	for i, addr := range allowlist {
 		strAllowlist[i] = addr.String()
 	}
 
-	// Get Denylist
 	denylist := k.GetDenyList(ctx, chainID)
 	strDenylist := make([]string, len(denylist))
 	for i, addr := range denylist {
@@ -376,7 +369,7 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	}, nil
 }
 
-// HasToValidate checks whether a validator needs to validate on a consumer chain
+// hasToValidate checks if a validator needs to validate on a consumer chain
 func (k Keeper) hasToValidate(
 	ctx sdk.Context,
 	provAddr types.ProviderConsAddress,
