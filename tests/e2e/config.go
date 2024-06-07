@@ -87,7 +87,7 @@ const (
 	MulticonsumerTestCfg        TestConfigType = "multi-consumer"
 	ConsumerMisbehaviourTestCfg TestConfigType = "consumer-misbehaviour"
 	CompatibilityTestCfg        TestConfigType = "compatibility"
-	TooManyValidatorsTestCfg    TestConfigType = "too-many-validators"
+	SmallMaxValidatorsTestCfg   TestConfigType = "small-max-validators"
 )
 
 // Attributes that are unique to a validator. Allows us to map (part of)
@@ -265,8 +265,8 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = ConsumerMisbehaviourTestConfig()
 	case CompatibilityTestCfg:
 		testCfg = CompatibilityTestConfig(pv, cv)
-	case TooManyValidatorsTestCfg:
-		testCfg = TooManyValidatorsTestConfig()
+	case SmallMaxValidatorsTestCfg:
+		testCfg = SmallMaxValidatorsTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -608,7 +608,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 	return tr
 }
 
-func TooManyValidatorsTestConfig() TestConfig {
+func SmallMaxValidatorsTestConfig() TestConfig {
 	cfg := DefaultTestConfig()
 
 	// set the MaxValidators to 2
