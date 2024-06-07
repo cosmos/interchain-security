@@ -396,6 +396,24 @@ func TestVscSendTimestamp(t *testing.T) {
 	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
 }
 
+func TestGetAllConsumerChainIDs(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
+	// GetAllConsumerChainIDs iterates over chainID in lexicographical order
+	expectedChainIDs := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
+
+	for i, chainID := range chainIDs {
+		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+		pk.SetConsumerClientId(ctx, chainID, clientID)
+	}
+
+	result := pk.GetAllConsumerChainIDs(ctx)
+	require.Len(t, result, len(chainIDs))
+	require.Equal(t, result, expectedChainIDs)
+}
+
 // TestGetAllConsumerChains tests GetAllConsumerChains behaviour correctness
 func TestGetAllConsumerChains(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))

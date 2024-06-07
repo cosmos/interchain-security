@@ -237,6 +237,24 @@ func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
 	return chainIDs
 }
 
+// GetAllConsumerChainIDs gets all of the consumer chain ID, for which the provider module
+// created IBC clients. Consumer chains with created clients are also referred to as registered.
+func (k Keeper) GetAllConsumerChainIDs(ctx sdk.Context) []string {
+	chainIDs := []string{}
+
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		// remove 1 byte prefix from key to retrieve chainID
+		chainID := string(iterator.Key()[1:])
+		chainIDs = append(chainIDs, chainID)
+	}
+
+	return chainIDs
+}
+
 // GetAllConsumerChains gets all of the consumer chains, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
