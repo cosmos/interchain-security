@@ -42,6 +42,10 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 			State: State{
 				ChainID("provi"): ChainState{
+					ValBalances: &map[ValidatorID]uint{
+						ValidatorID("alice"): 9489999999,
+						ValidatorID("bob"):   9500000000,
+					},
 					Proposals: &map[uint]Proposal{
 						proposalIndex: ConsumerAdditionProposal{
 							Deposit:       10000001,
