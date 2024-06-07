@@ -1506,10 +1506,8 @@ func stepsValidatorsAllowlistedChain() []Step {
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 				TopN:          0,
 				// only "alice" and "bob" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
-				Allowlist: []string{
-					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-					"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
-				},
+				Allowlist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+					"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"},
 			},
 			State: State{
 				ChainID("provi"): ChainState{
