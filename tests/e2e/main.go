@@ -195,7 +195,7 @@ var stepChoices = map[string]StepChoice{
 	"active-set-changes": {
 		name:        "active-set-changes",
 		steps:       stepsActiveSetChanges(),
-		description: "",
+		description: "This is a regression test related to the issue discussed here: https://forum.cosmos.network/t/cosmos-hub-v17-1-chain-halt-post-mortem/13899. The test ensures that the protocol works as expected when MaxValidators is smaller than the number of potential validators.",
 		testConfig:  SmallMaxValidatorsTestCfg,
 	},
 }
@@ -286,7 +286,7 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"consumer-double-downtime", "partial-set-security-opt-in", "partial-set-security-top-n",
 			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
 			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
-			"partial-set-security-validators-allowlisted", "too-many-validators",
+			"active-set-changes",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

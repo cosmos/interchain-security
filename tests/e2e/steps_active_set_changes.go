@@ -18,7 +18,7 @@ func stepsActiveSetChanges() []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 0,
+						ValidatorID("alice"): 0, // MaxValidators is set to 2, so alice is not part of the validator set
 						ValidatorID("bob"):   200,
 						ValidatorID("carol"): 700,
 					},
@@ -126,7 +126,6 @@ func stepsActiveSetChanges() []Step {
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100, // alice goes into the active set
-						// THIS WILL MAKE THE TEST FAIL AND THE PROVIDER NODES PANIC
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 700,
 					},
