@@ -463,7 +463,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
+		err := k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
+		if err != nil {
+			k.Logger(ctx).Error("failed to jail vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
+			return
+		}
 		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
 		jailDuration, err := k.slashingKeeper.DowntimeJailDuration(ctx)
 		if err != nil {
@@ -471,7 +475,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 			return
 		}
 		jailEndTime := ctx.BlockTime().Add(jailDuration)
-		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailEndTime)
+		err = k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailEndTime)
+		if err != nil {
+			k.Logger(ctx).Error("failed to set jail duration", "err", err.Error())
+			return
+		}
 	}
 
 	ctx.EventManager().EmitEvent(

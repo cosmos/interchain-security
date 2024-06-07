@@ -98,7 +98,14 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		if k.ComputeConsumerTotalVotingPower(ctx, consumer.ChainId) == 0 {
-			k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsCollected, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsCollected, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+			if err != nil {
+				k.Logger(ctx).Error(
+					"fail to allocate rewards from consumer chain %s to community pool: %s",
+					consumer.ChainId,
+					err,
+				)
+			}
 			return
 		}
 
@@ -127,7 +134,15 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 
 		// allocate community funding
 		remainingCoins, _ := remaining.TruncateDecimal()
-		k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingCoins, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingCoins, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+		if err != nil {
+			k.Logger(ctx).Error(
+				"fail to allocate rewards from consumer chain %s to community pool: %s",
+				consumer.ChainId,
+				err,
+			)
+			continue
+		}
 	}
 }
 
@@ -172,11 +187,16 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		}
 
 		// allocate the consumer reward tokens to the validator
-		k.distributionKeeper.AllocateTokensToValidator(
+		err = k.distributionKeeper.AllocateTokensToValidator(
 			ctx,
 			val,
 			tokensFraction,
 		)
+		if err != nil {
+			k.Logger(ctx).Error("fail to allocate tokens to validator :%s while allocating rewards from consumer chain: %s",
+				consAddr, chainID)
+			continue
+		}
 
 		// sum the tokens allocated
 		allocated = allocated.Add(tokensFraction...)
