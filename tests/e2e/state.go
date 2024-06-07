@@ -76,6 +76,14 @@ type ConsumerRemovalProposal struct {
 
 func (p ConsumerRemovalProposal) isProposal() {}
 
+type ConsumerModificationProposal struct {
+	Deposit uint
+	Chain   ChainID
+	Status  string
+}
+
+func (p ConsumerModificationProposal) isProposal() {}
+
 type Rewards struct {
 	IsRewarded map[ValidatorID]bool
 	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
@@ -481,6 +489,22 @@ func (tr TestConfig) getProposal(chain ChainID, proposal uint) Proposal {
 			Status:   status,
 			Chain:    chain,
 			StopTime: int(stopTime.Milliseconds()),
+		}
+	case "/interchain_security.ccv.provider.v1.ConsumerModificationProposal":
+		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
+
+		var chain ChainID
+		for i, conf := range tr.chainConfigs {
+			if string(conf.ChainId) == chainId {
+				chain = i
+				break
+			}
+		}
+
+		return ConsumerModificationProposal{
+			Deposit: uint(deposit),
+			Status:  status,
+			Chain:   chain,
 		}
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
 		return ParamsProposal{

@@ -192,6 +192,12 @@ var stepChoices = map[string]StepChoice{
 		description: "test partial set security for an Opt-In chain that has a validator denylisted",
 		testConfig:  DefaultTestCfg,
 	},
+	"partial-set-security-modification-proposal": {
+		name:        "partial-set-security-modification-proposal",
+		steps:       stepsModifyChain(),
+		description: "test partial set security parameters can be changed through a modification proposal",
+		testConfig:  DefaultTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
