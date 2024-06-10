@@ -382,7 +382,7 @@ func (k Keeper) hasToValidate(
 		if found {
 			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 		} else {
-			k.Logger(ctx).Error("did not find min power to in top N for chain", "chain", chainID)
+			k.Logger(ctx).Error("did not find min power in top N for chain", "chain", chainID)
 		}
 	}
 
