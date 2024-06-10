@@ -468,7 +468,7 @@ func (s *CCVTestSuite) TestTooManyLastValidators() {
 	// get current staking params
 	p := sk.GetParams(s.providerCtx())
 
-	// get validators, which are all active atm
+	// get validators, which are all active at the moment
 	vals := sk.GetAllValidators(s.providerCtx())
 	s.Require().Equal(len(vals), len(sk.GetLastValidators(s.providerCtx())))
 
