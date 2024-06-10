@@ -1542,3 +1542,13 @@ func (k Keeper) GetMinimumPowerInTopN(
 	}
 	return int64(binary.BigEndian.Uint64(buf)), true
 }
+
+// DeleteMinimumPowerInTopN removes the minimum power required for a validator to be in the top N
+// for a given consumer chain.
+func (k Keeper) DeleteMinimumPowerInTopN(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.MinimumPowerInTopNKey(chainID))
+}
