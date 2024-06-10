@@ -439,21 +439,15 @@ func (tr TestConfig) submitConsumerModificationProposal(
 	}
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	cmd := target.ExecCommand(
+	bz, err = target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
-	)
-	bz, err = cmd.CombinedOutput()
-
-	if verbose {
-		log.Println("submitConsumerModificationProposal cmd: ", cmd.String())
-	}
-
+	).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	// CONSUMER MODIFICATION PROPOSAL
-	bz, err = target.ExecCommand(
+	cmd := target.ExecCommand(
 		tr.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal", "consumer-modification", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
@@ -463,7 +457,13 @@ func (tr TestConfig) submitConsumerModificationProposal(
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
 		`-y`,
-	).CombinedOutput()
+	)
+	if verbose {
+		log.Println("submitConsumerModificationProposal cmd: ", cmd.String())
+	}
+
+	bz, err = cmd.CombinedOutput()
+
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
