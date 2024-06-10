@@ -7,7 +7,7 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 )
 
-func MigrateTopNForRegisteredChains(ctx sdk.Context, providerKeeper providerkeeper.Keeper, stakingKeeper stakingkeeper.Keeper) {
+func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper, stakingKeeper stakingkeeper.Keeper) {
 	// get all consumer chains
 	registeredConsumerChains := providerKeeper.GetAllRegisteredAndProposedChainIDs(ctx)
 
