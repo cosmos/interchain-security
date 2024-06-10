@@ -141,6 +141,7 @@ var (
 				ibcclientclient.UpgradeProposalHandler,
 				ibcproviderclient.ConsumerAdditionProposalHandler,
 				ibcproviderclient.ConsumerRemovalProposalHandler,
+				ibcproviderclient.ConsumerModificationProposalHandler,
 				ibcproviderclient.ChangeRewardDenomsProposalHandler,
 			},
 		),
