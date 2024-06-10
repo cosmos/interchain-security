@@ -108,7 +108,7 @@ an Opt-In chain with a 40% validators power cap, a maximum number of 30 validato
 ```
 
 :::warning
-If `top_N`, `validators_power_cap`, etc. or some other argument is not included in the proposal, then it is considered
+If `top_N`, `validators_power_cap`, or some other argument is not included in the proposal, then it is considered
 that the default value is set for this argument. For example, if a Top 50% chain wants to only modify `validators_power_cap`
 from 35 to 40, then the `ConsumerModificationProposal` would still need to include that `top_N` is 50. Otherwise
 `top_N` would be set to its default value of 0, and the chain would become an Opt-In chain.
