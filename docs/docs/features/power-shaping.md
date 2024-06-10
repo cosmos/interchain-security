@@ -62,5 +62,5 @@ In general, when setting these parameters, consider that the voting power distri
 and that the chain should be secure even if the power distribution changes significantly.
 
 :::tip
-The power shaping parameters of a running consumer chain can be changed through a [`ConsumerModificationProposal`](proposals#consumermodificationproposal).
+The power shaping parameters of a running consumer chain can be changed through a [`ConsumerModificationProposal`](./proposals.md#consumermodificationproposal).
 :::

@@ -29,5 +29,5 @@ For Opt In chains, this is a temporary measure to prevent issues around chain ID
 
 :::tip
 A running Top N consumer chain might want to become an Opt-In chain or vice versa. This can be achieved by issuing
-a [`ConsumerModificationProposal`](proposals#consumermodificationproposal).
+a [`ConsumerModificationProposal`](./proposals.md#consumermodificationproposal).
 :::

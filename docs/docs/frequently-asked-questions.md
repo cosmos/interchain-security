@@ -131,7 +131,7 @@ Yes, and this is useful for validators that are not in the top N% of the provide
 By setting the commission rate ahead of time, they can make sure that they immediately have a commission rate of their choosing as soon as they are in the top N%.
 
 ## Can a consumer chain modify its power shaping parameters?
-Yes, by issuing a [`ConsumerModificationProposal`](features/proposals#consumermodificationproposal).
+Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
 
 ## Can a Top N consumer chain become Opt-In or vice versa? 
-Yes, by issuing a [`ConsumerModificationProposal`](features/proposals#consumermodificationproposal).
+Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
