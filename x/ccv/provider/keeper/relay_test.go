@@ -70,7 +70,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mocks := testkeeper.NewMockedKeepers(ctrl)
-		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Times(1)
+		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, -1)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
@@ -760,14 +760,16 @@ func TestEndBlockVSU(t *testing.T) {
 	// create 4 sample lastValidators
 	var lastValidators []stakingtypes.Validator
 	var valAddresses []sdk.ValAddress
+	var powers []int64
 	for i := 0; i < 4; i++ {
 		validator := crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
 		lastValidators = append(lastValidators, validator)
 		valAddresses = append(valAddresses, validator.GetOperator())
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(i + 1)).AnyTimes()
+		powers = append(powers, int64(i+1))
 	}
 
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(lastValidators).AnyTimes()
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, lastValidators, powers, -1)
 
 	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, chainID, "clientID")
@@ -822,7 +824,7 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	valEPubKey, _ := valE.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, true).AnyTimes()
 
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD, valE}).AnyTimes()
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, []stakingtypes.Validator{valA, valB, valC, valD, valE}, []int64{1, 3, 4, 8, 16}, -1)
 
 	// add a consumer chain
 	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")

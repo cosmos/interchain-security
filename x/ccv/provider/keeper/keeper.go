@@ -1515,8 +1515,34 @@ func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 	return !iterator.Valid()
 }
 
-
-
+// GetLastBondedValidators iterates the
 func (k Keeper) GetLastBondedValidators(ctx sdk.Context) []stakingtypes.Validator {
-	return k.stakingKeeper.GetLastValidators(ctx)
+	var lastPowers []stakingtypes.LastValidatorPower
+
+	maxVals := k.stakingKeeper.MaxValidators(ctx)
+
+	i := 0
+	k.stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
+		lastPowers = append(lastPowers, stakingtypes.LastValidatorPower{Address: addr.String(), Power: power})
+		i++
+		return i >= int(maxVals)
+	})
+
+	var bondedValidators []stakingtypes.Validator
+
+	for _, p := range lastPowers {
+		addr, err := sdk.ValAddressFromBech32(p.Address)
+		if err != nil {
+			continue
+		}
+
+		val, found := k.stakingKeeper.GetValidator(ctx, addr)
+		if !found {
+			continue
+		}
+
+		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
+		bondedValidators = append(bondedValidators, val)
+	}
+	return bondedValidators
 }
