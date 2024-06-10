@@ -488,7 +488,7 @@ func (s *CCVTestSuite) TestTooManyLastValidators() {
 	// verify that the number of bonded validators is decreased by one
 	s.Require().Equal(len(lastVals)-1, len(sk.GetLastValidators(s.providerCtx())))
 
-	// update maximum validator to the equal number of bonded validators
+	// update maximum validator to equal the number of bonded validators
 	p.MaxValidators = uint32(len(sk.GetLastValidators(s.providerCtx())))
 	sk.SetParams(s.providerCtx(), p)
 
