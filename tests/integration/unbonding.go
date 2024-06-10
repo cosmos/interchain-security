@@ -462,6 +462,9 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
 }
 
+// This test reproduces a fixed bug when an inactive validator enters back into the active set.
+// It used to cause a panic in the provider module hook called by AfterUnbondingInitiated
+// during the staking module EndBlock.
 func (s *CCVTestSuite) TestTooManyLastValidators() {
 	sk := s.providerApp.GetTestStakingKeeper()
 
@@ -496,12 +499,14 @@ func (s *CCVTestSuite) TestTooManyLastValidators() {
 	s.providerChain.NextBlock()
 
 	// unjail validator
+	// Note that since validators are sorted in descending order, the unjailed validator
+	// enters the active set again since it's ranked first by voting power.
 	sk.Unjail(s.providerCtx(), consAddr)
 
 	// pass another block to update the validator set
 	// which causes a panic due to a GetLastValidator call in
 	// ApplyAndReturnValidatorSetUpdates where the staking module has a inconsistent state
-	s.Require().Panics(s.providerChain.NextBlock)
-	s.Require().Panics(func() { sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx()) })
-	s.Require().Panics(func() { sk.GetLastValidators(s.providerCtx()) })
+	s.Require().NotPanics(s.providerChain.NextBlock)
+	s.Require().NotPanics(func() { sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx()) })
+	s.Require().NotPanics(func() { sk.GetLastValidators(s.providerCtx()) })
 }
