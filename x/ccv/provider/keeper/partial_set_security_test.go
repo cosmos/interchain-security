@@ -131,6 +131,11 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 
 	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD}).AnyTimes()
 
+	// initialize the minPowerInTopN correctly
+	minPowerInTopN, err := providerKeeper.ComputeMinPowerInTopN(ctx, []stakingtypes.Validator{valA, valB, valC, valD}, 50)
+	require.NoError(t, err)
+	providerKeeper.SetMinimumPowerInTopN(ctx, chainID, minPowerInTopN)
+
 	// opt in all validators
 	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valAConsAddr))
 	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valBConsAddr))
@@ -278,7 +283,7 @@ func TestOptInTopNValidators(t *testing.T) {
 	require.Empty(t, providerKeeper.GetAllOptedIn(ctx, "chainID"))
 }
 
-func TestComputeMinPowerToOptIn(t *testing.T) {
+func TestComputeMinPowerInTopN(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 

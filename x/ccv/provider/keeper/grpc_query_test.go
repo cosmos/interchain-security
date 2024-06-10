@@ -203,7 +203,9 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		ConsumerPublicKey: &crypto.PublicKey{
 			Sum: &crypto.PublicKey_Ed25519{
 				Ed25519: []byte{1},
-			}}})
+			},
+		},
+	})
 
 	// set `providerAddr` as an opted-in validator on "chain3"
 	pk.SetOptedIn(ctx, "chain3", providerAddr)
@@ -307,6 +309,7 @@ func TestGetConsumerChain(t *testing.T) {
 		pk.SetTopN(ctx, chainID, topN)
 		pk.SetValidatorSetCap(ctx, chainID, validatorSetCaps[i])
 		pk.SetValidatorsPowerCap(ctx, chainID, validatorPowerCaps[i])
+		pk.SetMinimumPowerInTopN(ctx, chainID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
 			pk.SetAllowlist(ctx, chainID, addr)
 		}
