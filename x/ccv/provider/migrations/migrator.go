@@ -4,24 +4,21 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
 	v3 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v3"
 	v4 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v4"
 	v5 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v5"
-	v6 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v6"
 )
 
 // Migrator is a struct for handling in-place store migrations.
 type Migrator struct {
 	providerKeeper providerkeeper.Keeper
-	stakingKeeper  stakingkeeper.Keeper
 	paramSpace     paramtypes.Subspace
 }
 
 // NewMigrator returns a new Migrator.
-func NewMigrator(providerKeeper providerkeeper.Keeper, stakingKeeper stakingkeeper.Keeper, paramSpace paramtypes.Subspace) Migrator {
-	return Migrator{providerKeeper: providerKeeper, stakingKeeper: stakingKeeper, paramSpace: paramSpace}
+func NewMigrator(providerKeeper providerkeeper.Keeper, paramSpace paramtypes.Subspace) Migrator {
+	return Migrator{providerKeeper: providerKeeper, paramSpace: paramSpace}
 }
 
 // Migrating consensus version 1 to 2 is a no-op.
@@ -48,10 +45,5 @@ func (m Migrator) Migrate3to4(ctx sdktypes.Context) error {
 // The migration consists of setting a top N of 95 for all registered consumer chains.
 func (m Migrator) Migrate4to5(ctx sdktypes.Context) error {
 	v5.MigrateTopNForRegisteredChains(ctx, m.providerKeeper)
-	return nil
-}
-
-func (m Migrator) Migrate5to6(ctx sdktypes.Context) error {
-	v6.MigrateMinPowerInTopN(ctx, m.providerKeeper, m.stakingKeeper)
 	return nil
 }
