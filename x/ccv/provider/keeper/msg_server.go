@@ -218,12 +218,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 	}
 	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	if msg.ConsumerKey != "" {
-		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, &msg.ConsumerKey)
-	} else {
-		err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, nil)
-	}
-
+	err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, msg.ConsumerKey)
 	if err != nil {
 		return nil, err
 	}
@@ -307,4 +302,18 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 	})
 
 	return &types.MsgSetConsumerCommissionRateResponse{}, nil
+}
+
+func (k msgServer) ConsumerModification(goCtx context.Context, msg *types.MsgConsumerModification) (*types.MsgConsumerModificationResponse, error) {
+	if k.GetAuthority() != msg.Authority {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleConsumerModificationProposal(ctx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling ConsumerModification proposal")
+	}
+
+	return &types.MsgConsumerModificationResponse{}, nil
 }

@@ -1396,11 +1396,11 @@ func stepsValidatorsPowerCappedChain() []Step {
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						// the powers of the validators on the consumer chain are different from the provider chain
-						// because the consumer chain is power capped. Note that the total power is 600 (= 194 + 203 + 203)
-						// and 203 / 600.0 = 0.338 < 34% that is the power cap.
-						ValidatorID("alice"): 194,
-						ValidatorID("bob"):   203,
-						ValidatorID("carol"): 203,
+						// because the consumer chain is power capped. Note that the total power is 600 (= 192 + 204 + 204)
+						// and 204 / 600.0 = 0.34 <= 34% that is the power cap.
+						ValidatorID("alice"): 192,
+						ValidatorID("bob"):   204,
+						ValidatorID("carol"): 204,
 					},
 				},
 			},
@@ -1433,9 +1433,9 @@ func stepsValidatorsPowerCappedChain() []Step {
 			State: State{
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 194,
-						ValidatorID("bob"):   203,
-						ValidatorID("carol"): 203,
+						ValidatorID("alice"): 192,
+						ValidatorID("bob"):   204,
+						ValidatorID("carol"): 204,
 					},
 				},
 				ChainID("provi"): ChainState{
@@ -1459,9 +1459,9 @@ func stepsValidatorsPowerCappedChain() []Step {
 					ValPowers: &map[ValidatorID]uint{
 						// "carol" has opted out, and we only have 2 validators left validating. Power capping only operates
 						// in a best-effort basis and with 2 validators we cannot guarantee that no validator has more
-						// than 34% of the voting power. In this case, both validators get the same voting power (50% = 101 / 202).
-						ValidatorID("alice"): 101,
-						ValidatorID("bob"):   101,
+						// than 34% of the voting power. In this case, both validators get the same voting power (50% = 102 / 204).
+						ValidatorID("alice"): 102,
+						ValidatorID("bob"):   102,
 						ValidatorID("carol"): 0,
 					},
 				},

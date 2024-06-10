@@ -12,6 +12,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -376,7 +377,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	considerAll := func(providerAddr types.ProviderConsAddress) bool { return true }
+	considerAll := func(providerAddr providertypes.ProviderConsAddress) bool { return true }
 	nextValidators := s.providerKeeper().FilterValidators(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
 	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
 

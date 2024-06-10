@@ -47,6 +47,7 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 
 - [ADR 011: Improving testing and increasing confidence](./adr-011-improving-test-confidence.md)
 - [ADR 016: Security aggregation](./adr-016-securityaggregation.md)
+- [ADR 017: ICS with Inactive Provider Validators](./adr-017-allowing-inactive-validators.md)
 
 ### Rejected
 
