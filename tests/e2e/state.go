@@ -42,6 +42,85 @@ type Chain struct {
 
 func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 
+func (p TextProposal) isProposal() {}
+
+type ConsumerAdditionProposal struct {
+	Deposit       uint
+	Chain         ChainID
+	SpawnTime     int
+	InitialHeight clienttypes.Height
+	Status        string
+}
+
+type UpgradeProposal struct {
+	Title         string
+	Description   string
+	UpgradeHeight uint64
+	Type          string
+	Deposit       uint
+	Status        string
+}
+
+func (p UpgradeProposal) isProposal() {}
+
+func (p ConsumerAdditionProposal) isProposal() {}
+
+type ConsumerRemovalProposal struct {
+	Deposit  uint
+	Chain    ChainID
+	StopTime int
+	Status   string
+}
+
+func (p ConsumerRemovalProposal) isProposal() {}
+
+type ConsumerModificationProposal struct {
+	Deposit uint
+	Chain   ChainID
+	Status  string
+}
+
+func (p ConsumerModificationProposal) isProposal() {}
+
+type Rewards struct {
+	IsRewarded map[ValidatorID]bool
+	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
+	// otherwise it will calculate if it received any rewards since the 1st block
+	IsIncrementalReward bool
+	// if true checks rewards for "stake" token, otherwise checks rewards from
+	// other chains (e.g. false is used to check if provider received rewards from a consumer chain)
+	IsNativeDenom bool
+}
+
+type ParamsProposal struct {
+	Deposit  uint
+	Status   string
+	Subspace string
+	Key      string
+	Value    string
+}
+
+func (p ParamsProposal) isProposal() {}
+
+type Param struct {
+	Subspace string
+	Key      string
+	Value    string
+}
+
+func (tr TestConfig) getState(modelState State, verbose bool) State {
+	systemState := State{}
+	for k, modelState := range modelState {
+		if verbose {
+			fmt.Println("Getting model state for chain: ", k)
+		}
+		systemState[k] = tr.getChainState(k, modelState)
+	}
+
+	return systemState
+}
+
+func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainState {
 	chainState := ChainState{}
 
 	if modelState.ValBalances != nil {
@@ -486,6 +565,31 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Status:  status,
 			Title:   title,
 			Params:  params,
+		}
+
+	case "/interchain_security.ccv.provider.v1.ConsumerModificationProposal":
+		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
+
+		var chain ChainID
+		for i, conf := range tr.chainConfigs {
+			if string(conf.ChainId) == chainId {
+				chain = i
+				break
+			}
+		}
+
+		return ConsumerModificationProposal{
+			Deposit: uint(deposit),
+			Status:  status,
+			Chain:   chain,
+		}
+	case "/cosmos.params.v1beta1.ParameterChangeProposal":
+		return ParamsProposal{
+			Deposit:  uint(deposit),
+			Status:   status,
+			Subspace: gjson.Get(string(bz), `messages.0.content.changes.0.subspace`).String(),
+			Key:      gjson.Get(string(bz), `messages.0.content.changes.0.key`).String(),
+			Value:    gjson.Get(string(bz), `messages.0.content.changes.0.value`).String(),
 		}
 	}
 

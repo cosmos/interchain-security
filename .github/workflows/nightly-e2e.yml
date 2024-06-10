@@ -277,6 +277,22 @@ jobs:
           go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E partial set security denylist
         run: go run ./tests/e2e/... --tc partial-set-security-validators-denylisted
+  partial-set-security-modification-proposal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E partial set security modification proposal
+        run: go run ./tests/e2e/... --tc partial-set-security-modification-proposal
 
   nightly-test-fail:
     needs:
@@ -295,6 +311,7 @@ jobs:
       - partial-set-security-validators-power-cap-test
       - partial-set-security-validators-allowlisted-test
       - partial-set-security-validators-denylisted-test
+      - partial-set-security-modification-proposal
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     steps:
