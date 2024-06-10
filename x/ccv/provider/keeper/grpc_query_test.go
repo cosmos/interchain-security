@@ -1,10 +1,13 @@
 package keeper_test
 
 import (
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/require"
 
@@ -248,4 +251,94 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 		ctx, providerAddr.ToSdkConsAddr()).Return(val, true).Times(1)
 	res, _ = pk.QueryValidatorConsumerCommissionRate(ctx, &req)
 	require.Equal(t, expectedCommissionRate, res.Rate)
+}
+
+// TestGetConsumerChain tests GetConsumerChain behaviour correctness
+func TestGetConsumerChain(t *testing.T) {
+	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainIDs := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
+
+	// mock the validator set
+	vals := []stakingtypes.Validator{
+		{OperatorAddress: "cosmosvaloper1c4k24jzduc365kywrsvf5ujz4ya6mwympnc4en"}, // 50 power
+		{OperatorAddress: "cosmosvaloper196ax4vc0lwpxndu9dyhvca7jhxp70rmcvrj90c"}, // 150 power
+		{OperatorAddress: "cosmosvaloper1clpqr4nrk4khgkxj78fcwwh6dl3uw4epsluffn"}, // 300 power
+		{OperatorAddress: "cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3"}, // 500 power
+	}
+	powers := []int64{50, 150, 300, 500} // sum = 1000
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(vals).AnyTimes()
+
+	for i, val := range vals {
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), val.GetOperator()).Return(powers[i]).AnyTimes()
+	}
+
+	// set Top N parameters, client ids and expected result
+	topNs := []uint32{0, 70, 90, 100}
+	expectedMinPowerInTopNs := []int64{
+		-1,  // Top N is 0, so not a Top N chain
+		300, // 500 and 300 are in Top 70%
+		150, // 150 is also in the top 90%,
+		50,  // everyone is in the top 100%
+	}
+
+	validatorSetCaps := []uint32{0, 5, 10, 20}
+	validatorPowerCaps := []uint32{0, 5, 10, 33}
+	allowlists := [][]types.ProviderConsAddress{
+		{},
+		{types.NewProviderConsAddress([]byte("providerAddr1")), types.NewProviderConsAddress([]byte("providerAddr2"))},
+		{types.NewProviderConsAddress([]byte("providerAddr3"))},
+		{},
+	}
+
+	denylists := [][]types.ProviderConsAddress{
+		{types.NewProviderConsAddress([]byte("providerAddr4")), types.NewProviderConsAddress([]byte("providerAddr5"))},
+		{},
+		{types.NewProviderConsAddress([]byte("providerAddr6"))},
+		{},
+	}
+
+	expectedGetAllOrder := []types.Chain{}
+	for i, chainID := range chainIDs {
+		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+		topN := topNs[i]
+		pk.SetConsumerClientId(ctx, chainID, clientID)
+		pk.SetTopN(ctx, chainID, topN)
+		pk.SetValidatorSetCap(ctx, chainID, validatorSetCaps[i])
+		pk.SetValidatorsPowerCap(ctx, chainID, validatorPowerCaps[i])
+		for _, addr := range allowlists[i] {
+			pk.SetAllowlist(ctx, chainID, addr)
+		}
+		for _, addr := range denylists[i] {
+			pk.SetDenylist(ctx, chainID, addr)
+		}
+		strAllowlist := make([]string, len(allowlists[i]))
+		for j, addr := range allowlists[i] {
+			strAllowlist[j] = addr.String()
+		}
+
+		strDenylist := make([]string, len(denylists[i]))
+		for j, addr := range denylists[i] {
+			strDenylist[j] = addr.String()
+		}
+
+		expectedGetAllOrder = append(expectedGetAllOrder,
+			types.Chain{
+				ChainId:            chainID,
+				ClientId:           clientID,
+				Top_N:              topN,
+				MinPowerInTop_N:    expectedMinPowerInTopNs[i],
+				ValidatorSetCap:    validatorSetCaps[i],
+				ValidatorsPowerCap: validatorPowerCaps[i],
+				Allowlist:          strAllowlist,
+				Denylist:           strDenylist,
+			})
+	}
+
+	for i, chainID := range pk.GetAllRegisteredAndProposedChainIDs(ctx) {
+		c, err := pk.GetConsumerChain(ctx, chainID)
+		require.NoError(t, err)
+		require.Equal(t, expectedGetAllOrder[i], c)
+	}
 }

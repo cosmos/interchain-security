@@ -10,12 +10,9 @@ import (
 // If a chain is in voting while the upgrade happens, this is not sufficient,
 // and a migration to rewrite the proposal is needed.
 func MigrateTopNForRegisteredChains(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
-	// get all consumer chains
-	registeredConsumerChains := providerKeeper.GetAllConsumerChains(ctx)
-
 	// Set the topN of each chain to 95
-	for _, chain := range registeredConsumerChains {
-		providerKeeper.SetTopN(ctx, chain.ChainId, 95)
+	for _, chainID := range providerKeeper.GetAllRegisteredConsumerChainIDs(ctx) {
+		providerKeeper.SetTopN(ctx, chainID, 95)
 	}
 }
 
