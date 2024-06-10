@@ -20,6 +20,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cometbft/cometbft/libs/log"
 
@@ -1512,4 +1513,10 @@ func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 	defer iterator.Close()
 
 	return !iterator.Valid()
+}
+
+
+
+func (k Keeper) GetLastBondedValidators(ctx sdk.Context) []stakingtypes.Validator {
+	return k.stakingKeeper.GetLastValidators(ctx)
 }
