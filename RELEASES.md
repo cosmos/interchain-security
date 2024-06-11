@@ -7,7 +7,6 @@
   - [Stable Release Policy](#stable-release-policy)
   - [Version Matrix](#version-matrix)
     - [Backwards Compatibility](#backwards-compatibility)
-      - [Notes](#notes)
 
 ## Semantic Versioning
 
@@ -60,13 +59,12 @@ All missing minor release versions have been discontinued.
 | Release | End of Life Date |
 |---------|------------------|
 | `v3.2.x` | July 10, 2024 |
-| `v3.3.x` | July 10, 2024 |
-| `v3.3.x-lsm` | July 10, 2024 |
 | `v4.0.x` | January 24, 2025 |
-| `v4.1.x` | January 24, 2025 |
+| `v4.2.x` | January 24, 2025 |
+| `v5.0.x` | May 9, 2025 |
 
-**Note**: As of [Gaia v15.1.0](https://github.com/cosmos/gaia/releases/tag/v15.1.0),
-the Cosmos Hub uses a fork of Cosmos SDK ([v0.47.10-ics-lsm](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.10-ics-lsm))
+**Note**: As of [Gaia v17.2.0](https://github.com/cosmos/gaia/releases/tag/v17.2.0),
+the Cosmos Hub uses a fork of Cosmos SDK ([v0.47.15-ics-lsm](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.15-ics-lsm))
 that contains the Liquid Staking Module (LSM).
 This means the Cosmos Hub requires a fork of ICS.
 This fork is maintained by the development team and released using the `-lsm` prefix.
@@ -79,11 +77,10 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 | ICS | Golang | IBC | Cosmos SDK | CometBFT | Note |
 |-----|--------|-----|------------|----------|------|
 | [v3.2.0](https://github.com/cosmos/interchain-security/releases/tag/v3.2.0) | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 |
-| [v3.3.0](https://github.com/cosmos/interchain-security/releases/tag/v3.3.0) | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 |
-| [v3.3.3-lsm](https://github.com/cosmos/interchain-security/releases/tag/v3.3.3-lsm) | 1.20 | v7.3.1 | v0.47.10-ics-lsm | v0.37.4 | Provider only (Cosmos Hub specific) |
 | [v4.0.0](https://github.com/cosmos/interchain-security/releases/tag/v4.0.0) | 1.21 | v7.3.1 | v0.47.7 | v0.37.4 | Provider on >= v4.0.0 backwards compatible with consumers >= v3.2.0 |
-| [v4.1.1](https://github.com/cosmos/interchain-security/releases/tag/v4.1.1) | 1.21 | v7.4.0 | v0.47.10 | v0.37.4 |
-| [v4.1.1-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.1.1-lsm) | 1.21 | v7.4.0 | v0.47.12-ics-lsm | v0.37.4 | Provider only (Cosmos Hub specific) |
+| [v4.2.0](https://github.com/cosmos/interchain-security/releases/tag/v4.2.0) | 1.21 | v7.4.0 | v0.47.11 | v0.37.6 |
+| [v4.2.0-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.2.0-lsm) | 1.21 | v7.4.0 | v0.47.13-ics-lsm | v0.37.6 | Provider only (Cosmos Hub specific) |
+| [v5.0.0](https://github.com/cosmos/interchain-security/releases/tag/v5.0.0) | 1.21 | v8.1.0 | v0.50.4 | v0.38.5 |
 
 **Note:** For a list of major ICS features available in the currently active releases, see [FEATURES.md](./FEATURES.md).
 
@@ -93,15 +90,9 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 
 The following table indicates the compatibility of currently active releases:
 
-| Consumer | Provider | `v3.2.0` | `v3.3.0` | `v3.3.3-lsm` | `v4.0.0` | `v4.1.1-lsm` |
-|----------|----------|----------|----------|--------------|----------|--------------|
-| `v3.2.0` || ✅ | ✅ (1) | ✅ | ✅ | ✅ |
-| `v3.3.0` || ✅ (1) | ✅ | ✅ | ✅ | ✅ |
-| `v4.0.0` || ✅ (1)| ✅ (1)| ✅ (1) | ✅ | ✅ |
-| `v4.1.1` || ✅ (1)| ✅ (1)| ✅ (1) | ✅ | ✅ |
-
-#### Notes
-
-The following adjustments must be made to the CCV consumer genesis state that is obtained from the provider chain after the spawn time is reached in order for the consumer chain to start without errors.
-
-- (1) Use `interchain-security-cd genesis transform` to transform the consumer genesis file obtained from the provider.
+| Consumer | Provider |  `v4.2.0-lsm` |
+|----------|----------|--------------|
+| `v3.2.0` || ✅ |
+| `v4.0.0` || ✅ |
+| `v4.2.0` || ✅ |
+| `v5.0.0` || ✅ |
