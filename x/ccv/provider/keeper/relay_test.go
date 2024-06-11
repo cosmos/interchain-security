@@ -70,7 +70,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mocks := testkeeper.NewMockedKeepers(ctrl)
-		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, -1)
+		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
