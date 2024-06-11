@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -30,6 +29,8 @@ func TestChangeoverToConsumer(t *testing.T) {
 		cIds[4].SDKStakingValidator(),
 	}
 
+	powers := []int64{55, 87324, 2, 42389479, 9089080}
+
 	// Instantiate 5 ics val updates for use in test
 	initialValUpdates := []abci.ValidatorUpdate{
 		{Power: 55, PubKey: cIds[5].TMProtoCryptoPublicKey()},
@@ -41,7 +42,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		// Last standalone validators that will be mock returned from stakingKeeper.GetLastValidators()
+		// Last standalone validators that will be mock returned from consumerKeeper.GetLastBondedValidators()
 		lastSovVals []stakingtypes.Validator
 		// Val updates corresponding to initial valset set for ccv set initGenesis
 		initialValUpdates []abci.ValidatorUpdate
@@ -100,10 +101,13 @@ func TestChangeoverToConsumer(t *testing.T) {
 		// Set initial valset, as would be done in InitGenesis
 		consumerKeeper.SetInitialValSet(ctx, tc.initialValUpdates)
 
-		// Setup mocked return value for stakingKeeper.GetLastValidators()
-		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return(tc.lastSovVals),
-		)
+		// Setup mocked return value for consumerkeeper.GetLastBondedValidators()
+		uthelpers.SetupMocksForLastBondedValidatorsExpectation(
+			mocks.MockStakingKeeper,
+			180, // max validators
+			tc.lastSovVals,
+			powers,
+			-1) // any times
 
 		// Add ref to standalone staking keeper
 		consumerKeeper.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)

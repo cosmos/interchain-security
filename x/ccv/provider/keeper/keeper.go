@@ -1518,37 +1518,5 @@ func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 // GetLastBondedValidators iterates the last validator powers in the staking module
 // and returns the first MaxValidators many validators with the largest powers.
 func (k Keeper) GetLastBondedValidators(ctx sdk.Context) []stakingtypes.Validator {
-	maxVals := k.stakingKeeper.MaxValidators(ctx)
-
-	lastPowers := make([]stakingtypes.LastValidatorPower, maxVals)
-
-	i := 0
-	k.stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
-		lastPowers[i] = stakingtypes.LastValidatorPower{Address: addr.String(), Power: power}
-		i++
-		return i >= int(maxVals)
-	})
-
-	// truncate the lastPowers
-	lastPowers = lastPowers[:i]
-
-	bondedValidators := make([]stakingtypes.Validator, len(lastPowers))
-
-	for index, p := range lastPowers {
-		addr, err := sdk.ValAddressFromBech32(p.Address)
-		if err != nil {
-			k.Logger(ctx).Error("Invalid validator address", "address", p.Address, "error", err)
-			continue
-		}
-
-		val, found := k.stakingKeeper.GetValidator(ctx, addr)
-		if !found {
-			k.Logger(ctx).Error("Validator not found", "address", addr.String())
-			continue
-		}
-
-		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
-		bondedValidators[index] = val
-	}
-	return bondedValidators
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx))
 }
