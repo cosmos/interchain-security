@@ -47,13 +47,64 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	chains := []*types.Chain{}
-	for _, chain := range k.GetAllConsumerChains(ctx) {
-		// prevent implicit memory aliasing
-		c := chain
+	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+		c, err := k.GetConsumerChain(ctx, chainID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		chains = append(chains, &c)
 	}
 
 	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
+}
+
+// GetConsumerChain returns a Chain data structure with all the necessary fields
+func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, error) {
+	clientID, found := k.GetConsumerClientId(ctx, chainID)
+	if !found {
+		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", chainID)
+	}
+
+	topN, found := k.GetTopN(ctx, chainID)
+
+	// Get MinPowerInTop_N
+	var minPowerInTopN int64
+	if found && topN > 0 {
+		res, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
+		if err != nil {
+			return types.Chain{}, fmt.Errorf("failed to compute min power to opt in for chain (%s): %w", chainID, err)
+		}
+		minPowerInTopN = res
+	} else {
+		minPowerInTopN = -1
+	}
+
+	validatorSetCap, _ := k.GetValidatorSetCap(ctx, chainID)
+
+	validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, chainID)
+
+	allowlist := k.GetAllowList(ctx, chainID)
+	strAllowlist := make([]string, len(allowlist))
+	for i, addr := range allowlist {
+		strAllowlist[i] = addr.String()
+	}
+
+	denylist := k.GetDenyList(ctx, chainID)
+	strDenylist := make([]string, len(denylist))
+	for i, addr := range denylist {
+		strDenylist[i] = addr.String()
+	}
+
+	return types.Chain{
+		ChainId:            chainID,
+		ClientId:           clientID,
+		Top_N:              topN,
+		MinPowerInTop_N:    minPowerInTopN,
+		ValidatorSetCap:    validatorSetCap,
+		ValidatorsPowerCap: validatorsPowerCap,
+		Allowlist:          strAllowlist,
+		Denylist:           strDenylist,
+	}, nil
 }
 
 func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
@@ -307,17 +358,53 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	// get all the consumer chains for which the validator is either already
 	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
 	consumersToValidate := []string{}
-	for _, consumer := range k.GetAllConsumerChains(ctx) {
-		chainID := consumer.ChainId
-
-		if hasToValidate, err := k.HasToValidate(ctx, provAddr, chainID); err == nil && hasToValidate {
-			consumersToValidate = append(consumersToValidate, chainID)
+	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerChainID); err == nil && hasToValidate {
+			consumersToValidate = append(consumersToValidate, consumerChainID)
 		}
 	}
 
 	return &types.QueryConsumerChainsValidatorHasToValidateResponse{
 		ConsumerChainIds: consumersToValidate,
 	}, nil
+}
+
+// hasToValidate checks if a validator needs to validate on a consumer chain
+func (k Keeper) hasToValidate(
+	ctx sdk.Context,
+	provAddr types.ProviderConsAddress,
+	chainID string,
+) (bool, error) {
+	// if the validator was sent as part of the packet in the last epoch, it has to validate
+	if k.IsConsumerValidator(ctx, chainID, provAddr) {
+		return true, nil
+	}
+
+	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
+	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+		// in a Top-N chain, we automatically opt in all validators that belong to the top N
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
+		if err == nil {
+			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		} else {
+			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+		}
+	}
+
+	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
+	// the validator would have to validate in the next epoch
+	if k.IsOptedIn(ctx, chainID, provAddr) {
+		nextValidators := k.ComputeNextValidators(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx))
+		for _, v := range nextValidators {
+			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
+			if provAddr.ToSdkConsAddr().Equals(consAddr) {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 // QueryValidatorConsumerCommissionRate returns the commission rate a given

@@ -90,9 +90,9 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 	}
 
 	// get all consumers where the validator is in the validator set
-	for _, chain := range h.k.GetAllConsumerChains(ctx) {
-		if h.k.IsConsumerValidator(ctx, chain.ChainId, types.NewProviderConsAddress(consAddr)) {
-			consumerChainIDS = append(consumerChainIDS, chain.ChainId)
+	for _, chainID := range h.k.GetAllRegisteredConsumerChainIDs(ctx) {
+		if h.k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
+			consumerChainIDS = append(consumerChainIDS, chainID)
 		}
 	}
 
