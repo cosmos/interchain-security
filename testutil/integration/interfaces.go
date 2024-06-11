@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 
 	"cosmossdk.io/math"
@@ -106,6 +107,9 @@ type TestStakingKeeper interface {
 	) (ubd types.UnbondingDelegation, found bool)
 	GetAllValidators(ctx sdk.Context) (validators []types.Validator)
 	GetValidatorSet() types.ValidatorSet
+	GetParams(ctx sdk.Context) stakingtypes.Params
+	SetParams(ctx sdk.Context, p stakingtypes.Params) error
+	ApplyAndReturnValidatorSetUpdates(ctx sdk.Context) (updates []abci.ValidatorUpdate, err error)
 }
 
 type TestBankKeeper interface {
