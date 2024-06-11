@@ -1534,11 +1534,13 @@ func (k Keeper) GetLastBondedValidators(ctx sdk.Context) []stakingtypes.Validato
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
 		if err != nil {
+			k.Logger(ctx).Error("Invalid validator address", "address", p.Address, "error", err)
 			continue
 		}
 
 		val, found := k.stakingKeeper.GetValidator(ctx, addr)
 		if !found {
+			k.Logger(ctx).Error("Validator not found", "address", addr.String())
 			continue
 		}
 
