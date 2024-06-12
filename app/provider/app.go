@@ -573,6 +573,7 @@ func New(
 					paramsclient.ProposalHandler,
 					ibcproviderclient.ConsumerAdditionProposalHandler,
 					ibcproviderclient.ConsumerRemovalProposalHandler,
+					ibcproviderclient.ConsumerModificationProposalHandler,
 					ibcproviderclient.ChangeRewardDenomsProposalHandler,
 				},
 			),
