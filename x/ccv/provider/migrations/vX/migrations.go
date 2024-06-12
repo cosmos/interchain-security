@@ -1,6 +1,8 @@
 package vX
 
 import (
+	"encoding/binary"
+
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -10,10 +12,14 @@ import (
 )
 
 // CompleteUnbondingOps completes all unbonding operations
-func CompleteUnbondingOps(ctx sdk.Context, pk providerkeeper.Keeper, sk ccv.StakingKeeper) {
-	for _, op := range pk.GetAllUnbondingOps(ctx) {
-		if err := sk.UnbondingCanComplete(ctx, op.Id); err != nil {
-			pk.Logger(ctx).Error("UnbondingCanComplete failed", "unbondingID", op.Id, "error", err.Error())
+func CompleteUnbondingOps(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper, sk ccv.StakingKeeper) {
+	iterator := sdk.KVStorePrefixIterator(store, []byte{providertypes.UnbondingOpBytePrefix})
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		id := binary.BigEndian.Uint64(iterator.Key()[1:])
+		if err := sk.UnbondingCanComplete(ctx, id); err != nil {
+			pk.Logger(ctx).Error("UnbondingCanComplete failed", "unbondingID", id, "error", err.Error())
 		}
 	}
 }

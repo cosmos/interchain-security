@@ -413,40 +413,6 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
-// GetAllUnbondingOps gets all UnbondingOps, where each UnbondingOp consists
-// of its unique ID and a list of consumer chainIDs that the unbonding operation
-// is waiting on.
-//
-// Note that UnbondingOps are stored under keys with the following format:
-// UnbondingOpBytePrefix | ID
-// Thus, the iteration is in ascending order of IDs.
-// TODO (mpoke): remove after state migration calling stakingKeeper.UnbondingCanComplete(ctx, id)
-func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []types.UnbondingOp) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
-
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		id := binary.BigEndian.Uint64(iterator.Key()[1:])
-		bz := iterator.Value()
-		if bz == nil {
-			// An error here would indicate something is very wrong,
-			// the UnbondingOp is assumed to be correctly set in SetUnbondingOp.
-			panic(fmt.Errorf("unbonding operation is nil for id %d", id))
-		}
-		var unbondingOp types.UnbondingOp
-		if err := unbondingOp.Unmarshal(bz); err != nil {
-			// An error here would indicate something is very wrong,
-			// the UnbondingOp is assumed to be correctly serialized in SetUnbondingOp.
-			panic(fmt.Errorf("failed to unmarshal UnbondingOp: %w", err))
-		}
-
-		ops = append(ops, unbondingOp)
-	}
-
-	return ops
-}
-
 // Retrieves the underlying client state corresponding to a connection ID.
 func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
 	clientID string, tmClient *ibctmtypes.ClientState, err error,
