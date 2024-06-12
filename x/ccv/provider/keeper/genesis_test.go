@@ -25,7 +25,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	expClientID := "client"
 	oneHourFromNow := time.Now().UTC().Add(time.Hour)
 	initHeight, vscID := uint64(5), uint64(1)
-	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
 
 	// create validator keys and addresses for key assignment
@@ -51,9 +50,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				"channel",
 				initHeight,
 				*ccv.DefaultConsumerGenesisState(),
-				[]providertypes.VscUnbondingOps{
-					{VscId: vscID, UnbondingOpIds: ubdIndex},
-				},
+				nil,
 				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
 			),
@@ -68,11 +65,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 				nil,
 			),
 		},
-		[]providertypes.UnbondingOp{{
-			Id:                      vscID,
-			UnbondingConsumerChains: []string{cChainIDs[0]},
-		}},
-		&providertypes.MaturedUnbondingOps{Ids: ubdIndex},
+		nil,
+		nil,
 		[]providertypes.ConsumerAdditionProposal{{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
@@ -135,11 +129,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, expectedCandidate, pk.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// check local provider chain states
-	ubdOps, found := pk.GetUnbondingOp(ctx, vscID)
-	require.True(t, found)
-	require.Equal(t, provGenesis.UnbondingOps[0], ubdOps)
-	matureUbdOps := pk.GetMaturedUnbondingOps(ctx)
-	require.Equal(t, ubdIndex, matureUbdOps)
 	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)
 	require.Equal(t, cChainIDs[0], chainID)
@@ -205,12 +194,6 @@ func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, 
 		if expVSC := cs.GetPendingValsetChanges(); expVSC != nil {
 			gotVSC := pk.GetPendingVSCPackets(ctx, chainID)
 			require.Equal(t, expVSC, gotVSC)
-		}
-
-		for _, ubdOpIdx := range cs.UnbondingOpsIndex {
-			ubdIndex, found := pk.GetUnbondingOpIndex(ctx, chainID, ubdOpIdx.VscId)
-			require.True(t, found)
-			require.Equal(t, ubdOpIdx.UnbondingOpIds, ubdIndex)
 		}
 
 		require.Equal(t, cs.SlashDowntimeAck, pk.GetSlashAcks(ctx, chainID))

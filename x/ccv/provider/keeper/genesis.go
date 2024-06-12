@@ -39,15 +39,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		p := prop
 		k.SetPendingConsumerRemovalProp(ctx, &p)
 	}
-	for _, ubdOp := range genState.UnbondingOps {
-		k.SetUnbondingOp(ctx, ubdOp)
-	}
-
-	// Note that MatureUnbondingOps aren't stored across blocks, but it
-	// might be used after implementing standalone to consumer transition
-	if genState.MatureUnbondingOps != nil {
-		k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids)
-	}
 
 	// Set initial state for each consumer chain
 	for _, cs := range genState.ConsumerStates {
@@ -57,9 +48,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 			// An error here would indicate something is very wrong,
 			// the ConsumerGenesis validated in ConsumerState.Validate().
 			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
-		}
-		for _, ubdOpIndex := range cs.UnbondingOpsIndex {
-			k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.GetVscId(), ubdOpIndex.GetUnbondingOpIds())
 		}
 		// check if the CCV channel was established
 		if cs.ChannelId != "" {
@@ -121,7 +109,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			ChainId:           chainID,
 			ClientId:          clientID,
 			ConsumerGenesis:   gen,
-			UnbondingOpsIndex: k.GetAllUnbondingOpIndexes(ctx, chainID),
+			UnbondingOpsIndex: nil,
 		}
 
 		// try to find channel id for the current consumer chain
@@ -151,8 +139,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
-		k.GetAllUnbondingOps(ctx),
-		&types.MaturedUnbondingOps{Ids: k.GetMaturedUnbondingOps(ctx)},
+		nil,
+		nil,
 		k.GetAllPendingConsumerAdditionProps(ctx),
 		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,

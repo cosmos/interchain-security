@@ -52,25 +52,10 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 //
 // Note: This method should only panic for a system critical error like a
 // failed marshal/unmarshal, or persistence of critical data.
+// TODO (mpoke) remove once dealt with key assignment pruning
 func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
-	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
-	var maturedIds []uint64
-	for _, unbondingOp := range k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId) {
-		// Remove consumer chain ID from unbonding op record.
-		// Note that RemoveConsumerFromUnbondingOp cannot panic here
-		// as all the unbonding ops returned by GetUnbondingOpsFromIndex
-		// are retrieved via GetUnbondingOp.
-		if k.RemoveConsumerFromUnbondingOp(ctx, unbondingOp.Id, chainID) {
-			// Store id of matured unbonding op for later completion of unbonding in staking module
-			maturedIds = append(maturedIds, unbondingOp.Id)
-		}
-	}
-	k.AppendMaturedUnbondingOps(ctx, maturedIds)
-
-	// clean up index
-	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
-
 	// prune previous consumer validator address that are no longer needed
+	// TODO (mpoke) deal with key assignment pruning
 	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
 
 	k.Logger(ctx).Info("VSCMaturedPacket handled",
