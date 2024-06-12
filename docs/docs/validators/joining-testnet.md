@@ -1,18 +1,18 @@
 ---
 sidebar_position: 2
-title: Joining Replicated Security testnet
+title: Joining Interchain Security testnet
 ---
 
 ## Introduction
 
-This short guide will teach you how to join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/replicated-security).
+This short guide will teach you how to join the [Interchain Security testnet](https://github.com/cosmos/testnets/tree/master/interchain-security).
 
 The experience gained in the testnet will prepare you for validating interchain secured chains.
 
 :::tip
 Provider and consumer chain represent distinct networks and infrastructures operated by the same validator set.
 
-For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/validators/validator-setup) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs
+For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/main/validators/validator-setup) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs
 :::
 
 ## Joining the provider chain
@@ -21,7 +21,7 @@ For general information about running cosmos-sdk based chains check out the [val
 At present, all validators of the provider chain must also validate all governance approved consumer chains. The consumer chains cannot have a validator set different than the provider, which means they cannot introduce validators that are not also validating the provider chain.
 :::
 
-A comprehensive guide is available [here](https://github.com/cosmos/testnets/tree/master/replicated-security/provider).
+A comprehensive guide is available [here](https://github.com/cosmos/testnets/tree/master/interchain-security/provider).
 
 ## Initialization
 
@@ -79,7 +79,7 @@ gaiad tx staking create-validator \
 ```
 
 :::tip
-Check this [guide](https://hub.cosmos.network/validators/validator-setup#edit-validator-description) to edit your validator.
+Check this [guide](https://hub.cosmos.network/main/validators/validator-setup#edit-validator-description) to edit your validator.
 :::
 
 After this step, your validator is created and you can start your node and catch up to the rest of the network. It is recommended that you use `statesync` to catch up to the rest of the network.
@@ -119,22 +119,22 @@ $: ./statesync.sh # setup config.toml for statesync
 Finally, copy the provider genesis and start your node:
 
 ```bash
-$: GENESIS_URL=https://github.com/cosmos/testnets/raw/master/replicated-security/provider/provider-genesis.json
+$: GENESIS_URL=https://github.com/cosmos/testnets/raw/master/interchain-security/provider/provider-genesis.json
 $: wget $GENESIS_URL -O genesis.json
 $: genesis.json $NODE_HOME/config/genesis.json
 # start the service
 $: gaiad start --x-crisis-skip-assert-invariants --home $NODE_HOME --p2p.seeds="08ec17e86dac67b9da70deb20177655495a55407@provider-seed-01.rs-testnet.polypore.xyz:26656,4ea6e56300a2f37b90e58de5ee27d1c9065cf871@provider-seed-02.rs-testnet.polypore.xyz:26656"
 ```
 
-Additional scripts to setup your nodes are available [here](https://github.com/cosmos/testnets/blob/master/replicated-security/provider/join-rs-provider.sh) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/provider/join-rs-provider-cv.sh). The scripts will configure your node and create the required services - the scripts only work in linux environments.
+Additional scripts to setup your nodes are available [here](https://github.com/cosmos/testnets/blob/master/interchain-security/provider/join-ics-provider.sh) and [here](https://github.com/cosmos/testnets/blob/master/interchain-security/provider/join-ics-provider-cv.sh). The scripts will configure your node and create the required services - the scripts only work in linux environments.
 
 ## Joining consumer chains
 
 :::tip
 Once you reach the active set on the provider chain, you will be required to validate all available consumer chains.
 
-You can use the same consensus key on all consumer chains, or opt to use a different key on each consumer chain.
-Check out this [guide](../features/key-assignment.md) to learn more about key assignment in replicated security.
+We strongly recommend that you assign a separate key for each consumer chain.
+Check out this [guide](../features/key-assignment.md) to learn more about key assignment in interchain security.
 :::
 
 To join consumer chains, simply replicate the steps above for each consumer using the correct consumer chain binaries.

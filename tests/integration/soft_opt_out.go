@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"sort"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	consumerKeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )

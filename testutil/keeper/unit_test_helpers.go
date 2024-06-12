@@ -215,6 +215,7 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
 ) {
 	t.Helper()
+	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Times(1)
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
@@ -249,10 +250,15 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 
 	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID))
 
+	// in case the chain was successfully stopped, it should not contain a Top N associated to it
+	_, found = providerKeeper.GetTopN(ctx, expectedChainID)
+	require.False(t, found)
+
 	// test key assignment state is cleaned
 	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID))
 	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
 	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
+	require.Empty(t, providerKeeper.GetAllCommissionRateValidators(ctx, expectedChainID))
 }
 
 func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
@@ -271,6 +277,11 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		types.DefaultCCVTimeoutPeriod,
 		types.DefaultTransferTimeoutPeriod,
 		types.DefaultConsumerUnbondingPeriod,
+		0,
+		0,
+		0,
+		nil,
+		nil,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -45,15 +46,65 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// convert to array of pointers
 	chains := []*types.Chain{}
-	for _, chain := range k.GetAllConsumerChains(ctx) {
-		// prevent implicit memory aliasing
-		c := chain
+	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+		c, err := k.GetConsumerChain(ctx, chainID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		chains = append(chains, &c)
 	}
 
 	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
+}
+
+// GetConsumerChain returns a Chain data structure with all the necessary fields
+func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, error) {
+	clientID, found := k.GetConsumerClientId(ctx, chainID)
+	if !found {
+		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", chainID)
+	}
+
+	topN, found := k.GetTopN(ctx, chainID)
+
+	// Get MinPowerInTop_N
+	var minPowerInTopN int64
+	if found && topN > 0 {
+		res, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
+		if err != nil {
+			return types.Chain{}, fmt.Errorf("failed to compute min power to opt in for chain (%s): %w", chainID, err)
+		}
+		minPowerInTopN = res
+	} else {
+		minPowerInTopN = -1
+	}
+
+	validatorSetCap, _ := k.GetValidatorSetCap(ctx, chainID)
+
+	validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, chainID)
+
+	allowlist := k.GetAllowList(ctx, chainID)
+	strAllowlist := make([]string, len(allowlist))
+	for i, addr := range allowlist {
+		strAllowlist[i] = addr.String()
+	}
+
+	denylist := k.GetDenyList(ctx, chainID)
+	strDenylist := make([]string, len(denylist))
+	for i, addr := range denylist {
+		strDenylist[i] = addr.String()
+	}
+
+	return types.Chain{
+		ChainId:            chainID,
+		ClientId:           clientID,
+		Top_N:              topN,
+		MinPowerInTop_N:    minPowerInTopN,
+		ValidatorSetCap:    validatorSetCap,
+		ValidatorsPowerCap: validatorsPowerCap,
+		Allowlist:          strAllowlist,
+		Denylist:           strDenylist,
+	}, nil
 }
 
 func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
@@ -223,6 +274,178 @@ func (k Keeper) QueryParams(c context.Context, _ *types.QueryParamsRequest) (*ty
 	params := k.GetParams(ctx)
 
 	return &types.QueryParamsResponse{Params: params}, nil
+}
+
+// QueryConsumerChainOptedInValidators returns all validators that opted-in to a given consumer chain
+func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *types.QueryConsumerChainOptedInValidatorsRequest) (*types.QueryConsumerChainOptedInValidatorsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	consumerChainID := req.ChainId
+	if consumerChainID == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty chainId")
+	}
+
+	optedInVals := []string{}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.IsConsumerProposedOrRegistered(ctx, consumerChainID) {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerChainID))
+	}
+
+	for _, v := range k.GetAllOptedIn(ctx, consumerChainID) {
+		optedInVals = append(optedInVals, v.ToSdkConsAddr().String())
+	}
+
+	return &types.QueryConsumerChainOptedInValidatorsResponse{
+		ValidatorsProviderAddresses: optedInVals,
+	}, nil
+}
+
+// QueryConsumerValidators returns all validators that are consumer validators in a given consumer chain
+func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryConsumerValidatorsRequest) (*types.QueryConsumerValidatorsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	consumerChainID := req.ChainId
+	if consumerChainID == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty chainId")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if _, found := k.GetConsumerClientId(ctx, consumerChainID); !found {
+		// chain has to have started; consumer client id is set for a chain during the chain's spawn time
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("no started consumer chain: %s", consumerChainID))
+	}
+
+	var validators []*types.QueryConsumerValidatorsValidator
+	for _, v := range k.GetConsumerValSet(ctx, consumerChainID) {
+		validators = append(validators, &types.QueryConsumerValidatorsValidator{
+			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
+			ConsumerKey:     v.ConsumerPublicKey,
+			Power:           v.Power,
+		})
+	}
+
+	return &types.QueryConsumerValidatorsResponse{
+		Validators: validators,
+	}, nil
+}
+
+// QueryConsumerChainsValidatorHasToValidate returns all consumer chains that the given validator has to validate now
+// or in the next epoch if nothing changes.
+func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context, req *types.QueryConsumerChainsValidatorHasToValidateRequest) (*types.QueryConsumerChainsValidatorHasToValidateResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.ProviderAddress == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty provider address")
+	}
+
+	consAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid provider address")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	provAddr := types.NewProviderConsAddress(consAddr)
+
+	// get all the consumer chains for which the validator is either already
+	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
+	consumersToValidate := []string{}
+	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerChainID); err == nil && hasToValidate {
+			consumersToValidate = append(consumersToValidate, consumerChainID)
+		}
+	}
+
+	return &types.QueryConsumerChainsValidatorHasToValidateResponse{
+		ConsumerChainIds: consumersToValidate,
+	}, nil
+}
+
+// hasToValidate checks if a validator needs to validate on a consumer chain
+func (k Keeper) hasToValidate(
+	ctx sdk.Context,
+	provAddr types.ProviderConsAddress,
+	chainID string,
+) (bool, error) {
+	// if the validator was sent as part of the packet in the last epoch, it has to validate
+	if k.IsConsumerValidator(ctx, chainID, provAddr) {
+		return true, nil
+	}
+
+	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
+	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+		// in a Top-N chain, we automatically opt in all validators that belong to the top N
+		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
+		if err == nil {
+			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		} else {
+			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+		}
+	}
+
+	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
+	// the validator would have to validate in the next epoch
+	if k.IsOptedIn(ctx, chainID, provAddr) {
+		nextValidators := k.ComputeNextValidators(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx))
+		for _, v := range nextValidators {
+			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
+			if provAddr.ToSdkConsAddr().Equals(consAddr) {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
+// QueryValidatorConsumerCommissionRate returns the commission rate a given
+// validator charges on a given consumer chain
+func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req *types.QueryValidatorConsumerCommissionRateRequest) (*types.QueryValidatorConsumerCommissionRateResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	consumerChainID := req.ChainId
+	if consumerChainID == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty chainId")
+	}
+
+	consAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid provider address")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.IsConsumerProposedOrRegistered(ctx, consumerChainID) {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerChainID))
+	}
+
+	res := &types.QueryValidatorConsumerCommissionRateResponse{}
+
+	// Check if the validator has a commission rate set for the consumer chain,
+	// otherwise use the commission rate from the validator staking module struct
+	consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerChainID, types.NewProviderConsAddress(consAddr))
+	if found {
+		res.Rate = consumerRate
+	} else {
+		v, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+		if !ok {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown validator: %s", consAddr.String()))
+		}
+		res.Rate = v.Commission.Rate
+	}
+
+	return res, nil
 }
 
 func (k Keeper) QueryOldestUnconfirmedVsc(goCtx context.Context, req *types.QueryOldestUnconfirmedVscRequest) (*types.QueryOldestUnconfirmedVscResponse, error) {

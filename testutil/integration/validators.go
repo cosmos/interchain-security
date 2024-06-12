@@ -3,12 +3,12 @@ package integration
 import (
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 
 	"github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 )
 
 // CreateValidators creates a set of validators for testing purposes

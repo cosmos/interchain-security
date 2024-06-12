@@ -181,6 +181,134 @@ jobs:
           go-version: "1.21" # The Go version to download (if necessary) and use.
       - name: E2E consumer-double-downtime tests
         run: go run ./tests/e2e/... --tc consumer-double-downtime
+  partial-set-security-opt-in-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E partial set security opt-in chain
+        run: go run ./tests/e2e/... --tc partial-set-security-opt-in
+  partial-set-security-top-n-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E partial set security Top N chain
+        run: go run ./tests/e2e/... --tc partial-set-security-top-n
+  partial-set-security-validator-set-cap-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E partial set security validator-set cap
+        run: go run ./tests/e2e/... --tc partial-set-security-validator-set-cap
+  partial-set-security-validators-power-cap-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E partial set security validators-power cap
+        run: go run ./tests/e2e/... --tc partial-set-security-validators-power-cap
+  partial-set-security-validators-allowlisted-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E partial set security allowlist
+        run: go run ./tests/e2e/... --tc partial-set-security-validators-allowlisted
+  partial-set-security-validators-denylisted-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E partial set security denylist
+        run: go run ./tests/e2e/... --tc partial-set-security-validators-denylisted
+  partial-set-security-modification-proposal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E partial set security modification proposal
+        run: go run ./tests/e2e/... --tc partial-set-security-modification-proposal
+  active-set-changes-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+      - name: E2E active set changes
+        run: go run ./tests/e2e/... --tc active-set-changes
 
   nightly-test-fail:
     needs:
@@ -193,11 +321,22 @@ jobs:
       - consumer-misbehaviour-test
       - consumer-double-sign-test
       - consumer-double-downtime-test
+      - partial-set-security-opt-in-test
+      - partial-set-security-top-n-test
+      - partial-set-security-validator-set-cap-test
+      - partial-set-security-validators-power-cap-test
+      - partial-set-security-validators-allowlisted-test
+      - partial-set-security-validators-denylisted-test
+<<<<<<< HEAD
+      - active-set-changes-test
+=======
+      - partial-set-security-modification-proposal
+>>>>>>> main
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

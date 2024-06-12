@@ -55,7 +55,7 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	// get total power in set
 	totalPower := sdk.ZeroDec()
 	for _, val := range valset {
-		totalPower = totalPower.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
+		totalPower = totalPower.Add(sdk.NewDec(val.Power))
 	}
 
 	// get power of the smallest validator that cannot soft opt out
@@ -99,13 +99,13 @@ func (k Keeper) UpdateSlashingSigningInfo(ctx sdk.Context) {
 		}
 		if val.Power < smallestNonOptOutPower {
 			// validator CAN opt-out from validating on consumer chains
-			if val.OptedOut == false {
+			if !val.OptedOut {
 				// previously the validator couldn't opt-out
 				val.OptedOut = true
 			}
 		} else {
 			// validator CANNOT opt-out from validating on consumer chains
-			if val.OptedOut == true {
+			if val.OptedOut {
 				// previously the validator could opt-out
 				signingInfo.StartHeight = ctx.BlockHeight()
 				val.OptedOut = false

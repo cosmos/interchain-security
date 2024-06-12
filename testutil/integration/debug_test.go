@@ -283,3 +283,27 @@ func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing
 func TestSlashRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSlashRetries")
 }
+
+func TestIBCTransferMiddleware(t *testing.T) {
+	runCCVTestByName(t, "TestIBCTransferMiddleware")
+}
+
+func TestAllocateTokens(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokens")
+}
+
+func TestTransferConsumerRewardsToDistributionModule(t *testing.T) {
+	runCCVTestByName(t, "TransferConsumerRewardsToDistributionModule")
+}
+
+func TestAllocateTokensToValidator(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokensToValidator")
+}
+
+func TestMultiConsumerRewardsDistribution(t *testing.T) {
+	runCCVTestByName(t, "TestMultiConsumerRewardsDistribution")
+}
+
+func TestTooManyLastValidators(t *testing.T) {
+	runCCVTestByName(t, "TestTooManyLastValidators")
+}

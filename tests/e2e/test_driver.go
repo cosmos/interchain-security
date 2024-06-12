@@ -80,6 +80,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		td.testCfg.submitConsumerAdditionProposal(action, td.target, td.verbose)
 	case SubmitConsumerRemovalProposalAction:
 		td.testCfg.submitConsumerRemovalProposal(action, td.target, td.verbose)
+	case SubmitConsumerModificationProposalAction:
+		td.testCfg.submitConsumerModificationProposal(action, td.target, td.verbose)
 	case SubmitParamChangeLegacyProposalAction:
 		td.testCfg.submitParamChangeProposal(action, td.target, td.verbose)
 	case VoteGovProposalAction:
@@ -138,6 +140,10 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		td.testCfg.startConsumerEvidenceDetector(action, td.target, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
 		td.testCfg.submitChangeRewardDenomsProposal(action, td.target, td.verbose)
+	case OptInAction:
+		td.testCfg.optIn(action, td.target, td.verbose)
+	case OptOutAction:
+		td.testCfg.optOut(action, td.target, td.verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}

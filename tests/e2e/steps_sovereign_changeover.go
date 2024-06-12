@@ -48,6 +48,7 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 				DistributionChannel: "channel-0",
 				SpawnTime:           0,
 				InitialHeight:       clienttypes.Height{RevisionNumber: 0, RevisionHeight: 111}, // 1 block after upgrade !important
+				TopN:                100,
 			},
 			State: State{
 				ChainID("provi"): ChainState{

@@ -15,15 +15,13 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
 
-	cmttypes "github.com/cometbft/cometbft/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	cmttypes "github.com/cometbft/cometbft/types"
+
 	"github.com/cosmos/interchain-security/v4/testutil/integration"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -306,21 +304,21 @@ func RunItfTrace(t *testing.T, path string) {
 			// needs a header of height H+1 to accept the packet
 			// so, we do two blocks, one with a very small increment,
 			// and then another to increment the rest of the time
-			runningConsumersBefore := driver.runningConsumers()
+			runningConsumerChainIDsBefore := driver.runningConsumerChainIDs()
 
 			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
-			for _, consumer := range driver.runningConsumers() {
-				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
+			for _, consumerChainID := range driver.runningConsumerChainIDs() {
+				UpdateProviderClientOnConsumer(t, driver, string(consumerChainID))
 			}
 			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
 
-			runningConsumersAfter := driver.runningConsumers()
+			runningConsumerChainIDsAfter := driver.runningConsumerChainIDs()
 
 			// the consumers that were running before but not after must have timed out
-			for _, consumer := range runningConsumersBefore {
+			for _, consumerChainID := range runningConsumerChainIDsBefore {
 				found := false
-				for _, consumerAfter := range runningConsumersAfter {
-					if consumerAfter.ChainId == consumer.ChainId {
+				for _, consumerChainIDAfter := range runningConsumerChainIDsAfter {
+					if consumerChainIDAfter == consumerChainID {
 						found = true
 						break
 					}
@@ -334,8 +332,8 @@ func RunItfTrace(t *testing.T, path string) {
 			// because setting up chains will modify timestamps
 			// when the coordinator is starting chains
 			lastTimestamps := make(map[ChainId]time.Time, len(consumers))
-			for _, consumer := range driver.runningConsumers() {
-				lastTimestamps[ChainId(consumer.ChainId)] = driver.runningTime(ChainId(consumer.ChainId))
+			for _, consumerChainID := range driver.runningConsumerChainIDs() {
+				lastTimestamps[consumerChainID] = driver.runningTime(consumerChainID)
 			}
 
 			driver.coordinator.CurrentTime = driver.runningTime("provider")
@@ -366,12 +364,12 @@ func RunItfTrace(t *testing.T, path string) {
 			// for all connected consumers, update the clients...
 			// unless it was the last consumer to be started, in which case it already has the header
 			// as we called driver.setupConsumer
-			for _, consumer := range driver.runningConsumers() {
-				if len(consumersToStart) > 0 && consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(string) {
+			for _, consumerChainID := range driver.runningConsumerChainIDs() {
+				if len(consumersToStart) > 0 && string(consumerChainID) == consumersToStart[len(consumersToStart)-1].Value.(string) {
 					continue
 				}
 
-				UpdateProviderClientOnConsumer(t, driver, consumer.ChainId)
+				UpdateProviderClientOnConsumer(t, driver, string(consumerChainID))
 			}
 
 		case "EndAndBeginBlockForConsumer":
@@ -460,7 +458,7 @@ func RunItfTrace(t *testing.T, path string) {
 			}
 
 			val := addressMap[validatorName]
-			valConsAddr := sdktypes.ConsAddress(val.Address)
+			valConsAddr := sdk.ConsAddress(val.Address)
 
 			slashFraction := doubleSignSlashPercentage
 			if isDowntime {
@@ -492,33 +490,33 @@ func RunItfTrace(t *testing.T, path string) {
 		t.Logf("Comparing model state to actual state...")
 
 		// compare the running consumers
-		modelRunningConsumers := RunningConsumers(currentModelState)
+		modelRunningConsumerChainIDs := RunningConsumers(currentModelState)
 
-		systemRunningConsumers := driver.runningConsumers()
-		actualRunningConsumers := make([]string, len(systemRunningConsumers))
-		for i, chain := range systemRunningConsumers {
-			actualRunningConsumers[i] = chain.ChainId
+		systemRunningConsumerChainIDs := driver.runningConsumerChainIDs()
+		actualRunningConsumerChainIDs := make([]string, len(systemRunningConsumerChainIDs))
+		for i, chainID := range systemRunningConsumerChainIDs {
+			actualRunningConsumerChainIDs[i] = string(chainID)
 		}
 
 		// sort the slices so that we can compare them
-		sort.Slice(modelRunningConsumers, func(i, j int) bool {
-			return modelRunningConsumers[i] < modelRunningConsumers[j]
+		sort.Slice(modelRunningConsumerChainIDs, func(i, j int) bool {
+			return modelRunningConsumerChainIDs[i] < modelRunningConsumerChainIDs[j]
 		})
-		sort.Slice(actualRunningConsumers, func(i, j int) bool {
-			return actualRunningConsumers[i] < actualRunningConsumers[j]
+		sort.Slice(actualRunningConsumerChainIDs, func(i, j int) bool {
+			return actualRunningConsumerChainIDs[i] < actualRunningConsumerChainIDs[j]
 		})
 
-		require.Equal(t, modelRunningConsumers, actualRunningConsumers, "Running consumers do not match")
+		require.Equal(t, modelRunningConsumerChainIDs, actualRunningConsumerChainIDs, "Running consumers do not match")
 
 		// check validator sets - provider current validator set should be the one from the staking keeper
-		CompareValidatorSets(t, driver, currentModelState, actualRunningConsumers, realAddrsToModelConsAddrs)
+		CompareValidatorSets(t, driver, currentModelState, actualRunningConsumerChainIDs, realAddrsToModelConsAddrs)
 
 		// check times - sanity check that the block times match the ones from the model
-		CompareTimes(driver, actualRunningConsumers, currentModelState, timeOffset)
+		CompareTimes(driver, actualRunningConsumerChainIDs, currentModelState, timeOffset)
 
 		// check sent packets: we check that the package queues in the model and the system have the same length.
-		for _, consumer := range actualRunningConsumers {
-			ComparePacketQueues(t, driver, currentModelState, consumer, timeOffset)
+		for _, consumerChainID := range actualRunningConsumerChainIDs {
+			ComparePacketQueues(t, driver, currentModelState, consumerChainID, timeOffset)
 		}
 		// compare that the sent packets on the proider match the model
 		CompareSentPacketsOnProvider(driver, currentModelState, timeOffset)
@@ -528,8 +526,8 @@ func RunItfTrace(t *testing.T, path string) {
 		CompareJailedValidators(driver, currentModelState, timeOffset, addressMap)
 
 		// for all newly sent vsc packets, figure out which vsc id in the model they correspond to
-		for _, consumer := range actualRunningConsumers {
-			actualPackets := driver.packetQueue(PROVIDER, ChainId(consumer))
+		for _, consumerChainID := range actualRunningConsumerChainIDs {
+			actualPackets := driver.packetQueue(PROVIDER, ChainId(consumerChainID))
 			actualNewPackets := make([]types.ValidatorSetChangePacketData, 0)
 			for _, packet := range actualPackets {
 
@@ -545,7 +543,7 @@ func RunItfTrace(t *testing.T, path string) {
 				actualNewPackets = append(actualNewPackets, packetData)
 			}
 
-			modelPackets := PacketQueue(currentModelState, PROVIDER, consumer)
+			modelPackets := PacketQueue(currentModelState, PROVIDER, consumerChainID)
 			newModelVscIds := make([]uint64, 0)
 			for _, packet := range modelPackets {
 				modelVscId := uint64(packet.Value.(itf.MapExprType)["value"].Value.(itf.MapExprType)["id"].Value.(int64))
@@ -587,12 +585,14 @@ func RunItfTrace(t *testing.T, path string) {
 }
 
 func UpdateProviderClientOnConsumer(t *testing.T, driver *Driver, consumerChainId string) {
+	t.Helper()
 	driver.path(ChainId(consumerChainId)).AddClientHeader(PROVIDER, driver.providerHeader())
 	err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
 	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
 }
 
 func UpdateConsumerClientOnProvider(t *testing.T, driver *Driver, consumerChain string) {
+	t.Helper()
 	consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
 	driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
 	err := driver.path(ChainId(consumerChain)).UpdateClient(PROVIDER, false)
@@ -634,7 +634,7 @@ func CompareValidatorSets(
 			if ok { // the node has a key assigned, use the name of the consumer address in the model
 				consumerCurValSet[consAddrModelName] = val.Power
 			} else { // the node doesn't have a key assigned yet, get the validator moniker
-				consAddr := providertypes.NewConsumerConsAddress(sdktypes.ConsAddress(pubkey.Address().Bytes()))
+				consAddr := providertypes.NewConsumerConsAddress(sdk.ConsAddress(pubkey.Address().Bytes()))
 
 				// the consumer vals right now are CrossChainValidators, for which we don't know their mnemonic
 				// so we need to find the mnemonic of the consumer val now to enter it by name in the map
@@ -781,15 +781,15 @@ func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int6
 }
 
 func CompareSentPacketsOnProvider(driver *Driver, currentModelState map[string]itf.Expr, timeOffset time.Time) {
-	for _, consumer := range driver.runningConsumers() {
-		vscSendTimestamps := driver.providerKeeper().GetAllVscSendTimestamps(driver.providerCtx(), consumer.ChainId)
+	for _, consumerChainID := range driver.runningConsumerChainIDs() {
+		vscSendTimestamps := driver.providerKeeper().GetAllVscSendTimestamps(driver.providerCtx(), string(consumerChainID))
 
 		actualVscSendTimestamps := make([]time.Time, 0)
 		for _, vscSendTimestamp := range vscSendTimestamps {
 			actualVscSendTimestamps = append(actualVscSendTimestamps, vscSendTimestamp.Timestamp)
 		}
 
-		modelVscSendTimestamps := VscSendTimestamps(currentModelState, consumer.ChainId)
+		modelVscSendTimestamps := VscSendTimestamps(currentModelState, string(consumerChainID))
 
 		for i, modelVscSendTimestamp := range modelVscSendTimestamps {
 			actualTimeWithOffset := actualVscSendTimestamps[i].Unix() - timeOffset.Unix()
@@ -798,7 +798,7 @@ func CompareSentPacketsOnProvider(driver *Driver, currentModelState map[string]i
 				modelVscSendTimestamp,
 				actualTimeWithOffset,
 				"Vsc send timestamps do not match for consumer %v",
-				consumer.ChainId,
+				consumerChainID,
 			)
 		}
 	}
@@ -852,9 +852,9 @@ func (s *Stats) EnterStats(driver *Driver) {
 
 	// max number of in-flight packets
 	inFlightPackets := 0
-	for _, consumer := range driver.runningConsumers() {
-		inFlightPackets += len(driver.packetQueue(PROVIDER, ChainId(consumer.ChainId)))
-		inFlightPackets += len(driver.packetQueue(ChainId(consumer.ChainId), PROVIDER))
+	for _, consumerChainID := range driver.runningConsumerChainIDs() {
+		inFlightPackets += len(driver.packetQueue(PROVIDER, consumerChainID))
+		inFlightPackets += len(driver.packetQueue(consumerChainID, PROVIDER))
 	}
 	if inFlightPackets > s.maxNumInFlightPackets {
 		s.maxNumInFlightPackets = inFlightPackets

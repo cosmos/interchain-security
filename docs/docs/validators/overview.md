@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Overview
 :::tip
-We advise that you join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/replicated-security) to gain hands-on experience with running consumer chains.
+We advise that you join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/interchain-security) to gain hands-on experience with running consumer chains.
 :::
 
 At present, replicated security requires all validators of the provider chain (ie. Cosmos Hub) to run validator nodes for all governance-approved consumer chains.
@@ -63,11 +63,11 @@ The new `genesis.json` containing the initial validator set will be distributed 
 :::tip
 Please pay attention to any onboarding repositories provided by the consumer chain teams.
 Recommendations are available in [Consumer Onboarding Checklist](../consumer-development/onboarding.md).
-Another comprehensive guide is available in the [Replicated Security testnet repo](https://github.com/cosmos/testnets/blob/master/replicated-security/CONSUMER_LAUNCH_GUIDE.md).
+Another comprehensive guide is available in the [Interchain Security testnet repo](https://github.com/cosmos/testnets/blob/master/interchain-security/CONSUMER_LAUNCH_GUIDE.md).
 :::
 
 ### 7. Creating IBC connections
-Finally, to fully establish replicated security an IBC relayer is used to establish connections and create the required channels.
+Finally, to fully establish interchain security an IBC relayer is used to establish connections and create the required channels.
 
 :::warning
 The relayer can establish the connection only after the consumer chain starts producing blocks.
@@ -85,13 +85,13 @@ At present, the consumer chain can report evidence about downtime infractions to
 :::info
 Causing a downtime infraction on any consumer chain will not incur a slash penalty. Instead, the offending validator will be jailed on the provider chain and consequently on all consumer chains.
 
-To unjail, the validator must wait for the jailing period to elapse on the provider chain and [submit an unjail transaction](https://hub.cosmos.network/validators/validator-setup#unjail-validator) on the provider chain. After unjailing on the provider, the validator will be unjailed on all consumer chains.
+To unjail, the validator must wait for the jailing period to elapse on the provider chain and [submit an unjail transaction](https://hub.cosmos.network/main/validators/validator-setup#unjail-validator) on the provider chain. After unjailing on the provider, the validator will be unjailed on all consumer chains.
 
 More information is available in [Downtime Slashing documentation](../features/slashing.md#downtime-infractions)
 :::
 
 ## Double-signing Infractions
-To learn more about equivocation handling in replicated security check out the [Slashing](../features/slashing.md) documentation section.
+To learn more about equivocation handling in interchain security check out the [Slashing](../features/slashing.md) documentation section.
 
 ## Key assignment
 Validators can use different consensus keys on the provider and each of the consumer chains. The consumer chain consensus key must be registered on the provider before use.
@@ -99,7 +99,7 @@ Validators can use different consensus keys on the provider and each of the cons
 For more information check out the [Key assignment overview and guide](../features/key-assignment.md)
 
 ## References:
-- [Cosmos Hub Validators FAQ](https://hub.cosmos.network/validators/validator-faq)
-- [Cosmos Hub Running a validator](https://hub.cosmos.network/validators/validator-setup)
-- [Startup Sequence](https://github.com/cosmos/testnets/blob/master/replicated-security/CONSUMER_LAUNCH_GUIDE.md#chain-launch)
-- [Submit Unjailing Transaction](https://hub.cosmos.network/validators/validator-setup#unjail-validator)
+- [Cosmos Hub Validators FAQ](https://hub.cosmos.network/main/validators/validator-faq)
+- [Cosmos Hub Running a validator](https://hub.cosmos.network/main/validators/validator-setup)
+- [Startup Sequence](https://github.com/cosmos/testnets/blob/master/interchain-security/CONSUMER_LAUNCH_GUIDE.md#chain-launch)
+- [Submit Unjailing Transaction](https://hub.cosmos.network/main/validators/validator-setup#unjail-validator)

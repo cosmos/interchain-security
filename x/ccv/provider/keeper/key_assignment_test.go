@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"bytes"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"math/rand"
 	"sort"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -23,6 +23,8 @@ import (
 	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
+
+const ChainID = "chainID"
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	chainID := consumer
@@ -312,7 +314,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
-	chainID := "chainID"
+	chainID := ChainID
 	providerIdentities := []*cryptotestutil.CryptoIdentity{
 		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
 		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
@@ -638,7 +640,7 @@ type Assignment struct {
 // of simulated scenarios where random key assignments and validator
 // set updates are generated.
 func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
-	CHAINID := "chainID"
+	CHAINID := ChainID
 	// The number of full test executions to run
 	NUM_EXECUTIONS := 100
 	// Each test execution mimics the adding of a consumer chain and the
@@ -766,7 +768,10 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				})
 			}
 
-			nextValidators := k.ComputeNextEpochConsumerValSet(ctx, CHAINID, bondedValidators)
+			nextValidators := k.FilterValidators(ctx, CHAINID, bondedValidators,
+				func(providerAddr types.ProviderConsAddress) bool {
+					return true
+				})
 			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, CHAINID), nextValidators)
 			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
 

@@ -14,23 +14,22 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-
 	abcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
 	simibc "github.com/cosmos/interchain-security/v4/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
@@ -219,11 +218,7 @@ func (s *Driver) getStateString() string {
 	state.WriteString("\n")
 
 	state.WriteString("Consumers Chains:\n")
-	consumerChains := s.providerKeeper().GetAllConsumerChains(s.providerCtx())
-	chainIds := make([]string, len(consumerChains))
-	for i, consumerChain := range consumerChains {
-		chainIds[i] = consumerChain.ChainId
-	}
+	chainIds := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
 	state.WriteString(strings.Join(chainIds, ", "))
 	state.WriteString("\n\n")
 
@@ -261,11 +256,11 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 	if !s.isProviderChain(chain) {
 		// Check whether the chain is in the consumer chains on the provider
 
-		consumerChains := s.providerKeeper().GetAllConsumerChains(s.providerCtx())
+		consumerChainIDs := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
 
 		found := false
-		for _, consumerChain := range consumerChains {
-			if consumerChain.ChainId == string(chain) {
+		for _, consumerChainID := range consumerChainIDs {
+			if consumerChainID == string(chain) {
 				found = true
 			}
 		}
@@ -369,16 +364,16 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 	return header
 }
 
-func (s *Driver) runningConsumers() []providertypes.Chain {
-	consumersOnProvider := s.providerKeeper().GetAllConsumerChains(s.providerCtx())
+func (s *Driver) runningConsumerChainIDs() []ChainId {
+	consumerIDsOnProvider := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
 
-	consumersWithIntactChannel := make([]providertypes.Chain, 0)
-	for _, consumer := range consumersOnProvider {
-		if s.path(ChainId(consumer.ChainId)).Path.EndpointA.GetChannel().State == channeltypes.CLOSED ||
-			s.path(ChainId(consumer.ChainId)).Path.EndpointB.GetChannel().State == channeltypes.CLOSED {
+	consumersWithIntactChannel := make([]ChainId, 0)
+	for _, consumerChainID := range consumerIDsOnProvider {
+		if s.path(ChainId(consumerChainID)).Path.EndpointA.GetChannel().State == channeltypes.CLOSED ||
+			s.path(ChainId(consumerChainID)).Path.EndpointB.GetChannel().State == channeltypes.CLOSED {
 			continue
 		}
-		consumersWithIntactChannel = append(consumersWithIntactChannel, consumer)
+		consumersWithIntactChannel = append(consumersWithIntactChannel, ChainId(consumerChainID))
 	}
 	return consumersWithIntactChannel
 }
@@ -447,8 +442,8 @@ func (s *Driver) RequestSlash(
 // DeliverAcks delivers, for each path,
 // all possible acks (up to math.MaxInt many per path).
 func (s *Driver) DeliverAcks() {
-	for _, chain := range s.runningConsumers() {
-		path := s.path(ChainId(chain.ChainId))
+	for _, chainID := range s.runningConsumerChainIDs() {
+		path := s.path(chainID)
 		path.DeliverAcks(path.Path.EndpointA.Chain.ChainID, math.MaxInt)
 		path.DeliverAcks(path.Path.EndpointB.Chain.ChainID, math.MaxInt)
 	}

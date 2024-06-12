@@ -2,8 +2,8 @@ package v4
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 )
 

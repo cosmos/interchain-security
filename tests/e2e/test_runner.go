@@ -103,6 +103,7 @@ func (tr *TestRunner) checkConfig() error {
 	tr.config.validateStringLiterals()
 	return nil
 }
+
 func (tr *TestRunner) setupEnvironment(target ExecutionTarget) error {
 	tr.target = target
 	return target.Start()
@@ -137,7 +138,6 @@ Target: %s
 		tr.config.name,
 		tr.target.Info(),
 	)
-
 }
 
 func (tr *TestRunner) Report() string {
