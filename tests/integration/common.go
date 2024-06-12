@@ -326,28 +326,6 @@ func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, ms
 	}
 }
 
-func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool, msgAndArgs ...interface{}) {
-	entries := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
-	if found {
-		s.Require().NotEmpty(entries, fmt.Sprintf("checkCCVUnbondingOp failed - should not be empty; %s", msgAndArgs...))
-		s.Require().Greater(
-			len(entries),
-			0,
-			fmt.Sprintf("checkCCVUnbondingOp failed - no unbonding ops found; %s", msgAndArgs...),
-		)
-		s.Require().Greater(
-			len(entries[0].UnbondingConsumerChains),
-			0,
-			fmt.Sprintf("checkCCVUnbondingOp failed - unbonding op with no consumer chains; %s", msgAndArgs...),
-		)
-		s.Require().Equal(
-			"testchain2",
-			entries[0].UnbondingConsumerChains[0],
-			fmt.Sprintf("checkCCVUnbondingOp failed - unbonding op with unexpected consumer chain; %s", msgAndArgs...),
-		)
-	}
-}
-
 // Checks that an expected amount of redelegations exist for a delegator
 // via the staking keeper, then returns those redelegations.
 func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
