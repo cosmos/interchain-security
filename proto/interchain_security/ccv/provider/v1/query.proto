@@ -128,13 +128,6 @@ service Query {
     "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}";
     }
 
-  // QueryOldestUnconfirmedVsc returns the send timestamp of the oldest unconfirmed VSCPacket for a given chainID
-  rpc QueryOldestUnconfirmedVsc(QueryOldestUnconfirmedVscRequest)
-    returns (QueryOldestUnconfirmedVscResponse) {
-      option (google.api.http).get =
-      "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}";
-    }
-
   // QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
   // Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
   // because a VSCPacket could be delayed to be delivered on the consumer chain.
@@ -319,11 +312,4 @@ message QueryValidatorConsumerCommissionRateResponse {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false 
   ];
-}
-
-message QueryOldestUnconfirmedVscRequest { string chain_id = 1; }
-
-message QueryOldestUnconfirmedVscResponse {
-  interchain_security.ccv.provider.v1.VscSendTimestamp vsc_send_timestamp = 1
-      [ (gogoproto.nullable) = false ];
 }

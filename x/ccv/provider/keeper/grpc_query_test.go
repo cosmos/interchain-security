@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -64,49 +63,6 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	}
 	require.Equal(t, &consumerKey, response.PairValConAddr[0].ConsumerKey)
 	require.Equal(t, &expectedResult, response.PairValConAddr[0])
-}
-
-func TestQueryOldestUnconfirmedVsc(t *testing.T) {
-	chainID := consumer
-
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now().UTC()
-	pk.SetVscSendTimestamp(ctx, chainID, 2, now)
-	pk.SetVscSendTimestamp(ctx, chainID, 1, now)
-	pk.SetConsumerClientId(ctx, chainID, "client-1")
-
-	// Request is nil
-	_, err := pk.QueryOldestUnconfirmedVsc(ctx, nil)
-	require.Error(t, err)
-
-	// Request with chainId is empty
-	_, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{})
-	require.Error(t, err)
-
-	// Request with chainId is invalid
-	_, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: "invalidChainId"})
-	require.Error(t, err)
-
-	// Request is valid
-	response, err := pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: chainID})
-	require.NoError(t, err)
-	expectedResult := types.VscSendTimestamp{
-		VscId:     1,
-		Timestamp: now,
-	}
-	require.Equal(t, expectedResult, response.VscSendTimestamp)
-
-	// Make sure that the oldest is queried
-	pk.DeleteVscSendTimestamp(ctx, chainID, 1)
-	response, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: chainID})
-	require.NoError(t, err)
-	expectedResult = types.VscSendTimestamp{
-		VscId:     2,
-		Timestamp: now,
-	}
-	require.Equal(t, expectedResult, response.VscSendTimestamp)
 }
 
 func TestQueryConsumerChainOptedInValidators(t *testing.T) {
