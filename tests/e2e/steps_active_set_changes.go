@@ -1,6 +1,11 @@
 package main
 
-import clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+import (
+	"strconv"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+)
 
 // stepsActiveSetChanges starts a top N provider chain and causes a change in the active set
 func stepsActiveSetChanges() []Step {
@@ -43,7 +48,7 @@ func stepsActiveSetChanges() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
@@ -69,7 +74,7 @@ func stepsActiveSetChanges() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_PASSED",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
