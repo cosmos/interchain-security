@@ -322,7 +322,7 @@ func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, msgAndArgs
 	if wasFound {
 		// make sure UnbondingOnHoldRefCount remains zero
 		s.Require().Equal(
-			0,
+			int64(0),
 			stakingUnbondingOp.UnbondingOnHoldRefCount,
 			fmt.Sprintf("checkStakingUnbondingOps failed - UnbondingOnHoldRefCount; %s", msgAndArgs...),
 		)
