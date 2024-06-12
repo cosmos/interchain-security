@@ -82,30 +82,6 @@ func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv
 	)
 }
 
-// CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
-func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
-	for _, id := range k.ConsumeMaturedUnbondingOps(ctx) {
-		// Attempt to complete unbonding in staking module
-		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
-		if err != nil {
-			if stakingtypes.ErrUnbondingNotFound.Is(err) {
-				// The unbonding was not found.
-				unbondingType, found := k.stakingKeeper.GetUnbondingType(ctx, id)
-				if found && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
-					// If this is an unbonding delegation, it may have been removed
-					// after through a CancelUnbondingDelegation message
-					k.Logger(ctx).Debug("unbonding delegation was already removed:", "unbondingID", id)
-					continue
-				}
-			}
-			// UnbondingCanComplete failing means that the state of the x/staking module
-			// of cosmos-sdk is invalid. An exception is the case handled above
-			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
-		}
-		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
-	}
-}
-
 // OnAcknowledgementPacket handles acknowledgments for sent VSC packets
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
@@ -145,9 +121,6 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 // EndBlockVSU contains the EndBlock logic needed for
 // the Validator Set Update sub-protocol
 func (k Keeper) EndBlockVSU(ctx sdk.Context) {
-	// notify the staking module to complete all matured unbonding ops
-	k.completeMaturedUnbondingOps(ctx)
-
 	if ctx.BlockHeight()%k.GetBlocksPerEpoch(ctx) == 0 {
 		// only queue and send VSCPackets at the boundaries of an epoch
 
