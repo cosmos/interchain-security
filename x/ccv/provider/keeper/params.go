@@ -40,18 +40,6 @@ func (k Keeper) GetInitTimeoutPeriod(ctx sdk.Context) time.Duration {
 	return p
 }
 
-// GetVscTimeoutPeriod returns the vsc timeout period
-func (k Keeper) GetVscTimeoutPeriod(ctx sdk.Context) time.Duration {
-	var p time.Duration
-	k.paramSpace.Get(ctx, types.KeyVscTimeoutPeriod, &p)
-	return p
-}
-
-// SetVscTimeoutPeriod sets the vsc timeout period
-func (k Keeper) SetVscTimeoutPeriod(ctx sdk.Context, period time.Duration) {
-	k.paramSpace.Set(ctx, types.KeyVscTimeoutPeriod, period)
-}
-
 // GetSlashMeterReplenishPeriod returns the period in which:
 // Once the slash meter becomes not-full, the slash meter is replenished after this period.
 func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
@@ -92,7 +80,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetTrustingPeriodFraction(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
 		k.GetInitTimeoutPeriod(ctx),
-		k.GetVscTimeoutPeriod(ctx),
 		k.GetSlashMeterReplenishPeriod(ctx),
 		k.GetSlashMeterReplenishFraction(ctx),
 		k.GetConsumerRewardDenomRegistrationFee(ctx),

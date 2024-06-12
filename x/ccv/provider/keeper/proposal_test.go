@@ -3,10 +3,11 @@ package keeper_test
 import (
 	"bytes"
 	"encoding/json"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"sort"
 	"testing"
 	"time"
+
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
@@ -831,7 +832,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		TrustingPeriodFraction:      providertypes.DefaultTrustingPeriodFraction,
 		CcvTimeoutPeriod:            ccvtypes.DefaultCCVTimeoutPeriod,
 		InitTimeoutPeriod:           providertypes.DefaultInitTimeoutPeriod,
-		VscTimeoutPeriod:            providertypes.DefaultVscTimeoutPeriod,
 		SlashMeterReplenishPeriod:   providertypes.DefaultSlashMeterReplenishPeriod,
 		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: sdk.Coin{
