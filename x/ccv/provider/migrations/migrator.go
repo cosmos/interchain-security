@@ -5,7 +5,6 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	v3 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v3"
 	v4 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v4"
 	v5 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v5"
 )
@@ -30,8 +29,11 @@ func (m Migrator) Migrate1to2(ctx sdktypes.Context) error {
 }
 
 // Migrate2to3 migrates x/ccvprovider state from consensus version 2 to 3.
+// First run provider@v3.x.y in production to migrate from consensus version 2 to 3.
+// TODO (mpoke) This should probably return an error.
+// TODO (mpoke) Check versions.
 func (m Migrator) Migrate2to3(ctx sdktypes.Context) error {
-	return v3.MigrateQueuedPackets(ctx, m.providerKeeper)
+	return nil
 }
 
 // Migrate3to4 migrates x/ccvprovider state from consensus version 3 to 4.

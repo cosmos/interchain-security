@@ -41,27 +41,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 		{ChainId: cChainIDs[1], Timestamp: uint64(time.Now().UTC().UnixNano()) + 15},
 	}
 
-	now := time.Now().UTC()
-	exportedVscSendTimeStampsC0 := providertypes.ExportedVscSendTimestamp{
-		ChainId: "c0",
-		VscSendTimestamps: []providertypes.VscSendTimestamp{
-			{VscId: 1, Timestamp: now.Add(time.Hour)},
-			{VscId: 2, Timestamp: now.Add(2 * time.Hour)},
-		},
-	}
-
-	exportedVscSendTimeStampsC1 := providertypes.ExportedVscSendTimestamp{
-		ChainId: "c1",
-		VscSendTimestamps: []providertypes.VscSendTimestamp{
-			{VscId: 1, Timestamp: now.Add(-time.Hour)},
-			{VscId: 2, Timestamp: now.Add(time.Hour)},
-		},
-	}
-
-	var exportedVscSendTimeStampsAll []providertypes.ExportedVscSendTimestamp
-	exportedVscSendTimeStampsAll = append(exportedVscSendTimeStampsAll, exportedVscSendTimeStampsC0)
-	exportedVscSendTimeStampsAll = append(exportedVscSendTimeStampsAll, exportedVscSendTimeStampsC1)
-
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
 		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
@@ -125,7 +104,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 			},
 		},
 		initTimeoutTimeStamps,
-		exportedVscSendTimeStampsAll,
+		nil,
 	)
 
 	// Instantiate in-mem provider keeper with mocks
@@ -198,18 +177,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 		return initTimeoutTimestampInStore[i].Timestamp < initTimeoutTimestampInStore[j].Timestamp
 	})
 	require.Equal(t, initTimeoutTimestampInStore, initTimeoutTimeStamps)
-
-	vscSendTimestampsC0InStore := pk.GetAllVscSendTimestamps(ctx, cChainIDs[0])
-	sort.Slice(vscSendTimestampsC0InStore, func(i, j int) bool {
-		return vscSendTimestampsC0InStore[i].VscId < vscSendTimestampsC0InStore[j].VscId
-	})
-	require.Equal(t, vscSendTimestampsC0InStore, exportedVscSendTimeStampsC0.VscSendTimestamps)
-
-	vscSendTimestampsC1InStore := pk.GetAllVscSendTimestamps(ctx, cChainIDs[1])
-	sort.Slice(vscSendTimestampsC1InStore, func(i, j int) bool {
-		return vscSendTimestampsC1InStore[i].VscId < vscSendTimestampsC1InStore[j].VscId
-	})
-	require.Equal(t, vscSendTimestampsC1InStore, exportedVscSendTimeStampsC1.VscSendTimestamps)
 }
 
 func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {

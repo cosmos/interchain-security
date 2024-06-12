@@ -70,9 +70,6 @@ func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv
 	// clean up index
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
 
-	// remove the VSC timeout timestamp for this chainID and vscID
-	k.DeleteVscSendTimestamp(ctx, chainID, data.ValsetUpdateId)
-
 	// prune previous consumer validator address that are no longer needed
 	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
 
@@ -178,10 +175,6 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 			}
 			return
 		}
-		// set the VSC send timestamp for this packet;
-		// note that the VSC send timestamp are set when the packets
-		// are actually sent over IBC
-		k.SetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId, ctx.BlockTime())
 	}
 	k.DeletePendingVSCPackets(ctx, chainID)
 }
@@ -463,34 +456,6 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 					continue
 				}
 				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-			}
-		}
-	}
-
-	for _, channelToChain := range k.GetAllChannelToChains(ctx) {
-		// Check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
-		// exceed the current block time.
-		// Checking the first send timestamp for each chain is sufficient since
-		// timestamps are ordered by vsc ID.
-		// Note: GetFirstVscSendTimestamp panics if the internal state is invalid
-		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
-		if found {
-			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
-			if currentTime.After(timeoutTimestamp) {
-				// vscTimeout expired
-				// stop the consumer chain and release unbondings
-				k.Logger(ctx).Info("about to remove timed out consumer chain - VSCPacket timed out",
-					"chainID", channelToChain.ChainId,
-					"vscID", vscSendTimestamp.VscId,
-				)
-				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
-				if err != nil {
-					if providertypes.ErrConsumerChainNotFound.Is(err) {
-						// consumer chain not found
-						continue
-					}
-					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-				}
 			}
 		}
 	}
