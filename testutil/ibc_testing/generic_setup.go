@@ -143,7 +143,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
 
 	// opt-in all validators
-	for _, v := range providerApp.GetTestStakingKeeper().GetLastValidators(providerChain.GetContext()) {
+	for _, v := range providerKeeper.GetLastBondedValidators(providerChain.GetContext()) {
 		consAddr, _ := v.GetConsAddr()
 		providerKeeper.SetOptedIn(providerChain.GetContext(), chainID, providertypes.NewProviderConsAddress(consAddr))
 	}

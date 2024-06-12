@@ -303,3 +303,7 @@ func TestAllocateTokensToValidator(t *testing.T) {
 func TestMultiConsumerRewardsDistribution(t *testing.T) {
 	runCCVTestByName(t, "TestMultiConsumerRewardsDistribution")
 }
+
+func TestTooManyLastValidators(t *testing.T) {
+	runCCVTestByName(t, "TestTooManyLastValidators")
+}

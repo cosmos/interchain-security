@@ -1892,3 +1892,547 @@ func stepsValidatorsDenylistedChain() []Step {
 
 	return s
 }
+
+// stepsModifyChain issues multiple `ConsumerModificationProposal`s on a consumer chain to assert that indeed
+// partial-set security parameters can be changed.
+func stepsModifyChain() []Step {
+	s := []Step{
+		{
+			Action: StartChainAction{
+				Chain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			Action: SubmitConsumerAdditionProposalAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				Deposit:       10000001,
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0,
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+						},
+					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
+		},
+		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
+		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
+		{
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("alice"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {}, // chain is not running yet
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
+		},
+		{
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("bob"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
+		},
+		{
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("carol"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
+		},
+		{
+			// assign the consumer key "carol" is using on the consumer chain to be the one "carol" uses when opting in
+			Action: AssignConsumerPubKeyAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("carol"),
+				// reconfigure the node -> validator was using provider key
+				// until this point -> key matches config.consumerValPubKey for "carol"
+				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
+				ReconfigureNode: true,
+			},
+			State: State{},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: 1,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        "PROPOSAL_STATUS_PASSED",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: StartConsumerChainAction{
+				ConsumerChain: ChainID("consu"),
+				ProviderChain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+				// For consumers that're launching with the provider being on an earlier version
+				// of ICS before the soft opt-out threshold was introduced, we need to set the
+				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
+				// consumer binary doesn't panic. Sdk requires that all params are set to valid
+				// values from the genesis file.
+				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			Action: AddIbcConnectionAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				ClientA: 0,
+				ClientB: 0,
+			},
+			State: State{},
+		},
+		{
+			Action: AddIbcChannelAction{
+				ChainA:      ChainID("consu"),
+				ChainB:      ChainID("provi"),
+				ConnectionA: 0,
+				PortA:       "consumer",
+				PortB:       "provider",
+				Order:       "ordered",
+			},
+			State: State{},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+					},
+				},
+			},
+		},
+
+		// In what follows, we have 5 cases of `ConsumerModificationProposal`s that test the following:
+		// 1. set `ValidatorsPowerCap` to 40%
+		// 2. set the `ValidatorSetCap` to a maximum of 2 validators
+		// 3. set an allowlist with 2 validators
+		// 4. set a denylist with 1 validator
+		// 5. modify the chain from Opt In to Top 100%
+
+		// 1. set `ValidatorsPowerCap` to 40%
+		{
+			Action: SubmitConsumerModificationProposalAction{
+				Chain:              ChainID("provi"),
+				From:               ValidatorID("alice"),
+				Deposit:            10000001,
+				ConsumerChain:      ChainID("consu"),
+				ValidatorsPowerCap: 40,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						2: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: 2,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						2: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_PASSED",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("consu"): ChainState{
+					// `ValidatorsPowerCap` is set to 40%
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 130, // ~22% of the total voting power
+						ValidatorID("bob"):   230, // ~38% of the total voting power
+						ValidatorID("carol"): 240, // 40% of the total voting power
+					},
+				},
+			},
+		},
+
+		// 2. set the `ValidatorSetCap` to a maximum of 2 validators
+		{
+			Action: SubmitConsumerModificationProposalAction{
+				Chain:           ChainID("provi"),
+				From:            ValidatorID("alice"),
+				Deposit:         10000001,
+				ConsumerChain:   ChainID("consu"),
+				ValidatorSetCap: 2,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						3: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: 3,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						3: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_PASSED",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("consu"): ChainState{
+					// we can have a maximum of 2 validators due to `ValidatorSetCap`, hence only the 2 validators ("bob" and "carol")
+					// with the highest voting power validate
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+
+		// 3. set an allowlist with 2 validators
+		{
+			Action: SubmitConsumerModificationProposalAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				Deposit:       10000001,
+				ConsumerChain: ChainID("consu"),
+				// only "alice" and "carol" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
+				Allowlist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+					"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						4: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: 4,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						4: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_PASSED",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   0, // "bob" is not allowlisted
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+
+		// 4. set a denylist with 1 validator
+		{
+			Action: SubmitConsumerModificationProposalAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				Deposit:       10000001,
+				ConsumerChain: ChainID("consu"),
+				// only "alice" is denylisted (see `getDefaultValidators` in `tests/e2e/config.go`)
+				Denylist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						5: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: 5,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						5: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_PASSED",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0, // "alice" is denylisted
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+
+		// 5. modify the chain from Opt In to Top 100%
+		{
+			Action: SubmitConsumerModificationProposalAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				Deposit:       10000001,
+				ConsumerChain: ChainID("consu"),
+				TopN:          100,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						6: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: 6,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						6: ConsumerModificationProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  "PROPOSAL_STATUS_PASSED",
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: OptOutAction{
+				Chain:       ChainID("consu"),
+				Validator:   ValidatorID("alice"),
+				ExpectError: true, // because this chain is now Top 100%, no validator can opt out
+			},
+			State: State{},
+		},
+		{
+			Action: OptOutAction{
+				Chain:       ChainID("consu"),
+				Validator:   ValidatorID("bob"),
+				ExpectError: true, // because this chain is now Top 100%, no validator can opt out
+			},
+			State: State{},
+		},
+		{
+			Action: OptOutAction{
+				Chain:       ChainID("consu"),
+				Validator:   ValidatorID("carol"),
+				ExpectError: true, // because this chain is now Top 100%, no validator can opt out
+			},
+			State: State{},
+		}}
+
+	return s
+}

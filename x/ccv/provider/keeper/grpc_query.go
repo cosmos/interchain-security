@@ -375,7 +375,7 @@ func (k Keeper) hasToValidate(
 	}
 
 	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
-	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators := k.GetLastBondedValidators(ctx)
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
@@ -389,7 +389,7 @@ func (k Keeper) hasToValidate(
 	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
 	// the validator would have to validate in the next epoch
 	if k.IsOptedIn(ctx, chainID, provAddr) {
-		nextValidators := k.ComputeNextValidators(ctx, chainID, k.stakingKeeper.GetLastValidators(ctx))
+		nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 		for _, v := range nextValidators {
 			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 			if provAddr.ToSdkConsAddr().Equals(consAddr) {

@@ -316,7 +316,7 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 
 	// get the bonded validators from the staking module
-	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators := k.GetLastBondedValidators(ctx)
 
 	if prop.Top_N > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
