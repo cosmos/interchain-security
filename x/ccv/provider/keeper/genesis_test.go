@@ -63,8 +63,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				nil,
 			),
 		},
-		nil,
-		nil,
 		[]providertypes.ConsumerAdditionProposal{{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
@@ -96,7 +94,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 			},
 		},
 		initTimeoutTimeStamps,
-		nil,
 	)
 
 	// Instantiate in-mem provider keeper with mocks

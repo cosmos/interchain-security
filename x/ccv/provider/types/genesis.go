@@ -16,8 +16,6 @@ func NewGenesisState(
 	vscID uint64,
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
-	unbondingOps []UnbondingOp,
-	matureUbdOps *MaturedUnbondingOps,
 	additionProposals []ConsumerAdditionProposal,
 	removalProposals []ConsumerRemovalProposal,
 	params Params,
@@ -25,14 +23,11 @@ func NewGenesisState(
 	validatorsByConsumerAddr []ValidatorByConsumerAddr,
 	consumerAddrsToPrune []ConsumerAddrsToPrune,
 	initTimeoutTimestamps []InitTimeoutTimestamp,
-	exportedVscSendTimestamps []ExportedVscSendTimestamp,
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:            vscID,
 		ValsetUpdateIdToHeight:    vscIdToHeights,
 		ConsumerStates:            consumerStates,
-		UnbondingOps:              unbondingOps,
-		MatureUnbondingOps:        matureUbdOps,
 		ConsumerAdditionProposals: additionProposals,
 		ConsumerRemovalProposals:  removalProposals,
 		Params:                    params,
@@ -40,7 +35,6 @@ func NewGenesisState(
 		ValidatorsByConsumerAddr:  validatorsByConsumerAddr,
 		ConsumerAddrsToPrune:      consumerAddrsToPrune,
 		InitTimeoutTimestamps:     initTimeoutTimestamps,
-		ExportedVscSendTimestamps: exportedVscSendTimestamps,
 	}
 }
 
@@ -55,12 +49,6 @@ func DefaultGenesisState() *GenesisState {
 func (gs GenesisState) Validate() error {
 	if gs.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
-	}
-
-	for _, ubdOp := range gs.UnbondingOps {
-		if err := gs.ValidateUnbondingOp(ubdOp); err != nil {
-			return err
-		}
 	}
 
 	for _, prop := range gs.ConsumerAdditionProposals {

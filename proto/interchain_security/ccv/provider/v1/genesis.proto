@@ -19,37 +19,26 @@ message GenesisState {
     (gogoproto.moretags) = "yaml:\"consumer_states\""
   ];
   // empty for a new chain
-  // TODO (mpoke) remove
-  repeated interchain_security.ccv.provider.v1.UnbondingOp unbonding_ops = 3
+  repeated ValsetUpdateIdToHeight valset_update_id_to_height = 3
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  // TODO (mpoke) remove
-  interchain_security.ccv.provider.v1.MaturedUnbondingOps mature_unbonding_ops = 4;
-  // empty for a new chain
-  repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
+  repeated ConsumerAdditionProposal consumer_addition_proposals = 4
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  repeated ConsumerAdditionProposal consumer_addition_proposals = 6
+  repeated ConsumerRemovalProposal consumer_removal_proposals = 5
+      [ (gogoproto.nullable) = false ];
+  Params params = 6 [ (gogoproto.nullable) = false ];
+  // empty for a new chain
+  repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 7
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  repeated ConsumerRemovalProposal consumer_removal_proposals = 7
-      [ (gogoproto.nullable) = false ];
-  Params params = 8 [ (gogoproto.nullable) = false ];
-  // empty for a new chain
-  repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 9
+  repeated ValidatorByConsumerAddr validators_by_consumer_addr = 8
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  repeated ValidatorByConsumerAddr validators_by_consumer_addr = 10
-      [ (gogoproto.nullable) = false ];
-  // empty for a new chain
-  repeated ConsumerAddrsToPrune consumer_addrs_to_prune = 11
+  repeated ConsumerAddrsToPrune consumer_addrs_to_prune = 9
       [ (gogoproto.nullable) = false ];
 
-  repeated interchain_security.ccv.provider.v1.InitTimeoutTimestamp init_timeout_timestamps = 12
-      [ (gogoproto.nullable) = false ];
-
-// TODO (mpoke) remove
-  repeated interchain_security.ccv.provider.v1.ExportedVscSendTimestamp exported_vsc_send_timestamps = 13
+  repeated interchain_security.ccv.provider.v1.InitTimeoutTimestamp init_timeout_timestamps = 10
       [ (gogoproto.nullable) = false ];
 }
 

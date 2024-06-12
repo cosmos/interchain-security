@@ -138,8 +138,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
-		nil,
-		nil,
 		k.GetAllPendingConsumerAdditionProps(ctx),
 		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,
@@ -147,6 +145,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),
 		consumerAddrsToPrune,
 		k.GetAllInitTimeoutTimestamps(ctx),
-		nil,
 	)
 }
