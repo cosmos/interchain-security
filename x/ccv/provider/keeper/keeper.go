@@ -1138,3 +1138,42 @@ func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 
 	return !iterator.Valid()
 }
+
+// SetMinimumPowerInTopN sets the minimum power required for a validator to be in the top N
+// for a given consumer chain.
+func (k Keeper) SetMinimumPowerInTopN(
+	ctx sdk.Context,
+	chainID string,
+	power int64,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(power))
+
+	store.Set(types.MinimumPowerInTopNKey(chainID), buf)
+}
+
+// GetMinimumPowerInTopN returns the minimum power required for a validator to be in the top N
+// for a given consumer chain.
+func (k Keeper) GetMinimumPowerInTopN(
+	ctx sdk.Context,
+	chainID string,
+) (int64, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.MinimumPowerInTopNKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return int64(binary.BigEndian.Uint64(buf)), true
+}
+
+// DeleteMinimumPowerInTopN removes the minimum power required for a validator to be in the top N
+// for a given consumer chain.
+func (k Keeper) DeleteMinimumPowerInTopN(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.MinimumPowerInTopNKey(chainID))
+}

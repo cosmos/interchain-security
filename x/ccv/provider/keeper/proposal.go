@@ -175,6 +175,28 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, p *types.Con
 		k.SetDenylist(ctx, p.ChainId, types.NewProviderConsAddress(consAddr))
 	}
 
+	oldTopN, found := k.GetTopN(ctx, p.ChainId)
+	if !found {
+		oldTopN = 0
+		k.Logger(ctx).Info("consumer chain top N not found, treating as 0", "chainID", p.ChainId)
+	}
+
+	// if the top N changes, we need to update the new minimum power in top N
+	if p.Top_N != oldTopN {
+		if p.Top_N > 0 {
+			// if the chain receives a non-zero top N value, store the minimum power in the top N
+			bondedValidators := k.GetLastBondedValidators(ctx)
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, p.Top_N)
+			if err != nil {
+				return err
+			}
+			k.SetMinimumPowerInTopN(ctx, p.ChainId, minPower)
+		} else {
+			// if the chain receives a zero top N value, we delete the min power
+			k.DeleteMinimumPowerInTopN(ctx, p.ChainId)
+		}
+	}
+
 	return nil
 }
 
@@ -197,6 +219,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
+	k.DeleteMinimumPowerInTopN(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
@@ -271,18 +294,17 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 
 	// get the bonded validators from the staking module
-	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators := k.GetLastBondedValidators(ctx)
 
-	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+	if prop.Top_N > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, prop.Top_N)
-		if err == nil {
-			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
-		} else {
+		minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, prop.Top_N)
+		if err != nil {
 			return gen, nil, err
 		}
+		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 	}
-
 	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)

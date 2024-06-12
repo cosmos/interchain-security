@@ -39,13 +39,14 @@ func (s *CCVTestSuite) TestUndelegationCompletion() {
 // during the staking module EndBlock.
 func (s *CCVTestSuite) TestTooManyLastValidators() {
 	sk := s.providerApp.GetTestStakingKeeper()
+	pk := s.providerApp.GetProviderKeeper()
 
 	// get current staking params
 	p := sk.GetParams(s.providerCtx())
 
 	// get validators, which are all active at the moment
 	vals := sk.GetAllValidators(s.providerCtx())
-	s.Require().Equal(len(vals), len(sk.GetLastValidators(s.providerCtx())))
+	s.Require().Equal(len(vals), len(pk.GetLastBondedValidators(s.providerCtx())))
 
 	// jail a validator
 	val := vals[0]
@@ -54,17 +55,17 @@ func (s *CCVTestSuite) TestTooManyLastValidators() {
 	sk.Jail(s.providerCtx(), consAddr)
 
 	// save the current number of bonded vals
-	lastVals := sk.GetLastValidators(s.providerCtx())
+	lastVals := pk.GetLastBondedValidators(s.providerCtx())
 
 	// pass one block to apply the validator set changes
 	// (calls ApplyAndReturnValidatorSetUpdates in the the staking module EndBlock)
 	s.providerChain.NextBlock()
 
 	// verify that the number of bonded validators is decreased by one
-	s.Require().Equal(len(lastVals)-1, len(sk.GetLastValidators(s.providerCtx())))
+	s.Require().Equal(len(lastVals)-1, len(pk.GetLastBondedValidators(s.providerCtx())))
 
 	// update maximum validator to equal the number of bonded validators
-	p.MaxValidators = uint32(len(sk.GetLastValidators(s.providerCtx())))
+	p.MaxValidators = uint32(len(pk.GetLastBondedValidators(s.providerCtx())))
 	sk.SetParams(s.providerCtx(), p)
 
 	// pass one block to apply validator set changes
@@ -80,5 +81,5 @@ func (s *CCVTestSuite) TestTooManyLastValidators() {
 	// ApplyAndReturnValidatorSetUpdates where the staking module has a inconsistent state
 	s.Require().NotPanics(s.providerChain.NextBlock)
 	s.Require().NotPanics(func() { sk.ApplyAndReturnValidatorSetUpdates(s.providerCtx()) })
-	s.Require().NotPanics(func() { sk.GetLastValidators(s.providerCtx()) })
+	s.Require().NotPanics(func() { pk.GetLastBondedValidators(s.providerCtx()) })
 }
