@@ -82,14 +82,12 @@ const (
 	// need to unbond before a given unbonding operation can unbond on this chain.
 	// NOTE: This prefix is deprecated, but left in place to avoid state migrations
 	// [DEPRECATED]
-	// TODO (mpoke): cleanup state in migration
 	UnbondingOpBytePrefix
 
 	// UnbondingOpIndexBytePrefix is byte prefix of the index for looking up which unbonding
 	// operations are waiting for a given consumer chain to unbond
 	// NOTE: This prefix is deprecated, but left in place to avoid state migrations
 	// [DEPRECATED]
-	// TODO (mpoke): cleanup state in migration
 	UnbondingOpIndexBytePrefix
 
 	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from vscIDs to block heights
@@ -112,7 +110,6 @@ const (
 	// the list of VSC sending timestamps for a given consumer chainID.
 	// NOTE: This prefix is deprecated, but left in place to avoid state migrations
 	// [DEPRECATED]
-	// TODO (mpoke): cleanup state in migration
 	VscSendTimestampBytePrefix
 
 	// ThrottledPacketDataSizeBytePrefix is the byte prefix for storing the size of chain-specific throttled packet data queues
