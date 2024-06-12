@@ -129,7 +129,12 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 	valDConsAddr, _ := valD.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, true).AnyTimes()
 
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD}).AnyTimes()
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 4, []stakingtypes.Validator{valA, valB, valC, valD}, []int64{1, 2, 3, 4}, -1) // -1 to allow mocks AnyTimes
+
+	// initialize the minPowerInTopN correctly
+	minPowerInTopN, err := providerKeeper.ComputeMinPowerInTopN(ctx, []stakingtypes.Validator{valA, valB, valC, valD}, 50)
+	require.NoError(t, err)
+	providerKeeper.SetMinimumPowerInTopN(ctx, chainID, minPowerInTopN)
 
 	// opt in all validators
 	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valAConsAddr))
@@ -278,7 +283,7 @@ func TestOptInTopNValidators(t *testing.T) {
 	require.Empty(t, providerKeeper.GetAllOptedIn(ctx, "chainID"))
 }
 
-func TestComputeMinPowerToOptIn(t *testing.T) {
+func TestComputeMinPowerInTopN(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -299,50 +304,50 @@ func TestComputeMinPowerToOptIn(t *testing.T) {
 		createStakingValidator(ctx, mocks, 5, 6),
 	}
 
-	m, err := providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 100)
+	m, err := providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 100)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 97)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 97)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 96)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 96)
 	require.NoError(t, err)
 	require.Equal(t, int64(3), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 85)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 85)
 	require.NoError(t, err)
 	require.Equal(t, int64(3), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 84)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 84)
 	require.NoError(t, err)
 	require.Equal(t, int64(5), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 65)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 65)
 	require.NoError(t, err)
 	require.Equal(t, int64(5), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 64)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 64)
 	require.NoError(t, err)
 	require.Equal(t, int64(6), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 50)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 50)
 	require.NoError(t, err)
 	require.Equal(t, int64(6), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 40)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 40)
 	require.NoError(t, err)
 	require.Equal(t, int64(10), m)
 
-	m, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 1)
+	m, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 1)
 	require.NoError(t, err)
 	require.Equal(t, int64(10), m)
 
-	_, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 0)
+	_, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 0)
 	require.Error(t, err)
 
-	_, err = providerKeeper.ComputeMinPowerToOptIn(ctx, bondedValidators, 101)
+	_, err = providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 101)
 	require.Error(t, err)
 }
 

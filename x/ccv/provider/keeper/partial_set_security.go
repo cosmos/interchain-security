@@ -63,22 +63,18 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
 		}
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-		minPowerToOptIn, err := k.ComputeMinPowerToOptIn(ctx, k.stakingKeeper.GetLastValidators(ctx), topN)
-
-		if err != nil {
-			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+		minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, chainID)
+		if !found {
 			return errorsmod.Wrapf(
-				types.ErrCannotOptOutFromTopN,
-				"validator with power (%d) cannot opt out from Top N chain (%s) because the min power"+
-					" could not be computed: %s", power, chainID, err.Error())
-
+				types.ErrUnknownConsumerChainId,
+				"Could not find minimum power in top N for chain with id: %s", chainID)
 		}
 
-		if power >= minPowerToOptIn {
+		if power >= minPowerInTopN {
 			return errorsmod.Wrapf(
 				types.ErrCannotOptOutFromTopN,
 				"validator with power (%d) cannot opt out from Top N chain (%s) because all validators"+
-					" with at least %d power have to validate", power, chainID, minPowerToOptIn)
+					" with at least %d power have to validate", power, chainID, minPowerInTopN)
 		}
 	}
 
@@ -105,9 +101,9 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValid
 	}
 }
 
-// ComputeMinPowerToOptIn returns the minimum power needed for a validator (from the bonded validators)
-// to belong to the `topN` validators for a Top N chain.
-func (k Keeper) ComputeMinPowerToOptIn(ctx sdk.Context, bondedValidators []stakingtypes.Validator, topN uint32) (int64, error) {
+// ComputeMinPowerInTopN returns the minimum power needed for a validator (from the bonded validators)
+// to belong to the `topN`% of validators for a Top N chain.
+func (k Keeper) ComputeMinPowerInTopN(ctx sdk.Context, bondedValidators []stakingtypes.Validator, topN uint32) (int64, error) {
 	if topN == 0 || topN > 100 {
 		// Note that Top N chains have a lower limit on `topN`, namely that topN cannot be less than 50.
 		// However, we can envision that this method could be used for other (future) reasons where this might not

@@ -218,7 +218,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
 	// get the bonded validators from the staking module
-	bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators := k.GetLastBondedValidators(ctx)
 
 	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
 		currentValidators := k.GetConsumerValSet(ctx, chainID)
@@ -226,8 +226,11 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 
 		if topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, topN)
 			if err == nil {
+				// set the minimal power of validators in the top N in the store
+				k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+
 				k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 			} else {
 				// we just log here and do not panic because panic-ing would halt the provider chain

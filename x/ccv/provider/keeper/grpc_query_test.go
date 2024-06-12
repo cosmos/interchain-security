@@ -184,7 +184,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	valConsAddr, _ := val.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(valConsAddr)
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, true).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{val}).AnyTimes()
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{val}, []int64{1}, -1) // -1 to allow the calls "AnyTimes"
 
 	req := types.QueryConsumerChainsValidatorHasToValidateRequest{
 		ProviderAddress: providerAddr.String(),
@@ -203,14 +203,15 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		ConsumerPublicKey: &crypto.PublicKey{
 			Sum: &crypto.PublicKey_Ed25519{
 				Ed25519: []byte{1},
-			}}})
+			},
+		},
+	})
 
 	// set `providerAddr` as an opted-in validator on "chain3"
 	pk.SetOptedIn(ctx, "chain3", providerAddr)
 
 	// `providerAddr` has to validate "chain1" because it is a consumer validator in this chain, as well as "chain3"
-	// because it opted in, in "chain3" and `providerAddr` belongs to the bonded validators (see the mocking of `GetLastValidators`
-	// above)
+	// because it opted in, in "chain3" and `providerAddr` belongs to the bonded validators
 	expectedChains := []string{"chain1", "chain3"}
 
 	res, err := pk.QueryConsumerChainsValidatorHasToValidate(ctx, &req)
@@ -268,7 +269,8 @@ func TestGetConsumerChain(t *testing.T) {
 		{OperatorAddress: "cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3"}, // 500 power
 	}
 	powers := []int64{50, 150, 300, 500} // sum = 1000
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(gomock.Any()).Return(vals).AnyTimes()
+	maxValidators := uint32(180)
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, maxValidators, vals, powers, -1) // -1 to allow the calls "AnyTimes"
 
 	for i, val := range vals {
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), val.GetOperator()).Return(powers[i]).AnyTimes()
@@ -307,6 +309,7 @@ func TestGetConsumerChain(t *testing.T) {
 		pk.SetTopN(ctx, chainID, topN)
 		pk.SetValidatorSetCap(ctx, chainID, validatorSetCaps[i])
 		pk.SetValidatorsPowerCap(ctx, chainID, validatorPowerCaps[i])
+		pk.SetMinimumPowerInTopN(ctx, chainID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
 			pk.SetAllowlist(ctx, chainID, addr)
 		}
