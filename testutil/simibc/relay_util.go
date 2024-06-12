@@ -12,15 +12,12 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	simapp "github.com/cosmos/ibc-go/v8/testing/simapp"
-	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-
-	errorsmod "cosmossdk.io/errors"
+	cmttypes "github.com/cometbft/cometbft/types"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	tmtypes "github.com/cometbft/cometbft/types"
 )
 
 // UpdateReceiverClient DELIVERs a header to the receiving endpoint
@@ -31,6 +28,7 @@ import (
 //
 // NOTE: this function MAY be used independently of the rest of simibc.
 func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmtypes.Header, expectExpiration bool) (err error) {
+
 	err = augmentHeader(sender.Chain, receiver.Chain, receiver.ClientID, header)
 	if err != nil {
 		return err
@@ -45,7 +43,7 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 	}
 
 	chain := receiver.Chain
-	resp, err := simapp.SignAndDeliver(
+	res, err := simapp.SignAndDeliver(
 		chain.TB,
 		chain.TxConfig,
 		chain.App.GetBaseApp(),
@@ -62,13 +60,17 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		return err
 	}
 
-	err = commitBlock(chain, 1*time.Nanosecond, resp)
+	err = commitBlock(chain, 1*time.Nanosecond, res)
 	if err != nil {
 		return err
 	}
 
-	require.Len(chain.TB, resp.TxResults, 1)
-	txResult := resp.TxResults[0]
+	if len(res.TxResults) != 1 {
+		return fmt.Errorf("expected a tx result")
+
+	}
+
+	txResult := res.TxResults[0]
 
 	if txResult.Code != 0 {
 		return fmt.Errorf("%s/%d: %q", txResult.Codespace, txResult.Code, txResult.Log)
@@ -107,22 +109,17 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		receiver.Chain.GetContext().BlockHeader().NextValidatorsHash,
 		receiver.Chain.SenderPrivKey,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: check if a commit is needed here
 
 	for _, res := range resWithAck.TxResults {
 		res := res
 		if res.Code != 0 {
 			return nil, fmt.Errorf("%s/%d: %q", res.Codespace, res.Code, res.Log)
 		}
-	}
-
-	// need to set the sequence even if there was an error in delivery
-	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
-	if err != nil {
-		return nil, err
-	}
-
-	if setSequenceErr != nil {
-		return nil, setSequenceErr
 	}
 
 	if len(resWithAck.TxResults) != 1 {
@@ -132,6 +129,12 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.TxResults[0].GetEvents())
 	if err != nil {
 		return nil, err
+	}
+
+	// need to set the sequence even if there was an error in delivery
+	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+	if setSequenceErr != nil {
+		return nil, setSequenceErr
 	}
 
 	return ack, nil
@@ -150,19 +153,35 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
 
 	ackMsg := channeltypes.NewMsgAcknowledgement(p, ack, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
-	_, err = simapp.SignAndDeliver(
-		receiver.Chain.TB,
-		receiver.Chain.TxConfig,
-		receiver.Chain.App.GetBaseApp(),
+	chain := receiver.Chain
+	res, err := simapp.SignAndDeliver(
+		chain.TB,
+		chain.TxConfig,
+		chain.App.GetBaseApp(),
 		[]sdk.Msg{ackMsg},
-		receiver.Chain.ChainID,
-		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
-		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
+		chain.ChainID,
+		[]uint64{chain.SenderAccount.GetAccountNumber()},
+		[]uint64{chain.SenderAccount.GetSequence()},
 		true,
-		receiver.Chain.GetContext().BlockHeader().Time,
-		receiver.Chain.GetContext().BlockHeader().NextValidatorsHash,
-		receiver.Chain.SenderPrivKey,
+		chain.GetContext().BlockHeader().Time,
+		chain.GetContext().BlockHeader().NextValidatorsHash,
+		chain.SenderPrivKey,
 	)
+	if err != nil {
+		return err
+	}
+
+	// TODO: check if a commit is needed here
+
+	if len(res.TxResults) != 1 {
+		return fmt.Errorf("expected a tx result")
+	}
+
+	txResult := res.TxResults[0]
+
+	if txResult.Code != 0 {
+		return fmt.Errorf("%s/%d: %q", txResult.Codespace, txResult.Code, txResult.Log)
+	}
 
 	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {
@@ -178,35 +197,34 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
 
 // augmentHeader is a helper that augments the header with the height and validators that are most recently trusted
 // by the receiver chain. If there is an error, the header will not be modified.
+// Note that its duplicates the ConstructUpdateTMClientHeaderWithTrustedHeight behaviour from ibc testing
 func augmentHeader(sender, receiver *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
 	trustedHeight := receiver.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
 
+	// Relayer must query for LatestHeight on client to get TrustedHeight if the trusted height is not set
+	if trustedHeight.IsZero() {
+		trustedHeight = receiver.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
+	}
 	var (
-		tmTrustedVals *tmtypes.ValidatorSet
+		tmTrustedVals *cmttypes.ValidatorSet
 		ok            bool
 	)
-	// Once we get TrustedHeight from client, we must query the validators from the counterparty chain
-	// If the LatestHeight == LastHeader.Height, then TrustedValidators are current validators
-	// If LatestHeight < LastHeader.Height, we can query the historical validator set from HistoricalInfo
-	if trustedHeight == sender.LastHeader.GetHeight() {
-		tmTrustedVals = sender.Vals
-	} else {
-		// NOTE: We need to get validators from counterparty at height: trustedHeight+1
-		// since the last trusted validators for a header at height h
-		// is the NextValidators at h+1 committed to in header h by
-		// NextValidatorsHash
-		tmTrustedVals, ok = sender.GetValsAtHeight(int64(trustedHeight.RevisionHeight))
-		if !ok {
-			return errorsmod.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
-		}
+
+	tmTrustedVals, ok = sender.GetValsAtHeight(int64(trustedHeight.RevisionHeight))
+	if !ok {
+		return fmt.Errorf("%s: could not retrieve trusted validators at trustedHeight: %d",
+			ibctm.ErrInvalidHeaderHeight,
+			trustedHeight)
 	}
+
+	// inject trusted fields into last header
+	// for now assume revision number is 0
+	header.TrustedHeight = trustedHeight
+
 	trustedVals, err := tmTrustedVals.ToProto()
 	if err != nil {
 		return err
 	}
-	// inject trusted fields into last header
-	// for now assume revision number is 0
-	header.TrustedHeight = trustedHeight
 	header.TrustedValidators = trustedVals
 
 	return nil

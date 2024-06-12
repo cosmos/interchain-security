@@ -191,7 +191,6 @@ require (
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-metrics v0.5.2 // indirect
 	github.com/hashicorp/go-plugin v1.5.2 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
@@ -219,7 +218,3 @@ require (
 
 // following versions might cause unexpected behavior
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-
-replace github.com/cosmos/ibc-go/v8 => /Users/simon/Dev/go-workspace/src/github.com/cosmos/ibc-go
-
-replace github.com/cometbft/cometbft => /Users/simon/Dev/go-workspace/src/github.com/informalsystems/cometbft
