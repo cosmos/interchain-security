@@ -78,7 +78,6 @@ func TestNoPrefixOverlap(t *testing.T) {
 func getAllFullyDefinedKeys() [][]byte {
 	return [][]byte{
 		providertypes.PortKey(),
-		providertypes.MaturedUnbondingOpsKey(),
 		providertypes.ValidatorSetUpdateIdKey(),
 		providertypes.SlashMeterKey(),
 		providertypes.SlashMeterReplenishTimeCandidateKey(),
@@ -88,14 +87,11 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.InitTimeoutTimestampKey("chainID"),
 		providertypes.PendingCAPKey(time.Time{}, "chainID"),
 		providertypes.PendingCRPKey(time.Time{}, "chainID"),
-		providertypes.UnbondingOpKey(7),
-		providertypes.UnbondingOpIndexKey("chainID", 7),
 		providertypes.ValsetUpdateBlockHeightKey(7),
 		providertypes.ConsumerGenesisKey("chainID"),
 		providertypes.SlashAcksKey("chainID"),
 		providertypes.InitChainHeightKey("chainID"),
 		providertypes.PendingVSCsKey("chainID"),
-		providertypes.VscSendingTimestampKey("chainID", 8),
 		providertypes.ThrottledPacketDataSizeKey("chainID"),
 		providertypes.ThrottledPacketDataKey("chainID", 88),
 		providertypes.GlobalSlashEntryKey(providertypes.GlobalSlashEntry{}),
@@ -103,7 +99,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
 		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.VSCMaturedHandledThisBlockKey(),
 		providertypes.EquivocationEvidenceMinHeightKey("chainID"),
 	}
 }
@@ -290,12 +285,10 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 
 func TestKeysWithUint64Payload(t *testing.T) {
 	funcs := []func(uint64) []byte{
-		providertypes.UnbondingOpKey,
 		providertypes.ValsetUpdateBlockHeightKey,
 	}
 
 	expectedBytePrefixes := []byte{
-		providertypes.UnbondingOpBytePrefix,
 		providertypes.ValsetUpdateBlockHeightBytePrefix,
 	}
 

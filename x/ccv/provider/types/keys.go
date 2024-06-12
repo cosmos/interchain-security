@@ -42,6 +42,8 @@ const (
 	// MaturedUnbondingOpsByteKey is the byte key that stores the list of all unbonding operations ids
 	// that have matured from a consumer chain perspective,
 	// i.e., no longer waiting on the unbonding period to elapse on any consumer chain
+	// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+	// [DEPRECATED]
 	MaturedUnbondingOpsByteKey
 
 	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
@@ -78,10 +80,16 @@ const (
 
 	// UnbondingOpBytePrefix is the byte prefix that stores a record of all the ids of consumer chains that
 	// need to unbond before a given unbonding operation can unbond on this chain.
+	// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+	// [DEPRECATED]
+	// TODO (mpoke): cleanup state in migration
 	UnbondingOpBytePrefix
 
 	// UnbondingOpIndexBytePrefix is byte prefix of the index for looking up which unbonding
 	// operations are waiting for a given consumer chain to unbond
+	// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+	// [DEPRECATED]
+	// TODO (mpoke): cleanup state in migration
 	UnbondingOpIndexBytePrefix
 
 	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from vscIDs to block heights
@@ -102,6 +110,9 @@ const (
 
 	// VscSendTimestampBytePrefix is the byte prefix for storing
 	// the list of VSC sending timestamps for a given consumer chainID.
+	// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+	// [DEPRECATED]
+	// TODO (mpoke): cleanup state in migration
 	VscSendTimestampBytePrefix
 
 	// ThrottledPacketDataSizeBytePrefix is the byte prefix for storing the size of chain-specific throttled packet data queues
@@ -138,6 +149,8 @@ const (
 
 	// VSCMaturedHandledThisBlockBytePrefix is the byte prefix storing the number of vsc matured packets
 	// handled in the current block
+	// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+	// [DEPRECATED]
 	VSCMaturedHandledThisBlockBytePrefix
 
 	// EquivocationEvidenceMinHeightBytePrefix is the byte prefix storing the mapping from consumer chain IDs
@@ -193,11 +206,6 @@ const (
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
 	return []byte{PortByteKey}
-}
-
-// MaturedUnbondingOpsKey returns the key for storing the list of matured unbonding operations.
-func MaturedUnbondingOpsKey() []byte {
-	return []byte{MaturedUnbondingOpsByteKey}
 }
 
 // ValidatorSetUpdateIdKey is the key that stores the current validator set update id
@@ -263,27 +271,6 @@ func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	)
 }
 
-// UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
-// need to unbond before a given unbonding operation can unbond on this chain.
-func UnbondingOpKey(id uint64) []byte {
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, id)
-	return append([]byte{UnbondingOpBytePrefix}, bz...)
-}
-
-// UnbondingOpIndexKey returns an unbonding op index key
-// Note: chainId is hashed to a fixed length sequence of bytes here to prevent
-// injection attack between chainIDs.
-func UnbondingOpIndexKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(UnbondingOpIndexBytePrefix, chainID, vscID)
-}
-
-// ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
-// Removes the prefix + chainID from index key and returns only the key part.
-func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(UnbondingOpIndexBytePrefix, key)
-}
-
 // ValsetUpdateBlockHeightKey returns the key that storing the mapping from valset update ID to block height
 func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 	vuidBytes := make([]byte, 8)
@@ -311,18 +298,6 @@ func InitChainHeightKey(chainID string) []byte {
 // pending ValidatorSetChangePacket data is stored for a given chain ID
 func PendingVSCsKey(chainID string) []byte {
 	return append([]byte{PendingVSCsBytePrefix}, []byte(chainID)...)
-}
-
-// VscSendingTimestampKey returns the key under which the
-// sending timestamp of the VSCPacket with vsc ID is stored
-func VscSendingTimestampKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(VscSendTimestampBytePrefix, chainID, vscID)
-}
-
-// ParseVscTimeoutTimestampKey returns chain ID and vsc ID
-// for a VscSendingTimestampKey or an error if unparsable
-func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(VscSendTimestampBytePrefix, bz)
 }
 
 // ThrottledPacketDataSizeKey returns the key storing the size of the throttled packet data queue for a given chain ID
@@ -523,10 +498,6 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	addr := bz[prefixL+8+int(chainIdL):]
 	return chainID, addr, nil
-}
-
-func VSCMaturedHandledThisBlockKey() []byte {
-	return []byte{VSCMaturedHandledThisBlockBytePrefix}
 }
 
 // ProposedConsumerChainKey returns the key of proposed consumer chainId in consumerAddition gov proposal before voting finishes, the stored key format is prefix|proposalID, value is chainID
