@@ -228,7 +228,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, topN)
 			if err == nil {
-				// set the minimal power of validators in the top N ˇin the store
+				// set the minimal power of validators in the top N in the store
 				k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 
 				k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)

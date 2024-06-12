@@ -8,7 +8,7 @@ import (
 
 func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
 	// we only get the registered consumer chains and not also the proposed consumer chains because
-	// the minimal power is usually set when the consumer chain addition proposal passes
+	// the minimal power is first set when the consumer chain addition proposal passes
 	registeredConsumerChains := providerKeeper.GetAllRegisteredConsumerChainIDs(ctx)
 
 	for _, chain := range registeredConsumerChains {
