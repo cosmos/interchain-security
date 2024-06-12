@@ -213,11 +213,8 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, chainID, nextValidators)
 
-		// check whether there are changes in the validator set;
-		// note that this also entails unbonding operations
-		// w/o changes in the voting power of the validators in the validator set
-		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
-		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
+		// check whether there are changes in the validator set
+		if len(valUpdates) != 0 {
 			// construct validator set change packet data
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 			k.AppendPendingVSCPackets(ctx, chainID, packet)
@@ -225,7 +222,6 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 				"chainID", chainID,
 				"vscID", valUpdateID,
 				"len updates", len(valUpdates),
-				"len unbonding ops", len(unbondingOps),
 			)
 		}
 	}
