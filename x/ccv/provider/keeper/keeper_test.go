@@ -851,9 +851,9 @@ func TestMinimumPowerInTopN(t *testing.T) {
 	k.SetMinimumPowerInTopN(ctx, chainID, newMinPower)
 
 	// Retrieve the updated minimum power in top N
-	updatedMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
+	newActualMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
 	require.True(t, found)
-	require.Equal(t, newMinPower, updatedMinPower)
+	require.Equal(t, newMinPower, newActualMinPower)
 
 	// Test when the chain ID does not exist
 	nonExistentChainID := "nonExistentChain"
