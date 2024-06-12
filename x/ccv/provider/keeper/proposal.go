@@ -95,6 +95,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	}
 	k.SetConsumerClientId(ctx, chainID, clientID)
 
+	// TODO (mpoke) Decide what to do about the init timeout
 	// add the init timeout timestamp for this consumer chain
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
 	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
