@@ -277,7 +277,7 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 
 	// get the bonded validators from the staking module
-	bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators, err := k.GetLastBondedValidators(ctx)
 	if err != nil {
 		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 	}

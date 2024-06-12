@@ -474,9 +474,10 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 // during the staking module EndBlock.
 func (s *CCVTestSuite) TestTooManyLastValidators() {
 	sk := s.providerApp.GetTestStakingKeeper()
+	pk := s.providerApp.GetProviderKeeper()
 
 	getLastValsFn := func(ctx sdk.Context) []stakingtypes.Validator {
-		lastVals, err := sk.GetLastValidators(s.providerCtx())
+		lastVals, err := pk.GetLastBondedValidators(s.providerCtx())
 		s.Require().NoError(err)
 		return lastVals
 	}

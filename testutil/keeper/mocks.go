@@ -122,20 +122,6 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
 }
 
-// GetParams mocks base method.
-func (m *MockStakingKeeper) GetParams(ctx types0.Context) types5.Params {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetParams", ctx)
-	ret0, _ := ret[0].(types5.Params)
-	return ret0
-}
-
-// GetParams indicates an expected call of GetParams.
-func (mr *MockStakingKeeperMockRecorder) GetParams(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetParams", reflect.TypeOf((*MockStakingKeeper)(nil).GetParams), ctx)
-}
-
 // GetRedelegationByUnbondingID mocks base method.
 func (m *MockStakingKeeper) GetRedelegationByUnbondingID(ctx context.Context, id uint64) (types3.Redelegation, error) {
 	m.ctrl.T.Helper()
@@ -384,20 +370,6 @@ func (m *MockStakingKeeper) PutUnbondingOnHold(ctx context.Context, id uint64) e
 func (mr *MockStakingKeeperMockRecorder) PutUnbondingOnHold(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutUnbondingOnHold", reflect.TypeOf((*MockStakingKeeper)(nil).PutUnbondingOnHold), ctx, id)
-}
-
-// SetParams mocks base method.
-func (m *MockStakingKeeper) SetParams(ctx types0.Context, p types5.Params) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetParams", ctx, p)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetParams indicates an expected call of SetParams.
-func (mr *MockStakingKeeperMockRecorder) SetParams(ctx, p interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetParams", reflect.TypeOf((*MockStakingKeeper)(nil).SetParams), ctx, p)
 }
 
 // Slash mocks base method.

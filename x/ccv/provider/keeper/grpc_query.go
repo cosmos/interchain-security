@@ -10,7 +10,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
@@ -71,7 +70,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, 
 	// Get MinPowerInTop_N
 	var minPowerInTopN int64
 	if found && topN > 0 {
-		bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
+		bondedValidators, err := k.GetLastBondedValidators(ctx)
 		if err != nil {
 			return types.Chain{}, err
 		}
@@ -390,9 +389,9 @@ func (k Keeper) hasToValidate(
 	}
 
 	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
-	bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators, err := k.GetLastBondedValidators(ctx)
 	if err != nil {
-		return false, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
+		return false, nil
 	}
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
@@ -407,7 +406,7 @@ func (k Keeper) hasToValidate(
 	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
 	// the validator would have to validate in the next epoch
 	if k.IsOptedIn(ctx, chainID, provAddr) {
-		lastVals, err := k.stakingKeeper.GetLastValidators(ctx)
+		lastVals, err := k.GetLastBondedValidators(ctx)
 		if err != nil {
 			return false, err
 		}

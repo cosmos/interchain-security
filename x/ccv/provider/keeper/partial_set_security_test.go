@@ -133,7 +133,7 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 	valDConsAddr, _ := valD.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, nil).AnyTimes()
 
-	mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{valA, valB, valC, valD}, nil).AnyTimes()
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 4, []stakingtypes.Validator{valA, valB, valC, valD}, []int64{1, 2, 3, 4}, -1) // -1 to allow mocks AnyTimes
 
 	// opt in all validators
 	providerKeeper.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(valAConsAddr))

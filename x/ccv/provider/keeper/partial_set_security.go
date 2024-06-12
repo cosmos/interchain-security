@@ -69,7 +69,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 		if err != nil {
 			return err
 		}
-		bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
+		bondedValidators, err := k.GetLastBondedValidators(ctx)
 		if err != nil {
 			return errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 		}

@@ -216,11 +216,13 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
 // failing to GetLastValidators will cause a panic in EndBlock
+
+// TODO: decide if this func shouldn't return an error to be propagated to BeginBlocker
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
 	// get the bonded validators from the staking module
-	bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators, err := k.GetLastBondedValidators(ctx)
 	if err != nil {
 		panic(fmt.Errorf("failed to get last validators: %w", err))
 	}
