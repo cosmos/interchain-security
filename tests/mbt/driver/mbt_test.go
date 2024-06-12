@@ -413,11 +413,6 @@ func RunItfTrace(t *testing.T, path string) {
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			t.Log("DeliverPacketToProvider", consumerChain)
 
-			fmt.Println("consumer valset after 1")
-			for _, v := range driver.consumerValidatorSet(ChainId("consumer2")) {
-				fmt.Println(v.Power)
-			}
-
 			var expectError bool
 			if ConsumerStatus(currentModelState, consumerChain) == TIMEDOUT_STATUS {
 				expectError = true
@@ -484,11 +479,6 @@ func RunItfTrace(t *testing.T, path string) {
 		default:
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
 				path, index, actionKind)
-		}
-
-		fmt.Println("consumer valset after 2")
-		for _, v := range driver.consumerValidatorSet(ChainId("consumer2")) {
-			fmt.Println(v.Power)
 		}
 
 		// deliver all acks that are ready
@@ -598,12 +588,8 @@ func RunItfTrace(t *testing.T, path string) {
 
 func UpdateProviderClientOnConsumer(t *testing.T, driver *Driver, consumerChainId string) {
 	t.Helper()
-	fmt.Println(driver.providerHeader().Header.AppHash, driver.coordinator.Chains["provider"].CurrentHeader.Time.String())
-	fmt.Println("header1:", driver.providerHeader().Header.Time.String(), driver.coordinator.Chains["provider"].CurrentHeader.Time.String())
 	driver.path(ChainId(consumerChainId)).AddClientHeader(PROVIDER, driver.providerHeader())
-	fmt.Println("header2:", driver.providerHeader().Header.Time.String(), driver.coordinator.Chains["provider"].CurrentHeader.Time.String())
 	err := driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
-	fmt.Println("header4:", driver.providerHeader().Header.Time.String(), driver.coordinator.Chains["provider"].CurrentHeader.Time.String())
 	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
 }
 

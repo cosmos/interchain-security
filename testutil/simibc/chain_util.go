@@ -1,7 +1,6 @@
 package simibc
 
 import (
-	"fmt"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -12,7 +11,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // FinalizeBlock calls app.FinalizeBlock and app.Commit.
@@ -21,7 +19,6 @@ import (
 //
 // NOTE: this method may be used independently of the rest of simibc.
 func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Header, []channeltypes.Packet) {
-	fmt.Println("New LastHeader 0", c.LastHeader.Header.Time, c.CurrentHeader.Time)
 	res, err := c.App.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height:             c.CurrentHeader.Height,
 		Time:               c.CurrentHeader.GetTime(),
@@ -29,29 +26,8 @@ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Heade
 	})
 	require.NoError(c.TB, err)
 
-	_, err = c.App.Commit()
+	err = commitBlock(c, dt, res)
 	require.NoError(c.TB, err)
-
-	// set the last header to the current header
-	// use nil trusted fields
-	c.LastHeader = c.CurrentTMClientHeader()
-
-	// val set changes returned from previous block get applied to the next validators
-	// of this block. See tendermint spec for details.
-	c.Vals = c.NextVals
-	c.NextVals = ibctesting.ApplyValSetChanges(c, c.Vals, res.ValidatorUpdates)
-
-	// increment the current header
-	c.CurrentHeader = tmproto.Header{
-		ChainID:            c.ChainID,
-		Height:             c.App.LastBlockHeight() + 1,
-		AppHash:            c.App.LastCommitID().Hash,
-		Time:               c.CurrentHeader.Time.Add(dt),
-		ValidatorsHash:     c.Vals.Hash(),
-		NextValidatorsHash: c.NextVals.Hash(),
-		ProposerAddress:    c.CurrentHeader.ProposerAddress,
-	}
-	fmt.Println("New LastHeader", c.LastHeader.Header.Time, c.CurrentHeader.Time)
 
 	// handle packets
 	packets := ParsePacketsFromEvents(res.Events)

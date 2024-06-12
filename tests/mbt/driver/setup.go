@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"sort"
 	"testing"
@@ -372,17 +371,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 			continue
 		}
 		stakingValidators = append(stakingValidators, v)
-		fmt.Println(consAddr.String())
 	}
-
-	fmt.Println("--------------")
-
-	for addr, _ := range providerChain.Signers {
-		consAddr, _ := sdk.ConsAddressFromHex(addr)
-		fmt.Println(consAddr.String())
-	}
-
-	fmt.Println("###############")
 
 	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators)
 	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)

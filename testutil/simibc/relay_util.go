@@ -2,21 +2,19 @@ package simibc
 
 import (
 	"fmt"
-	"math/rand"
-	"testing"
 	"time"
 
-	bam "github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	simapp "github.com/cosmos/ibc-go/v8/testing/simapp"
+	"github.com/stretchr/testify/require"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -33,12 +31,10 @@ import (
 //
 // NOTE: this function MAY be used independently of the rest of simibc.
 func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmtypes.Header, expectExpiration bool) (err error) {
-	fmt.Println("header3A:", header.Header.Time.String(), sender.Chain.CurrentHeader.Time.String())
 	err = augmentHeader(sender.Chain, receiver.Chain, receiver.ClientID, header)
 	if err != nil {
 		return err
 	}
-	fmt.Println("header3B:", header.Header.Time.String(), sender.Chain.CurrentHeader.Time.String())
 
 	msg, err := clienttypes.NewMsgUpdateClient(
 		receiver.ClientID, header,
@@ -47,10 +43,43 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 	if err != nil {
 		return err
 	}
-	_, err = receiver.Chain.SendMsgs(msg)
-	fmt.Println("header3C:", header.Header.Time.String(), sender.Chain.CurrentHeader.Time.String())
 
-	return err
+	chain := receiver.Chain
+	resp, err := simapp.SignAndDeliver(
+		chain.TB,
+		chain.TxConfig,
+		chain.App.GetBaseApp(),
+		[]sdk.Msg{msg},
+		chain.ChainID,
+		[]uint64{chain.SenderAccount.GetAccountNumber()},
+		[]uint64{chain.SenderAccount.GetSequence()},
+		true,
+		chain.CurrentHeader.GetTime(),
+		chain.NextVals.Hash(),
+		chain.SenderPrivKey,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = commitBlock(chain, 1*time.Nanosecond, resp)
+	if err != nil {
+		return err
+	}
+
+	require.Len(chain.TB, resp.TxResults, 1)
+	txResult := resp.TxResults[0]
+
+	if txResult.Code != 0 {
+		return fmt.Errorf("%s/%d: %q", txResult.Codespace, txResult.Code, txResult.Log)
+	}
+
+	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+	if setSequenceErr != nil {
+		return setSequenceErr
+	}
+
+	return nil
 }
 
 // TryRecvPacket will try once to DELIVER a packet from sender to receiver. If successful,
@@ -65,12 +94,7 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 
 	RPmsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
-	fmt.Println("consumer valset before")
-	for _, v := range receiver.Chain.Vals.Validators {
-		fmt.Println(v.VotingPower)
-	}
-
-	resTx, err := SignAndDeliver(
+	resWithAck, err := simapp.SignAndDeliver(
 		receiver.Chain.TB,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
@@ -84,6 +108,13 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		receiver.Chain.SenderPrivKey,
 	)
 
+	for _, res := range resWithAck.TxResults {
+		res := res
+		if res.Code != 0 {
+			return nil, fmt.Errorf("%s/%d: %q", res.Codespace, res.Code, res.Log)
+		}
+	}
+
 	// need to set the sequence even if there was an error in delivery
 	setSequenceErr := receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 	if err != nil {
@@ -94,61 +125,16 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 		return nil, setSequenceErr
 	}
 
-	if resTx == nil {
-		return nil, fmt.Errorf("expect a tx result", resTx.String())
+	if len(resWithAck.TxResults) != 1 {
+		return nil, fmt.Errorf("expected a tx result")
 	}
 
-	ack, err = ParseAckFromEvents(resTx.GetEvents())
+	ack, err = ibctesting.ParseAckFromEvents(resWithAck.TxResults[0].GetEvents())
 	if err != nil {
 		return nil, err
 	}
 
 	return ack, nil
-}
-
-func SignAndDeliver(
-	tb testing.TB, txCfg client.TxConfig, app *bam.BaseApp, msgs []sdk.Msg,
-	chainID string, accNums, accSeqs []uint64, expPass bool, blockTime time.Time, nextValHash []byte, priv ...cryptotypes.PrivKey,
-) (*sdk.Result, error) {
-	tb.Helper()
-	tx, err := simtestutil.GenSignedMockTx(
-		rand.New(rand.NewSource(time.Now().UnixNano())),
-		txCfg,
-		msgs,
-		sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 0)},
-		simtestutil.DefaultGenTxGas,
-		chainID,
-		accNums,
-		accSeqs,
-		priv...,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Simulate a sending a transaction
-	_, res, err := app.SimDeliver(txCfg.TxEncoder(), tx)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-// ParseAckFromEvents parses events emitted from a MsgRecvPacket and returns the
-// acknowledgement.
-func ParseAckFromEvents(events sdk.Events) ([]byte, error) {
-	for _, ev := range events {
-		if ev.Type == channeltypes.EventTypeWriteAck {
-			for _, attr := range ev.Attributes {
-				if attr.Key == channeltypes.AttributeKeyAck { //nolint:staticcheck // DEPRECATED
-					return []byte(attr.Value), nil
-				}
-			}
-		}
-	}
-	return nil, fmt.Errorf("acknowledgement event attribute not found")
 }
 
 // TryRecvAck will try once to DELIVER an ack from sender to receiver.
@@ -223,5 +209,33 @@ func augmentHeader(sender, receiver *ibctesting.TestChain, clientID string, head
 	header.TrustedHeight = trustedHeight
 	header.TrustedValidators = trustedVals
 
+	return nil
+}
+
+func commitBlock(chain *ibctesting.TestChain, dt time.Duration, res *abci.ResponseFinalizeBlock) (err error) {
+	_, err = chain.App.Commit()
+	if err != nil {
+		return err
+	}
+
+	// set the last header to the current header
+	// use nil trusted fields
+	chain.LastHeader = chain.CurrentTMClientHeader()
+
+	// val set changes returned from previous block get applied to the next validators
+	// of this block. See tendermint spec for details.
+	chain.Vals = chain.NextVals
+	chain.NextVals = ibctesting.ApplyValSetChanges(chain, chain.Vals, res.ValidatorUpdates)
+
+	// increment the current header
+	chain.CurrentHeader = cmtproto.Header{
+		ChainID:            chain.ChainID,
+		Height:             chain.App.LastBlockHeight() + 1,
+		AppHash:            chain.App.LastCommitID().Hash,
+		Time:               chain.CurrentHeader.Time.Add(dt),
+		ValidatorsHash:     chain.Vals.Hash(),
+		NextValidatorsHash: chain.NextVals.Hash(),
+		ProposerAddress:    chain.CurrentHeader.ProposerAddress,
+	}
 	return nil
 }
