@@ -174,18 +174,26 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, p *types.Con
 		k.SetDenylist(ctx, p.ChainId, types.NewProviderConsAddress(consAddr))
 	}
 
-	// set the min power in top N correctly for the new value of N
-	if p.Top_N > 0 {
-		// if the chain receives a non-zero top N value, store the minimum power in the top N
-		bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
-		minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, p.Top_N)
-		if err != nil {
-			return err
+	oldTopN, found := k.GetTopN(ctx, p.ChainId)
+	if !found {
+		oldTopN = 0
+		k.Logger(ctx).Info("consumer chain top N not found, treating as 0", "chainID", p.ChainId)
+	}
+
+	// if the top N changes, we need to update the new minimum power in top N
+	if p.Top_N != oldTopN {
+		if p.Top_N > 0 {
+			// if the chain receives a non-zero top N value, store the minimum power in the top N
+			bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, p.Top_N)
+			if err != nil {
+				return err
+			}
+			k.SetMinimumPowerInTopN(ctx, p.ChainId, minPower)
+		} else {
+			// if the chain receives a zero top N value, we delete the min power
+			k.DeleteMinimumPowerInTopN(ctx, p.ChainId)
 		}
-		k.SetMinimumPowerInTopN(ctx, p.ChainId, minPower)
-	} else {
-		// if the chain receives a zero top N value, we delete the min power
-		k.DeleteMinimumPowerInTopN(ctx, p.ChainId)
 	}
 
 	return nil

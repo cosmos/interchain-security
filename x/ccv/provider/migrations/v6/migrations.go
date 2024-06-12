@@ -9,7 +9,7 @@ import (
 
 func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper, stakingKeeper stakingkeeper.Keeper) {
 	// get all consumer chains
-	registeredConsumerChains := providerKeeper.GetAllRegisteredAndProposedChainIDs(ctx)
+	registeredConsumerChains := providerKeeper.GetAllRegisteredConsumerChainIDs(ctx)
 
 	for _, chain := range registeredConsumerChains {
 		// get the top N
@@ -22,9 +22,9 @@ func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper
 		} else {
 			// set the minimal power in the top N
 			bondedValidators := stakingKeeper.GetLastValidators(ctx)
-			minPower, err := providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 95)
+			minPower, err := providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, topN)
 			if err != nil {
-				providerKeeper.Logger(ctx).Error("failed to compute min power in top N", "chain", chain, "error", err)
+				providerKeeper.Logger(ctx).Error("failed to compute min power in top N", "chain", chain, "topN", topN, "error", err)
 				continue
 			}
 			providerKeeper.SetMinimumPowerInTopN(ctx, chain, minPower)
