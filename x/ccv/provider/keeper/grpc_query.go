@@ -66,10 +66,15 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, 
 	}
 
 	topN, found := k.GetTopN(ctx, chainID)
+	if !found {
+		k.Logger(ctx).Error("failed to get top N, treating as 0", "chain", chainID)
+		topN = 0
+	}
 
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, chainID)
 	if !found {
+		k.Logger(ctx).Error("failed to get minimum power in top N, treating as -1", "chain", chainID)
 		minPowerInTopN = -1
 	}
 
