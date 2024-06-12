@@ -19,18 +19,19 @@ import (
 
 // type aliases
 type (
-	ChainState                = e2e.ChainState
-	Proposal                  = e2e.Proposal
-	Rewards                   = e2e.Rewards
-	TextProposal              = e2e.TextProposal
-	UpgradeProposal           = e2e.UpgradeProposal
-	ConsumerAdditionProposal  = e2e.ConsumerAdditionProposal
-	ConsumerRemovalProposal   = e2e.ConsumerRemovalProposal
-	IBCTransferParams         = e2e.IBCTransferParams
-	IBCTransferParamsProposal = e2e.IBCTransferParamsProposal
-	Param                     = e2e.Param
-	ParamsProposal            = e2e.ParamsProposal
-	TargetDriver              = e2e.TargetDriver
+	ChainState                   = e2e.ChainState
+	Proposal                     = e2e.Proposal
+	Rewards                      = e2e.Rewards
+	TextProposal                 = e2e.TextProposal
+	UpgradeProposal              = e2e.UpgradeProposal
+	ConsumerAdditionProposal     = e2e.ConsumerAdditionProposal
+	ConsumerRemovalProposal      = e2e.ConsumerRemovalProposal
+	ConsumerModificationProposal = e2e.ConsumerModificationProposal
+	IBCTransferParams            = e2e.IBCTransferParams
+	IBCTransferParamsProposal    = e2e.IBCTransferParamsProposal
+	Param                        = e2e.Param
+	ParamsProposal               = e2e.ParamsProposal
+	TargetDriver                 = e2e.TargetDriver
 )
 
 type State map[ChainID]ChainState
@@ -41,86 +42,6 @@ type Chain struct {
 }
 
 func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
-
-func (p TextProposal) isProposal() {}
-
-type ConsumerAdditionProposal struct {
-	Deposit       uint
-	Chain         ChainID
-	SpawnTime     int
-	InitialHeight clienttypes.Height
-	Status        string
-}
-
-type UpgradeProposal struct {
-	Title         string
-	Description   string
-	UpgradeHeight uint64
-	Type          string
-	Deposit       uint
-	Status        string
-}
-
-func (p UpgradeProposal) isProposal() {}
-
-func (p ConsumerAdditionProposal) isProposal() {}
-
-type ConsumerRemovalProposal struct {
-	Deposit  uint
-	Chain    ChainID
-	StopTime int
-	Status   string
-}
-
-func (p ConsumerRemovalProposal) isProposal() {}
-
-type ConsumerModificationProposal struct {
-	Deposit uint
-	Chain   ChainID
-	Status  string
-}
-
-func (p ConsumerModificationProposal) isProposal() {}
-
-type Rewards struct {
-	IsRewarded map[ValidatorID]bool
-	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
-	// otherwise it will calculate if it received any rewards since the 1st block
-	IsIncrementalReward bool
-	// if true checks rewards for "stake" token, otherwise checks rewards from
-	// other chains (e.g. false is used to check if provider received rewards from a consumer chain)
-	IsNativeDenom bool
-}
-
-type ParamsProposal struct {
-	Deposit  uint
-	Status   string
-	Subspace string
-	Key      string
-	Value    string
-}
-
-func (p ParamsProposal) isProposal() {}
-
-type Param struct {
-	Subspace string
-	Key      string
-	Value    string
-}
-
-func (tr TestConfig) getState(modelState State, verbose bool) State {
-	systemState := State{}
-	for k, modelState := range modelState {
-		if verbose {
-			fmt.Println("Getting model state for chain: ", k)
-		}
-		systemState[k] = tr.getChainState(k, modelState)
-	}
-
-	return systemState
-}
-
-func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainState {
 	chainState := ChainState{}
 
 	if modelState.ValBalances != nil {
@@ -568,7 +489,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		}
 
 	case "/interchain_security.ccv.provider.v1.ConsumerModificationProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
+		chainId := rawContent.Get("chain_id").String()
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {

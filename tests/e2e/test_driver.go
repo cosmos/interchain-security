@@ -146,9 +146,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case SubmitEnableTransfersProposalAction:
 		target.submitEnableTransfersProposalAction(action, td.verbose)
 	case SubmitConsumerModificationProposalAction:
-		target.submitConsumerModificationProposal(action, td.target, td.verbose) //FIXME BERND
-	case SubmitParamChangeLegacyProposalAction:
-		target.submitParamChangeProposal(action, td.target, td.verbose) //FIXME BERND
+		target.submitConsumerModificationProposal(action, td.verbose)
 	case VoteGovProposalAction:
 		target.voteGovProposal(action, td.verbose)
 	case StartConsumerChainAction:

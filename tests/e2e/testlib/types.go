@@ -309,6 +309,14 @@ type ConsumerRemovalProposal struct {
 
 func (p ConsumerRemovalProposal) isProposal() {}
 
+type ConsumerModificationProposal struct {
+	Deposit uint
+	Chain   ChainID
+	Status  string
+}
+
+func (p ConsumerModificationProposal) isProposal() {}
+
 type Rewards struct {
 	IsRewarded map[ValidatorID]bool
 	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,

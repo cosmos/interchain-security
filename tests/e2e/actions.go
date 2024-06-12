@@ -416,15 +416,14 @@ type SubmitConsumerModificationProposalAction struct {
 	Denylist           []string
 }
 
-func (tr TestConfig) submitConsumerModificationProposal(
+func (tr Chain) submitConsumerModificationProposal(
 	action SubmitConsumerModificationProposalAction,
-	target ExecutionTarget,
 	verbose bool,
 ) {
 	prop := client.ConsumerModificationProposalJSON{
 		Title:              "Propose the modification of the PSS parameters of a chain",
 		Summary:            "summary of a modification proposal",
-		ChainId:            string(tr.chainConfigs[action.ConsumerChain].ChainId),
+		ChainId:            string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
 		Deposit:            fmt.Sprint(action.Deposit) + `stake`,
 		TopN:               action.TopN,
 		ValidatorsPowerCap: action.ValidatorsPowerCap,
@@ -444,7 +443,7 @@ func (tr TestConfig) submitConsumerModificationProposal(
 	}
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	bz, err = target.ExecCommand(
+	bz, err = tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
 	).CombinedOutput()
 	if err != nil {
@@ -452,11 +451,11 @@ func (tr TestConfig) submitConsumerModificationProposal(
 	}
 
 	// CONSUMER MODIFICATION PROPOSAL
-	cmd := target.ExecCommand(
-		tr.chainConfigs[action.Chain].BinaryName,
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal", "consumer-modification", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
@@ -465,12 +464,17 @@ func (tr TestConfig) submitConsumerModificationProposal(
 	)
 	if verbose {
 		log.Println("submitConsumerModificationProposal cmd: ", cmd.String())
+		log.Println("submitConsumerModificationProposal json: ", jsonStr)
 	}
 
 	bz, err = cmd.CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
+	}
+
+	if verbose {
+		log.Println("submitConsumerModificationProposal output: ", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
@@ -488,7 +492,7 @@ func (tr Chain) submitEnableTransfersProposalAction(
 	action SubmitEnableTransfersProposalAction,
 	verbose bool,
 ) {
-	// gov signed addres got by checking the gov module acc address in the test container
+	// gov signed address got by checking the gov module acc address in the test container
 	// interchain-security-cdd q auth module-account gov --node tcp://7.7.9.253:26658
 	template := `
 	{

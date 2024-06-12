@@ -1939,7 +1939,7 @@ func stepsModifyChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
@@ -2024,7 +2024,7 @@ func stepsModifyChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_PASSED",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
@@ -2123,7 +2123,7 @@ func stepsModifyChain() []Step {
 						2: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 				},
@@ -2142,7 +2142,7 @@ func stepsModifyChain() []Step {
 						2: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_PASSED",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
@@ -2189,7 +2189,7 @@ func stepsModifyChain() []Step {
 						3: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 				},
@@ -2208,7 +2208,7 @@ func stepsModifyChain() []Step {
 						3: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_PASSED",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
@@ -2258,7 +2258,7 @@ func stepsModifyChain() []Step {
 						4: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 				},
@@ -2277,7 +2277,7 @@ func stepsModifyChain() []Step {
 						4: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_PASSED",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
@@ -2324,7 +2324,7 @@ func stepsModifyChain() []Step {
 						5: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 				},
@@ -2343,7 +2343,7 @@ func stepsModifyChain() []Step {
 						5: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_PASSED",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
@@ -2389,7 +2389,7 @@ func stepsModifyChain() []Step {
 						6: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 				},
@@ -2408,7 +2408,7 @@ func stepsModifyChain() []Step {
 						6: ConsumerModificationProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  "PROPOSAL_STATUS_PASSED",
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
