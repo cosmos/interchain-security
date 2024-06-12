@@ -272,52 +272,15 @@ message ChannelToChain {
   string chain_id = 2;
 }
 
-// VscUnbondingOps contains the IDs of unbonding operations that are waiting for
-// at least one VSCMaturedPacket with vscID from a consumer chain
-// TODO (mpoke) remove
-message VscUnbondingOps {
-  uint64 vsc_id = 1;
-  repeated uint64 unbonding_op_ids = 2;
-}
-
-// UnbondingOp contains the ids of consumer chains that need to unbond before
-// the unbonding operation with the given ID can unbond
-// TODO (mpoke) remove
-message UnbondingOp {
-  uint64 id = 1;
-  // consumer chains that are still unbonding
-  repeated string unbonding_consumer_chains = 2;
-}
-
 message InitTimeoutTimestamp {
   string chain_id = 1;
   uint64 timestamp = 2;
-}
-
-// TODO (mpoke) remove
-message VscSendTimestamp {
-  uint64 vsc_id = 1;
-  google.protobuf.Timestamp timestamp = 2
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
 
 // ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
 message ValidatorSetChangePackets {
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData list = 1
       [ (gogoproto.nullable) = false ];
-}
-
-// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
-// unbonding operations.
-// TODO (mpoke) remove
-message MaturedUnbondingOps { repeated uint64 ids = 1; }
-
-// ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
-// TODO (mpoke) remove
-message ExportedVscSendTimestamp {
-  string chain_id = 1;
-  repeated VscSendTimestamp vsc_send_timestamps = 2
-    [ (gogoproto.nullable) = false ];
 }
 
 //

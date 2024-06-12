@@ -90,30 +90,6 @@ func (gs GenesisState) Validate() error {
 	return nil
 }
 
-func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
-	if len(ubdOp.UnbondingConsumerChains) == 0 {
-		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
-	}
-
-	// Check that the ID is set correctly in the UnbondingOpsIndex
-	for _, chainID := range ubdOp.UnbondingConsumerChains {
-		found := false
-
-		// Find consumer state for this consumer chain
-		for _, cs := range gs.ConsumerStates {
-			if cs.ChainId != chainID {
-				continue
-			}
-		}
-		if !found {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis,
-				fmt.Sprintf("unbonding operation without UnbondingOpsIndex, opID=%d, chainID=%s", ubdOp.Id, chainID))
-		}
-	}
-
-	return nil
-}
-
 // Validate performs a consumer state validation returning an error upon any failure.
 // It ensures that the chain id, client id and consumer genesis states are valid and non-empty.
 func (cs ConsumerState) Validate() error {
