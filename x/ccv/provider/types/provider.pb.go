@@ -931,6 +931,7 @@ func (m *ChannelToChain) GetChainId() string {
 
 // VscUnbondingOps contains the IDs of unbonding operations that are waiting for
 // at least one VSCMaturedPacket with vscID from a consumer chain
+// TODO (mpoke) remove
 type VscUnbondingOps struct {
 	VscId          uint64   `protobuf:"varint,1,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`
 	UnbondingOpIds []uint64 `protobuf:"varint,2,rep,packed,name=unbonding_op_ids,json=unbondingOpIds,proto3" json:"unbonding_op_ids,omitempty"`
@@ -985,6 +986,7 @@ func (m *VscUnbondingOps) GetUnbondingOpIds() []uint64 {
 
 // UnbondingOp contains the ids of consumer chains that need to unbond before
 // the unbonding operation with the given ID can unbond
+// TODO (mpoke) remove
 type UnbondingOp struct {
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// consumer chains that are still unbonding
@@ -1090,6 +1092,7 @@ func (m *InitTimeoutTimestamp) GetTimestamp() uint64 {
 	return 0
 }
 
+// TODO (mpoke) remove
 type VscSendTimestamp struct {
 	VscId     uint64    `protobuf:"varint,1,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`
 	Timestamp time.Time `protobuf:"bytes,2,opt,name=timestamp,proto3,stdtime" json:"timestamp"`
@@ -1189,6 +1192,7 @@ func (m *ValidatorSetChangePackets) GetList() []types3.ValidatorSetChangePacketD
 
 // MaturedUnbondingOps defines a list of ids corresponding to ids of matured
 // unbonding operations.
+// TODO (mpoke) remove
 type MaturedUnbondingOps struct {
 	Ids []uint64 `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
 }
@@ -1234,6 +1238,7 @@ func (m *MaturedUnbondingOps) GetIds() []uint64 {
 }
 
 // ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
+// TODO (mpoke) remove
 type ExportedVscSendTimestamp struct {
 	ChainId           string             `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	VscSendTimestamps []VscSendTimestamp `protobuf:"bytes,2,rep,name=vsc_send_timestamps,json=vscSendTimestamps,proto3" json:"vsc_send_timestamps"`

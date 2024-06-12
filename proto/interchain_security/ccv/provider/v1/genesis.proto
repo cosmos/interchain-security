@@ -19,9 +19,11 @@ message GenesisState {
     (gogoproto.moretags) = "yaml:\"consumer_states\""
   ];
   // empty for a new chain
+  // TODO (mpoke) remove
   repeated interchain_security.ccv.provider.v1.UnbondingOp unbonding_ops = 3
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
+  // TODO (mpoke) remove
   interchain_security.ccv.provider.v1.MaturedUnbondingOps mature_unbonding_ops = 4;
   // empty for a new chain
   repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
@@ -46,6 +48,7 @@ message GenesisState {
   repeated interchain_security.ccv.provider.v1.InitTimeoutTimestamp init_timeout_timestamps = 12
       [ (gogoproto.nullable) = false ];
 
+// TODO (mpoke) remove
   repeated interchain_security.ccv.provider.v1.ExportedVscSendTimestamp exported_vsc_send_timestamps = 13
       [ (gogoproto.nullable) = false ];
 }
@@ -67,11 +70,13 @@ message ConsumerState {
       [ (gogoproto.nullable) = false ];
   // PendingValsetChanges defines the pending validator set changes for the
   // consumer chain
+  // TODO (mpoke) remove
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData
       pending_valset_changes = 6 [ (gogoproto.nullable) = false ];
   repeated string slash_downtime_ack = 7;
   // UnbondingOpsIndex defines the unbonding operations waiting on this consumer
   // chain
+  // TODO (mpoke) remove
   repeated interchain_security.ccv.provider.v1.VscUnbondingOps
       unbonding_ops_index = 8 [ (gogoproto.nullable) = false ];
 }

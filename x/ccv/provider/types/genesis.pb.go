@@ -31,8 +31,10 @@ type GenesisState struct {
 	// empty for a new chain
 	ConsumerStates []ConsumerState `protobuf:"bytes,2,rep,name=consumer_states,json=consumerStates,proto3" json:"consumer_states" yaml:"consumer_states"`
 	// empty for a new chain
+	// TODO (mpoke) remove
 	UnbondingOps []UnbondingOp `protobuf:"bytes,3,rep,name=unbonding_ops,json=unbondingOps,proto3" json:"unbonding_ops"`
 	// empty for a new chain
+	// TODO (mpoke) remove
 	MatureUnbondingOps *MaturedUnbondingOps `protobuf:"bytes,4,opt,name=mature_unbonding_ops,json=matureUnbondingOps,proto3" json:"mature_unbonding_ops,omitempty"`
 	// empty for a new chain
 	ValsetUpdateIdToHeight []ValsetUpdateIdToHeight `protobuf:"bytes,5,rep,name=valset_update_id_to_height,json=valsetUpdateIdToHeight,proto3" json:"valset_update_id_to_height"`
@@ -46,8 +48,9 @@ type GenesisState struct {
 	// empty for a new chain
 	ValidatorsByConsumerAddr []ValidatorByConsumerAddr `protobuf:"bytes,10,rep,name=validators_by_consumer_addr,json=validatorsByConsumerAddr,proto3" json:"validators_by_consumer_addr"`
 	// empty for a new chain
-	ConsumerAddrsToPrune      []ConsumerAddrsToPrune     `protobuf:"bytes,11,rep,name=consumer_addrs_to_prune,json=consumerAddrsToPrune,proto3" json:"consumer_addrs_to_prune"`
-	InitTimeoutTimestamps     []InitTimeoutTimestamp     `protobuf:"bytes,12,rep,name=init_timeout_timestamps,json=initTimeoutTimestamps,proto3" json:"init_timeout_timestamps"`
+	ConsumerAddrsToPrune  []ConsumerAddrsToPrune `protobuf:"bytes,11,rep,name=consumer_addrs_to_prune,json=consumerAddrsToPrune,proto3" json:"consumer_addrs_to_prune"`
+	InitTimeoutTimestamps []InitTimeoutTimestamp `protobuf:"bytes,12,rep,name=init_timeout_timestamps,json=initTimeoutTimestamps,proto3" json:"init_timeout_timestamps"`
+	// TODO (mpoke) remove
 	ExportedVscSendTimestamps []ExportedVscSendTimestamp `protobuf:"bytes,13,rep,name=exported_vsc_send_timestamps,json=exportedVscSendTimestamps,proto3" json:"exported_vsc_send_timestamps"`
 }
 
@@ -191,10 +194,12 @@ type ConsumerState struct {
 	ConsumerGenesis types.ConsumerGenesisState `protobuf:"bytes,5,opt,name=consumer_genesis,json=consumerGenesis,proto3" json:"consumer_genesis"`
 	// PendingValsetChanges defines the pending validator set changes for the
 	// consumer chain
+	// TODO (mpoke) remove
 	PendingValsetChanges []types.ValidatorSetChangePacketData `protobuf:"bytes,6,rep,name=pending_valset_changes,json=pendingValsetChanges,proto3" json:"pending_valset_changes"`
 	SlashDowntimeAck     []string                             `protobuf:"bytes,7,rep,name=slash_downtime_ack,json=slashDowntimeAck,proto3" json:"slash_downtime_ack,omitempty"`
 	// UnbondingOpsIndex defines the unbonding operations waiting on this consumer
 	// chain
+	// TODO (mpoke) remove
 	UnbondingOpsIndex []VscUnbondingOps `protobuf:"bytes,8,rep,name=unbonding_ops_index,json=unbondingOpsIndex,proto3" json:"unbonding_ops_index"`
 }
 
