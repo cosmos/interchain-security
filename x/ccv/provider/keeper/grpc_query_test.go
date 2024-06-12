@@ -309,6 +309,7 @@ func TestGetConsumerChain(t *testing.T) {
 		pk.SetTopN(ctx, chainID, topN)
 		pk.SetValidatorSetCap(ctx, chainID, validatorSetCaps[i])
 		pk.SetValidatorsPowerCap(ctx, chainID, validatorPowerCaps[i])
+		pk.SetMinimumPowerInTopN(ctx, chainID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
 			pk.SetAllowlist(ctx, chainID, addr)
 		}
