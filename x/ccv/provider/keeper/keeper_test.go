@@ -852,3 +852,22 @@ func TestMinimumPowerInTopN(t *testing.T) {
 	require.False(t, found)
 	require.Equal(t, int64(0), nonExistentMinPower)
 }
+
+func TestUpdateMinimumPowerInTopN(t *testing.T) {
+	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	chainID := "testChain"
+	initialMinPower := int64(1000)
+	updatedMinPower := int64(2000)
+
+	// Set the initial minimum power in top N
+	k.SetMinimumPowerInTopN(ctx, chainID, initialMinPower)
+
+	// Update the minimum power in top N
+	k.SetMinimumPowerInTopN(ctx, chainID, updatedMinPower)
+
+	// Retrieve the updated minimum power in top N
+	gotMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
+	require.True(t, found)
+	require.Equal(t, updatedMinPower, gotMinPower)
+}
