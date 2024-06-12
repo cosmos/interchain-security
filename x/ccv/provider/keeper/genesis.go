@@ -106,10 +106,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:           chainID,
-			ClientId:          clientID,
-			ConsumerGenesis:   gen,
-			UnbondingOpsIndex: nil,
+			ChainId:         chainID,
+			ClientId:        clientID,
+			ConsumerGenesis: gen,
 		}
 
 		// try to find channel id for the current consumer chain

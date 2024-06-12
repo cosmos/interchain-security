@@ -116,14 +116,6 @@ func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
 			if cs.ChainId != chainID {
 				continue
 			}
-			for _, vscUnbondingOps := range cs.UnbondingOpsIndex {
-				for _, id := range vscUnbondingOps.GetUnbondingOpIds() {
-					if id == ubdOp.Id {
-						found = true
-						break
-					}
-				}
-			}
 		}
 		if !found {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis,
@@ -164,15 +156,6 @@ func (cs ConsumerState) Validate() error {
 		}
 		if err := validateSlashAcksAddress(pVSC.SlashAcks); err != nil {
 			return err
-		}
-	}
-
-	for _, ubdOpIdx := range cs.UnbondingOpsIndex {
-		if ubdOpIdx.VscId == 0 {
-			return fmt.Errorf("UnbondingOpsIndex vscID cannot be equal to zero")
-		}
-		if len(ubdOpIdx.UnbondingOpIds) == 0 {
-			return fmt.Errorf("unbonding operation index cannot be empty: %#v", ubdOpIdx)
 		}
 	}
 
