@@ -59,7 +59,6 @@ message ConsumerState {
       [ (gogoproto.nullable) = false ];
   // PendingValsetChanges defines the pending validator set changes for the
   // consumer chain
-  // TODO (mpoke) remove
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData
       pending_valset_changes = 6 [ (gogoproto.nullable) = false ];
   repeated string slash_downtime_ack = 7;

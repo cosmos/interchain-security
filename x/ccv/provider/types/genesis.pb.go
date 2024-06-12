@@ -165,7 +165,6 @@ type ConsumerState struct {
 	ConsumerGenesis types.ConsumerGenesisState `protobuf:"bytes,5,opt,name=consumer_genesis,json=consumerGenesis,proto3" json:"consumer_genesis"`
 	// PendingValsetChanges defines the pending validator set changes for the
 	// consumer chain
-	// TODO (mpoke) remove
 	PendingValsetChanges []types.ValidatorSetChangePacketData `protobuf:"bytes,6,rep,name=pending_valset_changes,json=pendingValsetChanges,proto3" json:"pending_valset_changes"`
 	SlashDowntimeAck     []string                             `protobuf:"bytes,7,rep,name=slash_downtime_ack,json=slashDowntimeAck,proto3" json:"slash_downtime_ack,omitempty"`
 }
