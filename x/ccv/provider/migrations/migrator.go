@@ -8,6 +8,7 @@ import (
 	v3 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v3"
 	v4 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v4"
 	v5 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v5"
+	v6 "github.com/cosmos/interchain-security/v4/x/ccv/provider/migrations/v6"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -45,5 +46,10 @@ func (m Migrator) Migrate3to4(ctx sdktypes.Context) error {
 // The migration consists of setting a top N of 95 for all registered consumer chains.
 func (m Migrator) Migrate4to5(ctx sdktypes.Context) error {
 	v5.MigrateTopNForRegisteredChains(ctx, m.providerKeeper)
+	return nil
+}
+
+func (m Migrator) Migrate5to6(ctx sdktypes.Context) error {
+	v6.MigrateMinPowerInTopN(ctx, m.providerKeeper)
 	return nil
 }
