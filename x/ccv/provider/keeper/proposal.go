@@ -184,7 +184,7 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, p *types.Con
 	if p.Top_N != oldTopN {
 		if p.Top_N > 0 {
 			// if the chain receives a non-zero top N value, store the minimum power in the top N
-			bondedValidators := k.stakingKeeper.GetLastValidators(ctx)
+			bondedValidators := k.GetLastBondedValidators(ctx)
 			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, p.Top_N)
 			if err != nil {
 				return err
