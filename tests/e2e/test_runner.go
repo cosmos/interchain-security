@@ -19,7 +19,7 @@ const (
 // It sets up the test environment and the test driver to run the tests
 type TestRunner struct {
 	config     TestConfig
-	steps      []Step
+	stepChoice StepChoice
 	testDriver TestCaseDriver
 	target     ExecutionTarget
 	verbose    bool
@@ -86,7 +86,7 @@ func (tr *TestRunner) Run() error {
 	}
 
 	tr.testDriver = GetTestCaseDriver(tr.config)
-	err = tr.testDriver.Run(tr.steps, tr.target, tr.verbose)
+	err = tr.testDriver.Run(tr.stepChoice.steps, tr.target, tr.verbose)
 	if err != nil {
 		tr.result.Failed()
 		// not tearing down environment for troubleshooting reasons on container
@@ -118,13 +118,13 @@ func (tr *TestRunner) Setup(testCfg TestConfig) error {
 	return nil
 }
 
-func CreateTestRunner(config TestConfig, steps []Step, target ExecutionTarget, verbose bool) TestRunner {
+func CreateTestRunner(config TestConfig, stepChoice StepChoice, target ExecutionTarget, verbose bool) TestRunner {
 	return TestRunner{
-		target:  target,
-		steps:   steps,
-		config:  config,
-		verbose: verbose,
-		result:  TestResult{Status: TEST_STATUS_NOTRUN},
+		target:     target,
+		stepChoice: stepChoice,
+		config:     config,
+		verbose:    verbose,
+		result:     TestResult{Status: TEST_STATUS_NOTRUN},
 	}
 }
 
@@ -135,7 +135,7 @@ func (tr *TestRunner) Info() string {
 Test name : %s
 Target: %s
 ------------------------------------------`,
-		tr.config.name,
+		tr.stepChoice.name,
 		tr.target.Info(),
 	)
 }
@@ -150,7 +150,7 @@ Target: %s
 - Duration: %s
 - StartTime: %s
 ------------------------------------------`,
-		tr.config.name,
+		tr.stepChoice.name,
 		tr.target.Info(),
 		tr.result.Status,
 		tr.result.Result,

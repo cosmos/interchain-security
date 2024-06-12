@@ -277,7 +277,7 @@ func parseArguments() (err error) {
 
 type testStepsWithConfig struct {
 	config TestConfigType
-	steps  []Step
+	steps  StepChoice
 }
 
 func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVersions,
@@ -316,13 +316,12 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			log.Fatalf("Step choice '%s' not found.\nsee usage info:\n%s", tc, getTestCaseUsageString())
 		}
 
-		testSteps := stepChoices[tc].steps
 		if testConfig == "" {
 			testConfig = stepChoices[tc].testConfig
 		}
 		tests = append(tests, testStepsWithConfig{
 			config: testConfig,
-			steps:  testSteps,
+			steps:  stepChoices[tc],
 		},
 		)
 	}
@@ -351,7 +350,11 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 
 		tests = append(tests, testStepsWithConfig{
 			config: testConfig,
-			steps:  testCase,
+			steps: StepChoice{
+				name:        testFileName,
+				steps:       testCase,
+				description: fmt.Sprintf("Steps from file %s", testFileName),
+			},
 		})
 	}
 
