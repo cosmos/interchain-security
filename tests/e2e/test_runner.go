@@ -133,9 +133,11 @@ func (tr *TestRunner) Info() string {
 	return fmt.Sprintf(`
 ------------------------------------------
 Test name : %s
+Config: %s
 Target: %s
 ------------------------------------------`,
 		tr.stepChoice.name,
+		tr.config.name,
 		tr.target.Info(),
 	)
 }
@@ -144,6 +146,7 @@ func (tr *TestRunner) Report() string {
 	return fmt.Sprintf(`
 ------------------------------------------
 Test name : %s
+Config: %s
 Target: %s
 - Status: %s
 - Result: %s
@@ -151,6 +154,7 @@ Target: %s
 - StartTime: %s
 ------------------------------------------`,
 		tr.stepChoice.name,
+		tr.config.name,
 		tr.target.Info(),
 		tr.result.Status,
 		tr.result.Result,
