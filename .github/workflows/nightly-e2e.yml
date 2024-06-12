@@ -327,11 +327,8 @@ jobs:
       - partial-set-security-validators-power-cap-test
       - partial-set-security-validators-allowlisted-test
       - partial-set-security-validators-denylisted-test
-<<<<<<< HEAD
       - active-set-changes-test
-=======
       - partial-set-security-modification-proposal
->>>>>>> main
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     steps:
