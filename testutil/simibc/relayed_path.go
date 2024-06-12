@@ -112,6 +112,8 @@ func (f *RelayedPath) InvolvesChain(chainID string) bool {
 // the last call to UpdateClient (or all for the first call).
 func (f *RelayedPath) UpdateClient(chainID string, expectExpiration bool) error {
 	for _, header := range f.clientHeaders[f.Counterparty(chainID)] {
+		// avoid implicit memory aliasing
+		header := header
 		err := UpdateReceiverClient(f.endpoint(f.Counterparty(chainID)), f.endpoint(chainID), header, expectExpiration)
 		if err != nil {
 			return err

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sort"
 	"testing"
@@ -185,7 +186,7 @@ func getAppBytesAndSenders(
 		stakingValidators = append(stakingValidators, validator)
 
 		// Store delegation from the model delegator account
-		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress().String(), val.Address.String(), delShares))
+		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress().String(), validator.GetOperator(), delShares))
 
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
@@ -271,15 +272,15 @@ func newChain(
 		},
 	)
 
-	app.Commit()
+	// app.Commit()
 
-	app.FinalizeBlock(
-		&abcitypes.RequestFinalizeBlock{
-			Hash:               app.LastCommitID().Hash,
-			Height:             app.LastBlockHeight() + 1,
-			NextValidatorsHash: validators.Hash(),
-		},
-	)
+	// app.FinalizeBlock(
+	// 	&abcitypes.RequestFinalizeBlock{
+	// 		Hash:               app.LastCommitID().Hash,
+	// 		Height:             app.LastBlockHeight() + 1,
+	// 		NextValidatorsHash: validators.Hash(),
+	// 	},
+	// )
 
 	chain := &ibctesting.TestChain{
 		TB:          t,
@@ -367,14 +368,21 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		}
 
 		v, err := s.providerStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
-		// TODO: not sure why there was this code on ICS <= v5.x
-		// v, found := ...
-		// if !found { ... }
 		if err != nil {
 			continue
 		}
 		stakingValidators = append(stakingValidators, v)
+		fmt.Println(consAddr.String())
 	}
+
+	fmt.Println("--------------")
+
+	for addr, _ := range providerChain.Signers {
+		consAddr, _ := sdk.ConsAddressFromHex(addr)
+		fmt.Println(consAddr.String())
+	}
+
+	fmt.Println("###############")
 
 	nextValidators := s.providerKeeper().ComputeNextEpochConsumerValSet(s.providerCtx(), string(consumerChainId), stakingValidators)
 	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)

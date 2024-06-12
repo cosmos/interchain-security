@@ -1,6 +1,7 @@
 package simibc
 
 import (
+	"fmt"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -20,6 +21,7 @@ import (
 //
 // NOTE: this method may be used independently of the rest of simibc.
 func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Header, []channeltypes.Packet) {
+	fmt.Println("New LastHeader 0", c.LastHeader.Header.Time, c.CurrentHeader.Time)
 	res, err := c.App.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height:             c.CurrentHeader.Height,
 		Time:               c.CurrentHeader.GetTime(),
@@ -49,6 +51,7 @@ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Heade
 		NextValidatorsHash: c.NextVals.Hash(),
 		ProposerAddress:    c.CurrentHeader.ProposerAddress,
 	}
+	fmt.Println("New LastHeader", c.LastHeader.Header.Time, c.CurrentHeader.Time)
 
 	// handle packets
 	packets := ParsePacketsFromEvents(res.Events)
