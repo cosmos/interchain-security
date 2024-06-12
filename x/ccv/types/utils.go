@@ -135,7 +135,7 @@ func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, l
 	stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
 		lastPowers[i] = stakingtypes.LastValidatorPower{Address: addr.String(), Power: power}
 		i++
-		return i >= int(maxVals)
+		return i >= int(maxVals) // stop iteration if true
 	})
 
 	// truncate the lastPowers
