@@ -54,7 +54,10 @@ func (m Migrator) Migrate4to5(ctx sdktypes.Context) error {
 }
 
 // Migrate5to6 migrates x/ccvprovider state from consensus version 5 to 6.
-// The migration consists of initializing new provider chain params using params from the legacy store.
+// The migration consists of
+// - computing and storing the minimal power in the top N for all registered consumer chains.
+// - initializing new provider chain params using params from the legacy store.
 func (m Migrator) Migrate5to6(ctx sdktypes.Context) error {
+	v6.MigrateMinPowerInTopN(ctx, m.providerKeeper)
 	return v6.MigrateLegacyParams(ctx, m.providerKeeper, m.paramSpace)
 }

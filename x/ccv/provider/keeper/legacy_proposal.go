@@ -113,5 +113,30 @@ func (k Keeper) HandleLegacyConsumerModificationProposal(ctx sdk.Context, p *typ
 		k.SetDenylist(ctx, p.ChainId, types.NewProviderConsAddress(consAddr))
 	}
 
+	oldTopN, found := k.GetTopN(ctx, p.ChainId)
+	if !found {
+		oldTopN = 0
+		k.Logger(ctx).Info("consumer chain top N not found, treating as 0", "chainID", p.ChainId)
+	}
+
+	// if the top N changes, we need to update the new minimum power in top N
+	if p.Top_N != oldTopN {
+		if p.Top_N > 0 {
+			// if the chain receives a non-zero top N value, store the minimum power in the top N
+			bondedValidators, err := k.GetLastBondedValidators(ctx)
+			if err != nil {
+				return err
+			}
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, p.Top_N)
+			if err != nil {
+				return err
+			}
+			k.SetMinimumPowerInTopN(ctx, p.ChainId, minPower)
+		} else {
+			// if the chain receives a zero top N value, we delete the min power
+			k.DeleteMinimumPowerInTopN(ctx, p.ChainId)
+		}
+	}
+
 	return nil
 }
