@@ -236,7 +236,7 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 	return nil
 }
 
-// NewConsumerModificationProposal creates a new consumer modificaton proposal.
+// NewConsumerModificationProposal creates a new consumer modification proposal.
 func NewConsumerModificationProposal(title, description, chainID string,
 	topN uint32,
 	validatorsPowerCap uint32,

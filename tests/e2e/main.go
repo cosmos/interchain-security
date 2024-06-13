@@ -192,6 +192,12 @@ var stepChoices = map[string]StepChoice{
 		description: "test partial set security for an Opt-In chain that has a validator denylisted",
 		testConfig:  DefaultTestCfg,
 	},
+	"partial-set-security-modification-proposal": {
+		name:        "partial-set-security-modification-proposal",
+		steps:       stepsModifyChain(),
+		description: "test partial set security parameters can be changed through a modification proposal",
+		testConfig:  DefaultTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
@@ -280,6 +286,7 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"consumer-double-downtime", "partial-set-security-opt-in", "partial-set-security-top-n",
 			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
 			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
+			"partial-set-security-modification-proposal",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

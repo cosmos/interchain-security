@@ -404,6 +404,83 @@ func (tr Chain) submitConsumerRemovalProposal(
 	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
 }
 
+type SubmitConsumerModificationProposalAction struct {
+	Chain              ChainID
+	From               ValidatorID
+	Deposit            uint
+	ConsumerChain      ChainID
+	TopN               uint32
+	ValidatorsPowerCap uint32
+	ValidatorSetCap    uint32
+	Allowlist          []string
+	Denylist           []string
+}
+
+func (tr Chain) submitConsumerModificationProposal(
+	action SubmitConsumerModificationProposalAction,
+	verbose bool,
+) {
+	prop := client.ConsumerModificationProposalJSON{
+		Title:              "Propose the modification of the PSS parameters of a chain",
+		Summary:            "summary of a modification proposal",
+		ChainId:            string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		Deposit:            fmt.Sprint(action.Deposit) + `stake`,
+		TopN:               action.TopN,
+		ValidatorsPowerCap: action.ValidatorsPowerCap,
+		ValidatorSetCap:    action.ValidatorSetCap,
+		Allowlist:          action.Allowlist,
+		Denylist:           action.Denylist,
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	bz, err = tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER MODIFICATION PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-legacy-proposal", "consumer-modification", "/temp-proposal.json",
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+	if verbose {
+		log.Println("submitConsumerModificationProposal cmd: ", cmd.String())
+		log.Println("submitConsumerModificationProposal json: ", jsonStr)
+	}
+
+	bz, err = cmd.CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	if verbose {
+		log.Println("submitConsumerModificationProposal output: ", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 10*time.Second)
+}
+
 type SubmitEnableTransfersProposalAction struct {
 	Chain   ChainID
 	From    ValidatorID
@@ -415,7 +492,7 @@ func (tr Chain) submitEnableTransfersProposalAction(
 	action SubmitEnableTransfersProposalAction,
 	verbose bool,
 ) {
-	// gov signed addres got by checking the gov module acc address in the test container
+	// gov signed address got by checking the gov module acc address in the test container
 	// interchain-security-cdd q auth module-account gov --node tcp://7.7.9.253:26658
 	template := `
 	{
