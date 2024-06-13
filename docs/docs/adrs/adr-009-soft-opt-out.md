@@ -10,7 +10,7 @@ title: Soft Opt-Out
 
 ## Status
 
-Accepted
+Deprecated
 
 ## Context
 

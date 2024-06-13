@@ -150,14 +150,6 @@ func TestCISBeforeCCVEstablished(t *testing.T) {
 }
 
 //
-// Soft opt out tests
-//
-
-func TestSoftOptOut(t *testing.T) {
-	runCCVTestByName(t, "TestSoftOptOut")
-}
-
-//
 // Stop consumer tests
 //
 

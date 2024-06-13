@@ -463,7 +463,6 @@ func (tr TestConfig) submitConsumerModificationProposal(
 	}
 
 	bz, err = cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -606,6 +605,11 @@ func (tr *TestConfig) startConsumerChain(
 	verbose bool,
 ) {
 	fmt.Println("Starting consumer chain ", action.ConsumerChain)
+
+	// Note that Soft Opt-Out has been deprecated. Nevertheless, the parameter still exists and is expected to be set
+	// because the SDK requires that all params are set to valid values in the genesis file.
+	action.GenesisChanges = action.GenesisChanges + ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"\""
+
 	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.ConsumerChain, target)
 	consumerGenesisChanges := tr.chainConfigs[action.ConsumerChain].GenesisChanges
 	if consumerGenesisChanges != "" {
@@ -837,6 +841,10 @@ func (tr TestConfig) changeoverChain(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// Note that Soft Opt-Out has been deprecated. Nevertheless, the parameter still exists and is expected to be set
+	// because the SDK requires that all params are set to valid values in the genesis file.
+	action.GenesisChanges = action.GenesisChanges + ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"\""
 
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
 	consumerGenesisChanges := tr.chainConfigs[action.SovereignChain].GenesisChanges
@@ -2065,7 +2073,7 @@ func (tr TestConfig) invokeDoublesignSlash(
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
 		}
-		tr.waitBlocks("provi", 10, 2*time.Minute)
+		tr.waitBlocks("provi", 20, 4*time.Minute)
 	} else { // tr.useCometMock
 		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(action.Chain, action.Validator)
 

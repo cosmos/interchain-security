@@ -53,7 +53,11 @@
         "revision_height": 1
       },
       "DistributionChannel": "",
-      "TopN": 100
+      "TopN": 0,
+      "ValidatorsPowerCap": 0,
+      "ValidatorSetCap": 0,
+      "Allowlist": null,
+      "Denylist": null
     },
     "State": {
       "provi": {
@@ -124,6 +128,14 @@
     }
   },
   {
+    "ActionType": "main.OptInAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "alice"
+    },
+    "State": {}
+  },
+  {
     "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "provi",
@@ -184,7 +196,7 @@
           "Stake": 500000000
         }
       ],
-      "GenesisChanges": ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\""
+      "GenesisChanges": ""
     },
     "State": {
       "consu": {
@@ -263,7 +275,7 @@
         "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 500,
-          "bob": 20
+          "bob": 0
         },
         "StakedTokens": null,
         "Params": null,
@@ -312,7 +324,7 @@
         "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
-          "bob": 20
+          "bob": 0
         },
         "StakedTokens": null,
         "Params": null,
@@ -354,7 +366,7 @@
         "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
-          "bob": 20
+          "bob": 0
         },
         "StakedTokens": null,
         "Params": null,
@@ -406,7 +418,7 @@
         "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
-          "bob": 20
+          "bob": 0
         },
         "StakedTokens": null,
         "Params": null,

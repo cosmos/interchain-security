@@ -102,7 +102,6 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 					{Id: ValidatorID("bob"), Stake: 500000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 500000000, Allocation: 10000000000},
 				},
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("provi"): ChainState{

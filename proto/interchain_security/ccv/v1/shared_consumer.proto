@@ -62,11 +62,8 @@ message ConsumerParams {
     google.protobuf.Duration unbonding_period = 9
         [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
-    // The threshold for the percentage of validators at the bottom of the set who
-    // can opt out of running the consumer chain without being punished. For
-    // example, a value of 0.05 means that the validators in the bottom 5% of the
-    // set can opt out
-    string soft_opt_out_threshold = 10;
+    // !!! DEPRECATED !!! soft_opt_out_threshold is deprecated.
+    string soft_opt_out_threshold = 10 [deprecated = true];
 
     // Reward denoms. These are the denominations which are allowed to be sent to
     // the provider as rewards.
