@@ -608,7 +608,7 @@ func (tr *TestConfig) startConsumerChain(
 
 	// Note that Soft Opt-Out has been deprecated. Nevertheless, the parameter still exists and is expected to be set
 	// because the SDK requires that all params are set to valid values in the genesis file.
-	action.GenesisChanges = action.GenesisChanges + ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"\""
+	action.GenesisChanges = action.GenesisChanges + ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0\""
 
 	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.ConsumerChain, target)
 	consumerGenesisChanges := tr.chainConfigs[action.ConsumerChain].GenesisChanges
@@ -844,7 +844,7 @@ func (tr TestConfig) changeoverChain(
 
 	// Note that Soft Opt-Out has been deprecated. Nevertheless, the parameter still exists and is expected to be set
 	// because the SDK requires that all params are set to valid values in the genesis file.
-	action.GenesisChanges = action.GenesisChanges + ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"\""
+	action.GenesisChanges = action.GenesisChanges + ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0\""
 
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
 	consumerGenesisChanges := tr.chainConfigs[action.SovereignChain].GenesisChanges

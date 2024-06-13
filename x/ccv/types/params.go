@@ -79,9 +79,11 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		ConsumerRedistributionFraction:    consumerRedistributionFraction,
 		HistoricalEntries:                 historicalEntries,
 		UnbondingPeriod:                   consumerUnbondingPeriod,
-		RewardDenoms:                      rewardDenoms,
-		ProviderRewardDenoms:              providerRewardDenoms,
-		RetryDelayPeriod:                  retryDelayPeriod,
+		// DEPRECATED but setting here to 0 (i.e., disabled) for older versions of interchain-security
+		SoftOptOutThreshold:  "0",
+		RewardDenoms:         rewardDenoms,
+		ProviderRewardDenoms: providerRewardDenoms,
+		RetryDelayPeriod:     retryDelayPeriod,
 	}
 }
 

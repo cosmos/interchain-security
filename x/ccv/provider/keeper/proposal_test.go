@@ -876,7 +876,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			"consumer_redistribution_fraction": "0.75",
 			"historical_entries": 10000,
 			"unbonding_period": 1728000000000000,
-			"soft_opt_out_threshold": "",
+			"soft_opt_out_threshold": "0",
 			"reward_denoms": [],
 			"provider_reward_denoms": [],
 			"retry_delay_period": 3600000000000
