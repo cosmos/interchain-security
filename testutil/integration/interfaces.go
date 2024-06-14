@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	"cosmossdk.io/core/comet"
@@ -108,6 +109,9 @@ type TestStakingKeeper interface {
 	GetUnbondingDelegation(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (ubd stakingtypes.UnbondingDelegation, err error)
 	GetAllValidators(ctx context.Context) (validators []stakingtypes.Validator, err error)
 	GetValidatorSet() stakingtypes.ValidatorSet
+	GetParams(ctx context.Context) (stakingtypes.Params, error)
+	SetParams(ctx context.Context, p stakingtypes.Params) error
+	ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates []abci.ValidatorUpdate, err error)
 }
 
 type TestBankKeeper interface {
