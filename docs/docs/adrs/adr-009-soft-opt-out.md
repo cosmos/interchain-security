@@ -11,7 +11,7 @@ title: Soft Opt-Out
 ## Status
 
 Deprecated
-
+Deprecated by [Partial Set Security](adr-015-partial-set-security.md)
 ## Context
 
 Some small validators may not have the resources needed to validate all consumer chains. Therefore a need exists to allow the bottom `x%` of validators to opt-out of validating a consumer chain. Meaning downtime infractions for these validators are dropped without ever reaching the provider.
