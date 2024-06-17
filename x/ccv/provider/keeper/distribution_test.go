@@ -28,6 +28,9 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 	params.BlocksPerEpoch = 1
 	keeper.SetParams(ctx, params)
 
+	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
+	ctx = ctx.WithBlockHeight(params.NumberOfEpochsToStartReceivingRewards * params.BlocksPerEpoch)
+
 	createVal := func(power int64) tmtypes.Validator {
 		signer := tmtypes.NewMockPV()
 		val := tmtypes.NewValidator(signer.PrivKey.PubKey(), power)
@@ -287,10 +290,7 @@ func TestIsEligibleForConsumerRewards(t *testing.T) {
 
 	numberOfBlocks := params.NumberOfEpochsToStartReceivingRewards * params.BlocksPerEpoch
 
-	// if the provider's chain block height is less than `numberOfBlocks`, then irrespectively of the height of a consumer
-	// validator, the validator is eligible for rewards
-	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks-1), numberOfBlocks-1))
-
+	require.False(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks-1), 0))
 	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks), 0))
 	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 0))
 	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 1))

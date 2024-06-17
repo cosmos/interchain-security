@@ -132,16 +132,8 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 func (k Keeper) IsEligibleForConsumerRewards(ctx sdk.Context, consumerValidatorHeight int64) bool {
 	numberOfBlocksToStartReceivingRewards := k.GetNumberOfEpochsToStartReceivingRewards(ctx) * k.GetBlocksPerEpoch(ctx)
 
-	// Note that at the beginning of the chain's life (e.g., when the block height of the chain is still small), no validator
-	// could have been a consumer validator for more than `NumberOfEpochsToStartReceivingRewards` epochs and hence in this
-	// case all validators are eligible for rewards, even though they might have not been a consumer validator on the
-	// consumer chain for more than a single epoch.
-	isChainStillNew := ctx.BlockHeight() < numberOfBlocksToStartReceivingRewards
-
 	// a validator is eligible for rewards if it has been a consumer validator for `NumberOfEpochsToStartReceivingRewards` epochs
-	hasBeenConsumerValidatorForLongEnough := (ctx.BlockHeight() - consumerValidatorHeight) >= numberOfBlocksToStartReceivingRewards
-
-	return isChainStillNew || hasBeenConsumerValidatorForLongEnough
+	return (ctx.BlockHeight() - consumerValidatorHeight) >= numberOfBlocksToStartReceivingRewards
 }
 
 // AllocateTokensToConsumerValidators allocates tokens

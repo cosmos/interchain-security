@@ -44,7 +44,7 @@ const (
 
 	// DefaultNumberOfEpochsToStartReceivingRewards defines the default minimum number of epochs required by a validator to validate
 	// during so that the validator can start receiving rewards. This would mean that a validator has to be a consumer validator for at least
-	// `DefaultNumberOfEpochsToStartReceivingRewards * DefaultBlocksPerEpoch` on a consumer chain to stat receiving rewards from the chain.
+	// `DefaultNumberOfEpochsToStartReceivingRewards * DefaultBlocksPerEpoch` on a consumer chain to start receiving rewards from the chain.
 	// Note that after a validator starts receiving rewards, the validator would keep receiving rewards every time the
 	// consumer chain sends an IBC transfer over to the provider. This value only sets a constraint on when a validator
 	// can first start receiving rewards to avoid cases where a validator just opts in to receive rewards and then opts out
@@ -164,7 +164,7 @@ func (p Params) Validate() error {
 		return fmt.Errorf("blocks per epoch is invalid: %s", err)
 	}
 	if err := ccvtypes.ValidatePositiveInt64(p.NumberOfEpochsToStartReceivingRewards); err != nil {
-		return fmt.Errorf("number of epochs to start received rewards is invalid: %s", err)
+		return fmt.Errorf("number of epochs to start receiving rewards is invalid: %s", err)
 	}
 	return nil
 }

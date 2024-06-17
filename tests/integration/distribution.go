@@ -705,9 +705,14 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 
 	totalRewards := sdk.Coins{sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))}
 
+	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
+	numberOfBlocksToStartReceivingRewards :=
+		providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
+	providerCtx := s.providerCtx().WithBlockHeight(numberOfBlocksToStartReceivingRewards + s.providerCtx().BlockHeight())
+
 	// fund consumer rewards pool
 	bankKeeper.SendCoinsFromAccountToModule(
-		s.providerCtx(),
+		providerCtx,
 		s.providerChain.SenderAccount.GetAddress(),
 		providertypes.ConsumerRewardsPool,
 		totalRewards,
@@ -718,7 +723,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	for chainID := range s.consumerBundles {
 		// update consumer allocation
 		providerKeeper.SetConsumerRewardsAllocation(
-			s.providerCtx(),
+			providerCtx,
 			chainID,
 			providertypes.ConsumerRewardsAllocation{
 				Rewards: sdk.NewDecCoinsFromCoins(rewardsPerConsumer...),
@@ -738,16 +743,16 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 			},
 		)
 
-		valRewards := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		valRewards := distributionKeeper.GetValidatorOutstandingRewards(providerCtx, sdk.ValAddress(val.Address))
 		lastValOutRewards[sdk.ValAddress(val.Address).String()] = valRewards.Rewards
 	}
 
 	// store community pool balance
-	lastCommPool := distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx())
+	lastCommPool := distributionKeeper.GetFeePoolCommunityCoins(providerCtx)
 
 	// execute BeginBlock to trigger the token allocation
 	providerKeeper.BeginBlockRD(
-		s.providerCtx(),
+		providerCtx,
 		abci.RequestBeginBlock{
 			LastCommitInfo: abci.CommitInfo{
 				Votes: votes,
@@ -760,7 +765,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 
 	// compute the expected validators token allocation by subtracting the community tax
 	rewardsPerConsumerDec := sdk.NewDecCoinsFromCoins(rewardsPerConsumer...)
-	communityTax := distributionKeeper.GetCommunityTax(s.providerCtx())
+	communityTax := distributionKeeper.GetCommunityTax(providerCtx)
 	validatorsExpRewards := rewardsPerConsumerDec.
 		MulDecTruncate(math.LegacyOneDec().Sub(communityTax)).
 		// multiply by the number of consumers since all the validators opted in
@@ -770,7 +775,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	// verify the validator tokens allocation
 	// note that the validators have the same voting power to keep things simple
 	for _, val := range s.providerChain.Vals.Validators {
-		valRewards := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
+		valRewards := distributionKeeper.GetValidatorOutstandingRewards(providerCtx, sdk.ValAddress(val.Address))
 		s.Require().Equal(
 			valRewards.Rewards,
 			lastValOutRewards[sdk.ValAddress(val.Address).String()].Add(perValExpReward...),
@@ -778,7 +783,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	}
 
 	commPoolExpRewards := sdk.NewDecCoinsFromCoins(totalRewards...).Sub(validatorsExpRewards)
-	currCommPool := distributionKeeper.GetFeePoolCommunityCoins(s.providerCtx())
+	currCommPool := distributionKeeper.GetFeePoolCommunityCoins(providerCtx)
 
 	s.Require().Equal(currCommPool, (lastCommPool.Add(commPoolExpRewards...)))
 }
@@ -980,6 +985,10 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			ctx, _ := s.providerCtx().CacheContext()
+
+			// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
+			ctx = ctx.WithBlockHeight(providerKeeper.GetNumberOfEpochsToStartReceivingRewards(ctx)*providerKeeper.GetBlocksPerEpoch(ctx) +
+				ctx.BlockHeight())
 
 			// change the consumer valset
 			consuVals := providerKeeper.GetConsumerValSet(ctx, chainID)
