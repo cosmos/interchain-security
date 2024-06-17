@@ -156,6 +156,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 	// Allocate tokens by iterating over the consumer validators
 	for _, consumerVal := range k.GetConsumerValSet(ctx, chainID) {
+		// if a validator is not eligible, this means that the other eligible validators would get more rewards
 		if !k.IsEligibleForConsumerRewards(ctx, consumerVal.Height) {
 			continue
 		}
