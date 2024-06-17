@@ -293,6 +293,22 @@ jobs:
           go-version: "1.22" # The Go version to download (if necessary) and use.
       - name: E2E partial set security modification proposal
         run: go run ./tests/e2e/... --tc partial-set-security-modification-proposal
+  active-set-changes-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - uses: actions/checkout@v4
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22" # The Go version to download (if necessary) and use.
+      - name: E2E active set changes
+        run: go run ./tests/e2e/... --tc active-set-changes
 
   nightly-test-fail:
     needs:
@@ -312,6 +328,7 @@ jobs:
       - partial-set-security-validators-allowlisted-test
       - partial-set-security-validators-denylisted-test
       - partial-set-security-modification-proposal
+      - active-set-changes-test
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     steps:
