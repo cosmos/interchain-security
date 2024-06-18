@@ -1094,12 +1094,12 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	// update the consumer validators
 	consuVals := providerKeeper.GetConsumerValSet(ctx, chainID)
 	// first 2 validators were consumer validators since block height 1 and hence get rewards
-	consuVals[0].Height = 1
-	consuVals[1].Height = 1
+	consuVals[0].JoinHeight = 1
+	consuVals[1].JoinHeight = 1
 	// last 2 validators were consumer validators since block height 2 and hence do not get rewards because they
 	// have not been consumer validators for `GetNumberOfEpochsToStartReceivingRewards * GetBlocksPerEpoch` blocks
-	consuVals[2].Height = 2
-	consuVals[3].Height = 2
+	consuVals[2].JoinHeight = 2
+	consuVals[3].JoinHeight = 2
 	providerKeeper.SetConsumerValSet(ctx, chainID, consuVals)
 
 	providerKeeper.DeleteConsumerValSet(ctx, chainID)

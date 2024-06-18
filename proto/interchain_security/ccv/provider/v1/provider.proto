@@ -367,7 +367,7 @@ message ConsumerValidator {
   // If a validator becomes a consumer validator at height `H` and is continuously a consumer validator for all the upcoming
   // epochs, then the height of the validator SHOULD remain `H`. This height only resets to a different height if a validator
   // stops being a consumer validator during an epoch and later becomes again a consumer validator.
-  int64 height = 4;
+  int64 join_height = 4;
 }
 // ConsumerRewardsAllocation stores the rewards allocated by a consumer chain
 // to the consumer rewards pool. It is used to allocate the tokens to the consumer 

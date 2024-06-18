@@ -173,14 +173,14 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validat
 	if v, found := k.GetConsumerValidator(ctx, chainID, types.ProviderConsAddress{Address: consAddr}); found {
 		// if validator was already a consumer validator, then do not update the height set the first time
 		// the validator became a consumer validator
-		height = v.Height
+		height = v.JoinHeight
 	}
 
 	return types.ConsumerValidator{
 		ProviderConsAddr:  consAddr,
 		Power:             power,
 		ConsumerPublicKey: &consumerPublicKey,
-		Height:            height,
+		JoinHeight:        height,
 	}, nil
 }
 

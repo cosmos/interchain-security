@@ -41,13 +41,3 @@ func MigrateParams(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
 	}
 	paramsSubspace.Set(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, providertypes.DefaultNumberOfEpochsToStartReceivingRewards)
 }
-
-// MigrateSomething adds missing provider chain params to the param store.
-func MigrateSomething(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
-	for _, chainID := range providerKeeper.GetAllRegisteredConsumerChainIDs(ctx) {
-		for _, val := range providerKeeper.GetConsumerValSet(ctx, chainID) {
-			val.Height = ctx.BlockHeight()
-			providerKeeper.SetConsumerValidator(ctx, chainID, val)
-		}
-	}
-}

@@ -116,7 +116,7 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 		ProviderConsAddr:  valAConsAddr,
 		Power:             1,
 		ConsumerPublicKey: &valAPubKey,
-		Height:            123456789,
+		JoinHeight:        123456789,
 	}
 	providerKeeper.SetConsumerValidator(ctx, "chainID", consumerValidatorA)
 
@@ -128,12 +128,12 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 
 	// the height of consumer validator A should not be modified because A was already a consumer validator
 	cv, _ := providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
-	require.Equal(t, consumerValidatorA.Height, cv.Height, "the consumer validator's height was erroneously modified")
+	require.Equal(t, consumerValidatorA.JoinHeight, cv.JoinHeight, "the consumer validator's height was erroneously modified")
 
 	// the height of consumer validator B is set to be the same as the one of the current chain height because this
 	// consumer validator becomes a consumer validator for the first time (i.e., was not a consumer validator in the previous epoch)
 	cv, _ = providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
-	require.Equal(t, chainHeight, cv.Height, "the consumer validator's height was not correctly set")
+	require.Equal(t, chainHeight, cv.JoinHeight, "the consumer validator's height was not correctly set")
 }
 
 // TestOnRecvVSCMaturedPacket tests the OnRecvVSCMaturedPacket method of the keeper.
