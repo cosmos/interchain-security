@@ -11,6 +11,15 @@ import "interchain_security/ccv/provider/v1/provider.proto";
 
 // GenesisState defines the CCV provider chain genesis state
 message GenesisState {
+    // Reserve 3rd slot for removed unbonding_ops field
+    reserved 3;
+
+    // Reserve 4th slot for removed mature_unbonding_ops field
+    reserved 4;
+
+    // Reserve 13th slot for removed exported_vsc_send_timestamps field
+    reserved 13;
+
   // strictly positive and set to 1 (DefaultValsetUpdateID) for a new chain
   uint64 valset_update_id = 1;
   // empty for a new chain
@@ -19,26 +28,26 @@ message GenesisState {
     (gogoproto.moretags) = "yaml:\"consumer_states\""
   ];
   // empty for a new chain
-  repeated ValsetUpdateIdToHeight valset_update_id_to_height = 3
+  repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  repeated ConsumerAdditionProposal consumer_addition_proposals = 4
+  repeated ConsumerAdditionProposal consumer_addition_proposals = 6
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  repeated ConsumerRemovalProposal consumer_removal_proposals = 5
+  repeated ConsumerRemovalProposal consumer_removal_proposals = 7
       [ (gogoproto.nullable) = false ];
-  Params params = 6 [ (gogoproto.nullable) = false ];
+  Params params = 8 [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 7
-      [ (gogoproto.nullable) = false ];
-  // empty for a new chain
-  repeated ValidatorByConsumerAddr validators_by_consumer_addr = 8
+  repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 9
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  repeated ConsumerAddrsToPrune consumer_addrs_to_prune = 9
+  repeated ValidatorByConsumerAddr validators_by_consumer_addr = 10
+      [ (gogoproto.nullable) = false ];
+  // empty for a new chain
+  repeated ConsumerAddrsToPrune consumer_addrs_to_prune = 11
       [ (gogoproto.nullable) = false ];
 
-  repeated interchain_security.ccv.provider.v1.InitTimeoutTimestamp init_timeout_timestamps = 10
+  repeated interchain_security.ccv.provider.v1.InitTimeoutTimestamp init_timeout_timestamps = 12
       [ (gogoproto.nullable) = false ];
 }
 
@@ -46,6 +55,9 @@ message GenesisState {
 //
 // Note this type is only used internally to the provider CCV module.
 message ConsumerState {
+    // Reserve 8th slot for removed unbonding_ops_index field
+    reserved 8;
+
   // ChainID defines the chain ID for the consumer chain
   string chain_id = 1;
   // ChannelID defines the IBC channel ID for the consumer chain
