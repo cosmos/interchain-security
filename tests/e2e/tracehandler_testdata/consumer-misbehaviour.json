@@ -274,8 +274,7 @@
         "ValBalances": null,
         "ProposedConsumerChains": null,
         "ValPowers": {
-          "alice": 500,
-          "bob": 0
+          "alice": 500
         },
         "StakedTokens": null,
         "Params": null,
@@ -323,8 +322,7 @@
         "ValBalances": null,
         "ProposedConsumerChains": null,
         "ValPowers": {
-          "alice": 511,
-          "bob": 0
+          "alice": 511
         },
         "StakedTokens": null,
         "Params": null,
