@@ -7,6 +7,7 @@ title: Soft Opt-Out
 ## Changelog
 
 * 6/13/23: Initial draft of ADR. Feature already implemented and in production.
+* 6/19/24: Change status to deprecated
 
 ## Status
 
