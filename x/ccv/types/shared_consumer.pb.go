@@ -65,7 +65,7 @@ type ConsumerParams struct {
 	// Unbonding period for the consumer,
 	// which should be smaller than that of the provider in general.
 	UnbondingPeriod time.Duration `protobuf:"bytes,9,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
-	// !!! DEPRECATED !!! soft_opt_out_threshold is deprecated.
+	// !!! DEPRECATED !!! soft_opt_out_threshold is deprecated. see docs/docs/adrs/adr-015-partial-set-security.md
 	SoftOptOutThreshold string `protobuf:"bytes,10,opt,name=soft_opt_out_threshold,json=softOptOutThreshold,proto3" json:"soft_opt_out_threshold,omitempty"` // Deprecated: Do not use.
 	// Reward denoms. These are the denominations which are allowed to be sent to
 	// the provider as rewards.

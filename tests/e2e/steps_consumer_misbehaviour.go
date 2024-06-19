@@ -111,7 +111,6 @@ func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 		},
 		{
 			// start a consumer chain using a single big validator knowing that it holds more than 2/3 of the voting power
-			// and that the other validators hold less than 5% so they won't get jailed thanks to the sof opt-out mechanism.
 			Action: StartConsumerChainAction{
 				ConsumerChain: ChainID(consumerName),
 				ProviderChain: ChainID("provi"),
@@ -172,7 +171,6 @@ func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 500,
-						ValidatorID("bob"):   0,
 					},
 				},
 			},
@@ -188,7 +186,6 @@ func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   0,
 					},
 				},
 			},
