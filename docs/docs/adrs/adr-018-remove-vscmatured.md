@@ -13,7 +13,7 @@ Proposed
 
 ## Context
 
-The consumer module on the consumer chains is just a representation of the Hub’s staking module, i.e., it provides an _asynchronous_ view of the voting powers and indirectly of the locked collateral. 
+The consumer module on the consumer chains is a representation of the Hub’s staking module, i.e., it provides an _asynchronous_ view of the voting powers and indirectly of the locked collateral. 
 The key word here is _asynchronous_, which means that (in theory) there is no bound on the lag between the Hub’s view of stake and the consumer’s view of stake. 
 The reasons for this asynchrony are relaying delays and chain liveness (e.g., a consumer could be down for a long period of time without affecting the liveness of the staking module on the Hub). 
 
