@@ -100,7 +100,8 @@ Remove the `oldest_unconfirmed_vsc` query.
 
 #### Parameters
 
-Deprecate the consumer `UnbondingPeriod` (see `ConsumerParams`). 
+Given that currently relayers use the consumer `UnbondingPeriod` (see `ConsumerParams`), this param cannot be deprecated. 
+The `UnbondingTime` method from the staking interface will continue to be used to retrieve the consumer's `UnbondingPeriod`.
 
 #### State
 
@@ -115,10 +116,6 @@ Note that these removals require state migration.
 To stop the consumer chains from sending `VSCMaturedPackets`, it is sufficient to not sore the maturity time of `VSCPacket`s when receiving them, i.e., do not call `SetPacketMaturityTime` from the `OnRecvVSCPacket()` method. 
 Note that eventually, no additional `VSCMaturedPackets` will be added to the sending queue as `QueueVSCMaturedPackets` iterates over elapsed maturity times. 
 In addition, to cleanup the code, the `QueueVSCMaturedPackets` must be removed. 
-
-TODO:
-
-- adapt `UnbondingTime` and how relayers will interact with the consumer chain
 
 #### Messages
 
