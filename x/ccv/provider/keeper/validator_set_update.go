@@ -10,6 +10,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // SetConsumerValidator sets provided consumer `validator` on the consumer chain with `chainID`
@@ -193,4 +194,10 @@ func (k Keeper) FilterValidators(
 	}
 
 	return nextValidators
+}
+
+// GetLastBondedValidators iterates the last validator powers in the staking module
+// and returns the first MaxValidators many validators with the largest powers.
+func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx))
 }

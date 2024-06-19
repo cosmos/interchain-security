@@ -154,7 +154,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	s.Require().Len(props, 1, "unexpected len consumer addition proposals in AddConsumer")
 
 	// opt-in all validators
-	lastVals, err := providerApp.GetTestStakingKeeper().GetLastValidators(providerChain.GetContext())
+	lastVals, err := providerApp.GetProviderKeeper().GetLastBondedValidators(providerChain.GetContext())
 	s.Require().NoError(err)
 
 	for _, v := range lastVals {
