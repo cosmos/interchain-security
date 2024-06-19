@@ -42,7 +42,11 @@ To simplify the upgrading process, removing `VSCMaturedPackets` can be done in t
 
 As a result, once the provider chain runs R1, the consumers can start upgrading to R2.
 
-### Provider Changes
+### Provider Changes (R1)
+
+#### Parameters
+
+Deprecate the `VscTimeoutPeriod` parameter. 
 
 #### State
 
@@ -71,7 +75,7 @@ The first two are no longer needed, while the third (key assignment pruning) nee
 - Stop setting VSC send timestamps when sending `VSCPackets`.
 - Stop removing the VSC send timestamps when receiving `VSCMaturedPackets`.
 - Remove the logic from `EndBlockCCR` that checks if the first VSC send timestamp in iterator plus `VscTimeoutPeriod` exceeds the current block time.
-- Remove the `VscTimeoutPeriod` parameter. 
+- Deprecate the `VscTimeoutPeriod` parameter. 
 
 **Redesign key assignment pruning.** The reason for keeping "old" consumer addresses in the previous design was to enable slashing / jailing validators that misbehave on consumer chains, 
 i.e., the slashing logic uses the `GetProviderAddrFromConsumerAddr` method that accesses the mapping from validator addresses on consumer chains to validator addresses on the provider chain (`ValidatorsByConsumerAddrBytePrefix`).
@@ -86,15 +90,40 @@ This requires the following changes:
 
 Note that the existing "old" consumer addresses stored under the `ConsumerAddrsToPruneBytePrefix` need to be pruned eventually to avoid slashing validator for "old" misbehaviors. 
 As a result, `PruneKeyAssignments()` needs to be called for `UnbondingPeriod` (i.e., three weeks). 
-Once the `UnbondingPeriod` elapses, the consumers can be upgraded to stop sending `VSCMaturedPackets` and the provider can be upgraded to stop calling `PruneKeyAssignments()` (and all the data under `ConsumerAddrsToPruneBytePrefix` can be removed).
+Once the `UnbondingPeriod` elapses, the consumers can be upgraded to stop sending `VSCMaturedPackets` (see [R2](#consumer-changes-r2) below) and the provider can be upgraded to stop calling `PruneKeyAssignments()` (and all the data under `ConsumerAddrsToPruneBytePrefix` can be removed).
 
 #### Queries
 
 Remove the `oldest_unconfirmed_vsc` query. 
 
-### Consumer Changes
+### Consumer Changes (R2)
 
-TBA
+#### Parameters
+
+Deprecate the consumer `UnbondingPeriod` (see `ConsumerParams`). 
+
+#### State
+
+Remove the following key prefixes from the state:
+
+- `PacketMaturityTimeBytePrefix` -- the byte prefix that will store maturity time for each received VSC packet
+
+Note that these removals require state migration. 
+
+#### State Transitions
+
+To stop the consumer chains from sending `VSCMaturedPackets`, it is sufficient to not sore the maturity time of `VSCPacket`s when receiving them, i.e., do not call `SetPacketMaturityTime` from the `OnRecvVSCPacket()` method. 
+Note that eventually, no additional `VSCMaturedPackets` will be added to the sending queue as `QueueVSCMaturedPackets` iterates over elapsed maturity times. 
+In addition, to cleanup the code, the `QueueVSCMaturedPackets` must be removed. 
+
+TODO:
+
+- adapt `UnbondingTime` and how relayers will interact with the consumer chain
+
+#### Messages
+
+`VSCMaturedPacketData` is deprecated. 
+Note that this is a wire-breaking change -- older consumer versions will send `VSCMaturedPackets` and older provider versions will expect to receive `VSCMaturedPackets`. 
 
 ## Consequences
 
