@@ -243,6 +243,9 @@ message Params {
 
   // The number of blocks that comprise an epoch.
   int64 blocks_per_epoch = 10;
+
+  // The number of epochs a validator has to validate a consumer chain in order to start receiving rewards from that chain.
+  int64 number_of_epochs_to_start_receiving_rewards = 11;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators
@@ -360,6 +363,11 @@ message ConsumerValidator {
   int64 power = 2;
   // public key the validator uses on the consumer chain during this epoch
   tendermint.crypto.PublicKey consumer_public_key = 3;
+  // height the validator had when it FIRST became a consumer validator
+  // If a validator becomes a consumer validator at height `H` and is continuously a consumer validator for all the upcoming
+  // epochs, then the height of the validator SHOULD remain `H`. This height only resets to a different height if a validator
+  // stops being a consumer validator during an epoch and later becomes again a consumer validator.
+  int64 join_height = 4;
 }
 // ConsumerRewardsAllocation stores the rewards allocated by a consumer chain
 // to the consumer rewards pool. It is used to allocate the tokens to the consumer 
