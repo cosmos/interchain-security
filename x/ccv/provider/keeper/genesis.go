@@ -72,10 +72,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetValidatorByConsumerAddr(ctx, item.ChainId, consumerAddr, providerAddr)
 	}
 
-	for _, item := range genState.ConsumerAddrsToPrune {
+	for _, item := range genState.ConsumerAddrsToPruneV2 {
 		for _, addr := range item.ConsumerAddrs.Addresses {
 			consumerAddr := types.NewConsumerConsAddress(addr)
-			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, consumerAddr)
+			k.AppendConsumerAddrsToPruneV2(ctx, item.ChainId, item.PruneAfterTs, consumerAddr)
 		}
 	}
 
@@ -127,9 +127,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
-	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
+	consumerAddrsToPrune := []types.ConsumerAddrsToPruneV2{}
 	for _, chainID := range registeredChainIDs {
-		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chainID)...)
+		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPruneV2(ctx, chainID)...)
 	}
 
 	params := k.GetParams(ctx)
