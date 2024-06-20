@@ -62,7 +62,7 @@ Note that these removals require state migration.
 #### State Transitions
 
 Removing `VSCMaturedPackets` affects three ICS sub-protocols (see [HandleVSCMaturedPacket](https://github.com/cosmos/interchain-security/blob/v4.2.0/x/ccv/provider/keeper/relay.go#L51)): unbonding operations pausing, `VSCPackets` timeout, and key assignment pruning. 
-The first two are no longer needed, while the third (key assignment pruning) needs to be redesign to not depend on `VSCMaturedPackets`. 
+The first two are no longer needed, while the third (key assignment pruning) needs to be redesigned to not depend on `VSCMaturedPackets`. 
 
 **Removing unbonding operations pausing:** 
 
