@@ -233,7 +233,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
-	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "summary", proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "summary", proposer, false)
 	if err != nil {
 		return err
 	}

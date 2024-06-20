@@ -108,6 +108,7 @@ func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
 		"",
 		"",
 		sdk.AccAddress(acct.SDKValOpAddress()),
+		false,
 	)
 	require.NoError(t, err)
 
@@ -202,6 +203,7 @@ func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
 					"",
 					"",
 					sdk.AccAddress(acct.SDKValOpAddress()),
+					false,
 				)
 				require.NoError(t, err)
 			}

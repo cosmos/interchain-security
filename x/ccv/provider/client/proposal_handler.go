@@ -107,7 +107,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary, false)
 			if err != nil {
 				return err
 			}
@@ -163,7 +163,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary, false)
 			if err != nil {
 				return err
 			}
@@ -227,7 +227,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary, false)
 			if err != nil {
 				return err
 			}
@@ -284,7 +284,7 @@ func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary, false)
 			if err != nil {
 				return err
 			}
