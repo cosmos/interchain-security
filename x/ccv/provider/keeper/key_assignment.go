@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -321,6 +322,103 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (con
 func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerAddrsToPruneKey(chainID, vscID))
+}
+
+// AppendConsumerAddrsToPruneV2 appends a consumer validator address to the list of consumer addresses
+// that can be pruned once the block time is larger than pruneAfterTs.
+//
+// The following invariant needs to hold:
+// For each consumer address cAddr in ValidatorByConsumerAddr,
+//   - either there exists a provider address pAddr in ValidatorConsumerPubKey,
+//     s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
+//   - or there exists a timestamp in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(timestamp)
+func (k Keeper) AppendConsumerAddrsToPruneV2(
+	ctx sdk.Context,
+	chainID string,
+	pruneAfterTs time.Time,
+	consumerAddr types.ConsumerConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerAddrsToPruneV2Key(chainID, pruneAfterTs))
+	var consumerAddrsToPrune types.AddressList
+	if bz != nil {
+		err := consumerAddrsToPrune.Unmarshal(bz)
+		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the data bytes are assumed to be correctly serialized by previous calls to this method.
+			panic(err)
+		}
+	}
+	consumerAddrsToPrune.Addresses = append(consumerAddrsToPrune.Addresses, consumerAddr.ToSdkConsAddr())
+	bz, err := consumerAddrsToPrune.Marshal()
+	if err != nil {
+		// An error here would indicate something is very wrong,
+		// consumerAddrsToPrune is instantiated in this method and should be able to be marshaled.
+		panic(err)
+	}
+	store.Set(types.ConsumerAddrsToPruneV2Key(chainID, pruneAfterTs), bz)
+}
+
+// GetConsumerAddrsToPruneV2 returns the list of consumer addresses
+// that can be pruned once the block time is larger than pruneAfterTs.
+func (k Keeper) GetConsumerAddrsToPruneV2(
+	ctx sdk.Context,
+	chainID string,
+	pruneAfterTs time.Time,
+) (consumerAddrsToPrune types.AddressList) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerAddrsToPruneV2Key(chainID, pruneAfterTs))
+	if bz == nil {
+		return
+	}
+	err := consumerAddrsToPrune.Unmarshal(bz)
+	if err != nil {
+		// An error here would indicate something is very wrong,
+		// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPruneV2.
+		panic(fmt.Sprintf("failed to unmarshal consumer addresses to prune: %v", err))
+	}
+	return
+}
+
+// GetAllConsumerAddrsToPruneV2 gets all consumer addresses that can be eventually pruned for a given chainID.
+//
+// Note that the list of all consumer addresses is stored under keys with the following format:
+// ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | timestamp
+// Thus, the returned array is in ascending order of timestamps.
+func (k Keeper) GetAllConsumerAddrsToPruneV2(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPruneV2) {
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneV2BytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		_, pruneAfterTs, err := types.ParseChainIdAndTsKey(types.ConsumerAddrsToPruneV2BytePrefix, iterator.Key())
+		if err != nil {
+			// An error here would indicate something is very wrong,
+			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPruneV2.
+			panic(err)
+		}
+		var addrs types.AddressList
+		err = addrs.Unmarshal(iterator.Value())
+		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPruneV2.
+			panic(err)
+		}
+
+		consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPruneV2{
+			PruneAfterTs:  pruneAfterTs,
+			ConsumerAddrs: &addrs,
+			ChainId:       chainID,
+		})
+	}
+
+	return consumerAddrsToPrune
+}
+
+// DeleteConsumerAddrsToPruneV2 deletes the list of consumer addresses mapped to a timestamp
+func (k Keeper) DeleteConsumerAddrsToPruneV2(ctx sdk.Context, chainID string, pruneAfterTs time.Time) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerAddrsToPruneV2Key(chainID, pruneAfterTs))
 }
 
 // AssignConsumerKey assigns the consumerKey to the validator with providerAddr

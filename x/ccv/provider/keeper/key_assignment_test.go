@@ -270,6 +270,90 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 	require.Equal(t, expectedGetAllOrder, result)
 }
 
+func TestConsumerAddrsToPruneV2CRUD(t *testing.T) {
+	chainID := consumer
+	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr1"))
+
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	ts := ctx.BlockTime()
+
+	addrsToPrune := keeper.GetConsumerAddrsToPruneV2(ctx, chainID, ts).Addresses
+	require.Empty(t, addrsToPrune)
+
+	keeper.AppendConsumerAddrsToPruneV2(ctx, chainID, ts, consumerAddr)
+
+	addrsToPrune = keeper.GetConsumerAddrsToPruneV2(ctx, chainID, ts).Addresses
+	require.NotEmpty(t, addrsToPrune, "addresses to prune is empty")
+	require.Len(t, addrsToPrune, 1, "addresses to prune is not len 1")
+	require.Equal(t, addrsToPrune[0], consumerAddr.ToSdkConsAddr().Bytes())
+
+	keeper.DeleteConsumerAddrsToPruneV2(ctx, chainID, ts)
+	addrsToPrune = keeper.GetConsumerAddrsToPruneV2(ctx, chainID, ts).Addresses
+	require.Empty(t, addrsToPrune, "addresses to prune was returned")
+}
+
+func TestGetAllConsumerAddrsToPruneV2(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	seed := time.Now().UnixNano()
+	rng := rand.New(rand.NewSource(seed))
+
+	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
+	numAssignments := 10
+	testAssignments := []types.ConsumerAddrsToPruneV2{}
+	for i := 0; i < numAssignments; i++ {
+		consumerAddresses := types.AddressList{}
+		for j := 0; j < 2*(i+1); j++ {
+			addr := cryptotestutil.NewCryptoIdentityFromIntSeed(i * j).SDKValConsAddress()
+			consumerAddresses.Addresses = append(consumerAddresses.Addresses, addr)
+		}
+		testAssignments = append(testAssignments,
+			types.ConsumerAddrsToPruneV2{
+				ChainId:       chainIDs[rng.Intn(len(chainIDs))],
+				PruneAfterTs:  time.Now().UTC(),
+				ConsumerAddrs: &consumerAddresses,
+			},
+		)
+	}
+	// select a chainID with more than two assignments
+	var chainID string
+	for i := range chainIDs {
+		chainID = chainIDs[i]
+		count := 0
+		for _, assignment := range testAssignments {
+			if assignment.ChainId == chainID {
+				count++
+			}
+		}
+		if count > 2 {
+			break
+		}
+	}
+	expectedGetAllOrder := []types.ConsumerAddrsToPruneV2{}
+	for _, assignment := range testAssignments {
+		if assignment.ChainId == chainID {
+			expectedGetAllOrder = append(expectedGetAllOrder, assignment)
+		}
+	}
+	// sorting by ConsumerAddrsToPrune.PruneAfterTs
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].PruneAfterTs.Before(expectedGetAllOrder[j].PruneAfterTs)
+	})
+
+	for _, assignment := range testAssignments {
+		for _, addr := range assignment.ConsumerAddrs.Addresses {
+			consumerAddr := types.NewConsumerConsAddress(addr)
+			pk.AppendConsumerAddrsToPruneV2(ctx, assignment.ChainId, assignment.PruneAfterTs, consumerAddr)
+		}
+	}
+
+	result := pk.GetAllConsumerAddrsToPruneV2(ctx, chainID)
+	require.Equal(t, expectedGetAllOrder, result)
+}
+
 // checkCorrectPruningProperty checks that the pruning property is correct for a given
 // consumer chain. See AppendConsumerAddrsToPrune for a formulation of the property.
 func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chainID string) bool {

@@ -135,6 +135,7 @@ const (
 
 	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
 	// to consumer validators addresses needed for pruning
+	// TODO: deprecate once all consumer addresses stored under this prefix are pruned
 	ConsumerAddrsToPruneBytePrefix
 
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
@@ -196,6 +197,12 @@ const (
 	// MinimumPowerInTopNBytePrefix is the byte prefix for storing the
 	// minimum power required to be in the top N per consumer chain.
 	MinimumPowerInTopNBytePrefix
+
+	// ConsumerAddrsToPruneV2BytePrefix is the byte prefix that will store
+	// consumer validators addresses that need to be pruned. These are stored as a
+	// ts -> (consumer_address1, consumer_address2, ...) mapping, where ts is the
+	// timestamp after which the consumer validators addresses can be pruned.
+	ConsumerAddrsToPruneV2BytePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -396,6 +403,14 @@ func ConsumerRewardDenomsKey(denom string) []byte {
 // of a valid consumer equivocation evidence for a given consumer chain ID
 func EquivocationEvidenceMinHeightKey(consumerChainID string) []byte {
 	return append([]byte{EquivocationEvidenceMinHeightBytePrefix}, []byte(consumerChainID)...)
+}
+
+// ConsumerAddrsToPruneV2Key returns the key under which the consumer validators
+// addresses that need to be pruned are stored. These are stored as a
+// ts -> (consumer_address1, consumer_address2, ...) mapping, where ts is the
+// timestamp after which the consumer validators addresses can be pruned.
+func ConsumerAddrsToPruneV2Key(chainID string, pruneAfterTs time.Time) []byte {
+	return ChainIdAndTsKey(ConsumerAddrsToPruneV2BytePrefix, chainID, pruneAfterTs)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
