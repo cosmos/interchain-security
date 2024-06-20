@@ -211,7 +211,7 @@ func stepsDowntime(consumerName string) []Step {
 	}
 }
 
-// stepsDowstepsDoubleDowntime time tests that a validator can get jailed twice
+// stepsDoubleDowntime time tests that a validator can get jailed twice
 // on a consumer.
 // These are the steps:
 // - a validator is down on a consumer
