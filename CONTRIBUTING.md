@@ -179,7 +179,7 @@ Additionally, **each PR should only address a single issue**.
 
 ### Pull Request Templates
 
-There are three PR templates. The [default template](./.github/PULL_REQUEST_TEMPLATE.md) contains links to the three templates. Please go the the `Preview` tab and select the appropriate sub-template:
+There are three PR templates. The [default template](./.github/PULL_REQUEST_TEMPLATE.md) contains links to the three templates. Please go the `Preview` tab and select the appropriate sub-template:
 
 - The [production template](./.github/PULL_REQUEST_TEMPLATE/production.md) is for types `fix`, `feat`, and `refactor`. 
 - The [docs template](./.github/PULL_REQUEST_TEMPLATE/docs.md) is for documentation changes.

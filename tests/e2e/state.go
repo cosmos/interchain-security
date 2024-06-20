@@ -915,7 +915,7 @@ func (tc TestConfig) getTrustedHeight(
 
 	var trustedHeight gjson.Result
 	// iterate on the relayer's response
-	// and parse the the command "result"
+	// and parse the command "result"
 	for scanner.Scan() {
 		out := scanner.Text()
 		if len(gjson.Get(out, "result").Array()) > 0 {
