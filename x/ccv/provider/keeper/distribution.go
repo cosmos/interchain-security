@@ -93,7 +93,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
 			rewardsToSend, rewardsChange := alloc.Rewards.TruncateDecimal()
-
 			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsToSend, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 			if err != nil {
 				k.Logger(ctx).Error(
@@ -103,13 +102,16 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 				)
 			}
 
+			// set the consumer allocation to the remaining reward decimals
 			alloc.Rewards = rewardsChange
-			// update consumer allocation with subtracted rewards
 			k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
+
 			return
 		}
 
-		// calculate the reward allocations
+		// Consumer rewards are distributed between the validators and the community pool.
+		// The decimals resulting from the distribution are expected to remain in the consumer reward allocations.
+
 		communityTax, err := k.distributionKeeper.GetCommunityTax(ctx)
 		if err != nil {
 			k.Logger(ctx).Error(
@@ -125,10 +127,10 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
 		feeMultiplier := consumerRewards.MulDecTruncate(voteMultiplier)
 
-		// compute remaining for community pool
+		// compute remaining rewards for the community pool
 		remaining := consumerRewards.Sub(feeMultiplier)
 
-		// send validators' rewards to distribution module account
+		// transfer validators rewards to distribution module account
 		feeMultiplierTrunc, feeMultiplierChange := feeMultiplier.TruncateDecimal()
 		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, feeMultiplierTrunc)
 		if err != nil {
@@ -147,7 +149,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			sdk.NewDecCoinsFromCoins(feeMultiplierTrunc...),
 		)
 
-		// allocate remaining to community funding
+		// allocate remaining rewards to the community pool
 		remainingCoins, remainingChanges := remaining.TruncateDecimal()
 		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingCoins, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 		if err != nil {
@@ -159,7 +161,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			continue
 		}
 
-		// set consumer allocations to remaining decimals
+		// set consumer allocations to the remaining rewards decimals
 		alloc.Rewards = feeMultiplierChange.Add(remainingChanges...)
 		k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
 	}
@@ -236,39 +238,6 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	}
 
 	return allocated
-}
-
-// TransferConsumerRewardsToDistributionModule transfers the rewards allocation of the given consumer chain
-// from the consumer rewards pool to the distribution module
-func (k Keeper) TransferConsumerRewardsToDistributionModule(
-	ctx sdk.Context,
-	chainID string,
-) (sdk.Coins, error) {
-	// Get coins of the consumer rewards allocation
-	allocation := k.GetConsumerRewardsAllocation(ctx, chainID)
-
-	if allocation.Rewards.IsZero() {
-		return sdk.Coins{}, nil
-	}
-
-	// Truncate coin rewards
-	rewardsToSend, remRewards := allocation.Rewards.TruncateDecimal()
-
-	// NOTE the consumer rewards allocation isn't a module account, however its coins
-	// are held in the consumer reward pool module account. Thus the consumer
-	// rewards allocation must be reduced separately from the SendCoinsFromModuleToAccount call.
-
-	// Update consumer rewards allocation with the remaining decimal coins
-	allocation.Rewards = remRewards
-
-	// Send coins to distribution module account
-	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, rewardsToSend)
-	if err != nil {
-		return sdk.Coins{}, err
-	}
-
-	k.SetConsumerRewardsAllocation(ctx, chainID, allocation)
-	return rewardsToSend, nil
 }
 
 // consumer reward pools getter and setter
