@@ -197,13 +197,8 @@ func (am AppModule) OnRecvPacket(
 		var err error
 		switch consumerPacket.Type {
 		case ccv.VscMaturedPacket:
-			// handle VSCMaturedPacket
-			data := *consumerPacket.GetVscMaturedPacketData()
-			err = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, data)
-			if err == nil {
-				logger.Info("successfully handled VSCMaturedPacket", "sequence", packet.Sequence)
-				eventAttributes = append(eventAttributes, sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))))
-			}
+			// ignore VSCMaturedPacket
+			err = nil
 		case ccv.SlashPacket:
 			// handle SlashPacket
 			var ackResult ccv.PacketAckResult
