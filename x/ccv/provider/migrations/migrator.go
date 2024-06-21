@@ -58,8 +58,7 @@ func (m Migrator) Migrate4to5(ctx sdktypes.Context) error {
 // computing and storing the minimal power in the top N for all registered consumer chains.
 func (m Migrator) Migrate5to6(ctx sdktypes.Context) error {
 	v6.MigrateParams(ctx, m.paramSpace)
-	// TODO: @Sainoe uncomment after #1952 is backported
-	// v6.MigrateMinPowerInTopN(ctx, m.providerKeeper)
+	v6.MigrateMinPowerInTopN(ctx, m.providerKeeper)
 	return nil
 }
 

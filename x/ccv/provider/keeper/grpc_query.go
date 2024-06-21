@@ -66,20 +66,15 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, 
 	}
 
 	topN, found := k.GetTopN(ctx, chainID)
+	if !found {
+		k.Logger(ctx).Error("failed to get top N, treating as 0", "chain", chainID)
+		topN = 0
+	}
 
-	// Get MinPowerInTop_N
-	var minPowerInTopN int64
-	if found && topN > 0 {
-		bondedValidators, err := k.GetLastBondedValidators(ctx)
-		if err != nil {
-			return types.Chain{}, err
-		}
-		res, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
-		if err != nil {
-			return types.Chain{}, fmt.Errorf("failed to compute min power to opt in for chain (%s): %w", chainID, err)
-		}
-		minPowerInTopN = res
-	} else {
+	// Get the minimal power in the top N for the consumer chain
+	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, chainID)
+	if !found {
+		k.Logger(ctx).Error("failed to get minimum power in top N, treating as -1", "chain", chainID)
 		minPowerInTopN = -1
 	}
 
@@ -395,11 +390,11 @@ func (k Keeper) hasToValidate(
 	}
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, topN)
-		if err == nil {
+		minPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
+		if found {
 			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
 		} else {
-			k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+			k.Logger(ctx).Error("did not find min power in top N for chain", "chain", chainID)
 		}
 	}
 

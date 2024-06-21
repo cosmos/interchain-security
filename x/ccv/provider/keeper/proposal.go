@@ -177,6 +177,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
+	k.DeleteMinimumPowerInTopN(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
@@ -282,16 +283,15 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 	}
 
-	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+	if prop.Top_N > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerToOptIn(ctx, bondedValidators, prop.Top_N)
-		if err == nil {
-			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
-		} else {
+		minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, prop.Top_N)
+		if err != nil {
 			return gen, nil, err
 		}
+		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 	}
-
 	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
