@@ -76,29 +76,25 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 
 	// Iterate over all registered consumer chains
 	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
-		// transfer the consumer rewards to the distribution module account
-		// note that the rewards transferred are only consumer whitelisted denoms
-		rewardsCollected, err := k.TransferConsumerRewardsToDistributionModule(ctx, consumerChainID)
-		if err != nil {
-			k.Logger(ctx).Error(
-				"fail to transfer rewards to distribution module for chain %s: %s",
-				consumerChainID,
-				err,
-			)
-			continue
-		}
 
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
 		// of non-whitelisted denominations.
-		if rewardsCollected.IsZero() {
+		alloc := k.GetConsumerRewardsAllocation(ctx, consumerChainID)
+		if alloc.Rewards.IsZero() {
 			continue
 		}
+
+		// if rewardsCollected.IsZero() {
+		// 	continue
+		// }
 
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
-			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsCollected, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+			rewardsToSend, rewardsChange := alloc.Rewards.TruncateDecimal()
+
+			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsToSend, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 			if err != nil {
 				k.Logger(ctx).Error(
 					"fail to allocate rewards from consumer chain %s to community pool: %s",
@@ -106,12 +102,14 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 					err,
 				)
 			}
+
+			alloc.Rewards = rewardsChange
+			// update consumer allocation with subtracted rewards
+			k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
 			return
 		}
 
 		// calculate the reward allocations
-		rewardsCollectedDec := sdk.NewDecCoinsFromCoins(rewardsCollected...)
-		remaining := rewardsCollectedDec
 		communityTax, err := k.distributionKeeper.GetCommunityTax(ctx)
 		if err != nil {
 			k.Logger(ctx).Error(
@@ -121,19 +119,36 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			)
 			continue
 		}
+
+		// compute rewards for validators
+		consumerRewards := alloc.Rewards
 		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
-		feeMultiplier := rewardsCollectedDec.MulDecTruncate(voteMultiplier)
+		feeMultiplier := consumerRewards.MulDecTruncate(voteMultiplier)
+
+		// compute remaining for community pool
+		remaining := consumerRewards.Sub(feeMultiplier)
+
+		// send validators' rewards to distribution module account
+		feeMultiplierTrunc, feeMultiplierChange := feeMultiplier.TruncateDecimal()
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, feeMultiplierTrunc)
+		if err != nil {
+			k.Logger(ctx).Error(
+				"cannot send rewards to distribution module account %s: %s",
+				consumerChainID,
+				err,
+			)
+			continue
+		}
 
 		// allocate tokens to consumer validators
-		feeAllocated := k.AllocateTokensToConsumerValidators(
+		k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumerChainID,
-			feeMultiplier,
+			sdk.NewDecCoinsFromCoins(feeMultiplierTrunc...),
 		)
-		remaining = remaining.Sub(feeAllocated)
 
-		// allocate community funding
-		remainingCoins, _ := remaining.TruncateDecimal()
+		// allocate remaining to community funding
+		remainingCoins, remainingChanges := remaining.TruncateDecimal()
 		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingCoins, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 		if err != nil {
 			k.Logger(ctx).Error(
@@ -143,7 +158,20 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			)
 			continue
 		}
+
+		// set consumer allocations to remaining decimals
+		alloc.Rewards = feeMultiplierChange.Add(remainingChanges...)
+		k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
 	}
+}
+
+// IsEligibleForConsumerRewards returns `true` if the validator with `consumerValidatorHeight` has been a consumer
+// validator for a long period of time and hence is eligible to receive rewards, and false otherwise
+func (k Keeper) IsEligibleForConsumerRewards(ctx sdk.Context, consumerValidatorHeight int64) bool {
+	numberOfBlocksToStartReceivingRewards := k.GetNumberOfEpochsToStartReceivingRewards(ctx) * k.GetBlocksPerEpoch(ctx)
+
+	// a validator is eligible for rewards if it has been a consumer validator for `NumberOfEpochsToStartReceivingRewards` epochs
+	return (ctx.BlockHeight() - consumerValidatorHeight) >= numberOfBlocksToStartReceivingRewards
 }
 
 // AllocateTokensToConsumerValidators allocates tokens
@@ -166,6 +194,11 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 	// Allocate tokens by iterating over the consumer validators
 	for _, consumerVal := range k.GetConsumerValSet(ctx, chainID) {
+		// if a validator is not eligible, this means that the other eligible validators would get more rewards
+		if !k.IsEligibleForConsumerRewards(ctx, consumerVal.JoinHeight) {
+			continue
+		}
+
 		consAddr := sdk.ConsAddress(consumerVal.ProviderConsAddr)
 
 		// get the validator tokens fraction using its voting power
@@ -269,6 +302,12 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
 	// sum the consumer validators set voting powers
 	for _, v := range k.GetConsumerValSet(ctx, chainID) {
+
+		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
+		if !k.IsEligibleForConsumerRewards(ctx, v.JoinHeight) {
+			continue
+		}
+
 		totalPower += v.Power
 	}
 

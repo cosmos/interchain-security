@@ -11,6 +11,7 @@ import (
 	v4 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v4"
 	v5 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v5"
 	v6 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v6"
+	v7 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v7"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -53,8 +54,17 @@ func (m Migrator) Migrate4to5(ctx sdktypes.Context) error {
 	return nil
 }
 
-// Migrate5to6 migrates x/ccvprovider state from consensus version 5 to 6.
-// The migration consists of initializing new provider chain params using params from the legacy store.
+// Migrate5to6 consists of setting the `NumberOfEpochsToStartReceivingRewards` param, as well as
+// computing and storing the minimal power in the top N for all registered consumer chains.
 func (m Migrator) Migrate5to6(ctx sdktypes.Context) error {
-	return v6.MigrateLegacyParams(ctx, m.providerKeeper, m.paramSpace)
+	v6.MigrateParams(ctx, m.paramSpace)
+	// TODO: @Sainoe uncomment after #1952 is backported
+	// v6.MigrateMinPowerInTopN(ctx, m.providerKeeper)
+	return nil
+}
+
+// Migrate6to7 migrates x/ccvprovider state from consensus version 6 to 7.
+// The migration consists of initializing new provider chain params using params from the legacy store.
+func (m Migrator) Migrate6to7(ctx sdktypes.Context) error {
+	return v7.MigrateLegacyParams(ctx, m.providerKeeper, m.paramSpace)
 }
