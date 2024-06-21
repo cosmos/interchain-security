@@ -6,7 +6,7 @@
     - the last release branch: <v-last.x>
 -->
 
-# Replicated Security <v*.*.*>  Release Notes
+# Interchain Security <v*.*.*>  Release Notes
 
 <!--
   Please indicate whether this release is relevant to consumers or providers.
