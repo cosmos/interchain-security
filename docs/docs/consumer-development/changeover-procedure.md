@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # Changeover Procedure
 
-Chains that were not initially launched as consumers of replicated security can still participate in the protocol and leverage the economic security of the provider chain. The process where a standalone chain transitions to being a replicated consumer chain is called the **changeover procedure** and is part of the interchain security protocol. After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.
+Chains that were **not** initially launched as consumers of Interchain Security can still participate in the protocol and leverage the economic security of the provider chain. The process where a standalone chain transitions to being a replicated consumer chain is called the **changeover procedure** and is part of the interchain security protocol. After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.
 
 The relevant protocol specifications are available below:
 * [ICS-28 with existing chains](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#channel-initialization-existing-chains).
@@ -90,7 +90,7 @@ This `ConsumerGenesis` must be available on the standalone chain during the on-c
 
 ### 4. standalone chain upgrade
 
-Performing the on-chain upgrade on the standalone chain will add the `ccv/consumer` module and allow the chain to become a `consumer` of replicated security.
+Performing the on-chain upgrade on the standalone chain will add the `ccv/consumer` module and allow the chain to become a `consumer` of Interchain Security.
 
 :::caution
 The `ConsumerGenesis` must be exported to a file and placed in the correct folder on the standalone chain before the upgrade.

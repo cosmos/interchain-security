@@ -4,17 +4,22 @@ sidebar_position: 1
 
 # Overview
 :::tip
-We advise that you join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/interchain-security) to gain hands-on experience with running consumer chains.
+We advise that you join the [Interchain Security testnet](https://github.com/cosmos/testnets/tree/master/interchain-security) to gain hands-on experience with running consumer chains.
 :::
 
-At present, replicated security requires all validators of the provider chain (ie. Cosmos Hub) to run validator nodes for all governance-approved consumer chains.
+At present, Interchain Security requires some or all the validators of the provider chain (ie. Cosmos Hub) to run validator nodes for a consumer chain.
+Whether a validator has to run a validator node for a consumer chain depends on the consumer chain's on whether the chain is a Top N or an
+Opt-In chain and also on the [power-shaping features](../features/power-shaping.md). A validator can use the
+[`has-to-validate` query](validators/partial-set-security-for-validators.md#which-chains-does-a-validator-have-to-validate)
+to keep track of all the chains it has to validate.
 
-Once a `ConsumerAdditionProposal` passes, validators need to prepare to run the consumer chain binaries (these will be linked in their proposals) and set up validator nodes on governance-approved consumer chains.
 
-Provider chain and consumer chains represent standalone chains that only share the validator set ie. the same validator operators are tasked with running all chains.
+Once a `ConsumerAdditionProposal` passes, relevant validators need to prepare to run the consumer chain binaries (these will be linked in their proposals) and set up validator nodes on governance-approved consumer chains.
+
+Provider chain and consumer chains represent standalone chains that only share part of the validator set.
 
 :::info
-To validate a consumer chain and be eligible for rewards validators are required to be in the active set of the provider chain (first 180 validators for Cosmos Hub).
+To validate a consumer chain and be eligible for rewards, validators are required to be in the active set of the provider chain (first 180 validators for Cosmos Hub).
 :::
 
 ## Startup sequence overview
