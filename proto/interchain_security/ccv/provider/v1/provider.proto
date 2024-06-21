@@ -318,10 +318,10 @@ message ConsumerAddrsToPrune {
 }
 
 // Used to serialize the ConsumerAddrsToPruneV2 index from key assignment
-// ConsumerAddrsToPruneV2: (chainID, pruneAfterTs time.Time) -> consumerAddrs AddressList
+// ConsumerAddrsToPruneV2: (chainID, pruneTs time.Time) -> consumerAddrs AddressList
 message ConsumerAddrsToPruneV2 {
   string chain_id = 1;
-  google.protobuf.Timestamp prune_after_ts = 2
+  google.protobuf.Timestamp prune_ts = 2
     [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
   AddressList consumer_addrs = 3;
 }
