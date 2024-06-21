@@ -54,7 +54,7 @@ func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk p
 
 		for _, addr := range addrs.Addresses {
 			consumerAddr := providertypes.NewConsumerConsAddress(addr)
-			pk.AppendConsumerAddrsToPruneV2(ctx, chainID, pruneAfterTs, consumerAddr)
+			pk.AppendConsumerAddrsToPrune(ctx, chainID, pruneAfterTs, consumerAddr)
 		}
 	}
 }

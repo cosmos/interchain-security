@@ -89,7 +89,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 		[]providertypes.ConsumerAddrsToPruneV2{
 			{
 				ChainId:       cChainIDs[0],
-				PruneAfterTs:  oneHourFromNow,
+				PruneTs:       oneHourFromNow,
 				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}},
 			},
 		},
@@ -145,7 +145,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, provAddr, providerAddr)
 
-	addrs := pk.GetConsumerAddrsToPruneV2(ctx, cChainIDs[0], oneHourFromNow)
+	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], oneHourFromNow)
 	// Expect same list as what was provided in provGenesis
 	expectedAddrList := providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}}
 	require.Equal(t, expectedAddrList, addrs)
