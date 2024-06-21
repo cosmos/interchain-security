@@ -14,7 +14,7 @@ Implemented
 
 ## Context
 
-[Stride](https://github.com/Stride-Labs/stride) will be the first consumer to "changeover" from a standalone cosmos blockchain, to a consumer chain secured by the Cosmos Hub. This document will outline the changes made to the interchain security protocol to support this changeover process.
+[Stride](https://github.com/Stride-Labs/stride) will be the first consumer to "changeover" from a standalone cosmos blockchain, to a consumer chain secured by the Cosmos Hub. This document outlines the changes made to support this changeover process.
 
 ## Decision
 

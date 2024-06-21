@@ -154,9 +154,9 @@ Example of a consumer chain addition proposal (compare with the [ConsumerAdditio
 
 ```js
 // ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain or add a standalone chain.
-// If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time.
-// It is recommended that spawn time occurs after the proposal end time and that it is scheduled to happen before the standalone chain upgrade
-// that sill introduce the ccv module.
+// If it passes, then a subset (i.e., depends on `top_N` and on the power shaping parameters) of validators on the provider chain are expected
+// to validate the consumer chain at spawn time. It is recommended that spawn time occurs after the proposal end time and that it is 
+// scheduled to happen before the standalone chain upgrade that sill introduce the ccv module.
 {
     // Title of the proposal
     "title": "Changeover Standalone chain",
@@ -212,8 +212,33 @@ Example of a consumer chain addition proposal (compare with the [ConsumerAdditio
     // it is most relevant for chains performing a standalone to consumer changeover
     // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"  // NOTE: use existing transfer channel if available
+    // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
+    // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
+    // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
+    // A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
+    "top_N": 95,
+    // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
+    // `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
+    // consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
+    // 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
+    // to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
+    "validators_power_cap": 0,
+    // Corresponds to the maximum number of validators that can validate a consumer chain.
+    // Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+    "validator_set_cap": 0,
+    // Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
+    // the consumer chain.
+    "allowlist": [],
+    // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+    "denylist": []
 }
 ```
+
+:::info
+As seen in the `ConsumerAdditionProposal` example above, the changeover procedure can be used together with [Partial Set Security](../adrs/adr-015-partial-set-security.md).
+This means, that a standalone chain can choose to only be validated by some of the validators of the provider chain by setting `top_N` appropriately, or by
+additionally setting a validators-power cap, validator-set cap, etc. by using the [power-shaping parameters](../features/power-shaping.md).
+:::
 
 ## 3. Submit an Upgrade Proposal & Prepare for Changeover
 

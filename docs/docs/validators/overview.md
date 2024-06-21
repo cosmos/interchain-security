@@ -8,9 +8,9 @@ We advise that you join the [Interchain Security testnet](https://github.com/cos
 :::
 
 At present, Interchain Security requires some or all the validators of the provider chain (ie. Cosmos Hub) to run validator nodes for a consumer chain.
-Whether a validator has to run a validator node for a consumer chain depends on the consumer chain's on whether the chain is a Top N or an
+Whether a validator has to run a validator node for a consumer chain depends on whether the consumer chain is a Top N or an
 Opt-In chain and also on the [power-shaping features](../features/power-shaping.md). A validator can use the
-[`has-to-validate` query](validators/partial-set-security-for-validators.md#which-chains-does-a-validator-have-to-validate)
+[`has-to-validate` query](./partial-set-security-for-validators.md#which-chains-does-a-validator-have-to-validate)
 to keep track of all the chains it has to validate.
 
 
