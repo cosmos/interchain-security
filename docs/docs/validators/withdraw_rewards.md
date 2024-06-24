@@ -16,7 +16,7 @@ the actual values of the `NumberOfEpochsToStartReceivingRewards` and `BlocksPerE
 Here are example steps for withdrawing rewards from consumer chains in the provider chain
 
 :::info
-The examples used are from `rs-testnet`, the replicated security persistent testnet.
+The examples used are from `rs-testnet`, the Interchain Security persistent testnet.
 
 Validator operator address: `cosmosvaloper1e5yfpc8l6g4808fclmlyd38tjgxuwshnmjkrq6`
 Self-delegation address: `cosmos1e5yfpc8l6g4808fclmlyd38tjgxuwshn7xzkvf`
