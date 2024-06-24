@@ -146,7 +146,13 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 
 // EndBlockVSU contains the EndBlock logic needed for
 // the Validator Set Update sub-protocol
-func (k Keeper) EndBlockVSU(ctx sdk.Context) {
+func (k Keeper) EndBlockVSU(ctx sdk.Context) []abci.ValidatorUpdate {
+	// logic to update the provider consensus validator set.
+	// Important: must be called before the rest of EndBlockVSU, because
+	// EndBlockVSU needs to know the updated provider validator set
+	// to compute the minimum power in the top N
+	providerUpdates := k.ProviderValidatorUpdates(ctx)
+
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
@@ -161,6 +167,8 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 		// the updates will remain queued until the channel is established
 		k.SendVSCPackets(ctx)
 	}
+
+	return providerUpdates
 }
 
 // SendVSCPackets iterates over all registered consumers and sends pending

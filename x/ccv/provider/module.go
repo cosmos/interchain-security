@@ -160,16 +160,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// EndBlock logic needed for the Consumer Chain Removal sub-protocol
 	am.keeper.EndBlockCCR(ctx)
 
-	// logic to update the provider consensus validator set.
-	// Important: must be called before EndBlockVSU, because
-	// EndBlockVSU needs to know the updated provider validator set
-	// to compute the minimum power in the top N
-	providerUpdates := am.keeper.ProviderValidatorUpdates(ctx)
-
 	// EndBlock logic needed for the Validator Set Update sub-protocol
-	am.keeper.EndBlockVSU(ctx)
-
-	return providerUpdates
+	return am.keeper.EndBlockVSU(ctx)
 }
 
 // AppModuleSimulation functions
