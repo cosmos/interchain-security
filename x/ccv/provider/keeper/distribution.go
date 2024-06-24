@@ -127,8 +127,8 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		remaining := consumerRewards.Sub(validatorRewards)
 
 		// transfer validators rewards to distribution module account
-		validatorRewardsTrunc, validatorRewardsChange := validatorRewards.TruncateDecimal()
-		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, validatorRewardsTrunc)
+		validatorsRewardsTrunc, validatorsRewardsChange := validatorRewards.TruncateDecimal()
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, validatorsRewardsTrunc)
 		if err != nil {
 			k.Logger(ctx).Error(
 				"cannot send rewards to distribution module account %s: %s",
@@ -142,12 +142,12 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumerChainID,
-			sdk.NewDecCoinsFromCoins(validatorRewardsTrunc...),
+			sdk.NewDecCoinsFromCoins(validatorsRewardsTrunc...),
 		)
 
 		// allocate remaining rewards to the community pool
-		remainingCoins, remainingChanges := remaining.TruncateDecimal()
-		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingCoins, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+		remainingRewards, remainingChanges := remaining.TruncateDecimal()
+		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingRewards, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 		if err != nil {
 			k.Logger(ctx).Error(
 				"fail to allocate rewards from consumer chain %s to community pool: %s",
@@ -158,7 +158,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		}
 
 		// set consumer allocations to the remaining rewards decimals
-		alloc.Rewards = validatorRewardsChange.Add(remainingChanges...)
+		alloc.Rewards = validatorsRewardsChange.Add(remainingChanges...)
 		k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
 	}
 }
