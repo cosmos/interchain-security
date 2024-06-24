@@ -56,6 +56,7 @@ const config = {
           },
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
+          exclude: ["**/templates/*"],
         },
 
         theme: {
