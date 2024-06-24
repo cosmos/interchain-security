@@ -30,7 +30,7 @@ This includes events, queries, CLI interfaces.
 ## Release Cycle
 
 ICS follows a traditional release cycle involving release candidates (RCs) releases before finalizing a new version.
-The stable release guarantees do not go into affect until a final release is performed.
+The stable release guarantees do not go into effect until a final release is performed.
 
 ❗***It is never advisable to use a non-final release in production.***
 
