@@ -761,7 +761,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 
 	rewardsPerChain, _ := rewardsPerConsumerDec.
 		MulDecTruncate(math.LegacyOneDec().Sub(communityTax)).TruncateDecimal()
-	validatorsExpRewardsPerchain := sdk.NewDecCoinsFromCoins(rewardsPerChain...).QuoDec(math.LegacyNewDec(int64(valNum)))
+	validatorsExpRewardsPerChain := sdk.NewDecCoinsFromCoins(rewardsPerChain...).QuoDec(math.LegacyNewDec(int64(valNum)))
 	// multiply by the number of consumers
 	validatorsExpRewards := validatorsExpRewardsPerchain.MulDec(math.LegacyNewDec(int64(consNum)))
 
