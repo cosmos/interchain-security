@@ -156,6 +156,9 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateInt64(p.BlocksPerEpoch); err != nil {
 		return fmt.Errorf("blocks per epoch is invalid: %s", err)
 	}
+	if err := ccvtypes.ValidatePositiveInt64(p.MaxProviderConsensusValidators); err != nil {
+		return fmt.Errorf("max provider consensus validators is invalid: %s", err)
+	}
 	return nil
 }
 
