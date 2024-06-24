@@ -808,22 +808,22 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 
 	providerKeeper.SetValidatorSetUpdateId(ctx, 1)
 
-	valA := createStakingValidator(ctx, mocks, 1, 1) // 3.125% of the total voting power
+	valA := testkeeper.CreateStakingValidator(ctx, mocks, 1, 1) // 3.125% of the total voting power
 	valAConsAddr, _ := valA.GetConsAddr()
 	valAPubKey, _ := valA.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, true).AnyTimes()
-	valB := createStakingValidator(ctx, mocks, 2, 3) // 9.375% of the total voting power
+	valB := testkeeper.CreateStakingValidator(ctx, mocks, 2, 3) // 9.375% of the total voting power
 	valBConsAddr, _ := valB.GetConsAddr()
 	valBPubKey, _ := valB.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, true).AnyTimes()
-	valC := createStakingValidator(ctx, mocks, 3, 4) // 12.5% of the total voting power
+	valC := testkeeper.CreateStakingValidator(ctx, mocks, 3, 4) // 12.5% of the total voting power
 	valCConsAddr, _ := valC.GetConsAddr()
 	valCPubKey, _ := valC.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, true).AnyTimes()
-	valD := createStakingValidator(ctx, mocks, 4, 8) // 25% of the total voting power
+	valD := testkeeper.CreateStakingValidator(ctx, mocks, 4, 8) // 25% of the total voting power
 	valDConsAddr, _ := valD.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, true).AnyTimes()
-	valE := createStakingValidator(ctx, mocks, 5, 16) // 50% of the total voting power
+	valE := testkeeper.CreateStakingValidator(ctx, mocks, 5, 16) // 50% of the total voting power
 	valEConsAddr, _ := valE.GetConsAddr()
 	valEPubKey, _ := valE.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, true).AnyTimes()

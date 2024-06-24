@@ -1,10 +1,11 @@
 package keeper_test
 
 import (
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"testing"
 	"time"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/stretchr/testify/require"
 
@@ -177,7 +178,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	val := createStakingValidator(ctx, mocks, 1, 1)
+	val := testkeeper.CreateStakingValidator(ctx, mocks, 1, 1)
 	valConsAddr, _ := val.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(valConsAddr)
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, true).AnyTimes()
@@ -200,7 +201,9 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		ConsumerPublicKey: &crypto.PublicKey{
 			Sum: &crypto.PublicKey_Ed25519{
 				Ed25519: []byte{1},
-			}}})
+			},
+		},
+	})
 
 	// set `providerAddr` as an opted-in validator on "chain3"
 	pk.SetOptedIn(ctx, "chain3", providerAddr)
