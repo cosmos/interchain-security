@@ -744,7 +744,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 
 	// At this point the distribution module account
 	// only holds the community pool's tokens
-	// since there zero validators outstanding rewards
+	// since there are no validators with outstanding rewards
 	lastCommPool := getDistrAcctBalFn(s.providerCtx())
 
 	// execute BeginBlock to trigger the token allocation
