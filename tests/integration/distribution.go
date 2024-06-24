@@ -777,7 +777,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 		)
 	}
 
-	// check that the total expected rewards is transferred to the distribution module account
+	// check that the total expected rewards are transferred to the distribution module account
 	allocRemPerConsu := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID).Rewards
 	totalRewardsDistributed := sdk.NewDecCoinsFromCoins(totalRewards...).Sub(allocRemPerConsu.MulDec(math.LegacyNewDec(int64(consNum))))
 
