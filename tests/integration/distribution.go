@@ -732,7 +732,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 		)
 	}
 
-	// Iterate over the validators and
+	// iterate over the validators and verify that no validator has outstanding rewards
 	totalValsRewards := sdk.DecCoins{}
 	for _, val := range s.providerChain.Vals.Validators {
 		valRewards, err := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
