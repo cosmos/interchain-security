@@ -121,13 +121,13 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		// compute rewards for validators
 		consumerRewards := alloc.Rewards
 		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
-		feeMultiplier := consumerRewards.MulDecTruncate(voteMultiplier)
+		validatorRewards := consumerRewards.MulDecTruncate(voteMultiplier)
 
 		// compute remaining rewards for the community pool
-		remaining := consumerRewards.Sub(feeMultiplier)
+		remaining := consumerRewards.Sub(validatorRewards)
 
 		// transfer validators rewards to distribution module account
-		feeMultiplierTrunc, feeMultiplierChange := feeMultiplier.TruncateDecimal()
+		feeMultiplierTrunc, feeMultiplierChange := validatorRewards.TruncateDecimal()
 		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, feeMultiplierTrunc)
 		if err != nil {
 			k.Logger(ctx).Error(
