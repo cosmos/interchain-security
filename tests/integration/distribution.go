@@ -720,14 +720,14 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	)
 
 	// Allocate rewards evenly between consumers
-	rewardsPerConsumer := totalRewards.QuoInt(math.NewInt(int64(len(s.consumerBundles))))
+	rewardsPerChain := totalRewards.QuoInt(math.NewInt(int64(len(s.consumerBundles))))
 	for chainID := range s.consumerBundles {
 		// update consumer allocation
 		providerKeeper.SetConsumerRewardsAllocation(
 			s.providerCtx(),
 			chainID,
 			providertypes.ConsumerRewardsAllocation{
-				Rewards: sdk.NewDecCoinsFromCoins(rewardsPerConsumer...),
+				Rewards: sdk.NewDecCoinsFromCoins(rewardsPerChain...),
 			},
 		)
 	}
@@ -754,26 +754,25 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	consNum := len(s.consumerBundles)
 
 	// compute the expected validators token allocation by subtracting the community tax
-	rewardsPerConsumerDec := sdk.NewDecCoinsFromCoins(rewardsPerConsumer...)
+	rewardsPerChainDec := sdk.NewDecCoinsFromCoins(rewardsPerChain...)
 	communityTax, err := distributionKeeper.GetCommunityTax(s.providerCtx())
 	s.Require().NoError(err)
 
-	rewardsPerChain, _ := rewardsPerConsumerDec.
+	rewardsPerChainTrunc, _ := rewardsPerChainDec.
 		MulDecTruncate(math.LegacyOneDec().Sub(communityTax)).TruncateDecimal()
-	validatorsExpRewardsPerChain := sdk.NewDecCoinsFromCoins(rewardsPerChain...).QuoDec(math.LegacyNewDec(int64(valNum)))
+	validatorsExpRewardsPerChain := sdk.NewDecCoinsFromCoins(rewardsPerChainTrunc...).QuoDec(math.LegacyNewDec(int64(valNum)))
 	// multiply by the number of consumers
 	validatorsExpRewards := validatorsExpRewardsPerChain.MulDec(math.LegacyNewDec(int64(consNum)))
 
 	// verify the validator tokens allocation
 	// note that the validators have the same voting power to keep things simple
-	lastValOutRewards := map[string]sdk.DecCoins{}
 	for _, val := range s.providerChain.Vals.Validators {
 		valRewards, err := distributionKeeper.GetValidatorOutstandingRewards(s.providerCtx(), sdk.ValAddress(val.Address))
 		s.Require().NoError(err)
 
 		s.Require().Equal(
 			valRewards.Rewards,
-			lastValOutRewards[sdk.ValAddress(val.Address).String()].Add(validatorsExpRewards...),
+			validatorsExpRewards,
 		)
 	}
 
