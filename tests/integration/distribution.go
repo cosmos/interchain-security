@@ -733,7 +733,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	}
 
 	// Iterate over the validators and
-	// store their current voting power and outstanding rewards
+	// store their outstanding rewards
 	lastValOutRewards := map[string]sdk.DecCoins{}
 	totalValsRewards := sdk.DecCoins{}
 	for _, val := range s.providerChain.Vals.Validators {
