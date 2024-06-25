@@ -2,22 +2,18 @@ package v6
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
-// MigrateParams migrates the provider module's parameters from the x/params to self store.
-func MigrateLegacyParams(ctx sdk.Context, keeper providerkeeper.Keeper, legacyParamspace ccvtypes.LegacyParamSubspace) error {
-	ctx.Logger().Info("starting provider legacy params migration")
-	params := GetParamsLegacy(ctx, legacyParamspace)
-	err := params.Validate()
-	if err != nil {
-		return err
+// MigrateParams adds missing provider chain params to the param store.
+func MigrateParams(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
+	if !paramsSubspace.HasKeyTable() {
+		paramsSubspace.WithKeyTable(providertypes.ParamKeyTable())
 	}
-
-	keeper.SetParams(ctx, params)
-	keeper.Logger(ctx).Info("successfully migrated legacy provider parameters")
-	return nil
+	paramsSubspace.Set(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, providertypes.DefaultNumberOfEpochsToStartReceivingRewards)
 }
 
 func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {

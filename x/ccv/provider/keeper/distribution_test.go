@@ -24,6 +24,14 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	// `ComputeConsumerTotalVotingPower` used in this test retrieves the blocks per epoch, so we need to set this param
+	params := providertypes.DefaultParams()
+	params.BlocksPerEpoch = 1
+	keeper.SetParams(ctx, params)
+
+	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
+	ctx = ctx.WithBlockHeight(params.NumberOfEpochsToStartReceivingRewards * params.BlocksPerEpoch)
+
 	createVal := func(power int64) tmtypes.Validator {
 		signer := tmtypes.NewMockPV()
 		val := tmtypes.NewValidator(signer.PrivKey.PubKey(), power)
@@ -270,4 +278,22 @@ func TestGetConsumerRewardsAllocationNil(t *testing.T) {
 		Rewards: nil,
 	}
 	require.Equal(t, expectedRewardAllocation, alloc)
+}
+
+func TestIsEligibleForConsumerRewards(t *testing.T) {
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	params := providertypes.DefaultParams()
+	params.NumberOfEpochsToStartReceivingRewards = 10
+	params.BlocksPerEpoch = 5
+	keeper.SetParams(ctx, params)
+
+	numberOfBlocks := params.NumberOfEpochsToStartReceivingRewards * params.BlocksPerEpoch
+
+	require.False(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks-1), 0))
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks), 0))
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 0))
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 1))
+	require.False(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 2))
 }

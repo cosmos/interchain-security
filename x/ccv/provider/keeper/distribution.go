@@ -85,6 +85,10 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			continue
 		}
 
+		// if rewardsCollected.IsZero() {
+		// 	continue
+		// }
+
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
@@ -163,6 +167,15 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	}
 }
 
+// IsEligibleForConsumerRewards returns `true` if the validator with `consumerValidatorHeight` has been a consumer
+// validator for a long period of time and hence is eligible to receive rewards, and false otherwise
+func (k Keeper) IsEligibleForConsumerRewards(ctx sdk.Context, consumerValidatorHeight int64) bool {
+	numberOfBlocksToStartReceivingRewards := k.GetNumberOfEpochsToStartReceivingRewards(ctx) * k.GetBlocksPerEpoch(ctx)
+
+	// a validator is eligible for rewards if it has been a consumer validator for `NumberOfEpochsToStartReceivingRewards` epochs
+	return (ctx.BlockHeight() - consumerValidatorHeight) >= numberOfBlocksToStartReceivingRewards
+}
+
 // AllocateTokensToConsumerValidators allocates tokens
 // to the given consumer chain's validator set
 func (k Keeper) AllocateTokensToConsumerValidators(
@@ -183,6 +196,11 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 	// Allocate tokens by iterating over the consumer validators
 	for _, consumerVal := range k.GetConsumerValSet(ctx, chainID) {
+		// if a validator is not eligible, this means that the other eligible validators would get more rewards
+		if !k.IsEligibleForConsumerRewards(ctx, consumerVal.JoinHeight) {
+			continue
+		}
+
 		consAddr := sdk.ConsAddress(consumerVal.ProviderConsAddr)
 
 		// get the validator tokens fraction using its voting power
@@ -253,6 +271,12 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
 	// sum the consumer validators set voting powers
 	for _, v := range k.GetConsumerValSet(ctx, chainID) {
+
+		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
+		if !k.IsEligibleForConsumerRewards(ctx, v.JoinHeight) {
+			continue
+		}
+
 		totalPower += v.Power
 	}
 
