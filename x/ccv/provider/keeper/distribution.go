@@ -125,14 +125,14 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		// compute rewards for validators
 		consumerRewards := alloc.Rewards
 		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
-		feeMultiplier := consumerRewards.MulDecTruncate(voteMultiplier)
+		validatorsRewards := consumerRewards.MulDecTruncate(voteMultiplier)
 
 		// compute remaining rewards for the community pool
-		remaining := consumerRewards.Sub(feeMultiplier)
+		remaining := consumerRewards.Sub(validatorsRewards)
 
 		// transfer validators rewards to distribution module account
-		feeMultiplierTrunc, feeMultiplierChange := feeMultiplier.TruncateDecimal()
-		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, feeMultiplierTrunc)
+		validatorsRewardsTrunc, validatorsRewardsChange := validatorsRewards.TruncateDecimal()
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, validatorsRewardsTrunc)
 		if err != nil {
 			k.Logger(ctx).Error(
 				"cannot send rewards to distribution module account %s: %s",
@@ -146,12 +146,12 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumerChainID,
-			sdk.NewDecCoinsFromCoins(feeMultiplierTrunc...),
+			sdk.NewDecCoinsFromCoins(validatorsRewardsTrunc...),
 		)
 
 		// allocate remaining rewards to the community pool
-		remainingCoins, remainingChanges := remaining.TruncateDecimal()
-		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingCoins, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+		remainingRewards, remainingChanges := remaining.TruncateDecimal()
+		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingRewards, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 		if err != nil {
 			k.Logger(ctx).Error(
 				"fail to allocate rewards from consumer chain %s to community pool: %s",
@@ -162,7 +162,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		}
 
 		// set consumer allocations to the remaining rewards decimals
-		alloc.Rewards = feeMultiplierChange.Add(remainingChanges...)
+		alloc.Rewards = validatorsRewardsChange.Add(remainingChanges...)
 		k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
 	}
 }
