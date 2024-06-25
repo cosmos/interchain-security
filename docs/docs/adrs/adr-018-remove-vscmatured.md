@@ -13,7 +13,7 @@ Proposed
 
 ## Context
 
-> The idea of removing VSCMatured packets was first suggested [Jae Kwon](https://github.com/jaekwon) over a conversation in 2022. 
+> The idea of removing VSCMatured packets was first suggested by [Jae Kwon](https://github.com/jaekwon) over a conversation in 2022. 
 > As a result of that conversation, [an ADR was proposed](https://github.com/cosmos/interchain-security/pull/712) to halt consumer chain if VSC packets are no longer received. 
 > The ADR was not accepted due to other considerations regarding the safety of consumer chains. 
 > See [this blog post](https://informal.systems/blog/learning-to-live-with-unbonding-pausing) for more details. 
