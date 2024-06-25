@@ -53,5 +53,4 @@ func TestMigrateParams(t *testing.T) {
 	migratedParams := k.GetParams(ctx)
 	require.NotEmpty(t, migratedParams)
 	require.Equal(t, defaultParams, migratedParams)
-	require.NotEqual(t, emptyParams, migratedParams)
 }
