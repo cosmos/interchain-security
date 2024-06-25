@@ -221,31 +221,31 @@ func (c *ChainState) UnmarshalJSON(data []byte) error {
 func UnmarshalProposalWithType(inputMap json.RawMessage, proposalType string) (Proposal, error) {
 	var err error
 	switch proposalType {
-	case "main.TextProposal":
+	case "e2e.TextProposal":
 		prop := TextProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil
 		}
-	case "main.ConsumerAdditionProposal":
+	case "e2e.ConsumerAdditionProposal":
 		prop := ConsumerAdditionProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil
 		}
-	case "main.UpgradeProposal":
+	case "e2e.UpgradeProposal":
 		prop := UpgradeProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil
 		}
-	case "main.ConsumerRemovalProposal":
+	case "e2e.ConsumerRemovalProposal":
 		prop := ConsumerRemovalProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil
 		}
-	case "main.IBCTransferParamsProposal":
+	case "e2e.IBCTransferParamsProposal":
 		prop := IBCTransferParamsProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {

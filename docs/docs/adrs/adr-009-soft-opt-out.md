@@ -7,11 +7,12 @@ title: Soft Opt-Out
 ## Changelog
 
 * 6/13/23: Initial draft of ADR. Feature already implemented and in production.
+* 6/19/24: Change status to deprecated
 
 ## Status
 
-Accepted
-
+Deprecated
+Deprecated by [Partial Set Security](adr-015-partial-set-security.md)
 ## Context
 
 Some small validators may not have the resources needed to validate all consumer chains. Therefore a need exists to allow the bottom `x%` of validators to opt-out of validating a consumer chain. Meaning downtime infractions for these validators are dropped without ever reaching the provider.

@@ -158,9 +158,6 @@ func (AppModule) ConsensusVersion() uint64 {
 func (am AppModule) BeginBlock(goCtx context.Context) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Execute BeginBlock logic for the Soft Opt-Out sub-protocol
-	am.keeper.BeginBlockSoftOptOut(ctx)
-
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
 		// The CCV channel was established, but it was then closed;
