@@ -81,6 +81,9 @@ func transformToNew(jsonRaw []byte, ctx client.Context) (json.RawMessage, error)
 		oldConsumerGenesis.Params.RetryDelayPeriod = types.DefaultRetryDelayPeriod
 	}
 
+	// `SoftOptOutThreshold` is deprecated in the current consumer implementation, so set to zero
+	oldConsumerGenesis.Params.SoftOptOutThreshold = "0"
+
 	// Versions before v3.3.x of provider genesis data fills up deprecated fields
 	// ProviderClientState, ConsensusState and InitialValSet in type GenesisState
 	newGenesis := types.ConsumerGenesisState{

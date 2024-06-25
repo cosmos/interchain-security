@@ -22,7 +22,6 @@ func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.ConsumerParams {
 		k.GetConsumerRedistributionFrac(ctx),
 		k.GetHistoricalEntries(ctx),
 		k.GetUnbondingPeriod(ctx),
-		k.GetSoftOptOutThreshold(ctx),
 		k.GetRewardDenoms(ctx),
 		k.GetProviderRewardDenoms(ctx),
 		k.GetRetryDelayPeriod(ctx),
@@ -118,14 +117,6 @@ func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
 	var period time.Duration
 	k.paramStore.Get(ctx, ccvtypes.KeyConsumerUnbondingPeriod, &period)
 	return period
-}
-
-// GetSoftOptOutThreshold returns the percentage of validators at the bottom of the set
-// that can opt out of running the consumer chain
-func (k Keeper) GetSoftOptOutThreshold(ctx sdk.Context) string {
-	var str string
-	k.paramStore.Get(ctx, ccvtypes.KeySoftOptOutThreshold, &str)
-	return str
 }
 
 func (k Keeper) GetRewardDenoms(ctx sdk.Context) []string {

@@ -37,9 +37,6 @@ const (
 	// the staking module default.
 	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 7*24*time.Hour
 
-	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
-	DefaultSoftOptOutThreshold = "0.05"
-
 	// Default retry delay period is 1 hour.
 	DefaultRetryDelayPeriod = time.Hour
 )
@@ -54,7 +51,6 @@ var (
 	KeyConsumerRedistributionFrac        = []byte("ConsumerRedistributionFraction")
 	KeyHistoricalEntries                 = []byte("HistoricalEntries")
 	KeyConsumerUnbondingPeriod           = []byte("UnbondingPeriod")
-	KeySoftOptOutThreshold               = []byte("SoftOptOutThreshold")
 	KeyRewardDenoms                      = []byte("RewardDenoms")
 	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
 	KeyRetryDelayPeriod                  = []byte("RetryDelayPeriod")
@@ -70,7 +66,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
+	consumerUnbondingPeriod time.Duration,
 	rewardDenoms, providerRewardDenoms []string, retryDelayPeriod time.Duration,
 ) ConsumerParams {
 	return ConsumerParams{
@@ -83,10 +79,11 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		ConsumerRedistributionFraction:    consumerRedistributionFraction,
 		HistoricalEntries:                 historicalEntries,
 		UnbondingPeriod:                   consumerUnbondingPeriod,
-		SoftOptOutThreshold:               softOptOutThreshold,
-		RewardDenoms:                      rewardDenoms,
-		ProviderRewardDenoms:              providerRewardDenoms,
-		RetryDelayPeriod:                  retryDelayPeriod,
+		// DEPRECATED but setting here to 0 (i.e., disabled) for older versions of interchain-security
+		SoftOptOutThreshold:  "0",
+		RewardDenoms:         rewardDenoms,
+		ProviderRewardDenoms: providerRewardDenoms,
+		RetryDelayPeriod:     retryDelayPeriod,
 	}
 }
 
@@ -104,7 +101,6 @@ func DefaultParams() ConsumerParams {
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
 		DefaultConsumerUnbondingPeriod,
-		DefaultSoftOptOutThreshold,
 		rewardDenoms,
 		provideRewardDenoms,
 		DefaultRetryDelayPeriod,
@@ -140,9 +136,6 @@ func (p ConsumerParams) Validate() error {
 	if err := ValidateDuration(p.UnbondingPeriod); err != nil {
 		return err
 	}
-	if err := ValidateSoftOptOutThreshold(p.SoftOptOutThreshold); err != nil {
-		return err
-	}
 	if err := ValidateDenoms(p.RewardDenoms); err != nil {
 		return err
 	}
@@ -175,8 +168,6 @@ func (p *ConsumerParams) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.HistoricalEntries, ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
 			p.UnbondingPeriod, ValidateDuration),
-		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
-			p.SoftOptOutThreshold, ValidateSoftOptOutThreshold),
 		paramtypes.NewParamSetPair(KeyRewardDenoms,
 			p.RewardDenoms, ValidateDenoms),
 		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
@@ -192,24 +183,6 @@ func ValidateProviderFeePoolAddrStr(i interface{}) error {
 		return nil
 	}
 	// Cannot validate provider chain address on the consumer chain
-	return nil
-}
-
-func ValidateSoftOptOutThreshold(i interface{}) error {
-	str, ok := i.(string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	dec, err := sdktypes.NewDecFromStr(str)
-	if err != nil {
-		return err
-	}
-	if dec.IsNegative() {
-		return fmt.Errorf("soft opt out threshold cannot be negative, got %s", str)
-	}
-	if !dec.Sub(sdktypes.MustNewDecFromStr("0.2")).IsNegative() {
-		return fmt.Errorf("soft opt out threshold cannot be greater than 0.2, got %s", str)
-	}
 	return nil
 }
 

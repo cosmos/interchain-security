@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/golang/mock/gomock"
-
 	"github.com/stretchr/testify/require"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
