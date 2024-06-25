@@ -19,7 +19,7 @@ func TestMigrateParams(t *testing.T) {
 
 	MigrateParams(ctx, *inMemParams.ParamsSubspace)
 
-	// after migration, number of epochs epoch param should exist and be equal to default
+	// after migration, number of epochs to start receiving rewards param should exist and be equal to default
 	require.True(t, inMemParams.ParamsSubspace.Has(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards))
 	var numberOfEpochsParam int64
 	inMemParams.ParamsSubspace.Get(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, &numberOfEpochsParam)
