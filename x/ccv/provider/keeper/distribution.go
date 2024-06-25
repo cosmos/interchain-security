@@ -76,29 +76,20 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 
 	// Iterate over all registered consumer chains
 	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
-		// transfer the consumer rewards to the distribution module account
-		// note that the rewards transferred are only consumer whitelisted denoms
-		rewardsCollected, err := k.TransferConsumerRewardsToDistributionModule(ctx, consumerChainID)
-		if err != nil {
-			k.Logger(ctx).Error(
-				"fail to transfer rewards to distribution module for chain %s: %s",
-				consumerChainID,
-				err,
-			)
-			continue
-		}
 
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
 		// of non-whitelisted denominations.
-		if rewardsCollected.IsZero() {
+		alloc := k.GetConsumerRewardsAllocation(ctx, consumerChainID)
+		if alloc.Rewards.IsZero() {
 			continue
 		}
 
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
-			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsCollected, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+			rewardsToSend, rewardsChange := alloc.Rewards.TruncateDecimal()
+			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsToSend, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 			if err != nil {
 				k.Logger(ctx).Error(
 					"fail to allocate rewards from consumer chain %s to community pool: %s",
@@ -106,12 +97,17 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 					err,
 				)
 			}
+
+			// set the consumer allocation to the remaining reward decimals
+			alloc.Rewards = rewardsChange
+			k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
+
 			return
 		}
 
-		// calculate the reward allocations
-		rewardsCollectedDec := sdk.NewDecCoinsFromCoins(rewardsCollected...)
-		remaining := rewardsCollectedDec
+		// Consumer rewards are distributed between the validators and the community pool.
+		// The decimals resulting from the distribution are expected to remain in the consumer reward allocations.
+
 		communityTax, err := k.distributionKeeper.GetCommunityTax(ctx)
 		if err != nil {
 			k.Logger(ctx).Error(
@@ -121,20 +117,37 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			)
 			continue
 		}
+
+		// compute rewards for validators
+		consumerRewards := alloc.Rewards
 		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
-		feeMultiplier := rewardsCollectedDec.MulDecTruncate(voteMultiplier)
+		validatorsRewards := consumerRewards.MulDecTruncate(voteMultiplier)
+
+		// compute remaining rewards for the community pool
+		remaining := consumerRewards.Sub(validatorsRewards)
+
+		// transfer validators rewards to distribution module account
+		validatorsRewardsTrunc, validatorsRewardsChange := validatorsRewards.TruncateDecimal()
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, validatorsRewardsTrunc)
+		if err != nil {
+			k.Logger(ctx).Error(
+				"cannot send rewards to distribution module account %s: %s",
+				consumerChainID,
+				err,
+			)
+			continue
+		}
 
 		// allocate tokens to consumer validators
-		feeAllocated := k.AllocateTokensToConsumerValidators(
+		k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumerChainID,
-			feeMultiplier,
+			sdk.NewDecCoinsFromCoins(validatorsRewardsTrunc...),
 		)
-		remaining = remaining.Sub(feeAllocated)
 
-		// allocate community funding
-		remainingCoins, _ := remaining.TruncateDecimal()
-		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingCoins, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+		// allocate remaining rewards to the community pool
+		remainingRewards, remainingChanges := remaining.TruncateDecimal()
+		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingRewards, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 		if err != nil {
 			k.Logger(ctx).Error(
 				"fail to allocate rewards from consumer chain %s to community pool: %s",
@@ -143,6 +156,10 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			)
 			continue
 		}
+
+		// set consumer allocations to the remaining rewards decimals
+		alloc.Rewards = validatorsRewardsChange.Add(remainingChanges...)
+		k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
 	}
 }
 
@@ -203,39 +220,6 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	}
 
 	return allocated
-}
-
-// TransferConsumerRewardsToDistributionModule transfers the rewards allocation of the given consumer chain
-// from the consumer rewards pool to the distribution module
-func (k Keeper) TransferConsumerRewardsToDistributionModule(
-	ctx sdk.Context,
-	chainID string,
-) (sdk.Coins, error) {
-	// Get coins of the consumer rewards allocation
-	allocation := k.GetConsumerRewardsAllocation(ctx, chainID)
-
-	if allocation.Rewards.IsZero() {
-		return sdk.Coins{}, nil
-	}
-
-	// Truncate coin rewards
-	rewardsToSend, remRewards := allocation.Rewards.TruncateDecimal()
-
-	// NOTE the consumer rewards allocation isn't a module account, however its coins
-	// are held in the consumer reward pool module account. Thus the consumer
-	// rewards allocation must be reduced separately from the SendCoinsFromModuleToAccount call.
-
-	// Update consumer rewards allocation with the remaining decimal coins
-	allocation.Rewards = remRewards
-
-	// Send coins to distribution module account
-	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, rewardsToSend)
-	if err != nil {
-		return sdk.Coins{}, err
-	}
-
-	k.SetConsumerRewardsAllocation(ctx, chainID, allocation)
-	return rewardsToSend, nil
 }
 
 // consumer reward pools getter and setter
