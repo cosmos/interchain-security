@@ -95,6 +95,7 @@ func (k Keeper) getValSet(
 	return validators
 }
 
+// getTotalPower computes the total power of all the consumer validators stored under the given prefix.
 func (k Keeper) getTotalPower(ctx sdk.Context, prefix []byte) math.Int {
 	totalPower := math.ZeroInt()
 	validators := k.getValSet(ctx, prefix)
