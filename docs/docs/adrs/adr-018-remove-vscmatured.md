@@ -23,7 +23,7 @@ The key word here is _asynchronous_, which means that (in theory) there is no bo
 The reasons for this asynchrony are relaying delays and chain liveness (e.g., a consumer could be down for a long period of time without affecting the liveness of the staking module on the Hub). 
 
 The current version of ICS uses `VSCMaturedPackets` to create on the consumers a _partially synchronous_ view of the Hub’s staking module. 
-Partially synchronous means that the lag between the Hub’s view of stake and the consumer’s view of stake is bounded. 
+Partially synchronous means that the lag between the Hub’s view of stake and the consumer’s view of stake is bounded, because consumers that exceed this lag are forcibly removed from the protocol.
 Basically, unlocking collateral from the Hub is being delayed until the consumers’ `UnbondingPeriod` elapses. 
 The reason the view is only partially synchronous is that eventually the collateral is unlocked, i.e., if `VSCMaturedPackets` are not received from a consumer for `VscTimeoutPeriod` (default: 5 weeks), then the consumer is removed from ICS and the collateral is unlocked. 
 Note that keeping the stake locked “forever” would affect the Hub’s liveness, so it’s not a viable option. 
