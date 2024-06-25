@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: ADR Template
+title: Pause validator unbonding during equivocation proposal
 ---
 # ADR 007: Pause validator unbonding during equivocation proposal
 
