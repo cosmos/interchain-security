@@ -3,12 +3,11 @@ package keeper
 import (
 	"context"
 
+	storetypes "cosmossdk.io/store/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-	storetypes "cosmossdk.io/store/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"

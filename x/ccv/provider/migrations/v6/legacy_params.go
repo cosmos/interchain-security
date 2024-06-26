@@ -3,11 +3,10 @@ package v6
 import (
 	"time"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 

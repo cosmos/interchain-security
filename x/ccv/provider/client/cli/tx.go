@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
+	"cosmossdk.io/math"
+
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/spf13/cobra"
-
-	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"

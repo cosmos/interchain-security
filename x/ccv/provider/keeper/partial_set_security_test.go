@@ -2,15 +2,16 @@ package keeper_test
 
 import (
 	"bytes"
-	gomath "math"
 	"sort"
 	"testing"
+
+	gomath "math"
+
+	"cosmossdk.io/math"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
-
-	"cosmossdk.io/math"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"

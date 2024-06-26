@@ -5,7 +5,6 @@ import (
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"

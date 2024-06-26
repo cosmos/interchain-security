@@ -3,9 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	"github.com/stretchr/testify/require"
 
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
