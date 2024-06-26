@@ -109,13 +109,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 	// Set the last provider consensus validator set
 	k.SetLastProviderConsensusValSet(ctx, genState.LastProviderConsensusValidators)
 
-	return k.GetGenesisValUpdates(ctx)
+	return k.InitGenesisValUpdates(ctx)
 }
 
-// GetGenesisValUpdates returns the genesis validator set updates
+// InitGenesisValUpdates returns the genesis validator set updates
 // for the provider module by selecting the first MaxProviderConsensusValidators
 // from the staking module's validator set.
-func (k Keeper) GetGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
+func (k Keeper) InitGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 	// get the staking validator set
 	valSet, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
 	if err != nil {

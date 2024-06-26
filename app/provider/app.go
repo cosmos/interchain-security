@@ -101,7 +101,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -111,6 +110,7 @@ import (
 
 	appencoding "github.com/cosmos/interchain-security/v5/app/encoding"
 	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	no_valupdates_genutil "github.com/cosmos/interchain-security/v5/x/ccv/no_valupdates_genutil"
 	no_valupdates_staking "github.com/cosmos/interchain-security/v5/x/ccv/no_valupdates_staking"
 	ibcprovider "github.com/cosmos/interchain-security/v5/x/ccv/provider"
 	ibcproviderclient "github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
@@ -152,7 +152,7 @@ var (
 		mint.AppModuleBasic{},
 		slashing.AppModuleBasic{},
 		distr.AppModuleBasic{},
-		staking.AppModuleBasic{},
+		no_valupdates_staking.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 
@@ -536,7 +536,7 @@ func New(
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.MM = module.NewManager(
-		genutil.NewAppModule(
+		no_valupdates_genutil.NewAppModule(
 			app.AccountKeeper,
 			app.StakingKeeper,
 			app,
