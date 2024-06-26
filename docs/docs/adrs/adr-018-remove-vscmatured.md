@@ -120,7 +120,7 @@ The first two are no longer needed, while the third (key assignment pruning) nee
 - Stop removing the VSC send timestamps when receiving `VSCMaturedPackets`.
 - Remove the logic from `EndBlockCCR` that checks if the first VSC send timestamp in iterator plus `VscTimeoutPeriod` exceeds the current block time.
 
-**Redesign key assignment pruning.** The reason for keeping "old" consumer addresses in the previous design was to enable slashing / jailing validators that misbehave on consumer chains, 
+**Redesign key assignment pruning.** The reason for keeping "old" consumer addresses is to enable slashing / jailing validators that misbehave on consumer chains, 
 i.e., the slashing logic uses the `GetProviderAddrFromConsumerAddr` method that accesses the mapping from validator addresses on consumer chains to validator addresses on the provider chain (`ValidatorsByConsumerAddrBytePrefix`).
 Thus, "old" consumer addresses are no longer needed after the provider's `UnbondingPeriod` elapses. 
 This means that once a validator changes its key on a consumer, we can prune the address corresponding to the "old" key after `UnbondingPeriod`. 
