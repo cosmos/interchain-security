@@ -9,10 +9,9 @@ import (
 	"strconv"
 	"testing"
 
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/google/go-cmp/cmp"
-
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
 // an isolated test case for a proposal submission

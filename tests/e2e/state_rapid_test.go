@@ -117,6 +117,7 @@ func GetIBCTransferParamsGen() *rapid.Generator[IBCTransferParams] {
 			ReceiveEnabled: rapid.Bool().Draw(t, "ReceiveEnabled"),
 		}
 	})
+
 }
 
 func GetIBCTransferParamsProposalGen() *rapid.Generator[IBCTransferParamsProposal] {

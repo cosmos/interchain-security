@@ -334,6 +334,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 		fmt.Println("submitConsumerAdditionProposal json:", jsonStr)
 	}
 	bz, err = cmd.CombinedOutput()
+
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -467,6 +468,7 @@ func (tr Chain) submitConsumerModificationProposal(
 	}
 
 	bz, err = cmd.CombinedOutput()
+
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1003,6 +1005,7 @@ func (tr Chain) addChainToHermes(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
+
 	bz, err := tr.target.ExecCommand("bash", "-c", "hermes", "version").CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n error getting hermes version", string(bz))
@@ -1768,7 +1771,7 @@ func (tr Chain) invokeDowntimeSlash(action DowntimeSlashAction, verbose bool) {
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down, verbose bool) {
+func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down bool, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -1908,7 +1911,7 @@ func (tr Chain) registerRepresentative(
 				panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 			}
 			defer file.Close()
-			err = os.WriteFile(file.Name(), []byte(fileContent), 0o600)
+			err = os.WriteFile(file.Name(), []byte(fileContent), 0600)
 			if err != nil {
 				log.Fatalf("Failed writing consumer genesis to file: %v", err)
 			}
