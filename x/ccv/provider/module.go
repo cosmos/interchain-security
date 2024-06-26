@@ -181,9 +181,7 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 	// EndBlock logic needed for the Consumer Chain Removal sub-protocol
 	am.keeper.EndBlockCCR(sdkCtx)
 	// EndBlock logic needed for the Validator Set Update sub-protocol
-	am.keeper.EndBlockVSU(sdkCtx)
-
-	return nil
+	return am.keeper.EndBlockVSU(sdkCtx)
 }
 
 // AppModuleSimulation functions

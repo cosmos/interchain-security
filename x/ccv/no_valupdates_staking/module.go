@@ -38,11 +38,17 @@ type AppModule struct {
 
 // NewAppModule creates a new AppModule object using the native x/staking module
 // AppModule constructor.
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper, subspace exported.Subspace) AppModule {
-	stakingAppMod := staking.NewAppModule(cdc, &keeper, ak, bk, subspace)
+func NewAppModule(
+	cdc codec.Codec,
+	keeper *keeper.Keeper,
+	ak types.AccountKeeper,
+	bk types.BankKeeper,
+	ls exported.Subspace,
+) AppModule {
+	stakingAppMod := staking.NewAppModule(cdc, keeper, ak, bk, ls)
 	return AppModule{
 		AppModule:  stakingAppMod,
-		keeper:     keeper,
+		keeper:     *keeper,
 		accKeeper:  ak,
 		bankKeeper: bk,
 	}

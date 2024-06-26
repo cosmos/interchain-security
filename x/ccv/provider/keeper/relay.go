@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
@@ -13,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -160,6 +162,70 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 		// the updates will remain queued until the channel is established
 		k.SendVSCPackets(ctx)
 	}
+}
+
+func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
+	// get the bonded validators from the staking module
+	bondedValidators := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+
+	// get the last validator set sent to consensus
+	currentValidators := k.GetLastProviderConsensusValSet(ctx)
+
+	nextValidators := []types.ConsumerValidator{}
+	maxValidators := k.GetMaxProviderConsensusValidators(ctx)
+	// avoid out of range errors by bounding the max validators to the number of bonded validators
+	if maxValidators > int64(len(bondedValidators)) {
+		maxValidators = int64(len(bondedValidators))
+	}
+	for _, val := range bondedValidators[:maxValidators] {
+		// create the validator from the staking validator
+		consAddr, err := val.GetConsAddr()
+		if err != nil {
+			k.Logger(ctx).Error("getting consensus address",
+				"validator", val.GetOperator(),
+				"error", err)
+			continue
+		}
+
+		pubKey, err := val.TmConsPublicKey()
+		if err != nil {
+			k.Logger(ctx).Error("getting consensus public key",
+				"validator", val.GetOperator(),
+				"error", err)
+			continue
+		}
+
+		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+		if err != nil {
+			k.Logger(ctx).Error("creating validator address",
+				"validator", val.GetOperator(),
+				"error", err)
+			continue
+		}
+
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+		if err != nil {
+			k.Logger(ctx).Error("getting last validator power",
+				"validator", val.GetOperator(),
+				"error", err)
+			continue
+		}
+
+		nextValidator := types.ConsumerValidator{
+			ProviderConsAddr:  consAddr,
+			ConsumerPublicKey: &pubKey,
+			Power:             power,
+		}
+
+		nextValidators = append(nextValidators, nextValidator)
+	}
+
+	// store the validator set we will send to consensus
+	k.SetLastProviderConsensusValSet(ctx, nextValidators)
+
+	valUpdates := DiffValidators(currentValidators, nextValidators)
+
+	return valUpdates
 }
 
 // SendVSCPackets iterates over all registered consumers and sends pending
