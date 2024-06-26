@@ -78,11 +78,12 @@ func (mr *MockStakingKeeperMockRecorder) Delegation(ctx, addr, valAddr interface
 }
 
 // GetBondedValidatorsByPower mocks base method.
-func (m *MockStakingKeeper) GetBondedValidatorsByPower(ctx types1.Context) []types3.Validator {
+func (m *MockStakingKeeper) GetBondedValidatorsByPower(ctx context.Context) ([]types3.Validator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBondedValidatorsByPower", ctx)
 	ret0, _ := ret[0].([]types3.Validator)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetBondedValidatorsByPower indicates an expected call of GetBondedValidatorsByPower.

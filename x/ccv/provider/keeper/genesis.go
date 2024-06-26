@@ -5,12 +5,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.
-func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
+func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abci.ValidatorUpdate {
 	k.SetPort(ctx, ccv.ProviderPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -103,6 +105,50 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 	k.SetParams(ctx, genState.Params)
 	k.InitializeSlashMeter(ctx)
+
+	// Set the last provider consensus validator set
+	k.SetLastProviderConsensusValSet(ctx, genState.LastProviderConsensusValidators)
+
+	return k.GetGenesisValUpdates(ctx)
+}
+
+// GetGenesisValUpdates returns the genesis validator set updates
+// for the provider module by selecting the first MaxProviderConsensusValidators
+// from the staking module's validator set.
+func (k Keeper) GetGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
+	// get the staking validator set
+	valSet, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		panic(fmt.Errorf("retrieving validator set: %w", err))
+	}
+
+	// restrict the set to the first MaxProviderConsensusValidators
+	maxVals := k.GetParams(ctx).MaxProviderConsensusValidators
+	if int64(len(valSet)) > maxVals {
+		k.Logger(ctx).Info(fmt.Sprintf("reducing validator set from %d to %d", len(valSet), maxVals))
+		valSet = valSet[:maxVals]
+	}
+
+	reducedValSet := make([]types.ConsensusValidator, len(valSet))
+	for i, val := range valSet {
+		consensusVal, err := k.CreateProviderConsensusValidator(ctx, val)
+		if err != nil {
+			k.Logger(ctx).Error(fmt.Sprintf("failed to create provider consensus validator: %v", err))
+			continue
+		}
+		reducedValSet[i] = consensusVal
+	}
+
+	k.SetLastProviderConsensusValSet(ctx, reducedValSet)
+
+	valUpdates := make([]abci.ValidatorUpdate, len(reducedValSet))
+	for i, val := range reducedValSet {
+		valUpdates[i] = abci.ValidatorUpdate{
+			PubKey: *val.PublicKey,
+			Power:  val.Power,
+		}
+	}
+	return valUpdates
 }
 
 // ExportGenesis returns the CCV provider module's exported genesis
@@ -171,5 +217,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		consumerAddrsToPrune,
 		k.GetAllInitTimeoutTimestamps(ctx),
 		exportedVscSendTimestamps,
+		k.GetLastProviderConsensusValSet(ctx),
 	)
 }

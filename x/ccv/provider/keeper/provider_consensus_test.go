@@ -3,8 +3,9 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -14,10 +15,10 @@ func TestSetLastProviderConsensusValidator(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validator := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddr"),
-		Power:             2,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validator := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddr"),
+		Power:            2,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
 	providerKeeper.SetLastProviderConsensusValidator(ctx, validator)
@@ -32,19 +33,19 @@ func TestSetLastProviderConsensusValSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validator1 := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddr1"),
-		Power:             2,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validator1 := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddr1"),
+		Power:            2,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	validator2 := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddr2"),
-		Power:             3,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validator2 := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddr2"),
+		Power:            3,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	nextValidators := []types.ConsumerValidator{validator1, validator2}
+	nextValidators := []types.ConsensusValidator{validator1, validator2}
 
 	providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
 
@@ -57,10 +58,10 @@ func TestDeleteLastProviderConsensusValidator(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validator := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddr"),
-		Power:             2,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validator := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddr"),
+		Power:            2,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
 	providerKeeper.SetLastProviderConsensusValidator(ctx, validator)
@@ -77,19 +78,19 @@ func TestDeleteLastProviderConsensusValSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validator1 := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddr1"),
-		Power:             2,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validator1 := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddr1"),
+		Power:            2,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	validator2 := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddr2"),
-		Power:             3,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validator2 := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddr2"),
+		Power:            3,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	nextValidators := []types.ConsumerValidator{validator1, validator2}
+	nextValidators := []types.ConsensusValidator{validator1, validator2}
 
 	providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
 

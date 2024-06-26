@@ -1,8 +1,9 @@
 package integration
 
 import (
-	"cosmossdk.io/math"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"

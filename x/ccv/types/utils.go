@@ -7,11 +7,12 @@ import (
 	"strings"
 	"time"
 
-	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/log"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/log"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -139,7 +140,6 @@ func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, l
 		i++
 		return i >= int(maxVals) // stop iteration if true
 	})
-
 	if err != nil {
 		return nil, err
 	}

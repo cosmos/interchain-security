@@ -7,9 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	addresscodec "cosmossdk.io/core/address"
-	"cosmossdk.io/math"
-
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -17,16 +15,16 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
+	addresscodec "cosmossdk.io/core/address"
 	errorsmod "cosmossdk.io/errors"
-
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-
-	"cosmossdk.io/log"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"

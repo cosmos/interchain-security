@@ -7,6 +7,7 @@ import (
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/core/appmodule"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -74,7 +75,6 @@ func (am AppModule) EndBlock(c context.Context) error {
 		deleteForbiddenProposal(ctx, am, proposal)
 		return false, nil
 	})
-
 	if err != nil {
 		return err
 	}

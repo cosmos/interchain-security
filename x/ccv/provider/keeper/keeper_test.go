@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 

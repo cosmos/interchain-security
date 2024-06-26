@@ -4,24 +4,26 @@ import (
 	"context"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"

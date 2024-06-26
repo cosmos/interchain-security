@@ -6,23 +6,23 @@ import (
 	"reflect"
 	"time"
 
-	addresscodec "cosmossdk.io/core/address"
-	"cosmossdk.io/core/store"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
+	addresscodec "cosmossdk.io/core/address"
+	"cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
-
+	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	"cosmossdk.io/log"
 	tmtypes "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"

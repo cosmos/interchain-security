@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
+
 	consumerTypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )

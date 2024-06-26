@@ -9,13 +9,14 @@ import (
 	"strconv"
 	"time"
 
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
-	"gopkg.in/yaml.v2"
-
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
+	"gopkg.in/yaml.v2"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+
+	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 )
 
 type (
@@ -236,7 +237,7 @@ func (tr Commands) GetBalance(chain ChainID, validator ValidatorID) uint {
 
 // interchain-securityd query gov proposals
 func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
-	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
+	noProposalRegex := regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
@@ -411,6 +412,7 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 
 	return chains
 }
+
 func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
@@ -545,7 +547,7 @@ func (tr Commands) curlJsonRPCRequest(method, params, address string) {
 // by querying the hosting chain with the given chainID
 func (tr Commands) GetClientFrozenHeight(chain ChainID, clientID string) (uint64, uint64) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
+	// cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 		"query", "ibc", "client", "state", clientID,
@@ -579,7 +581,7 @@ func (tr Commands) GetTrustedHeight(
 	index int,
 ) (uint64, uint64) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
+	// configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
 	configureNodeCmd := tr.Target.ExecCommand("hermes",
 		"--json", "query", "client", "consensus", "--chain", string(chain),
 		`--client`, clientID,
@@ -623,7 +625,7 @@ func (tr Commands) GetTrustedHeight(
 
 func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	// bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 		"query", "provider", "list-proposed-consumer-chains",

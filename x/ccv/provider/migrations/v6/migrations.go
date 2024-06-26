@@ -2,6 +2,7 @@ package v6
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )

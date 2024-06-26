@@ -3,11 +3,12 @@ package integration
 import (
 	"time"
 
-	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+
+	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"

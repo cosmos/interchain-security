@@ -12,7 +12,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -35,6 +34,7 @@ import (
 	"github.com/cosmos/interchain-security/v5/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v5/testutil/simibc"
 	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 

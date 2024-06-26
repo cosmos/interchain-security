@@ -3,6 +3,7 @@ package provider_test
 import (
 	"testing"
 
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -13,7 +14,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider"

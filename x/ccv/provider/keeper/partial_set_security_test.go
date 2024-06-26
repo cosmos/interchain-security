@@ -2,16 +2,15 @@ package keeper_test
 
 import (
 	"bytes"
+	gomath "math"
 	"sort"
 	"testing"
-
-	gomath "math"
-
-	"cosmossdk.io/math"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
+
+	"cosmossdk.io/math"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -389,24 +388,24 @@ func TestCapValidatorSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validatorA := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddrA"),
-		Power:             1,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validatorA := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddrA"),
+		Power:            1,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	validatorB := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddrB"),
-		Power:             2,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validatorB := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddrB"),
+		Power:            2,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	validatorC := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddrC"),
-		Power:             3,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validatorC := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddrC"),
+		Power:            3,
+		PublicKey:        &crypto.PublicKey{},
 	}
-	validators := []types.ConsumerValidator{validatorA, validatorB, validatorC}
+	validators := []types.ConsensusValidator{validatorA, validatorB, validatorC}
 
 	consumerValidators := providerKeeper.CapValidatorSet(ctx, "chainID", validators)
 	require.Equal(t, validators, consumerValidators)
@@ -421,55 +420,55 @@ func TestCapValidatorSet(t *testing.T) {
 
 	providerKeeper.SetValidatorSetCap(ctx, "chainID", 1)
 	consumerValidators = providerKeeper.CapValidatorSet(ctx, "chainID", validators)
-	require.Equal(t, []types.ConsumerValidator{validatorC}, consumerValidators)
+	require.Equal(t, []types.ConsensusValidator{validatorC}, consumerValidators)
 
 	providerKeeper.SetValidatorSetCap(ctx, "chainID", 2)
 	consumerValidators = providerKeeper.CapValidatorSet(ctx, "chainID", validators)
-	require.Equal(t, []types.ConsumerValidator{validatorC, validatorB}, consumerValidators)
+	require.Equal(t, []types.ConsensusValidator{validatorC, validatorB}, consumerValidators)
 
 	providerKeeper.SetValidatorSetCap(ctx, "chainID", 3)
 	consumerValidators = providerKeeper.CapValidatorSet(ctx, "chainID", validators)
-	require.Equal(t, []types.ConsumerValidator{validatorC, validatorB, validatorA}, consumerValidators)
+	require.Equal(t, []types.ConsensusValidator{validatorC, validatorB, validatorA}, consumerValidators)
 }
 
 func TestCapValidatorsPower(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validatorA := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddrA"),
-		Power:             1,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validatorA := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddrA"),
+		Power:            1,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	validatorB := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddrB"),
-		Power:             2,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validatorB := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddrB"),
+		Power:            2,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	validatorC := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddrC"),
-		Power:             3,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validatorC := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddrC"),
+		Power:            3,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	validatorD := types.ConsumerValidator{
-		ProviderConsAddr:  []byte("providerConsAddrD"),
-		Power:             4,
-		ConsumerPublicKey: &crypto.PublicKey{},
+	validatorD := types.ConsensusValidator{
+		ProviderConsAddr: []byte("providerConsAddrD"),
+		Power:            4,
+		PublicKey:        &crypto.PublicKey{},
 	}
 
-	validators := []types.ConsumerValidator{validatorA, validatorB, validatorC, validatorD}
+	validators := []types.ConsensusValidator{validatorA, validatorB, validatorC, validatorD}
 
-	expectedValidators := make([]types.ConsumerValidator, len(validators))
+	expectedValidators := make([]types.ConsensusValidator, len(validators))
 	copy(expectedValidators, validators)
 	expectedValidators[0].Power = 2
 	expectedValidators[1].Power = 2
 	expectedValidators[2].Power = 3
 	expectedValidators[3].Power = 3
 
-	sortValidators := func(validators []types.ConsumerValidator) {
+	sortValidators := func(validators []types.ConsensusValidator) {
 		sort.Slice(validators, func(i, j int) bool {
 			return bytes.Compare(validators[i].ProviderConsAddr, validators[j].ProviderConsAddr) < 0
 		})
@@ -523,13 +522,13 @@ func TestNoMoreThanPercentOfTheSum(t *testing.T) {
 	require.True(t, noMoreThanPercent(keeper.NoMoreThanPercentOfTheSum(createConsumerValidators(powers), percent), percent))
 }
 
-func createConsumerValidators(powers []int64) []types.ConsumerValidator {
-	var validators []types.ConsumerValidator
+func createConsumerValidators(powers []int64) []types.ConsensusValidator {
+	var validators []types.ConsensusValidator
 	for _, p := range powers {
-		validators = append(validators, types.ConsumerValidator{
-			ProviderConsAddr:  []byte("providerConsAddr"),
-			Power:             p,
-			ConsumerPublicKey: &crypto.PublicKey{},
+		validators = append(validators, types.ConsensusValidator{
+			ProviderConsAddr: []byte("providerConsAddr"),
+			Power:            p,
+			PublicKey:        &crypto.PublicKey{},
 		})
 	}
 	return validators
@@ -537,7 +536,7 @@ func createConsumerValidators(powers []int64) []types.ConsumerValidator {
 
 // returns `true` if no validator in `validators` corresponds to more than `percent` of the total sum of all
 // validators' powers
-func noMoreThanPercent(validators []types.ConsumerValidator, percent uint32) bool {
+func noMoreThanPercent(validators []types.ConsensusValidator, percent uint32) bool {
 	sum := int64(0)
 	for _, v := range validators {
 		sum = sum + v.Power
@@ -551,7 +550,7 @@ func noMoreThanPercent(validators []types.ConsumerValidator, percent uint32) boo
 	return true
 }
 
-func sumPowers(vals []types.ConsumerValidator) int64 {
+func sumPowers(vals []types.ConsensusValidator) int64 {
 	sum := int64(0)
 	for _, v := range vals {
 		sum += v.Power
@@ -559,7 +558,7 @@ func sumPowers(vals []types.ConsumerValidator) int64 {
 	return sum
 }
 
-func CapSatisfiable(vals []types.ConsumerValidator, percent uint32) bool {
+func CapSatisfiable(vals []types.ConsensusValidator, percent uint32) bool {
 	// 100 / len(vals) is what each validator gets if each has the same power.
 	// if this is more than the cap, it cannot be satisfied.
 	return float64(100)/float64(len(vals)) < float64(percent)
@@ -569,14 +568,14 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 	// define properties to test
 
 	// capRespectedIfSatisfiable: if the cap can be respected, then it will be respected
-	capRespectedIfSatisfiable := func(valsBefore, valsAfter []types.ConsumerValidator, percent uint32) bool {
+	capRespectedIfSatisfiable := func(valsBefore, valsAfter []types.ConsensusValidator, percent uint32) bool {
 		if CapSatisfiable(valsBefore, percent) {
 			return noMoreThanPercent(valsAfter, percent)
 		}
 		return true
 	}
 
-	evenPowersIfCapCannotBeSatisfied := func(valsBefore, valsAfter []types.ConsumerValidator, percent uint32) bool {
+	evenPowersIfCapCannotBeSatisfied := func(valsBefore, valsAfter []types.ConsensusValidator, percent uint32) bool {
 		if !CapSatisfiable(valsBefore, percent) {
 			// if the cap cannot be satisfied, each validator should have the same power
 			for _, valAfter := range valsAfter {
@@ -590,7 +589,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 
 	// fairness: if before, v1 has more power than v2, then afterwards v1 will not have less power than v2
 	// (they might get the same power if they are both capped)
-	fairness := func(valsBefore, valsAfter []types.ConsumerValidator) bool {
+	fairness := func(valsBefore, valsAfter []types.ConsensusValidator) bool {
 		for i, v := range valsBefore {
 			// find the validator after with the same address
 			vAfter := findConsumerValidator(t, v, valsAfter)
@@ -619,7 +618,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 	}
 
 	// non-zero: v has non-zero power before IFF it has non-zero power after
-	nonZero := func(valsBefore, valsAfter []types.ConsumerValidator) bool {
+	nonZero := func(valsBefore, valsAfter []types.ConsensusValidator) bool {
 		for _, v := range valsBefore {
 			vAfter := findConsumerValidator(t, v, valsAfter)
 			if (v.Power == 0) != (vAfter.Power == 0) {
@@ -631,7 +630,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 
 	// equalSumIfCapSatisfiable: the sum of the powers of the validators will not change if the cap can be satisfied
 	// (except for small changes by rounding errors)
-	equalSumIfCapSatisfiable := func(valsBefore, valsAfter []types.ConsumerValidator, percent uint32) bool {
+	equalSumIfCapSatisfiable := func(valsBefore, valsAfter []types.ConsensusValidator, percent uint32) bool {
 		if CapSatisfiable(valsBefore, percent) {
 			difference := gomath.Abs(float64(sumPowers(valsBefore) - sumPowers(valsAfter)))
 			if difference > 1 {
@@ -643,7 +642,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 	}
 
 	// num validators: the number of validators will not change
-	equalNumVals := func(valsBefore, valsAfter []types.ConsumerValidator) bool {
+	equalNumVals := func(valsBefore, valsAfter []types.ConsensusValidator) bool {
 		return len(valsBefore) == len(valsAfter)
 	}
 
@@ -669,8 +668,8 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 	})
 }
 
-func findConsumerValidator(t *testing.T, v types.ConsumerValidator, valsAfter []types.ConsumerValidator) *types.ConsumerValidator {
-	var vAfter *types.ConsumerValidator
+func findConsumerValidator(t *testing.T, v types.ConsensusValidator, valsAfter []types.ConsensusValidator) *types.ConsensusValidator {
+	var vAfter *types.ConsensusValidator
 	for _, vA := range valsAfter {
 		if bytes.Equal(v.ProviderConsAddr, vA.ProviderConsAddr) {
 			vAfter = &vA

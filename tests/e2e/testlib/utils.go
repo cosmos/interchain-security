@@ -7,7 +7,7 @@ import (
 	"os/exec"
 )
 
-var verbose *bool //TODO: remove hack
+var verbose *bool // TODO: remove hack
 
 func ExecuteCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose bool) {
 	if verbose {

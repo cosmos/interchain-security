@@ -3,8 +3,9 @@ package integration
 import (
 	"time"
 
-	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+
+	"cosmossdk.io/math"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 

@@ -14,7 +14,6 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
@@ -316,7 +315,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 
 	// deposit is refunded
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
-
 }
 
 func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, msgs []sdk.Msg,

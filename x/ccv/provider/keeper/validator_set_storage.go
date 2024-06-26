@@ -5,6 +5,7 @@ import (
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -19,7 +20,7 @@ func (k Keeper) getValidatorKey(prefix []byte, providerAddr types.ProviderConsAd
 func (k Keeper) setValidator(
 	ctx sdk.Context,
 	prefix []byte,
-	validator types.ConsumerValidator,
+	validator types.ConsensusValidator,
 ) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := validator.Marshal()
@@ -31,7 +32,7 @@ func (k Keeper) setValidator(
 }
 
 // setValSet resets the validator set stored under the given prefix to the provided `nextValidators`.
-func (k Keeper) setValSet(ctx sdk.Context, prefix []byte, nextValidators []types.ConsumerValidator) {
+func (k Keeper) setValSet(ctx sdk.Context, prefix []byte, nextValidators []types.ConsensusValidator) {
 	k.deleteValSet(ctx, prefix)
 	for _, val := range nextValidators {
 		k.setValidator(ctx, prefix, val)
@@ -78,14 +79,14 @@ func (k Keeper) isValidator(ctx sdk.Context, prefix []byte, providerAddr types.P
 func (k Keeper) getValSet(
 	ctx sdk.Context,
 	key []byte,
-) (validators []types.ConsumerValidator) {
+) (validators []types.ConsensusValidator) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		iterator.Value()
-		var validator types.ConsumerValidator
+		var validator types.ConsensusValidator
 		if err := validator.Unmarshal(iterator.Value()); err != nil {
 			panic(fmt.Errorf("failed to unmarshal ConsumerValidator: %w", err))
 		}

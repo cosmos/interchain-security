@@ -11,10 +11,11 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
+
+	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 )
 
 // type aliases
@@ -365,7 +366,6 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 	)
 
 	bz, err := cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
@@ -380,7 +380,7 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 
 // interchain-securityd query gov proposals
 func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
-	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
+	noProposalRegex := regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,

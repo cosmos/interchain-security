@@ -12,6 +12,7 @@ import (
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/evidence/types"
 	evidencetypes "cosmossdk.io/x/evidence/types"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"
@@ -129,7 +130,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		relayAllCommittedPackets(s, s.providerChain, bundle.Path,
 			ccv.ProviderPortID, bundle.Path.EndpointB.ChannelID, 1)
 
-		// check that each consumer updated its VSC ID for the subsequent not commited block ctx.BlockHeight()
+		// check that each consumer updated its VSC ID for the subsequent not committed block ctx.BlockHeight()
 		consumerKeeper := bundle.GetKeeper()
 		ctx := bundle.GetCtx()
 		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
@@ -419,7 +420,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().NoError(err, "no error expected")
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 
-	providerKeeper.SetConsumerValidator(ctx, firstBundle.Chain.ChainID, providertypes.ConsumerValidator{
+	providerKeeper.SetConsumerValidator(ctx, firstBundle.Chain.ChainID, providertypes.ConsensusValidator{
 		ProviderConsAddr: validAddress,
 	})
 

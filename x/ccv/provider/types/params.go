@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -178,6 +179,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
 		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyMaxProviderConsensusValidators, p.MaxProviderConsensusValidators, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

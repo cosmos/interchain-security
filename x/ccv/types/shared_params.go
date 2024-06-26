@@ -4,8 +4,9 @@ import (
 	fmt "fmt"
 	"time"
 
-	"cosmossdk.io/math"
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+
+	"cosmossdk.io/math"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 )

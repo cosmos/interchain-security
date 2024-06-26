@@ -10,19 +10,20 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	cmttypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/interchain-security/v5/testutil/integration"
 
+	"github.com/cosmos/interchain-security/v5/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )

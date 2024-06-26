@@ -5,6 +5,7 @@ import (
 	time "time"
 
 	"cosmossdk.io/math"
+
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"

@@ -3,8 +3,9 @@ package integration
 import (
 	"time"
 
-	"cosmossdk.io/math"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 

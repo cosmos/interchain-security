@@ -11,8 +11,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-
 	evidencetypes "cosmossdk.io/x/evidence/types"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -359,7 +359,7 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
 	} else if err != nil {
-		return errorsmod.Wrapf(slashingtypes.ErrBadValidatorAddr, "unkown error looking for provider consensus address: %s", providerAddr.String())
+		return errorsmod.Wrapf(slashingtypes.ErrBadValidatorAddr, "unknown error looking for provider consensus address: %s", providerAddr.String())
 	}
 
 	if validator.IsUnbonded() {
@@ -429,7 +429,7 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
 	} else if err != nil {
-		return errorsmod.Wrapf(slashingtypes.ErrBadValidatorAddr, "unkown error looking for provider consensus address: %s", providerAddr.String())
+		return errorsmod.Wrapf(slashingtypes.ErrBadValidatorAddr, "unknown error looking for provider consensus address: %s", providerAddr.String())
 	}
 
 	if validator.IsUnbonded() {
