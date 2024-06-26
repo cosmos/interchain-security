@@ -37,7 +37,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	// increased by HistoricalEntries in order to prune the historical info less or equal to the current block height
 	// Note that historical info containing the created validators were stored during the BeginBlocker of the current block
 	// at the moment of creation and thus are indexed with the respective block heights InitHeight and InitHeight+1
-	// Last saved historical info was in the last committed block k.consumerChain.GetContext().BlockHeight(), meaning that
+	// Last saved historical info was in the last commited block k.consumerChain.GetContext().BlockHeight(), meaning that
 	// if we want to prune old entries we need to start from the last saved historical info which is k.consumerChain.GetContext().BlockHeight() - 1
 	testSetup := []func(CCVTestSuite){
 		createVal,

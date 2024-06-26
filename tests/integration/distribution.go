@@ -3,16 +3,15 @@ package integration
 import (
 	"strings"
 
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
+	"cosmossdk.io/math"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
-	"cosmossdk.io/math"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-
 	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
