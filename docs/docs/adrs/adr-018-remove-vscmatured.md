@@ -140,7 +140,8 @@ Remove the `oldest_unconfirmed_vsc` query.
 #### Parameters
 
 Given that currently relayers use the consumer `UnbondingPeriod` (see `ConsumerParams`), this param cannot be deprecated. 
-The `UnbondingTime` method from the staking interface will continue to be used to retrieve the consumer's `UnbondingPeriod`.
+Note that Hermes queries the `UnbondingPeriod` for sanity checks and to set the default trusting period when it is not specified.
+As a result, the `UnbondingTime` method from the staking interface will continue to be used to retrieve the consumer's `UnbondingPeriod`.
 
 #### State
 
