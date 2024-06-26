@@ -55,7 +55,7 @@ Deprecate the `InitTimeoutPeriod` and `VscTimeoutPeriod` parameters.
 
 #### State
 
-Add the following key prefixes to the state:
+Add the following key prefix to the state:
 
 - `ConsumerAddrsToPruneV2BytePrefix` -- the byte prefix for storing consumer validators addresses that need to be pruned.
   These are stored as 
