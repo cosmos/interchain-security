@@ -132,7 +132,7 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 			}
 			// UnbondingCanComplete failing means that the state of the x/staking module
 			// of cosmos-sdk is invalid. An exception is the case handled above
-			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
+			k.Logger(ctx).Error(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
 		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
 	}
@@ -486,55 +486,55 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 // EndBlockCCR contains the EndBlock logic needed for
 // the Consumer Chain Removal sub-protocol
 func (k Keeper) EndBlockCCR(ctx sdk.Context) {
-	currentTime := ctx.BlockTime()
-	currentTimeUint64 := uint64(currentTime.UnixNano())
+	// currentTime := ctx.BlockTime()
+	// currentTimeUint64 := uint64(currentTime.UnixNano())
 
-	for _, initTimeoutTimestamp := range k.GetAllInitTimeoutTimestamps(ctx) {
-		if currentTimeUint64 > initTimeoutTimestamp.Timestamp {
-			// initTimeout expired
-			// stop the consumer chain and unlock the unbonding.
-			// Note that the CCV channel was not established,
-			// thus closeChan is irrelevant
-			k.Logger(ctx).Info("about to remove timed out consumer chain - chain was not initialised",
-				"chainID", initTimeoutTimestamp.ChainId)
-			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
-			if err != nil {
-				if providertypes.ErrConsumerChainNotFound.Is(err) {
-					// consumer chain not found
-					continue
-				}
-				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-			}
-		}
-	}
+	// for _, initTimeoutTimestamp := range k.GetAllInitTimeoutTimestamps(ctx) {
+	// 	if currentTimeUint64 > initTimeoutTimestamp.Timestamp {
+	// 		// initTimeout expired
+	// 		// stop the consumer chain and unlock the unbonding.
+	// 		// Note that the CCV channel was not established,
+	// 		// thus closeChan is irrelevant
+	// 		k.Logger(ctx).Info("about to remove timed out consumer chain - chain was not initialised",
+	// 			"chainID", initTimeoutTimestamp.ChainId)
+	// 		err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
+	// 		if err != nil {
+	// 			if providertypes.ErrConsumerChainNotFound.Is(err) {
+	// 				// consumer chain not found
+	// 				continue
+	// 			}
+	// 			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+	// 		}
+	// 	}
+	// }
 
-	for _, channelToChain := range k.GetAllChannelToChains(ctx) {
-		// Check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
-		// exceed the current block time.
-		// Checking the first send timestamp for each chain is sufficient since
-		// timestamps are ordered by vsc ID.
-		// Note: GetFirstVscSendTimestamp panics if the internal state is invalid
-		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
-		if found {
-			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
-			if currentTime.After(timeoutTimestamp) {
-				// vscTimeout expired
-				// stop the consumer chain and release unbondings
-				k.Logger(ctx).Info("about to remove timed out consumer chain - VSCPacket timed out",
-					"chainID", channelToChain.ChainId,
-					"vscID", vscSendTimestamp.VscId,
-				)
-				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
-				if err != nil {
-					if providertypes.ErrConsumerChainNotFound.Is(err) {
-						// consumer chain not found
-						continue
-					}
-					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-				}
-			}
-		}
-	}
+	// for _, channelToChain := range k.GetAllChannelToChains(ctx) {
+	// 	// Check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
+	// 	// exceed the current block time.
+	// 	// Checking the first send timestamp for each chain is sufficient since
+	// 	// timestamps are ordered by vsc ID.
+	// 	// Note: GetFirstVscSendTimestamp panics if the internal state is invalid
+	// 	vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
+	// 	if found {
+	// 		timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
+	// 		if currentTime.After(timeoutTimestamp) {
+	// 			// vscTimeout expired
+	// 			// stop the consumer chain and release unbondings
+	// 			k.Logger(ctx).Info("about to remove timed out consumer chain - VSCPacket timed out",
+	// 				"chainID", channelToChain.ChainId,
+	// 				"vscID", vscSendTimestamp.VscId,
+	// 			)
+	// 			err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
+	// 			if err != nil {
+	// 				if providertypes.ErrConsumerChainNotFound.Is(err) {
+	// 					// consumer chain not found
+	// 					continue
+	// 				}
+	// 				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
 // getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
