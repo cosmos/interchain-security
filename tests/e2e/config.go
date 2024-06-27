@@ -92,6 +92,7 @@ const (
 	ConsumerMisbehaviourTestCfg TestConfigType = "consumer-misbehaviour"
 	CompatibilityTestCfg        TestConfigType = "compatibility"
 	SmallMaxValidatorsTestCfg   TestConfigType = "small-max-validators"
+	InactiveProviderValsTestCfg TestConfigType = "inactive-provider-vals"
 )
 
 type TestConfig struct {
@@ -180,6 +181,8 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = CompatibilityTestConfig(pv, cv)
 	case SmallMaxValidatorsTestCfg:
 		testCfg = SmallMaxValidatorsTestConfig()
+	case InactiveProviderValsTestCfg:
+		testCfg = InactiveProviderValsTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -417,7 +420,7 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 				".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
 		}
-	} else if semver.Compare(providerVersion, "v5.0.0-alpha1") < 0 { //TODO: MOV THIS BACK TO "v5.0.0"
+	} else if semver.Compare(providerVersion, "v5.0.0-alpha1") < 0 { // TODO: MOV THIS BACK TO "v5.0.0"
 		fmt.Println("Using provider chain config for v4.1.x")
 		providerConfig = ChainConfig{
 			ChainId:        ChainID("provi"),
@@ -554,6 +557,27 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 	tr.Initialize()
+	return tr
+}
+
+func InactiveProviderValsTestConfig() TestConfig {
+	tr := DefaultTestConfig()
+	tr.name = "InactiveValsConfig"
+	// set the MaxProviderConsensusValidators param to 2
+	proviConfig := tr.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += " | .app_state.provider.params.max_provider_consensus_validators = \"2\""
+
+	consuConfig := tr.chainConfigs[ChainID("consu")]
+	// set the soft_opt_out threshold to 0% to make sure all validators are slashed for downtime
+	consuConfig.GenesisChanges += " | .app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.0\""
+	tr.chainConfigs[ChainID("provi")] = proviConfig
+	tr.chainConfigs[ChainID("consu")] = consuConfig
+
+	// make is to that carol does not use a consumer key
+	carolConfig := tr.validatorConfigs[ValidatorID("carol")]
+	carolConfig.UseConsumerKey = false
+	tr.validatorConfigs[ValidatorID("carol")] = carolConfig
+
 	return tr
 }
 
