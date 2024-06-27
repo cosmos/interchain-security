@@ -357,7 +357,7 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
-		"query", "distribution", "delegation-total-rewards",
+		"query", "distribution", "rewards",
 		delAddresss,
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.GetQueryNode(chain),

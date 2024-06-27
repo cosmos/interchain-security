@@ -1,6 +1,11 @@
 package main
 
-import clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+import (
+	"strconv"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+)
 
 // stepsInactiveValidatorsOnConsumer tests situations where validators that are *not* in the active set on the
 // provider chain validate on the consumer chain.
@@ -79,7 +84,7 @@ func stepsInactiveProviderValidators() []Step {
 					Chain:  ChainID("provi"),
 					From:   ValidatorID("carol"),
 					To:     ValidatorID("carol"),
-					Amount: 1000000000, // carol needs to have more than 2/3rds of power(alice) + power(carol) + power(bob) to run both chains alone, so we stake some more to her
+					Amount: 700000000, // carol needs to have more than 2/3rds of power(alice) + power(carol) + power(bob) to run both chains alone, so we stake some more to her
 				},
 				State: State{
 					ChainID("provi"): ChainState{
@@ -186,7 +191,7 @@ func stepsInactiveProviderValidators() []Step {
 						ValPowers: &map[ValidatorID]uint{
 							ValidatorID("alice"): 100,
 							ValidatorID("bob"):   0,
-							ValidatorID("carol"): 500,
+							ValidatorID("carol"): 1000,
 						},
 					},
 				},
@@ -377,7 +382,7 @@ func setupOptInChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
@@ -449,7 +454,7 @@ func setupOptInChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_PASSED",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
