@@ -344,28 +344,27 @@ func (tr Commands) GetBlockHeight(chain ChainID) uint {
 
 func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
 	valCfg := tr.validatorConfigs[validator]
-	delAddresss := valCfg.DelAddress
+	delAddress := valCfg.DelAddress
 	if chain != ChainID("provi") {
 		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if valCfg.UseConsumerKey {
-			delAddresss = valCfg.ConsumerDelAddress
+			delAddress = valCfg.ConsumerDelAddress
 		} else {
 			// use the same address as on the provider but with different prefix
-			delAddresss = valCfg.DelAddressOnConsumer
+			delAddress = valCfg.DelAddressOnConsumer
 		}
 	}
 
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
 		"query", "distribution", "delegation-total-rewards",
-		"--delegator-address", delAddresss,
+		"--delegator-address", delAddress,
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	)
 
 	bz, err := cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
@@ -380,7 +379,7 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 
 // interchain-securityd query gov proposals
 func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
-	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
+	noProposalRegex := regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.chainConfigs[chain].BinaryName
 	bz, err := tr.target.ExecCommand(binaryName,

@@ -169,14 +169,14 @@ func (tr Commands) GetValPower(chain ChainID, validator ValidatorID) uint {
 
 func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
 	valCfg := tr.ValidatorConfigs[validator]
-	delAddresss := valCfg.DelAddress
+	delAddress := valCfg.DelAddress
 	if chain != ChainID("provi") {
 		// use binary with Bech32Prefix set to ConsumerAccountPrefix
 		if valCfg.UseConsumerKey {
-			delAddresss = valCfg.ConsumerDelAddress
+			delAddress = valCfg.ConsumerDelAddress
 		} else {
 			// use the same address as on the provider but with different prefix
-			delAddresss = valCfg.DelAddressOnConsumer
+			delAddress = valCfg.DelAddressOnConsumer
 		}
 	}
 
@@ -184,7 +184,7 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 	bz, err := tr.Target.ExecCommand(binaryName,
 
 		"query", "distribution", "rewards",
-		delAddresss,
+		delAddress,
 
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.GetQueryNode(chain),
@@ -236,7 +236,7 @@ func (tr Commands) GetBalance(chain ChainID, validator ValidatorID) uint {
 
 // interchain-securityd query gov proposals
 func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
-	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
+	noProposalRegex := regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
@@ -411,6 +411,7 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 
 	return chains
 }
+
 func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
