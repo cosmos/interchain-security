@@ -380,7 +380,7 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 
 	err = k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
 	if err != nil {
-		return fmt.Errorf("fail to set jail duration for validator: %s", providerAddr.String())
+		return fmt.Errorf("fail to set jail duration for validator: %s: %s", providerAddr.String(), err)
 	}
 
 	// Tombstone the validator so that we cannot slash the validator more than once

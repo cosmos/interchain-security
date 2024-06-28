@@ -85,10 +85,6 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			continue
 		}
 
-		// if rewardsCollected.IsZero() {
-		// 	continue
-		// }
-
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
@@ -210,8 +206,14 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		// get the validator type struct for the consensus address
 		val, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 		if err != nil {
-			k.Logger(ctx).Error("cannot find validator by consensus address :%s while allocating rewards from consumer chain: %s",
-				consAddr, chainID)
+			k.Logger(ctx).Error("cannot find validator by consensus address", "consensus address",
+				consAddr,
+				"while allocating rewards from consumer chain",
+				"consumer",
+				chainID,
+				"error",
+				err,
+			)
 			continue
 		}
 
