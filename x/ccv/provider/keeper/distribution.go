@@ -206,10 +206,10 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		// get the validator type struct for the consensus address
 		val, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 		if err != nil {
-			k.Logger(ctx).Error("cannot find validator by consensus address", "consensus address",
+			k.Logger(ctx).Error(
+				"cannot find validator by consensus address",
 				consAddr,
 				"while allocating rewards from consumer chain",
-				"consumer",
 				chainID,
 				"error",
 				err,
