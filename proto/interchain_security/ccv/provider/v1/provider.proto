@@ -308,15 +308,6 @@ message ValidatorByConsumerAddr {
   bytes provider_addr = 3;
 }
 
-// Used to serialize the ConsumerAddrsToPrune index from key assignment
-// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
-// TODO remove once all consumer addresses stored under the ConsumerAddrsToPrune index are pruned
-message ConsumerAddrsToPrune {
-  string chain_id = 1;
-  uint64 vsc_id = 2;
-  AddressList consumer_addrs = 3;
-}
-
 // Used to serialize the ConsumerAddrsToPruneV2 index from key assignment
 // ConsumerAddrsToPruneV2: (chainID, pruneTs time.Time) -> consumerAddrs AddressList
 message ConsumerAddrsToPruneV2 {
