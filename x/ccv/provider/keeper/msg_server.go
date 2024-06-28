@@ -80,7 +80,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		sdk.NewEvent(
 			types.EventTypeAssignConsumerKey,
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
-			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, consumerTMPublicKey.String()),
+			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
 		),
 	})
 
