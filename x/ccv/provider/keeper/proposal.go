@@ -95,6 +95,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	}
 	k.SetConsumerClientId(ctx, chainID, clientID)
 
+	// TODO (mpoke) Decide what to do about the init timeout
 	// add the init timeout timestamp for this consumer chain
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
 	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
@@ -239,9 +240,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		}
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
-
-		// delete VSC send timestamps
-		k.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	}
 
 	// delete consumer commission rate
@@ -253,26 +251,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteInitChainHeight(ctx, chainID)
 	k.DeleteSlashAcks(ctx, chainID)
 	k.DeletePendingVSCPackets(ctx, chainID)
-
-	// release unbonding operations
-	for _, unbondingOpsIndex := range k.GetAllUnbondingOpIndexes(ctx, chainID) {
-		// iterate over the unbonding operations for the current VSC ID
-		var maturedIds []uint64
-		for _, id := range unbondingOpsIndex.UnbondingOpIds {
-			// Remove consumer chain ID from unbonding op record.
-			// Note that RemoveConsumerFromUnbondingOp cannot panic here
-			// as it is expected that for all UnbondingOpIds in every
-			// VscUnbondingOps returned by GetAllUnbondingOpIndexes
-			// there is an unbonding op in store that can be retrieved
-			// via via GetUnbondingOp.
-			if k.RemoveConsumerFromUnbondingOp(ctx, id, chainID) {
-				// Store id of matured unbonding op for later completion of unbonding in staking module
-				maturedIds = append(maturedIds, id)
-			}
-		}
-		k.AppendMaturedUnbondingOps(ctx, maturedIds)
-		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
-	}
 
 	k.DeleteTopN(ctx, chainID)
 	k.DeleteValidatorsPowerCap(ctx, chainID)

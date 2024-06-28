@@ -103,7 +103,7 @@ func (k Keeper) SetValidatorConsumerPubKey(
 // If chainID is nil, it returns all the validators public keys assigned for all consumer chains
 //
 // Note that the validators public keys assigned for a consumer chain are stored under keys
-// with the following format: UnbondingOpIndexBytePrefix | len(chainID) | chainID | providerAddress
+// with the following format: ConsumerValidatorsBytePrefix | len(chainID) | chainID | providerAddress
 // Thus, the returned array is
 //   - in ascending order of providerAddresses, if chainID is not nil;
 //   - in undetermined order, if chainID is nil.

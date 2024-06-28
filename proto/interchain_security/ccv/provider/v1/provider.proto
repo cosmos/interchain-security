@@ -207,6 +207,9 @@ message GlobalSlashEntry {
 // Params defines the parameters for CCV Provider module
 message Params {
 
+  // Reserve 5th slot for removed vsc_timeout_period param
+  reserved 5;
+
   // Reserve 8th slot for removed max throttled packet param
   reserved 8;
 
@@ -220,12 +223,6 @@ message Params {
   // The channel initialization (IBC channel opening handshake) will timeout
   // after this duration
   google.protobuf.Duration init_timeout_period = 4
-      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
-  // The VSC packets sent by the provider will timeout after this duration.
-  // Note that unlike ccv_timeout_period which is an IBC param,
-  // the vsc_timeout_period is a provider-side param that enables the provider
-  // to timeout VSC packets even when a consumer chain is not live.
-  google.protobuf.Duration vsc_timeout_period = 5
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // The period for which the slash meter is replenished
@@ -272,47 +269,15 @@ message ChannelToChain {
   string chain_id = 2;
 }
 
-// VscUnbondingOps contains the IDs of unbonding operations that are waiting for
-// at least one VSCMaturedPacket with vscID from a consumer chain
-message VscUnbondingOps {
-  uint64 vsc_id = 1;
-  repeated uint64 unbonding_op_ids = 2;
-}
-
-// UnbondingOp contains the ids of consumer chains that need to unbond before
-// the unbonding operation with the given ID can unbond
-message UnbondingOp {
-  uint64 id = 1;
-  // consumer chains that are still unbonding
-  repeated string unbonding_consumer_chains = 2;
-}
-
 message InitTimeoutTimestamp {
   string chain_id = 1;
   uint64 timestamp = 2;
-}
-
-message VscSendTimestamp {
-  uint64 vsc_id = 1;
-  google.protobuf.Timestamp timestamp = 2
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
 
 // ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
 message ValidatorSetChangePackets {
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData list = 1
       [ (gogoproto.nullable) = false ];
-}
-
-// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
-// unbonding operations.
-message MaturedUnbondingOps { repeated uint64 ids = 1; }
-
-// ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
-message ExportedVscSendTimestamp {
-  string chain_id = 1;
-  repeated VscSendTimestamp vsc_send_timestamps = 2
-    [ (gogoproto.nullable) = false ];
 }
 
 //

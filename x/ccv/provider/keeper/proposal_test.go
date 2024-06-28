@@ -832,7 +832,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		TrustingPeriodFraction:      providertypes.DefaultTrustingPeriodFraction,
 		CcvTimeoutPeriod:            ccvtypes.DefaultCCVTimeoutPeriod,
 		InitTimeoutPeriod:           providertypes.DefaultInitTimeoutPeriod,
-		VscTimeoutPeriod:            providertypes.DefaultVscTimeoutPeriod,
 		SlashMeterReplenishPeriod:   providertypes.DefaultSlashMeterReplenishPeriod,
 		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: sdk.Coin{

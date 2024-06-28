@@ -8,7 +8,6 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
@@ -32,119 +31,7 @@ func (k *Keeper) Hooks() Hooks {
 // staking hooks
 //
 
-// This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
-	var consumerChainIDS []string
-
-	// get validator address from unbonding operation
-	unbondingType, found := h.k.stakingKeeper.GetUnbondingType(ctx, id)
-	vadAddrBech32 := ""
-	if !found {
-		ctx.Logger().Error("undefined type for unbonding operation id: %d", id)
-		return nil
-	}
-
-	switch unbondingType {
-	case stakingtypes.UnbondingType_UnbondingDelegation:
-		ubd, found := h.k.stakingKeeper.GetUnbondingDelegationByUnbondingID(ctx, id)
-		if !found {
-			ctx.Logger().Error("unfound ubonding delegation for unbonding id: %d", id)
-			return nil
-		}
-		vadAddrBech32 = ubd.ValidatorAddress
-	case stakingtypes.UnbondingType_Redelegation:
-		red, found := h.k.stakingKeeper.GetRedelegationByUnbondingID(ctx, id)
-		if !found {
-			ctx.Logger().Error("unfound relegation for unbonding operation id: %d", id)
-			return nil
-		}
-		vadAddrBech32 = red.ValidatorSrcAddress
-	case stakingtypes.UnbondingType_ValidatorUnbonding:
-		val, found := h.k.stakingKeeper.GetValidatorByUnbondingID(ctx, id)
-		if !found {
-			ctx.Logger().Error("unfound validator for unbonding operation id: %d", id)
-			return nil
-		}
-		vadAddrBech32 = val.OperatorAddress
-	default:
-		ctx.Logger().Error("invalid unbonding operation type: %s", unbondingType)
-		return nil
-	}
-
-	valAddr, err := sdk.ValAddressFromBech32(vadAddrBech32)
-	if err != nil {
-		ctx.Logger().Error(err.Error())
-		return nil
-	}
-
-	validator, found := h.k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
-		ctx.Logger().Error("unfound validator for validator address %s", vadAddrBech32)
-		return nil
-	}
-
-	consAddr, err := validator.GetConsAddr()
-	if err != nil {
-		ctx.Logger().Error(err.Error())
-		return nil
-	}
-
-	// get all consumers where the validator is in the validator set
-	for _, chainID := range h.k.GetAllRegisteredConsumerChainIDs(ctx) {
-		if h.k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
-			consumerChainIDS = append(consumerChainIDS, chainID)
-		}
-	}
-
-	if len(consumerChainIDS) == 0 {
-		// Do not put the unbonding op on hold if there are no consumer chains
-		return nil
-	}
-	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, id); err != nil {
-		// Note: that in the case of a validator unbonding, AfterUnbondingInitiated is called
-		// from staking.EndBlock.
-
-		// In this case PutUnbondingOnHold fails if either the unbonding operation was
-		// not found or the UnbondingOnHoldRefCount is negative.
-
-		// This change should be updated for SDK v0.48 because it will include changes in handling
-		// check: https://github.com/cosmos/cosmos-sdk/pull/16043
-		ctx.Logger().Error("unbonding could not be put on hold: %w", err)
-		return nil
-	}
-
-	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-	unbondingOp := providertypes.UnbondingOp{
-		Id:                      id,
-		UnbondingConsumerChains: consumerChainIDS,
-	}
-
-	// Add to indexes
-	for _, consumerChainID := range consumerChainIDS {
-		index, _ := h.k.GetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID)
-		index = append(index, id)
-		h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
-	}
-
-	h.k.SetUnbondingOp(ctx, unbondingOp)
-
-	// NOTE: This is a temporary fix for v0.47 -> we should not panic in this edge case
-	// since the AfterUnbondInitiatedHook can be called with a non-existing UnbondingEntry.id
-	// check: https://github.com/cosmos/cosmos-sdk/pull/16043
-	//
-	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-	// if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, id); err != nil {
-	// 	// If there was an error putting the unbonding on hold, panic to end execution for
-	// 	// the current tx and prevent committal of this invalid state.
-	// 	//
-	// 	// Note: that in the case of a validator unbonding, AfterUnbondingInitiated is called
-	// 	// from staking.EndBlock, thus the following panic would halt the chain.
-	// 	// In this case PutUnbondingOnHold fails if either the unbonding operation was
-	// 	// not found or the UnbondingOnHoldRefCount is negative. In either cases,
-	// 	// the state of the x/staking module of cosmos-sdk is invalid.
-	// 	panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
-	// }
 	return nil
 }
 

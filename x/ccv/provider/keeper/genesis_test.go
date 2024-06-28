@@ -25,7 +25,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	expClientID := "client"
 	oneHourFromNow := time.Now().UTC().Add(time.Hour)
 	initHeight, vscID := uint64(5), uint64(1)
-	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
 
 	// create validator keys and addresses for key assignment
@@ -41,27 +40,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 		{ChainId: cChainIDs[1], Timestamp: uint64(time.Now().UTC().UnixNano()) + 15},
 	}
 
-	now := time.Now().UTC()
-	exportedVscSendTimeStampsC0 := providertypes.ExportedVscSendTimestamp{
-		ChainId: "c0",
-		VscSendTimestamps: []providertypes.VscSendTimestamp{
-			{VscId: 1, Timestamp: now.Add(time.Hour)},
-			{VscId: 2, Timestamp: now.Add(2 * time.Hour)},
-		},
-	}
-
-	exportedVscSendTimeStampsC1 := providertypes.ExportedVscSendTimestamp{
-		ChainId: "c1",
-		VscSendTimestamps: []providertypes.VscSendTimestamp{
-			{VscId: 1, Timestamp: now.Add(-time.Hour)},
-			{VscId: 2, Timestamp: now.Add(time.Hour)},
-		},
-	}
-
-	var exportedVscSendTimeStampsAll []providertypes.ExportedVscSendTimestamp
-	exportedVscSendTimeStampsAll = append(exportedVscSendTimeStampsAll, exportedVscSendTimeStampsC0)
-	exportedVscSendTimeStampsAll = append(exportedVscSendTimeStampsAll, exportedVscSendTimeStampsC1)
-
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
 		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
@@ -72,9 +50,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				"channel",
 				initHeight,
 				*ccv.DefaultConsumerGenesisState(),
-				[]providertypes.VscUnbondingOps{
-					{VscId: vscID, UnbondingOpIds: ubdIndex},
-				},
 				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
 			),
@@ -84,16 +59,10 @@ func TestInitAndExportGenesis(t *testing.T) {
 				"",
 				0,
 				*ccv.DefaultConsumerGenesisState(),
-				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
 			),
 		},
-		[]providertypes.UnbondingOp{{
-			Id:                      vscID,
-			UnbondingConsumerChains: []string{cChainIDs[0]},
-		}},
-		&providertypes.MaturedUnbondingOps{Ids: ubdIndex},
 		[]providertypes.ConsumerAdditionProposal{{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
@@ -125,7 +94,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 			},
 		},
 		initTimeoutTimeStamps,
-		exportedVscSendTimeStampsAll,
 	)
 
 	// Instantiate in-mem provider keeper with mocks
@@ -156,11 +124,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, expectedCandidate, pk.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// check local provider chain states
-	ubdOps, found := pk.GetUnbondingOp(ctx, vscID)
-	require.True(t, found)
-	require.Equal(t, provGenesis.UnbondingOps[0], ubdOps)
-	matureUbdOps := pk.GetMaturedUnbondingOps(ctx)
-	require.Equal(t, ubdIndex, matureUbdOps)
 	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)
 	require.Equal(t, cChainIDs[0], chainID)
@@ -198,18 +161,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 		return initTimeoutTimestampInStore[i].Timestamp < initTimeoutTimestampInStore[j].Timestamp
 	})
 	require.Equal(t, initTimeoutTimestampInStore, initTimeoutTimeStamps)
-
-	vscSendTimestampsC0InStore := pk.GetAllVscSendTimestamps(ctx, cChainIDs[0])
-	sort.Slice(vscSendTimestampsC0InStore, func(i, j int) bool {
-		return vscSendTimestampsC0InStore[i].VscId < vscSendTimestampsC0InStore[j].VscId
-	})
-	require.Equal(t, vscSendTimestampsC0InStore, exportedVscSendTimeStampsC0.VscSendTimestamps)
-
-	vscSendTimestampsC1InStore := pk.GetAllVscSendTimestamps(ctx, cChainIDs[1])
-	sort.Slice(vscSendTimestampsC1InStore, func(i, j int) bool {
-		return vscSendTimestampsC1InStore[i].VscId < vscSendTimestampsC1InStore[j].VscId
-	})
-	require.Equal(t, vscSendTimestampsC1InStore, exportedVscSendTimeStampsC1.VscSendTimestamps)
 }
 
 func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {
@@ -238,12 +189,6 @@ func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, 
 		if expVSC := cs.GetPendingValsetChanges(); expVSC != nil {
 			gotVSC := pk.GetPendingVSCPackets(ctx, chainID)
 			require.Equal(t, expVSC, gotVSC)
-		}
-
-		for _, ubdOpIdx := range cs.UnbondingOpsIndex {
-			ubdIndex, found := pk.GetUnbondingOpIndex(ctx, chainID, ubdOpIdx.VscId)
-			require.True(t, found)
-			require.Equal(t, ubdOpIdx.UnbondingOpIds, ubdIndex)
 		}
 
 		require.Equal(t, cs.SlashDowntimeAck, pk.GetSlashAcks(ctx, chainID))

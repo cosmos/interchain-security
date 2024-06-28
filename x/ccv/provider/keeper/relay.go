@@ -52,58 +52,16 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 //
 // Note: This method should only panic for a system critical error like a
 // failed marshal/unmarshal, or persistence of critical data.
+// TODO (mpoke) remove once dealt with key assignment pruning
 func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
-	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
-	var maturedIds []uint64
-	for _, unbondingOp := range k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId) {
-		// Remove consumer chain ID from unbonding op record.
-		// Note that RemoveConsumerFromUnbondingOp cannot panic here
-		// as all the unbonding ops returned by GetUnbondingOpsFromIndex
-		// are retrieved via GetUnbondingOp.
-		if k.RemoveConsumerFromUnbondingOp(ctx, unbondingOp.Id, chainID) {
-			// Store id of matured unbonding op for later completion of unbonding in staking module
-			maturedIds = append(maturedIds, unbondingOp.Id)
-		}
-	}
-	k.AppendMaturedUnbondingOps(ctx, maturedIds)
-
-	// clean up index
-	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
-
-	// remove the VSC timeout timestamp for this chainID and vscID
-	k.DeleteVscSendTimestamp(ctx, chainID, data.ValsetUpdateId)
-
 	// prune previous consumer validator address that are no longer needed
+	// TODO (mpoke) deal with key assignment pruning
 	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
 
 	k.Logger(ctx).Info("VSCMaturedPacket handled",
 		"chainID", chainID,
 		"vscID", data.ValsetUpdateId,
 	)
-}
-
-// CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
-func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
-	for _, id := range k.ConsumeMaturedUnbondingOps(ctx) {
-		// Attempt to complete unbonding in staking module
-		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
-		if err != nil {
-			if stakingtypes.ErrUnbondingNotFound.Is(err) {
-				// The unbonding was not found.
-				unbondingType, found := k.stakingKeeper.GetUnbondingType(ctx, id)
-				if found && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
-					// If this is an unbonding delegation, it may have been removed
-					// after through a CancelUnbondingDelegation message
-					k.Logger(ctx).Debug("unbonding delegation was already removed:", "unbondingID", id)
-					continue
-				}
-			}
-			// UnbondingCanComplete failing means that the state of the x/staking module
-			// of cosmos-sdk is invalid. An exception is the case handled above
-			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
-		}
-		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
-	}
 }
 
 // OnAcknowledgementPacket handles acknowledgments for sent VSC packets
@@ -145,9 +103,6 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 // EndBlockVSU contains the EndBlock logic needed for
 // the Validator Set Update sub-protocol
 func (k Keeper) EndBlockVSU(ctx sdk.Context) {
-	// notify the staking module to complete all matured unbonding ops
-	k.completeMaturedUnbondingOps(ctx)
-
 	if ctx.BlockHeight()%k.GetBlocksPerEpoch(ctx) == 0 {
 		// only queue and send VSCPackets at the boundaries of an epoch
 
@@ -205,10 +160,6 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 			}
 			return
 		}
-		// set the VSC send timestamp for this packet;
-		// note that the VSC send timestamp are set when the packets
-		// are actually sent over IBC
-		k.SetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId, ctx.BlockTime())
 	}
 	k.DeletePendingVSCPackets(ctx, chainID)
 }
@@ -243,11 +194,8 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, chainID, nextValidators)
 
-		// check whether there are changes in the validator set;
-		// note that this also entails unbonding operations
-		// w/o changes in the voting power of the validators in the validator set
-		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
-		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
+		// check whether there are changes in the validator set
+		if len(valUpdates) != 0 {
 			// construct validator set change packet data
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 			k.AppendPendingVSCPackets(ctx, chainID, packet)
@@ -255,7 +203,6 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 				"chainID", chainID,
 				"vscID", valUpdateID,
 				"len updates", len(valUpdates),
-				"len unbonding ops", len(unbondingOps),
 			)
 		}
 	}
@@ -410,7 +357,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// Obtain provider chain consensus address using the consumer chain consensus address
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
-	k.Logger(ctx).Debug("handling slash packet",
+	k.Logger(ctx).Debug("HandleSlashPacket",
 		"chainID", chainID,
 		"consumer cons addr", consumerConsAddr.String(),
 		"provider cons addr", providerConsAddr.String(),
@@ -425,10 +372,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// stakingKeeper.Slash() panics otherwise
 	if !found || validator.IsUnbonded() {
 		// if validator is not found or is unbonded, drop slash packet and log error.
-		// Note that it is impossible for the validator to be not found or unbonded if both the provider
-		// and the consumer are following the protocol. Thus if this branch is taken then one or both
-		// chains is incorrect, but it is impossible to tell which.
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
+		k.Logger(ctx).Info(
+			"HandleSlashPacket - slash packet dropped because validator not found or is unbonded",
+			"provider cons addr", providerConsAddr.String(),
+		)
 		return
 	}
 
@@ -436,7 +383,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr.ToSdkConsAddr()) {
 		// Log and drop packet if validator is tombstoned.
 		k.Logger(ctx).Info(
-			"slash packet dropped because validator is already tombstoned",
+			"HandleSlashPacket - slash packet dropped because validator is already tombstoned",
 			"provider cons addr", providerConsAddr.String(),
 		)
 		return
@@ -444,7 +391,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	if !found {
-		k.Logger(ctx).Error("infraction height not found. But was found during slash packet validation")
+		k.Logger(ctx).Error(
+			"HandleSlashPacket - infraction height not found. But was found during slash packet validation",
+			"vscID", data.ValsetUpdateId,
+		)
 		// drop packet
 		return
 	}
@@ -459,7 +409,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// jail validator
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
-		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
+		k.Logger(ctx).Info("HandleSlashPacket - validator jailed", "provider cons addr", providerConsAddr.String())
 		jailTime := ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
 		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailTime)
 	}
@@ -497,34 +447,6 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 					continue
 				}
 				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-			}
-		}
-	}
-
-	for _, channelToChain := range k.GetAllChannelToChains(ctx) {
-		// Check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
-		// exceed the current block time.
-		// Checking the first send timestamp for each chain is sufficient since
-		// timestamps are ordered by vsc ID.
-		// Note: GetFirstVscSendTimestamp panics if the internal state is invalid
-		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
-		if found {
-			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
-			if currentTime.After(timeoutTimestamp) {
-				// vscTimeout expired
-				// stop the consumer chain and release unbondings
-				k.Logger(ctx).Info("about to remove timed out consumer chain - VSCPacket timed out",
-					"chainID", channelToChain.ChainId,
-					"vscID", vscSendTimestamp.VscId,
-				)
-				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
-				if err != nil {
-					if providertypes.ErrConsumerChainNotFound.Is(err) {
-						// consumer chain not found
-						continue
-					}
-					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-				}
 			}
 		}
 	}

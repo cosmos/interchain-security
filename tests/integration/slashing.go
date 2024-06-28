@@ -98,15 +98,6 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().Equal(heightBefore+2, heightAfter)
 
 	// We've now advanced two blocks.
-
-	// VSC packets should have been sent from provider during block N to each consumer
-	expectedSentValsetUpdateId := valsetUpdateIdN
-	for _, bundle := range s.consumerBundles {
-		_, found := providerKeeper.GetVscSendTimestamp(s.providerCtx(),
-			bundle.Chain.ChainID, expectedSentValsetUpdateId)
-		s.Require().True(found)
-	}
-
 	s.nextEpoch()
 
 	// Confirm the valset update Id was incremented twice on provider,
@@ -117,6 +108,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// check that the validator was removed from the provider validator set by N + 2
 	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
+	// VSC packets should have been sent from provider during block N to each consumer
+	expectedSentValsetUpdateId := valsetUpdateIdN
 	for _, bundle := range s.consumerBundles {
 		// Relay VSC packets from provider to each consumer
 		relayAllCommittedPackets(s, s.providerChain, bundle.Path,

@@ -205,28 +205,8 @@ func TestSlashAllValidators(t *testing.T) {
 // Unbonding tests
 //
 
-func TestUndelegationNormalOperation(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationNormalOperation")
-}
-
-func TestUndelegationVscTimeout(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationVscTimeout")
-}
-
-func TestUndelegationDuringInit(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationDuringInit")
-}
-
-func TestUnbondingNoConsumer(t *testing.T) {
-	runCCVTestByName(t, "TestUnbondingNoConsumer")
-}
-
-func TestRedelegationNoConsumer(t *testing.T) {
-	runCCVTestByName(t, "TestRedelegationNoConsumer")
-}
-
-func TestRedelegationProviderFirst(t *testing.T) {
-	runCCVTestByName(t, "TestRedelegationProviderFirst")
+func TestUndelegationCompletion(t *testing.T) {
+	runCCVTestByName(t, "TestUndelegationCompletion")
 }
 
 //
