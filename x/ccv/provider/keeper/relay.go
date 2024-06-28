@@ -314,7 +314,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// Obtain provider chain consensus address using the consumer chain consensus address
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
-	k.Logger(ctx).Debug("handling slash packet",
+	k.Logger(ctx).Debug("HandleSlashPacket",
 		"chainID", chainID,
 		"consumer cons addr", consumerConsAddr.String(),
 		"provider cons addr", providerConsAddr.String(),
@@ -329,10 +329,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// stakingKeeper.Slash() panics otherwise
 	if !found || validator.IsUnbonded() {
 		// if validator is not found or is unbonded, drop slash packet and log error.
-		// Note that it is impossible for the validator to be not found or unbonded if both the provider
-		// and the consumer are following the protocol. Thus if this branch is taken then one or both
-		// chains is incorrect, but it is impossible to tell which.
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
+		k.Logger(ctx).Info(
+			"HandleSlashPacket - slash packet dropped because validator not found or is unbonded",
+			"provider cons addr", providerConsAddr.String(),
+		)
 		return
 	}
 
@@ -340,7 +340,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr.ToSdkConsAddr()) {
 		// Log and drop packet if validator is tombstoned.
 		k.Logger(ctx).Info(
-			"slash packet dropped because validator is already tombstoned",
+			"HandleSlashPacket - slash packet dropped because validator is already tombstoned",
 			"provider cons addr", providerConsAddr.String(),
 		)
 		return
@@ -348,7 +348,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	if !found {
-		k.Logger(ctx).Error("infraction height not found. But was found during slash packet validation")
+		k.Logger(ctx).Error(
+			"HandleSlashPacket - infraction height not found. But was found during slash packet validation",
+			"vscID", data.ValsetUpdateId,
+		)
 		// drop packet
 		return
 	}
@@ -363,7 +366,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// jail validator
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
-		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
+		k.Logger(ctx).Info("HandleSlashPacket - validator jailed", "provider cons addr", providerConsAddr.String())
 		jailTime := ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
 		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailTime)
 	}

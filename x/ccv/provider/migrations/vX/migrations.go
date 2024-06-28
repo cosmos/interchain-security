@@ -12,7 +12,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
-// CompleteUnbondingOps completes all unbonding operations
+// CompleteUnbondingOps completes all unbonding operations.
+// Note that it must be executed before CleanupState.
 func CompleteUnbondingOps(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper, sk ccv.StakingKeeper) {
 	iterator := sdk.KVStorePrefixIterator(store, []byte{providertypes.UnbondingOpBytePrefix})
 	defer iterator.Close()
@@ -60,17 +61,15 @@ func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk p
 }
 
 // CleanupState removes deprecated state
-func CleanupState(ctx sdk.Context, store storetypes.KVStore) error {
+func CleanupState(store storetypes.KVStore) {
 	removePrefix(store, providertypes.MaturedUnbondingOpsByteKey)
 	removePrefix(store, providertypes.UnbondingOpBytePrefix)
 	removePrefix(store, providertypes.UnbondingOpIndexBytePrefix)
 	removePrefix(store, providertypes.VscSendTimestampBytePrefix)
 	removePrefix(store, providertypes.VSCMaturedHandledThisBlockBytePrefix)
-
-	return nil
 }
 
-func removePrefix(store storetypes.KVStore, prefix byte) error {
+func removePrefix(store storetypes.KVStore, prefix byte) {
 	iterator := sdk.KVStorePrefixIterator(store, []byte{prefix})
 	defer iterator.Close()
 
@@ -81,6 +80,4 @@ func removePrefix(store storetypes.KVStore, prefix byte) error {
 	for _, delKey := range keysToDel {
 		store.Delete(delKey)
 	}
-
-	return nil
 }
