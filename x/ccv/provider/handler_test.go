@@ -34,10 +34,6 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
 	providerConsAddr := providerCryptoId.ProviderConsAddress()
 
-	// a different providerConsAddr, to simulate different validators having assigned keys
-	providerCryptoId2 := testcrypto.NewCryptoIdentityFromIntSeed(10)
-	providerConsAddr2 := providerCryptoId2.ProviderConsAddress()
-
 	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 	consumerKeyBz := base64.StdEncoding.EncodeToString(consumerCryptoId.ConsensusSDKPubKey().Bytes())
@@ -128,7 +124,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 			chainID:  "chainid",
 		},
 		{
-			name: "success: consumer key in use, but by the same validator",
+			name: "fail: consumer key in use",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
@@ -147,7 +143,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
-			expError: false,
+			expError: true,
 			chainID:  "chainid",
 		},
 	}

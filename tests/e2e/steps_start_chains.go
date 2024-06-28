@@ -86,24 +86,16 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		{
-			// op should be a noop - key already assigned, but by the same validator
+			// op should fail - key already assigned by the same validator
 			Action: AssignConsumerPubKeyAction{
 				Chain:           ChainID(consumerName),
 				Validator:       ValidatorID("carol"),
 				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
 				ReconfigureNode: false,
-				ExpectError:     false,
+				ExpectError:     true,
+				ExpectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
 			},
-			State: State{
-				ChainID(consumerName): ChainState{
-					AssignedKeys: &map[ValidatorID]string{
-						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ConsumerValconsAddressOnProvider,
-					},
-					ProviderKeys: &map[ValidatorID]string{
-						ValidatorID("carol"): getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			// op should fail - key already assigned by another validator
