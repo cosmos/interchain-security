@@ -79,7 +79,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 			}, false, 2,
 		},
 		{
-			"double same-key assignment in same block", func(pk *providerkeeper.Keeper) error {
+			"double same-key assignment in same block by different vals", func(pk *providerkeeper.Keeper) error {
 				// establish CCV channel
 				s.SetupCCVChannel(s.path)
 
@@ -90,7 +90,30 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
-				// same key assignment
+				// same key assignment, but different validator
+				validator2, _ := generateNewConsumerKey(s, 1)
+				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator2, consumerKey)
+				if err != nil {
+					return err
+				}
+				s.nextEpoch()
+
+				return nil
+			}, true, 2,
+		},
+		{
+			"double same-key assignment in same block by same val", func(pk *providerkeeper.Keeper) error {
+				// establish CCV channel
+				s.SetupCCVChannel(s.path)
+
+				// key assignment
+				validator, consumerKey := generateNewConsumerKey(s, 0)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				if err != nil {
+					return err
+				}
+
+				// same key assignment, but different validator
 				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
 				if err != nil {
 					return err
@@ -101,7 +124,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 			}, true, 2,
 		},
 		{
-			"double key assignment in same block", func(pk *providerkeeper.Keeper) error {
+			"double key assignment in same block by same val", func(pk *providerkeeper.Keeper) error {
 				// establish CCV channel
 				s.SetupCCVChannel(s.path)
 
@@ -124,7 +147,31 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 			}, false, 2,
 		},
 		{
-			"double same-key assignment in different blocks", func(pk *providerkeeper.Keeper) error {
+			"double same-key assignment in different blocks by different vals", func(pk *providerkeeper.Keeper) error {
+				// establish CCV channel
+				s.SetupCCVChannel(s.path)
+
+				// key assignment
+				validator, consumerKey := generateNewConsumerKey(s, 0)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				if err != nil {
+					return err
+				}
+				s.nextEpoch()
+
+				// same key assignment
+				validator2, _ := generateNewConsumerKey(s, 1)
+				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator2, consumerKey)
+				if err != nil {
+					return err
+				}
+				s.nextEpoch()
+
+				return nil
+			}, true, 2,
+		},
+		{
+			"double same-key assignment in different blocks by same val", func(pk *providerkeeper.Keeper) error {
 				// establish CCV channel
 				s.SetupCCVChannel(s.path)
 
@@ -147,7 +194,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 			}, true, 2,
 		},
 		{
-			"double key assignment in different blocks", func(pk *providerkeeper.Keeper) error {
+			"double key assignment in different blocks by same val", func(pk *providerkeeper.Keeper) error {
 				// establish CCV channel
 				s.SetupCCVChannel(s.path)
 
