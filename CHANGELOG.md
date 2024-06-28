@@ -2,7 +2,7 @@
 
 ## v5.0.0
 
-❗ *The provider module should never not be used with this version.*
+❗ *The provider module should not be used with this version.*
 
 *May 9, 2024*
 

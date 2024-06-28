@@ -374,7 +374,7 @@ func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
 // MsgConsumerAddition defines the message used to spawn a new consumer chain using a v1 governance proposal.
-// If it passes, then all ˝validators on the provider chain are expected to validate
+// If it passes, then all validators on the provider chain are expected to validate
 // the consumer chain at spawn time or get slashed.
 // It is recommended that spawn time occurs after the proposal end time.
 //

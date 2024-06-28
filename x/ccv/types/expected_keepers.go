@@ -47,7 +47,6 @@ type StakingKeeper interface {
 	Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error)
 	MaxValidators(ctx context.Context) (uint32, error)
 	GetLastTotalPower(ctx context.Context) (math.Int, error)
-	GetLastValidators(ctx context.Context) ([]stakingtypes.Validator, error)
 	BondDenom(ctx context.Context) (string, error)
 	GetUnbondingDelegationsFromValidator(ctx context.Context, valAddr sdk.ValAddress) ([]stakingtypes.UnbondingDelegation, error)
 	GetRedelegationsFromSrcValidator(ctx context.Context, valAddr sdk.ValAddress) ([]stakingtypes.Redelegation, error)

@@ -107,21 +107,6 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, operator int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidatorPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidatorPower), ctx, operator)
 }
 
-// GetLastValidators mocks base method.
-func (m *MockStakingKeeper) GetLastValidators(ctx context.Context) ([]types3.Validator, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastValidators", ctx)
-	ret0, _ := ret[0].([]types3.Validator)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLastValidators indicates an expected call of GetLastValidators.
-func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
-}
-
 // GetRedelegationByUnbondingID mocks base method.
 func (m *MockStakingKeeper) GetRedelegationByUnbondingID(ctx context.Context, id uint64) (types3.Redelegation, error) {
 	m.ctrl.T.Helper()
