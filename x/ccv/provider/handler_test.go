@@ -34,10 +34,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
 	providerConsAddr := providerCryptoId.ProviderConsAddress()
 
-	// a different providerConsAddr, to simulate different validators having assigned keys
-	providerCryptoId2 := testcrypto.NewCryptoIdentityFromIntSeed(10)
-	providerConsAddr2 := providerCryptoId2.ProviderConsAddress()
-
 	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 	consumerKeyBz := base64.StdEncoding.EncodeToString(consumerCryptoId.ConsensusSDKPubKey().Bytes())
@@ -105,32 +101,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			chainID:  "chainid",
 		},
 		{
-			name: "fail: consumer key in use by other validator",
-			setup: func(ctx sdk.Context,
-				k keeper.Keeper, mocks testkeeper.MockedKeepers,
-			) {
-				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
-					ChainId: "chainid",
-				})
-				// Use the consumer key already used by some other validator
-				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr2)
-
-				gomock.InOrder(
-					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, providerCryptoId.SDKValOpAddress(),
-						// validator should not be missing
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
-					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-						consumerConsAddr.ToSdkConsAddr(),
-						// return false - no other validator uses the consumer key to validate *on the provider*
-					).Return(stakingtypes.Validator{}, false),
-				)
-			},
-			expError: true,
-			chainID:  "chainid",
-		},
-		{
-			name: "success: consumer key in use, but by the same validator",
+			name: "fail: consumer key in use",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
@@ -150,7 +121,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},
-			expError: false,
+			expError: true,
 			chainID:  "chainid",
 		},
 	}
