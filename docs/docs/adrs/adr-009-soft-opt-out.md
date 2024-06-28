@@ -11,7 +11,6 @@ title: Soft Opt-Out
 
 ## Status
 
-Deprecated
 Deprecated by [Partial Set Security](adr-015-partial-set-security.md)
 ## Context
 
