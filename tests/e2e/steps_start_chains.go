@@ -90,7 +90,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
 				ReconfigureNode: false,
 				ExpectError:     true,
-				ExpectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
+				ExpectedError:   "a validator has or had assigned this consumer key already",
 			},
 			State: State{},
 		},
@@ -103,7 +103,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
 				ReconfigureNode: false,
 				ExpectError:     true,
-				ExpectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
+				ExpectedError:   "a validator has or had assigned this consumer key already",
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
