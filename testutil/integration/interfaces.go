@@ -2,10 +2,9 @@ package integration
 
 import (
 	"context"
-	"time"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	"time"
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"

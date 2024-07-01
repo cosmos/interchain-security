@@ -113,13 +113,6 @@ func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
 	return params.UnbondingPeriod
 }
 
-// GetSoftOptOutThreshold returns the percentage of validators at the bottom of the set
-// that can opt out of running the consumer chain
-func (k Keeper) GetSoftOptOutThreshold(ctx sdk.Context) string {
-	params := k.GetConsumerParams(ctx)
-	return params.SoftOptOutThreshold
-}
-
 func (k Keeper) GetRewardDenoms(ctx sdk.Context) []string {
 	params := k.GetConsumerParams(ctx)
 	return params.RewardDenoms

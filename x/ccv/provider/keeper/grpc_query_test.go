@@ -1,14 +1,13 @@
 package keeper_test
 
 import (
-	"fmt"
-	"testing"
-	"time"
-
 	"cosmossdk.io/math"
+	"fmt"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/golang/mock/gomock"
+	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"

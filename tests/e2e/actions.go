@@ -468,7 +468,6 @@ func (tr Chain) submitConsumerModificationProposal(
 	}
 
 	bz, err = cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -599,10 +598,15 @@ func (tr *Chain) startConsumerChain(
 	verbose bool,
 ) {
 	fmt.Println("Starting consumer chain ", action.ConsumerChain)
+
 	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.ConsumerChain)
 	consumerGenesisChanges := tr.testConfig.chainConfigs[action.ConsumerChain].GenesisChanges
+
 	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.GenesisChanges
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
+	}
+	if action.GenesisChanges != "" {
+		consumerGenesis = consumerGenesis + " | " + action.GenesisChanges
 	}
 
 	tr.startChain(StartChainAction{
@@ -832,7 +836,10 @@ func (tr Chain) changeoverChain(
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
 	consumerGenesisChanges := tr.testConfig.chainConfigs[action.SovereignChain].GenesisChanges
 	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.GenesisChanges
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
+	}
+	if action.GenesisChanges != "" {
+		consumerGenesis = consumerGenesis + " | " + action.GenesisChanges
 	}
 
 	tr.startChangeover(ChangeoverChainAction{
@@ -2040,7 +2047,7 @@ func (tr Chain) invokeDoublesignSlash(
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
 		}
-		tr.waitBlocks("provi", 10, 2*time.Minute)
+		tr.waitBlocks("provi", 20, 4*time.Minute)
 	} else { // tr.useCometMock
 		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(action.Chain, action.Validator)
 
