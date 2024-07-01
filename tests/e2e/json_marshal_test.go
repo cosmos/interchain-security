@@ -15,7 +15,7 @@ import (
 
 func TestProposalUnmarshal(t *testing.T) {
 	proposalAndTypeString := `{
-		"Type": "main.ConsumerAdditionProposal",
+		"Type": "e2e.ConsumerAdditionProposal",
 		"RawProposal": {
 			"Deposit": 10000001,
 			"Chain": "consu",
@@ -74,7 +74,7 @@ var testCases = []ChainStateTestCase{
 			},
 			"Proposals": {
 				"1": {
-					"Type": "main.ConsumerAdditionProposal",
+					"Type": "e2e.ConsumerAdditionProposal",
 					"RawProposal": {
 						"Deposit": 10000001,
 						"Chain": "consu",
@@ -120,7 +120,7 @@ var testCases = []ChainStateTestCase{
 			},
 			"Proposals": {
 				"1": {
-					"Type": "main.NotAProposalTypeProposal",
+					"Type": "e2e.NotAProposalTypeProposal",
 					"RawProposal": {
 						"Deposit": 10000001,
 						"Chain": "consu",
