@@ -3,14 +3,18 @@ package provider_test
 import (
 	"testing"
 
-	"cosmossdk.io/math"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"cosmossdk.io/math"
+
+	"github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -110,6 +114,7 @@ func TestInitGenesis(t *testing.T) {
 			nil,
 			nil,
 			nil,
+			nil,
 		)
 
 		cdc := keeperParams.Cdc
@@ -141,9 +146,19 @@ func TestInitGenesis(t *testing.T) {
 		// Last total power is queried in InitGenesis, only if method has not
 		// already panicked from unowned capability.
 		if !tc.expPanic {
+			// create a mock validator
+			cId := crypto.NewCryptoIdentityFromIntSeed(234234)
+			validator := cId.SDKStakingValidator()
+			valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
+			require.NoError(t, err)
+
 			orderedCalls = append(orderedCalls,
 				mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 					ctx).Return(math.NewInt(100), nil).Times(1), // Return total voting power as 100
+				mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(
+					ctx).Return([]stakingtypes.Validator{validator}, nil).Times(1), // Return a single validator
+				mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+					ctx, valAddr).Return(int64(100), nil).Times(1), // Return total power as power of the single validator
 			)
 		}
 

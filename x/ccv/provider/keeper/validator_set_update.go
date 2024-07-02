@@ -21,14 +21,14 @@ func (k Keeper) GetConsumerChainConsensusValidatorsKey(ctx sdk.Context, chainID 
 func (k Keeper) SetConsumerValidator(
 	ctx sdk.Context,
 	chainID string,
-	validator types.ConsumerValidator,
+	validator types.ConsensusValidator,
 ) {
 	k.setValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), validator)
 }
 
 // SetConsumerValSet resets the current consumer validators with the `nextValidators` computed by
 // `FilterValidators` and hence this method should only be called after `FilterValidators` has completed.
-func (k Keeper) SetConsumerValSet(ctx sdk.Context, chainID string, nextValidators []types.ConsumerValidator) {
+func (k Keeper) SetConsumerValSet(ctx sdk.Context, chainID string, nextValidators []types.ConsensusValidator) {
 	k.setValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), nextValidators)
 }
 
@@ -59,45 +59,45 @@ func (k Keeper) IsConsumerValidator(ctx sdk.Context, chainID string, providerAdd
 func (k Keeper) GetConsumerValSet(
 	ctx sdk.Context,
 	chainID string,
-) []types.ConsumerValidator {
+) []types.ConsensusValidator {
 	return k.getValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID))
 }
 
 // DiffValidators compares the current and the next epoch's consumer validators and returns the `ValidatorUpdate` diff
 // needed by CometBFT to update the validator set on a chain.
 func DiffValidators(
-	currentValidators []types.ConsumerValidator,
-	nextValidators []types.ConsumerValidator,
+	currentValidators []types.ConsensusValidator,
+	nextValidators []types.ConsensusValidator,
 ) []abci.ValidatorUpdate {
 	var updates []abci.ValidatorUpdate
 
-	isCurrentValidator := make(map[string]types.ConsumerValidator, len(currentValidators))
+	isCurrentValidator := make(map[string]types.ConsensusValidator, len(currentValidators))
 	for _, val := range currentValidators {
-		isCurrentValidator[val.ConsumerPublicKey.String()] = val
+		isCurrentValidator[val.PublicKey.String()] = val
 	}
 
-	isNextValidator := make(map[string]types.ConsumerValidator, len(nextValidators))
+	isNextValidator := make(map[string]types.ConsensusValidator, len(nextValidators))
 	for _, val := range nextValidators {
-		isNextValidator[val.ConsumerPublicKey.String()] = val
+		isNextValidator[val.PublicKey.String()] = val
 	}
 
 	for _, currentVal := range currentValidators {
-		if nextVal, found := isNextValidator[currentVal.ConsumerPublicKey.String()]; !found {
+		if nextVal, found := isNextValidator[currentVal.PublicKey.String()]; !found {
 			// this consumer public key does not appear in the next validators and hence we remove the validator
 			// with that consumer public key by creating an update with 0 power
-			updates = append(updates, abci.ValidatorUpdate{PubKey: *currentVal.ConsumerPublicKey, Power: 0})
+			updates = append(updates, abci.ValidatorUpdate{PubKey: *currentVal.PublicKey, Power: 0})
 		} else if currentVal.Power != nextVal.Power {
 			// validator did not modify its consumer public key but has changed its voting power, so we
 			// have to create an update with the new power
-			updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.ConsumerPublicKey, Power: nextVal.Power})
+			updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.PublicKey, Power: nextVal.Power})
 		}
 		// else no update is needed because neither the consumer public key changed, nor the power of the validator
 	}
 
 	for _, nextVal := range nextValidators {
-		if _, found := isCurrentValidator[nextVal.ConsumerPublicKey.String()]; !found {
+		if _, found := isCurrentValidator[nextVal.PublicKey.String()]; !found {
 			// this consumer public key does not exist in the current validators and hence we introduce this validator
-			updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.ConsumerPublicKey, Power: nextVal.Power})
+			updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.PublicKey, Power: nextVal.Power})
 		}
 	}
 
@@ -105,30 +105,30 @@ func DiffValidators(
 }
 
 // CreateConsumerValidator creates a consumer validator for `chainID` from the given staking `validator`
-func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validator stakingtypes.Validator) (types.ConsumerValidator, error) {
+func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validator stakingtypes.Validator) (types.ConsensusValidator, error) {
 	valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
 	if err != nil {
-		return types.ConsumerValidator{}, err
+		return types.ConsensusValidator{}, err
 	}
 	power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
-		return types.ConsumerValidator{}, fmt.Errorf("could not retrieve validator's (%+v) consensus address: %w",
+		return types.ConsensusValidator{}, fmt.Errorf("could not retrieve validator's (%+v) consensus address: %w",
 			validator, err)
 	}
 
-	consumerPublicKey, foundConsumerPublicKey := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
-	if !foundConsumerPublicKey {
+	consumerPublicKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
+	if !found {
 		consumerPublicKey, err = validator.TmConsPublicKey()
 		if err != nil {
-			return types.ConsumerValidator{}, fmt.Errorf("could not retrieve validator's (%+v) public key: %w", validator, err)
+			return types.ConsensusValidator{}, fmt.Errorf("could not retrieve validator's (%+v) public key: %w", validator, err)
 		}
 	}
 
-	return types.ConsumerValidator{
-		ProviderConsAddr:  consAddr,
-		Power:             power,
-		ConsumerPublicKey: &consumerPublicKey,
+	return types.ConsensusValidator{
+		ProviderConsAddr: consAddr,
+		Power:            power,
+		PublicKey:        &consumerPublicKey,
 	}, nil
 }
 
@@ -139,8 +139,8 @@ func (k Keeper) FilterValidators(
 	chainID string,
 	bondedValidators []stakingtypes.Validator,
 	predicate func(providerAddr types.ProviderConsAddress) bool,
-) []types.ConsumerValidator {
-	var nextValidators []types.ConsumerValidator
+) []types.ConsensusValidator {
+	var nextValidators []types.ConsensusValidator
 	for _, val := range bondedValidators {
 		consAddr, err := val.GetConsAddr()
 		if err != nil {

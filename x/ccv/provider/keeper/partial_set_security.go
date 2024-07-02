@@ -165,7 +165,7 @@ func (k Keeper) ComputeMinPowerInTopN(ctx sdk.Context, bondedValidators []stakin
 
 // CapValidatorSet caps the provided `validators` if chain `chainID` is an Opt In chain with a validator-set cap. If cap
 // is `k`, `CapValidatorSet` returns the first `k` validators from `validators` with the highest power.
-func (k Keeper) CapValidatorSet(ctx sdk.Context, chainID string, validators []types.ConsumerValidator) []types.ConsumerValidator {
+func (k Keeper) CapValidatorSet(ctx sdk.Context, chainID string, validators []types.ConsensusValidator) []types.ConsensusValidator {
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// is a no-op if the chain is a Top N chain
 		return validators
@@ -186,7 +186,7 @@ func (k Keeper) CapValidatorSet(ctx sdk.Context, chainID string, validators []ty
 // with their new powers. Works on a best-basis effort because there are cases where we cannot guarantee that all validators
 // on the consumer chain have less power than the set validators-power cap. For example, if we have 10 validators and
 // the power cap is set to 5%, we need at least one validator to have more than 10% of the voting power on the consumer chain.
-func (k Keeper) CapValidatorsPower(ctx sdk.Context, chainID string, validators []types.ConsumerValidator) []types.ConsumerValidator {
+func (k Keeper) CapValidatorsPower(ctx sdk.Context, chainID string, validators []types.ConsensusValidator) []types.ConsensusValidator {
 	if p, found := k.GetValidatorsPowerCap(ctx, chainID); found && p > 0 {
 		return NoMoreThanPercentOfTheSum(validators, p)
 	} else {
@@ -196,7 +196,7 @@ func (k Keeper) CapValidatorsPower(ctx sdk.Context, chainID string, validators [
 }
 
 // sum is a helper function to sum all the validators' power
-func sum(validators []types.ConsumerValidator) int64 {
+func sum(validators []types.ConsensusValidator) int64 {
 	s := int64(0)
 	for _, v := range validators {
 		s = s + v.Power
@@ -206,7 +206,7 @@ func sum(validators []types.ConsumerValidator) int64 {
 
 // NoMoreThanPercentOfTheSum returns a set of validators with updated powers such that no validator has more than the
 // provided `percent` of the sum of all validators' powers. Operates on a best-effort basis.
-func NoMoreThanPercentOfTheSum(validators []types.ConsumerValidator, percent uint32) []types.ConsumerValidator {
+func NoMoreThanPercentOfTheSum(validators []types.ConsensusValidator, percent uint32) []types.ConsensusValidator {
 	// Algorithm's idea
 	// ----------------
 	// Consider the validators' powers to be `a_1, a_2, ... a_n` and `p` to be the percent in [1, 100]. Now, consider
@@ -262,7 +262,7 @@ func NoMoreThanPercentOfTheSum(validators []types.ConsumerValidator, percent uin
 		}
 	}
 
-	updatedValidators := make([]types.ConsumerValidator, len(validators))
+	updatedValidators := make([]types.ConsensusValidator, len(validators))
 
 	powerPerValidator := int64(0)
 	remainingValidators := int64(validatorsWithPowerLessThanMaxPower)
@@ -309,7 +309,7 @@ func (k Keeper) CanValidateChain(ctx sdk.Context, chainID string, providerAddr t
 }
 
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
-func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsumerValidator {
+func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsensusValidator {
 	nextValidators := k.FilterValidators(ctx, chainID, bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
 			return k.CanValidateChain(ctx, chainID, providerAddr)

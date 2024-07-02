@@ -328,7 +328,7 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	for _, v := range k.GetConsumerValSet(ctx, consumerChainID) {
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
 			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
-			ConsumerKey:     v.ConsumerPublicKey,
+			ConsumerKey:     v.PublicKey,
 			Power:           v.Power,
 		})
 	}

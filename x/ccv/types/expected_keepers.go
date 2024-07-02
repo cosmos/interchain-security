@@ -4,6 +4,7 @@ import (
 	context "context"
 	"time"
 
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
@@ -12,11 +13,10 @@ import (
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 )
@@ -56,6 +56,7 @@ type StakingKeeper interface {
 	GetUnbondingDelegationByUnbondingID(ctx context.Context, id uint64) (stakingtypes.UnbondingDelegation, error)
 	GetRedelegationByUnbondingID(ctx context.Context, id uint64) (stakingtypes.Redelegation, error)
 	GetValidatorByUnbondingID(ctx context.Context, id uint64) (stakingtypes.Validator, error)
+	GetBondedValidatorsByPower(ctx context.Context) ([]stakingtypes.Validator, error)
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing

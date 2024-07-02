@@ -139,7 +139,6 @@ func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, l
 		i++
 		return i >= int(maxVals) // stop iteration if true
 	})
-
 	if err != nil {
 		return nil, err
 	}

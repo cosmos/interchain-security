@@ -295,7 +295,6 @@ func (msg *MsgConsumerAddition) ValidateBasic() error {
 }
 
 func (msg *MsgConsumerRemoval) ValidateBasic() error {
-
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
 	}

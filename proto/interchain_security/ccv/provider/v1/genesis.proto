@@ -48,6 +48,9 @@ message GenesisState {
 
   repeated interchain_security.ccv.provider.v1.ExportedVscSendTimestamp exported_vsc_send_timestamps = 13
       [ (gogoproto.nullable) = false ];
+
+  repeated ConsensusValidator last_provider_consensus_validators = 14
+      [ (gogoproto.nullable) = false ];
 }
 
 // The provider CCV module's knowledge of consumer state. 

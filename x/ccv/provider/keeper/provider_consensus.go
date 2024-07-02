@@ -1,8 +1,12 @@
 package keeper
 
 import (
+	"fmt"
+
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
@@ -11,14 +15,14 @@ import (
 // as part of the last provider consensus validator set
 func (k Keeper) SetLastProviderConsensusValidator(
 	ctx sdk.Context,
-	validator types.ConsumerValidator,
+	validator types.ConsensusValidator,
 ) {
 	k.setValidator(ctx, []byte{types.LastProviderConsensusValsPrefix}, validator)
 }
 
 // SetLastProviderConsensusValSet resets the stored last validator set sent to the consensus engine on the provider
 // to the provided `nextValidators“.
-func (k Keeper) SetLastProviderConsensusValSet(ctx sdk.Context, nextValidators []types.ConsumerValidator) {
+func (k Keeper) SetLastProviderConsensusValSet(ctx sdk.Context, nextValidators []types.ConsensusValidator) {
 	k.setValSet(ctx, []byte{types.LastProviderConsensusValsPrefix}, nextValidators)
 }
 
@@ -43,7 +47,7 @@ func (k Keeper) DeleteLastProviderConsensusValSet(
 // validator set sent to the consensus engine on the provider
 func (k Keeper) GetLastProviderConsensusValSet(
 	ctx sdk.Context,
-) []types.ConsumerValidator {
+) []types.ConsensusValidator {
 	return k.getValSet(ctx, []byte{types.LastProviderConsensusValsPrefix})
 }
 
@@ -53,4 +57,31 @@ func (k Keeper) GetLastTotalProviderConsensusPower(
 	ctx sdk.Context,
 ) math.Int {
 	return k.getTotalPower(ctx, []byte{types.LastProviderConsensusValsPrefix})
+}
+
+// CreateProviderConsensusValidator creates a new ConsensusValidator from the given staking validator
+func (k Keeper) CreateProviderConsensusValidator(ctx sdk.Context, val stakingtypes.Validator) (types.ConsensusValidator, error) {
+	consAddr, err := val.GetConsAddr()
+	if err != nil {
+		return types.ConsensusValidator{}, fmt.Errorf("getting consensus address: %w", err)
+	}
+	pubKey, err := val.TmConsPublicKey()
+	if err != nil {
+		return types.ConsensusValidator{}, fmt.Errorf("getting consensus public key: %w", err)
+	}
+	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+	if err != nil {
+		return types.ConsensusValidator{}, fmt.Errorf("getting validator address: %w", err)
+	}
+
+	power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+	if err != nil {
+		return types.ConsensusValidator{}, fmt.Errorf("getting validator power: %w", err)
+	}
+
+	return types.ConsensusValidator{
+		ProviderConsAddr: consAddr,
+		PublicKey:        &pubKey,
+		Power:            power,
+	}, nil
 }
