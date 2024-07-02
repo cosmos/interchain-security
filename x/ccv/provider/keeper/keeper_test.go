@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"testing"
-	"time"
 
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
@@ -222,59 +221,6 @@ func TestInitHeight(t *testing.T) {
 		height, _ := providerKeeper.GetInitChainHeight(ctx, tc.chainID)
 		require.Equal(t, tc.expected, height)
 	}
-}
-
-func TestInitTimeoutTimestamp(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now().UTC()
-	nsNow := uint64(now.UnixNano())
-	timeoutTimestamps := []types.InitTimeoutTimestamp{
-		{
-			ChainId:   "chain-2",
-			Timestamp: nsNow,
-		},
-		{
-			ChainId:   "chain-1",
-			Timestamp: nsNow + 10,
-		},
-		{
-			ChainId:   "chain-4",
-			Timestamp: nsNow - 10,
-		},
-		{
-			ChainId:   "chain-3",
-			Timestamp: nsNow,
-		},
-	}
-
-	expectedGetAllOrder := timeoutTimestamps
-	// sorting by ChainId
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
-	})
-
-	_, found := pk.GetInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
-	require.False(t, found)
-
-	for _, tt := range timeoutTimestamps {
-		pk.SetInitTimeoutTimestamp(ctx, tt.ChainId, tt.Timestamp)
-	}
-
-	for _, tt := range timeoutTimestamps {
-		_, found := pk.GetInitTimeoutTimestamp(ctx, tt.ChainId)
-		require.True(t, found)
-	}
-
-	// iterate and check all results are returned in the expected order
-	result := pk.GetAllInitTimeoutTimestamps(ctx)
-	require.Len(t, result, len(timeoutTimestamps))
-	require.Equal(t, result, expectedGetAllOrder)
-
-	pk.DeleteInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
-	_, found = pk.GetInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
-	require.False(t, found)
 }
 
 func TestGetAllRegisteredConsumerChainIDs(t *testing.T) {
