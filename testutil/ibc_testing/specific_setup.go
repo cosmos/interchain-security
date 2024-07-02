@@ -10,12 +10,11 @@ import (
 	db "github.com/cosmos/cosmos-db"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
-	"cosmossdk.io/log"
-
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"cosmossdk.io/log"
 	"github.com/cometbft/cometbft/abci/types"
 
 	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"

@@ -7,6 +7,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -17,7 +18,6 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
