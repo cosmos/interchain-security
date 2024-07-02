@@ -41,7 +41,7 @@ what we describe applies to both governance-proposed consumer chains, as well as
 
 A consumer chain can reside in three phases: i) _prelaunch_, ii) _launched_, and iii) _stopped_ phase as seen
 in the diagram below:
-[States of a consumer chain](./adr18_states_of_a_consumer_chain.png)
+![States of a consumer chain](./adr18_states_of_a_consumer_chain.png)
 
 When a chain is first proposed through a `ConsumerAdditionProposal` or added through a permissionless transaction message,
 the phase resides in the _prelaunch_ phase. At this state, validators can choose to opt in on the consumer chain. Additionally,
