@@ -641,6 +641,7 @@ type Assignment struct {
 // of simulated scenarios where random key assignments and validator
 // set updates are generated.
 func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
+	CHAINID := ChainID
 	// The number of full test executions to run
 	NUM_EXECUTIONS := 100
 	// Each test execution mimics the adding of a consumer chain and the
@@ -768,9 +769,12 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				})
 			}
 
-			nextValidators := k.ComputeNextEpochConsumerValSet(ctx, ChainID, bondedValidators)
-			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, ChainID), nextValidators)
-			k.SetConsumerValSet(ctx, ChainID, nextValidators)
+			nextValidators := k.FilterValidators(ctx, CHAINID, bondedValidators,
+				func(providerAddr types.ProviderConsAddress) bool {
+					return true
+				})
+			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, CHAINID), nextValidators)
+			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
 
 			consumerValset.apply(updates)
 			// Simulate the VSCID update in EndBlock

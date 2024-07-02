@@ -5,7 +5,7 @@ sidebar_position: 3
 
 # ICS Provider Proposals
 
-Interchain security module introduces 3 new proposal types to the provider.
+Interchain security module introduces new proposal types to the provider.
 
 The proposals are used to propose upcoming interchain security events through governance.
 
@@ -42,10 +42,13 @@ Minimal example:
     "blocks_per_distribution_transmission": 1000,
     "historical_entries": 10000,
     "genesis_hash": "d86d756e10118e66e6805e9cc476949da2e750098fcc7634fd0cc77f57a0b2b0",
-    "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1"
-    // relevant for chains performing a standalone to consumer changeover
-    // in order to maintain the existing ibc transfer channel
-    "distribution_transmission_channel": "channel-123"
+    "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1",
+    "distribution_transmission_channel": "channel-123",
+    "top_N": 95,
+    "validators_power_cap": 0,
+    "validator_set_cap": 0,
+    "allowlist": [],
+    "denylist": []
 }
 ```
 More examples can be found in the interchain security testnet repository [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/noble-1/start-proposal-noble-1.json).
@@ -73,6 +76,45 @@ Minimal example:
     "description": "Here is a .md formatted string specifying removal details"
 }
 ```
+
+:::warning
+Before the introduction of Partial Set Security, consumer chains typically included a "soft opt-out mechanism"
+which allows the bottom N% of the provider's validators to not validate the consumer chain, without being jailed for downtime on the provider.
+After the introduction of Partial Set Security, the use of the soft opt-out mechanism is discouraged, and consumer chains are
+encouraged to use the topN parameter to not force validators with little stake to validate the chain.
+:::
+
+
+## `ConsumerModificationProposal`
+Proposal type used to change the power shaping parameters of a running consumer chain, as well as to change a Top N running
+consumer chain to an Opt-In chain and vice versa.
+
+When a `ConsumerModificationProposal` passes for a running consumer chain, the consumer chain would change all its
+parameters to the ones passed in the `ConsumerModificationProposal`.
+
+Assume, a `chain-1` is a Top N chain. If the following `ConsumerModificationProposal` passes, then `chain-1` would become
+an Opt-In chain with a 40% validators power cap, a maximum number of 30 validators, and one denylisted validator.
+```js
+{
+    "title": "Modify consumer chain",
+    "description": ".md description of your chain and all other relevant information",
+    "chain_id": "chain-1",
+    "top_N": 0,
+    "validators_power_cap": 40,
+    "validator_set_cap": 30,
+    "allowlist": [],
+    "denylist": ["cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"]
+}
+```
+
+:::warning
+If `top_N`, `validators_power_cap`, or some other argument is not included in the proposal, then it is considered
+that the default value is set for this argument. For example, if a Top 50% chain wants to only modify `validators_power_cap`
+from 35 to 40, then the `ConsumerModificationProposal` would still need to include that `top_N` is 50. Otherwise
+`top_N` would be set to its default value of 0, and the chain would become an Opt-In chain.
+
+To be **safe**, always include `top_N` and all the power shaping parameters in your `ConsumerModificationProposal`.
+:::
 
 ## ChangeRewardDenomProposal
 

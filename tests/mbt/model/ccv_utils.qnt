@@ -531,6 +531,11 @@ module ccv_utils {
         )
     }
 
+    // Returns the set of all nodes that are neither jailed nor have 0 power on the provider.
+    pure def validatorsWithPower(providerState: ProviderState): Set[Node] = {
+        nonJailedNodes(providerState).filter(node => providerState.chainState.currentValidatorPowers.get(node) != 0)
+    }
+
     pure def IsEmptyValSet(valSet: ValidatorSet): bool = {
         valSet.keys().filter(
             node => valSet.get(node) > 0

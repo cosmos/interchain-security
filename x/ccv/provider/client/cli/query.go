@@ -35,6 +35,10 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdProposedConsumerChains())
 	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
 	cmd.AddCommand(CmdProviderParameters())
+	cmd.AddCommand(CmdConsumerChainOptedInValidators())
+	cmd.AddCommand(CmdConsumerValidators())
+	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
+	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	cmd.AddCommand(CmdOldestUnconfirmedVsc())
 	return cmd
 }
@@ -352,7 +356,7 @@ $ %s query provider registered-consumer-reward-denoms
 
 func CmdAllPairsValConAddrByConsumerChainID() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "all-pairs-valconsensus-address",
+		Use:   "all-pairs-valconsensus-address [consumer-chain-id]",
 		Short: "Query all pairs of valconsensus address by consumer chainId.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -403,6 +407,161 @@ $ %s query provider params
 			}
 
 			return clientCtx.PrintProto(&res.Params)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// Command to query opted-in validators by consumer chain ID
+func CmdConsumerChainOptedInValidators() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "consumer-opted-in-validators [chainid]",
+		Short: "Query opted-in validators for a given consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query opted-in validators for a given consumer chain.
+Example:
+$ %s consumer-opted-in-validators foochain
+		`, version.AppName),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.QueryConsumerChainOptedInValidators(cmd.Context(),
+				&types.QueryConsumerChainOptedInValidatorsRequest{ChainId: args[0]})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// Command to query the consumer validators by consumer chain ID
+func CmdConsumerValidators() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "consumer-validators [chainid]",
+		Short: "Query the last set consumer-validator set for a given consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the last set consumer-validator set for a given consumer chain.
+Note that this does not necessarily mean that the consumer chain is currently using this validator set because a VSCPacket could be delayed, etc.
+Example:
+$ %s consumer-validators foochain
+		`, version.AppName),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.QueryConsumerValidators(cmd.Context(),
+				&types.QueryConsumerValidatorsRequest{ChainId: args[0]})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// Command to query the consumer chains list a given validator has to validate
+func CmdConsumerChainsValidatorHasToValidate() *cobra.Command {
+	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
+	cmd := &cobra.Command{
+		Use:   "has-to-validate [provider-validator-address]",
+		Short: "Query the consumer chains list a given validator has to validate",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`the list of consumer chains that as a validator, you need to be running right now, is always a subset of this, so it seems like a very nice "safe bet".
+Example:
+$ %s has-to-validate %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+		`, version.AppName, bech32PrefixConsAddr),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			addr, err := sdk.ConsAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			res, err := queryClient.QueryConsumerChainsValidatorHasToValidate(cmd.Context(),
+				&types.QueryConsumerChainsValidatorHasToValidateRequest{
+					ProviderAddress: addr.String(),
+				})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// Command to query the consumer commission rate a validator charges
+// on a consumer chain
+func CmdValidatorConsumerCommissionRate() *cobra.Command {
+	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
+	cmd := &cobra.Command{
+		Use:   "validator-consumer-commission-rate [chainid] [provider-validator-address]",
+		Short: "Query the consumer commission rate a validator charges on a consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the consumer commission rate a validator charges on a consumer chain.
+Example:
+$ %s validator-consumer-commission-rate foochain %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+		`, version.AppName, bech32PrefixConsAddr),
+		),
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			addr, err := sdk.ConsAddressFromBech32(args[1])
+			if err != nil {
+				return err
+			}
+
+			res, err := queryClient.QueryValidatorConsumerCommissionRate(cmd.Context(),
+				&types.QueryValidatorConsumerCommissionRateRequest{
+					ChainId:         args[0],
+					ProviderAddress: addr.String(),
+				})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
 		},
 	}
 

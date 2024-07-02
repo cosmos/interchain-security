@@ -42,7 +42,16 @@ const config = {
           versions: {
             current: {
               path: "/",
-              // banner: "current",
+              label: "main",
+              banner: "unreleased",
+            },
+            "v4.2.0-docs": {
+              path: "/v4.2.0/",
+              label: "v4.2.0",
+              banner: "none",
+            },
+            "v5.0.0": {
+              banner: "unreleased",
             },
           },
           remarkPlugins: [remarkMath],
@@ -91,7 +100,14 @@ const config = {
           {
             type: "docsVersionDropdown",
             position: "left",
-            dropdownActiveClassDisabled: true,
+            dropdownActiveClassDisabled: false,
+            dropdownItemsAfter: [
+              {
+                href: "https://cosmos.github.io/interchain-security/legacy",
+                label: "<= v3.x",
+                target: "_blank",
+              },
+            ],
           },
         ],
       },
@@ -211,7 +227,7 @@ const config = {
         toExtensions: ["html"],
         redirects: [
           {
-            from: ["/main", "/master"],
+            from: ["/main"],
             to: "/",
           },
         ],

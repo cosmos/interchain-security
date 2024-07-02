@@ -184,11 +184,14 @@ func TestGetLastSovereignValidators(t *testing.T) {
 	cId1 := crypto.NewCryptoIdentityFromIntSeed(11)
 	val := cId1.SDKStakingValidator()
 	val.Description.Moniker = "sanity check this is the correctly serialized val"
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{
-			val,
-		}, nil),
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(
+		mocks.MockStakingKeeper,
+		180,
+		[]stakingtypes.Validator{val},
+		[]int64{1000},
+		1,
 	)
+
 	lastSovVals, err := ck.GetLastStandaloneValidators(ctx)
 	require.NoError(t, err)
 	require.Equal(t, []stakingtypes.Validator{val}, lastSovVals)

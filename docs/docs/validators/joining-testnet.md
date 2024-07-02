@@ -12,7 +12,7 @@ The experience gained in the testnet will prepare you for validating interchain 
 :::tip
 Provider and consumer chain represent distinct networks and infrastructures operated by the same validator set.
 
-For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/validators/validator-setup) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs
+For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/main/validators/validator-setup) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs.
 :::
 
 ## Joining the provider chain
@@ -79,7 +79,7 @@ gaiad tx staking create-validator \
 ```
 
 :::tip
-Check this [guide](https://hub.cosmos.network/validators/validator-setup#edit-validator-description) to edit your validator.
+Check this [guide](https://hub.cosmos.network/main/validators/validator-setup#edit-validator-description) to edit your validator.
 :::
 
 After this step, your validator is created and you can start your node and catch up to the rest of the network. It is recommended that you use `statesync` to catch up to the rest of the network.
@@ -133,7 +133,7 @@ Additional scripts to setup your nodes are available [here](https://github.com/c
 :::tip
 Once you reach the active set on the provider chain, you will be required to validate all available consumer chains.
 
-You can use the same consensus key on all consumer chains, or opt to use a different key on each consumer chain.
+We strongly recommend that you assign a separate key for each consumer chain.
 Check out this [guide](../features/key-assignment.md) to learn more about key assignment in interchain security.
 :::
 

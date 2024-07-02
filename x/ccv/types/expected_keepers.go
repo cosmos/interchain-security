@@ -11,7 +11,6 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
 	"cosmossdk.io/math"
-
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -48,11 +47,14 @@ type StakingKeeper interface {
 	Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error)
 	MaxValidators(ctx context.Context) (uint32, error)
 	GetLastTotalPower(ctx context.Context) (math.Int, error)
-	GetLastValidators(ctx context.Context) ([]stakingtypes.Validator, error)
 	BondDenom(ctx context.Context) (string, error)
 	GetUnbondingDelegationsFromValidator(ctx context.Context, valAddr sdk.ValAddress) ([]stakingtypes.UnbondingDelegation, error)
 	GetRedelegationsFromSrcValidator(ctx context.Context, valAddr sdk.ValAddress) ([]stakingtypes.Redelegation, error)
 	GetUnbondingType(ctx context.Context, id uint64) (stakingtypes.UnbondingType, error)
+	MinCommissionRate(ctx context.Context) (math.LegacyDec, error)
+	GetUnbondingDelegationByUnbondingID(ctx context.Context, id uint64) (stakingtypes.UnbondingDelegation, error)
+	GetRedelegationByUnbondingID(ctx context.Context, id uint64) (stakingtypes.Redelegation, error)
+	GetValidatorByUnbondingID(ctx context.Context, id uint64) (stakingtypes.Validator, error)
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
@@ -109,6 +111,8 @@ type ClientKeeper interface {
 // DistributionKeeper defines the expected interface of the distribution keeper
 type DistributionKeeper interface {
 	FundCommunityPool(ctx context.Context, amount sdk.Coins, sender sdk.AccAddress) error
+	GetCommunityTax(ctx context.Context) (math.LegacyDec, error)
+	AllocateTokensToValidator(ctx context.Context, validator stakingtypes.ValidatorI, reward sdk.DecCoins) error
 }
 
 // ConsumerHooks event hooks for newly bonded cross-chain validators
@@ -134,7 +138,7 @@ type IBCTransferKeeper interface {
 	Transfer(context.Context, *transfertypes.MsgTransfer) (*transfertypes.MsgTransferResponse, error)
 }
 
-// IBCKeeper defines the expected interface needed for opening a
+// IBCCoreKeeper defines the expected interface needed for opening a
 // channel
 type IBCCoreKeeper interface {
 	ChannelOpenInit(

@@ -353,7 +353,7 @@ func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) ([]stakingtypes.Val
 	if !k.IsPreCCV(ctx) || k.standaloneStakingKeeper == nil {
 		panic("cannot get last standalone validators if not in pre-ccv state, or if standalone staking keeper is nil")
 	}
-	return k.standaloneStakingKeeper.GetLastValidators(ctx)
+	return k.GetLastBondedValidators(ctx)
 }
 
 // GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by maturity times,
@@ -711,4 +711,10 @@ func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {
 func (k Keeper) IsPrevStandaloneChain(ctx sdk.Context) bool {
 	store := ctx.KVStore(k.storeKey)
 	return store.Has(types.PrevStandaloneChainKey())
+}
+
+// GetLastBondedValidators iterates the last validator powers in the staking module
+// and returns the first MaxValidators many validators with the largest powers.
+func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.standaloneStakingKeeper, k.Logger(ctx))
 }

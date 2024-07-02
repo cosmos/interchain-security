@@ -367,23 +367,27 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 	}
 
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
+		return errorsmod.Wrapf(slashingtypes.ErrValidatorTombstoned, providerAddr.String())
 	}
 
 	// jail validator if not already
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
+		err := k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
+		if err != nil {
+			return err
+		}
 	}
 
-	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
+	err = k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
+	if err != nil {
+		return fmt.Errorf("fail to set jail duration for validator: %s: %s", providerAddr.String(), err)
+	}
 
 	// Tombstone the validator so that we cannot slash the validator more than once
 	// Note that we cannot simply use the fact that a validator is jailed to avoid slashing more than once
 	// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
 	// and in such a case the validator would not get slashed when we call `SlashValidator`.
-	k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
-
-	return nil
+	return k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
 }
 
 // ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured `undelegations` and

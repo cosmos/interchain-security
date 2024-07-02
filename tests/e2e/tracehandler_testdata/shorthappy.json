@@ -41,6 +41,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -57,7 +58,8 @@
       "InitialHeight": {
         "revision_height": 1
       },
-      "DistributionChannel": ""
+      "DistributionChannel": "",
+      "TopN": 100
     },
     "State": {
       "provi": {
@@ -78,6 +80,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -123,6 +126,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -134,10 +138,31 @@
       "Validator": "carol",
       "ConsumerPubkey": "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}",
       "ReconfigureNode": false,
-      "ExpectError": true,
-      "ExpectedError": "a validator has assigned the consumer key already: consumer key is already in use by a validator"
+      "ExpectError": false,
+      "ExpectedError": ""
     },
-    "State": {}
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ProposedConsumerChains": null,
+        "ValPowers": null,
+        "StakedTokens": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": {
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
+        },
+        "ProviderKeys": {
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+        },
+        "ConsumerPendingPacketQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
+        "HasToValidate": null,
+        "Proposals": null
+      }
+    }
   },
   {
     "ActionType": "main.AssignConsumerPubKeyAction",
@@ -168,6 +193,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -205,6 +231,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -264,6 +291,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -283,6 +311,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -336,6 +365,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -355,6 +385,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -384,6 +415,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -414,6 +446,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -443,6 +476,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -473,6 +507,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -492,6 +527,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -522,6 +558,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -553,6 +590,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -572,6 +610,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -602,6 +641,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -630,6 +670,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -649,6 +690,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -678,6 +720,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -697,6 +740,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -727,6 +771,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -755,6 +800,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -774,6 +820,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -804,6 +851,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -832,6 +880,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -851,6 +900,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -881,6 +931,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -909,6 +960,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -928,6 +980,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -958,6 +1011,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -986,6 +1040,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -1005,6 +1060,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -1035,6 +1091,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       },
       "provi": {
@@ -1054,6 +1111,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": null
       }
     }
@@ -1090,6 +1148,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": {
           "2": {
             "RawProposal": {
@@ -1138,6 +1197,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": {
           "2": {
             "RawProposal": {
@@ -1179,6 +1239,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": {
           "3": {
             "RawProposal": {
@@ -1225,6 +1286,7 @@
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
+        "HasToValidate": null,
         "Proposals": {
           "3": {
             "RawProposal": {

@@ -1,4 +1,4 @@
-package v5
+package v7
 
 import (
 	"time"
@@ -75,6 +75,12 @@ func getBlocksPerEpoch(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace)
 	return b
 }
 
+func getNumberOfEpochsToStartReceivingRewards(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace) int64 {
+	var b int64
+	paramSpace.Get(ctx, types.KeyNumberOfEpochsToStartReceivingRewards, &b)
+	return b
+}
+
 // Legacy: Only for migration purposes. GetParamsLegacy returns the paramset for the provider
 // module from a given param subspace
 func GetParamsLegacy(ctx sdk.Context, paramspace ccvtypes.LegacyParamSubspace) types.Params {
@@ -88,5 +94,6 @@ func GetParamsLegacy(ctx sdk.Context, paramspace ccvtypes.LegacyParamSubspace) t
 		getSlashMeterReplenishFraction(ctx, paramspace),
 		getConsumerRewardDenomRegistrationFee(ctx, paramspace),
 		getBlocksPerEpoch(ctx, paramspace),
+		getNumberOfEpochsToStartReceivingRewards(ctx, paramspace),
 	)
 }

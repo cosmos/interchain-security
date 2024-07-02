@@ -10,7 +10,7 @@ title: Partial Set Security
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 

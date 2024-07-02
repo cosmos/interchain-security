@@ -108,47 +108,51 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 // ExportGenesis returns the CCV provider module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// get a list of all registered consumer chains
-	registeredChains := k.GetAllConsumerChains(ctx)
+	registeredChainIDs := k.GetAllRegisteredConsumerChainIDs(ctx)
 
 	var exportedVscSendTimestamps []types.ExportedVscSendTimestamp
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
-	for _, chain := range registeredChains {
-		gen, found := k.GetConsumerGenesis(ctx, chain.ChainId)
+	for _, chainID := range registeredChainIDs {
+		// no need for the second return value of GetConsumerClientId
+		// as GetAllRegisteredConsumerChainIDs already iterated through
+		// the entire prefix range
+		clientID, _ := k.GetConsumerClientId(ctx, chainID)
+		gen, found := k.GetConsumerGenesis(ctx, chainID)
 		if !found {
-			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
+			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
 		}
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:           chain.ChainId,
-			ClientId:          chain.ClientId,
+			ChainId:           chainID,
+			ClientId:          clientID,
 			ConsumerGenesis:   gen,
-			UnbondingOpsIndex: k.GetAllUnbondingOpIndexes(ctx, chain.ChainId),
+			UnbondingOpsIndex: k.GetAllUnbondingOpIndexes(ctx, chainID),
 		}
 
 		// try to find channel id for the current consumer chain
-		channelId, found := k.GetChainToChannel(ctx, chain.ChainId)
+		channelId, found := k.GetChainToChannel(ctx, chainID)
 		if found {
 			cs.ChannelId = channelId
-			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chain.ChainId)
+			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chainID)
 			if !found {
-				panic(fmt.Errorf("cannot find init height for consumer chain %s", chain.ChainId))
+				panic(fmt.Errorf("cannot find init height for consumer chain %s", chainID))
 			}
-			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chain.ChainId)
+			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
 		}
 
-		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chain.ChainId)
+		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chainID)
 		consumerStates = append(consumerStates, cs)
 
-		vscSendTimestamps := k.GetAllVscSendTimestamps(ctx, chain.ChainId)
-		exportedVscSendTimestamps = append(exportedVscSendTimestamps, types.ExportedVscSendTimestamp{ChainId: chain.ChainId, VscSendTimestamps: vscSendTimestamps})
+		vscSendTimestamps := k.GetAllVscSendTimestamps(ctx, chainID)
+		exportedVscSendTimestamps = append(exportedVscSendTimestamps, types.ExportedVscSendTimestamp{ChainId: chainID, VscSendTimestamps: vscSendTimestamps})
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
-	for _, chain := range registeredChains {
-		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chain.ChainId)...)
+	for _, chainID := range registeredChainIDs {
+		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chainID)...)
 	}
 
 	params := k.GetParams(ctx)

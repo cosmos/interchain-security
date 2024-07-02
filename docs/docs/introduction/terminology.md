@@ -16,7 +16,11 @@ Interchain Security is the Cosmos-specific category of Shared Security that uses
 
 ## Replicated Security
 
-A particular protocol/implementation of Interchain Security that fully replicates the security and decentralization of a validator set across multiple blockchains. Replicated security has also been referred to as "Cross Chain Validation" or "Interchain Security V1", a legacy term for the same protocol. That is, a "provider chain" such as the Cosmos Hub can share its exact validator set with multiple consumer chains by communicating changes in its validator set over IBC. Note this documentation is focused on explaining the concepts from replicated security.
+A particular protocol/implementation of Interchain Security that fully replicates the security and decentralization of a validator set across multiple blockchains. Replicated security has also been referred to as "Cross Chain Validation" or "Interchain Security V1", a legacy term for the same protocol. That is, a "provider chain" such as the Cosmos Hub can share its exact validator set with multiple consumer chains by communicating changes in its validator set over IBC.
+
+## Partial Set Security
+
+A major iteration of Interchain Security, also known as "Interchain Security V2". Partial Set Security allows a provider chain to share only a subset of its validator set with a consumer chain. This subset can be determined by the top N% validators by voting power, or by validators opting in to validate the consumer chain. Partial Set Security allows for more flexible security tradeoffs than Replicated Security.
 
 ## Mesh security
 

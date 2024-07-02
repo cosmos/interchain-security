@@ -19,18 +19,19 @@ import (
 
 // type aliases
 type (
-	ChainState                = e2e.ChainState
-	Proposal                  = e2e.Proposal
-	Rewards                   = e2e.Rewards
-	TextProposal              = e2e.TextProposal
-	UpgradeProposal           = e2e.UpgradeProposal
-	ConsumerAdditionProposal  = e2e.ConsumerAdditionProposal
-	ConsumerRemovalProposal   = e2e.ConsumerRemovalProposal
-	IBCTransferParams         = e2e.IBCTransferParams
-	IBCTransferParamsProposal = e2e.IBCTransferParamsProposal
-	Param                     = e2e.Param
-	ParamsProposal            = e2e.ParamsProposal
-	TargetDriver              = e2e.TargetDriver
+	ChainState                   = e2e.ChainState
+	Proposal                     = e2e.Proposal
+	Rewards                      = e2e.Rewards
+	TextProposal                 = e2e.TextProposal
+	UpgradeProposal              = e2e.UpgradeProposal
+	ConsumerAdditionProposal     = e2e.ConsumerAdditionProposal
+	ConsumerRemovalProposal      = e2e.ConsumerRemovalProposal
+	ConsumerModificationProposal = e2e.ConsumerModificationProposal
+	IBCTransferParams            = e2e.IBCTransferParams
+	IBCTransferParamsProposal    = e2e.IBCTransferParamsProposal
+	Param                        = e2e.Param
+	ParamsProposal               = e2e.ParamsProposal
+	TargetDriver                 = e2e.TargetDriver
 )
 
 type State map[ChainID]ChainState
@@ -41,7 +42,6 @@ type Chain struct {
 }
 
 func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
-
 	chainState := ChainState{}
 
 	if modelState.ValBalances != nil {
@@ -106,6 +106,14 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 			chainClientsFrozenHeights[id] = tr.GetClientFrozenHeight(chain, id)
 		}
 		chainState.ClientsFrozenHeights = &chainClientsFrozenHeights
+	}
+
+	if modelState.HasToValidate != nil {
+		hasToValidate := map[ValidatorID][]ChainID{}
+		for validatorId := range *modelState.HasToValidate {
+			hasToValidate[validatorId] = tr.target.GetHasToValidate(validatorId)
+		}
+		chainState.HasToValidate = &hasToValidate
 	}
 
 	if modelState.ConsumerPendingPacketQueueSize != nil {
@@ -479,6 +487,31 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Title:   title,
 			Params:  params,
 		}
+
+	case "/interchain_security.ccv.provider.v1.ConsumerModificationProposal":
+		chainId := rawContent.Get("chain_id").String()
+
+		var chain ChainID
+		for i, conf := range tr.chainConfigs {
+			if string(conf.ChainId) == chainId {
+				chain = i
+				break
+			}
+		}
+
+		return ConsumerModificationProposal{
+			Deposit: uint(deposit),
+			Status:  status,
+			Chain:   chain,
+		}
+	case "/cosmos.params.v1beta1.ParameterChangeProposal":
+		return ParamsProposal{
+			Deposit:  uint(deposit),
+			Status:   status,
+			Subspace: gjson.Get(string(bz), `messages.0.content.changes.0.subspace`).String(),
+			Key:      gjson.Get(string(bz), `messages.0.content.changes.0.key`).String(),
+			Value:    gjson.Get(string(bz), `messages.0.content.changes.0.value`).String(),
+		}
 	}
 
 	log.Fatal("received unknown proposal type: ", propType, "proposal JSON:", string(bz))
@@ -805,6 +838,29 @@ func (tr Commands) GetClientFrozenHeight(chain ChainID, clientID string) (uint64
 	}
 
 	return uint64(revHeight), uint64(revNumber)
+}
+
+func (tr Commands) GetHasToValidate(
+	validatorId ValidatorID,
+) []ChainID {
+	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	bz, err := tr.target.ExecCommand(binaryName,
+		"query", "provider", "has-to-validate",
+		tr.validatorConfigs[validatorId].ValconsAddress,
+		`--node`, tr.GetQueryNode(ChainID("provi")),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	arr := gjson.Get(string(bz), "consumer_chain_ids").Array()
+	chains := []ChainID{}
+	for _, c := range arr {
+		chains = append(chains, ChainID(c.String()))
+	}
+
+	return chains
 }
 
 func (tr Commands) GetTrustedHeight(

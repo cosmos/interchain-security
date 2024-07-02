@@ -28,5 +28,6 @@ This allows the consumer chain to leverage those modules while also using the `x
 With these modules enabled, the consumer chain can mint its own governance tokens, which can then be delegated to prominent community members which are referred to as "representatives" (as opposed to "validators" in standalone chains). The token may have different use cases besides just voting on governance proposals.
 
 ## Standalone chain to consumer chain changeover
-This feature is being actively worked on. Information will be provided at a later time.
+
+See the [standalone chain to consumer chain changeover guide](./changeover-procedure.md) for more information on how to transition your standalone chain to a consumer chain.
 

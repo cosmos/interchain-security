@@ -7,15 +7,16 @@ import (
 	"strings"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/log"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
-	errorsmod "cosmossdk.io/errors"
-
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -122,4 +123,47 @@ func GetConsAddrFromBech32(bech32str string) (sdk.ConsAddress, error) {
 		return nil, errors.New("couldn't find valid bech32")
 	}
 	return sdk.ConsAddress(addr), nil
+}
+
+func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, logger log.Logger) ([]stakingtypes.Validator, error) {
+	maxVals, err := stakingKeeper.MaxValidators(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	lastPowers := make([]stakingtypes.LastValidatorPower, maxVals)
+
+	i := 0
+	err = stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
+		lastPowers[i] = stakingtypes.LastValidatorPower{Address: addr.String(), Power: power}
+		i++
+		return i >= int(maxVals) // stop iteration if true
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// truncate the lastPowers
+	lastPowers = lastPowers[:i]
+
+	bondedValidators := make([]stakingtypes.Validator, len(lastPowers))
+
+	for index, p := range lastPowers {
+		addr, err := sdk.ValAddressFromBech32(p.Address)
+		if err != nil {
+			logger.Error("Invalid validator address", "address", p.Address, "error", err)
+			continue
+		}
+
+		val, err := stakingKeeper.GetValidator(ctx, addr)
+		if err != nil {
+			logger.Error(err.Error(), addr.String())
+			continue
+		}
+
+		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
+		bondedValidators[index] = val
+	}
+	return bondedValidators, nil
 }

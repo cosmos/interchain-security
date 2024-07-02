@@ -10,6 +10,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // SetConsumerValidator sets provided consumer `validator` on the consumer chain with `chainID`
@@ -25,6 +26,15 @@ func (k Keeper) SetConsumerValidator(
 	}
 
 	store.Set(types.ConsumerValidatorKey(chainID, validator.ProviderConsAddr), bz)
+}
+
+// SetConsumerValSet resets the current consumer validators with the `nextValidators` computed by
+// `FilterValidators` and hence this method should only be called after `FilterValidators` has completed.
+func (k Keeper) SetConsumerValSet(ctx sdk.Context, chainID string, nextValidators []types.ConsumerValidator) {
+	k.DeleteConsumerValSet(ctx, chainID)
+	for _, val := range nextValidators {
+		k.SetConsumerValidator(ctx, chainID, val)
+	}
 }
 
 // DeleteConsumerValidator removes consumer validator with `providerAddr` address
@@ -58,13 +68,26 @@ func (k Keeper) DeleteConsumerValSet(
 
 // IsConsumerValidator returns `true` if the consumer validator with `providerAddr` exists for chain `chainID`
 // and `false` otherwise
-func (k Keeper) IsConsumerValidator(
-	ctx sdk.Context,
-	chainID string,
-	providerAddr types.ProviderConsAddress,
-) bool {
+func (k Keeper) IsConsumerValidator(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) bool {
 	store := ctx.KVStore(k.storeKey)
 	return store.Get(types.ConsumerValidatorKey(chainID, providerAddr.ToSdkConsAddr())) != nil
+}
+
+// GetConsumerValidator returns the consumer validator with `providerAddr` if it exists for chain `chainID`
+func (k Keeper) GetConsumerValidator(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) (types.ConsumerValidator, bool) {
+	store := ctx.KVStore(k.storeKey)
+	marshalledConsumerValidator := store.Get(types.ConsumerValidatorKey(chainID, providerAddr.ToSdkConsAddr()))
+
+	if marshalledConsumerValidator == nil {
+		return types.ConsumerValidator{}, false
+	}
+
+	var validator types.ConsumerValidator
+	if err := validator.Unmarshal(marshalledConsumerValidator); err != nil {
+		panic(fmt.Errorf("failed to unmarshal ConsumerValidator: %w", err))
+	}
+
+	return validator, true
 }
 
 // GetConsumerValSet returns all the consumer validators for chain `chainID`
@@ -89,58 +112,6 @@ func (k Keeper) GetConsumerValSet(
 	return validators
 }
 
-// ComputeNextEpochConsumerValSet returns the next validator set that is responsible for validating consumer
-// chain `chainID`, based on the bonded validators.
-func (k Keeper) ComputeNextEpochConsumerValSet(
-	ctx sdk.Context,
-	chainID string,
-	bondedValidators []stakingtypes.Validator,
-) []types.ConsumerValidator {
-	var nextValidators []types.ConsumerValidator
-	for _, val := range bondedValidators {
-		valoper, err := k.ValidatorAddressCodec().StringToBytes(val.GetOperator())
-		if err != nil {
-			panic(fmt.Errorf("could not decode validator operator: %w", err))
-		}
-		// get next voting power and the next consumer public key
-		nextPower, err := k.stakingKeeper.GetLastValidatorPower(ctx, valoper)
-		if err != nil {
-			panic(fmt.Errorf("could not get last validator power: %w", err))
-		}
-		consAddr, err := val.GetConsAddr()
-		if err != nil {
-			// this should never happen but is recoverable if we exclude this validator from the `nextValidators`
-			k.Logger(ctx).Error("could not get consensus address of validator",
-				"validator", val.GetOperator(),
-				"error", err)
-			continue
-		}
-		nextConsumerPublicKey, foundConsumerPublicKey := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
-		if !foundConsumerPublicKey {
-			// if no consumer key assigned then use the validator's key itself
-			k.Logger(ctx).Info("could not retrieve public key for validator on consumer chain because"+
-				" the validator did not assign a new consumer key",
-				"validator", val.GetOperator(),
-				"chainID", chainID)
-			nextConsumerPublicKey, err = val.CmtConsPublicKey()
-			if err != nil {
-				// this should never happen and might not be recoverable because without the public key
-				// we cannot generate a validator update
-				panic(fmt.Errorf("could not retrieve validator's (%+v) public key: %w", val, err))
-			}
-		}
-
-		nextValidator := types.ConsumerValidator{
-			ProviderConsAddr:  consAddr,
-			Power:             nextPower,
-			ConsumerPublicKey: &nextConsumerPublicKey,
-		}
-		nextValidators = append(nextValidators, nextValidator)
-	}
-
-	return nextValidators
-}
-
 // DiffValidators compares the current and the next epoch's consumer validators and returns the `ValidatorUpdate` diff
 // needed by CometBFT to update the validator set on a chain.
 func DiffValidators(
@@ -149,12 +120,12 @@ func DiffValidators(
 ) []abci.ValidatorUpdate {
 	var updates []abci.ValidatorUpdate
 
-	isCurrentValidator := make(map[string]types.ConsumerValidator)
+	isCurrentValidator := make(map[string]types.ConsumerValidator, len(currentValidators))
 	for _, val := range currentValidators {
 		isCurrentValidator[val.ConsumerPublicKey.String()] = val
 	}
 
-	isNextValidator := make(map[string]types.ConsumerValidator)
+	isNextValidator := make(map[string]types.ConsumerValidator, len(nextValidators))
 	for _, val := range nextValidators {
 		isNextValidator[val.ConsumerPublicKey.String()] = val
 	}
@@ -182,11 +153,76 @@ func DiffValidators(
 	return updates
 }
 
-// SetConsumerValSet resets the current consumer validators with the `nextValidators` computed by
-// `ComputeNextEpochConsumerValSet` and hence this method should only be called after `ComputeNextEpochConsumerValSet` has completed.
-func (k Keeper) SetConsumerValSet(ctx sdk.Context, chainID string, nextValidators []types.ConsumerValidator) {
-	k.DeleteConsumerValSet(ctx, chainID)
-	for _, val := range nextValidators {
-		k.SetConsumerValidator(ctx, chainID, val)
+// CreateConsumerValidator creates a consumer validator for `chainID` from the given staking `validator`
+func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validator stakingtypes.Validator) (types.ConsumerValidator, error) {
+	valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
+	if err != nil {
+		return types.ConsumerValidator{}, err
 	}
+	power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+	consAddr, err := validator.GetConsAddr()
+	if err != nil {
+		return types.ConsumerValidator{}, fmt.Errorf("could not retrieve validator's (%+v) consensus address: %w",
+			validator, err)
+	}
+
+	consumerPublicKey, foundConsumerPublicKey := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
+	if !foundConsumerPublicKey {
+		consumerPublicKey, err = validator.TmConsPublicKey()
+		if err != nil {
+			return types.ConsumerValidator{}, fmt.Errorf("could not retrieve validator's (%+v) public key: %w", validator, err)
+		}
+	}
+
+	height := ctx.BlockHeight()
+	if v, found := k.GetConsumerValidator(ctx, chainID, types.ProviderConsAddress{Address: consAddr}); found {
+		// if validator was already a consumer validator, then do not update the height set the first time
+		// the validator became a consumer validator
+		height = v.JoinHeight
+	}
+
+	return types.ConsumerValidator{
+		ProviderConsAddr:  consAddr,
+		Power:             power,
+		ConsumerPublicKey: &consumerPublicKey,
+		JoinHeight:        height,
+	}, nil
+}
+
+// FilterValidators filters the provided `bondedValidators` according to `predicate` and returns
+// the filtered set.
+func (k Keeper) FilterValidators(
+	ctx sdk.Context,
+	chainID string,
+	bondedValidators []stakingtypes.Validator,
+	predicate func(providerAddr types.ProviderConsAddress) bool,
+) []types.ConsumerValidator {
+	var nextValidators []types.ConsumerValidator
+	for _, val := range bondedValidators {
+		consAddr, err := val.GetConsAddr()
+		if err != nil {
+			continue
+		}
+
+		if predicate(types.NewProviderConsAddress(consAddr)) {
+			nextValidator, err := k.CreateConsumerValidator(ctx, chainID, val)
+			if err != nil {
+				// this should never happen but is recoverable if we exclude this validator from the next validator set
+				k.Logger(ctx).Error("could not create consumer validator",
+					"validator", val.GetOperator(),
+					"error", err)
+				continue
+			}
+
+			nextValidators = append(nextValidators, nextValidator)
+		}
+	}
+
+	return nextValidators
+}
+
+// GetLastBondedValidators iterates the last validator powers in the staking module
+// and returns the first MaxValidators many validators with the largest powers.
+func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx))
 }

@@ -59,13 +59,13 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	// get total power in set
 	totalPower := math.LegacyZeroDec()
 	for _, val := range valset {
-		totalPower = totalPower.Add(math.LegacyNewDecFromInt(math.NewInt(val.Power)))
+		totalPower = totalPower.Add(math.LegacyNewDec(val.Power))
 	}
 
 	// get power of the smallest validator that cannot soft opt out
 	powerSum := math.LegacyZeroDec()
 	for _, val := range valset {
-		powerSum = powerSum.Add(math.LegacyNewDecFromInt(math.NewInt(val.Power)))
+		powerSum = powerSum.Add(math.LegacyNewDec(val.Power))
 		// if powerSum / totalPower > SoftOptOutThreshold
 		if powerSum.Quo(totalPower).GT(optOutThreshold) {
 			// set smallest non opt out power

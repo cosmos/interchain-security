@@ -156,6 +156,54 @@ var stepChoices = map[string]StepChoice{
 		description: `Minimal set of test steps to perform compatibility tests`,
 		testConfig:  CompatibilityTestCfg,
 	},
+	"partial-set-security-opt-in": {
+		name:        "partial-set-security-opt-in",
+		steps:       stepsOptInChain(),
+		description: "test partial set security for an Opt-In chain",
+		testConfig:  DefaultTestCfg,
+	},
+	"partial-set-security-top-n": {
+		name:        "partial-set-security-top-n",
+		steps:       stepsTopNChain(),
+		description: "test partial set security for a Top-N chain",
+		testConfig:  DefaultTestCfg,
+	},
+	"partial-set-security-validator-set-cap": {
+		name:        "partial-set-security-validator-set-cap",
+		steps:       stepsValidatorSetCappedChain(),
+		description: "test partial set security for an Opt-In chain that is validator-set capped",
+		testConfig:  DefaultTestCfg,
+	},
+	"partial-set-security-validators-power-cap": {
+		name:        "partial-set-security-validators-power-cap",
+		steps:       stepsValidatorsPowerCappedChain(),
+		description: "test partial set security for an Opt-In chain that has its validators' power capped",
+		testConfig:  DefaultTestCfg,
+	},
+	"partial-set-security-validators-allowlisted": {
+		name:        "partial-set-security-validators-allowlisted",
+		steps:       stepsValidatorsAllowlistedChain(),
+		description: "test partial set security for an Opt-In chain that has some validators allowlisted",
+		testConfig:  DefaultTestCfg,
+	},
+	"partial-set-security-validators-denylisted": {
+		name:        "partial-set-security-validators-denylisted",
+		steps:       stepsValidatorsDenylistedChain(),
+		description: "test partial set security for an Opt-In chain that has a validator denylisted",
+		testConfig:  DefaultTestCfg,
+	},
+	"partial-set-security-modification-proposal": {
+		name:        "partial-set-security-modification-proposal",
+		steps:       stepsModifyChain(),
+		description: "test partial set security parameters can be changed through a modification proposal",
+		testConfig:  DefaultTestCfg,
+	},
+	"active-set-changes": {
+		name:        "active-set-changes",
+		steps:       stepsActiveSetChanges(),
+		description: "This is a regression test related to the issue discussed here: https://forum.cosmos.network/t/cosmos-hub-v17-1-chain-halt-post-mortem/13899. The test ensures that the protocol works as expected when MaxValidators is smaller than the number of potential validators.",
+		testConfig:  SmallMaxValidatorsTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
@@ -241,7 +289,11 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"changeover", "happy-path",
 			"democracy-reward", "democracy",
 			"slash-throttle", "consumer-double-sign", "consumer-misbehaviour",
-			"consumer-double-downtime",
+			"consumer-double-downtime", "partial-set-security-opt-in", "partial-set-security-top-n",
+			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
+			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
+			"partial-set-security-modification-proposal",
+			"active-set-changes",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

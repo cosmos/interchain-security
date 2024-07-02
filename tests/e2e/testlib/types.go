@@ -21,6 +21,7 @@ type ChainCommands interface {
 	GetConsumerChains(chain ChainID) map[ChainID]bool
 	GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string
 	GetClientFrozenHeight(chain ChainID, clientID string) (RevisionNumber, RevisionHeight uint64)
+	GetHasToValidate(validator ValidatorID) []ChainID
 	GetIBCTransferParams(chain ChainID) IBCTransferParams
 	GetProposal(chain ChainID, proposal uint) Proposal
 	GetParam(chain ChainID, param Param) string
@@ -168,6 +169,7 @@ type ChainState struct {
 	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
 	RegisteredConsumerRewardDenoms *[]string
 	ClientsFrozenHeights           *map[string]clienttypes.Height
+	HasToValidate                  *map[ValidatorID][]ChainID // only relevant to provider chain
 }
 
 // custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info
@@ -306,6 +308,14 @@ type ConsumerRemovalProposal struct {
 }
 
 func (p ConsumerRemovalProposal) isProposal() {}
+
+type ConsumerModificationProposal struct {
+	Deposit uint
+	Chain   ChainID
+	Status  string
+}
+
+func (p ConsumerModificationProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[ValidatorID]bool
