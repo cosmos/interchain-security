@@ -62,6 +62,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.ConsumerRewardsAllocationBytePrefix,
 		providertypes.ConsumerCommissionRatePrefix,
 		providertypes.MinimumPowerInTopNBytePrefix,
+		providertypes.LastProviderConsensusValsPrefix,
 		providertypes.ParametersByteKey,
 	}
 }
