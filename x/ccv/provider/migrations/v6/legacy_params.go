@@ -88,5 +88,7 @@ func GetParamsLegacy(ctx sdk.Context, paramspace ccvtypes.LegacyParamSubspace) t
 		getSlashMeterReplenishFraction(ctx, paramspace),
 		getConsumerRewardDenomRegistrationFee(ctx, paramspace),
 		getBlocksPerEpoch(ctx, paramspace),
+		// this parameter is new so it doesn't need to be migrated, just initialized
+		types.DefaultMaxProviderConsensusValidators,
 	)
 }

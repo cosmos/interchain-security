@@ -50,6 +50,7 @@ func TestParams(t *testing.T) {
 			Amount: math.NewInt(10000000),
 		},
 		600,
+		10,
 	)
 	providerKeeper.SetParams(ctx, newParams)
 	params = providerKeeper.GetParams(ctx)
