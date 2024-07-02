@@ -23,18 +23,18 @@ ICS without needing a governance proposal but by simply issuing a transaction.
 
 ## Decision
 
-### The phases of a consumer chain
+### The Phases of a Consumer Chain
 In Permissionless ICS, launching an Opt In chain is **only** possible through a transaction and not through a `ConsumerAdditionProposal`.
 Nevertheless, Permissionless ICS does not eliminate the `ConsumerAdditionProposal` governance proposal, as proposals are still necessary
 for Top N chains. Because of this, this ADR outlines a solution that attempts to preserve as much of the governance proposal code
 as possible. In what follows, what we describe applies to both governance-proposed consumer (i.e., Top N) chains and transaction-based (i.e., Opt In) chains.
 
-A consumer chain can reside in three phases: i) _prelaunch_, ii) _launched_, and iii) _stopped_ phase as seen
+A consumer chain can reside in three phases: i) _prelaunched_, ii) _launched_, and iii) _stopped_ phase as seen
 in the diagram below:
 ![Phases of a consumer chain](./adr18_phases_of_a_consumer_chain.png)
 
-When a Top N chain is first proposed through a `ConsumerAdditionProposal` or an Opt In chan is added through a transaction,
-the consumer chain resides in the _prelaunch_ phase. At this state, validators can choose to opt in on the consumer chain. Additionally,
+When a Top N chain is first proposed through a `ConsumerAdditionProposal` or an Opt In chain is added through a transaction,
+the consumer chain resides in the _prelaunched_ phase. At this state, validators can choose to opt in on the consumer chain. Additionally,
 an Opt In chain can choose to change parameters of the to-be-launched chains, such as `spawnTime`, etc. by issuing a specific transaction.
 This is not the case for Top N chains, where a `ConsumerModificationProposal` can only be issued after a consumer
 chain [has started](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L150).
@@ -45,10 +45,10 @@ the chain can launch and moves to the _launched_ phase. While in launched phase,
 its parameters through a `ConsumerModificationProposal` and an Opt In chain can change its parameters by issuing a transaction.
 
 Lastly, a Top N chain can choose to exit ICS by issuing a `ConsumerRemovalProposal` and an Opt In chain can issue a transaction to stop the chain.
-After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed. We need
-to keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviour.
+After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed. We
+keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviour.
 
-Note that everything described so far and everything that follows applies to standalone chains as well that join ICS.
+Note that everything described so far and everything that follows applies to standalone chains as well.
 
 ### From `chainID` to `consumerID`
 A hindrance in moving to Permissionless ICS is chain-id squatting. In a permissionless setting, anyone could issue a transaction
@@ -60,7 +60,7 @@ a combination of a `chainID` and an increasing sequence number, thus we can supp
 Nevertheless, as a result of using `consumerID`, we have to migrate a substantial chunk of state to re-index it using `consumerID` as the key.
 
 #### State
-To do move from a `consumerID` to a `chainID`, we need to revamp the consumer chains' stored state in ICS. Currently, in
+To move from `consumerID` to a `chainID`, we need to revamp the consumer chains' stored state in ICS. Currently, in
 ICS we have state that is indexed by a multitude of [keys](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/types/keys.go#L40).
 In the table below, we see which ones are associated with a `chainID` and how often state under those keys gets updated.
 
@@ -110,15 +110,15 @@ In the table below, we see which ones are associated with a `chainID` and how of
 | `ConsumerAddrsToPruneV2BytePrefix`       |Stores consumer addresses to be pruned (as part of `VSCMaturedPacket`s deprecation)|**YES**                   |Every `MsgAssignConsumerKey` or `MsgOptIn` and later during actual pruning|
 
 Everything stored under a key associated with a `chainID` needs to be migrated to new state under `consumerID`. 
-Because we have to migrate in any case, we can also clean up a number of those keys by building a `ConsumerChainRecord` while
-we are it. The `ConsumerChainRecord` contains state relevant to a consumer chain and is keyed by a `consumerID`. Although the `ConsumerChainRecord`
+Because we have to migrate in any case, we can also clean up a number of those keys by building a `ConsumerChainRecord`.
+The `ConsumerChainRecord` contains state relevant to a consumer chain and is keyed by a `consumerID`. Although the `ConsumerChainRecord`
 could contain **all** state related to a consumer chain (e.g., opted-in and consumer validators of a chain) we do not include
 such fields in the `ConsumerChainRecord` because this would increase the cost of ICS-related transactions due to the [gas cost](https://github.com/cosmos/cosmos-sdk/blob/v0.50.7/store/gaskv/store.go#L40).
 Furthermore, if we were to store all the opted-in or consumer validators, etc. it would be tricky to read or write those fields,
 because we would need to extract the opted-in validators from the `ConsumerChainRecord` and then search through those
 validators to find the one we are looking for, etc.
 
-The `ConsumerChainRecord` is going to be:
+The `ConsumerChainRecord` contains the following:
 ```protobuf
 message ConsumerChainRecord {
   // the owner of this consumer chain
@@ -129,6 +129,8 @@ message ConsumerChainRecord {
   string channel_id;
   // the chain-id of the consumer chain
   string chain_id;
+  // consumer genesis
+  interchain_security.ccv.v1.ConsumerGenesisState consumer_genesis = 5
   // min height needed for an equivocation to be actionable
   uint64 equivocation_evidence_min_height;
   // maximum power (percentage-wise) a validator can have on the consumer chain
@@ -143,8 +145,9 @@ message ConsumerChainRecord {
 ```
 
 We store the `ConsumerChainRecord`s using the `consumerID` as their key. The `owner_address` of a consumer chain corresponds
-to the address that issued the `MsgLaunchConsumerChain` (see later). The `owner_address` can be updated by issuing a `MsgUpdateConsumerChain` (see later).
-Note that we create a `ConsumerChainRecord` at the _launched_ phase of a consumer chain.
+to the address that issued the `MsgLaunchConsumerChain` and the `owner_address` can be updated by issuing a `MsgUpdateConsumerChain` (see later).
+Note that a `ConsumerChainRecord` is only created when a consumer chain moves from the prelaunched to the _launched_ phase.
+The information needed to set up a `ConsumerChainRecord` are stored in the corresponding `ConsumerAdditionProposal` (see `MsgLaunchConsumerChain` below). 
 
 ### New Messages
 In what follows, we describe the new messages that Permissionless ICS introduces and on how those can be used.
@@ -177,7 +180,7 @@ message MsgLaunchConsumerChain {
 except the `top_N` field because we can only launch Opt In consumer chains with this message (Top N chains still need to go
 through a governance proposal). Note, that an alternative format for this message could have been to include a single `ConsumerAdditionProposal` field in it,
 but this confuses the semantics of `MsgLaunchConsumerChain` and that of a governance proposal. The response of this message
-(i.e., `MsgLaunchConsumerChainResponse`) contains a single `string` named `consumerID`. The `consumerID`s corresponds
+(i.e., `MsgLaunchConsumerChainResponse`) contains a single `string` that is the `consumerID`. The `consumerID`s corresponds
 to `len(chainID) | chainID | counter` and this way we can have multiple different `consumerID`s that correspond to a chain
 with the same `chainID`. By doing this, we tackle the main issue behind permissionless consumer chains that is chain-id squatting.
 Note that `consumerID` could just be a `uint64` but we choose to include `chainID` in it as well so that it is easier to see
@@ -188,13 +191,13 @@ We intend to set a fixed cost of a `MsgLaunchConsumerChain` to avoid getting spa
 
 To execute a `MsgLaunchConsumerChain`, we first create a `ConsumerAdditionProposal` under the hoods, with the `top_N` set to 0, and call
 [`HandleConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L30)
-as if the proposal was already voted on and accepted. Note that we need to migrate `ConsumerAdditionProposal`s to use
-based on the `consumerID` instead using [both](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L382)
+simulating a proposal was already voted on and accepted. Note that we need to migrate `ConsumerAdditionProposal`s to use
+the `consumerID` instead using [both](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L382)
 `chainID` and the `spawnTime` as keys. The [usual validity conditions]((https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/types/proposal.go#L114))
 hold for the fields of the `MsgLaunchConsumerChain`. Note however, that we intend to have a `spawnTime` upper limit as well.
 For example, if you launch a consumer chain in Permissionless ICS, the `spawnTime` should not be more
 than two months ahead in the future, to avoid having consumer chains lingering for too long before they get added. To do this,
-we intend to introduce a `maxSpawnTime` limit in [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/proto/interchain_security/ccv/provider/v1/provider.proto#L29).
+we introduce a `maxSpawnTime` limit in [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/proto/interchain_security/ccv/provider/v1/provider.proto#L29).
 This way, Opt In consumer chains that reach their `spawnTime` but have no validator opted in, get simply removed.
 
 #### Modify a Consumer Chain
@@ -225,11 +228,11 @@ message MsgUpdateConsumerChain {
 }
 ```
 
-The `owner_address` is provided as well and hence a validator can change this as can be seen.
+The `owner_address` is provided as well and hence a validator can change the owner of a consumer chain as well.
 
-The `initial_height`, `spawnTime` and everything else could be provided here but would only be applicable if the chain
-is still in the prelaunch phase. This can be achieved by looking if there's an ongoing consumer addition proposal for this `consumerID`,
-and going and changing the fields of ths proposal. The other fields such as `allowlist`, etc. can be changed at any point before or after a chain has started.
+The `initial_height`, `spawnTime`, etc. exist in `MsgUpdateConsumerChain` but are only be applicable if the chain
+is still in the prelaunched phase. This can be achieved by looking if there is an ongoing `ConsumerAdditionProposal` for this `consumerID`,
+and then changing the fields of ths proposal. The other fields such as `allowlist`, etc. can be changed at any point before or after a chain has started.
 
 #### Stop a Consumer Chain
 With the `MsgStopConsumerChain` we can stop any Opt In chain at any moment. Note that all relevant state for this consumer chain
@@ -245,14 +248,12 @@ message MsgStopConsumerChain {
 }
 ```
 
-### Migration
+### Additional Modifications
 We need to perform multiple migrations at this moment. One is for the `ConsumerAdditionProposal`, etc. and the other
 to generate the `ConsumerChainRecord`s for the existing consumer chains, as well as deleting the old keys. Because
 we only have two consumer chains at the moment, this is not going to be an expensive migration even if we have some
 consumer chains that are being voted upon. Similarly, all the messages, queries, etc. would need to be changed to operate on a `consumerID`
 instead of a `chainID`.
-
-### Garbage collect
 
 ## Consequences
 
