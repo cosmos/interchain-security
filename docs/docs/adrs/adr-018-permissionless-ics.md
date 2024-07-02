@@ -228,7 +228,8 @@ message MsgUpdateConsumerChain {
 }
 ```
 
-The `owner_address` is provided as well and hence a validator can change the owner of a consumer chain as well.
+The `owner_address` is provided as well and hence a validator can change the owner of a consumer chain as well. Because of this,
+the `MsgUpdateConsumerChain` needs to contain two signatures: one for the old and one for the new owner address.
 
 The `initial_height`, `spawnTime`, etc. exist in `MsgUpdateConsumerChain` but are only be applicable if the chain
 is still in the prelaunched phase. This can be achieved by looking if there is an ongoing `ConsumerAdditionProposal` for this `consumerID`,
