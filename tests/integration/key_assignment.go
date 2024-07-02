@@ -121,10 +121,10 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				s.nextEpoch()
 
 				return nil
-			}, false, 2,
+			}, true, 2,
 		},
 		{
-			"double key assignment in same block", func(pk *providerkeeper.Keeper) error {
+			"double key assignment in same block by same val", func(pk *providerkeeper.Keeper) error {
 				// establish CCV channel
 				s.SetupCCVChannel(s.path)
 
@@ -191,10 +191,10 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				s.nextEpoch()
 
 				return nil
-			}, false, 2,
+			}, true, 2,
 		},
 		{
-			"double key assignment in different blocks", func(pk *providerkeeper.Keeper) error {
+			"double key assignment in different blocks by same val", func(pk *providerkeeper.Keeper) error {
 				// establish CCV channel
 				s.SetupCCVChannel(s.path)
 
