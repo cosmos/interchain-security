@@ -31,7 +31,7 @@ multiple nodes, called primary and witness nodes.
 
 Light clients download new headers committed on chain from a primary. Headers can be verified in two ways: sequentially,
 where the block height of headers is serial, or using skipping. This second verification method allows light clients to download headers
-with nonconsecutive block height, where some intermediate headers are skipped (see [Tendermint Light Client, Figure 1 and Figure 3](https://arxiv.org/pdf/2010.07031.pdf)).
+with nonconsecutive block height, where some intermediate headers are skipped (see [Tendermint Light Client, Figure 1 and Figure 3](https://arxiv.org/pdf/2010.07031)).
 Additionally, light clients are cross-checking new headers obtained from a primary with witnesses to ensure all nodes share the same state.
 
 A light client attack occurs when a Byzantine validator sends invalid headers to a light client.

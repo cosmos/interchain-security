@@ -10,7 +10,7 @@ title: Epochs
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 

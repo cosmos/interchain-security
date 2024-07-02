@@ -107,19 +107,19 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, operator int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidatorPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidatorPower), ctx, operator)
 }
 
-// GetLastValidators mocks base method.
-func (m *MockStakingKeeper) GetLastValidators(ctx context.Context) ([]types3.Validator, error) {
+// GetRedelegationByUnbondingID mocks base method.
+func (m *MockStakingKeeper) GetRedelegationByUnbondingID(ctx context.Context, id uint64) (types3.Redelegation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastValidators", ctx)
-	ret0, _ := ret[0].([]types3.Validator)
+	ret := m.ctrl.Call(m, "GetRedelegationByUnbondingID", ctx, id)
+	ret0, _ := ret[0].(types3.Redelegation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetLastValidators indicates an expected call of GetLastValidators.
-func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gomock.Call {
+// GetRedelegationByUnbondingID indicates an expected call of GetRedelegationByUnbondingID.
+func (mr *MockStakingKeeperMockRecorder) GetRedelegationByUnbondingID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRedelegationByUnbondingID", reflect.TypeOf((*MockStakingKeeper)(nil).GetRedelegationByUnbondingID), ctx, id)
 }
 
 // GetRedelegationsFromSrcValidator mocks base method.
@@ -135,6 +135,21 @@ func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx context.Context
 func (mr *MockStakingKeeperMockRecorder) GetRedelegationsFromSrcValidator(ctx, valAddr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRedelegationsFromSrcValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetRedelegationsFromSrcValidator), ctx, valAddr)
+}
+
+// GetUnbondingDelegationByUnbondingID mocks base method.
+func (m *MockStakingKeeper) GetUnbondingDelegationByUnbondingID(ctx context.Context, id uint64) (types3.UnbondingDelegation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnbondingDelegationByUnbondingID", ctx, id)
+	ret0, _ := ret[0].(types3.UnbondingDelegation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUnbondingDelegationByUnbondingID indicates an expected call of GetUnbondingDelegationByUnbondingID.
+func (mr *MockStakingKeeperMockRecorder) GetUnbondingDelegationByUnbondingID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingDelegationByUnbondingID", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingDelegationByUnbondingID), ctx, id)
 }
 
 // GetUnbondingDelegationsFromValidator mocks base method.
@@ -195,6 +210,21 @@ func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx context.Context, consAddr
 func (mr *MockStakingKeeperMockRecorder) GetValidatorByConsAddr(ctx, consAddr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByConsAddr", reflect.TypeOf((*MockStakingKeeper)(nil).GetValidatorByConsAddr), ctx, consAddr)
+}
+
+// GetValidatorByUnbondingID mocks base method.
+func (m *MockStakingKeeper) GetValidatorByUnbondingID(ctx context.Context, id uint64) (types3.Validator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorByUnbondingID", ctx, id)
+	ret0, _ := ret[0].(types3.Validator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidatorByUnbondingID indicates an expected call of GetValidatorByUnbondingID.
+func (mr *MockStakingKeeperMockRecorder) GetValidatorByUnbondingID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByUnbondingID", reflect.TypeOf((*MockStakingKeeper)(nil).GetValidatorByUnbondingID), ctx, id)
 }
 
 // GetValidatorUpdates mocks base method.
@@ -282,6 +312,21 @@ func (m *MockStakingKeeper) MaxValidators(ctx context.Context) (uint32, error) {
 func (mr *MockStakingKeeperMockRecorder) MaxValidators(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxValidators", reflect.TypeOf((*MockStakingKeeper)(nil).MaxValidators), ctx)
+}
+
+// MinCommissionRate mocks base method.
+func (m *MockStakingKeeper) MinCommissionRate(ctx context.Context) (math.LegacyDec, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MinCommissionRate", ctx)
+	ret0, _ := ret[0].(math.LegacyDec)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MinCommissionRate indicates an expected call of MinCommissionRate.
+func (mr *MockStakingKeeperMockRecorder) MinCommissionRate(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MinCommissionRate", reflect.TypeOf((*MockStakingKeeper)(nil).MinCommissionRate), ctx)
 }
 
 // PowerReduction mocks base method.
@@ -918,6 +963,20 @@ func (m *MockDistributionKeeper) EXPECT() *MockDistributionKeeperMockRecorder {
 	return m.recorder
 }
 
+// AllocateTokensToValidator mocks base method.
+func (m *MockDistributionKeeper) AllocateTokensToValidator(ctx context.Context, validator types3.ValidatorI, reward types1.DecCoins) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AllocateTokensToValidator", ctx, validator, reward)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AllocateTokensToValidator indicates an expected call of AllocateTokensToValidator.
+func (mr *MockDistributionKeeperMockRecorder) AllocateTokensToValidator(ctx, validator, reward interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateTokensToValidator", reflect.TypeOf((*MockDistributionKeeper)(nil).AllocateTokensToValidator), ctx, validator, reward)
+}
+
 // FundCommunityPool mocks base method.
 func (m *MockDistributionKeeper) FundCommunityPool(ctx context.Context, amount types1.Coins, sender types1.AccAddress) error {
 	m.ctrl.T.Helper()
@@ -930,6 +989,21 @@ func (m *MockDistributionKeeper) FundCommunityPool(ctx context.Context, amount t
 func (mr *MockDistributionKeeperMockRecorder) FundCommunityPool(ctx, amount, sender interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FundCommunityPool", reflect.TypeOf((*MockDistributionKeeper)(nil).FundCommunityPool), ctx, amount, sender)
+}
+
+// GetCommunityTax mocks base method.
+func (m *MockDistributionKeeper) GetCommunityTax(ctx context.Context) (math.LegacyDec, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCommunityTax", ctx)
+	ret0, _ := ret[0].(math.LegacyDec)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCommunityTax indicates an expected call of GetCommunityTax.
+func (mr *MockDistributionKeeperMockRecorder) GetCommunityTax(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommunityTax", reflect.TypeOf((*MockDistributionKeeper)(nil).GetCommunityTax), ctx)
 }
 
 // MockConsumerHooks is a mock of ConsumerHooks interface.

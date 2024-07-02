@@ -10,6 +10,7 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -38,9 +39,65 @@ func (h Hooks) AfterUnbondingInitiated(goCtx context.Context, id uint64) error {
 	var consumerChainIDS []string
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	for _, chain := range h.k.GetAllConsumerChains(ctx) {
 
-		consumerChainIDS = append(consumerChainIDS, chain.ChainId)
+	// get validator address from unbonding operation
+	unbondingType, err := h.k.stakingKeeper.GetUnbondingType(ctx, id)
+	vadAddrBech32 := ""
+	if err != nil {
+		ctx.Logger().Error("undefined type for unbonding operation: id: %d: %s", id, err)
+		return nil
+	}
+
+	switch unbondingType {
+	case stakingtypes.UnbondingType_UnbondingDelegation:
+		ubd, err := h.k.stakingKeeper.GetUnbondingDelegationByUnbondingID(ctx, id)
+		if err != nil {
+			ctx.Logger().Error("unfound ubonding delegation for unbonding id: %d: %s", id, err)
+			return nil
+		}
+		vadAddrBech32 = ubd.ValidatorAddress
+	case stakingtypes.UnbondingType_Redelegation:
+		red, err := h.k.stakingKeeper.GetRedelegationByUnbondingID(ctx, id)
+		if err != nil {
+			ctx.Logger().Error("unfound relegation for unbonding operation id: %d: %s", id, err)
+			return nil
+		}
+		vadAddrBech32 = red.ValidatorSrcAddress
+	case stakingtypes.UnbondingType_ValidatorUnbonding:
+		val, err := h.k.stakingKeeper.GetValidatorByUnbondingID(ctx, id)
+		if err != nil {
+			ctx.Logger().Error("unfound validator for unbonding operation id: %d: %s", id, err)
+			return nil
+		}
+		vadAddrBech32 = val.OperatorAddress
+	default:
+		ctx.Logger().Error("invalid unbonding operation type: %s", unbondingType)
+		return nil
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(vadAddrBech32)
+	if err != nil {
+		ctx.Logger().Error(err.Error())
+		return nil
+	}
+
+	validator, err := h.k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		ctx.Logger().Error("unfound validator for validator address: %s: %s", vadAddrBech32, err)
+		return nil
+	}
+
+	consAddr, err := validator.GetConsAddr()
+	if err != nil {
+		ctx.Logger().Error(err.Error())
+		return nil
+	}
+
+	// get all consumers where the validator is in the validator set
+	for _, chainID := range h.k.GetAllRegisteredConsumerChainIDs(ctx) {
+		if h.k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
+			consumerChainIDS = append(consumerChainIDS, chainID)
+		}
 	}
 
 	if len(consumerChainIDS) == 0 {
@@ -141,6 +198,10 @@ func (h Hooks) BeforeDelegationRemoved(_ context.Context, _ sdk.AccAddress, _ sd
 	return nil
 }
 
+func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) error {
+	return nil
+}
+
 //
 // gov hooks
 //
@@ -213,8 +274,4 @@ func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 		}
 	}
 	return providertypes.ConsumerAdditionProposal{}, false
-}
-
-func (h Hooks) BeforeTokenizeShareRecordRemoved(_ sdk.Context, _ uint64) error {
-	return nil
 }

@@ -1,10 +1,11 @@
 package keeper
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
+
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -16,7 +17,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
@@ -41,8 +41,8 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.
 		HistoricalEntries:                 proposal.HistoricalEntries,
 		DistributionTransmissionChannel:   proposal.DistributionTransmissionChannel,
 	}
-	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)
 
+	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)
 }
 
 // Wrapper for the new proposal message MsgConsumerRemoval
@@ -52,8 +52,8 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.M
 		ChainId:  proposal.ChainId,
 		StopTime: proposal.StopTime,
 	}
-	return k.HandleLegacyConsumerRemovalProposal(ctx, &p)
 
+	return k.HandleLegacyConsumerRemovalProposal(ctx, &p)
 }
 
 // Wrapper for the new proposal message MsgChangeRewardDenoms
@@ -63,7 +63,24 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 		DenomsToAdd:    proposal.DenomsToAdd,
 		DenomsToRemove: proposal.DenomsToRemove,
 	}
+
 	return k.HandleLegacyConsumerRewardDenomProposal(ctx, &p)
+}
+
+// HandleConsumerModificationProposal modifies a running consumer chain
+func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *types.MsgConsumerModification) error {
+	p := types.ConsumerModificationProposal{
+		Title:              proposal.Title,
+		Description:        proposal.Description,
+		ChainId:            proposal.ChainId,
+		Top_N:              proposal.Top_N,
+		ValidatorsPowerCap: proposal.ValidatorsPowerCap,
+		ValidatorSetCap:    proposal.ValidatorSetCap,
+		Allowlist:          proposal.Allowlist,
+		Denylist:           proposal.Denylist,
+	}
+
+	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
 }
 
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
@@ -160,6 +177,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
+	k.DeleteMinimumPowerInTopN(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
@@ -185,6 +203,12 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	}
 
+	// delete consumer commission rate
+	provAddrs := k.GetAllCommissionRateValidators(ctx, chainID)
+	for _, addr := range provAddrs {
+		k.DeleteConsumerCommissionRate(ctx, chainID, addr)
+	}
+
 	k.DeleteInitChainHeight(ctx, chainID)
 	k.DeleteSlashAcks(ctx, chainID)
 	k.DeletePendingVSCPackets(ctx, chainID)
@@ -208,6 +232,15 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.AppendMaturedUnbondingOps(ctx, maturedIds)
 		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
 	}
+
+	k.DeleteTopN(ctx, chainID)
+	k.DeleteValidatorsPowerCap(ctx, chainID)
+	k.DeleteValidatorSetCap(ctx, chainID)
+	k.DeleteAllowlist(ctx, chainID)
+	k.DeleteDenylist(ctx, chainID)
+
+	k.DeleteAllOptedIn(ctx, chainID)
+	k.DeleteConsumerValSet(ctx, chainID)
 
 	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
@@ -244,43 +277,23 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
 
-	var lastPowers []stakingtypes.LastValidatorPower
+	// get the bonded validators from the staking module
+	bondedValidators, err := k.GetLastBondedValidators(ctx)
+	if err != nil {
+		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
+	}
 
-	k.stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
-		lastPowers = append(lastPowers, stakingtypes.LastValidatorPower{Address: addr.String(), Power: power})
-		return false
-	})
-
-	var bondedValidators []stakingtypes.Validator
-
-	for _, p := range lastPowers {
-		addr, err := sdk.ValAddressFromBech32(p.Address)
+	if prop.Top_N > 0 {
+		// in a Top-N chain, we automatically opt in all validators that belong to the top N
+		minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, prop.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
-
-		val, err := k.stakingKeeper.GetValidator(ctx, addr)
-		if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers")
-		} else if err != nil {
-			return gen, nil, errorsmod.Wrapf(err, "error getting validator from LastValidatorPowers")
-		}
-
-		// TODO: Remove this code block after main merge
-		// tmProtoPk, err := val.CmtConsPublicKey()
-		// if err != nil {
-		// 	return gen, nil, err
-		// }
-
-		// initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
-		// 	PubKey: tmProtoPk,
-		// 	Power:  p.Power,
-		// })
-		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
-		bondedValidators = append(bondedValidators, val)
+		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 	}
+	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
-	nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chainID, bondedValidators)
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
@@ -364,14 +377,52 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
-	for _, prop := range propsToExecute {
+	for i, prop := range propsToExecute {
 		// create consumer client in a cached context to handle errors
-		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
+		cachedCtx, writeFn := ctx.CacheContext()
+
+		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
+		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
+		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
+
+		for _, address := range prop.Allowlist {
+			consAddr, err := sdk.ConsAddressFromBech32(address)
+			if err != nil {
+				continue
+			}
+
+			k.SetAllowlist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+		}
+
+		for _, address := range prop.Denylist {
+			consAddr, err := sdk.ConsAddressFromBech32(address)
+			if err != nil {
+				continue
+			}
+
+			k.SetDenylist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
+		}
+
+		err := k.CreateConsumerClient(cachedCtx, &propsToExecute[i])
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created: %w", err)
 			continue
 		}
+
+		consumerGenesis, found := k.GetConsumerGenesis(cachedCtx, prop.ChainId)
+		if !found {
+			// drop the proposal
+			ctx.Logger().Info("consumer genesis could not be created")
+			continue
+		}
+
+		if len(consumerGenesis.Provider.InitialValSet) == 0 {
+			// drop the proposal
+			ctx.Logger().Info("consumer genesis initial validator set is empty - no validators opted in")
+			continue
+		}
+
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())

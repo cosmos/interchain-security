@@ -167,10 +167,10 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 // If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
 func (k Keeper) SendVSCPackets(ctx sdk.Context) {
-	for _, chain := range k.GetAllConsumerChains(ctx) {
+	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
 		// check if CCV channel is established and send
-		if channelID, found := k.GetChainToChannel(ctx, chain.ChainId); found {
-			k.SendVSCPacketsToChain(ctx, chain.ChainId, channelID)
+		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+			k.SendVSCPacketsToChain(ctx, chainID, channelID)
 		}
 	}
 }
@@ -216,31 +216,50 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
 // failing to GetLastValidators will cause a panic in EndBlock
+
+// TODO: decide if this func shouldn't return an error to be propagated to BeginBlocker
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
 	// get the bonded validators from the staking module
-	bondedValidators, err := k.stakingKeeper.GetLastValidators(ctx)
+	bondedValidators, err := k.GetLastBondedValidators(ctx)
 	if err != nil {
 		panic(fmt.Errorf("failed to get last validators: %w", err))
 	}
 
-	for _, chain := range k.GetAllConsumerChains(ctx) {
-		currentValidators := k.GetConsumerValSet(ctx, chain.ChainId)
-		nextValidators := k.ComputeNextEpochConsumerValSet(ctx, chain.ChainId, bondedValidators)
+	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+		currentValidators := k.GetConsumerValSet(ctx, chainID)
+		topN, _ := k.GetTopN(ctx, chainID)
+
+		if topN > 0 {
+			// in a Top-N chain, we automatically opt in all validators that belong to the top N
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, topN)
+			if err == nil {
+				// set the minimal power of validators in the top N in the store
+				k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+
+				k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+			} else {
+				// we just log here and do not panic because panic-ing would halt the provider chain
+				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+			}
+		}
+
+		nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
+
 		valUpdates := DiffValidators(currentValidators, nextValidators)
-		k.SetConsumerValSet(ctx, chain.ChainId, nextValidators)
+		k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
-		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chain.ChainId, valUpdateID)
+		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
-			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chain.ChainId))
-			k.AppendPendingVSCPackets(ctx, chain.ChainId, packet)
+			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
+			k.AppendPendingVSCPackets(ctx, chainID, packet)
 			k.Logger(ctx).Info("VSCPacket enqueued:",
-				"chainID", chain.ChainId,
+				"chainID", chainID,
 				"vscID", valUpdateID,
 				"len updates", len(valUpdates),
 				"len unbonding ops", len(unbondingOps),
@@ -331,6 +350,16 @@ func (k Keeper) OnRecvSlashPacket(
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
 		return ccv.V1Result, nil
+	}
+
+	// Check that the validator belongs to the consumer chain valset
+	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
+		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
+			providerConsAddr.String(), chainID)
+		// drop packet but return a slash ack so that the consumer can send another slash packet
+		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+
+		return ccv.SlashPacketHandledResult, nil
 	}
 
 	meter := k.GetSlashMeter(ctx)
@@ -440,7 +469,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
+		err := k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
+		if err != nil {
+			k.Logger(ctx).Error("failed to jail vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
+			return
+		}
 		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
 		jailDuration, err := k.slashingKeeper.DowntimeJailDuration(ctx)
 		if err != nil {
@@ -448,7 +481,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 			return
 		}
 		jailEndTime := ctx.BlockTime().Add(jailDuration)
-		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailEndTime)
+		err = k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailEndTime)
+		if err != nil {
+			k.Logger(ctx).Error("failed to set jail duration", "err", err.Error())
+			return
+		}
 	}
 
 	ctx.EventManager().EmitEvent(

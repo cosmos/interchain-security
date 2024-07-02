@@ -32,6 +32,8 @@ All the logic in EndBlock/BeginBlock happens here, like updating the validator s
 * `DeliverVscPacket(receiver: Chain)`: Delivers a pending VSCPacket from the provider to the consumer `receiver`.
 * `DeliverPacketToProvider(sender: Chain)`: Delivers a pending packet from the consumer `sender` to the provider.
 * `KeyAssignment(chain: Chain, validator: Node, consumerAddr: ConsumerAddr)` (only when running with `--step stepKeyAssignment`): Assigns the `consumerAddr` to the `validator` on the `chain`. Note that we use "key" and "consumerAddr" pretty much interchangeably, as the model makes no differentiation between private keys, public keys, addresses, etc, as it doesn't model the cryptography.
+* `OptIn(chain: Chain, validator: Node)` (only when running with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`): The `validator` opts in on the `chain`.
+* `OptOut(chain: Chain, validator: Node)` (only when running with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`): The `validator` opts out on the `chain`.
 
 ### State machines
 
@@ -50,6 +52,12 @@ As an optional module, it can also include KeyAssignment.
 To run with key assignment, specify the step flag: `--step stepKeyAssignment`.
 
 KeyAssignment also needs some different invariants, see below.
+
+#### Partial Set Security
+
+To run with Partial Set Security, specify the step flag `--step stepBoundedDriftKeyAndPSS`.
+This runs both PSS and Key Assignment.
+It also requires running with `ccv_boundeddrift.qnt`, see below.
 
 #### ccv_boundeddrift.qnt
 This state machine layer is more restricted to generate more interesting traces:
@@ -75,10 +83,8 @@ traces are not very useful for testing.
 
 To run unit tests, run 
 ```
-quint test ccv_test.qnt
-```
-and 
-```
+quint test ccv_test.qnt;
+quint test ccv_pss_test.qnt;
 quint test ccv_model.qnt
 ```
 
@@ -133,3 +139,7 @@ The available sanity checks are:
 - CanReceiveMaturations
 - CanAssignConsumerKey (only with `--step stepKeyAssignment`)
 - CanHaveConsumerAddresses (only with `--step stepKeyAssignment`)
+- CanOptIn (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
+- CanOptOut (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
+- CanFailOptOut (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)
+- CanHaveOptIn (only with `--step stepBoundedDriftKeyAndPSS` on `ccv_boundeddrift.qnt`)

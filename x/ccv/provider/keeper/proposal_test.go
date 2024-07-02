@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -18,6 +20,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -27,6 +30,120 @@ import (
 //
 // Initialization sub-protocol related tests of proposal.go
 //
+
+// Tests the HandleConsumerAdditionProposal method against the SpawnConsumerChainProposalHandler spec.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
+// Spec tag: [CCV-PCF-HCAPROP.1]
+func TestHandleConsumerAdditionProposal(t *testing.T) {
+	type testCase struct {
+		description string
+		malleate    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
+		prop        *providertypes.ConsumerAdditionProposal
+		// Time when prop is handled
+		blockTime time.Time
+		// Whether it's expected that the proposal is successfully verified
+		// and appended to the pending proposals
+		expAppendProp bool
+	}
+
+	// Snapshot times asserted in tests
+	now := time.Now().UTC()
+
+	tests := []testCase{
+		{
+			description: "expect to append valid proposal",
+			malleate:    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {},
+			prop: providertypes.NewConsumerAdditionProposal(
+				"title",
+				"description",
+				"chainID",
+				clienttypes.NewHeight(2, 3),
+				[]byte("gen_hash"),
+				[]byte("bin_hash"),
+				now, // Spawn time
+				"0.75",
+				10,
+				"",
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			).(*providertypes.ConsumerAdditionProposal),
+			blockTime:     now,
+			expAppendProp: true,
+		},
+		{
+			description: "expect to not append invalid proposal using an already existing chain id",
+			malleate: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
+				k.SetConsumerClientId(ctx, chainID, "anyClientId")
+			},
+
+			prop: providertypes.NewConsumerAdditionProposal(
+				"title",
+				"description",
+				"chainID",
+				clienttypes.NewHeight(2, 3),
+				[]byte("gen_hash"),
+				[]byte("bin_hash"),
+				now,
+				"0.75",
+				10,
+				"",
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
+			).(*providertypes.ConsumerAdditionProposal),
+			blockTime:     now,
+			expAppendProp: false,
+		},
+	}
+
+	for _, tc := range tests {
+		// Common setup
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		ctx = ctx.WithBlockTime(tc.blockTime)
+
+		if tc.expAppendProp {
+			// Mock calls are only asserted if we expect a client to be created.
+			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1) // returns empty validator set
+			gomock.InOrder(
+				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
+			)
+		}
+
+		tc.malleate(ctx, providerKeeper, tc.prop.ChainId)
+
+		err := providerKeeper.HandleLegacyConsumerAdditionProposal(ctx, tc.prop)
+
+		if tc.expAppendProp {
+			require.NoError(t, err)
+			// check that prop was added to the stored pending props
+			gotProposal, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
+			require.True(t, found)
+			require.Equal(t, *tc.prop, gotProposal)
+		} else {
+			require.Error(t, err)
+			// check that prop wasn't added to the stored pending props
+			_, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
+			require.False(t, found)
+		}
+
+		ctrl.Finish()
+	}
+}
 
 // Tests the CreateConsumerClient method against the spec,
 // with more granularity than what's covered in TestHandleCreateConsumerChainProposal.
@@ -45,6 +162,7 @@ func TestCreateConsumerClient(t *testing.T) {
 			description: "No state mutation, new client should be created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
 				// Valid client creation is asserted with mock expectations here
+				testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1) // returns empty validator set
 				gomock.InOrder(
 					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
 				)
@@ -60,7 +178,7 @@ func TestCreateConsumerClient(t *testing.T) {
 				mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
 				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 				mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(), gomock.Any()).Times(0)
-				mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(0)
+				testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 0) // returns empty validator set
 			},
 			expClientCreated: false,
 		},
@@ -263,10 +381,6 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 	require.Len(t, result, len(props))
 	require.Equal(t, expectedGetAllOrder, result)
 }
-
-//
-// Consumer Chain Removal sub-protocol related tests of proposal.go
-//
 
 // Tests the StopConsumerChain method against the spec,
 // with more granularity than what's covered in TestHandleLegacyConsumerRemovalProposal, or integration tests.
@@ -540,7 +654,8 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			Denom:  "stake",
 			Amount: math.NewInt(1000000),
 		},
-		BlocksPerEpoch: 600,
+		BlocksPerEpoch:                        600,
+		NumberOfEpochsToStartReceivingRewards: 24,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()
@@ -550,6 +665,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	//
 	ctx = ctx.WithChainID("testchain1") // chainID is obtained from ctx
 	ctx = ctx.WithBlockHeight(5)        // RevisionHeight obtained from ctx
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1)
 	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
 
 	// matches params from jsonString
@@ -689,6 +805,11 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -700,6 +821,11 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time not passed", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -711,6 +837,11 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			50,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "invalid proposal: chain id already exists", "chain2", clienttypes.NewHeight(4, 5), []byte{}, []byte{},
@@ -722,38 +853,139 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
+			50,
+			0,
+			0,
+			nil,
+			nil,
+		).(*providertypes.ConsumerAdditionProposal),
+		providertypes.NewConsumerAdditionProposal(
+			"title", "opt-in chain with at least one validator opted in", "chain5", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.Add(-time.Hour*1).UTC(),
+			"0.75",
+			10,
+			"",
+			10000,
+			100000000000,
+			100000000000,
+			100000000000,
+			0,
+			0,
+			0,
+			nil,
+			nil,
+		).(*providertypes.ConsumerAdditionProposal),
+		providertypes.NewConsumerAdditionProposal(
+			"title", "opt-in chain with no validator opted in", "chain6", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.Add(-time.Minute).UTC(),
+			"0.75",
+			10,
+			"",
+			10000,
+			100000000000,
+			100000000000,
+			100000000000,
+			0,
+			0,
+			0,
+			nil,
+			nil,
 		).(*providertypes.ConsumerAdditionProposal),
 	}
 
-	// Expect client creation for only for the 1st and second proposals (spawn time already passed and valid)
-	gomock.InOrder(
-		append(testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4)),
-			testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)...,
-	)
+	// Expect client creation for only the first, second, and fifth proposals (spawn time already passed and valid)
+	expectedCalls := testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain5", clienttypes.NewHeight(3, 4))...)
+
+	// The sixth proposal would have spawn time passed and hence needs the mocks but the client will not be
+	// created because `chain6` is an Opt In chain and has no validator opted in
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain6", clienttypes.NewHeight(3, 4))...)
+
+	gomock.InOrder(expectedCalls...)
 
 	for _, prop := range pendingProps {
 		providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
 	}
 
+	// opt in a sample validator so the chain's proposal can successfully execute
+	validator := cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKStakingValidator()
+	consAddr, _ := validator.GetConsAddr()
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{validator}, []int64{0}, -1) // -1 to allow any number of calls
+
+	valAddr, _ := sdk.ValAddressFromBech32(validator.GetOperator())
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).Return(int64(1), nil).AnyTimes()
+	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
+
 	providerKeeper.BeginBlockInit(ctx)
 
-	// Only the third proposal is still stored as pending
+	// first proposal is not pending anymore because its spawn time already passed and was executed
 	_, found := providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[0].SpawnTime, pendingProps[0].ChainId)
 	require.False(t, found)
+	// first proposal was successfully executed and hence consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[0].ChainId)
+	require.True(t, found)
 
+	// second proposal is not pending anymore because its spawn time already passed and was executed
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[1].SpawnTime, pendingProps[1].ChainId)
 	require.False(t, found)
+	// second proposal was successfully executed and hence consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[1].ChainId)
+	require.True(t, found)
 
+	// third proposal is still stored as pending because its spawn time has not passed
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[2].SpawnTime, pendingProps[2].ChainId)
 	require.True(t, found)
+	// because the proposal is still pending, no consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[2].ChainId)
+	require.False(t, found)
 
-	// check that the invalid proposal was dropped
+	// check that the invalid proposals were dropped
 	_, found = providerKeeper.GetPendingConsumerAdditionProp(
 		ctx, pendingProps[3].SpawnTime, pendingProps[3].ChainId)
 	require.False(t, found)
+	// Note that we do not check that `GetConsumerGenesis(ctx, pendingProps[3].ChainId)` returns `false` here because
+	// `pendingProps[3]` is an invalid proposal due to the chain id already existing so the consumer genesis also exists
+
+	// fifth proposal corresponds to an Opt-In chain with one opted-in validator and hence the proposal gets
+	// successfully executed
+	_, found = providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[4].SpawnTime, pendingProps[4].ChainId)
+	require.False(t, found)
+	// fifth proposal was successfully executed and hence consumer genesis was created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[4].ChainId)
+	require.True(t, found)
+
+	// sixth proposal corresponds to an Opt-In chain with no opted-in validators and hence the
+	// proposal is not successful
+	_, found = providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[5].SpawnTime, pendingProps[5].ChainId)
+	// the proposal was dropped and deleted
+	require.False(t, found)
+	// no consumer genesis is created
+	_, found = providerKeeper.GetConsumerGenesis(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	// no consumer client is associated with this chain
+	_, found = providerKeeper.GetConsumerClientId(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	// no fields should be set for this (check some of them)
+	_, found = providerKeeper.GetTopN(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	_, found = providerKeeper.GetValidatorsPowerCap(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+	_, found = providerKeeper.GetValidatorSetCap(ctx, pendingProps[5].ChainId)
+	require.False(t, found)
+
+	// test that Top N is set correctly
+	require.True(t, providerKeeper.IsTopN(ctx, "chain1"))
+	topN, found := providerKeeper.GetTopN(ctx, "chain1")
+	require.True(t, found)
+	require.Equal(t, uint32(50), topN)
+
+	require.True(t, providerKeeper.IsOptIn(ctx, "chain4"))
 }
 
 // TestBeginBlockCCR tests BeginBlockCCR against the spec.
@@ -787,6 +1019,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	expectations := []*gomock.Call{}
 	for _, prop := range pendingProps {
 		// A consumer chain is setup corresponding to each prop, making these mocks necessary
+		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1)
 		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
 			prop.ChainId, clienttypes.NewHeight(2, 3))...)
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
@@ -805,6 +1038,7 @@ func TestBeginBlockCCR(t *testing.T) {
 		additionProp := testkeeper.GetTestConsumerAdditionProp()
 		additionProp.ChainId = prop.ChainId
 		additionProp.InitialHeight = clienttypes.NewHeight(2, 3)
+
 		err := providerKeeper.CreateConsumerClient(ctx, additionProp)
 		require.NoError(t, err)
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")
@@ -823,6 +1057,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	//
 	// Test execution
 	//
+
 	providerKeeper.BeginBlockCCR(ctx)
 
 	// Only the 3rd (final) proposal is still stored as pending

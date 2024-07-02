@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
@@ -56,6 +57,11 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -81,6 +87,11 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				100000000000,
+				0,
+				0,
+				0,
+				nil,
+				nil,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -96,6 +107,7 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
+			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, []int64{}, 1)
 			gomock.InOrder(
 				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
 			)
@@ -223,8 +235,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 		// meaning no external keeper methods are allowed to be called.
 		if tc.expAppendProp {
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
-
-			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+			// Valid client creation is asserted with mock expectations here
 			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		}
 
@@ -253,4 +264,55 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 		// Assert mock calls from setup function
 		ctrl.Finish()
 	}
+}
+
+func TestHandleConsumerModificationProposal(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainID := "chainID"
+
+	// set up a consumer client, so it seems that "chainID" is running
+	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+
+	// set PSS-related fields to update them later on
+	providerKeeper.SetTopN(ctx, chainID, 50)
+	providerKeeper.SetValidatorSetCap(ctx, chainID, 10)
+	providerKeeper.SetValidatorsPowerCap(ctx, chainID, 34)
+	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
+	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
+	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
+
+	expectedTopN := uint32(75)
+	expectedValidatorsPowerCap := uint32(67)
+	expectedValidatorSetCap := uint32(20)
+	expectedAllowlistedValidator := "cosmosvalcons1wpex7anfv3jhystyv3eq20r35a"
+	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	proposal := providertypes.NewConsumerModificationProposal("title", "description", chainID,
+		expectedTopN,
+		expectedValidatorsPowerCap,
+		expectedValidatorSetCap,
+		[]string{expectedAllowlistedValidator},
+		[]string{expectedDenylistedValidator},
+	).(*providertypes.ConsumerModificationProposal)
+
+	err := providerKeeper.HandleLegacyConsumerModificationProposal(ctx, proposal)
+	require.NoError(t, err)
+
+	actualTopN, _ := providerKeeper.GetTopN(ctx, chainID)
+	require.Equal(t, expectedTopN, actualTopN)
+	actualValidatorsPowerCap, _ := providerKeeper.GetValidatorsPowerCap(ctx, chainID)
+	require.Equal(t, expectedValidatorsPowerCap, actualValidatorsPowerCap)
+	actualValidatorSetCap, _ := providerKeeper.GetValidatorSetCap(ctx, chainID)
+	require.Equal(t, expectedValidatorSetCap, actualValidatorSetCap)
+
+	allowlistedValidator, err := sdk.ConsAddressFromBech32(expectedAllowlistedValidator)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(providerKeeper.GetAllowList(ctx, chainID)))
+	require.Equal(t, providertypes.NewProviderConsAddress(allowlistedValidator), providerKeeper.GetAllowList(ctx, chainID)[0])
+
+	denylistedValidator, err := sdk.ConsAddressFromBech32(expectedDenylistedValidator)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, chainID)))
+	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, chainID)[0])
 }
