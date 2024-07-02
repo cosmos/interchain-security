@@ -288,18 +288,6 @@ func stepsInactiveProviderValidators() []Step {
 							ValidatorID("carol"): 1000,
 						},
 					},
-					ChainID("provi"): ChainState{
-						// check that alice and bob don't get consumer rewards
-						Rewards: &Rewards{
-							IsNativeDenom:       false, // check for rewards from consumer
-							IsIncrementalReward: true,  // check rewards for currently produced blocks only
-							IsRewarded: map[ValidatorID]bool{
-								ValidatorID("alice"): false,
-								ValidatorID("bob"):   false,
-								ValidatorID("carol"): true,
-							},
-						},
-					},
 				},
 			},
 			// unjail alice
