@@ -66,6 +66,7 @@ import (
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
+	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -352,9 +353,7 @@ func New(
 	// Remove the ConsumerRewardsPool from the group of blocked recipient addresses in bank
 	// this is required for the provider chain to be able to receive tokens from
 	// the consumer chain
-	bankBlockedAddrs := app.ModuleAccountAddrs()
-	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
-		providertypes.ConsumerRewardsPool).String())
+	bankBlockedAddrs := BankBlockedAddrs(app)
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
@@ -679,6 +678,13 @@ func New(
 	}
 
 	// create the simulation manager and define the order of the modules for deterministic simulations
+	overrideModules := map[string]module.AppModuleSimulation{
+		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
+	}
+	app.sm = module.NewSimulationManagerFromAppModules(app.MM.Modules, overrideModules)
+
+	// register the store decoders for simulation tests
+	app.sm.RegisterStoreDecoders()
 
 	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
 	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
@@ -778,6 +784,13 @@ func New(
 	app.ScopedIBCProviderKeeper = scopedIBCProviderKeeper
 
 	return app
+}
+
+func BankBlockedAddrs(app *App) map[string]bool {
+	bankBlockedAddrs := app.ModuleAccountAddrs()
+	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
+		providertypes.ConsumerRewardsPool).String())
+	return bankBlockedAddrs
 }
 
 // Name returns the name of the App
