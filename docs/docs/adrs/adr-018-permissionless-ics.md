@@ -262,5 +262,9 @@ instead of a `chainID`.
 ### Positive
 - Easier to launch an Opt In consumer chain because no governance is required.
 
+### Negative
+- Extensive migration, overhaul of existing code base that could lead to bugs and more work while auditing this.
+
+
 ## References
 [CHIPs Discussion phase: Permissionless ICS](https://forum.cosmos.network/t/chips-discussion-phase-permissionless-ics/13955)
