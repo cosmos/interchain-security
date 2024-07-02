@@ -12,8 +12,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// GetConsumerChainKey returns the store key for consumer validators of the consumer chain with `chainID`
-func (k Keeper) GetConsumerChainKey(ctx sdk.Context, chainID string) []byte {
+// GetConsumerChainConsensusValidatorsKey returns the store key for consumer validators of the consumer chain with `chainID`
+func (k Keeper) GetConsumerChainConsensusValidatorsKey(ctx sdk.Context, chainID string) []byte {
 	return types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
 }
 
@@ -23,13 +23,13 @@ func (k Keeper) SetConsumerValidator(
 	chainID string,
 	validator types.ConsensusValidator,
 ) {
-	k.setValidator(ctx, k.GetConsumerChainKey(ctx, chainID), validator)
+	k.setValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), validator)
 }
 
 // SetConsumerValSet resets the current consumer validators with the `nextValidators` computed by
 // `FilterValidators` and hence this method should only be called after `FilterValidators` has completed.
 func (k Keeper) SetConsumerValSet(ctx sdk.Context, chainID string, nextValidators []types.ConsensusValidator) {
-	k.setValSet(ctx, k.GetConsumerChainKey(ctx, chainID), nextValidators)
+	k.setValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), nextValidators)
 }
 
 // DeleteConsumerValidator removes consumer validator with `providerAddr` address
@@ -38,7 +38,7 @@ func (k Keeper) DeleteConsumerValidator(
 	chainID string,
 	providerConsAddr types.ProviderConsAddress,
 ) {
-	k.deleteValidator(ctx, k.GetConsumerChainKey(ctx, chainID), providerConsAddr)
+	k.deleteValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), providerConsAddr)
 }
 
 // DeleteConsumerValSet deletes all the stored consumer validators for chain `chainID`
@@ -46,13 +46,13 @@ func (k Keeper) DeleteConsumerValSet(
 	ctx sdk.Context,
 	chainID string,
 ) {
-	k.deleteValSet(ctx, k.GetConsumerChainKey(ctx, chainID))
+	k.deleteValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID))
 }
 
 // IsConsumerValidator returns `true` if the consumer validator with `providerAddr` exists for chain `chainID`
 // and `false` otherwise
 func (k Keeper) IsConsumerValidator(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) bool {
-	return k.isValidator(ctx, k.GetConsumerChainKey(ctx, chainID), providerAddr)
+	return k.isValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), providerAddr)
 }
 
 // GetConsumerValSet returns all the consumer validators for chain `chainID`
@@ -60,7 +60,7 @@ func (k Keeper) GetConsumerValSet(
 	ctx sdk.Context,
 	chainID string,
 ) []types.ConsensusValidator {
-	return k.getValSet(ctx, k.GetConsumerChainKey(ctx, chainID))
+	return k.getValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID))
 }
 
 // DiffValidators compares the current and the next epoch's consumer validators and returns the `ValidatorUpdate` diff
