@@ -187,7 +187,7 @@ const (
 	// minimum power required to be in the top N per consumer chain.
 	MinimumPowerInTopNBytePrefix
 
-	// LastProviderConsensusValsPrefix is byte prefix for storing the last validator set
+	// LastProviderConsensusValsPrefix is the byte prefix for storing the last validator set
 	// sent to the consensus engine of the provider chain
 	LastProviderConsensusValsPrefix
 

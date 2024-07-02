@@ -77,10 +77,10 @@ func (k Keeper) isValidator(ctx sdk.Context, prefix []byte, providerAddr types.P
 // getValSet returns all the validators stored under the given prefix.
 func (k Keeper) getValSet(
 	ctx sdk.Context,
-	key []byte,
+	prefix []byte,
 ) (validators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
