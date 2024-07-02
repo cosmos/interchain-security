@@ -191,10 +191,10 @@ We intend to set a fixed cost of a `MsgLaunchConsumerChain` to avoid getting spa
 
 To execute a `MsgLaunchConsumerChain`, we first create a `ConsumerAdditionProposal` under the hoods, with the `top_N` set to 0, and call
 [`HandleConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L30)
-simulating a proposal was already voted on and accepted. Note that we need to migrate `ConsumerAdditionProposal`s to use
+simulating a proposal that was already voted on and accepted. Note that we need to migrate `ConsumerAdditionProposal`s to use
 the `consumerID` instead using [both](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L382)
-`chainID` and the `spawnTime` as keys. The [usual validity conditions]((https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/types/proposal.go#L114))
-hold for the fields of the `MsgLaunchConsumerChain`. Note however, that we intend to have a `spawnTime` upper limit as well.
+`chainID` and the `spawnTime` as keys. The [usual validity conditions](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/types/proposal.go#L114)
+hold for the fields of `MsgLaunchConsumerChain`. Note however, that we intend to have a `spawnTime` upper limit as well.
 For example, if you launch a consumer chain in Permissionless ICS, the `spawnTime` should not be more
 than two months ahead in the future, to avoid having consumer chains lingering for too long before they get added. To do this,
 we introduce a `maxSpawnTime` limit in [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/proto/interchain_security/ccv/provider/v1/provider.proto#L29).
@@ -238,8 +238,9 @@ and then changing the fields of ths proposal. The other fields such as `allowlis
 With the `MsgStopConsumerChain` we can stop any Opt In chain at any moment. Note that all relevant state for this consumer chain
 remains on the provider's state before getting removed for the provider's unbonding period. This is to enable
 potential slashing for any infraction that might have been caused until now. After the unbonding period, the `ConsumerChainRecord`
-associated with this chain is removed. Note however that `consumerID`s are **never** reused. Naturally, this message
-can only be issued by the owner of the consumer chain.
+associated with this chain is removed. Note however that we never recycle used `consumerID`s. Naturally, this message
+can only be issued by the owner of the consumer chain. Also, any remaining IBC rewards that were to be sent to the provider chain
+are lost.
 
 ```protobuf
 message MsgStopConsumerChain {
@@ -259,10 +260,6 @@ instead of a `chainID`.
 
 ### Positive
 - Easier to launch an Opt In consumer chain because no governance is required.
-
-### Negative 
-
-### Neutral 
 
 ## References
 [CHIPs Discussion phase: Permissionless ICS](https://forum.cosmos.network/t/chips-discussion-phase-permissionless-ics/13955)
