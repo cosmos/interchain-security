@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -36,6 +37,27 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	chainID string,
 	pubkey cryptotypes.PubKey,
 ) error {
+	// check that the evidence is for an ICS consumer chain
+	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"cannot find consumer chain %s",
+			chainID,
+		)
+	}
+
+	// check that the evidence is not too old
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, chainID)
+	if uint64(evidence.VoteA.Height) < minHeight {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
+			chainID,
+			evidence.VoteA.Height,
+			minHeight,
+		)
+	}
+
 	// verifies the double voting evidence using the consumer chain public key
 	if err := k.VerifyDoubleVotingEvidence(*evidence, chainID, pubkey); err != nil {
 		return err
@@ -270,17 +292,41 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 }
 
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
-// a valid light client attack on a light client that tracks an ICS consumer chain
+// a valid light client attack from an ICS consumer chain and that the light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+	consumerChainID := misbehaviour.Header1.Header.ChainID
+
 	// check that the misbehaviour is for an ICS consumer chain
-	clientId, found := k.GetConsumerClientId(ctx, misbehaviour.Header1.Header.ChainID)
+	clientId, found := k.GetConsumerClientId(ctx, consumerChainID)
 	if !found {
-		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", misbehaviour.Header1.Header.ChainID)
+		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", consumerChainID)
 	} else if misbehaviour.ClientId != clientId {
 		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain %s is %s got %s",
-			misbehaviour.Header1.Header.ChainID,
+			consumerChainID,
 			clientId,
 			misbehaviour.ClientId,
+		)
+	}
+
+	// Check that the headers are at the same height to ensure that
+	// the misbehaviour is for a light client attack and not a time violation,
+	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
+	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
+		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
+	}
+
+	// Check that the evidence is not too old
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerChainID)
+	evidenceHeight := misbehaviour.Header1.GetHeight().GetRevisionHeight()
+	// Note that the revision number is not relevant for checking the age of evidence
+	// as it's already part of the chain ID and the minimum height is mapped to chain IDs
+	if evidenceHeight < minHeight {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
+			consumerChainID,
+			evidenceHeight,
+			minHeight,
 		)
 	}
 
@@ -290,13 +336,6 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	}
 
 	clientStore := k.clientKeeper.ClientStore(ctx, clientId)
-
-	// Check that the headers are at the same height to ensure that
-	// the misbehaviour is for a light client attack and not a time violation,
-	// see CheckForMisbehaviour in ibc-go/blob/v7.3.0/modules/light-clients/07-tendermint/misbehaviour_handle.go#L73
-	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
-		return errorsmod.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
-	}
 
 	// CheckForMisbehaviour verifies that the headers have different blockID hashes
 	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
