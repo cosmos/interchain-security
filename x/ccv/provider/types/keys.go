@@ -402,7 +402,7 @@ func EquivocationEvidenceMinHeightKey(consumerChainID string) []byte {
 
 // ConsumerAddrsToPruneV2Key returns the key under which the consumer validators
 // addresses that need to be pruned are stored. These are stored as a
-// ts -> (consumer_address1, consumer_address2, ...) mapping, where ts is the
+// (chainID, ts) -> (consumer_address1, consumer_address2, ...) mapping, where ts is the
 // timestamp at which the consumer validators addresses can be pruned.
 func ConsumerAddrsToPruneV2Key(chainID string, pruneTs time.Time) []byte {
 	return ChainIdAndTsKey(ConsumerAddrsToPruneV2BytePrefix, chainID, pruneTs)
