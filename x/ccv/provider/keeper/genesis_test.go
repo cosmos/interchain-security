@@ -154,7 +154,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	)
 
 	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(
-		// return an empty set of validators, since they are not tested against here
 		[]stakingtypes.Validator{
 			provVal,
 		}, nil).AnyTimes()

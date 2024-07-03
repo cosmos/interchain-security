@@ -180,9 +180,9 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
 // The function returns the difference between the current validator set and the next validator set as a list of `abci.ValidatorUpdate` objects.
 func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 	// get the bonded validators from the staking module
-	bondedValidators, error := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
-	if error != nil {
-		panic(fmt.Errorf("failed to get bonded validators: %w", error))
+	bondedValidators, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to get bonded validators: %w", err))
 	}
 
 	// get the last validator set sent to consensus

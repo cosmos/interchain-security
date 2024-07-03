@@ -13,8 +13,8 @@ import (
 // high-level, this test does:
 // - start the provider chain
 // - start a consumer chain
-// - check that non-consensus validators do not get slashed for downtime; and that they don't get rewards
-// - check that active validators *do* get slashed for downtime, and don't get rewards while they are down
+// - check that non-consensus validators do not get slashed for downtime on the provider; and that they don't get rewards
+// - check that active validators *do* get slashed for downtime on the provider, and don't get rewards while they are down
 // - check that non-consensus validators *do* get jailed for downtime on consumer chains
 // - check that non-consensus validators *become* consensus validators when they have enough power
 func stepsInactiveProviderValidators() []Step {
@@ -144,7 +144,6 @@ func stepsInactiveProviderValidators() []Step {
 				},
 				State: State{
 					ChainID("provi"): ChainState{
-						// check that now every validator got rewarded since the first block
 						Rewards: &Rewards{
 							IsNativeDenom:       true, // check for rewards in the provider denom
 							IsIncrementalReward: true, // check rewards for currently produced blocks only

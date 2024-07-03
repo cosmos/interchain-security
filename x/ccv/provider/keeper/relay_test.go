@@ -775,7 +775,7 @@ func TestEndBlockVSU(t *testing.T) {
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, lastValidators, powers, -1)
 
 	sort.Slice(lastValidators, func(i, j int) bool {
-		return lastValidators[i].ConsensusPower(sdk.DefaultPowerReduction) >
+		return lastValidators[i].GetConsensusPower(sdk.DefaultPowerReduction) >
 			lastValidators[j].GetConsensusPower(sdk.DefaultPowerReduction)
 	})
 	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(lastValidators, nil).AnyTimes()
