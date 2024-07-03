@@ -43,7 +43,9 @@ func stepsInactiveProviderValidators() []Step {
 						},
 						Rewards: &Rewards{
 							IsNativeDenom:       true, // check for rewards in the provider denom
-							IsIncrementalReward: true, // check current rewards, because alice gets one block of rewards due to being in the genesis
+							IsIncrementalReward: true, // we need to get incremental rewards
+							// if we would look at total rewards, alice would trivially also get rewards,
+							// because she gets rewards in the first block due to being in the genesis
 							IsRewarded: map[ValidatorID]bool{
 								ValidatorID("alice"): false,
 								ValidatorID("bob"):   true,
