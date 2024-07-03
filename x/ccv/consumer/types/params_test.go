@@ -58,14 +58,6 @@ func TestValidateParams(t *testing.T) {
 			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, -24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"}, 2*time.Hour), false,
 		},
 		{
-			"custom invalid params, invalid soft opt out threshold",
-			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "-0.05", []string{"u"}, []string{}, 2*time.Hour), false,
-		},
-		{
-			"custom invalid params, invalid soft opt out threshold",
-			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.5", []string{"u"}, []string{}, 2*time.Hour), false,
-		},
-		{
 			"custom invalid params, invalid reward denom",
 			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05", []string{"u"}, []string{}, 2*time.Hour), false,
 		},

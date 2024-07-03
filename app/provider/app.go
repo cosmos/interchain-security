@@ -678,8 +678,6 @@ func New(
 		panic(err)
 	}
 
-	// create the simulation manager and define the order of the modules for deterministic simulations
-
 	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
 	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
 	app.UpgradeKeeper.SetUpgradeHandler(

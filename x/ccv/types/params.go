@@ -27,6 +27,9 @@ const (
 	// decimal number. For example "0.75" would represent 75%.
 	DefaultConsumerRedistributeFrac = "0.75"
 
+	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
+	DefaultSoftOptOutThreshold = "0.05"
+
 	// Default number of historical info entries to persist in store.
 	// We use the same default as the staking module, but use a signed integer
 	// so that negative values can be caught during parameter validation in a readable way,
@@ -37,9 +40,6 @@ const (
 	// than the default unbonding period on the provider, where the provider uses
 	// the staking module default.
 	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 7*24*time.Hour
-
-	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
-	DefaultSoftOptOutThreshold = "0.05"
 
 	// Default retry delay period is 1 hour.
 	DefaultRetryDelayPeriod = time.Hour
@@ -149,9 +149,6 @@ func (p ConsumerParams) Validate() error {
 	if err := ValidateDuration(p.UnbondingPeriod); err != nil {
 		return err
 	}
-	if err := ValidateSoftOptOutThreshold(p.SoftOptOutThreshold); err != nil {
-		return err
-	}
 	if err := ValidateDenoms(p.RewardDenoms); err != nil {
 		return err
 	}
@@ -184,8 +181,6 @@ func (p *ConsumerParams) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.HistoricalEntries, ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
 			p.UnbondingPeriod, ValidateDuration),
-		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
-			p.SoftOptOutThreshold, ValidateSoftOptOutThreshold),
 		paramtypes.NewParamSetPair(KeyRewardDenoms,
 			p.RewardDenoms, ValidateDenoms),
 		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
