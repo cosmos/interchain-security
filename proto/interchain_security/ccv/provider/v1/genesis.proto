@@ -20,6 +20,9 @@ message GenesisState {
     // Reserve 11th slot for consumer_addrs_to_prune field
     reserved 11;
 
+    // Reserve 12th slot for removed init_timeout_timestamps field
+    reserved 12;
+
     // Reserve 13th slot for removed exported_vsc_send_timestamps field
     reserved 13;
 
@@ -45,9 +48,6 @@ message GenesisState {
       [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ValidatorByConsumerAddr validators_by_consumer_addr = 10
-      [ (gogoproto.nullable) = false ];
-
-  repeated interchain_security.ccv.provider.v1.InitTimeoutTimestamp init_timeout_timestamps = 12
       [ (gogoproto.nullable) = false ];
 
   // empty for a new chain

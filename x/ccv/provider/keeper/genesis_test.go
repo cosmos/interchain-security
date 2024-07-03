@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"sort"
 	"testing"
 	"time"
 
@@ -34,11 +33,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
-
-	initTimeoutTimeStamps := []providertypes.InitTimeoutTimestamp{
-		{ChainId: cChainIDs[0], Timestamp: uint64(time.Now().UTC().UnixNano()) + 10},
-		{ChainId: cChainIDs[1], Timestamp: uint64(time.Now().UTC().UnixNano()) + 15},
-	}
 
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
@@ -93,7 +87,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}},
 			},
 		},
-		initTimeoutTimeStamps,
 	)
 
 	// Instantiate in-mem provider keeper with mocks
@@ -155,12 +148,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	// check the exported genesis
 	require.Equal(t, provGenesis, pk.ExportGenesis(ctx))
-
-	initTimeoutTimestampInStore := pk.GetAllInitTimeoutTimestamps(ctx)
-	sort.Slice(initTimeoutTimestampInStore, func(i, j int) bool {
-		return initTimeoutTimestampInStore[i].Timestamp < initTimeoutTimestampInStore[j].Timestamp
-	})
-	require.Equal(t, initTimeoutTimestampInStore, initTimeoutTimeStamps)
 }
 
 func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {

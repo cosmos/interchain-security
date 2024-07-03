@@ -79,10 +79,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
-	for _, item := range genState.InitTimeoutTimestamps {
-		k.SetInitTimeoutTimestamp(ctx, item.ChainId, item.Timestamp)
-	}
-
 	k.SetParams(ctx, genState.Params)
 	k.InitializeSlashMeter(ctx)
 }
@@ -144,6 +140,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAllValidatorConsumerPubKeys(ctx, nil),
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),
 		consumerAddrsToPrune,
-		k.GetAllInitTimeoutTimestamps(ctx),
 	)
 }
