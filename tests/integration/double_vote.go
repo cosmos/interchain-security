@@ -86,10 +86,19 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerChain.ChainID,
 	)
 
-	// create a vote using the consumer validator key
-	// with block height that is smaller than the equivocation evidence min height
-	consuVoteOld := testutil.MakeAndSignVote(
+	// create two votes using the consumer validator key that both have
+	// the same block height that is smaller than the equivocation evidence min height
+	consuVoteOld1 := testutil.MakeAndSignVote(
 		blockID1,
+		int64(equivocationEvidenceMinHeight-1),
+		s.consumerCtx().BlockTime(),
+		consuValSet,
+		consuSigner,
+		s.consumerChain.ChainID,
+	)
+
+	consuVoteOld2 := testutil.MakeAndSignVote(
+		blockID2,
 		int64(equivocationEvidenceMinHeight-1),
 		s.consumerCtx().BlockTime(),
 		consuValSet,
@@ -120,8 +129,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		{
 			"evidence is older than equivocation evidence min height - shouldn't pass",
 			&tmtypes.DuplicateVoteEvidence{
-				VoteA:            consuVoteOld,
-				VoteB:            consuBadVote,
+				VoteA:            consuVoteOld1,
+				VoteB:            consuVoteOld2,
 				ValidatorPower:   consuVal.VotingPower,
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
@@ -134,7 +143,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			"the votes in the evidence are for different height - shouldn't pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            consuVote,
-				VoteB:            consuVoteOld,
+				VoteB:            consuVoteOld1,
 				ValidatorPower:   consuVal.VotingPower,
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
