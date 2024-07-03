@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v4.2.1
+
+*July 4, 2024*
+
+### BUG FIXES
+
+- [Provider](x/ccv/provider)
+  - Add missing check for the minimum height of evidence in the consumer double-vote handler.
+    [#2008](https://github.com/cosmos/interchain-security/pull/2008)
+
+### STATE BREAKING
+
+- [Provider](x/ccv/provider)
+  - Add missing check for the minimum height of evidence in the consumer double-vote handler.
+    [#2008](https://github.com/cosmos/interchain-security/pull/2008)
+
 ## v4.2.0
 
 May 17, 2024
