@@ -237,7 +237,7 @@ and then changing the fields of ths proposal. The other fields such as `allowlis
 
 #### Stop a Consumer Chain
 With the `MsgStopConsumerChain` we can stop any Opt In chain at any moment. Note that all relevant state for this consumer chain
-remains on the provider's state before getting removed for the provider's unbonding period. This is to enable
+remains on the provider's state before getting removed after one unbonding period (of the provider). This is to enable
 potential slashing for any infraction that might have been caused until now. After the unbonding period, the `ConsumerChainRecord`
 associated with this chain is removed. Note however that we never recycle used `consumerID`s. Naturally, this message
 can only be issued by the owner of the consumer chain. Also, any remaining IBC rewards that were to be sent to the provider chain
