@@ -145,6 +145,13 @@ verify-models:
 	../run_invariants.sh
 
 
+###############################################################################
+###                         Simulation tests                                ###
+
+# Run a full simulation test
+sim-full:
+	cd app/provider;\
+	go test -mod=readonly -run=^TestFullAppSimulation$  -Enabled=true -NumBlocks=500 -BlockSize=200 -Commit=true -timeout 24h github.com/cosmos/interchain-security/v5/app/provider -v
 
 ###############################################################################
 ###                                Linting                                  ###
