@@ -59,12 +59,14 @@ func TestFullAppSimulation(t *testing.T) {
 
 	encoding := providerapp.MakeTestEncodingConfig()
 
+	genesisState := providerapp.NewDefaultGenesisState(encoding.Codec)
+
 	// run randomized simulation
 	_, simParams, simErr := simulation.SimulateFromSeed(
 		t,
 		os.Stdout,
 		app.BaseApp,
-		simtestutil.AppStateFn(encoding.Codec, app.SimulationManager(), providerapp.NewDefaultGenesisState(encoding.Codec)),
+		simtestutil.AppStateFn(encoding.Codec, app.SimulationManager(), genesisState),
 		simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
 		simtestutil.SimulationOperations(app, app.AppCodec(), config),
 		providerapp.BankBlockedAddrs(app),
