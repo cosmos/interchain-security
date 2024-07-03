@@ -60,7 +60,7 @@ a combination of a `chainID` and an increasing sequence number, thus we can supp
 Nevertheless, as a result of using `consumerID`, we have to migrate a substantial chunk of state to re-index it using `consumerID` as the key.
 
 #### State
-To move from `consumerID` to a `chainID`, we need to revamp the consumer chains' stored state in ICS. Currently, in
+To move from using the `chainID` to the new `consumerID`, we need to revamp the consumer chains' stored state in ICS. Currently, in
 ICS we have state that is indexed by a multitude of [keys](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/types/keys.go#L40).
 In the table below, we see which ones are associated with a `chainID` and how often state under those keys gets updated.
 
@@ -187,7 +187,7 @@ Note that `consumerID` could just be a `uint64` but we choose to include `chainI
 what the consumer chain just by looking at the `consumerID`. This means that the `chainID` of a chain cannot be changed
 after launching it (because the `chainID` is part of the `consumerID` key).
 
-We intend to set a fixed cost of a `MsgLaunchConsumerChain` to avoid getting spammed with bogus consumer launch chains.
+We intend to set a fixed cost of a `MsgLaunchConsumerChain` to avoid getting spammed with bogus consumer chains.
 
 To execute a `MsgLaunchConsumerChain`, we first create a `ConsumerAdditionProposal` under the hoods, with the `top_N` set to 0, and call
 [`HandleConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L30)
@@ -231,9 +231,9 @@ message MsgUpdateConsumerChain {
 The `owner_address` is provided as well and hence a validator can change the owner of a consumer chain as well. Because of this,
 the `MsgUpdateConsumerChain` needs to contain two signatures: one for the old and one for the new owner address.
 
-The `initial_height`, `spawnTime`, etc. exist in `MsgUpdateConsumerChain` but are only be applicable if the chain
+The `initial_height`, `spawnTime`, etc. exist in `MsgUpdateConsumerChain` but can only be modified if the chain
 is still in the prelaunched phase. This can be achieved by looking if there is an ongoing `ConsumerAdditionProposal` for this `consumerID`,
-and then changing the fields of ths proposal. The other fields such as `allowlist`, etc. can be changed at any point before or after a chain has started.
+and then changing the fields of this proposal. The other fields such as `allowlist`, etc. can be changed at any point before or after a chain has started.
 
 #### Stop a Consumer Chain
 With the `MsgStopConsumerChain` we can stop any Opt In chain at any moment. Note that all relevant state for this consumer chain
