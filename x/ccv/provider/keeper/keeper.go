@@ -396,8 +396,6 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	k.SetChannelToChain(ctx, channelID, chainID)
 	// - set current block height for the consumer chain initialization
 	k.SetInitChainHeight(ctx, chainID, uint64(ctx.BlockHeight()))
-	// - remove init timeout timestamp
-	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 
 	// emit event on successful addition
 	ctx.EventManager().EmitEvent(
