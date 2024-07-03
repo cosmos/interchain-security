@@ -1,2 +1,2 @@
 - Add missing check for the minimum height of evidence in the consumer double-vote handler.
-[#xxx](https://github.com/cosmos/interchain-security/pull/xxx)
+[#2007](https://github.com/cosmos/interchain-security/pull/2007)
