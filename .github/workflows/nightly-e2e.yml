@@ -324,7 +324,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.22" # The Go version to download (if necessary) and use.
-      - name: E2E active set changes
+      - name: E2E inactive provider validators on consumer
         run: go run ./tests/e2e/... --tc inactive-provider-validators-on-consumer
 
   nightly-test-fail:
