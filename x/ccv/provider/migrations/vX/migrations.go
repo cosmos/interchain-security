@@ -65,6 +65,7 @@ func CleanupState(store storetypes.KVStore) {
 	removePrefix(store, providertypes.MaturedUnbondingOpsByteKey)
 	removePrefix(store, providertypes.UnbondingOpBytePrefix)
 	removePrefix(store, providertypes.UnbondingOpIndexBytePrefix)
+	removePrefix(store, providertypes.InitTimeoutTimestampBytePrefix)
 	removePrefix(store, providertypes.VscSendTimestampBytePrefix)
 	removePrefix(store, providertypes.VSCMaturedHandledThisBlockBytePrefix)
 }
