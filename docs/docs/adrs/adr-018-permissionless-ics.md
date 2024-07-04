@@ -73,7 +73,7 @@ For example, if a validator opts in on a chain using `MsgOptIn`, the validator h
 provide the `consumerID` for Top N consumers chains, we store a mapping between `proposalID` to `consumerID`. This storing
 takes place in the [`AfterProposalSubmission`](https://github.com/cosmos/cosmos-sdk/blob/v0.50.7/x/gov/keeper/proposal.go#L117) hook.
 In some cases, we need the actual `chainID`. For example, when we [verify equivocation evidence](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/consumer_equivocation.go#L121).
-To avoid having to change how [Hermes](https://github.com/informalsystems/hermes) constructs and sends need the `MsgSubmitConsumerMisbehaviour`
+To avoid having to change how [Hermes](https://github.com/informalsystems/hermes) constructs the `MsgSubmitConsumerMisbehaviour`
 and `MsgSubmitConsumerDoubleVoting` messages, we just verify the evidence is valid and then go through all the chains with the `chainID`
 to check on whether a validator can be slashed.
 
