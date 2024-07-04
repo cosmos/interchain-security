@@ -861,3 +861,80 @@ func TestMinimumPowerInTopN(t *testing.T) {
 	require.False(t, found)
 	require.Equal(t, int64(0), nonExistentMinPower)
 }
+
+func TestConsumerMinValidatorPower(t *testing.T) {
+	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	chainID := "testChain"
+
+	// Set the minimum validator power
+	minPower := int64(1000)
+
+	k.SetConsumerMinValidatorPower(ctx, chainID, minPower)
+
+	// Retrieve the minimum validator power
+	actualMinPower, found := k.GetConsumerMinValidatorPower(ctx, chainID)
+
+	require.True(t, found)
+	require.Equal(t, minPower, actualMinPower)
+
+	// Update the minimum validator power
+	newMinPower := int64(2000)
+	k.SetConsumerMinValidatorPower(ctx, chainID, newMinPower)
+
+	// Retrieve the updated minimum validator power
+	newActualMinPower, found := k.GetConsumerMinValidatorPower(ctx, chainID)
+	require.True(t, found)
+	require.Equal(t, newMinPower, newActualMinPower)
+
+	// Test when the chain ID does not exist
+	nonExistentChainID := "nonExistentChain"
+
+	_, found = k.GetConsumerMinValidatorPower(ctx, nonExistentChainID)
+	require.False(t, found)
+
+	// Delete the minimum validator power
+	k.DeleteConsumerMinValidatorPower(ctx, chainID)
+
+	// Retrieve the deleted minimum validator power
+	_, found = k.GetConsumerMinValidatorPower(ctx, chainID)
+
+	require.False(t, found)
+}
+
+func TestConsumerAllowInactiveValidators(t *testing.T) {
+	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	chainID := "testChain"
+
+	// Initially set the flag to allow inactive validators
+	k.SetConsumerAllowInactiveValidators(ctx, chainID, true)
+
+	// Retrieve the flag value
+	allowInactive, found := k.GetConsumerAllowInactiveValidators(ctx, chainID)
+
+	require.True(t, found)
+	require.True(t, allowInactive)
+
+	// Update the flag to disallow inactive validators
+	k.SetConsumerAllowInactiveValidators(ctx, chainID, false)
+
+	// Retrieve the updated flag value
+	newAllowInactive, found := k.GetConsumerAllowInactiveValidators(ctx, chainID)
+	require.True(t, found)
+	require.False(t, newAllowInactive)
+
+	// Test when the chain ID does not exist
+	nonExistentChainID := "nonExistentChain"
+
+	_, found = k.GetConsumerAllowInactiveValidators(ctx, nonExistentChainID)
+	require.False(t, found)
+
+	// Delete the flag for allowing inactive validators
+	k.DeleteConsumerAllowInactiveValidators(ctx, chainID)
+
+	// Attempt to retrieve the deleted flag value
+	_, found = k.GetConsumerAllowInactiveValidators(ctx, chainID)
+
+	require.False(t, found)
+}

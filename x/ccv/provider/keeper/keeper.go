@@ -1582,3 +1582,79 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MinimumPowerInTopNKey(chainID))
 }
+
+// SetConsumerMinValidatorPower sets the minimum power required for a validator to be able to validate
+// on a given consumer chain.
+func (k Keeper) SetConsumerMinValidatorPower(
+	ctx sdk.Context,
+	chainID string,
+	minValidatorStake int64,
+) {
+	store := ctx.KVStore(k.storeKey)
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(minValidatorStake))
+	store.Set(types.ConsumerMinValidatorPowerKey(chainID), buf)
+}
+
+// GetConsumerMinValidatorPower returns the minimum power required for a validator to be able to validate
+// on a given consumer chain.
+func (k Keeper) GetConsumerMinValidatorPower(
+	ctx sdk.Context,
+	chainID string,
+) (int64, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.ConsumerMinValidatorPowerKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return int64(binary.BigEndian.Uint64(buf)), true
+}
+
+// DeleteConsumerMinValidatorPower removes the minimum power required for a validator to be able to validate
+// on a given consumer chain.
+func (k Keeper) DeleteConsumerMinValidatorPower(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerMinValidatorPowerKey(chainID))
+}
+
+// SetConsumerAllowInactiveValidators sets the flag that allows inactive validators to validate
+// on a given consumer chain.
+func (k Keeper) SetConsumerAllowInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+	allowInactiveValidators bool,
+) {
+	store := ctx.KVStore(k.storeKey)
+	buf := []byte{0}
+	if allowInactiveValidators {
+		buf = []byte{1}
+	}
+	store.Set(types.ConsumerAllowInactiveValidatorsKey(chainID), buf)
+}
+
+// GetConsumerAllowInactiveValidators returns the flag that allows inactive validators to validate
+// on a given consumer chain.
+func (k Keeper) GetConsumerAllowInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+) (bool, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.ConsumerAllowInactiveValidatorsKey(chainID))
+	if buf == nil {
+		return false, false
+	}
+	return buf[0] == 1, true
+}
+
+// DeleteConsumerAllowInactiveValidators removes the flag that allows inactive validators to validate
+// on a given consumer chain.
+func (k Keeper) DeleteConsumerAllowInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerAllowInactiveValidatorsKey(chainID))
+}

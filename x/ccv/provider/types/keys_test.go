@@ -64,6 +64,8 @@ func getAllKeyPrefixes() []byte {
 		providertypes.MinimumPowerInTopNBytePrefix,
 		providertypes.LastProviderConsensusValsPrefix,
 		providertypes.ParametersByteKey,
+		providertypes.ConsumerMinValidatorPowerPrefix,
+		providertypes.ConsumerAllowInactiveValidatorsPrefix,
 	}
 }
 

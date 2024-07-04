@@ -191,6 +191,15 @@ const (
 	// sent to the consensus engine of the provider chain
 	LastProviderConsensusValsPrefix
 
+	// ConsumerMinValidatorPowerPrefix is the byte prefix for storing the minimum validator stake
+	// required to validate on a given consumer chain
+	ConsumerMinValidatorPowerPrefix
+
+	// ConsumerAllowInactiveValidatorsPrefix is the byte prefix for storing
+	// whether validators that are not part of consensus on the provider chain
+	// are allowed to validate on the consumer chain
+	ConsumerAllowInactiveValidatorsPrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -629,6 +638,17 @@ func MinimumPowerInTopNKey(chainID string) []byte {
 // in the last validator set sent to the consensus engine of the provider chain
 func LastProviderConsensusValidatorKey(providerAddr []byte) []byte {
 	return append([]byte{LastProviderConsensusValsPrefix}, providerAddr...)
+}
+
+// ConsumerMinValidatorPowerKey returns the key of the minimum validator stake required to validate on a given consumer chain
+func ConsumerMinValidatorPowerKey(chainID string) []byte {
+	return ChainIdWithLenKey(ConsumerMinValidatorPowerPrefix, chainID)
+}
+
+// ConsumerAllowInactiveValidatorsKey returns the key of whether validators that are not part of consensus on the provider chain
+// are allowed to validate on the consumer chain
+func ConsumerAllowInactiveValidatorsKey(chainID string) []byte {
+	return ChainIdWithLenKey(ConsumerAllowInactiveValidatorsPrefix, chainID)
 }
 
 //
