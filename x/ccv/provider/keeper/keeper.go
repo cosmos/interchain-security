@@ -1588,11 +1588,11 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 func (k Keeper) SetConsumerMinValidatorPower(
 	ctx sdk.Context,
 	chainID string,
-	minValidatorStake int64,
+	minValidatorStake uint32,
 ) {
 	store := ctx.KVStore(k.storeKey)
 	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, uint64(minValidatorStake))
+	binary.BigEndian.PutUint32(buf, minValidatorStake)
 	store.Set(types.ConsumerMinValidatorPowerKey(chainID), buf)
 }
 
@@ -1601,13 +1601,13 @@ func (k Keeper) SetConsumerMinValidatorPower(
 func (k Keeper) GetConsumerMinValidatorPower(
 	ctx sdk.Context,
 	chainID string,
-) (int64, bool) {
+) (uint32, bool) {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.ConsumerMinValidatorPowerKey(chainID))
 	if buf == nil {
 		return 0, false
 	}
-	return int64(binary.BigEndian.Uint64(buf)), true
+	return binary.BigEndian.Uint32(buf), true
 }
 
 // DeleteConsumerMinValidatorPower removes the minimum power required for a validator to be able to validate

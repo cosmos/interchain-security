@@ -62,6 +62,8 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				0,
 				nil,
 				nil,
+				0,
+				true,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -92,6 +94,8 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				0,
 				nil,
 				nil,
+				0,
+				true,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -282,6 +286,8 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
 	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
 	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
+	providerKeeper.SetConsumerMinValidatorPower(ctx, chainID, 0)
+	providerKeeper.SetConsumerAllowInactiveValidators(ctx, chainID, false)
 
 	expectedTopN := uint32(75)
 	expectedValidatorsPowerCap := uint32(67)
@@ -294,6 +300,8 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 		expectedValidatorSetCap,
 		[]string{expectedAllowlistedValidator},
 		[]string{expectedDenylistedValidator},
+		10000,
+		true,
 	).(*providertypes.ConsumerModificationProposal)
 
 	err := providerKeeper.HandleLegacyConsumerModificationProposal(ctx, proposal)
@@ -315,4 +323,10 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, chainID)))
 	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, chainID)[0])
+
+	actualMinValidatorPower, _ := providerKeeper.GetConsumerMinValidatorPower(ctx, chainID)
+	require.Equal(t, uint32(10000), actualMinValidatorPower)
+
+	actualAllowInactiveValidators, _ := providerKeeper.GetConsumerAllowInactiveValidators(ctx, chainID)
+	require.Equal(t, true, actualAllowInactiveValidators)
 }

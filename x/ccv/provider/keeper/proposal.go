@@ -70,14 +70,16 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 // HandleConsumerModificationProposal modifies a running consumer chain
 func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *types.MsgConsumerModification) error {
 	p := types.ConsumerModificationProposal{
-		Title:              proposal.Title,
-		Description:        proposal.Description,
-		ChainId:            proposal.ChainId,
-		Top_N:              proposal.Top_N,
-		ValidatorsPowerCap: proposal.ValidatorsPowerCap,
-		ValidatorSetCap:    proposal.ValidatorSetCap,
-		Allowlist:          proposal.Allowlist,
-		Denylist:           proposal.Denylist,
+		Title:                   proposal.Title,
+		Description:             proposal.Description,
+		ChainId:                 proposal.ChainId,
+		Top_N:                   proposal.Top_N,
+		ValidatorsPowerCap:      proposal.ValidatorsPowerCap,
+		ValidatorSetCap:         proposal.ValidatorSetCap,
+		Allowlist:               proposal.Allowlist,
+		Denylist:                proposal.Denylist,
+		MinValidatorPower:       proposal.MinValidatorPower,
+		AllowInactiveValidators: proposal.AllowInactiveValidators,
 	}
 
 	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
@@ -238,6 +240,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteValidatorSetCap(ctx, chainID)
 	k.DeleteAllowlist(ctx, chainID)
 	k.DeleteDenylist(ctx, chainID)
+	k.DeleteConsumerMinValidatorPower(ctx, chainID)
+	k.DeleteConsumerAllowInactiveValidators(ctx, chainID)
 
 	k.DeleteAllOptedIn(ctx, chainID)
 	k.DeleteConsumerValSet(ctx, chainID)

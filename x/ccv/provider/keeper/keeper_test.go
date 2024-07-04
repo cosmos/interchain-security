@@ -868,7 +868,7 @@ func TestConsumerMinValidatorPower(t *testing.T) {
 	chainID := "testChain"
 
 	// Set the minimum validator power
-	minPower := int64(1000)
+	minPower := uint32(1000)
 
 	k.SetConsumerMinValidatorPower(ctx, chainID, minPower)
 
@@ -879,7 +879,7 @@ func TestConsumerMinValidatorPower(t *testing.T) {
 	require.Equal(t, minPower, actualMinPower)
 
 	// Update the minimum validator power
-	newMinPower := int64(2000)
+	newMinPower := uint32(2000)
 	k.SetConsumerMinValidatorPower(ctx, chainID, newMinPower)
 
 	// Retrieve the updated minimum validator power

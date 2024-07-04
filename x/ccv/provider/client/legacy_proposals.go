@@ -36,11 +36,13 @@ type ConsumerAdditionProposalJSON struct {
 
 	Deposit string `json:"deposit"`
 
-	TopN               uint32   `json:"top_N"`
-	ValidatorsPowerCap uint32   `json:"validators_power_cap"`
-	ValidatorSetCap    uint32   `json:"validator_set_cap"`
-	Allowlist          []string `json:"allowlist"`
-	Denylist           []string `json:"denylist"`
+	TopN                    uint32   `json:"top_N"`
+	ValidatorsPowerCap      uint32   `json:"validators_power_cap"`
+	ValidatorSetCap         uint32   `json:"validator_set_cap"`
+	Allowlist               []string `json:"allowlist"`
+	Denylist                []string `json:"denylist"`
+	MinValidatorPower       uint32   `json:"min_validator_power"`
+	AllowInactiveValidators bool     `json:"allow_inactive_validators"`
 }
 
 type ConsumerAdditionProposalReq struct {
@@ -174,6 +176,9 @@ type ConsumerModificationProposalJSON struct {
 	Denylist           []string `json:"denylist"`
 
 	Deposit string `json:"deposit"`
+
+	MinValidatorPower       uint32 `json:"min_validator_power"`
+	AllowInactiveValidators bool   `json:"allow_inactive_validators"`
 }
 
 func ParseConsumerModificationProposalJSON(proposalFile string) (ConsumerModificationProposalJSON, error) {
