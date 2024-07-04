@@ -59,11 +59,7 @@
         "revision_height": 1
       },
       "DistributionChannel": "",
-      "TopN": 100,
-      "ValidatorsPowerCap": 0,
-      "ValidatorSetCap": 0,
-      "Allowlist": null,
-      "Denylist": null
+      "TopN": 100
     },
     "State": {
       "provi": {
@@ -275,7 +271,7 @@
           "Stake": 500000000
         }
       ],
-      "GenesisChanges": ""
+      "GenesisChanges": ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\""
     },
     "State": {
       "consu": {
@@ -356,11 +352,7 @@
         "revision_height": 1
       },
       "DistributionChannel": "",
-      "TopN": 100,
-      "ValidatorsPowerCap": 0,
-      "ValidatorSetCap": 0,
-      "Allowlist": null,
-      "Denylist": null
+      "TopN": 100
     },
     "State": {
       "provi": {
@@ -572,7 +564,7 @@
           "Stake": 500000000
         }
       ],
-      "GenesisChanges": ""
+      "GenesisChanges": ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\""
     },
     "State": {
       "densu": {

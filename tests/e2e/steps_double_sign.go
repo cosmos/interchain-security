@@ -13,16 +13,16 @@ func stepsDoubleSignOnProvider(consumerName string) []Step {
 				// slash on provider
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 0, // from 99 to 0
+						ValidatorID("carol"): 0, // from 500 to 0
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 99, // not tombstoned on consumerName yet
+						ValidatorID("carol"): 495, // not tombstoned on consumerName yet
 					},
 				},
 			},
@@ -38,14 +38,14 @@ func stepsDoubleSignOnProvider(consumerName string) []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
 						ValidatorID("carol"): 0,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
 						ValidatorID("carol"): 0, // tombstoning visible on consumerName
 					},

@@ -355,6 +355,7 @@ func (k Keeper) MakeConsumerGenesis(
 		prop.ConsumerRedistributionFraction,
 		prop.HistoricalEntries,
 		prop.UnbondingPeriod,
+		"0.05",
 		[]string{},
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,

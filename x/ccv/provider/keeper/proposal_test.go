@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	_go "github.com/cosmos/ics23/go"
@@ -14,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -877,7 +878,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			"consumer_redistribution_fraction": "0.75",
 			"historical_entries": 10000,
 			"unbonding_period": 1728000000000000,
-			"soft_opt_out_threshold": "0",
+			"soft_opt_out_threshold": "0.05",
 			"reward_denoms": [],
 			"provider_reward_denoms": [],
 			"retry_delay_period": 3600000000000

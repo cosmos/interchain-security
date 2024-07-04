@@ -23,16 +23,16 @@ func stepsDowntime(consumerName string) []Step {
 				// validator should be slashed on consumer, powers not affected on either chain yet
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -47,18 +47,18 @@ func stepsDowntime(consumerName string) []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// Downtime jailing and corresponding voting power change are processed by provider
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
 						// See https://github.com/cosmos/interchain-security/issues/1304
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -75,10 +75,10 @@ func stepsDowntime(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// VSC now seen on consumer
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -91,18 +91,18 @@ func stepsDowntime(consumerName string) []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// bob's stake should not be slashed
 						// since the slash was initiated from consumer
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -117,11 +117,11 @@ func stepsDowntime(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// bob's stake should not be slashed
 						// since the slash was initiated from consumer
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -136,7 +136,7 @@ func stepsDowntime(consumerName string) []Step {
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
 						// Carol's stake should be slashed and jailed
 						// downtime slash was initiated from provider
@@ -145,9 +145,9 @@ func stepsDowntime(consumerName string) []Step {
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -162,7 +162,7 @@ func stepsDowntime(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
 						ValidatorID("carol"): 0,
 					},
@@ -177,14 +177,14 @@ func stepsDowntime(consumerName string) []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 99,
+						ValidatorID("carol"): 495,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
 						ValidatorID("carol"): 0,
 					},
@@ -201,9 +201,9 @@ func stepsDowntime(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 99,
+						ValidatorID("carol"): 495,
 					},
 				},
 			},
@@ -211,7 +211,7 @@ func stepsDowntime(consumerName string) []Step {
 	}
 }
 
-// stepsDoubleDowntime time tests that a validator can get jailed twice
+// stepsDowstepsDoubleDowntime time tests that a validator can get jailed twice
 // on a consumer.
 // These are the steps:
 // - a validator is down on a consumer
@@ -233,16 +233,16 @@ func stepsDoubleDowntime(consumerName string) []Step {
 				// validator should be slashed on consumer, powers not affected on either chain yet
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -257,18 +257,18 @@ func stepsDoubleDowntime(consumerName string) []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// Downtime jailing and corresponding voting power change are processed by provider
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
 						// See https://github.com/cosmos/interchain-security/issues/1304
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -285,10 +285,10 @@ func stepsDoubleDowntime(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// VSC now seen on consumer
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -301,18 +301,18 @@ func stepsDoubleDowntime(consumerName string) []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// bob's stake should not be slashed
 						// since the slash was initiated from consumer
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -327,11 +327,11 @@ func stepsDoubleDowntime(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// bob's stake should not be slashed
 						// since the slash was initiated from consumer
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -346,16 +346,16 @@ func stepsDoubleDowntime(consumerName string) []Step {
 				// validator should be slashed on consumer, powers not affected on either chain yet
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -370,18 +370,18 @@ func stepsDoubleDowntime(consumerName string) []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// Downtime jailing and corresponding voting power change are processed by provider
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
 						// See https://github.com/cosmos/interchain-security/issues/1304
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -398,10 +398,67 @@ func stepsDoubleDowntime(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 910,
+						ValidatorID("alice"): 509,
 						// VSC now seen on consumer
 						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 100,
+						ValidatorID("carol"): 501,
+					},
+				},
+			},
+		},
+	}
+}
+
+// stepsDowntimeWithOptOut returns steps validating that alice can incur downtime
+// and not be slashed/jailed, since her voting power is less than 5% of the total.
+//
+// Note: 60 / (60 + 500 + 950) ~= 0.04
+func stepsDowntimeWithOptOut(consumerName string) []Step {
+	return []Step{
+		{
+			Action: DowntimeSlashAction{
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("alice"),
+			},
+			State: State{
+				// powers not affected on either chain
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 60,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 950,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 60,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 950,
+					},
+				},
+			},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						// alice is not slashed or jailed due to soft opt out
+						ValidatorID("alice"): 60,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 950,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 60,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 950,
 					},
 				},
 			},

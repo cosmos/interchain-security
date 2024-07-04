@@ -136,6 +136,18 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 
 	// Otherwise infraction happened after the changeover was completed.
 
+	// if this is a downtime infraction and the validator is allowed to
+	// soft opt out, do not queue a slash packet
+	if infraction == stakingtypes.Infraction_INFRACTION_DOWNTIME {
+		if power < k.GetSmallestNonOptOutPower(ctx) {
+			// soft opt out
+			k.Logger(ctx).Debug("soft opt out",
+				"validator", addr,
+				"power", power,
+			)
+			return math.NewInt(0)
+		}
+	}
 	// get VSC ID for infraction height
 	vscID := k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight))
 

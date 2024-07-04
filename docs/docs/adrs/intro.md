@@ -37,6 +37,7 @@ To suggest an ADR, please make use of the [ADR template](./templates/adr-templat
 - [ADR 004: Denom DOS fixes](./adr-004-denom-dos-fixes.md)
 - [ADR 005: Cryptographic verification of equivocation evidence](./adr-005-cryptographic-equivocation-verification.md)
 - [ADR 008: Throttle with retries](./adr-008-throttle-retries.md)
+- [ADR 009: Soft Opt-Out](./adr-009-soft-opt-out.md)
 - [ADR 010: Standalone to Consumer Changeover](./adr-010-standalone-changeover.md)
 - [ADR 013: Slashing on the provider for consumer equivocation](./adr-013-equivocation-slashing.md)
 - [ADR 014: Epochs](./adr-014-epochs.md)
@@ -56,4 +57,3 @@ To suggest an ADR, please make use of the [ADR template](./templates/adr-templat
 ### Deprecated
 
 - [ADR 003: Equivocation governance proposal](./adr-003-equivocation-gov-proposal.md)
-- [ADR 009: Soft Opt-Out](./adr-009-soft-opt-out.md)
