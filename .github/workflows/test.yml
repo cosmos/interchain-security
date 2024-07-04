@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: Gaia-Runner-medium
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -60,7 +60,7 @@ jobs:
           path: ./profile.out
 
   test-integration:
-    runs-on: ubuntu-latest
+    runs-on: Gaia-Runner-medium
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -91,7 +91,7 @@ jobs:
           path: ./integration-profile.out
 
   test-mbt:
-    runs-on: ubuntu-latest
+    runs-on: Gaia-Runner-medium
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -168,7 +168,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   test-e2e:
-    runs-on: ubuntu-latest
+    runs-on: Gaia-Runner-medium
     steps:
       - uses: actions/checkout@v4
         with:
@@ -230,7 +230,7 @@ jobs:
           make test-e2e-compatibility-tests-latest
 
   test-cometmock:
-    runs-on: ubuntu-latest
+    runs-on: Gaia-Runner-medium
     steps:
       - uses: actions/checkout@v4
         with:
