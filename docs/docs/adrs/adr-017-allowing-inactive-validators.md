@@ -62,6 +62,9 @@ The following changes to the state are required:
 * Store the provider consensus validator set in the provider module state under the `LastProviderConsensusValsPrefix` key. This is the last set of validators that the provider sent to the consensus engine. This is needed to compute the ValUpdates to send to the consensus engine (by diffing the current set with this last sent set).
 * Increase the `MaxValidators` parameter of the staking module to the desired size of the potential validator
 set of consumer chains.
+* Introduce two new parameters for consumer chains: `AllowInactiveValidators` and `MinValidatorPower`.
+  * `AllowInactiveValidators` is a boolean that determines whether the consumer chain allows validators that are not part of the active set on the provider chain to validate on the consumer chain.
+  * `MinValidatorPower` is the minimum amount of power that a validator must have on the provider chain to be considered for validation on the consumer chain. This is to prevent validators with very little stake from validating on the consumer chain.
 
 ## Risk Mitigations
 
@@ -116,6 +119,24 @@ Instead of increasing the active set size, we could allow validators that are un
 For this, we would need to:
 * Modify the VSC updates to consider the set of all validators, even unbonded ones, instead of just active ones
 * Adjust our downtime jailing/equivocation slashing logic to work correctly with unbonded validators. This is very hard, because redelegations are not usually tracked for unbonded validators.
+
+## Test Scenarios
+
+The following scenarios should be tested:
+
+Test scenarios for `AllowInactiveValidators` and `MinValidatorPower`:
+
+### A consumer chain that sets `AllowInactiveValidators` to `false` does not get inactive validators from the provider
+* Set up a provider chain with `AllowInactiveValidators` equal to false and where at least one validator is inactive on the provider
+* Set up a consumer chain that connects to the provider chain
+* The consumer chain should not get the inactive validator from the provider chain
+
+Good to test as an e2e test
+
+### Minimum validator power is respected
+* A consumer chain that sets a minimum validator power should never get validators with less power than the minimum power from the provider chain
+
+Good to write as an invariant, and also doing a PBT test, either in unit tests or as an integration test
 
 ## References
 
