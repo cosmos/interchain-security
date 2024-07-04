@@ -683,18 +683,12 @@ func findConsumerValidator(t *testing.T, v types.ConsensusValidator, valsAfter [
 	return vAfter
 }
 
-func TestAppliedConsumerMinValidatorPower(t *testing.T) {
-	// define the property to test:
-	// all the validators in the result validator set have a power >= minPower
-	minPowerRespected := func(valSet []types.ConsensusValidator, minPower uint64) bool {
-		for _, v := range valSet {
-			if v.Power < int64(minPower) {
-				return false
-			}
-		}
-		return true
-	}
-
+// TestAppliedConsumerMinValidatorPower tests that all the validators in the result validator set
+// have a power >= minPower.
+// This is a unit test, and it calls the ComputeNextValidators function directly.
+// This function would normally be called to compute the next validator set for a chain
+// during EndBlock.
+func TestAppliedConsumerMinValidatorPowerAndDisabledInactive(t *testing.T) {
 	// set up pbt
 	rapid.Check(t, func(rapidT *rapid.T) {
 		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -708,9 +702,12 @@ func TestAppliedConsumerMinValidatorPower(t *testing.T) {
 		maxProviderConsensusValidators := rapid.IntRange(1, 300).Draw(rapidT, "maxProviderConsensusValidators")
 		validatorSetSizeCap := rapid.Uint32Range(1, 200).Draw(rapidT, "validatorSetSizeCap")
 
+		inactiveValidatorsEnabled := rapid.Bool().Draw(rapidT, "inactiveValidatorsEnabled")
+
 		// set the parameters
 		providerKeeper.SetConsumerMinValidatorPower(ctx, "chainID", minPower)
 		providerKeeper.SetValidatorSetCap(ctx, "chainID", validatorSetSizeCap)
+		providerKeeper.SetConsumerAllowInactiveValidators(ctx, "chainID", inactiveValidatorsEnabled)
 		params := providerKeeper.GetParams(ctx)
 		params.MaxProviderConsensusValidators = int64(maxProviderConsensusValidators)
 		providerKeeper.SetParams(ctx, params)
@@ -729,11 +726,52 @@ func TestAppliedConsumerMinValidatorPower(t *testing.T) {
 
 		cappedValidators := providerKeeper.ComputeNextValidators(ctx, "chainID", bondedValidators)
 
+		// define the property to test:
+		// all the validators in the result validator set have a power >= minPower
+		minPowerRespected := func(valSet []types.ConsensusValidator, minPower uint64) bool {
+			for _, v := range valSet {
+				if v.Power < int64(minPower) {
+					return false
+				}
+			}
+			return true
+		}
+
+		inactiveValidatorsDisabled := func(originalValSet []stakingtypes.Validator, resultValSet []types.ConsensusValidator) bool {
+			// get the active original validators
+			if len(originalValSet) > maxProviderConsensusValidators {
+				originalValSet = originalValSet[:maxProviderConsensusValidators]
+			}
+
+			// for each result validator
+			for _, v := range resultValSet {
+				// confirm that that validator is in the original validator set
+				found := false
+				for _, originalV := range originalValSet {
+					originalConsAddr, err := originalV.GetConsAddr()
+					require.NoError(t, err)
+					if bytes.Equal(originalConsAddr, v.ProviderConsAddr) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return false
+				}
+			}
+			return true
+		}
+
 		// check properties
 		require.True(t, minPowerRespected(cappedValidators, minPower),
-			"minPower: %v, cappedValidators: %v",
+			"min power cap is not respected! minPower: %v, cappedValidators: %v",
 			minPower,
 			cappedValidators,
 		)
+
+		if !inactiveValidatorsEnabled {
+			require.True(t, inactiveValidatorsDisabled(bondedValidators, cappedValidators),
+				"inactive validators are in the set, despite not being allowed! original validators: %v, cappedValidators: %v", bondedValidators, cappedValidators)
+		}
 	})
 }
