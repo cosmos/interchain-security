@@ -25,14 +25,18 @@ ICS without needing a governance proposal but by simply issuing a transaction.
 
 ### The Phases of a Consumer Chain
 In Permissionless ICS, launching an Opt In chain is **only** possible through a transaction and not through a `ConsumerAdditionProposal`.
-Similarly, modifying or stopping an Opt In chain is only possible through transactions and not through governance proposals.
 Nevertheless, Permissionless ICS does not eliminate the `ConsumerAdditionProposal` governance proposal, as proposals are still necessary
 for Top N chains. Because of this, this ADR outlines a solution that attempts to preserve as much of the governance proposal code
-as possible. In what follows, what we describe applies to both governance-proposed consumer (i.e., Top N) chains and transaction-based (i.e., Opt In) chains.
+as possible.
+Additionally, to make the distinction between governance-proposed versus transaction-launched chains clearer, in Permissionless ICS,
+we can only add, modify, or remove Top N chains with governance proposals (i.e., `ConsumerAdditionProposal`, `ConsumerModificationProposal`,
+and `ConsumerRemovalProposal`) and we can only add, modify, or remove Opt In chains with transactions.
+In what follows, we describe changes that apply to both governance-proposed (i.e., Top N) and transaction-based (i.e., Opt In) consumer chains.
 
 A consumer chain can reside in three phases: i) _prelaunched_, ii) _launched_, and iii) _stopped_ phase as seen
 in the diagram below:
 ![Phases of a consumer chain](./adr18_phases_of_a_consumer_chain.png)
+
 
 When a Top N chain is first proposed through a `ConsumerAdditionProposal` or an Opt In chain is added through a transaction,
 the consumer chain resides in the _prelaunched_ phase. At this state, validators can choose to opt in on the consumer chain. Additionally,
@@ -64,10 +68,18 @@ appropriate client (i.e., `clientID`) based on the actual chain they want to com
 consumer chains with the exact same `chainID`, and it is the responsibility of the validator to choose the one they wish
 to interact with by providing the right `consumerID`.
 
-As a result of using `consumerID`, we have to migrate a substantial chunk of state to re-index it using `consumerID` as the key.
+Note, that with Permissionless ICS all interactions on a consumer chain have to use the `consumerID` instead of the `chainID`.
+For example, if a validator opts in on a chain using `MsgOptIn`, the validator has to provide the `consumerID`. To also
+provide the `consumerID` for Top N consumers chains, we store a mapping between `proposalID` to `consumerID`. This storing
+takes place in the [`AfterProposalSubmission`](https://github.com/cosmos/cosmos-sdk/blob/v0.50.7/x/gov/keeper/proposal.go#L117) hook.
+In some cases, we need the actual `chainID`. For example, when we [verify equivocation evidence](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/consumer_equivocation.go#L121).
+To avoid having to change how [Hermes](https://github.com/informalsystems/hermes) constructs and sends need the `MsgSubmitConsumerMisbehaviour`
+and `MsgSubmitConsumerDoubleVoting` messages, we just verify the evidence is valid and then go through all the chains with the `chainID`
+to check on whether a validator can be slashed.
 
 
 #### State
+As a result of using `consumerID`, we have to migrate a substantial chunk of state to re-index it using `consumerID` as the key.
 To move from using the `chainID` to the new `consumerID`, we need to revamp the consumer chains' stored state in ICS. Currently, in
 ICS we have state that is indexed by a multitude of [keys](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/types/keys.go#L40).
 In the table below, we see which ones are associated with a `chainID` and how often state under those keys gets updated.
@@ -195,9 +207,10 @@ to `len(chainID) | chainID | counter` and this way we can have multiple differen
 with the same `chainID`. By doing this, we tackle the main issue behind permissionless consumer chains that is chain-id squatting.
 Note that `consumerID` could just be a `uint64` but we choose to include `chainID` in it as well so that it is easier to see
 what the consumer chain just by looking at the `consumerID`. This means that the `chainID` of a chain cannot be changed
-after launching it (because the `chainID` is part of the `consumerID` key).
+after launching it (because the `chainID` is part of the `consumerID` key). To easily generate `consumerID`s we store
+for each `len(chainID) | chainID` the latest `counter` value used for this `chainID`.
 
-We intend to set a fixed cost of a `MsgLaunchConsumerChain` to avoid getting spammed with bogus consumer chains.
+We set a to-be-decided fixed cost of a `MsgLaunchConsumerChain` to avoid getting spammed with bogus consumer chains.
 
 To execute a `MsgLaunchConsumerChain`, we first create a `ConsumerAdditionProposal` under the hoods, with the `top_N` set to 0, and call
 [`HandleConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L30)
@@ -212,7 +225,12 @@ To do this, we keep track of when a `MsgLaunchConsumerChain` is first issued by 
 [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/proto/interchain_security/ccv/provider/v1/provider.proto#L29).
 This way, even if `spawnTime` is updated through a `MsgUpdateConsumerChain` (see below), we can check on whether the
 new proposed `spawnTime` is less than `issuedTime + (2 months)`. Note that Top N chains can have an arbitrary `spawnTime`
-since their proposals can already be rejected by the community. 
+since their proposals can already be rejected by the community.
+
+For all chains in the prelaunch phase, we keep a mapping between `consumerID` and the underlying `ConsumerAdditionProposal`.
+This way, we can respond to queries that ask for all the consumer chain's parameters. For example, retrieving the
+`spawn_time` of consumer chain with a given `consumerID`.
+
 #### Modify a Consumer Chain
 
 We introduce the `MsgUpdateConsumerChain` message so that the owner of a consumer chain can change its parameters
@@ -279,6 +297,7 @@ We also change `MsgOptIn` so a validator cannot opt in to two or more chains wit
 
 ### Negative
 - Extensive migration and overhaul of existing code base (as part of API-breaking changes) that could lead to bugs and more work for auditing this.
+
 
 ## References
 [CHIPs Discussion phase: Permissionless ICS](https://forum.cosmos.network/t/chips-discussion-phase-permissionless-ics/13955)
