@@ -682,3 +682,58 @@ func findConsumerValidator(t *testing.T, v types.ConsensusValidator, valsAfter [
 	}
 	return vAfter
 }
+
+func TestAppliedConsumerMinValidatorPower(t *testing.T) {
+	// define the property to test:
+	// all the validators in the result validator set have a power >= minPower
+	minPowerRespected := func(valSet []types.ConsensusValidator, minPower uint64) bool {
+		for _, v := range valSet {
+			if v.Power < int64(minPower) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// set up pbt
+	rapid.Check(t, func(rapidT *rapid.T) {
+		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+		numValidators := rapid.IntRange(1, 300).Draw(rapidT, "numValidators")
+
+		powers := rapid.SliceOfN(rapid.Int64Range(1, 100000000), numValidators, numValidators).Draw(rapidT, "powers")
+
+		// choose random parameters
+		minPower := rapid.Uint64Range(0, 100000000).Draw(rapidT, "minPower")
+		maxProviderConsensusValidators := rapid.IntRange(1, 300).Draw(rapidT, "maxProviderConsensusValidators")
+		validatorSetSizeCap := rapid.Uint32Range(1, 200).Draw(rapidT, "validatorSetSizeCap")
+
+		// set the parameters
+		providerKeeper.SetConsumerMinValidatorPower(ctx, "chainID", minPower)
+		providerKeeper.SetValidatorSetCap(ctx, "chainID", validatorSetSizeCap)
+		params := providerKeeper.GetParams(ctx)
+		params.MaxProviderConsensusValidators = int64(maxProviderConsensusValidators)
+		providerKeeper.SetParams(ctx, params)
+
+		// create the validators
+		bondedValidators := make([]stakingtypes.Validator, len(powers))
+		for i, power := range powers {
+			validator := createStakingValidator(ctx, mocks, i, power, i)
+			bondedValidators[i] = validator
+
+			// opt everyone in
+			valConsAddr, err := validator.GetConsAddr()
+			require.NoError(t, err)
+			providerKeeper.SetOptedIn(ctx, "chainID", types.NewProviderConsAddress(valConsAddr))
+		}
+
+		cappedValidators := providerKeeper.ComputeNextValidators(ctx, "chainID", bondedValidators)
+
+		// check properties
+		require.True(t, minPowerRespected(cappedValidators, minPower),
+			"minPower: %v, cappedValidators: %v",
+			minPower,
+			cappedValidators,
+		)
+	})
+}

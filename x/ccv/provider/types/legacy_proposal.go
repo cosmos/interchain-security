@@ -58,7 +58,7 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 	validatorSetCap uint32,
 	allowlist []string,
 	denylist []string,
-	minValidatorPower uint32,
+	minValidatorPower uint64,
 	allowInactiveValidators bool,
 ) govv1beta1.Content {
 	return &ConsumerAdditionProposal{
@@ -247,7 +247,7 @@ func NewConsumerModificationProposal(title, description, chainID string,
 	validatorSetCap uint32,
 	allowlist []string,
 	denylist []string,
-	min_validator_power uint32,
+	min_validator_power uint64,
 	allow_inactive_validators bool,
 ) govv1beta1.Content {
 	return &ConsumerModificationProposal{

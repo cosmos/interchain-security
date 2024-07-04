@@ -316,7 +316,10 @@ func (k Keeper) FilterByMinPower(ctx sdk.Context, chainID string, validators []t
 
 	filteredValidators := make([]types.ConsensusValidator, 0, len(validators))
 	for _, v := range validators {
-		if v.Power >= int64(minPower) {
+		if uint64(v.Power) >= minPower {
+			fmt.Println("v.Power", v.Power)
+			fmt.Println("uint64(v.Power)", uint64(v.Power))
+			fmt.Println("minPower", minPower)
 			filteredValidators = append(filteredValidators, v)
 		}
 	}

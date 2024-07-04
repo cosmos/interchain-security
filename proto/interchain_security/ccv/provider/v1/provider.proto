@@ -109,7 +109,7 @@ message ConsumerAdditionProposal {
   // Corresponds to the minimal voting power a validator must have on the provider
   // chain to be able to validate the consumer chain. This is used to prevent
   // validators with very low voting power from validating consumer chains.
-  uint32 min_validator_power = 20;
+  uint64 min_validator_power = 20;
   // Whether or not to allow inactive validators(=validators on the provider chain that 
   // are not part of consensus, but still have stake) to validate the consumer chain.
   bool allow_inactive_validators = 21;
@@ -166,7 +166,7 @@ message ConsumerModificationProposal {
   // Corresponds to the minimal voting power a validator must have on the provider
   // chain to be able to validate the consumer chain. This is used to prevent
   // validators with very low voting power from validating consumer chains.
-  uint32 min_validator_power = 9;
+  uint64 min_validator_power = 9;
   // Whether or not to allow inactive validators(=validators on the provider chain that 
   // are not part of consensus, but still have stake) to validate the consumer chain.
   bool allow_inactive_validators = 10;

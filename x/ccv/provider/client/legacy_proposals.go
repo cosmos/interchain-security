@@ -41,7 +41,7 @@ type ConsumerAdditionProposalJSON struct {
 	ValidatorSetCap         uint32   `json:"validator_set_cap"`
 	Allowlist               []string `json:"allowlist"`
 	Denylist                []string `json:"denylist"`
-	MinValidatorPower       uint32   `json:"min_validator_power"`
+	MinValidatorPower       uint64   `json:"min_validator_power"`
 	AllowInactiveValidators bool     `json:"allow_inactive_validators"`
 }
 
@@ -177,7 +177,7 @@ type ConsumerModificationProposalJSON struct {
 
 	Deposit string `json:"deposit"`
 
-	MinValidatorPower       uint32 `json:"min_validator_power"`
+	MinValidatorPower       uint64 `json:"min_validator_power"`
 	AllowInactiveValidators bool   `json:"allow_inactive_validators"`
 }
 
