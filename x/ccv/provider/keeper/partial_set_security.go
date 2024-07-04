@@ -308,13 +308,40 @@ func (k Keeper) CanValidateChain(ctx sdk.Context, chainID string, providerAddr t
 			!k.IsDenylisted(ctx, chainID, providerAddr))
 }
 
+func (k Keeper) FilterByMinPower(ctx sdk.Context, chainID string, validators []types.ConsensusValidator) []types.ConsensusValidator {
+	minPower, found := k.GetConsumerMinValidatorPower(ctx, chainID)
+	if !found || minPower == 0 {
+		return validators
+	}
+
+	filteredValidators := make([]types.ConsensusValidator, 0, len(validators))
+	for _, v := range validators {
+		if v.Power >= int64(minPower) {
+			filteredValidators = append(filteredValidators, v)
+		}
+	}
+
+	return filteredValidators
+}
+
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
 func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsensusValidator {
+	allowsInactive, found := k.GetConsumerAllowInactiveValidators(ctx, chainID)
+	if !allowsInactive || !found {
+		// if the chain does not allow inactive validators, we filter out inactive validators by taking only the
+		// provider active validators, which we do by taking the first MaxProviderConsesusValidators many
+		maxValidators := k.GetMaxProviderConsensusValidators(ctx)
+		if int64(len(bondedValidators)) > maxValidators && maxValidators > 0 { // if maxValidators is 0, we should not filter because empty validator sets halt the chain
+			bondedValidators = bondedValidators[:k.GetMaxProviderConsensusValidators(ctx)]
+		}
+	}
+
 	nextValidators := k.FilterValidators(ctx, chainID, bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
 			return k.CanValidateChain(ctx, chainID, providerAddr)
 		})
 
+	nextValidators = k.FilterByMinPower(ctx, chainID, nextValidators)
 	nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
 	return k.CapValidatorsPower(ctx, chainID, nextValidators)
 }
