@@ -3,10 +3,13 @@ package main
 import (
 	"encoding/json"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -20,7 +23,7 @@ func TestProposalUnmarshal(t *testing.T) {
 			"InitialHeight": {
 				"revision_height": 1
 			},
-			"Status": "PROPOSAL_STATUS_PASSED"
+			"Status": "3"
 		}
 	}`
 
@@ -29,7 +32,7 @@ func TestProposalUnmarshal(t *testing.T) {
 		Chain:         ChainID("consu"),
 		SpawnTime:     0,
 		InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-		Status:        "PROPOSAL_STATUS_PASSED",
+		Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 	}
 
 	type ProposalAndType struct {
@@ -43,7 +46,7 @@ func TestProposalUnmarshal(t *testing.T) {
 		t.Errorf("Unexpected error while unmarshalling: %v", err)
 	}
 
-	actualProposal, err := UnmarshalProposalWithType(propAndType.RawProposal, propAndType.Type)
+	actualProposal, err := e2e.UnmarshalProposalWithType(propAndType.RawProposal, propAndType.Type)
 	if err != nil {
 		t.Errorf("Unexpected error while unmarshalling\n error: %v\n Raw proposal: %v\n Type: %v", err, spew.Sdump(propAndType.RawProposal), propAndType.Type)
 	}
@@ -79,7 +82,7 @@ var testCases = []ChainStateTestCase{
 						"InitialHeight": {
 							"revision_height": 1
 						},
-						"Status": "PROPOSAL_STATUS_PASSED"
+						"Status": "3"
 					}
 				}
 			}
@@ -96,7 +99,7 @@ var testCases = []ChainStateTestCase{
 					Chain:         ChainID("consu"),
 					SpawnTime:     0,
 					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-					Status:        "PROPOSAL_STATUS_PASSED",
+					Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 				},
 			},
 		},
@@ -125,7 +128,7 @@ var testCases = []ChainStateTestCase{
 						"InitialHeight": {
 							"revision_height": 1
 						},
-						"Status": "PROPOSAL_STATUS_PASSED"
+						"Status": "3"
 					}
 				}
 			},

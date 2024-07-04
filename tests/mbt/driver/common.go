@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -21,5 +22,5 @@ func getIndexOfString(s string, slice []string) int {
 
 func init() {
 	//	tokens === power
-	sdk.DefaultPowerReduction = sdk.NewInt(1)
+	sdk.DefaultPowerReduction = math.NewInt(1)
 }

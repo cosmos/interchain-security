@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Tests the validation of consumer params that happens at genesis
@@ -56,14 +56,6 @@ func TestValidateParams(t *testing.T) {
 		{
 			"custom invalid params, negative unbonding period",
 			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, -24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"}, 2*time.Hour), false,
-		},
-		{
-			"custom invalid params, invalid soft opt out threshold",
-			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "-0.05", []string{"u"}, []string{}, 2*time.Hour), false,
-		},
-		{
-			"custom invalid params, invalid soft opt out threshold",
-			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.5", []string{"u"}, []string{}, 2*time.Hour), false,
 		},
 		{
 			"custom invalid params, invalid reward denom",

@@ -14,11 +14,11 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	testcrypto "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider"
-	keeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	testcrypto "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
+	keeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 func TestInvalidMsg(t *testing.T) {
@@ -30,7 +30,7 @@ func TestInvalidMsg(t *testing.T) {
 	require.True(t, strings.Contains(err.Error(), "unrecognized provider message type"))
 }
 
-func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
+func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
 	providerConsAddr := providerCryptoId.ProviderConsAddress()
 
@@ -61,11 +61,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// Return a valid validator, found!
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerConsAddr.ToSdkConsAddr(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			expError: false,
@@ -80,7 +79,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
 						// Return a valid validator, found!
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 				)
 			},
 			expError: true,
@@ -97,8 +96,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// return false: not found!
-					).Return(stakingtypes.Validator{}, false).Times(1),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound).Times(1),
 				)
 			},
 			expError: true,
@@ -119,11 +117,11 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
 						// validator should not be missing
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerConsAddr.ToSdkConsAddr(),
 						// return false - no other validator uses the consumer key to validate *on the provider*
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, nil),
 				)
 			},
 			expError: true,
@@ -143,11 +141,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// Return a valid validator, found!
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerConsAddr.ToSdkConsAddr(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			expError: false,
@@ -163,6 +160,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 			msg, err := providertypes.NewMsgAssignConsumerKey(tc.chainID,
 				providerCryptoId.SDKValOpAddress(), consumerKey,
+				providerCryptoId.SDKStakingValidator().OperatorAddress,
 			)
 
 			require.NoError(t, err)

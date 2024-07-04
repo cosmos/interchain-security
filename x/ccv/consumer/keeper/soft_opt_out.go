@@ -2,11 +2,15 @@ package keeper
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"sort"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
 )
 
 // BeginBlockSoftOptOut executes BeginBlock logic for the Soft Opt-Out sub-protocol
@@ -29,7 +33,7 @@ func (k Keeper) SetSmallestNonOptOutPower(ctx sdk.Context, power uint64) {
 // is less than [SoftOptOutThreshold] of the total power of all validators.
 func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	// get soft opt-out threshold
-	optOutThreshold := sdk.MustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))
+	optOutThreshold := math.LegacyMustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))
 	if optOutThreshold.IsZero() {
 		// If the SoftOptOutThreshold is zero, then soft opt-out is disable.
 		// Setting the smallest non-opt-out power to zero, fixes the diff-testing
@@ -53,15 +57,15 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	})
 
 	// get total power in set
-	totalPower := sdk.ZeroDec()
+	totalPower := math.LegacyZeroDec()
 	for _, val := range valset {
-		totalPower = totalPower.Add(sdk.NewDec(val.Power))
+		totalPower = totalPower.Add(math.LegacyNewDec(val.Power))
 	}
 
 	// get power of the smallest validator that cannot soft opt out
-	powerSum := sdk.ZeroDec()
+	powerSum := math.LegacyZeroDec()
 	for _, val := range valset {
-		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
+		powerSum = powerSum.Add(math.LegacyNewDec(val.Power))
 		// if powerSum / totalPower > SoftOptOutThreshold
 		if powerSum.Quo(totalPower).GT(optOutThreshold) {
 			// set smallest non opt out power
@@ -93,9 +97,11 @@ func (k Keeper) UpdateSlashingSigningInfo(ctx sdk.Context) {
 	// a certain prefix in ascending order
 	for _, val := range valset {
 		consAddr := sdk.ConsAddress(val.Address)
-		signingInfo, found := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-		if !found {
+		signingInfo, err := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+		if errors.Is(err, slashingtypes.ErrNoSigningInfoFound) {
 			continue
+		} else if err != nil {
+			panic(fmt.Errorf("failed to get validator signing info for validator %s", consAddr))
 		}
 		if val.Power < smallestNonOptOutPower {
 			// validator CAN opt-out from validating on consumer chains
@@ -112,7 +118,9 @@ func (k Keeper) UpdateSlashingSigningInfo(ctx sdk.Context) {
 			}
 		}
 
-		k.slashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signingInfo)
+		if err := k.slashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signingInfo); err != nil {
+			panic(fmt.Errorf("failed to update validator signing info for validator %s", consAddr))
+		}
 		k.SetCCValidator(ctx, val)
 	}
 }
