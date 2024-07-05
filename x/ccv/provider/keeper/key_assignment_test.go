@@ -300,10 +300,10 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 // consumer chain. See AppendConsumerAddrsToPrune for a formulation of the property.
 func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chainID string) bool {
 	/*
-				For each consumer address cAddr in ValidatorByConsumerAddr,
-				  - either there exists a provider address pAddr in ValidatorConsumerPubKey,
-				    s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
-		          - or there exists a timestamp in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(timestamp)
+		For each consumer address cAddr in ValidatorByConsumerAddr,
+		  - either there exists a provider address pAddr in ValidatorConsumerPubKey,
+		    s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
+		  - or there exists a timestamp in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(timestamp)
 	*/
 	willBePruned := map[string]bool{}
 	for _, consAddrToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
