@@ -49,7 +49,11 @@ func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk p
 				continue
 			}
 		} else {
-			pk.Logger(ctx).Error("MigrateConsumerAddrsToPrune cannot find VSC send timestamp", "error", err.Error())
+			pk.Logger(ctx).Error(
+				"MigrateConsumerAddrsToPrune cannot find VSC send timestamp",
+				"chainID", chainID,
+				"vscID", vscID,
+			)
 			continue
 		}
 		pruneAfterTs := sentTime.Add(sk.UnbondingTime(ctx))
