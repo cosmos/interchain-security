@@ -300,10 +300,10 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 // consumer chain. See AppendConsumerAddrsToPrune for a formulation of the property.
 func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chainID string) bool {
 	/*
-		For each consumer address cAddr in ValidatorByConsumerAddr,
-		  - either there exists a provider address pAddr in ValidatorConsumerPubKey,
-		    s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
-		  - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
+				For each consumer address cAddr in ValidatorByConsumerAddr,
+				  - either there exists a provider address pAddr in ValidatorConsumerPubKey,
+				    s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
+		          - or there exists a timestamp in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(timestamp)
 	*/
 	willBePruned := map[string]bool{}
 	for _, consAddrToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
@@ -319,6 +319,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 			// Address will be pruned, everything is fine.
 			continue
 		}
+
 		// Try to find a validator who has this consumer address currently assigned
 		isCurrentlyAssigned := false
 		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, &valByConsAddr.ChainId) {
@@ -740,11 +741,6 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		providerValset := CreateValSet(providerIDS)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(assignableIDS)
-		// For each validator on the consumer, record the corresponding provider
-		// address as looked up on the provider using GetProviderAddrFromConsumerAddr
-		// at a given vscid.
-		// consumer consAddr -> vscid -> provider consAddr
-		historicSlashQueries := map[string]map[uint64]string{}
 
 		// Sanity check that the validator set update is initialised to 0, for clarity.
 		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
@@ -815,9 +811,14 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			}
 		}
 
+		// Set the unbonding time to 60s so that a key is prunable after 60s
+		unbondingTimeInNs := time.Duration(60 * 1_000_000_000) // 60 seconds
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeInNs).AnyTimes()
+
 		// The consumer chain has not yet been registered
 		// Apply some randomly generated key assignments
 		assignments := getAssignments()
+
 		applyAssignments(assignments)
 		// And generate a random provider valset which, in the real system, will
 		// be put into the consumer genesis.
@@ -828,15 +829,15 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		// Register the consumer chain
 		k.SetConsumerClientId(ctx, CHAINID, "")
 
-		// Analogous to the last vscid received from the consumer in a maturity
-		// Used to check the correct pruning property
-		greatestPrunedVSCID := -1
+		// Set the greatest block time up to which keys have been pruned. At the beginning, no pruning has taken
+		// place, so we set `greatestPrunedBlockTime` to 0, and set the current block time to 1.
+		greatestPrunedBlockTime := int64(0)
+		ctx = ctx.WithBlockTime(time.Unix(0, 1))
 
 		// Simulate a number of 'blocks'
 		// Each block consists of a number of random key assignment tx's
 		// and a random set of validator power updates
 		for block := 0; block < NUM_BLOCKS_PER_EXECUTION; block++ {
-
 			stakingUpdates = getStakingUpdates()
 			assignments = getAssignments()
 
@@ -844,13 +845,14 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			applyAssignments(assignments)
 			applyUpdatesAndIncrementVSCID(stakingUpdates)
 
-			// Randomly fast forward the greatest pruned VSCID. This simulates
-			// delivery of maturity packets from the consumer chain.
-			prunedVscid := greatestPrunedVSCID +
-				// +1 and -1 because id was incremented (-1), (+1) to make upper bound inclusive
-				rng.Intn(int(k.GetValidatorSetUpdateId(ctx))+1-1-greatestPrunedVSCID)
-			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
-			greatestPrunedVSCID = prunedVscid
+			// prune all keys that can be pruned up to the current block time
+			greatestPrunedBlockTime = ctx.BlockTime().UnixNano()
+			k.PruneKeyAssignments(ctx, CHAINID)
+
+			// Increase the block time by a small random amount up to UnbondingTime / 10. We do not increase the block time
+			// by UnbondingTime so that in the upcoming iteration of this `for` loop (i.e., new block), not all the keys
+			// previously (in this current block) set to be prunable are pruned.
+			ctx = ctx.WithBlockTime(time.Unix(0, ctx.BlockTime().UnixNano()+rng.Int63n(unbondingTimeInNs.Nanoseconds())/10))
 
 			/*
 
@@ -906,20 +908,25 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				Property: Pruning (bounded storage)
 				Check that all keys have been or will eventually be pruned.
 			*/
-
 			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
 
 			/*
 				Property: Correct Consumer Initiated Slash Lookup
 
-				Check that since the last pruning, it has never been possible to query
-				two different provider addresses from the same consumer address.
+				Check that since the last pruning took place, it has never been possible to have
+				two different provider addresses for the same consumer address.
 				We know that the queried provider address was correct at least once,
 				from checking the validator set replication property. These two facts
 				together guarantee that the slash lookup is always correct.
 			*/
 
-			// Build up the historicSlashQueries data structure
+			// For each validator on the consumer, record the corresponding provider
+			// address as looked up on the provider using `GetProviderAddrFromConsumerAddr`
+			// at a given block time.
+			// consumer consAddr -> block time -> provider consAddr
+			consumerAddrToBlockTimeToProviderAddr := map[string]map[uint64]string{}
+
+			// Build up the consumerAddrToBlockTimeToProviderAddr data structure
 			for i := range consumerValset.identities {
 				// For each active validator on the consumer chain
 				consC := consumerValset.identities[i].ConsumerConsAddress()
@@ -927,28 +934,25 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
 
-					if _, found := historicSlashQueries[consC.String()]; !found {
-						historicSlashQueries[consC.String()] = map[uint64]string{}
+					if _, found := consumerAddrToBlockTimeToProviderAddr[consC.String()]; !found {
+						consumerAddrToBlockTimeToProviderAddr[consC.String()] = map[uint64]string{}
 					}
 
-					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
-					// Record the slash query result obtained at this block
-					historicSlashQueries[consC.String()][vscid] = consP.String()
+					consumerAddrToBlockTimeToProviderAddr[consC.String()][uint64(ctx.BlockTime().UnixNano())] = consP.String()
 				}
 			}
 
-			// Check that, for each address known the consumer at some block
-			// with vscid st. greatestPrunedVSCID < vscid, there were never
-			// conflicting slash query results.
-			for _, vscidToConsP := range historicSlashQueries {
+			// Check that, for each consumer address known at some block with blockTime st. greatestPrunedBlockTime < blockTime,
+			// there were never two providers with this consumer address.
+			for _, blockTimeToProviderAddr := range consumerAddrToBlockTimeToProviderAddr {
 				seen := map[string]bool{}
-				for vscid, consP := range vscidToConsP {
-					if uint64(greatestPrunedVSCID) < vscid {
-						// The provider would have returned
+				for blockTime, consP := range blockTimeToProviderAddr {
+					if uint64(greatestPrunedBlockTime) < blockTime {
 						seen[consP] = true
 					}
 				}
-				// No conflicts.
+				// Having len(seen) >= 2 implies that we had at least 2 different provider addresses that at some point
+				// had the exact same consumer address since the last pruning took place. This should not be possible!
 				require.True(t, len(seen) < 2)
 			}
 
