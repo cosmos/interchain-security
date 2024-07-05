@@ -199,13 +199,6 @@ func GetNewSlashPacketData() types.SlashPacketData {
 	}
 }
 
-// Obtains vsc matured packet data with a newly generated key
-func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return types.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
-}
-
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
 // which assert that a consumer chain was properly setup to be later stopped from `StopConsumerChain`.
 // Note: This function only setups and tests that we correctly setup a consumer chain that we could later stop when

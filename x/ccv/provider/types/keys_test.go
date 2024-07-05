@@ -62,6 +62,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.ConsumerRewardsAllocationBytePrefix,
 		providertypes.ConsumerCommissionRatePrefix,
 		providertypes.MinimumPowerInTopNBytePrefix,
+		providertypes.ConsumerAddrsToPruneV2BytePrefix,
 	}
 }
 
@@ -98,9 +99,9 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.GlobalSlashEntryKey(providertypes.GlobalSlashEntry{}),
 		providertypes.ConsumerValidatorsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
-		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.EquivocationEvidenceMinHeightKey("chainID"),
+		providertypes.ConsumerAddrsToPruneV2Key("chainID", time.Time{}),
 	}
 }
 

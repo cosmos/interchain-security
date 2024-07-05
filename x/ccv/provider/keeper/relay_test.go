@@ -85,27 +85,6 @@ func TestQueueVSCPackets(t *testing.T) {
 	}
 }
 
-// TestOnRecvVSCMaturedPacket tests the OnRecvVSCMaturedPacket method of the keeper.
-//
-// Note: Handling logic itself is not tested here.
-func TestOnRecvVSCMaturedPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
-
-	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
-
-	// Execute on recv for chain-1, confirm v1 result ack is returned
-	err := executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-1", 1)
-	require.NoError(t, err)
-
-	// Now queue a slash packet data instance for chain-2, confirm v1 result ack is returned
-	err = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
-	require.NoError(t, err)
-}
-
 // TestOnRecvDowntimeSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets.
 func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -203,22 +182,6 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	// slash log should be empty for a random validator address in this testcase
 	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).ProviderConsAddress()
 	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
-}
-
-func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
-	channelID string, ibcSeqNum uint64,
-) error {
-	t.Helper()
-	// Instantiate vsc matured packet data and bytes
-	data := testkeeper.GetNewVSCMaturedPacketData()
-	dataBz, err := data.Marshal()
-	require.NoError(t, err)
-
-	return providerKeeper.OnRecvVSCMaturedPacket(
-		ctx,
-		channeltypes.NewPacket(dataBz, ibcSeqNum, "srcPort", "srcChan", "provider-port", channelID, clienttypes.Height{}, 1),
-		data,
-	)
 }
 
 func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,

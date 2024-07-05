@@ -16,54 +16,6 @@ import (
 	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
 )
 
-// OnRecvVSCMaturedPacket handles a VSCMatured packet and returns a no-op result ack.
-func (k Keeper) OnRecvVSCMaturedPacket(
-	ctx sdk.Context,
-	packet channeltypes.Packet,
-	data ccv.VSCMaturedPacketData,
-) error {
-	// check that the channel is established, panic if not
-	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
-	if !found {
-		// VSCMatured packet was sent on a channel different than any of the established CCV channels;
-		// this should never happen
-		k.Logger(ctx).Error("VSCMaturedPacket received on unknown channel",
-			"channelID", packet.DestinationChannel,
-		)
-		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
-	}
-
-	// validate packet data upon receiving
-	if err := data.Validate(); err != nil {
-		return errorsmod.Wrapf(err, "error validating VSCMaturedPacket data")
-	}
-
-	k.HandleVSCMaturedPacket(ctx, chainID, data)
-
-	k.Logger(ctx).Info("VSCMaturedPacket handled",
-		"chainID", chainID,
-		"vscID", data.ValsetUpdateId,
-	)
-
-	return nil
-}
-
-// HandleVSCMaturedPacket handles a VSCMatured packet.
-//
-// Note: This method should only panic for a system critical error like a
-// failed marshal/unmarshal, or persistence of critical data.
-// TODO (mpoke) remove once dealt with key assignment pruning
-func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
-	// prune previous consumer validator address that are no longer needed
-	// TODO (mpoke) deal with key assignment pruning
-	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
-
-	k.Logger(ctx).Info("VSCMaturedPacket handled",
-		"chainID", chainID,
-		"vscID", data.ValsetUpdateId,
-	)
-}
-
 // OnAcknowledgementPacket handles acknowledgments for sent VSC packets
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
@@ -233,6 +185,11 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, blockHeight)
 	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
+
+	// prune previous consumer validator addresses that are no longer needed
+	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+		k.PruneKeyAssignments(ctx, chainID)
+	}
 }
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and

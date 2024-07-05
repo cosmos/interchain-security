@@ -21,7 +21,7 @@ func NewGenesisState(
 	params Params,
 	validatorConsumerPubkeys []ValidatorConsumerPubKey,
 	validatorsByConsumerAddr []ValidatorByConsumerAddr,
-	consumerAddrsToPrune []ConsumerAddrsToPrune,
+	consumerAddrsToPrune []ConsumerAddrsToPruneV2,
 	initTimeoutTimestamps []InitTimeoutTimestamp,
 ) *GenesisState {
 	return &GenesisState{
@@ -33,7 +33,7 @@ func NewGenesisState(
 		Params:                    params,
 		ValidatorConsumerPubkeys:  validatorConsumerPubkeys,
 		ValidatorsByConsumerAddr:  validatorsByConsumerAddr,
-		ConsumerAddrsToPrune:      consumerAddrsToPrune,
+		ConsumerAddrsToPruneV2:    consumerAddrsToPrune,
 		InitTimeoutTimestamps:     initTimeoutTimestamps,
 	}
 }
@@ -82,7 +82,7 @@ func (gs GenesisState) Validate() error {
 
 	if err := KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
 		gs.ValidatorsByConsumerAddr,
-		gs.ConsumerAddrsToPrune,
+		gs.ConsumerAddrsToPruneV2,
 	); err != nil {
 		return err
 	}
