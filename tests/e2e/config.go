@@ -491,7 +491,7 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
 		}
 	} else if semver.Compare(semver.MajorMinor(providerVersion), "v4.3.0") >= 0 && strings.HasSuffix(providerVersion, "-lsm") {
-		// v4.3.0-lsm introduced 'expedited governance proposal' which are not in main northe genesis needs a
+		// v4.3.0-lsm introduced 'expedited governance proposal' which needs `expedited_voting_period` parameter to be set in genesis
 		fmt.Println("Using provider chain config for versions >= v4.3.0-lsm")
 		providerConfig = ChainConfig{
 			ChainId:        ChainID("provi"),
