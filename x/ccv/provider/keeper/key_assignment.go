@@ -295,7 +295,7 @@ func (k Keeper) GetConsumerAddrsToPrune(
 // Note that the list of all consumer addresses is stored under keys with the following format:
 // ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | timestamp
 // Thus, this method returns all the consumer addresses stored under keys in the following range:
-// (ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID) ... (ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | ts)
+// (ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | ts') where ts' <= ts
 func (k Keeper) ConsumeConsumerAddrsToPrune(
 	ctx sdk.Context,
 	chainID string,

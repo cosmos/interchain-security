@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -302,7 +303,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		For each consumer address cAddr in ValidatorByConsumerAddr,
 		  - either there exists a provider address pAddr in ValidatorConsumerPubKey,
 		    s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
-		  - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
+		  - or there exists a timestamp in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(timestamp)
 	*/
 	willBePruned := map[string]bool{}
 	for _, consAddrToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
@@ -318,6 +319,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 			// Address will be pruned, everything is fine.
 			continue
 		}
+
 		// Try to find a validator who has this consumer address currently assigned
 		isCurrentlyAssigned := false
 		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, &valByConsAddr.ChainId) {
@@ -662,300 +664,303 @@ type Assignment struct {
 	ck  tmprotocrypto.PublicKey
 }
 
-// // TestSimulatedAssignmentsAndUpdateApplication tests a series
-// // of simulated scenarios where random key assignments and validator
-// // set updates are generated.
-// func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
-// 	CHAINID := ChainID
-// 	// The number of full test executions to run
-// 	NUM_EXECUTIONS := 100
-// 	// Each test execution mimics the adding of a consumer chain and the
-// 	// assignments and power updates of several blocks
-// 	NUM_BLOCKS_PER_EXECUTION := 40
-// 	// The number of validators to be simulated
-// 	NUM_VALIDATORS := 4
-// 	// The number of keys that can be used. Keeping this number small is
-// 	// good because it increases the chance that different assignments will
-// 	// use the same keys, which is something we want to test.
-// 	NUM_ASSIGNABLE_KEYS := 12
-// 	// The maximum number of key assignment actions to simulate in each
-// 	// simulated block, and before the consumer chain is registered.
-// 	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 8
+// TestSimulatedAssignmentsAndUpdateApplication tests a series
+// of simulated scenarios where random key assignments and validator
+// set updates are generated.
+func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
+	CHAINID := ChainID
+	// The number of full test executions to run
+	NUM_EXECUTIONS := 100
+	// Each test execution mimics the adding of a consumer chain and the
+	// assignments and power updates of several blocks
+	NUM_BLOCKS_PER_EXECUTION := 40
+	// The number of validators to be simulated
+	NUM_VALIDATORS := 4
+	// The number of keys that can be used. Keeping this number small is
+	// good because it increases the chance that different assignments will
+	// use the same keys, which is something we want to test.
+	NUM_ASSIGNABLE_KEYS := 12
+	// The maximum number of key assignment actions to simulate in each
+	// simulated block, and before the consumer chain is registered.
+	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 8
 
-// 	// Create some identities for the simulated provider validators to use
-// 	providerIDS := []*cryptotestutil.CryptoIdentity{}
-// 	// Create some identities which the provider validators can assign to the consumer chain
-// 	assignableIDS := []*cryptotestutil.CryptoIdentity{}
-// 	for i := 0; i < NUM_VALIDATORS; i++ {
-// 		providerIDS = append(providerIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
-// 	}
-// 	// Notice that the assignable identities include the provider identities
-// 	for i := 0; i < NUM_VALIDATORS+NUM_ASSIGNABLE_KEYS; i++ {
-// 		assignableIDS = append(assignableIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
-// 	}
+	// Create some identities for the simulated provider validators to use
+	providerIDS := []*cryptotestutil.CryptoIdentity{}
+	// Create some identities which the provider validators can assign to the consumer chain
+	assignableIDS := []*cryptotestutil.CryptoIdentity{}
+	for i := 0; i < NUM_VALIDATORS; i++ {
+		providerIDS = append(providerIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
+	}
+	// Notice that the assignable identities include the provider identities
+	for i := 0; i < NUM_VALIDATORS+NUM_ASSIGNABLE_KEYS; i++ {
+		assignableIDS = append(assignableIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
+	}
 
-// 	seed := time.Now().UnixNano()
-// 	rng := rand.New(rand.NewSource(seed))
+	seed := time.Now().UnixNano()
+	rng := rand.New(rand.NewSource(seed))
 
-// 	// Helper: simulates creation of staking module EndBlock updates.
-// 	getStakingUpdates := func() (ret []abci.ValidatorUpdate) {
-// 		// Get a random set of validators to update. It is important to test subsets of all validators.
-// 		validators := rng.Perm(len(providerIDS))[0:rng.Intn(len(providerIDS)+1)]
-// 		for _, i := range validators {
-// 			// Power 0, 1, or 2 represents
-// 			// deletion, update (from 0 or 2), update (from 0 or 1)
-// 			power := rng.Intn(3)
-// 			ret = append(ret, abci.ValidatorUpdate{
-// 				PubKey: providerIDS[i].TMProtoCryptoPublicKey(),
-// 				Power:  int64(power),
-// 			})
-// 		}
-// 		return
-// 	}
+	// Helper: simulates creation of staking module EndBlock updates.
+	getStakingUpdates := func() (ret []abci.ValidatorUpdate) {
+		// Get a random set of validators to update. It is important to test subsets of all validators.
+		validators := rng.Perm(len(providerIDS))[0:rng.Intn(len(providerIDS)+1)]
+		for _, i := range validators {
+			// Power 0, 1, or 2 represents
+			// deletion, update (from 0 or 2), update (from 0 or 1)
+			power := rng.Intn(3)
+			ret = append(ret, abci.ValidatorUpdate{
+				PubKey: providerIDS[i].TMProtoCryptoPublicKey(),
+				Power:  int64(power),
+			})
+		}
+		return
+	}
 
-// 	// Helper: simulates creation of assignment tx's to be done.
-// 	getAssignments := func() (ret []Assignment) {
-// 		for i, numAssignments := 0, rng.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
-// 			randomIxP := rng.Intn(len(providerIDS))
-// 			randomIxC := rng.Intn(len(assignableIDS))
-// 			ret = append(ret, Assignment{
-// 				val: providerIDS[randomIxP].SDKStakingValidator(),
-// 				ck:  assignableIDS[randomIxC].TMProtoCryptoPublicKey(),
-// 			})
-// 		}
-// 		return
-// 	}
+	// Helper: simulates creation of assignment tx's to be done.
+	getAssignments := func() (ret []Assignment) {
+		for i, numAssignments := 0, rng.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
+			randomIxP := rng.Intn(len(providerIDS))
+			randomIxC := rng.Intn(len(assignableIDS))
+			ret = append(ret, Assignment{
+				val: providerIDS[randomIxP].SDKStakingValidator(),
+				ck:  assignableIDS[randomIxC].TMProtoCryptoPublicKey(),
+			})
+		}
+		return
+	}
 
-// 	// Run a randomly simulated execution and test that desired properties hold
-// 	// Helper: run a randomly simulated scenario where a consumer chain is added
-// 	// (after key assignment actions are done), followed by a series of validator power updates
-// 	// and key assignments tx's. For each simulated 'block', the validator set replication
-// 	// properties and the pruning property are checked.
-// 	runRandomExecution := func() {
-// 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	// Run a randomly simulated execution and test that desired properties hold
+	// Helper: run a randomly simulated scenario where a consumer chain is added
+	// (after key assignment actions are done), followed by a series of validator power updates
+	// and key assignments tx's. For each simulated 'block', the validator set replication
+	// properties and the pruning property are checked.
+	runRandomExecution := func() {
+		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-// 		// Create validator sets for the provider and consumer. These are used to check the validator set
-// 		// replication property.
-// 		providerValset := CreateValSet(providerIDS)
-// 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
-// 		consumerValset := CreateValSet(assignableIDS)
-// 		// For each validator on the consumer, record the corresponding provider
-// 		// address as looked up on the provider using GetProviderAddrFromConsumerAddr
-// 		// at a given vscid.
-// 		// consumer consAddr -> vscid -> provider consAddr
-// 		historicSlashQueries := map[string]map[uint64]string{}
+		// Create validator sets for the provider and consumer. These are used to check the validator set
+		// replication property.
+		providerValset := CreateValSet(providerIDS)
+		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
+		consumerValset := CreateValSet(assignableIDS)
 
-// 		// Sanity check that the validator set update is initialised to 0, for clarity.
-// 		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
+		// Sanity check that the validator set update is initialised to 0, for clarity.
+		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
 
-// 		// Mock calls to GetLastValidatorPower to return directly from the providerValset
-// 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-// 			gomock.Any(),
-// 			gomock.Any(),
-// 		).DoAndReturn(func(_ interface{}, valAddr sdk.ValAddress) int64 {
-// 			// When the mocked method is called, locate the appropriate validator
-// 			// in the provider valset and return its power.
-// 			for i, id := range providerIDS {
-// 				if id.SDKStakingValidator().GetOperator().Equals(valAddr) {
-// 					return providerValset.power[i]
-// 				}
-// 			}
-// 			panic("must find validator")
-// 			// This can be called 0 or more times per block depending on the random
-// 			// assignments that occur
-// 		}).AnyTimes()
+		// Mock calls to GetLastValidatorPower to return directly from the providerValset
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+			gomock.Any(),
+			gomock.Any(),
+		).DoAndReturn(func(_ interface{}, valAddr sdk.ValAddress) int64 {
+			// When the mocked method is called, locate the appropriate validator
+			// in the provider valset and return its power.
+			for i, id := range providerIDS {
+				if id.SDKStakingValidator().GetOperator().Equals(valAddr) {
+					return providerValset.power[i]
+				}
+			}
+			panic("must find validator")
+			// This can be called 0 or more times per block depending on the random
+			// assignments that occur
+		}).AnyTimes()
 
-// 		// This implements the assumption that all the provider IDS are added
-// 		// to the system at the beginning of the simulation.
-// 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-// 			gomock.Any(),
-// 			gomock.Any(),
-// 		).DoAndReturn(func(_ interface{}, consP sdk.ConsAddress) (stakingtypes.Validator, bool) {
-// 			for _, id := range providerIDS {
-// 				if id.SDKValConsAddress().Equals(consP) {
-// 					return id.SDKStakingValidator(), true
-// 				}
-// 			}
-// 			return stakingtypes.Validator{}, false
-// 		}).AnyTimes()
+		// This implements the assumption that all the provider IDS are added
+		// to the system at the beginning of the simulation.
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
+			gomock.Any(),
+			gomock.Any(),
+		).DoAndReturn(func(_ interface{}, consP sdk.ConsAddress) (stakingtypes.Validator, bool) {
+			for _, id := range providerIDS {
+				if id.SDKValConsAddress().Equals(consP) {
+					return id.SDKStakingValidator(), true
+				}
+			}
+			return stakingtypes.Validator{}, false
+		}).AnyTimes()
 
-// 		// Helper: apply some updates to both the provider and consumer valsets
-// 		// and increment the provider vscid.
-// 		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
-// 			providerValset.apply(updates)
+		// Helper: apply some updates to both the provider and consumer valsets
+		// and increment the provider vscid.
+		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
+			providerValset.apply(updates)
 
-// 			var bondedValidators []stakingtypes.Validator
-// 			for _, v := range providerValset.identities {
-// 				pkAny, _ := codectypes.NewAnyWithValue(v.ConsensusSDKPubKey())
+			var bondedValidators []stakingtypes.Validator
+			for _, v := range providerValset.identities {
+				pkAny, _ := codectypes.NewAnyWithValue(v.ConsensusSDKPubKey())
 
-// 				bondedValidators = append(bondedValidators, stakingtypes.Validator{
-// 					OperatorAddress: v.SDKValOpAddress().String(),
-// 					ConsensusPubkey: pkAny,
-// 				})
-// 			}
+				bondedValidators = append(bondedValidators, stakingtypes.Validator{
+					OperatorAddress: v.SDKValOpAddress().String(),
+					ConsensusPubkey: pkAny,
+				})
+			}
 
-// 			nextValidators := k.FilterValidators(ctx, CHAINID, bondedValidators,
-// 				func(providerAddr types.ProviderConsAddress) bool {
-// 					return true
-// 				})
-// 			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, CHAINID), nextValidators)
-// 			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
+			nextValidators := k.FilterValidators(ctx, CHAINID, bondedValidators,
+				func(providerAddr types.ProviderConsAddress) bool {
+					return true
+				})
+			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, CHAINID), nextValidators)
+			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
 
-// 			consumerValset.apply(updates)
-// 			// Simulate the VSCID update in EndBlock
-// 			k.IncrementValidatorSetUpdateId(ctx)
-// 		}
+			consumerValset.apply(updates)
+			// Simulate the VSCID update in EndBlock
+			k.IncrementValidatorSetUpdateId(ctx)
+		}
 
-// 		// Helper: apply some key assignment transactions to the system
-// 		applyAssignments := func(assignments []Assignment) {
-// 			for _, a := range assignments {
-// 				// ignore err return, it can be possible for an error to occur
-// 				_ = k.AssignConsumerKey(ctx, CHAINID, a.val, a.ck)
-// 			}
-// 		}
+		// Helper: apply some key assignment transactions to the system
+		applyAssignments := func(assignments []Assignment) {
+			for _, a := range assignments {
+				// ignore err return, it can be possible for an error to occur
+				_ = k.AssignConsumerKey(ctx, CHAINID, a.val, a.ck)
+			}
+		}
 
-// 		// The consumer chain has not yet been registered
-// 		// Apply some randomly generated key assignments
-// 		assignments := getAssignments()
-// 		applyAssignments(assignments)
-// 		// And generate a random provider valset which, in the real system, will
-// 		// be put into the consumer genesis.
-// 		stakingUpdates := getStakingUpdates()
+		// Set the unbonding time to 60s so that a key is prunable after 60s
+		unbondingTimeInNs := time.Duration(60 * 1_000_000_000) // 60 seconds
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeInNs).AnyTimes()
 
-// 		applyUpdatesAndIncrementVSCID(stakingUpdates)
+		// The consumer chain has not yet been registered
+		// Apply some randomly generated key assignments
+		assignments := getAssignments()
 
-// 		// Register the consumer chain
-// 		k.SetConsumerClientId(ctx, CHAINID, "")
+		applyAssignments(assignments)
+		// And generate a random provider valset which, in the real system, will
+		// be put into the consumer genesis.
+		stakingUpdates := getStakingUpdates()
 
-// 		// Analogous to the last vscid received from the consumer in a maturity
-// 		// Used to check the correct pruning property
-// 		greatestPrunedVSCID := -1
+		applyUpdatesAndIncrementVSCID(stakingUpdates)
 
-// 		// Simulate a number of 'blocks'
-// 		// Each block consists of a number of random key assignment tx's
-// 		// and a random set of validator power updates
-// 		for block := 0; block < NUM_BLOCKS_PER_EXECUTION; block++ {
+		// Register the consumer chain
+		k.SetConsumerClientId(ctx, CHAINID, "")
 
-// 			stakingUpdates = getStakingUpdates()
-// 			assignments = getAssignments()
+		// Set the greatest block time up to which keys have been pruned. At the beginning, no pruning has taken
+		// place, so we set `greatestPrunedBlockTime` to 0, and set the current block time to 1.
+		greatestPrunedBlockTime := int64(0)
+		ctx = ctx.WithBlockTime(time.Unix(0, 1))
 
-// 			// Generate and apply assignments and power updates
-// 			applyAssignments(assignments)
-// 			applyUpdatesAndIncrementVSCID(stakingUpdates)
+		// Simulate a number of 'blocks'
+		// Each block consists of a number of random key assignment tx's
+		// and a random set of validator power updates
+		for block := 0; block < NUM_BLOCKS_PER_EXECUTION; block++ {
+			stakingUpdates = getStakingUpdates()
+			assignments = getAssignments()
 
-// 			// Randomly fast forward the greatest pruned VSCID. This simulates
-// 			// delivery of maturity packets from the consumer chain.
-// 			prunedVscid := greatestPrunedVSCID +
-// 				// +1 and -1 because id was incremented (-1), (+1) to make upper bound inclusive
-// 				rng.Intn(int(k.GetValidatorSetUpdateId(ctx))+1-1-greatestPrunedVSCID)
-// 			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
-// 			greatestPrunedVSCID = prunedVscid
+			// Generate and apply assignments and power updates
+			applyAssignments(assignments)
+			applyUpdatesAndIncrementVSCID(stakingUpdates)
 
-// 			/*
+			// prune all keys that can be pruned up to the current block time
+			greatestPrunedBlockTime = ctx.BlockTime().UnixNano()
+			k.PruneKeyAssignments(ctx, CHAINID)
 
-// 				Property: Validator Set Replication
-// 				Each validator set on the provider must be replicated on the consumer.
-// 				The property in the real system is somewhat weaker, because the consumer chain can
-// 				forward updates to tendermint in batches.
-// 				(See https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties)
-// 				We test the stronger property, because we abstract over implementation of the consumer
-// 				chain. The stronger property implies the weaker property.
+			// Increase the block time by a small random amount up to UnbondingTime / 10. We do not increase the block time
+			// by UnbondingTime so that in the upcoming iteration of this `for` loop (i.e., new block), not all the keys
+			// previously (in this current block) set to be prunable are pruned.
+			ctx = ctx.WithBlockTime(time.Unix(0, ctx.BlockTime().UnixNano()+rng.Int63n(unbondingTimeInNs.Nanoseconds())/10))
 
-// 			*/
+			/*
 
-// 			// Check validator set replication forward direction
-// 			for i, idP := range providerValset.identities {
-// 				// For each active validator on the provider chain
-// 				if 0 < providerValset.power[i] {
-// 					// Get the assigned key
-// 					ck, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, idP.ProviderConsAddress())
-// 					if !found {
-// 						// Use default if unassigned
-// 						ck = idP.TMProtoCryptoPublicKey()
-// 					}
-// 					consC, err := ccvtypes.TMCryptoPublicKeyToConsAddr(ck)
-// 					require.NoError(t, err)
-// 					// Find the corresponding consumer validator (must always be found)
-// 					for j, idC := range consumerValset.identities {
-// 						if consC.Equals(idC.SDKValConsAddress()) {
-// 							// Ensure powers are the same
-// 							require.Equal(t, providerValset.power[i], consumerValset.power[j])
-// 						}
-// 					}
-// 				}
-// 			}
-// 			// Check validator set replication backward direction
-// 			for i := range consumerValset.identities {
-// 				// For each active validator on the consumer chain
-// 				consC := consumerValset.identities[i].ConsumerConsAddress()
-// 				if 0 < consumerValset.power[i] {
-// 					// Get the provider who assigned the key
-// 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
-// 					// Find the corresponding provider validator (must always be found)
-// 					for j, idP := range providerValset.identities {
-// 						if idP.SDKValConsAddress().Equals(consP.ToSdkConsAddr()) {
-// 							// Ensure powers are the same
-// 							require.Equal(t, providerValset.power[j], consumerValset.power[i])
-// 						}
-// 					}
-// 				}
-// 			}
+				Property: Validator Set Replication
+				Each validator set on the provider must be replicated on the consumer.
+				The property in the real system is somewhat weaker, because the consumer chain can
+				forward updates to tendermint in batches.
+				(See https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties)
+				We test the stronger property, because we abstract over implementation of the consumer
+				chain. The stronger property implies the weaker property.
 
-// 			/*
-// 				Property: Pruning (bounded storage)
-// 				Check that all keys have been or will eventually be pruned.
-// 			*/
+			*/
 
-// 			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
+			// Check validator set replication forward direction
+			for i, idP := range providerValset.identities {
+				// For each active validator on the provider chain
+				if 0 < providerValset.power[i] {
+					// Get the assigned key
+					ck, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, idP.ProviderConsAddress())
+					if !found {
+						// Use default if unassigned
+						ck = idP.TMProtoCryptoPublicKey()
+					}
+					consC, err := ccvtypes.TMCryptoPublicKeyToConsAddr(ck)
+					require.NoError(t, err)
+					// Find the corresponding consumer validator (must always be found)
+					for j, idC := range consumerValset.identities {
+						if consC.Equals(idC.SDKValConsAddress()) {
+							// Ensure powers are the same
+							require.Equal(t, providerValset.power[i], consumerValset.power[j])
+						}
+					}
+				}
+			}
+			// Check validator set replication backward direction
+			for i := range consumerValset.identities {
+				// For each active validator on the consumer chain
+				consC := consumerValset.identities[i].ConsumerConsAddress()
+				if 0 < consumerValset.power[i] {
+					// Get the provider who assigned the key
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
+					// Find the corresponding provider validator (must always be found)
+					for j, idP := range providerValset.identities {
+						if idP.SDKValConsAddress().Equals(consP.ToSdkConsAddr()) {
+							// Ensure powers are the same
+							require.Equal(t, providerValset.power[j], consumerValset.power[i])
+						}
+					}
+				}
+			}
 
-// 			/*
-// 				Property: Correct Consumer Initiated Slash Lookup
+			/*
+				Property: Pruning (bounded storage)
+				Check that all keys have been or will eventually be pruned.
+			*/
+			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
 
-// 				Check that since the last pruning, it has never been possible to query
-// 				two different provider addresses from the same consumer address.
-// 				We know that the queried provider address was correct at least once,
-// 				from checking the validator set replication property. These two facts
-// 				together guarantee that the slash lookup is always correct.
-// 			*/
+			/*
+				Property: Correct Consumer Initiated Slash Lookup
 
-// 			// Build up the historicSlashQueries data structure
-// 			for i := range consumerValset.identities {
-// 				// For each active validator on the consumer chain
-// 				consC := consumerValset.identities[i].ConsumerConsAddress()
-// 				if 0 < consumerValset.power[i] {
-// 					// Get the provider who assigned the key
-// 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
+				Check that since the last pruning took place, it has never been possible to have
+				two different provider addresses for the same consumer address.
+				We know that the queried provider address was correct at least once,
+				from checking the validator set replication property. These two facts
+				together guarantee that the slash lookup is always correct.
+			*/
 
-// 					if _, found := historicSlashQueries[consC.String()]; !found {
-// 						historicSlashQueries[consC.String()] = map[uint64]string{}
-// 					}
+			// For each validator on the consumer, record the corresponding provider
+			// address as looked up on the provider using `GetProviderAddrFromConsumerAddr`
+			// at a given block time.
+			// consumer consAddr -> block time -> provider consAddr
+			consumerAddrToBlockTimeToProviderAddr := map[string]map[uint64]string{}
 
-// 					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
-// 					// Record the slash query result obtained at this block
-// 					historicSlashQueries[consC.String()][vscid] = consP.String()
-// 				}
-// 			}
+			// Build up the consumerAddrToBlockTimeToProviderAddr data structure
+			for i := range consumerValset.identities {
+				// For each active validator on the consumer chain
+				consC := consumerValset.identities[i].ConsumerConsAddress()
+				if 0 < consumerValset.power[i] {
+					// Get the provider who assigned the key
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
 
-// 			// Check that, for each address known the consumer at some block
-// 			// with vscid st. greatestPrunedVSCID < vscid, there were never
-// 			// conflicting slash query results.
-// 			for _, vscidToConsP := range historicSlashQueries {
-// 				seen := map[string]bool{}
-// 				for vscid, consP := range vscidToConsP {
-// 					if uint64(greatestPrunedVSCID) < vscid {
-// 						// The provider would have returned
-// 						seen[consP] = true
-// 					}
-// 				}
-// 				// No conflicts.
-// 				require.True(t, len(seen) < 2)
-// 			}
+					if _, found := consumerAddrToBlockTimeToProviderAddr[consC.String()]; !found {
+						consumerAddrToBlockTimeToProviderAddr[consC.String()] = map[uint64]string{}
+					}
 
-// 		}
-// 		ctrl.Finish()
-// 	}
+					consumerAddrToBlockTimeToProviderAddr[consC.String()][uint64(ctx.BlockTime().UnixNano())] = consP.String()
+				}
+			}
 
-// 	for i := 0; i < NUM_EXECUTIONS; i++ {
-// 		runRandomExecution()
-// 	}
-// }
+			// Check that, for each consumer address known at some block with blockTime st. greatestPrunedBlockTime < blockTime,
+			// there were never two providers with this consumer address.
+			for _, blockTimeToProviderAddr := range consumerAddrToBlockTimeToProviderAddr {
+				seen := map[string]bool{}
+				for blockTime, consP := range blockTimeToProviderAddr {
+					if uint64(greatestPrunedBlockTime) < blockTime {
+						seen[consP] = true
+					}
+				}
+				// Having len(seen) >= 2 implies that we had at least 2 different provider addresses that at some point
+				// had the exact same consumer address since the last pruning took place. This should not be possible!
+				require.True(t, len(seen) < 2)
+			}
+
+		}
+		ctrl.Finish()
+	}
+
+	for i := 0; i < NUM_EXECUTIONS; i++ {
+		runRandomExecution()
+	}
+}
