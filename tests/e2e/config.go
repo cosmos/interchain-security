@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -488,6 +489,27 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 				".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
+		}
+	} else if semver.Compare(semver.MajorMinor(providerVersion), "v4.3.0") >= 0 && strings.HasSuffix(providerVersion, "-lsm") {
+		// v4.3.0-lsm introduced 'expedited governance proposal' which are not in main northe genesis needs a
+		fmt.Println("Using provider chain config for versions >= v4.3.0-lsm")
+		providerConfig = ChainConfig{
+			ChainId:        ChainID("provi"),
+			AccountPrefix:  "cosmos",
+			BinaryName:     "interchain-security-pd",
+			IpPrefix:       "7.7.7",
+			VotingWaitTime: 20,
+			GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+				".app_state.gov.params.expedited_voting_period = \"10s\" | " +
+				// Custom slashing parameters for testing validator downtime functionality
+				// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+				".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+				".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+				".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+				".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
+				".app_state.provider.params.blocks_per_epoch = 3",
 		}
 	} else {
 		fmt.Println("Using default provider chain config")
