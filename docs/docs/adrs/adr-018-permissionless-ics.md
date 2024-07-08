@@ -169,7 +169,7 @@ message ConsumerChainRecord {
 We store the `ConsumerChainRecord`s using the `consumerID` as their key. The `owner_address` of a consumer chain corresponds
 to the address that issued the `MsgLaunchConsumerChain` and the `owner_address` can be updated by issuing a `MsgUpdateConsumerChain` (see later).
 Note that a `ConsumerChainRecord` is only created when a consumer chain moves from the prelaunched to the _launched_ phase.
-The information needed to set up a `ConsumerChainRecord` are stored in the corresponding `ConsumerAdditionProposal` (see `MsgLaunchConsumerChain` below). 
+The information needed to set up a `ConsumerChainRecord` are stored in the corresponding `ConsumerAdditionProposal` (see `MsgLaunchConsumerChain` below).
 
 ### New Messages
 In what follows, we describe the new messages that Permissionless ICS introduces, and on how those can be used.
