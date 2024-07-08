@@ -310,6 +310,11 @@ func (msg *MsgConsumerModification) ValidateBasic() error {
 		return ErrBlankConsumerChainID
 	}
 
+	err := ValidatePSSFeatures(msg.Top_N, msg.ValidatorsPowerCap)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
+	}
+
 	return nil
 }
 
