@@ -172,7 +172,7 @@ Note that a `ConsumerChainRecord` is only created when a consumer chain moves fr
 The information needed to set up a `ConsumerChainRecord` are stored in the corresponding `ConsumerAdditionProposal` (see `MsgLaunchConsumerChain` below). 
 
 ### New Messages
-In what follows, we describe the new messages that Permissionless ICS introduces and on how those can be used.
+In what follows, we describe the new messages that Permissionless ICS introduces, and on how those can be used.
 We then, describe how we can utilize those messages with our existing codebase.
 
 #### Launch a Consumer Chain
