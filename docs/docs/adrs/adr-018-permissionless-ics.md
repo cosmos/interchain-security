@@ -51,7 +51,7 @@ its parameters through a `ConsumerModificationProposal` and an Opt In chain can 
 
 Lastly, a Top N chain can choose to exit ICS by issuing a `ConsumerRemovalProposal` and an Opt In chain can issue a transaction to stop the chain.
 After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed. We
-keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviour.
+keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviours that occurred before the consumer chain stopped.
 
 Note that everything described so far and everything that follows applies to standalone chains as well.
 
