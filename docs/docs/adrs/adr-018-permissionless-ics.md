@@ -25,7 +25,7 @@ ICS without needing a governance proposal but by simply issuing a transaction.
 
 ### The Phases of a Consumer Chain
 In Permissionless ICS, launching an Opt In chain is **only** possible through a transaction and not through a `ConsumerAdditionProposal`.
-Nevertheless, Permissionless ICS does not eliminate the `ConsumerAdditionProposal` governance proposal, as proposals are still necessary
+Nevertheless, ICS does not eliminate the `ConsumerAdditionProposal` governance proposal, as proposals are still necessary
 for Top N chains. Because of this, this ADR outlines a solution that attempts to preserve as much of the governance proposal code
 as possible.
 Additionally, to make the distinction between governance-proposed versus transaction-launched chains clearer, in Permissionless ICS,
