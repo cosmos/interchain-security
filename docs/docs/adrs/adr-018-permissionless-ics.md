@@ -40,7 +40,7 @@ in the diagram below:
 
 When a Top N chain is first proposed through a `ConsumerAdditionProposal` or an Opt In chain is added through a transaction,
 the consumer chain resides in the _prelaunched_ phase. At this state, validators can choose to opt in on the consumer chain. Additionally,
-an Opt In chain can choose to change parameters of the to-be-launched chains, such as `spawnTime`, etc. by issuing a specific transaction.
+an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc. by issuing a specific transaction.
 This is not the case for Top N chains, where a `ConsumerModificationProposal` can only be issued after a consumer
 chain [has started](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L150).
 
