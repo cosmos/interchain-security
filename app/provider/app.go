@@ -741,7 +741,7 @@ func New(
 		},
 	)
 	if err != nil {
-		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
+		panic(fmt.Errorf("failed to create AnteHandler: %w", err))
 	}
 
 	app.SetInitChainer(app.InitChainer)

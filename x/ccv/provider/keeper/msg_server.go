@@ -83,7 +83,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
 
-// ConsumerAddition defines a rpc handler method for MsgConsumerAddition
+// ConsumerAddition defines an RPC handler method for MsgConsumerAddition
 func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
@@ -97,7 +97,7 @@ func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsume
 	return &types.MsgConsumerAdditionResponse{}, nil
 }
 
-// ConsumerRemoval defines a rpc handler method for MsgConsumerRemoval
+// ConsumerRemoval defines an RPC handler method for MsgConsumerRemoval
 func (k msgServer) ConsumerRemoval(
 	goCtx context.Context,
 	msg *types.MsgConsumerRemoval) (*types.MsgConsumerRemovalResponse, error) {
