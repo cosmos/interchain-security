@@ -215,7 +215,7 @@ We set a to-be-decided fixed cost of a `MsgLaunchConsumerChain` to avoid getting
 To execute a `MsgLaunchConsumerChain`, we first create a `ConsumerAdditionProposal` under the hoods, with the `top_N` set to 0, and call
 [`HandleConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L30)
 simulating a proposal that was already voted on and accepted. Note that we need to migrate `ConsumerAdditionProposal`s to use
-the `consumerID` instead using [both](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L382)
+the `consumerID` instead of using [both](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L382)
 `chainID` and the `spawnTime` as keys. The [usual validity conditions](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/types/proposal.go#L114)
 hold for the fields of `MsgLaunchConsumerChain`. Note however, that we intend to have a `spawnTime` upper limit as well.
 For example, if you launch a consumer chain in Permissionless ICS, the `spawnTime` should not be more
