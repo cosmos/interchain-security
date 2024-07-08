@@ -204,7 +204,7 @@ through a governance proposal). Note, that an alternative format for this messag
 but this confuses the semantics of `MsgLaunchConsumerChain` and that of a governance proposal. The response of this message
 (i.e., `MsgLaunchConsumerChainResponse`) contains a single `string` that is the `consumerID`. The `consumerID`s corresponds
 to `len(chainID) | chainID | counter` and this way we can have multiple different `consumerID`s that correspond to a chain
-with the same `chainID`. By doing this, we tackle the main issue behind permissionless consumer chains that is chain-id squatting.
+with the same `chainID`. By doing this, we tackle the main issue behind permissionless consumer chains, that is chain-id squatting.
 Note that `consumerID` could just be a `uint64` but we choose to include `chainID` in it as well so that it is easier to see
 what the consumer chain just by looking at the `consumerID`. This means that the `chainID` of a chain cannot be changed
 after launching it (because the `chainID` is part of the `consumerID` key). To easily generate `consumerID`s we store
