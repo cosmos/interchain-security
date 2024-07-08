@@ -53,7 +53,7 @@ Lastly, a Top N chain can choose to exit ICS by issuing a `ConsumerRemovalPropos
 After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed. We
 keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviours that occurred before the consumer chain stopped.
 
-Note that everything described so far and everything that follows applies to standalone chains as well.
+Note that everything described so far and everything that follows applies to consumer chains that transition from standalone chains as well.
 
 ### From `chainID` to `consumerID`
 A hindrance in moving to Permissionless ICS is [chain-id squatting](https://github.com/cosmos/interchain-security/pull/2001#discussion_r1663686774).
