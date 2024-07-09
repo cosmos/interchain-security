@@ -31,8 +31,8 @@ type legacyParamChangeKey struct {
 
 // these parameters don't exist in the consumer app -- keeping them as an example
 var LegacyWhitelistedParams = map[legacyParamChangeKey]struct{}{
-	// add whitlisted legacy parameters here [cosmos-sdk <= 0.47]
-	// commented parameters are just an example - most params have been moved to their respecitve modules
+	// add whitelisted legacy parameters here [cosmos-sdk <= 0.47]
+	// commented parameters are just an example - most params have been moved to their respective modules
 	// and they cannot be changed through legacy governance proposals
 	{Subspace: banktypes.ModuleName, Key: "SendEnabled"}: {},
 }
