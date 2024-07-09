@@ -65,8 +65,9 @@ const (
 	// [DEPRECATED]
 	LastStandaloneHeightByteKey
 
-	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
-	SmallestNonOptOutPowerByteKey
+	// NOTE: This key is deprecated, but left in place to avoid consumer state migrations
+	// [DEPRECATED]
+	DeprecatedSmallestNonOptOutPowerByteKey
 
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
@@ -199,10 +200,6 @@ func InitialValSetKey() []byte {
 
 func InitGenesisHeightKey() []byte {
 	return []byte{InitGenesisHeightByteKey}
-}
-
-func SmallestNonOptOutPowerKey() []byte {
-	return []byte{SmallestNonOptOutPowerByteKey}
 }
 
 // StandaloneTransferChannelIDKey returns the key to the transfer channelID that existed from a standalone chain

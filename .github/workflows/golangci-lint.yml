@@ -9,10 +9,11 @@ on:
   merge_group:
 permissions:
   contents: read
+
 jobs:
   golangci:
     name: golangci-lint
-    runs-on: ubuntu-latest
+    runs-on: Gaia-Runner-medium
     steps:
       - uses: actions/setup-go@v5
         with:

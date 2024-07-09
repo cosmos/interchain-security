@@ -87,6 +87,55 @@ func TestQueueVSCPackets(t *testing.T) {
 	}
 }
 
+// TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights checks that the heights of consumer validators are not
+// getting incorrectly updated
+func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainHeight := int64(987654321)
+	ctx = ctx.WithBlockHeight(chainHeight)
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	// mock 2 bonded validators
+	valA := createStakingValidator(ctx, mocks, 1, 1)
+	valAConsAddr, _ := valA.GetConsAddr()
+	valAPubKey, _ := valA.TmConsPublicKey()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, true).AnyTimes()
+	valB := createStakingValidator(ctx, mocks, 2, 2)
+	valBConsAddr, _ := valB.GetConsAddr()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, true).AnyTimes()
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{valA, valB}, []int64{1, 2}, -1)
+
+	// set a consumer client, so we have a consumer chain (i.e., `k.GetAllConsumerChains(ctx)` is non empty)
+	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+
+	// opt in validator A and set as a consumer validator
+	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
+	consumerValidatorA := types.ConsumerValidator{
+		ProviderConsAddr:  valAConsAddr,
+		Power:             1,
+		ConsumerPublicKey: &valAPubKey,
+		JoinHeight:        123456789,
+	}
+	providerKeeper.SetConsumerValidator(ctx, "chainID", consumerValidatorA)
+
+	// Opt in validator B. Note that validator B is not a consumer validator and hence would become a consumer
+	// validator for the first time after the `QueueVSCPackets` call.
+	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
+
+	providerKeeper.QueueVSCPackets(ctx)
+
+	// the height of consumer validator A should not be modified because A was already a consumer validator
+	cv, _ := providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
+	require.Equal(t, consumerValidatorA.JoinHeight, cv.JoinHeight, "the consumer validator's height was erroneously modified")
+
+	// the height of consumer validator B is set to be the same as the one of the current chain height because this
+	// consumer validator becomes a consumer validator for the first time (i.e., was not a consumer validator in the previous epoch)
+	cv, _ = providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
+	require.Equal(t, chainHeight, cv.JoinHeight, "the consumer validator's height was not correctly set")
+}
+
 // TestOnRecvVSCMaturedPacket tests the OnRecvVSCMaturedPacket method of the keeper.
 //
 // Note: Handling logic itself is not tested here.

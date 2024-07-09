@@ -80,7 +80,7 @@ Upgrading the provider from `v2.x.y` to `v3.3.0` will not require state migratio
 
 ## [v3.2.x](https://github.com/cosmos/interchain-security/tree/release/v3.2.x)
 
-`v3.2.0` bumps IBC to `v7.3`. As a result, `legacy_ibc_testing` is not longer required and was removed, see https://github.com/cosmos/interchain-security/pull/1185. This means that when upgrading to `v3.2.0`, any customized tests relying on `legacy_ibc_testing` need to be updated.
+`v3.2.0` bumps IBC to `v7.3`. As a result, `legacy_ibc_testing` is no longer required and was removed, see https://github.com/cosmos/interchain-security/pull/1185. This means that when upgrading to `v3.2.0`, any customized tests relying on `legacy_ibc_testing` need to be updated.
 
 ### Consumer 
 
@@ -124,7 +124,7 @@ Legacy APIs of the `AppModule` interface have been removed from ccv modules. For
 
 #### Imports
 
-Imports for ics23 have been updated as the repository have been migrated from confio to cosmos.
+Imports for ics23 have been updated as the repository has been migrated from confio to cosmos.
 
 ```diff
 import (

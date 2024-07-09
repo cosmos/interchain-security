@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: ADR Template
+title: Denom DOS fixes
 ---
 # ADR 004: Denom DOS fixes
 

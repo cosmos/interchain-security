@@ -2,12 +2,21 @@
 sidebar_position: 3
 ---
 
-# Withdrawing consumer chain validator rewards
+# Consumer chain validator rewards
 
+:::warning
+A validator can only receive rewards from a consumer chain if the validator has been validating the consumer chain
+for some time. Specifically, the validator has to be a consumer validator of the consumer chain for at least
+`NumberOfEpochsToStartReceivingRewards * BlocksPerEpoch` blocks (run `interchain-security-pd query provider params` for
+the actual values of the `NumberOfEpochsToStartReceivingRewards` and `BlocksPerEpoch` params).
+:::
+
+
+## Withdrawing rewards
 Here are example steps for withdrawing rewards from consumer chains in the provider chain
 
 :::info
-The examples used are from `rs-testnet`, the replicated security persistent testnet.
+The examples used are from `rs-testnet`, the Interchain Security persistent testnet.
 
 Validator operator address: `cosmosvaloper1e5yfpc8l6g4808fclmlyd38tjgxuwshnmjkrq6`
 Self-delegation address: `cosmos1e5yfpc8l6g4808fclmlyd38tjgxuwshn7xzkvf`

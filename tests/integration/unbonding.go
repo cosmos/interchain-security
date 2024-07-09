@@ -486,7 +486,7 @@ func (s *CCVTestSuite) TestTooManyLastValidators() {
 	lastVals := pk.GetLastBondedValidators(s.providerCtx())
 
 	// pass one block to apply the validator set changes
-	// (calls ApplyAndReturnValidatorSetUpdates in the the staking module EndBlock)
+	// (calls ApplyAndReturnValidatorSetUpdates in the staking module EndBlock)
 	s.providerChain.NextBlock()
 
 	// verify that the number of bonded validators is decreased by one

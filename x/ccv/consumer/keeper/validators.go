@@ -119,7 +119,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 	return k.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 }
 
-// Slash queues a slashing request for the the provider chain
+// Slash queues a slashing request for the provider chain
 // All queued slashing requests will be cleared in EndBlock
 // Called by Slashing keeper in SlashWithInfractionReason
 func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.Infraction) math.Int {
@@ -136,18 +136,6 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 
 	// Otherwise infraction happened after the changeover was completed.
 
-	// if this is a downtime infraction and the validator is allowed to
-	// soft opt out, do not queue a slash packet
-	if infraction == stakingtypes.Infraction_INFRACTION_DOWNTIME {
-		if power < k.GetSmallestNonOptOutPower(ctx) {
-			// soft opt out
-			k.Logger(ctx).Debug("soft opt out",
-				"validator", addr,
-				"power", power,
-			)
-			return math.NewInt(0)
-		}
-	}
 	// get VSC ID for infraction height
 	vscID := k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight))
 
