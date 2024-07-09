@@ -1,45 +1,56 @@
 # CHANGELOG
 
-## v5.0.0
+## v4.3.0
 
-❗ *The provider module should not be used with this version.*
+*June 20, 2024*
 
-*May 9, 2024*
+### BUG FIXES
+
+- General
+  - Write unbonding period advisory to stderr instead of stdout
+    ([\#1921](https://github.com/cosmos/interchain-security/pull/1921))
+- [Provider](x/ccv/provider)
+  - Apply audit suggestions that include a bug fix in the way we compute the
+    maximum capped power.
+    ([\#1925](https://github.com/cosmos/interchain-security/pull/1925))
+  - Replace `GetAllConsumerChains` with lightweight version
+    (`GetAllRegisteredConsumerChainIDs`) that doesn't call into the staking module
+    ([\#1946](https://github.com/cosmos/interchain-security/pull/1946))
 
 ### DEPENDENCIES
 
 - Bump [ibc-go](https://github.com/cosmos/ibc-go) to
-  [v8.1.x](https://github.com/cosmos/ibc-go/releases/tag/v8.1.0).
-  ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
-- Bump [CometBFT](https://github.com/cometbft/cometbft) to
-  [v0.38.4\5](https://github.com/cometbft/cometbft/releases/tag/v0.38.5).
-  ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
-- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
-[v0.50.x](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.4)
-([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
+  [v7.6.0](https://github.com/cosmos/ibc-go/releases/tag/v7.6.0).
+  ([\#1974](https://github.com/cosmos/interchain-security/pull/1974))
 
 ### FEATURES
 
-- [Consumer](x/ccv/consumer)
-  - Add consumer `MsgUpdateParams` from [cosmos-sdk](https://github.com/cosmos/cosmos-sdk).
-    ([\#1814](https://github.com/cosmos/interchain-security/pull/1814)).
 - [Provider](x/ccv/provider)
-  - Add provider `MsgUpdateParams` from [cosmos-sdk](https://github.com/cosmos/cosmos-sdk).
-    ([\#1698](https://github.com/cosmos/interchain-security/pull/1698)).
+  - Allow consumer chains to change their PSS parameters.
+    ([\#1932](https://github.com/cosmos/interchain-security/pull/1932))
+
+### IMPROVEMENTS
+
+- [Provider](x/ccv/provider)
+  - Only start distributing rewards to validators after they have been validating
+    for a fixed number of blocks. Introduces the `NumberOfEpochsToStartReceivingRewards` param.
+    ([\#1929](https://github.com/cosmos/interchain-security/pull/1929))
 
 ### STATE BREAKING
 
-- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
-  [v8.1.x](https://github.com/cosmos/ibc-go/releases/tag/v8.1.0).
-  ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
-- Bump [CometBFT](https://github.com/cometbft/cometbft) to
-  [v0.38.4\5](https://github.com/cometbft/cometbft/releases/tag/v0.38.5).
-  ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
-- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
-[v0.50.x](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.4)
-([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
-- Revert `PutUnbondingOnHold` behavior to ICS@v1
-([\#1819](https://github.com/cosmos/interchain-security/pull/1819))
+- General
+  - Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+    [v7.6.0](https://github.com/cosmos/ibc-go/releases/tag/v7.6.0).
+    ([\#1974](https://github.com/cosmos/interchain-security/pull/1974))
+- [Provider](x/ccv/provider)
+  - Apply audit suggestions that include a bug fix in the way we compute the
+    maximum capped power. ([\#1925](https://github.com/cosmos/interchain-security/pull/1925))
+  - Only start distributing rewards to validators after they have been validating
+    for a fixed number of blocks. Introduces the `NumberOfEpochsToStartReceivingRewards` param.
+    ([\#1929](https://github.com/cosmos/interchain-security/pull/1929))
+  - Allow consumer chains to change their PSS parameters.
+    ([\#1932](https://github.com/cosmos/interchain-security/pull/1932))
+
 ## v4.2.0
 
 May 17, 2024
