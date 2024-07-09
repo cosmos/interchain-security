@@ -1058,7 +1058,5 @@ func MakeTestEncodingConfig() appencoding.EncodingConfig {
 
 func makeEncodingConfig() appencoding.EncodingConfig {
 	encodingConfig := appencoding.MakeTestEncodingConfig()
-	// std.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	// std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	return encodingConfig
 }
