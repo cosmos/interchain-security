@@ -151,7 +151,6 @@ var (
 		mint.AppModuleBasic{},
 		ccvdistr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
-			// TODO: eventually remove upgrade proposal handler and cancel proposal handler
 			[]govclient.ProposalHandler{
 				paramsclient.ProposalHandler,
 			},
