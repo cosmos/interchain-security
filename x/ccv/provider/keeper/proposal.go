@@ -40,6 +40,11 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.
 		BlocksPerDistributionTransmission: proposal.BlocksPerDistributionTransmission,
 		HistoricalEntries:                 proposal.HistoricalEntries,
 		DistributionTransmissionChannel:   proposal.DistributionTransmissionChannel,
+		Top_N:                             proposal.Top_N,
+		ValidatorsPowerCap:                proposal.ValidatorsPowerCap,
+		ValidatorSetCap:                   proposal.ValidatorSetCap,
+		Allowlist:                         proposal.Allowlist,
+		Denylist:                          proposal.Denylist,
 	}
 
 	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)
