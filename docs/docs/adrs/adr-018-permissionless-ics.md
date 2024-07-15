@@ -210,7 +210,7 @@ what the consumer chain just by looking at the `consumerID`. This means that the
 after launching it (because the `chainID` is part of the `consumerID` key). To easily generate `consumerID`s we store
 for each `len(chainID) | chainID` the latest `counter` value used for this `chainID`.
 
-We set a to-be-decided fixed cost of a `MsgLaunchConsumerChain` to avoid getting spammed with bogus consumer chains.
+To prevent an attacker spaming the system by creating bogus consumer chains, we set a fixed cost for sending a `MsgLaunchConsumerChain` (configurable via a parameter). 
 
 To execute a `MsgLaunchConsumerChain`, we first create a `ConsumerAdditionProposal` under the hoods, with the `top_N` set to 0, and call
 [`HandleConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v4.3.0/x/ccv/provider/keeper/proposal.go#L30)
