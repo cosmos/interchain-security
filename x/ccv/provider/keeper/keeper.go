@@ -396,8 +396,6 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	k.SetChannelToChain(ctx, channelID, chainID)
 	// - set current block height for the consumer chain initialization
 	k.SetInitChainHeight(ctx, chainID, uint64(ctx.BlockHeight()))
-	// - remove init timeout timestamp
-	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 
 	// emit event on successful addition
 	ctx.EventManager().EmitEvent(
@@ -668,54 +666,6 @@ func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bo
 func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
-}
-
-// SetInitTimeoutTimestamp sets the init timeout timestamp for the given chain ID
-func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint64) {
-	store := ctx.KVStore(k.storeKey)
-	tsBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(tsBytes, ts)
-	store.Set(types.InitTimeoutTimestampKey(chainID), tsBytes)
-}
-
-// GetInitTimeoutTimestamp returns the init timeout timestamp for the given chain ID.
-// This method is used only in testing.
-func (k Keeper) GetInitTimeoutTimestamp(ctx sdk.Context, chainID string) (uint64, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.InitTimeoutTimestampKey(chainID))
-	if bz == nil {
-		return 0, false
-	}
-	return binary.BigEndian.Uint64(bz), true
-}
-
-// DeleteInitTimeoutTimestamp removes from the store the init timeout timestamp for the given chainID.
-func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.InitTimeoutTimestampKey(chainID))
-}
-
-// GetAllInitTimeoutTimestamps gets all init timeout timestamps in the store.
-//
-// Note that the init timeout timestamps are stored under keys with the following format:
-// InitTimeoutTimestampBytePrefix | chainID
-// Thus, the returned array is in ascending order of chainIDs (NOT in timestamp order).
-func (k Keeper) GetAllInitTimeoutTimestamps(ctx sdk.Context) (initTimeoutTimestamps []types.InitTimeoutTimestamp) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
-
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		chainID := string(iterator.Key()[1:])
-		ts := binary.BigEndian.Uint64(iterator.Value())
-
-		initTimeoutTimestamps = append(initTimeoutTimestamps, types.InitTimeoutTimestamp{
-			ChainId:   chainID,
-			Timestamp: ts,
-		})
-	}
-
-	return initTimeoutTimestamps
 }
 
 // SetSlashLog updates validator's slash log for a consumer chain

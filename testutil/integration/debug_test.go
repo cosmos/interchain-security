@@ -50,14 +50,6 @@ func findAndCallMethod(t *testing.T, suite any, methodName string) {
 }
 
 //
-// Channel init tests
-//
-
-func TestInitTimeout(t *testing.T) {
-	runCCVTestByName(t, "TestInitTimeout")
-}
-
-//
 // Consumer democracy tests
 //
 

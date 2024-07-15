@@ -383,32 +383,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	)
 }
 
-// EndBlockCCR contains the EndBlock logic needed for
-// the Consumer Chain Removal sub-protocol
-func (k Keeper) EndBlockCCR(ctx sdk.Context) {
-	currentTime := ctx.BlockTime()
-	currentTimeUint64 := uint64(currentTime.UnixNano())
-
-	for _, initTimeoutTimestamp := range k.GetAllInitTimeoutTimestamps(ctx) {
-		if currentTimeUint64 > initTimeoutTimestamp.Timestamp {
-			// initTimeout expired
-			// stop the consumer chain and unlock the unbonding.
-			// Note that the CCV channel was not established,
-			// thus closeChan is irrelevant
-			k.Logger(ctx).Info("about to remove timed out consumer chain - chain was not initialised",
-				"chainID", initTimeoutTimestamp.ChainId)
-			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
-			if err != nil {
-				if providertypes.ErrConsumerChainNotFound.Is(err) {
-					// consumer chain not found
-					continue
-				}
-				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-			}
-		}
-	}
-}
-
 // getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
 func (k Keeper) getMappedInfractionHeight(ctx sdk.Context,
 	chainID string, valsetUpdateID uint64,

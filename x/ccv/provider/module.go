@@ -159,8 +159,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// EndBlock logic needed for the Consumer Initiated Slashing sub-protocol.
 	// Important: EndBlockCIS must be called before EndBlockVSU
 	am.keeper.EndBlockCIS(ctx)
-	// EndBlock logic needed for the Consumer Chain Removal sub-protocol
-	am.keeper.EndBlockCCR(ctx)
 	// EndBlock logic needed for the Validator Set Update sub-protocol
 	am.keeper.EndBlockVSU(ctx)
 

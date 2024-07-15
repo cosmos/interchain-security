@@ -40,7 +40,6 @@ func TestParams(t *testing.T) {
 		),
 		"0.25",
 		7*24*time.Hour,
-		5*time.Hour,
 		time.Hour,
 		"0.4",
 		sdk.Coin{

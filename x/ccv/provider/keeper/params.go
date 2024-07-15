@@ -33,13 +33,6 @@ func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 	return p
 }
 
-// GetInitTimeoutPeriod returns the init timeout period
-func (k Keeper) GetInitTimeoutPeriod(ctx sdk.Context) time.Duration {
-	var p time.Duration
-	k.paramSpace.Get(ctx, types.KeyInitTimeoutPeriod, &p)
-	return p
-}
-
 // GetSlashMeterReplenishPeriod returns the period in which:
 // Once the slash meter becomes not-full, the slash meter is replenished after this period.
 func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
@@ -79,7 +72,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetTemplateClient(ctx),
 		k.GetTrustingPeriodFraction(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
-		k.GetInitTimeoutPeriod(ctx),
 		k.GetSlashMeterReplenishPeriod(ctx),
 		k.GetSlashMeterReplenishFraction(ctx),
 		k.GetConsumerRewardDenomRegistrationFee(ctx),

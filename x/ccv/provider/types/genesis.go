@@ -22,7 +22,6 @@ func NewGenesisState(
 	validatorConsumerPubkeys []ValidatorConsumerPubKey,
 	validatorsByConsumerAddr []ValidatorByConsumerAddr,
 	consumerAddrsToPrune []ConsumerAddrsToPruneV2,
-	initTimeoutTimestamps []InitTimeoutTimestamp,
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:            vscID,
@@ -34,7 +33,6 @@ func NewGenesisState(
 		ValidatorConsumerPubkeys:  validatorConsumerPubkeys,
 		ValidatorsByConsumerAddr:  validatorsByConsumerAddr,
 		ConsumerAddrsToPruneV2:    consumerAddrsToPrune,
-		InitTimeoutTimestamps:     initTimeoutTimestamps,
 	}
 }
 

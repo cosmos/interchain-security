@@ -240,8 +240,6 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.False(t, found)
 	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
 	require.Empty(t, acks)
-	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
-	require.False(t, found)
 
 	// in case the chain was successfully stopped, it should not contain a Top N associated to it
 	_, found = providerKeeper.GetTopN(ctx, expectedChainID)

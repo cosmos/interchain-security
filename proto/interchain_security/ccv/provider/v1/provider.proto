@@ -207,6 +207,9 @@ message GlobalSlashEntry {
 // Params defines the parameters for CCV Provider module
 message Params {
 
+  // Reserve 4th slot for removed init_timeout_period param
+  reserved 4;
+
   // Reserve 5th slot for removed vsc_timeout_period param
   reserved 5;
 
@@ -219,10 +222,6 @@ message Params {
   string trusting_period_fraction = 2;
   // Sent IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 3
-      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
-  // The channel initialization (IBC channel opening handshake) will timeout
-  // after this duration
-  google.protobuf.Duration init_timeout_period = 4
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // The period for which the slash meter is replenished
