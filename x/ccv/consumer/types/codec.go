@@ -9,7 +9,6 @@ import (
 
 // RegisterInterfaces registers the consumer Tx message types to the interface registry
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgUpdateParams{},
