@@ -23,9 +23,6 @@ const (
 	// as UnbondingPeriod * TrustingPeriodFraction
 	DefaultTrustingPeriodFraction = "0.66"
 
-	// DefaultInitTimeoutPeriod defines the init timeout period
-	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
-
 	// DefaultSlashMeterReplenishPeriod defines the default period for which the slash gas meter is replenished
 	DefaultSlashMeterReplenishPeriod = time.Hour
 
@@ -44,7 +41,6 @@ const (
 var (
 	KeyTemplateClient                     = []byte("TemplateClient")
 	KeyTrustingPeriodFraction             = []byte("TrustingPeriodFraction")
-	KeyInitTimeoutPeriod                  = []byte("InitTimeoutPeriod")
 	KeySlashMeterReplenishPeriod          = []byte("SlashMeterReplenishPeriod")
 	KeySlashMeterReplenishFraction        = []byte("SlashMeterReplenishFraction")
 	KeyConsumerRewardDenomRegistrationFee = []byte("ConsumerRewardDenomRegistrationFee")
@@ -61,7 +57,6 @@ func NewParams(
 	cs *ibctmtypes.ClientState,
 	trustingPeriodFraction string,
 	ccvTimeoutPeriod time.Duration,
-	initTimeoutPeriod time.Duration,
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
 	consumerRewardDenomRegistrationFee sdk.Coin,
@@ -71,7 +66,6 @@ func NewParams(
 		TemplateClient:                     cs,
 		TrustingPeriodFraction:             trustingPeriodFraction,
 		CcvTimeoutPeriod:                   ccvTimeoutPeriod,
-		InitTimeoutPeriod:                  initTimeoutPeriod,
 		SlashMeterReplenishPeriod:          slashMeterReplenishPeriod,
 		SlashMeterReplenishFraction:        slashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: consumerRewardDenomRegistrationFee,
@@ -96,7 +90,6 @@ func DefaultParams() Params {
 		),
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
-		DefaultInitTimeoutPeriod,
 		DefaultSlashMeterReplenishPeriod,
 		DefaultSlashMeterReplenishFraction,
 		// Defining this inline because it's not possible to define a constant of type sdk.Coin.
@@ -123,9 +116,6 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
 		return fmt.Errorf("ccv timeout period is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateDuration(p.InitTimeoutPeriod); err != nil {
-		return fmt.Errorf("init timeout period is invalid: %s", err)
-	}
 	if err := ccvtypes.ValidateDuration(p.SlashMeterReplenishPeriod); err != nil {
 		return fmt.Errorf("slash meter replenish period is invalid: %s", err)
 	}
@@ -147,7 +137,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, ValidateTemplateClient),
 		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
-		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
