@@ -173,7 +173,7 @@ The information needed to set up a `ConsumerChainRecord` are stored in the corre
 
 ### New Messages
 In what follows, we describe the new messages that Permissionless ICS introduces, and on how those can be used.
-We then, describe how we can utilize those messages with our existing codebase.
+Then, we describe how to utilize these messages with our existing codebase.
 
 #### Launch a Consumer Chain
 To prepare a consumer chain for launch, we issue a `MsgLaunchConsumerChain` message that is as follows:
