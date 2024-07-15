@@ -68,7 +68,7 @@ appropriate client (i.e., `clientID`) based on the actual chain they want to com
 consumer chains with the exact same `chainID`, and it is the responsibility of the validator to choose the one they wish
 to interact with by providing the right `consumerID`.
 
-Note, that with Permissionless ICS all interactions on a consumer chain have to use the `consumerID` instead of the `chainID`.
+Note that with Permissionless ICS all interactions on a consumer chain have to use the `consumerID` instead of the `chainID`.
 For example, if a validator opts in on a chain using `MsgOptIn`, the validator has to provide the `consumerID`. To also
 provide the `consumerID` for Top N consumers chains, we store a mapping between `proposalID` to `consumerID`. This storing
 takes place in the [`AfterProposalSubmission`](https://github.com/cosmos/cosmos-sdk/blob/v0.50.7/x/gov/keeper/proposal.go#L117) hook.
