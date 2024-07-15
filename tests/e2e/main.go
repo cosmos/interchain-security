@@ -204,6 +204,12 @@ var stepChoices = map[string]StepChoice{
 		description: "This is a regression test related to the issue discussed here: https://forum.cosmos.network/t/cosmos-hub-v17-1-chain-halt-post-mortem/13899. The test ensures that the protocol works as expected when MaxValidators is smaller than the number of potential validators.",
 		testConfig:  SmallMaxValidatorsTestCfg,
 	},
+	"inactive-provider-validators-on-consumer": {
+		name:        "inactive-provider-validators-on-consumer",
+		steps:       stepsInactiveProviderValidators(),
+		description: "test inactive validators on consumer",
+		testConfig:  InactiveProviderValsTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {

@@ -366,15 +366,18 @@ message ConsumerAddrsToPrune {
   AddressList consumer_addrs = 3;
 }
 
-// ConsumerValidator is used to facilitate epoch-based transitions. It contains relevant info for
-// a validator that is expected to validate on a consumer chain during an epoch.
-message ConsumerValidator {
+// ConsensusValidator is used to express a validator that
+// should be validating on a chain. 
+// It contains relevant info for
+// a validator that is expected to validate on 
+// either the provider or a consumer chain.
+message ConsensusValidator {
   // validator's consensus address on the provider chain
   bytes provider_cons_addr = 1;
   // voting power the validator has during this epoch
   int64 power = 2;
   // public key the validator uses on the consumer chain during this epoch
-  tendermint.crypto.PublicKey consumer_public_key = 3;
+  tendermint.crypto.PublicKey public_key = 3;
   // height the validator had when it FIRST became a consumer validator
   // If a validator becomes a consumer validator at height `H` and is continuously a consumer validator for all the upcoming
   // epochs, then the height of the validator SHOULD remain `H`. This height only resets to a different height if a validator

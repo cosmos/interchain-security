@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"sort"
 	"strings"
 	"testing"
 
@@ -111,11 +112,11 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 
 	// opt in validator A and set as a consumer validator
 	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
-	consumerValidatorA := types.ConsumerValidator{
-		ProviderConsAddr:  valAConsAddr,
-		Power:             1,
-		ConsumerPublicKey: &valAPubKey,
-		JoinHeight:        123456789,
+	consumerValidatorA := types.ConsensusValidator{
+		ProviderConsAddr: valAConsAddr,
+		Power:            1,
+		PublicKey:        &valAPubKey,
+		JoinHeight:       123456789,
 	}
 	providerKeeper.SetConsumerValidator(ctx, "chainID", consumerValidatorA)
 
@@ -174,7 +175,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
 	// Set consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsumerValidator{
+	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{
 		ProviderConsAddr: packetData.Validator.Address,
 	})
 
@@ -185,7 +186,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{
+	providerKeeper.SetConsumerValidator(ctx, "chain-2", providertypes.ConsensusValidator{
 		ProviderConsAddr: packetData.Validator.Address,
 	})
 
@@ -198,7 +199,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
 
 	// Set the consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsumerValidator{ProviderConsAddr: packetData.Validator.Address})
+	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{ProviderConsAddr: packetData.Validator.Address})
 
 	// Mock call to GetEffectiveValPower, so that it returns 2.
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
@@ -492,7 +493,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			// Setup consumer address to provider address mapping.
 			require.NotEmpty(t, tc.packetData.Validator.Address)
 			providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, consumerConsAddr, providerConsAddr)
-			providerKeeper.SetConsumerValidator(ctx, chainId, providertypes.ConsumerValidator{ProviderConsAddr: providerConsAddr.Address.Bytes()})
+			providerKeeper.SetConsumerValidator(ctx, chainId, providertypes.ConsensusValidator{ProviderConsAddr: providerConsAddr.Address.Bytes()})
 
 			// Execute method and assert expected mock calls.
 			providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
@@ -552,7 +553,7 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	}
 
 	// Opt-in one validator to consumer
-	pk.SetConsumerValidator(ctx, "chain-1", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[0].Address()})
+	pk.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{ProviderConsAddr: valsPk[0].Address()})
 
 	// Start second unbonding
 	unbondingOpId = 2
@@ -588,8 +589,8 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	pk.SetConsumerClientId(ctx, "chain-2", "client-2")
 
 	// Opt-in both validators to second consumer
-	pk.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[0].Address()})
-	pk.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[1].Address()})
+	pk.SetConsumerValidator(ctx, "chain-2", providertypes.ConsensusValidator{ProviderConsAddr: valsPk[0].Address()})
+	pk.SetConsumerValidator(ctx, "chain-2", providertypes.ConsensusValidator{ProviderConsAddr: valsPk[1].Address()})
 
 	// Start third and fourth unbonding
 	unbondingOpIds := []uint64{3, 4}
@@ -822,6 +823,12 @@ func TestEndBlockVSU(t *testing.T) {
 	}
 
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, lastValidators, powers, -1)
+
+	sort.Slice(lastValidators, func(i, j int) bool {
+		return lastValidators[i].GetConsensusPower(sdk.DefaultPowerReduction) >
+			lastValidators[j].GetConsensusPower(sdk.DefaultPowerReduction)
+	})
+	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(lastValidators, nil).AnyTimes()
 
 	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, chainID, "clientID")

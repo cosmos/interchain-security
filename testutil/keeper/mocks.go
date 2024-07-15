@@ -77,6 +77,21 @@ func (mr *MockStakingKeeperMockRecorder) Delegation(ctx, addr, valAddr interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delegation", reflect.TypeOf((*MockStakingKeeper)(nil).Delegation), ctx, addr, valAddr)
 }
 
+// GetBondedValidatorsByPower mocks base method.
+func (m *MockStakingKeeper) GetBondedValidatorsByPower(ctx context.Context) ([]types3.Validator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBondedValidatorsByPower", ctx)
+	ret0, _ := ret[0].([]types3.Validator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBondedValidatorsByPower indicates an expected call of GetBondedValidatorsByPower.
+func (mr *MockStakingKeeperMockRecorder) GetBondedValidatorsByPower(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBondedValidatorsByPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetBondedValidatorsByPower), ctx)
+}
+
 // GetLastTotalPower mocks base method.
 func (m *MockStakingKeeper) GetLastTotalPower(ctx context.Context) (math.Int, error) {
 	m.ctrl.T.Helper()

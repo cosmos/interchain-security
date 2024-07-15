@@ -198,6 +198,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
 		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyNumberOfEpochsToStartReceivingRewards, p.NumberOfEpochsToStartReceivingRewards, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyMaxProviderConsensusValidators, p.MaxProviderConsensusValidators, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

@@ -13,6 +13,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -145,7 +148,13 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 
 // EndBlockVSU contains the EndBlock logic needed for
 // the Validator Set Update sub-protocol
-func (k Keeper) EndBlockVSU(ctx sdk.Context) {
+func (k Keeper) EndBlockVSU(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
+	// logic to update the provider consensus validator set.
+	// Important: must be called before the rest of EndBlockVSU, because
+	// we need to know the updated provider validator set
+	// to compute the minimum power in the top N
+	valUpdates := k.ProviderValidatorUpdates(ctx)
+
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
@@ -160,6 +169,46 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 		// the updates will remain queued until the channel is established
 		k.SendVSCPackets(ctx)
 	}
+
+	return valUpdates, nil
+}
+
+// ProviderValidatorUpdates returns changes in the provider consensus validator set
+// from the last block to the current one.
+// It retrieves the bonded validators from the staking module and creates a `ConsumerValidator` object for each validator.
+// The maximum number of validators is determined by the `maxValidators` parameter.
+// The function returns the difference between the current validator set and the next validator set as a list of `abci.ValidatorUpdate` objects.
+func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
+	// get the bonded validators from the staking module
+	bondedValidators, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to get bonded validators: %w", err))
+	}
+
+	// get the last validator set sent to consensus
+	currentValidators := k.GetLastProviderConsensusValSet(ctx)
+
+	nextValidators := []types.ConsensusValidator{}
+	maxValidators := k.GetMaxProviderConsensusValidators(ctx)
+	// avoid out of range errors by bounding the max validators to the number of bonded validators
+	if maxValidators > int64(len(bondedValidators)) {
+		maxValidators = int64(len(bondedValidators))
+	}
+	for _, val := range bondedValidators[:maxValidators] {
+		nextValidator, err := k.CreateProviderConsensusValidator(ctx, val)
+		if err != nil {
+			k.Logger(ctx).Error("error when creating provider consensus validator", "error", err)
+			continue
+		}
+		nextValidators = append(nextValidators, nextValidator)
+	}
+
+	// store the validator set we will send to consensus
+	k.SetLastProviderConsensusValSet(ctx, nextValidators)
+
+	valUpdates := DiffValidators(currentValidators, nextValidators)
+
+	return valUpdates
 }
 
 // SendVSCPackets iterates over all registered consumers and sends pending
