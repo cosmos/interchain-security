@@ -58,8 +58,6 @@ updates:
     labels:
       - dependencies
 
-<<<<<<< HEAD
-=======
   - package-ecosystem: gomod
     directory: "/"
     schedule:
@@ -80,7 +78,6 @@ updates:
     labels:
       - dependencies
 
->>>>>>> eb93342 (chore:  rm mbt, trace tests from CI; fix dependabot (#2000))
   - package-ecosystem: gomod
     directory: "/"
     schedule:
