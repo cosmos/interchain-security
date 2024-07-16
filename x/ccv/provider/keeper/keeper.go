@@ -1582,3 +1582,81 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MinimumPowerInTopNKey(chainID))
 }
+
+// SetMinStake sets the minimum stake required for a validator to validate
+// a given consumer chain.
+func (k Keeper) SetMinStake(
+	ctx sdk.Context,
+	chainID string,
+	minStake int64,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(minStake))
+
+	store.Set(types.MinStakeKey(chainID), buf)
+}
+
+// GetMinStake returns the minimum stake required for a validator to validate
+// a given consumer chain.
+func (k Keeper) GetMinStake(
+	ctx sdk.Context,
+	chainID string,
+) (int64, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.MinStakeKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return int64(binary.BigEndian.Uint64(buf)), true
+}
+
+// DeleteMinStake removes the minimum stake required for a validator to validate
+// a given consumer chain.
+func (k Keeper) DeleteMinStake(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.MinStakeKey(chainID))
+}
+
+// SetMaxValidatorRank sets the maximum position in the validator set a validator can have to validate
+// a given consumer chain.
+func (k Keeper) SetMaxValidatorRank(
+	ctx sdk.Context,
+	chainID string,
+	maxRank int32,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, uint32(maxRank))
+
+	store.Set(types.MaxValidatorRankKey(chainID), buf)
+}
+
+// GetMaxValidatorRank returns the maximum position in the validator set a validator can have to validate
+// a given consumer chain.
+func (k Keeper) GetMaxValidatorRank(
+	ctx sdk.Context,
+	chainID string,
+) (int32, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.MaxValidatorRankKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return int32(binary.BigEndian.Uint32(buf)), true
+}
+
+// DeleteMaxValidatorRank removes the maximum position in the validator set a validator can have to validate
+// a given consumer chain.
+func (k Keeper) DeleteMaxValidatorRank(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.MaxValidatorRankKey(chainID))
+}

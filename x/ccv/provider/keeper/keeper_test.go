@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -832,32 +833,63 @@ func TestDenylist(t *testing.T) {
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 }
 
-func TestMinimumPowerInTopN(t *testing.T) {
+// Tests setting, getting and deleting number parameters that are stored per-consumer chain.
+// The tests cover the following parameters:
+// - MinimumPowerInTopN
+// - MinStake
+// - MaxValidatorRank
+func TestKeeperIntConsumerParams(t *testing.T) {
 	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-	chainID := "testChain"
-	minPower := int64(1000)
+	tests := []struct {
+		name        string
+		settingFunc func(sdk.Context, string, int64)
+		getFunc     func(sdk.Context, string) (int64, bool)
+	}{
+		{
+			name:        "Minimum Power In Top N",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinimumPowerInTopN(ctx, id, val) },
+			getFunc:     func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinimumPowerInTopN(ctx, id) },
+		},
+		{
+			name:        "Minimum Stake",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinStake(ctx, id, val) },
+			getFunc:     func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinStake(ctx, id) },
+		},
+		{
+			name:        "Maximum Validator Rank",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMaxValidatorRank(ctx, id, int32(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetMaxValidatorRank(ctx, id)
+				return int64(val), found
+			},
+		},
+	}
 
-	// Set the minimum power in top N
-	k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chainID := "chainID"
+			initialValue := 1000
+			updatedValue := 2000
+			// Set initial value
+			tt.settingFunc(ctx, chainID, int64(initialValue))
 
-	// Retrieve the minimum power in top N
-	actualMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
-	require.True(t, found)
-	require.Equal(t, minPower, actualMinPower)
+			// Retrieve and check initial value
+			actualValue, found := tt.getFunc(ctx, chainID)
+			require.True(t, found)
+			require.Equal(t, initialValue, actualValue)
 
-	// Update the minimum power
-	newMinPower := int64(2000)
-	k.SetMinimumPowerInTopN(ctx, chainID, newMinPower)
+			// Update value
+			tt.settingFunc(ctx, chainID, int64(updatedValue))
 
-	// Retrieve the updated minimum power in top N
-	newActualMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
-	require.True(t, found)
-	require.Equal(t, newMinPower, newActualMinPower)
+			// Retrieve and check updated value
+			newActualValue, found := tt.getFunc(ctx, chainID)
+			require.True(t, found)
+			require.Equal(t, updatedValue, newActualValue)
 
-	// Test when the chain ID does not exist
-	nonExistentChainID := "nonExistentChain"
-	nonExistentMinPower, found := k.GetMinimumPowerInTopN(ctx, nonExistentChainID)
-	require.False(t, found)
-	require.Equal(t, int64(0), nonExistentMinPower)
+			// Check non-existent chain ID
+			_, found = tt.getFunc(ctx, "not the chainID")
+			require.False(t, found)
+		})
+	}
 }

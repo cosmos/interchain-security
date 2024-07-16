@@ -65,7 +65,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.LastProviderConsensusValsPrefix,
 		providertypes.ParametersByteKey,
 		providertypes.MinStakePrefix,
-		providertypes.MinValidatorRankPrefix,
+		providertypes.MaxValidatorRankPrefix,
 	}
 }
 
@@ -111,7 +111,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.VSCMaturedHandledThisBlockKey(),
 		providertypes.EquivocationEvidenceMinHeightKey("chainID"),
 		providertypes.MinStakeKey("chainID"),
-		providertypes.MinValidatorRankKey("chainID"),
+		providertypes.MaxValidatorRankKey("chainID"),
 	}
 }
 

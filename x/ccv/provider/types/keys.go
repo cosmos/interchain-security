@@ -194,8 +194,9 @@ const (
 	// MinStakePrefix is the byte prefix for storing the mapping from consumer chains to the minimum stake required to be a validator on the consumer chain
 	MinStakePrefix
 
-	// MinValidatorRankPrefix is the byte prefix for storing the mapping from consumer chains to the minimum rank required to be a validator on the consumer chain
-	MinValidatorRankPrefix
+	// MaxValidatorRankPrefix is the byte prefix for storing the mapping from consumer chains to the maximum position in the validator set
+	// a validator can have to be a validator on the consumer chain
+	MaxValidatorRankPrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -642,8 +643,10 @@ func MinStakeKey(chainID string) []byte {
 	return ChainIdWithLenKey(MinStakePrefix, chainID)
 }
 
-func MinValidatorRankKey(chainID string) []byte {
-	return ChainIdWithLenKey(MinValidatorRankPrefix, chainID)
+// MaxValidatorRankKey returns the key used to store the maximal position in the validator set
+// a validator can have to validate on consumer chain `chainID`
+func MaxValidatorRankKey(chainID string) []byte {
+	return ChainIdWithLenKey(MaxValidatorRankPrefix, chainID)
 }
 
 //
