@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -16,10 +17,9 @@ import (
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 type (
@@ -100,7 +100,7 @@ func AddDemocracyConsumer[T testutil.DemocConsumerApp](
 	s.T().Helper()
 
 	// generate validators private/public key
-	valSet, valUpdates, signers, err := testutil.CreateValidators(4, "test")
+	valSet, valUpdates, signers, err := testutil.CreateValidators(4, "")
 	require.NoError(s.T(), err)
 
 	ibctesting.DefaultTestingAppInit = appIniter(valUpdates)
@@ -142,26 +142,28 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	prop.ChainId = chainID
 	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
 
+	// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
+	// using time.Now() could set the spawn time to be too far in the past or too far in the future
+	prop.SpawnTime = coordinator.CurrentTime
+	// NOTE: the initial height passed to CreateConsumerClient
+	// must be the height on the consumer when InitGenesis is called
+	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
+
+	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), prop)
+	props := providerKeeper.GetAllPendingConsumerAdditionProps(providerChain.GetContext())
+	s.Require().Len(props, 1, "unexpected len consumer addition proposals in AddConsumer")
+
 	// opt-in all validators
-	for _, v := range providerKeeper.GetLastBondedValidators(providerChain.GetContext()) {
+	lastVals, err := providerApp.GetProviderKeeper().GetLastBondedValidators(providerChain.GetContext())
+	s.Require().NoError(err)
+
+	for _, v := range lastVals {
 		consAddr, _ := v.GetConsAddr()
 		providerKeeper.SetOptedIn(providerChain.GetContext(), chainID, providertypes.NewProviderConsAddress(consAddr))
 	}
 
-	// NOTE: the initial height passed to CreateConsumerClient
-	// must be the height on the consumer when InitGenesis is called
-	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
-	err := providerKeeper.CreateConsumerClient(
-		providerChain.GetContext(),
-		prop,
-	)
-	s.Require().NoError(err)
-
-	// set the consumer TopN here since the test suite setup only used the consumer addition prop
-	// to create the consumer genesis, see BeginBlockInit in /x/ccv/provider/keeper/proposal.go.
-	providerKeeper.SetTopN(providerChain.GetContext(), chainID, prop.Top_N)
-
 	// commit the state on the provider chain
+	// and create the client and genesis of consumer
 	coordinator.CommitBlock(providerChain)
 
 	// get genesis state created by the provider
@@ -169,14 +171,15 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		providerChain.GetContext(),
 		chainID,
 	)
-	s.Require().True(found, "consumer genesis not found")
+
+	s.Require().True(found, "consumer genesis not found in AddConsumer")
 
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator
 	for _, update := range consumerGenesisState.Provider.InitialValSet {
 		// tmPubKey update.PubKey
 		tmPubKey, err := tmencoding.PubKeyFromProto(update.PubKey)
-		s.Require().NoError(err)
+		s.Require().NoError(err, "failed to convert tendermint pubkey")
 		valz = append(valz, &tmtypes.Validator{
 			PubKey:           tmPubKey,
 			VotingPower:      update.Power,

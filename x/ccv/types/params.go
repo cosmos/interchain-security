@@ -4,6 +4,7 @@ import (
 	fmt "fmt"
 	time "time"
 
+	"cosmossdk.io/math"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -25,6 +26,9 @@ const (
 	// during distribution events. The fraction is a string representing a
 	// decimal number. For example "0.75" would represent 75%.
 	DefaultConsumerRedistributeFrac = "0.75"
+
+	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
+	DefaultSoftOptOutThreshold = "0.05"
 
 	// Default number of historical info entries to persist in store.
 	// We use the same default as the staking module, but use a signed integer
@@ -51,10 +55,19 @@ var (
 	KeyConsumerRedistributionFrac        = []byte("ConsumerRedistributionFraction")
 	KeyHistoricalEntries                 = []byte("HistoricalEntries")
 	KeyConsumerUnbondingPeriod           = []byte("UnbondingPeriod")
+	KeySoftOptOutThreshold               = []byte("SoftOptOutThreshold")
 	KeyRewardDenoms                      = []byte("RewardDenoms")
 	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
 	KeyRetryDelayPeriod                  = []byte("RetryDelayPeriod")
 )
+
+// helper interface
+// sdk::paramtypes.ParamSpace implicitly implements this interface because it
+// implements the Get(ctx sdk.Context, key []byte, ptr interface{})
+// since only Get(...) is needed to migrate params we can ignore the other methods on paramtypes.ParamSpace.
+type LegacyParamSubspace interface {
+	Get(ctx sdktypes.Context, key []byte, ptr interface{})
+}
 
 // ParamKeyTable type declaration for parameters
 func ParamKeyTable() paramtypes.KeyTable {
@@ -66,7 +79,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration,
+	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
 	rewardDenoms, providerRewardDenoms []string, retryDelayPeriod time.Duration,
 ) ConsumerParams {
 	return ConsumerParams{
@@ -79,11 +92,10 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		ConsumerRedistributionFraction:    consumerRedistributionFraction,
 		HistoricalEntries:                 historicalEntries,
 		UnbondingPeriod:                   consumerUnbondingPeriod,
-		// DEPRECATED but setting here to 0 (i.e., disabled) for older versions of interchain-security
-		SoftOptOutThreshold:  "0",
-		RewardDenoms:         rewardDenoms,
-		ProviderRewardDenoms: providerRewardDenoms,
-		RetryDelayPeriod:     retryDelayPeriod,
+		SoftOptOutThreshold:               softOptOutThreshold,
+		RewardDenoms:                      rewardDenoms,
+		ProviderRewardDenoms:              providerRewardDenoms,
+		RetryDelayPeriod:                  retryDelayPeriod,
 	}
 }
 
@@ -101,6 +113,7 @@ func DefaultParams() ConsumerParams {
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
 		DefaultConsumerUnbondingPeriod,
+		DefaultSoftOptOutThreshold,
 		rewardDenoms,
 		provideRewardDenoms,
 		DefaultRetryDelayPeriod,
@@ -186,6 +199,24 @@ func ValidateProviderFeePoolAddrStr(i interface{}) error {
 	return nil
 }
 
+func ValidateSoftOptOutThreshold(i interface{}) error {
+	str, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	dec, err := math.LegacyNewDecFromStr(str)
+	if err != nil {
+		return err
+	}
+	if dec.IsNegative() {
+		return fmt.Errorf("soft opt out threshold cannot be negative, got %s", str)
+	}
+	if !dec.Sub(math.LegacyMustNewDecFromStr("0.2")).IsNegative() {
+		return fmt.Errorf("soft opt out threshold cannot be greater than 0.2, got %s", str)
+	}
+	return nil
+}
+
 func ValidateDenoms(i interface{}) error {
 	v, ok := i.([]string)
 	if !ok {
@@ -196,7 +227,7 @@ func ValidateDenoms(i interface{}) error {
 	for _, denom := range v {
 		coin := sdktypes.Coin{
 			Denom:  denom,
-			Amount: sdktypes.NewInt(0),
+			Amount: math.NewInt(0),
 		}
 
 		if err := coin.Validate(); err != nil {

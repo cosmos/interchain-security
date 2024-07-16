@@ -192,17 +192,17 @@ var stepChoices = map[string]StepChoice{
 		description: "test partial set security for an Opt-In chain that has a validator denylisted",
 		testConfig:  DefaultTestCfg,
 	},
-	"active-set-changes": {
-		name:        "active-set-changes",
-		steps:       stepsActiveSetChanges(),
-		description: "This is a regression test related to the issue discussed here: https://forum.cosmos.network/t/cosmos-hub-v17-1-chain-halt-post-mortem/13899. The test ensures that the protocol works as expected when MaxValidators is smaller than the number of potential validators.",
-		testConfig:  SmallMaxValidatorsTestCfg,
-	},
 	"partial-set-security-modification-proposal": {
 		name:        "partial-set-security-modification-proposal",
 		steps:       stepsModifyChain(),
 		description: "test partial set security parameters can be changed through a modification proposal",
 		testConfig:  DefaultTestCfg,
+	},
+	"active-set-changes": {
+		name:        "active-set-changes",
+		steps:       stepsActiveSetChanges(),
+		description: "This is a regression test related to the issue discussed here: https://forum.cosmos.network/t/cosmos-hub-v17-1-chain-halt-post-mortem/13899. The test ensures that the protocol works as expected when MaxValidators is smaller than the number of potential validators.",
+		testConfig:  SmallMaxValidatorsTestCfg,
 	},
 }
 
@@ -292,8 +292,8 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"consumer-double-downtime", "partial-set-security-opt-in", "partial-set-security-top-n",
 			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
 			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
-			"active-set-changes",
 			"partial-set-security-modification-proposal",
+			"active-set-changes",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")
@@ -509,6 +509,19 @@ Summary:
 		len(remainingTests), numTotalTests,
 	)
 
+	report += fmt.Sprintln("\nFAILED TESTS:")
+	for _, t := range failedTests {
+		report += t.Report()
+	}
+	report += fmt.Sprintln("\n\nPASSED TESTS:")
+	for _, t := range passedTests {
+		report += t.Report()
+	}
+
+	report += fmt.Sprintln("\n\nREMAINING TESTS:")
+	for _, t := range remainingTests {
+		report += t.Report()
+	}
 	report += "=================================================="
 	fmt.Print(report)
 }

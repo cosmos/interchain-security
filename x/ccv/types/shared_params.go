@@ -4,7 +4,8 @@ import (
 	fmt "fmt"
 	"time"
 
-	ibchost "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"cosmossdk.io/math"
+	ibchost "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 )
@@ -90,21 +91,21 @@ func ValidateStringFraction(i interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
-	dec, err := sdktypes.NewDecFromStr(str)
+	dec, err := math.LegacyNewDecFromStr(str)
 	if err != nil {
 		return err
 	}
 	if dec.IsNegative() {
 		return fmt.Errorf("param cannot be negative, got %s", str)
 	}
-	if dec.Sub(sdktypes.NewDec(1)).IsPositive() {
+	if dec.Sub(math.LegacyNewDec(1)).IsPositive() {
 		return fmt.Errorf("param cannot be greater than 1, got %s", str)
 	}
 	return nil
 }
 
 func CalculateTrustPeriod(unbondingPeriod time.Duration, defaultTrustPeriodFraction string) (time.Duration, error) {
-	trustDec, err := sdktypes.NewDecFromStr(defaultTrustPeriodFraction)
+	trustDec, err := math.LegacyNewDecFromStr(defaultTrustPeriodFraction)
 	if err != nil {
 		return time.Duration(0), err
 	}

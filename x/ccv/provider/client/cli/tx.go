@@ -6,7 +6,9 @@ import (
 	"os"
 	"strings"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"cosmossdk.io/math"
+
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -18,7 +20,7 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -52,6 +54,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 				return err
 			}
 
+			signer := clientCtx.GetFromAddress().String()
 			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
@@ -60,7 +63,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 
 			providerValAddr := clientCtx.GetFromAddress()
 
-			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1])
+			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1], signer)
 			if err != nil {
 				return err
 			}
@@ -233,7 +236,9 @@ func NewOptInCmd() *cobra.Command {
 			} else {
 				consumerPubKey = ""
 			}
-			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
+
+			signer := clientCtx.GetFromAddress().String()
+			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey, signer)
 			if err != nil {
 				return err
 			}
@@ -271,7 +276,8 @@ func NewOptOutCmd() *cobra.Command {
 
 			providerValAddr := clientCtx.GetFromAddress()
 
-			msg, err := types.NewMsgOptOut(args[0], sdk.ValAddress(providerValAddr))
+			signer := clientCtx.GetFromAddress().String()
+			msg, err := types.NewMsgOptOut(args[0], sdk.ValAddress(providerValAddr), signer)
 			if err != nil {
 				return err
 			}
@@ -315,7 +321,7 @@ func NewSetConsumerCommissionRateCmd() *cobra.Command {
 
 			providerValAddr := clientCtx.GetFromAddress()
 
-			commission, err := sdk.NewDecFromStr(args[1])
+			commission, err := math.LegacyNewDecFromStr(args[1])
 			if err != nil {
 				return err
 			}

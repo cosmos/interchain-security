@@ -3,13 +3,14 @@ package keeper
 import (
 	"fmt"
 
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // SetConsumerValidator sets provided consumer `validator` on the consumer chain with `chainID`
@@ -53,7 +54,7 @@ func (k Keeper) DeleteConsumerValSet(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 
 	var keysToDel [][]byte
 	defer iterator.Close()
@@ -96,7 +97,7 @@ func (k Keeper) GetConsumerValSet(
 ) (validators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -154,7 +155,11 @@ func DiffValidators(
 
 // CreateConsumerValidator creates a consumer validator for `chainID` from the given staking `validator`
 func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validator stakingtypes.Validator) (types.ConsumerValidator, error) {
-	power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
+	valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
+	if err != nil {
+		return types.ConsumerValidator{}, err
+	}
+	power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
 		return types.ConsumerValidator{}, fmt.Errorf("could not retrieve validator's (%+v) consensus address: %w",
@@ -204,7 +209,7 @@ func (k Keeper) FilterValidators(
 			if err != nil {
 				// this should never happen but is recoverable if we exclude this validator from the next validator set
 				k.Logger(ctx).Error("could not create consumer validator",
-					"validator", val.GetOperator().String(),
+					"validator", val.GetOperator(),
 					"error", err)
 				continue
 			}
@@ -218,6 +223,6 @@ func (k Keeper) FilterValidators(
 
 // GetLastBondedValidators iterates the last validator powers in the staking module
 // and returns the first MaxValidators many validators with the largest powers.
-func (k Keeper) GetLastBondedValidators(ctx sdk.Context) []stakingtypes.Validator {
+func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx))
 }

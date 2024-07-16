@@ -1,6 +1,37 @@
 # Upgrading Replicated Security
 
+## [v4.4.x](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0)
+
+### Provider
+
+***Note that provider chains should not use this version of ICS***
+
+### Consumer
+
+Upgrading the consumer from `v4.0.0` to `v4.4.0` will not require state migration. 
+
 This guide provides instructions for upgrading to specific versions of Replicated Security.
+
+## [v4.3.x](https://github.com/cosmos/interchain-security/releases/tag/v4.3.0)
+
+### Provider
+
+Upgrading a provider from `v4.2.0` to `v4.3.0` requires state migrations that will be done automatically via the upgrade module. 
+
+### Consumer
+
+***Note that consumer chains should not use this version of ICS***
+
+## [v4.2.x](https://github.com/cosmos/interchain-security/releases/tag/v4.2.0)
+
+### Provider
+
+Upgrading a provider from `v4.1.0` or `v4.1.0-lsm` to `v4.2.0` or `v4.2.0-lsm` requires state migrations, see relevant pull request [here](https://github.com/cosmos/interchain-security/pull/1809)
+for the corresponding migrators.
+
+### Consumer
+
+***Note that consumer chains should not use this version of ICS***
 
 ## [v4.1.x](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-rc2) and [v4.1.x-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.1.0-lsm-rc2)
 
@@ -80,7 +111,7 @@ Upgrading the provider from `v2.x.y` to `v3.3.0` will not require state migratio
 
 ## [v3.2.x](https://github.com/cosmos/interchain-security/tree/release/v3.2.x)
 
-`v3.2.0` bumps IBC to `v7.3`. As a result, `legacy_ibc_testing` is no longer required and was removed, see https://github.com/cosmos/interchain-security/pull/1185. This means that when upgrading to `v3.2.0`, any customized tests relying on `legacy_ibc_testing` need to be updated.
+`v3.2.0` bumps IBC to `v7.3`. As a result, `legacy_ibc_testing` is not longer required and was removed, see https://github.com/cosmos/interchain-security/pull/1185. This means that when upgrading to `v3.2.0`, any customized tests relying on `legacy_ibc_testing` need to be updated.
 
 ### Consumer 
 
@@ -124,7 +155,7 @@ Legacy APIs of the `AppModule` interface have been removed from ccv modules. For
 
 #### Imports
 
-Imports for ics23 have been updated as the repository has been migrated from confio to cosmos.
+Imports for ics23 have been updated as the repository have been migrated from confio to cosmos.
 
 ```diff
 import (

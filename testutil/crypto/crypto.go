@@ -15,7 +15,7 @@ import (
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // CryptoIdentity is a test helper for generating keys and addresses of
@@ -61,7 +61,7 @@ func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {
 }
 
 func (v *CryptoIdentity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
-	ret, err := sdkcryptocodec.ToTmProtoPublicKey(v.ConsensusSDKPubKey())
+	ret, err := sdkcryptocodec.ToCmtProtoPublicKey(v.ConsensusSDKPubKey())
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +69,7 @@ func (v *CryptoIdentity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
 }
 
 func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
-	ret, err := sdkcryptocodec.ToTmPubKeyInterface(v.ConsensusSDKPubKey())
+	ret, err := sdkcryptocodec.ToCmtPubKeyInterface(v.ConsensusSDKPubKey())
 	if err != nil {
 		panic(err)
 	}
@@ -77,11 +77,15 @@ func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
 }
 
 func (v *CryptoIdentity) SDKStakingValidator() sdkstakingtypes.Validator {
-	ret, err := sdkstakingtypes.NewValidator(v.SDKValOpAddress(), v.ConsensusSDKPubKey(), sdkstakingtypes.Description{})
+	ret, err := sdkstakingtypes.NewValidator(v.SDKValOpAddressString(), v.ConsensusSDKPubKey(), sdkstakingtypes.Description{})
 	if err != nil {
 		panic(err)
 	}
 	return ret
+}
+
+func (v *CryptoIdentity) SDKValOpAddressString() string {
+	return sdktypes.ValAddress(v.OperatorSDKPubKey().Address()).String()
 }
 
 func (v *CryptoIdentity) ConsensusSDKPubKey() sdkcryptotypes.PubKey {

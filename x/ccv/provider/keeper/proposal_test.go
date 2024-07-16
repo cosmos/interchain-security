@@ -7,22 +7,24 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	_go "github.com/cosmos/ics23/go"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 //
@@ -124,7 +126,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 		tc.malleate(ctx, providerKeeper, tc.prop.ChainId)
 
-		err := providerKeeper.HandleConsumerAdditionProposal(ctx, tc.prop)
+		err := providerKeeper.HandleLegacyConsumerAdditionProposal(ctx, tc.prop)
 
 		if tc.expAppendProp {
 			require.NoError(t, err)
@@ -380,194 +382,8 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 	require.Equal(t, expectedGetAllOrder, result)
 }
 
-//
-// Consumer Chain Removal sub-protocol related tests of proposal.go
-//
-
-// TestHandleConsumerRemovalProposal tests HandleConsumerRemovalProposal against its corresponding spec method.
-//
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
-// Spec tag: [CCV-PCF-HCRPROP.1]
-func TestHandleConsumerRemovalProposal(t *testing.T) {
-	type testCase struct {
-		description string
-		setupMocks  func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
-
-		// Consumer removal proposal to handle
-		prop *providertypes.ConsumerRemovalProposal
-		// Time when prop is handled
-		blockTime time.Time
-		// Whether it's expected that the proposal is successfully verified
-		// and appended to the pending proposals
-		expAppendProp bool
-
-		// chainID of the consumer chain
-		// tests need to check that the CCV channel is not closed prematurely
-		chainId string
-	}
-
-	// Snapshot times asserted in tests
-	now := time.Now().UTC()
-	hourAfterNow := now.Add(time.Hour).UTC()
-	hourBeforeNow := now.Add(-time.Hour).UTC()
-
-	tests := []testCase{
-		{
-			description: "valid proposal",
-			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "ClientID")
-			},
-			prop: providertypes.NewConsumerRemovalProposal(
-				"title",
-				"description",
-				"chainID",
-				now,
-			).(*providertypes.ConsumerRemovalProposal),
-			blockTime:     hourAfterNow, // After stop time.
-			expAppendProp: true,
-			chainId:       "chainID",
-		},
-		{
-			description: "valid proposal - stop_time in the past",
-			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "ClientID")
-			},
-			prop: providertypes.NewConsumerRemovalProposal(
-				"title",
-				"description",
-				"chainID",
-				hourBeforeNow,
-			).(*providertypes.ConsumerRemovalProposal),
-			blockTime:     hourAfterNow, // After stop time.
-			expAppendProp: true,
-			chainId:       "chainID",
-		},
-		{
-			description: "valid proposal - before stop_time in the future",
-			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "ClientID")
-			},
-			prop: providertypes.NewConsumerRemovalProposal(
-				"title",
-				"description",
-				"chainID",
-				hourAfterNow,
-			).(*providertypes.ConsumerRemovalProposal),
-			blockTime:     now,
-			expAppendProp: true,
-			chainId:       "chainID",
-		},
-		{
-			description: "rejected valid proposal - consumer chain does not exist",
-			setupMocks:  func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {},
-			prop: providertypes.NewConsumerRemovalProposal(
-				"title",
-				"description",
-				"chainID-2",
-				hourAfterNow,
-			).(*providertypes.ConsumerRemovalProposal),
-			blockTime:     hourAfterNow, // After stop time.
-			expAppendProp: false,
-			chainId:       "chainID-2",
-		},
-	}
-
-	for _, tc := range tests {
-
-		// Common setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
-		ctx = ctx.WithBlockTime(tc.blockTime)
-
-		// Mock expectations and setup for stopping the consumer chain, if applicable
-		// Note: when expAppendProp is false, no mocks are setup,
-		// meaning no external keeper methods are allowed to be called.
-		if tc.expAppendProp {
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
-
-			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
-			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
-		}
-
-		tc.setupMocks(ctx, providerKeeper, tc.prop.ChainId)
-
-		err := providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
-
-		if tc.expAppendProp {
-			require.NoError(t, err)
-
-			// Proposal should be stored as pending
-			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
-			require.True(t, found)
-
-			// confirm that the channel was not closed
-			_, found = providerKeeper.GetChainToChannel(ctx, tc.chainId)
-			require.True(t, found)
-		} else {
-			require.Error(t, err)
-
-			// Expect no pending proposal to exist
-			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
-			require.False(t, found)
-		}
-
-		// Assert mock calls from setup function
-		ctrl.Finish()
-	}
-}
-
-func TestHandleConsumerModificationProposal(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	chainID := "chainID"
-
-	// set up a consumer client, so it seems that "chainID" is running
-	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
-
-	// set PSS-related fields to update them later on
-	providerKeeper.SetTopN(ctx, chainID, 50)
-	providerKeeper.SetValidatorSetCap(ctx, chainID, 10)
-	providerKeeper.SetValidatorsPowerCap(ctx, chainID, 34)
-	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
-	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
-	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
-
-	expectedTopN := uint32(75)
-	expectedValidatorsPowerCap := uint32(67)
-	expectedValidatorSetCap := uint32(20)
-	expectedAllowlistedValidator := "cosmosvalcons1wpex7anfv3jhystyv3eq20r35a"
-	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
-	proposal := providertypes.NewConsumerModificationProposal("title", "description", chainID,
-		expectedTopN,
-		expectedValidatorsPowerCap,
-		expectedValidatorSetCap,
-		[]string{expectedAllowlistedValidator},
-		[]string{expectedDenylistedValidator},
-	).(*providertypes.ConsumerModificationProposal)
-
-	err := providerKeeper.HandleConsumerModificationProposal(ctx, proposal)
-	require.NoError(t, err)
-
-	actualTopN, _ := providerKeeper.GetTopN(ctx, chainID)
-	require.Equal(t, expectedTopN, actualTopN)
-	actualValidatorsPowerCap, _ := providerKeeper.GetValidatorsPowerCap(ctx, chainID)
-	require.Equal(t, expectedValidatorsPowerCap, actualValidatorsPowerCap)
-	actualValidatorSetCap, _ := providerKeeper.GetValidatorSetCap(ctx, chainID)
-	require.Equal(t, expectedValidatorSetCap, actualValidatorSetCap)
-
-	allowlistedValidator, err := sdk.ConsAddressFromBech32(expectedAllowlistedValidator)
-	require.Equal(t, 1, len(providerKeeper.GetAllowList(ctx, chainID)))
-	require.Equal(t, providertypes.NewProviderConsAddress(allowlistedValidator), providerKeeper.GetAllowList(ctx, chainID)[0])
-
-	denylistedValidator, err := sdk.ConsAddressFromBech32(expectedDenylistedValidator)
-	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, chainID)))
-	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, chainID)[0])
-}
-
 // Tests the StopConsumerChain method against the spec,
-// with more granularity than what's covered in TestHandleConsumerRemovalProposal, or integration tests.
+// with more granularity than what's covered in TestHandleLegacyConsumerRemovalProposal, or integration tests.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
 // Spec tag: [CCV-PCF-STCC.1]
 func TestStopConsumerChain(t *testing.T) {
@@ -836,7 +652,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: sdk.Coin{
 			Denom:  "stake",
-			Amount: sdk.NewInt(1000000),
+			Amount: math.NewInt(1000000),
 		},
 		BlocksPerEpoch:                        600,
 		NumberOfEpochsToStartReceivingRewards: 24,
@@ -877,7 +693,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			"consumer_redistribution_fraction": "0.75",
 			"historical_entries": 10000,
 			"unbonding_period": 1728000000000000,
-			"soft_opt_out_threshold": "0",
+			"soft_opt_out_threshold": "0.05",
 			"reward_denoms": [],
 			"provider_reward_denoms": [],
 			"retry_delay_period": 3600000000000
@@ -1097,7 +913,8 @@ func TestBeginBlockInit(t *testing.T) {
 	consAddr, _ := validator.GetConsAddr()
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{validator}, []int64{0}, -1) // -1 to allow any number of calls
 
-	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), validator.GetOperator()).Return(int64(1)).AnyTimes()
+	valAddr, _ := sdk.ValAddressFromBech32(validator.GetOperator())
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).Return(int64(1), nil).AnyTimes()
 	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
 
 	providerKeeper.BeginBlockInit(ctx)
@@ -1165,6 +982,7 @@ func TestBeginBlockInit(t *testing.T) {
 	// test that Top N is set correctly
 	require.True(t, providerKeeper.IsTopN(ctx, "chain1"))
 	topN, found := providerKeeper.GetTopN(ctx, "chain1")
+	require.True(t, found)
 	require.Equal(t, uint32(50), topN)
 
 	require.True(t, providerKeeper.IsOptIn(ctx, "chain4"))
