@@ -499,7 +499,7 @@ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.Te
 		ccvtypes.DefaultConsumerRedistributeFrac,
 		ccvtypes.DefaultHistoricalEntries,
 		modelParams.UnbondingPeriodPerChain[ChainId(consumerClientState.ChainId)],
-		"0", // disable soft opt-out
+		ccvtypes.DefaultSoftOptOutThreshold,
 		[]string{},
 		[]string{},
 		ccvtypes.DefaultRetryDelayPeriod,

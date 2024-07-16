@@ -109,7 +109,7 @@ If your architecture decision is a simple change, you may contribute directly wi
 
 In certain circumstances, the architecture decision may require changes to the ICS spec. Note that the spec is responsible for defining language-agnostic, implementation-agnostic behaviors for the ICS protocol. Whereas ADRs are responsible for communicating implementation decisions contained within this repo.
 
-To create an ADR, follow the [template](docs/docs/adrs/adr-template.md) and [doc](docs/docs/adrs/intro.md). If you would like to see examples of how these are written, please refer to the current [ADRs](docs/docs/adrs).
+To create an ADR, follow the [template](docs/docs/adrs/templates/adr-template.md) and [doc](docs/docs/adrs/intro.md). If you would like to see examples of how these are written, please refer to the current [ADRs](docs/docs/adrs).
 
 ### ADR Proposals
 
@@ -179,7 +179,7 @@ Additionally, **each PR should only address a single issue**.
 
 ### Pull Request Templates
 
-There are three PR templates. The [default template](./.github/PULL_REQUEST_TEMPLATE.md) contains links to the three templates. Please go the the `Preview` tab and select the appropriate sub-template:
+There are three PR templates. The [default template](./.github/PULL_REQUEST_TEMPLATE.md) contains links to the three templates. Please go to the `Preview` tab and select the appropriate sub-template:
 
 - The [production template](./.github/PULL_REQUEST_TEMPLATE/production.md) is for types `fix`, `feat`, and `refactor`. 
 - The [docs template](./.github/PULL_REQUEST_TEMPLATE/docs.md) is for documentation changes.

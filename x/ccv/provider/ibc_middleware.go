@@ -212,7 +212,7 @@ func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string)
 // It follows the same logic than the OnRecvPacket method of the IBC transfer module
 // see https://github.com/cosmos/ibc-go/blob/v7.3.2/modules/apps/transfer/keeper/relay.go#L162
 func GetProviderDenom(denom string, packet channeltypes.Packet) (providerDenom string) {
-	// If the the prefix denom corresponds to the packet's source port and channel,
+	// If the prefix denom corresponds to the packet's source port and channel,
 	// returns the base denom
 	if ibctransfertypes.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), denom) {
 		voucherPrefix := ibctransfertypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())

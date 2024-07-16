@@ -506,7 +506,7 @@ func (k Keeper) ValidatorConsensusKeyInUse(ctx sdk.Context, valAddr sdk.ValAddre
 	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		// Abort TX, do NOT allow validator to be created
-		panic(fmt.Errorf("error finding newly created validator in staking module: %s", err))
+		panic(fmt.Errorf("error finding newly created validator in staking module: %w", err))
 	}
 
 	// Get the consensus address of the validator being added

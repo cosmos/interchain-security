@@ -311,7 +311,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	// the misbehaviour is for a light client attack and not a time violation,
 	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
-		return errorsmod.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
+		return errorsmod.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
 
 	// Check that the evidence is not too old
@@ -516,7 +516,7 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 // CRUD section
 //
 
-// SetEquivocationEvidenceMinHeight sets the the minimum height
+// SetEquivocationEvidenceMinHeight sets the minimum height
 // of a valid consumer equivocation evidence for a given consumer chain ID
 func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string, height uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -526,7 +526,7 @@ func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string
 	store.Set(types.EquivocationEvidenceMinHeightKey(chainID), heightBytes)
 }
 
-// GetEquivocationEvidenceMinHeight returns the the minimum height
+// GetEquivocationEvidenceMinHeight returns the minimum height
 // of a valid consumer equivocation evidence for a given consumer chain ID
 func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) uint64 {
 	store := ctx.KVStore(k.storeKey)
@@ -538,7 +538,7 @@ func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string
 	return binary.BigEndian.Uint64(bz)
 }
 
-// DeleteEquivocationEvidenceMinHeight deletes the the minimum height
+// DeleteEquivocationEvidenceMinHeight deletes the minimum height
 // of a valid consumer equivocation evidence for a given consumer chain ID
 func (k Keeper) DeleteEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)

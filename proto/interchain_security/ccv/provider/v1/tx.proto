@@ -279,8 +279,7 @@ message MsgSetConsumerCommissionRate {
   string rate = 3 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
-    (gogoproto.nullable)   = false,
-    (amino.dont_omitempty) = true
+    (gogoproto.nullable)   = false
     ];
   }
 

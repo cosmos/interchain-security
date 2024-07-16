@@ -32,6 +32,7 @@ var (
 	_ sdk.Msg = (*MsgAssignConsumerKey)(nil)
 	_ sdk.Msg = (*MsgConsumerAddition)(nil)
 	_ sdk.Msg = (*MsgConsumerRemoval)(nil)
+	_ sdk.Msg = (*MsgConsumerModification)(nil)
 	_ sdk.Msg = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.Msg = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.Msg = (*MsgSubmitConsumerDoubleVoting)(nil)
@@ -42,6 +43,7 @@ var (
 	_ sdk.HasValidateBasic = (*MsgAssignConsumerKey)(nil)
 	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
 	_ sdk.HasValidateBasic = (*MsgConsumerRemoval)(nil)
+	_ sdk.HasValidateBasic = (*MsgConsumerModification)(nil)
 	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerDoubleVoting)(nil)
@@ -244,10 +246,6 @@ func (msg *MsgConsumerAddition) ValidateBasic() error {
 		return ErrBlankConsumerChainID
 	}
 
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "consumer chain id must not be blank")
-	}
-
 	if msg.InitialHeight.IsZero() {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
 	}
@@ -303,6 +301,20 @@ func (msg *MsgConsumerRemoval) ValidateBasic() error {
 	if msg.StopTime.IsZero() {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
 	}
+	return nil
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg *MsgConsumerModification) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return ErrBlankConsumerChainID
+	}
+
+	err := ValidatePSSFeatures(msg.Top_N, msg.ValidatorsPowerCap)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
+	}
+
 	return nil
 }
 
