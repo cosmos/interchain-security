@@ -8,7 +8,7 @@ require (
 	github.com/cometbft/cometbft v0.38.9
 	github.com/cometbft/cometbft-db v0.12.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.50.7
-	github.com/cosmos/gogoproto v1.4.12
+	github.com/cosmos/gogoproto v1.5.0
 	github.com/cosmos/ics23/go v0.10.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
@@ -146,7 +146,7 @@ require (
 )
 
 require (
-	cosmossdk.io/client/v2 v2.0.0-beta.1
+	cosmossdk.io/client/v2 v2.0.0-beta.3
 	cosmossdk.io/collections v0.4.0
 	cosmossdk.io/log v1.3.1
 	cosmossdk.io/store v1.1.0
