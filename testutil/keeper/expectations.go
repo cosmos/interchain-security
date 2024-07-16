@@ -3,22 +3,22 @@ package keeper
 import (
 	time "time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 
 	math "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 //
@@ -53,8 +53,7 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 	unbondingTimeToInject time.Duration,
 ) []*gomock.Call {
 	return []*gomock.Call{
-		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject).Times(1),
-
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject, nil).Times(1),
 		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
 			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
 	}
@@ -102,7 +101,7 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 			ctx, expectedProviderValConsAddr.ToSdkConsAddr()).Return(
-			valToReturn, true,
+			valToReturn, nil,
 		).Times(1),
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
@@ -113,12 +112,12 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
 			gomock.Eq(expectedProviderValConsAddr.ToSdkConsAddr()),
-		).Return())
+		).Return(nil))
 
 		// JailUntil is set in this code path.
-		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
+		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour, nil).Times(1))
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
-			expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any()).Times(1))
+			expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any()).Return(nil).Times(1))
 	}
 
 	return calls
@@ -186,26 +185,26 @@ func GetMocksForSlashValidator(
 		mocks.MockStakingKeeper.EXPECT().
 			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ math.LegacyDec) math.Int {
+					sum := math.NewInt(0)
 					for _, r := range undelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
 					return sum
 				}).AnyTimes(),
 		mocks.MockStakingKeeper.EXPECT().
 			SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
+				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ math.LegacyDec) math.Int {
+					sum := math.NewInt(0)
 					for _, r := range redelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
 							continue
 						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						sum = sum.Add(math.NewInt(r.InitialBalance.Int64()))
 					}
 					return sum
 				}).AnyTimes(),
@@ -223,14 +222,15 @@ func GetMocksForSlashValidator(
 // Times is the number of times the expectation should be called. Provide -1 for `AnyTimes“.
 func SetupMocksForLastBondedValidatorsExpectation(mockStakingKeeper *MockStakingKeeper, maxValidators uint32, vals []stakingtypes.Validator, powers []int64, times int) {
 	iteratorCall := mockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx sdk.Context, cb func(sdk.ValAddress, int64) bool) {
+		func(ctx sdk.Context, cb func(sdk.ValAddress, int64) bool) error {
 			for i, val := range vals {
 				if stop := cb(sdk.ValAddress(val.OperatorAddress), powers[i]); stop {
 					break
 				}
 			}
+			return nil
 		})
-	maxValidatorsCall := mockStakingKeeper.EXPECT().MaxValidators(gomock.Any()).Return(maxValidators)
+	maxValidatorsCall := mockStakingKeeper.EXPECT().MaxValidators(gomock.Any()).Return(maxValidators, nil)
 
 	if times == -1 {
 		iteratorCall.AnyTimes()
@@ -242,7 +242,7 @@ func SetupMocksForLastBondedValidatorsExpectation(mockStakingKeeper *MockStaking
 
 	// set up mocks for GetValidator calls
 	for _, val := range vals {
-		getValCall := mockStakingKeeper.EXPECT().GetValidator(gomock.Any(), sdk.ValAddress(val.OperatorAddress)).Return(val, true)
+		getValCall := mockStakingKeeper.EXPECT().GetValidator(gomock.Any(), sdk.ValAddress(val.OperatorAddress)).Return(val, nil)
 		if times == -1 {
 			getValCall.AnyTimes()
 		} else {

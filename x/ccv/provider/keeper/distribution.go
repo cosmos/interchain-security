@@ -1,22 +1,22 @@
 package keeper
 
 import (
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	storetypes "cosmossdk.io/store/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+
+	"context"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.
-func (k Keeper) BeginBlockRD(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (k Keeper) BeginBlockRD(ctx sdk.Context) {
 	// TODO this is Tendermint-dependent
 	// ref https://github.com/cosmos/cosmos-sdk/issues/3095
 	if ctx.BlockHeight() > 1 {
@@ -56,8 +56,7 @@ func (k Keeper) DeleteConsumerRewardDenom(
 
 func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenoms []string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerRewardDenomsBytePrefix})
-
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ConsumerRewardDenomsBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()[1:]
@@ -77,53 +76,90 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 
 	// Iterate over all registered consumer chains
 	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
-		// transfer the consumer rewards to the distribution module account
-		// note that the rewards transferred are only consumer whitelisted denoms
-		rewardsCollected, err := k.TransferConsumerRewardsToDistributionModule(ctx, consumerChainID)
+
+		// note that it's possible that no rewards are collected even though the
+		// reward pool isn't empty. This can happen if the reward pool holds some tokens
+		// of non-whitelisted denominations.
+		alloc := k.GetConsumerRewardsAllocation(ctx, consumerChainID)
+		if alloc.Rewards.IsZero() {
+			continue
+		}
+
+		// temporary workaround to keep CanWithdrawInvariant happy
+		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
+		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
+			rewardsToSend, rewardsChange := alloc.Rewards.TruncateDecimal()
+			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsToSend, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+			if err != nil {
+				k.Logger(ctx).Error(
+					"fail to allocate rewards from consumer chain %s to community pool: %s",
+					consumerChainID,
+					err,
+				)
+			}
+
+			// set the consumer allocation to the remaining reward decimals
+			alloc.Rewards = rewardsChange
+			k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
+
+			return
+		}
+
+		// Consumer rewards are distributed between the validators and the community pool.
+		// The decimals resulting from the distribution are expected to remain in the consumer reward allocations.
+
+		communityTax, err := k.distributionKeeper.GetCommunityTax(ctx)
 		if err != nil {
 			k.Logger(ctx).Error(
-				"fail to transfer rewards to distribution module for chain %s: %s",
+				"cannot get community tax while allocating rewards from consumer chain %s: %s",
 				consumerChainID,
 				err,
 			)
 			continue
 		}
 
-		// note that it's possible that no rewards are collected even though the
-		// reward pool isn't empty. This can happen if the reward pool holds some tokens
-		// of non-whitelisted denominations.
-		if rewardsCollected.IsZero() {
+		// compute rewards for validators
+		consumerRewards := alloc.Rewards
+		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
+		validatorsRewards := consumerRewards.MulDecTruncate(voteMultiplier)
+
+		// compute remaining rewards for the community pool
+		remaining := consumerRewards.Sub(validatorsRewards)
+
+		// transfer validators rewards to distribution module account
+		validatorsRewardsTrunc, validatorsRewardsChange := validatorsRewards.TruncateDecimal()
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, validatorsRewardsTrunc)
+		if err != nil {
+			k.Logger(ctx).Error(
+				"cannot send rewards to distribution module account %s: %s",
+				consumerChainID,
+				err,
+			)
 			continue
 		}
 
-		rewardsCollectedDec := sdk.NewDecCoinsFromCoins(rewardsCollected...)
-
-		// temporary workaround to keep CanWithdrawInvariant happy
-		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
-		feePool := k.distributionKeeper.GetFeePool(ctx)
-		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
-			feePool.CommunityPool = feePool.CommunityPool.Add(rewardsCollectedDec...)
-			k.distributionKeeper.SetFeePool(ctx, feePool)
-			return
-		}
-
-		// calculate the reward allocations
-		remaining := rewardsCollectedDec
-		communityTax := k.distributionKeeper.GetCommunityTax(ctx)
-		voteMultiplier := math.LegacyOneDec().Sub(communityTax)
-		feeMultiplier := rewardsCollectedDec.MulDecTruncate(voteMultiplier)
-
 		// allocate tokens to consumer validators
-		feeAllocated := k.AllocateTokensToConsumerValidators(
+		k.AllocateTokensToConsumerValidators(
 			ctx,
 			consumerChainID,
-			feeMultiplier,
+			sdk.NewDecCoinsFromCoins(validatorsRewardsTrunc...),
 		)
-		remaining = remaining.Sub(feeAllocated)
 
-		// allocate community funding
-		feePool.CommunityPool = feePool.CommunityPool.Add(remaining...)
-		k.distributionKeeper.SetFeePool(ctx, feePool)
+		// allocate remaining rewards to the community pool
+		remainingRewards, remainingChanges := remaining.TruncateDecimal()
+		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingRewards, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
+		if err != nil {
+			k.Logger(ctx).Error(
+				"fail to allocate rewards from consumer chain %s to community pool: %s",
+				consumerChainID,
+				err,
+			)
+			continue
+		}
+
+		// set consumer allocations to the remaining rewards decimals
+		alloc.Rewards = validatorsRewardsChange.Add(remainingChanges...)
+		k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
 	}
 }
 
@@ -168,7 +204,18 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		tokensFraction := tokens.MulDecTruncate(powerFraction)
 
 		// get the validator type struct for the consensus address
-		val := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr).(stakingtypes.Validator)
+		val, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+		if err != nil {
+			k.Logger(ctx).Error(
+				"cannot find validator by consensus address",
+				consAddr,
+				"while allocating rewards from consumer chain",
+				chainID,
+				"error",
+				err,
+			)
+			continue
+		}
 
 		// check if the validator set a custom commission rate for the consumer chain
 		if cr, found := k.GetConsumerCommissionRate(ctx, chainID, types.NewProviderConsAddress(consAddr)); found {
@@ -177,50 +224,22 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		}
 
 		// allocate the consumer reward tokens to the validator
-		k.distributionKeeper.AllocateTokensToValidator(
+		err = k.distributionKeeper.AllocateTokensToValidator(
 			ctx,
 			val,
 			tokensFraction,
 		)
+		if err != nil {
+			k.Logger(ctx).Error("fail to allocate tokens to validator :%s while allocating rewards from consumer chain: %s",
+				consAddr, chainID)
+			continue
+		}
 
 		// sum the tokens allocated
 		allocated = allocated.Add(tokensFraction...)
 	}
 
 	return allocated
-}
-
-// TransferConsumerRewardsToDistributionModule transfers the rewards allocation of the given consumer chain
-// from the consumer rewards pool to a the distribution module
-func (k Keeper) TransferConsumerRewardsToDistributionModule(
-	ctx sdk.Context,
-	chainID string,
-) (sdk.Coins, error) {
-	// Get coins of the consumer rewards allocation
-	allocation := k.GetConsumerRewardsAllocation(ctx, chainID)
-
-	if allocation.Rewards.IsZero() {
-		return sdk.Coins{}, nil
-	}
-
-	// Truncate coin rewards
-	rewardsToSend, remRewards := allocation.Rewards.TruncateDecimal()
-
-	// NOTE the consumer rewards allocation isn't a module account, however its coins
-	// are held in the consumer reward pool module account. Thus the consumer
-	// rewards allocation must be reduced separately from the SendCoinsFromModuleToAccount call.
-
-	// Update consumer rewards allocation with the remaining decimal coins
-	allocation.Rewards = remRewards
-
-	// Send coins to distribution module account
-	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, rewardsToSend)
-	if err != nil {
-		return sdk.Coins{}, err
-	}
-
-	k.SetConsumerRewardsAllocation(ctx, chainID, allocation)
-	return rewardsToSend, nil
 }
 
 // consumer reward pools getter and setter
@@ -292,7 +311,7 @@ func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet cha
 
 // HandleSetConsumerCommissionRate sets a per-consumer chain commission rate for the given provider address
 // on the condition that the given consumer chain exists.
-func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, commissionRate sdk.Dec) error {
+func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, commissionRate math.LegacyDec) error {
 	// check that the consumer chain exists
 	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
 		return errorsmod.Wrapf(
@@ -301,7 +320,10 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string,
 	}
 
 	// validate against the minimum commission rate
-	minRate := k.stakingKeeper.MinCommissionRate(ctx)
+	minRate, err := k.stakingKeeper.MinCommissionRate(ctx)
+	if err != nil {
+		return err
+	}
 	if commissionRate.LT(minRate) {
 		return errorsmod.Wrapf(
 			stakingtypes.ErrCommissionLTMinRate,

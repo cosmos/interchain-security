@@ -38,7 +38,12 @@ func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.
 	for _, val := range initialValUpdates {
 		initialUpdatesFlag[val.PubKey.String()] = true
 	}
-	for _, val := range k.GetLastStandaloneValidators(ctx) {
+
+	standaloneValset, err := k.GetLastStandaloneValidators(ctx)
+	if err != nil {
+		panic(err)
+	}
+	for _, val := range standaloneValset {
 		zeroPowerUpdate := val.ABCIValidatorUpdateZero()
 		if !initialUpdatesFlag[zeroPowerUpdate.PubKey.String()] {
 			initialValUpdates = append(initialValUpdates, zeroPowerUpdate)

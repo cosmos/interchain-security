@@ -8,7 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 type Status int
@@ -193,6 +193,18 @@ const (
 //
 // Fully defined key func section
 //
+
+const (
+	// ParametersKey is the is the single byte key for storing provider's parameters.
+	// note that this was set to the max uint8 type value 0xFF in order to protect
+	// from using the ICS v5.0.0 provider module by mistake
+	ParametersByteKey = byte(0xFF)
+)
+
+// ParametersKey returns the key for the parameters of the provider module in the store
+func ParametersKey() []byte {
+	return []byte{ParametersByteKey}
+}
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {

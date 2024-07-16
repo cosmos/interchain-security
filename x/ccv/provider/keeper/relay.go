@@ -1,19 +1,20 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet and returns a no-op result ack.
@@ -88,10 +89,10 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {
-			if stakingtypes.ErrUnbondingNotFound.Is(err) {
+			if errors.Is(err, stakingtypes.ErrNoUnbondingDelegation) {
 				// The unbonding was not found.
-				unbondingType, found := k.stakingKeeper.GetUnbondingType(ctx, id)
-				if found && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
+				unbondingType, errGet := k.stakingKeeper.GetUnbondingType(ctx, id)
+				if errGet == nil && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
 					// If this is an unbonding delegation, it may have been removed
 					// after through a CancelUnbondingDelegation message
 					k.Logger(ctx).Debug("unbonding delegation was already removed:", "unbondingID", id)
@@ -189,7 +190,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 			k.GetCCVTimeoutPeriod(ctx),
 		)
 		if err != nil {
-			if clienttypes.ErrClientNotActive.Is(err) {
+			if errors.Is(err, clienttypes.ErrClientNotActive) {
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				// the client cannot expire during iteration (in the middle of a block)
@@ -214,11 +215,17 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 }
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
+// failing to GetLastBondedValidators will cause a panic in EndBlock
+
+// TODO: decide if this func shouldn't return an error to be propagated to BeginBlocker
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
 	// get the bonded validators from the staking module
-	bondedValidators := k.GetLastBondedValidators(ctx)
+	bondedValidators, err := k.GetLastBondedValidators(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to get last validators: %w", err))
+	}
 
 	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
 		currentValidators := k.GetConsumerValSet(ctx, chainID)
@@ -419,16 +426,20 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	)
 
 	// Obtain validator from staking keeper
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
+	if err != nil {
+		k.Logger(ctx).Error("validator not found", "validator", providerConsAddr.String(), "error", err)
+		return
+	}
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
-	if !found || validator.IsUnbonded() {
+	if validator.IsUnbonded() {
 		// if validator is not found or is unbonded, drop slash packet and log error.
 		// Note that it is impossible for the validator to be not found or unbonded if both the provider
 		// and the consumer are following the protocol. Thus if this branch is taken then one or both
 		// chains is incorrect, but it is impossible to tell which.
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
+		k.Logger(ctx).Error("validator already unbonded", "validator", providerConsAddr.String())
 		return
 	}
 
@@ -458,10 +469,23 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
+		err := k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
+		if err != nil {
+			k.Logger(ctx).Error("failed to jail vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
+			return
+		}
 		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
-		jailTime := ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailTime)
+		jailDuration, err := k.slashingKeeper.DowntimeJailDuration(ctx)
+		if err != nil {
+			k.Logger(ctx).Error("failed to get jail duration", "err", err.Error())
+			return
+		}
+		jailEndTime := ctx.BlockTime().Add(jailDuration)
+		err = k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailEndTime)
+		if err != nil {
+			k.Logger(ctx).Error("failed to set jail duration", "err", err.Error())
+			return
+		}
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -492,7 +516,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				"chainID", initTimeoutTimestamp.ChainId)
 			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
-				if providertypes.ErrConsumerChainNotFound.Is(err) {
+				if errors.Is(err, providertypes.ErrConsumerChainNotFound) {
 					// consumer chain not found
 					continue
 				}
@@ -519,7 +543,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				)
 				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
 				if err != nil {
-					if providertypes.ErrConsumerChainNotFound.Is(err) {
+					if errors.Is(err, providertypes.ErrConsumerChainNotFound) {
 						// consumer chain not found
 						continue
 					}

@@ -31,7 +31,7 @@ func getAllKeyPrefixes() []byte {
 		PreCCVByteKey,
 		InitialValSetByteKey,
 		LastStandaloneHeightByteKey,
-		DeprecatedSmallestNonOptOutPowerByteKey,
+		SmallestNonOptOutPowerByteKey,
 		HistoricalInfoBytePrefix,
 		PacketMaturityTimeBytePrefix,
 		HeightValsetUpdateIDBytePrefix,
@@ -43,6 +43,7 @@ func getAllKeyPrefixes() []byte {
 		PrevStandaloneChainByteKey,
 		PendingPacketsIndexByteKey,
 		SlashRecordByteKey,
+		ParametersByteKey,
 	}
 }
 

@@ -3,14 +3,14 @@ package integration
 import (
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // TestPacketRoundtrip tests a CCV packet roundtrip when tokens are bonded on provider
@@ -19,7 +19,7 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 	s.SetupTransferChannel()
 
 	// Bond some tokens on provider to change validator powers
-	bondAmt := sdk.NewInt(1000000)
+	bondAmt := math.NewInt(1000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 
@@ -45,13 +45,13 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	suite.SetupCCVChannel(suite.path)
 
 	// send 3 packets to consumer chain at different times
-	pk, err := cryptocodec.FromTmPubKeyInterface(suite.providerChain.Vals.Validators[0].PubKey)
+	pk, err := cryptocodec.FromCmtPubKeyInterface(suite.providerChain.Vals.Validators[0].PubKey)
 	suite.Require().NoError(err)
-	pk1, err := cryptocodec.ToTmProtoPublicKey(pk)
+	pk1, err := cryptocodec.ToCmtProtoPublicKey(pk)
 	suite.Require().NoError(err)
-	pk, err = cryptocodec.FromTmPubKeyInterface(suite.providerChain.Vals.Validators[1].PubKey)
+	pk, err = cryptocodec.FromCmtPubKeyInterface(suite.providerChain.Vals.Validators[1].PubKey)
 	suite.Require().NoError(err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(pk)
+	pk2, err := cryptocodec.ToCmtProtoPublicKey(pk)
 	suite.Require().NoError(err)
 
 	pd := ccv.NewValidatorSetChangePacketData(

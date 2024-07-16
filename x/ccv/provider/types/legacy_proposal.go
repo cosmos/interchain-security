@@ -6,15 +6,16 @@ import (
 	"strings"
 	time "time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
+	evidencetypes "cosmossdk.io/x/evidence/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const (
@@ -96,7 +97,7 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 }
 
 // ValidatePSSFeatures returns an error if the `topN` and `validatorsPowerCap` parameters are no in the correct ranges
-func ValidatePSSFeatures(topN, validatorsPowerCap uint32) error {
+func ValidatePSSFeatures(topN uint32, validatorsPowerCap uint32) error {
 	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
 	// Opt In chain) or in the range [50, 100] (for a Top N chain).
 	if topN != 0 && (topN < 50 || topN > 100) {
@@ -356,12 +357,12 @@ func (crdp *ChangeRewardDenomsProposal) ValidateBasic() error {
 
 	// Return error if any denom is "invalid"
 	for _, denom := range crdp.DenomsToAdd {
-		if !sdk.NewCoin(denom, sdk.NewInt(1)).IsValid() {
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
 			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
 		}
 	}
 	for _, denom := range crdp.DenomsToRemove {
-		if !sdk.NewCoin(denom, sdk.NewInt(1)).IsValid() {
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
 			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
 		}
 	}

@@ -269,15 +269,12 @@ func GetSubmitConsumerRemovalProposalActionGen() *rapid.Generator[SubmitConsumer
 	})
 }
 
-func GetSubmitParamChangeProposalActionGen() *rapid.Generator[SubmitParamChangeLegacyProposalAction] {
-	return rapid.Custom(func(t *rapid.T) SubmitParamChangeLegacyProposalAction {
-		return SubmitParamChangeLegacyProposalAction{
-			Chain:    GetChainIDGen().Draw(t, "Chain"),
-			From:     GetValidatorIDGen().Draw(t, "From"),
-			Deposit:  rapid.Uint().Draw(t, "Deposit"),
-			Subspace: rapid.String().Draw(t, "Subspace"),
-			Key:      rapid.String().Draw(t, "Key"),
-			Value:    rapid.String().Draw(t, "Value"), // could make this more generic in the future, since Value takes interfaces
+func GetSubmitParamChangeProposalActionGen() *rapid.Generator[SubmitEnableTransfersProposalAction] {
+	return rapid.Custom(func(t *rapid.T) SubmitEnableTransfersProposalAction {
+		return SubmitEnableTransfersProposalAction{
+			Chain:   GetChainIDGen().Draw(t, "Chain"),
+			From:    GetValidatorIDGen().Draw(t, "From"),
+			Deposit: rapid.Uint().Draw(t, "Deposit"),
 		}
 	})
 }

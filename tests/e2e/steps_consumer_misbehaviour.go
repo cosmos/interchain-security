@@ -1,7 +1,10 @@
 package main
 
 import (
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"strconv"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
 
 // starts a provider chain and an Opt-In consumer chain with one validator
@@ -34,7 +37,7 @@ func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 				ConsumerChain: ChainID(consumerName),
 				SpawnTime:     0,
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				TopN:          100,
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -48,7 +51,7 @@ func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 				},
@@ -99,7 +102,7 @@ func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        "PROPOSAL_STATUS_PASSED",
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{

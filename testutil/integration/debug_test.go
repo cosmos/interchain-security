@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/v4/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v4/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/v4/app/provider"
-	integr "github.com/cosmos/interchain-security/v4/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v5/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v5/app/provider"
+	integr "github.com/cosmos/interchain-security/v5/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite
@@ -67,6 +67,10 @@ func TestDemocracyRewardsDistribution(t *testing.T) {
 
 func TestDemocracyGovernanceWhitelisting(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
+}
+
+func TestDemocracyMsgUpdateParams(t *testing.T) {
+	runConsumerDemocracyTestByName(t, "TestDemocracyMsgUpdateParams")
 }
 
 //
@@ -269,11 +273,28 @@ func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing
 	runCCVTestByName(t, "TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations")
 }
 
+//
 // Throttle retry tests
 //
 
 func TestSlashRetries(t *testing.T) {
 	runCCVTestByName(t, "TestSlashRetries")
+}
+
+func TestKeyAssignment(t *testing.T) {
+	runCCVTestByName(t, "TestKeyAssignment")
+}
+
+//
+// Provider gov hooks test
+//
+
+func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
+	runCCVTestByName(t, "TestAfterPropSubmissionAndVotingPeriodEnded")
+}
+
+func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
+	runCCVTestByName(t, "TestGetConsumerAdditionLegacyPropFromProp")
 }
 
 func TestIBCTransferMiddleware(t *testing.T) {
