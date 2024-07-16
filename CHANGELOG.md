@@ -39,6 +39,25 @@
 - Revert `PutUnbondingOnHold` behavior to ICS@v1
 ([\#1819](https://github.com/cosmos/interchain-security/pull/1819))
 
+## v4.4.0
+
+*July 16, 2024*
+
+### API BREAKING
+
+- Remove soft opt-out feature. 
+  ([\#1964](https://github.com/cosmos/interchain-security/pull/1964))
+
+### FEATURES
+
+- Remove soft opt-out feature. 
+  ([\#1964](https://github.com/cosmos/interchain-security/pull/1964))
+
+### STATE BREAKING
+
+- Remove soft opt-out feature. 
+  ([\#1964](https://github.com/cosmos/interchain-security/pull/1964))
+
 ## v4.3.1
 
 *July 4, 2024*
