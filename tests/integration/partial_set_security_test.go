@@ -19,7 +19,13 @@ import (
 // won't correspond to at least one voting power
 const stake_multiplier = 1000000
 
-func TestInactiveVals(t *testing.T) {
+// TestMinStakeMaxRank tests the min stake and max rank parameters.
+// It starts a provider and single consumer chain,
+// sets the initial powers according to the input, and then
+// sets the min stake and max rank parameters according to the test case.
+// Finally, it checks that the validator set on the consumer chain is as expected
+// according to the min stake and max rank parameters.
+func TestMinStakeMaxRank(t *testing.T) {
 	testCases := []struct {
 		name                string
 		stakedTokens        []int64
