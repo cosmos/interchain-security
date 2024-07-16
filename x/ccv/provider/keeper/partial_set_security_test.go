@@ -701,7 +701,7 @@ func createStakingValidatorsAndMocks(ctx sdk.Context, mocks testkeeper.MockedKee
 	}
 	// set up mocks
 	for index, val := range validators {
-		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, consAddrs[index]).Return(val, nil).AnyTimes()
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, consAddrs[index].Address).Return(val, nil).AnyTimes()
 	}
 
 	return validators, consAddrs
