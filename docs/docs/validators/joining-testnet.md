@@ -12,7 +12,7 @@ The experience gained in the testnet will prepare you for validating interchain 
 :::tip
 Provider and consumer chain represent distinct networks and infrastructures operated by the same validator set.
 
-For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/main/validators/validator-setup) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs.
+For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/main/validators/validator-setup) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs
 :::
 
 ## Joining the provider chain

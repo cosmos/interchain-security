@@ -11,7 +11,6 @@ import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos_proto/cosmos.proto";
-import "amino/amino.proto";
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -316,10 +315,8 @@ message QueryValidatorConsumerCommissionRateRequest {
 message QueryValidatorConsumerCommissionRateResponse {
   // The rate to charge delegators on the consumer chain, as a fraction
   string rate = 1 [
-    (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
-    (gogoproto.nullable)   = false,
-    (amino.dont_omitempty) = true
+    (gogoproto.nullable)   = false
     ];
 }
 

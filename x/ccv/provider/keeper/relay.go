@@ -215,7 +215,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 }
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
-// failing to GetLastValidators will cause a panic in EndBlock
+// failing to GetLastBondedValidators will cause a panic in EndBlock
 
 // TODO: decide if this func shouldn't return an error to be propagated to BeginBlocker
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
@@ -427,8 +427,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// Obtain validator from staking keeper
 	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
-	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-		k.Logger(ctx).Error("validator not found", "validator", providerConsAddr.String())
+	if err != nil {
+		k.Logger(ctx).Error("validator not found", "validator", providerConsAddr.String(), "error", err)
 		return
 	}
 

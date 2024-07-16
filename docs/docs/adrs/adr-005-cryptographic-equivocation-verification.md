@@ -87,7 +87,7 @@ The application will, in turn, punish the malicious validator through jailing, t
 In the first part of the feature, we introduce a new endpoint: `HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour)`.
 The main idea is to leverage the current IBC misbehaviour handling and update it to solely jail and slash the validators that
 performed a light client attack. Note that in this context, we assume that chains connected via a light client
-share the same validator set, as is the case with Replicated Security. 
+share a subset of the validator set of the provider.
 
 This endpoint reuses the IBC client libraries to verify that the misbehaviour headers would have fooled the light client.
 Additionally, it’s crucial that the endpoint logic results in the slashing and jailing of validators under the same conditions

@@ -66,7 +66,7 @@ func NewAppModule(
 
 // BeginBlock implements HasBeginBlocker interface
 // The cosmos-sdk/distribution BeginBlocker functionality is replicated here,
-// however it no proposer awards are allocated.
+// however no proposer awards are allocated.
 func (am AppModule) BeginBlock(goCtx context.Context) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	defer telemetry.ModuleMeasureSince(distrtypes.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)

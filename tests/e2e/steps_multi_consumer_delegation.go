@@ -1,6 +1,6 @@
 package main
 
-// stepsDelegate tests basic delegation and resulting validator power changes.
+// stepsMultiConsumerDelegate tests basic delegation and resulting validator power changes.
 func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 	return []Step{
 		{

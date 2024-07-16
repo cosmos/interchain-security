@@ -124,7 +124,7 @@ func (k Keeper) Slash(ctx context.Context, addr sdk.ConsAddress, infractionHeigh
 	return k.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 }
 
-// Slash queues a slashing request for the the provider chain
+// Slash queues a slashing request for the provider chain
 // All queued slashing requests will be cleared in EndBlock
 // Called by Slashing keeper in SlashWithInfractionReason
 func (k Keeper) SlashWithInfractionReason(goCtx context.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec, infraction stakingtypes.Infraction) (math.Int, error) {

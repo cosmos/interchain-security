@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
@@ -417,15 +418,17 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 				".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
 		}
-	} else if semver.Compare(providerVersion, "v5.0.0-alpha1") < 0 { //TODO: MOV THIS BACK TO "v5.0.0"
-		fmt.Println("Using provider chain config for v4.1.x")
+	} else if semver.Compare(semver.MajorMinor(providerVersion), "v4.3.0") >= 0 && strings.HasSuffix(providerVersion, "-lsm") {
+		// v4.3.0-lsm introduced 'expedited governance proposal' which needs `expedited_voting_period` parameter to be set in genesis
+		fmt.Println("Using provider chain config for versions >= v4.3.0-lsm")
 		providerConfig = ChainConfig{
 			ChainId:        ChainID("provi"),
-			AccountPrefix:  ProviderAccountPrefix,
+			AccountPrefix:  "cosmos",
 			BinaryName:     "interchain-security-pd",
 			IpPrefix:       "7.7.7",
 			VotingWaitTime: 20,
 			GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+				".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 				// Custom slashing parameters for testing validator downtime functionality
 				// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 				".app_state.slashing.params.signed_blocks_window = \"10\" | " +
