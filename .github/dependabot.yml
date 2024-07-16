@@ -58,6 +58,29 @@ updates:
     labels:
       - dependencies
 
+<<<<<<< HEAD
+=======
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+    target-branch: "release/v4.3.x"
+    # Only allow automated security-related dependency updates on release branches.
+    open-pull-requests-limit: 0
+    labels:
+      - dependencies
+
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+    target-branch: "release/v4.3.x-lsm"
+    # Only allow automated security-related dependency updates on release branches.
+    open-pull-requests-limit: 0
+    labels:
+      - dependencies
+
+>>>>>>> eb93342 (chore:  rm mbt, trace tests from CI; fix dependabot (#2000))
   - package-ecosystem: gomod
     directory: "/"
     schedule:
