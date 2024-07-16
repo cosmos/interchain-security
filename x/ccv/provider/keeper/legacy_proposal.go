@@ -92,6 +92,8 @@ func (k Keeper) HandleLegacyConsumerModificationProposal(ctx sdk.Context, p *typ
 	k.SetTopN(ctx, p.ChainId, p.Top_N)
 	k.SetValidatorsPowerCap(ctx, p.ChainId, p.ValidatorsPowerCap)
 	k.SetValidatorSetCap(ctx, p.ChainId, p.ValidatorSetCap)
+	k.SetMinStake(ctx, p.ChainId, p.MinStake)
+	k.SetMaxValidatorRank(ctx, p.ChainId, p.MaxRank)
 
 	k.DeleteAllowlist(ctx, p.ChainId)
 	for _, address := range p.Allowlist {

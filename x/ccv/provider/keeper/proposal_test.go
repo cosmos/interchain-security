@@ -930,6 +930,10 @@ func TestBeginBlockInit(t *testing.T) {
 
 	valAddr, _ := sdk.ValAddressFromBech32(validator.GetOperator())
 	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).Return(int64(1), nil).AnyTimes()
+
+	// for each validator, expect a call to GetValidatorByConsAddr with its consensus address
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).Return(validator, nil).AnyTimes()
+
 	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
 
 	providerKeeper.BeginBlockInit(ctx)

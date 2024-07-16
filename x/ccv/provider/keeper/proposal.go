@@ -78,6 +78,8 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *ty
 		ValidatorSetCap:    proposal.ValidatorSetCap,
 		Allowlist:          proposal.Allowlist,
 		Denylist:           proposal.Denylist,
+		MinStake:           proposal.MinStake,
+		MaxRank:            proposal.MaxRank,
 	}
 
 	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
