@@ -2,6 +2,17 @@
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
+## [v4.4.x](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0)
+
+### Provider
+
+***Note that provider chains should not use this version of ICS***
+
+### Consumer
+
+Upgrading the provider from `v4.3.0` to `v4.4.0` will not require state migration. 
+
+
 ## [v4.3.x](https://github.com/cosmos/interchain-security/releases/tag/v4.3.0)
 
 ### Provider
