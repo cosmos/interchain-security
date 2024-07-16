@@ -327,11 +327,32 @@ func (k Keeper) FulfillsMinStake(ctx sdk.Context, chainID string, providerAddr t
 
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
 func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsensusValidator {
+	// sort the bonded validators by power in descending order
+	sort.Slice(bondedValidators, func(i, j int) bool {
+		iTokens := bondedValidators[i].GetTokens()
+		jTokens := bondedValidators[j].GetTokens()
+		result := iTokens.GT(jTokens)
+		return result
+	})
+
 	// take only the first `MaxValidatorRank` many validators; others are not allowed to validate
 	maxRank, found := k.GetMaxValidatorRank(ctx, chainID)
-	if found {
-		bondedValidators = bondedValidators[:maxRank]
+	if found && maxRank > 0 && int(maxRank) < len(bondedValidators) {
+		tmpValidators := bondedValidators[:maxRank]
+
+		// also include other validators that have the same number of tokens as the last validator in the list
+		for i := maxRank; int(i) < len(bondedValidators); i++ {
+			// if the validator has the same number of tokens as the last validator in the list, include it
+			if bondedValidators[i].GetTokens().Equal(bondedValidators[maxRank-1].GetTokens()) {
+				tmpValidators = append(tmpValidators, bondedValidators[i])
+			} else {
+				// since validators are sorted, we can break if we get to a validator with less tokens
+				break
+			}
+		}
+		bondedValidators = tmpValidators
 	}
+
 	nextValidators := k.FilterValidators(ctx, chainID, bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
 			return k.CanValidateChain(ctx, chainID, providerAddr) && k.FulfillsMinStake(ctx, chainID, providerAddr)

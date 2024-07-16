@@ -683,28 +683,38 @@ func findConsumerValidator(t *testing.T, v types.ConsensusValidator, valsAfter [
 	return vAfter
 }
 
+func createStakingValidatorsAndMocks(ctx sdk.Context, mocks testkeeper.MockedKeepers, powers ...int64) ([]stakingtypes.Validator, []types.ProviderConsAddress) {
+	var validators []stakingtypes.Validator
+	for i, power := range powers {
+		val := createStakingValidator(ctx, mocks, i, power, i)
+		val.Tokens = math.NewInt(power)
+		validators = append(validators, val)
+	}
+
+	var consAddrs []types.ProviderConsAddress
+	for _, val := range validators {
+		consAddr, err := val.GetConsAddr()
+		if err != nil {
+			panic(err)
+		}
+		consAddrs = append(consAddrs, types.NewProviderConsAddress(consAddr))
+	}
+	// set up mocks
+	for index, val := range validators {
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, consAddrs[index]).Return(val, nil).AnyTimes()
+	}
+
+	return validators, consAddrs
+}
+
 // TestMinStake checks that FulfillsMinStake returns true if the validator has more than the min stake
 // and false otherwise
 func TestMinStake(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// create 2 validators
-	valA := createStakingValidator(ctx, mocks, 1, 1, 1)
-	valA.Tokens = math.NewInt(1)
-	valB := createStakingValidator(ctx, mocks, 2, 2, 2)
-	valB.Tokens = math.NewInt(2)
-
-	// get their cons addresses
-	valAConsAddr, err := valA.GetConsAddr()
-	require.NoError(t, err)
-
-	valBConsAddr, err := valB.GetConsAddr()
-	require.NoError(t, err)
-
-	// set up mocks
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
+	// create two validators with powers 1 and 2
+	_, consAddrs := createStakingValidatorsAndMocks(ctx, mocks, 1, 2)
 
 	testCases := []struct {
 		name           string
@@ -731,10 +741,76 @@ func TestMinStake(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			providerKeeper.SetMinStake(ctx, "chainID", tc.minStake)
-			for i, valAddr := range []sdk.ConsAddress{valAConsAddr, valBConsAddr} {
-				result := providerKeeper.FulfillsMinStake(ctx, "chainID", types.NewProviderConsAddress(valAddr))
+			for i, valAddr := range consAddrs {
+				result := providerKeeper.FulfillsMinStake(ctx, "chainID", valAddr)
 				require.Equal(t, tc.expectedFulfil[i], result)
 			}
+		})
+	}
+}
+
+func TestMaxValidatorRank(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// create validators
+	vals, consAddrs := createStakingValidatorsAndMocks(ctx, mocks, 1, 2, 3, 4, 5, 5)
+
+	// opt the validators in
+	for _, valAddr := range consAddrs {
+		providerKeeper.SetOptedIn(ctx, "chainID", valAddr)
+	}
+
+	testCases := []struct {
+		name                      string
+		maxRank                   int32
+		expectedProviderConsAddrs []types.ProviderConsAddress
+	}{
+		{
+			name:                      "No max rank",
+			maxRank:                   0,
+			expectedProviderConsAddrs: consAddrs,
+		},
+		{
+			name:    "Max rank set to 1",
+			maxRank: 1,
+			// include the last two validators which each have 5 power
+			expectedProviderConsAddrs: consAddrs[len(consAddrs)-2:],
+		},
+		{
+			name:    "Max rank set to 2",
+			maxRank: 2,
+			// still only include the last two validators
+			expectedProviderConsAddrs: consAddrs[len(consAddrs)-2:],
+		},
+		{
+			name:    "Max rank set to 3",
+			maxRank: 3,
+			// now include the third to last validator as well
+			expectedProviderConsAddrs: consAddrs[len(consAddrs)-3:],
+		},
+		{
+			name:                      "Max rank set to 6",
+			maxRank:                   6,
+			expectedProviderConsAddrs: consAddrs,
+		},
+		{
+			name:                      "Max rank set to 10",
+			maxRank:                   10,
+			expectedProviderConsAddrs: consAddrs,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			providerKeeper.SetMaxValidatorRank(ctx, "chainID", tc.maxRank)
+			nextVals := providerKeeper.ComputeNextValidators(ctx, "chainID", vals)
+			nextConsAddrs := make([]types.ProviderConsAddress, len(nextVals))
+			for i, val := range nextVals {
+				nextConsAddrs[i] = types.NewProviderConsAddress(val.ProviderConsAddr)
+			}
+			// check that the expected validators are the same as the next validator set, disregarding ordering
+			require.ElementsMatch(t, tc.expectedProviderConsAddrs, nextConsAddrs)
 		})
 	}
 }
