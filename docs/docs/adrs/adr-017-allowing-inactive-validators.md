@@ -68,7 +68,7 @@ set of consumer chains.
 
 To mitigate risks from validators with little stake, we introduce a minimum stake requirement for validators to be able to validate on consumer chains, which can be set by each consumer chain independently, with a default value set by the provider chain.
 
-Additionally, we indepdently allow individual consumer chains to set a maximum rank for validators.
+Additionally, we independently allow individual consumer chains to set a maximum rank for validators.
 This means that validators above a certain position in the validator set cannot validate on the consumer chain.
 Setting this to be equal to `MaxProviderConsensusValidators` effectively disables this feature,
 which will disallow validators from outside the provider active set from validating on the consumer chain and revert them to the previous behaviour of only considering validators of the provider that are part of the active consensus validator set.
