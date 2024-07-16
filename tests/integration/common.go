@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -22,10 +22,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v4/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v4/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -54,7 +54,7 @@ func (s *CCVTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }
 
-func (s *CCVTestSuite) providerBondDenom() string {
+func (s *CCVTestSuite) providerBondDenom() (string, error) {
 	return s.providerApp.GetTestStakingKeeper().BondDenom(s.providerCtx())
 }
 
@@ -67,8 +67,8 @@ func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator,
 }
 
 func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
-	validator, found := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
+	validator, err := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	s.Require().NoError(err)
 	return validator
 }
 
@@ -90,7 +90,9 @@ func (s *CCVTestSuite) setDefaultValSigningInfo(tmVal tmtypes.Validator) {
 }
 
 func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) math.Int {
-	return s.providerApp.GetTestBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
+	denom, err := s.providerBondDenom()
+	s.Require().NoError(err)
+	return s.providerApp.GetTestBankKeeper().GetBalance(providerCtx, delAddr, denom).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
@@ -147,12 +149,12 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 }
 
 // delegate delegates bondAmt to the first validator
-func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int) (initBalance math.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int) (initBalance math.Int, shares math.LegacyDec, valAddr sdk.ValAddress) {
 	return delegateByIdx(s, delAddr, bondAmt, 0)
 }
 
 // delegateByIdx delegates bondAmt to the validator at specified index in provider val set
-func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, idx int) (initBalance math.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, idx int) (initBalance math.Int, shares math.LegacyDec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 	// choose a validator
 	validator, valAddr := s.getValByIdx(idx)
@@ -172,8 +174,8 @@ func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, id
 }
 
 // undelegate unbonds an amount of delegator shares from a given validator
-func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
-	_, err := s.providerApp.GetTestStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
+func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount math.LegacyDec) (valsetUpdateId uint64) {
+	_, _, err := s.providerApp.GetTestStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
 	s.Require().NoError(err)
 
 	// save the current valset update ID
@@ -185,7 +187,7 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
-	valDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
+	valDstAddr sdk.ValAddress, sharesAmount math.LegacyDec,
 ) {
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	ctx := s.providerCtx()
@@ -200,10 +202,11 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 	)
 	s.Require().NoError(err)
 
-	providerUnbondingPeriod := stakingKeeper.UnbondingTime(ctx)
+	providerUnbondingPeriod, err := stakingKeeper.UnbondingTime(ctx)
+	s.Require().NoError(err)
 
-	valSrc, found := stakingKeeper.GetValidator(ctx, valSrcAddr)
-	s.Require().True(found)
+	valSrc, err := stakingKeeper.GetValidator(ctx, valSrcAddr)
+	s.Require().NoError(err)
 
 	// Completion time of redelegation operation will be after unbonding period if source val is bonded
 	if valSrc.IsBonded() {
@@ -272,7 +275,7 @@ func relayAllCommittedPackets(
 	s.Require().Equal(
 		expectedPackets,
 		len(commitments),
-		fmt.Sprintf("actual number of packet commitments does not match expectation; %s", msgAndArgs...),
+		fmt.Sprintf("actual number of packet commitments does not match expectation; expected: %d - got: %d", expectedPackets, len(commitments)),
 	)
 
 	// relay all packets from srcChain to counterparty
@@ -287,7 +290,7 @@ func relayAllCommittedPackets(
 		err := path.RelayPacket(packet)
 		s.Require().NoError(
 			err,
-			fmt.Sprintf("error while relaying packets; %s", msgAndArgs...),
+			fmt.Sprintf("error while relaying packets; %v", err),
 		)
 	}
 }
@@ -301,7 +304,8 @@ func relayAllCommittedPackets(
 // TODO (mpoke) get rid of consumer unbonding period
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding periods
-	providerUnbondingPeriod := s.providerApp.GetTestStakingKeeper().UnbondingTime(s.providerCtx())
+	providerUnbondingPeriod, err := s.providerApp.GetTestStakingKeeper().UnbondingTime(s.providerCtx())
+	s.Require().NoError(err)
 	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
 	var jumpPeriod time.Duration
 	if chainType == Provider {
@@ -330,7 +334,10 @@ func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, msgAndArgs
 }
 
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k testutil.TestStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
-	stakingUbd, found := k.GetUnbondingDelegationByUnbondingID(ctx, id)
+	stakingUbd, err := k.GetUnbondingDelegationByUnbondingID(ctx, id)
+	if err != nil {
+		return
+	}
 
 	for _, entry := range stakingUbd.Entries {
 		if entry.UnbondingId == id {
@@ -510,11 +517,11 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	suite.Require().Equal(exported.Tendermint, endpoint.ClientConfig.GetClientType(), "only Tendermint client supported")
 
 	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
-	require.True(endpoint.Chain.T, ok)
+	require.True(endpoint.Chain.TB, ok)
 	tmConfig.UnbondingPeriod = unbondingPeriod
 
 	trustPeriod, err := ccv.CalculateTrustPeriod(unbondingPeriod, providertypes.DefaultTrustingPeriodFraction)
-	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.TB, err)
 	tmConfig.TrustingPeriod = trustPeriod
 
 	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
@@ -528,13 +535,13 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	msg, err := clienttypes.NewMsgCreateClient(
 		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
-	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.TB, err)
 
 	res, err := endpoint.Chain.SendMsgs(msg)
-	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.TB, err)
 
 	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
-	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.TB, err)
 }
 
 // GetConsumerEndpointClientAndConsState returns the client and consensus state
@@ -564,8 +571,8 @@ func (s *CCVTestSuite) setupValidatorPowers(powers []int64) {
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	s.Require().Equal(len(powers), len(s.providerChain.Vals.Validators))
 	for idx := range s.providerChain.Vals.Validators {
-		bondAmt := sdk.NewInt(powers[idx]).Mul(sdk.DefaultPowerReduction)
-		bondAmt = bondAmt.Sub(sdk.NewInt(1)) // 1 token is bonded during the initial setup
+		bondAmt := math.NewInt(powers[idx]).Mul(sdk.DefaultPowerReduction)
+		bondAmt = bondAmt.Sub(math.NewInt(1)) // 1 token is bonded during the initial setup
 		delegateByIdx(s, delAddr, bondAmt, idx)
 	}
 
@@ -574,18 +581,22 @@ func (s *CCVTestSuite) setupValidatorPowers(powers []int64) {
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	expectedTotalPower := int64(0)
 	for idx, val := range s.providerChain.Vals.Validators {
-		actualPower := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		actualPower, err := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().NoError(err)
 		s.Require().Equal(powers[idx], actualPower)
 		expectedTotalPower += powers[idx]
 	}
-	s.Require().Equal(expectedTotalPower, stakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+
+	totalPower, err := stakingKeeper.GetLastTotalPower(s.providerCtx())
+	s.Require().NoError(err)
+	s.Require().Equal(expectedTotalPower, totalPower.Int64())
 }
 
 // mustGetStakingValFromTmVal returns the staking validator from the current state of the staking keeper,
 // corresponding to a given tendermint validator. Note this func will fail the test if the validator is not found.
 func (s *CCVTestSuite) mustGetStakingValFromTmVal(tmVal tmtypes.Validator) (stakingVal stakingtypes.Validator) {
-	stakingVal, found := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(tmVal.Address))
-	s.Require().True(found)
+	stakingVal, err := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(tmVal.Address))
+	s.Require().NoError(err)
 	return stakingVal
 }
 

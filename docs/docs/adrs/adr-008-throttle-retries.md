@@ -19,7 +19,7 @@ Accepted
 
 For context on why the throttling mechanism exists, see [ADR 002](./adr-002-throttle.md).
 
-Note the terms slash throttling and jail throttling are synonymous, since in replicated security a `SlashPacket` simply jails a validator for downtime infractions.  
+Note the terms slash throttling and jail throttling are synonymous, since in Interchain Security a `SlashPacket` simply jails a validator for downtime infractions.
 
 Currently the throttling mechanism is designed so that provider logic (slash meter, etc.) dictates how many `SlashPackets` can be handled over time. 
 Throttled `SlashPackets` are persisted on the provider, leading to multiple possible issues. Namely:

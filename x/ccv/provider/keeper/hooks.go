@@ -1,15 +1,17 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Wrapper struct
@@ -31,11 +33,13 @@ func (k *Keeper) Hooks() Hooks {
 // staking hooks
 //
 
-func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
+func (h Hooks) AfterUnbondingInitiated(goCtx context.Context, id uint64) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) error {
+func (h Hooks) AfterValidatorCreated(goCtx context.Context, valAddr sdk.ValAddress) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	if h.k.ValidatorConsensusKeyInUse(ctx, valAddr) {
 		// Abort TX, do NOT allow validator to be created
 		panic("cannot create a validator with a consensus key that is already in use or was recently in use as an assigned consumer chain key")
@@ -43,7 +47,9 @@ func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) er
 	return nil
 }
 
-func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) error {
+func (h Hooks) AfterValidatorRemoved(goCtx context.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(ctx, nil) {
 		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
 			consumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
@@ -61,35 +67,39 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 	return nil
 }
 
-func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationCreated(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeDelegationSharesModified(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationSharesModified(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterDelegationModified(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterDelegationModified(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeValidatorSlashed(_ sdk.Context, _ sdk.ValAddress, _ sdk.Dec) error {
+func (h Hooks) BeforeValidatorSlashed(_ context.Context, _ sdk.ValAddress, _ math.LegacyDec) error {
 	return nil
 }
 
-func (h Hooks) BeforeValidatorModified(_ sdk.Context, _ sdk.ValAddress) error {
+func (h Hooks) BeforeValidatorModified(_ context.Context, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorBonded(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorBonded(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorBeginUnbonding(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationRemoved(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+	return nil
+}
+
+func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) error {
 	return nil
 }
 
@@ -100,29 +110,38 @@ func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.Va
 // AfterProposalSubmission - call hook if registered
 // After a consumerAddition proposal submission, a record is created
 // that maps the proposal ID to the consumer chain ID.
-func (h Hooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
+func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	if p, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
 		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
 	}
+	return nil
 }
 
 // AfterProposalVotingPeriodEnded - call hook if registered
 // After proposal voting ends, the consumer chainID in store is deleted.
 // When a consumerAddition proposal passes, the consumer chainID is available in providerKeeper.GetAllPendingConsumerAdditionProps
 // or providerKeeper.GetAllConsumerChains(ctx).
-func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64) {
+func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalID uint64) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	if _, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
 		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
 	}
+	return nil
 }
 
-func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
+func (h Hooks) AfterProposalDeposit(ctx context.Context, proposalID uint64, depositorAddr sdk.AccAddress) error {
+	return nil
 }
 
-func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {
+func (h Hooks) AfterProposalVote(ctx context.Context, proposalID uint64, voterAddr sdk.AccAddress) error {
+	return nil
 }
 
-func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
+func (h Hooks) AfterProposalFailedMinDeposit(ctx context.Context, proposalID uint64) error {
+	return nil
 }
 
 // GetConsumerAdditionLegacyPropFromProp extracts a consumer addition legacy proposal from
@@ -131,9 +150,9 @@ func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 	ctx sdk.Context,
 	proposalID uint64,
 ) (providertypes.ConsumerAdditionProposal, bool) {
-	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
-	if !ok {
-		panic(fmt.Errorf("failed to get proposal %d from store", proposalID))
+	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalID)
+	if err != nil {
+		return providertypes.ConsumerAdditionProposal{}, false
 	}
 
 	// Iterate over the messages in the proposal
@@ -156,8 +175,4 @@ func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 		}
 	}
 	return providertypes.ConsumerAdditionProposal{}, false
-}
-
-func (h Hooks) BeforeTokenizeShareRecordRemoved(_ sdk.Context, _ uint64) error {
-	return nil
 }

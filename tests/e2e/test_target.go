@@ -24,7 +24,13 @@ type ExecutionTarget interface {
 	Delete() error
 	Info() string
 }
-
+type TargetConfig struct {
+	gaiaTag         string
+	localSdkPath    string
+	useGaia         bool
+	providerVersion string
+	consumerVersion string
+}
 type DockerContainer struct {
 	targetConfig TargetConfig
 	containerCfg ContainerConfig

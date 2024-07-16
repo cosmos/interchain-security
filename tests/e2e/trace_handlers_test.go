@@ -6,9 +6,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -28,7 +30,7 @@ var proposalInStateSteps = []Step{
 						Deposit:  10000001,
 						Chain:    ChainID("foo"),
 						StopTime: 0,
-						Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
+						Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 					},
 				},
 			},
@@ -114,22 +116,20 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 					Chain:         ChainID("test"),
 					SpawnTime:     0,
 					InitialHeight: clienttypes.Height{RevisionNumber: 5, RevisionHeight: 5},
-					Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+					Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 				},
 			},
 		}},
-		"params-proposal": {ChainState{
+		"IBC trasfer update params": {ChainState{
 			ValBalances: &map[ValidatorID]uint{
 				ValidatorID("alice"): 9889999998,
 				ValidatorID("bob"):   9960000001,
 			},
 			Proposals: &map[uint]Proposal{
-				1: ParamsProposal{
-					Deposit:  10000001,
-					Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
-					Subspace: "staking",
-					Key:      "MaxValidators",
-					Value:    "105",
+				1: IBCTransferParamsProposal{
+					Deposit: 10000001,
+					Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+					Params:  IBCTransferParams{true, true},
 				},
 			},
 		}},
@@ -139,7 +139,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 					Deposit:  10000001,
 					Chain:    ChainID("test123"),
 					StopTime: 5000000000,
-					Status:   "PROPOSAL_STATUS_PASSED",
+					Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 				},
 			},
 			ValBalances: &map[ValidatorID]uint{

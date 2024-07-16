@@ -29,14 +29,14 @@ A protocol built on IBC that allows delegators on a cosmos chain to re-delegate 
 ## Consumer Chain
 
 Chain that is secured by the validator set of the provider, instead of its own.
-Replicated security allows the provider chain validator set to validate blocks on the consumer chain.
+Interchain Security allows a subset of the provider chain's validator set to validate blocks on the consumer chain.
 
 ## Standalone Chain
 
-Chain that is secured by its own validator set. This chain does not participate in replicated security.
+Chain that is secured by its own validator set. This chain does not participate in Interchain Security.
 
 Standalone chains may sometimes be called "sovereign" - the terms are synonymous.
 
 ## Changeover Procedure
 
-Chains that were not initially launched as consumers of replicated security can still participate in the protocol and leverage the economic security of the provider chain. The process where a standalone chain transitions to being a replicated consumer chain is called the **changeover procedure** and is part of the interchain security protocol. After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.
+Chains that were not initially launched as consumers of Interchain Security can still participate in the protocol and leverage the economic security of the provider chain. The process where a standalone chain transitions to being a replicated consumer chain is called the **changeover procedure** and is part of the interchain security protocol. After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.

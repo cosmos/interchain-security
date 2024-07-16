@@ -1,6 +1,6 @@
 package simibc
 
-import channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+import channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 // The number of blocks to wait before a packet or ack is available for delivery
 // after it has been committed on the chain.

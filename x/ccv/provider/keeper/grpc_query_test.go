@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/golang/mock/gomock"
 
-	"github.com/stretchr/testify/require"
-
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
@@ -136,10 +136,10 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	val := createStakingValidator(ctx, mocks, 1, 1)
+	val := createStakingValidator(ctx, mocks, 1, 1, 1)
 	valConsAddr, _ := val.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(valConsAddr)
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, true).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, nil).AnyTimes()
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{val}, []int64{1}, -1) // -1 to allow the calls "AnyTimes"
 
 	req := types.QueryConsumerChainsValidatorHasToValidateRequest{
@@ -193,19 +193,19 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 
 	pk.SetProposedConsumerChain(ctx, chainID, 1)
 	// validator with set consumer commission rate
-	expectedCommissionRate, _ := sdktypes.NewDecFromStr("0.123")
+	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.123")
 	pk.SetConsumerCommissionRate(ctx, chainID, providerAddr, expectedCommissionRate)
 	res, _ := pk.QueryValidatorConsumerCommissionRate(ctx, &req)
 	require.Equal(t, expectedCommissionRate, res.Rate)
 
 	// validator with no set consumer commission rate
 	pk.DeleteConsumerCommissionRate(ctx, chainID, providerAddr)
-	expectedCommissionRate, _ = sdktypes.NewDecFromStr("0.456")
+	expectedCommissionRate = math.LegacyMustNewDecFromStr("0.456")
 
 	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
 	val := stakingtypes.Validator{Commission: stakingtypes.Commission{CommissionRates: stakingtypes.CommissionRates{Rate: expectedCommissionRate}}}
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-		ctx, providerAddr.ToSdkConsAddr()).Return(val, true).Times(1)
+		ctx, providerAddr.ToSdkConsAddr()).Return(val, nil).Times(1)
 	res, _ = pk.QueryValidatorConsumerCommissionRate(ctx, &req)
 	require.Equal(t, expectedCommissionRate, res.Rate)
 }
@@ -229,7 +229,9 @@ func TestGetConsumerChain(t *testing.T) {
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, maxValidators, vals, powers, -1) // -1 to allow the calls "AnyTimes"
 
 	for i, val := range vals {
-		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), val.GetOperator()).Return(powers[i]).AnyTimes()
+		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+		require.NoError(t, err)
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).Return(powers[i], nil).AnyTimes()
 	}
 
 	// set Top N parameters, client ids and expected result

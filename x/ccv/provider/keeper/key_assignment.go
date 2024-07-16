@@ -6,14 +6,15 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // ParseConsumerKey parses the ED25519 PubKey`consumerKey` from a JSON string
@@ -118,7 +119,7 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 		// iterate over the validators public keys assigned for chainID
 		prefix = types.ChainIdWithLenKey(types.ConsumerValidatorsBytePrefix, *chainID)
 	}
-	iterator := sdk.KVStorePrefixIterator(store, prefix)
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		// TODO: store chainID and provider cons address in value bytes, marshaled as protobuf type
@@ -202,7 +203,7 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 		// iterate over the mappings from consensus addresses on chainID
 		prefix = types.ChainIdWithLenKey(types.ValidatorsByConsumerAddrBytePrefix, *chainID)
 	}
-	iterator := sdk.KVStorePrefixIterator(store, prefix)
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		// TODO: store chainID and consumer cons address in value bytes, marshaled as protobuf type
@@ -305,7 +306,7 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 
 	startPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneV2BytePrefix, chainID)
 	iterator := store.Iterator(startPrefix,
-		sdk.InclusiveEndBytes(types.ConsumerAddrsToPruneV2Key(chainID, ts)))
+		storetypes.InclusiveEndBytes(types.ConsumerAddrsToPruneV2Key(chainID, ts)))
 	defer iterator.Close()
 
 	var keysToDel [][]byte
@@ -348,7 +349,7 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPruneV2) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneV2BytePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		_, ts, err := types.ParseChainIdAndTsKey(types.ConsumerAddrsToPruneV2BytePrefix, iterator.Key())
@@ -410,7 +411,7 @@ func (k Keeper) AssignConsumerKey(
 	}
 	providerAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	if existingVal, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr.ToSdkConsAddr()); found {
+	if existingVal, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr.ToSdkConsAddr()); err == nil {
 		// If there is already a different validator using the consumer key to validate on the provider
 		// we prevent assigning the consumer key.
 		if existingVal.OperatorAddress != validator.OperatorAddress {
@@ -462,10 +463,14 @@ func (k Keeper) AssignConsumerKey(
 		if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
 			// mark the old consumer address as prunable once UnbondingPeriod elapses;
 			// note: this state is removed on EndBlock
+			unbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
+			if err != nil {
+				return err
+			}
 			k.AppendConsumerAddrsToPrune(
 				ctx,
 				chainID,
-				ctx.BlockTime().Add(k.stakingKeeper.UnbondingTime(ctx)),
+				ctx.BlockTime().Add(unbondingPeriod),
 				oldConsumerAddr,
 			)
 		} else {
@@ -559,10 +564,10 @@ func (k Keeper) IsConsumerProposedOrRegistered(ctx sdk.Context, chainID string) 
 // In case it panics, the TX aborts and thus, the validator is not created. See AfterValidatorCreated hook.
 func (k Keeper) ValidatorConsensusKeyInUse(ctx sdk.Context, valAddr sdk.ValAddress) bool {
 	// Get the validator being added in the staking module.
-	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
 		// Abort TX, do NOT allow validator to be created
-		panic("did not find newly created validator in staking module")
+		panic(fmt.Errorf("error finding newly created validator in staking module: %w", err))
 	}
 
 	// Get the consensus address of the validator being added

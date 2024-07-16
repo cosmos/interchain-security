@@ -1,7 +1,7 @@
 package integration
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 )
 
 // TestUndelegationCompletion tests that undelegations complete after
@@ -10,7 +10,7 @@ func (s *CCVTestSuite) TestUndelegationCompletion() {
 	s.SetupCCVChannel(s.path)
 
 	// delegate bondAmt and undelegate 1/4 of it
-	bondAmt := sdk.NewInt(10000000)
+	bondAmt := math.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 4)
 	// - check that staking unbonding op was created
@@ -21,12 +21,14 @@ func (s *CCVTestSuite) TestUndelegationCompletion() {
 
 	// unbond on provider
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
-	incrementTime(s, stakingKeeper.UnbondingTime(s.providerCtx()))
+	unbondingPeriod, err := stakingKeeper.UnbondingTime(s.providerCtx())
+	s.Require().NoError(err)
+	incrementTime(s, unbondingPeriod)
 
 	// check that the unbonding operation completed
 	checkStakingUnbondingOps(s, valsetUpdateID, false)
 	// - check that necessary delegated coins have been returned
-	unbondAmt := bondAmt.Quo(sdk.NewInt(4))
+	unbondAmt := bondAmt.Quo(math.NewInt(4))
 	stillBondedAmt := bondAmt.Sub(unbondAmt)
 	s.Require().Equal(
 		initBalance.Sub(stillBondedAmt),

@@ -43,6 +43,7 @@ func getAllKeyPrefixes() []byte {
 		PrevStandaloneChainByteKey,
 		PendingPacketsIndexByteKey,
 		SlashRecordByteKey,
+		ParametersByteKey,
 	}
 }
 
@@ -68,8 +69,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		// PendingDataPacketsKey() does not use duplicated prefix with value of 0x06
 		PreCCVKey(),
 		InitialValSetKey(),
-		// LastStandaloneHeightKey() is depreciated
-		SmallestNonOptOutPowerKey(),
+		// LastStandaloneHeightKey() is deprecated
 		HistoricalInfoKey(0),
 		PacketMaturityTimeKey(0, time.Time{}),
 		HeightValsetUpdateIDKey(0),

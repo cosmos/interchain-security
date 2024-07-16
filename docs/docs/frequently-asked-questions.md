@@ -80,7 +80,7 @@ Consumer chain upgrades are unlikely to impact the provider chain, as long as th
 
 ## How can I connect to the testnets?
 
-Check out the [Joining Replicated Security testnet](./validators/joining-testnet.md) section.
+Check out the [Joining Interchain Security testnet](./validators/joining-testnet.md) section.
 
 ## How do I start using ICS?
 

@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,9 +15,9 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v4/testutil/crypto"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/testutil/crypto"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Tests validation of consumer states and params within a provider genesis state
@@ -71,7 +72,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, 600),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -88,7 +89,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, 600),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -105,7 +106,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, 600),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -126,7 +127,7 @@ func TestValidateGenesisState(t *testing.T) {
 					ccv.DefaultCCVTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
-					sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, 600),
+					sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -147,7 +148,7 @@ func TestValidateGenesisState(t *testing.T) {
 					ccv.DefaultCCVTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
-					sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, 600),
+					sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -168,7 +169,7 @@ func TestValidateGenesisState(t *testing.T) {
 					0, // 0 ccv timeout here
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
-					sdk.Coin{Denom: "stake", Amount: sdk.NewInt(1000000)}, 600),
+					sdk.Coin{Denom: "stake", Amount: math.NewInt(1000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -189,7 +190,7 @@ func TestValidateGenesisState(t *testing.T) {
 					ccv.DefaultCCVTimeoutPeriod,
 					0, // 0 slash meter replenish period here
 					types.DefaultSlashMeterReplenishFraction,
-					sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, 600),
+					sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -210,7 +211,7 @@ func TestValidateGenesisState(t *testing.T) {
 					ccv.DefaultCCVTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
 					"1.15",
-					sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}, 600),
+					sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -366,7 +367,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "st", Amount: sdk.NewInt(10000000)}, 600),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "st", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,
@@ -383,7 +384,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: sdk.NewInt(-1000000)}, 600),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(-1000000)}, 600, 24),
 				nil,
 				nil,
 				nil,

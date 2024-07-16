@@ -1,7 +1,7 @@
 syntax = "proto3";
 package interchain_security.ccv.consumer.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types";
+option go_package = "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types";
 
 import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
@@ -27,7 +27,10 @@ message CrossChainValidator {
     (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey",
     (gogoproto.moretags) = "yaml:\"consensus_pubkey\""
   ];
-  bool opted_out = 4;
+
+  // !!! DEPRECATED !!! opted_out is deprecated because after the introduction of Partial Set Security (PSS)
+  // we removed the soft opt-out feature.
+  bool opted_out = 4 [deprecated = true];
 }
 
 // A record storing the state of a slash packet sent to the provider chain

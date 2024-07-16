@@ -1,11 +1,12 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -14,8 +15,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
@@ -217,7 +218,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			k.GetCCVTimeoutPeriod(ctx),
 		)
 		if err != nil {
-			if clienttypes.ErrClientNotActive.Is(err) {
+			if errors.Is(err, clienttypes.ErrClientNotActive) {
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				k.Logger(ctx).Info("IBC client is expired, cannot send IBC packet; leaving packet data stored:", "type", p.Type.String())

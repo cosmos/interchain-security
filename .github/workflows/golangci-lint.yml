@@ -9,14 +9,15 @@ on:
   merge_group:
 permissions:
   contents: read
+
 jobs:
   golangci:
     name: golangci-lint
-    runs-on: ubuntu-latest
+    runs-on: Gaia-Runner-medium
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.22'
       - uses: technote-space/get-diff-action@v6.1.2
         id: git_diff
         with:

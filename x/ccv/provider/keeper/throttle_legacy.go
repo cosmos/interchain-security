@@ -3,10 +3,11 @@ package keeper
 import (
 	"fmt"
 
+	storetypes "cosmossdk.io/store/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Pending packet data type enum, used to encode the type of packet data stored at each entry in the mutual queue.
@@ -26,7 +27,7 @@ func (k Keeper) LegacyGetAllThrottledPacketData(ctx sdktypes.Context, consumerCh
 
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
-	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -60,7 +61,7 @@ func (k Keeper) LegacyGetAllThrottledPacketData(ctx sdktypes.Context, consumerCh
 func (k Keeper) LegacyDeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
-	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}

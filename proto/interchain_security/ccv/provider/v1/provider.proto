@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v4/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v5/x/ccv/provider/types";
 
 import "interchain_security/ccv/v1/wire.proto";
 import "gogoproto/gogo.proto";
@@ -13,8 +13,8 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos/evidence/v1beta1/evidence.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
-
 
 //
 // Note any type defined in this file is ONLY used internally to the provider CCV module.
@@ -26,9 +26,11 @@ import "amino/amino.proto";
 // chain are expected to validate the consumer chain at spawn time or get
 // slashed. It is recommended that spawn time occurs after the proposal end
 // time.
+// Use MsgConsumerAddition to submit this proposal type.
 message ConsumerAdditionProposal {
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.goproto_stringer) = false;
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
 
   // the title of the proposal
   string title = 1;
@@ -110,7 +112,10 @@ message ConsumerAdditionProposal {
 // remove (and stop) a consumer chain. If it passes, all the consumer chain's
 // state is removed from the provider chain. The outstanding unbonding operation
 // funds are released.
+// Use MsgConsumerRemoval to submit this proposal type.
 message ConsumerRemovalProposal {
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
   // the title of the proposal
   string title = 1;
   // the description of the proposal
@@ -172,7 +177,10 @@ message EquivocationProposal {
 
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
+// Use MsgChangeRewardDenoms to submit this proposal type.
 message ChangeRewardDenomsProposal {
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
   // the title of the proposal
   string title = 1;
   // the description of the proposal
@@ -239,6 +247,9 @@ message Params {
 
   // The number of blocks that comprise an epoch.
   int64 blocks_per_epoch = 10;
+
+  // The number of epochs a validator has to validate a consumer chain in order to start receiving rewards from that chain.
+  int64 number_of_epochs_to_start_receiving_rewards = 11;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators
@@ -325,6 +336,11 @@ message ConsumerValidator {
   int64 power = 2;
   // public key the validator uses on the consumer chain during this epoch
   tendermint.crypto.PublicKey consumer_public_key = 3;
+  // height the validator had when it FIRST became a consumer validator
+  // If a validator becomes a consumer validator at height `H` and is continuously a consumer validator for all the upcoming
+  // epochs, then the height of the validator SHOULD remain `H`. This height only resets to a different height if a validator
+  // stops being a consumer validator during an epoch and later becomes again a consumer validator.
+  int64 join_height = 4;
 }
 // ConsumerRewardsAllocation stores the rewards allocated by a consumer chain
 // to the consumer rewards pool. It is used to allocate the tokens to the consumer 

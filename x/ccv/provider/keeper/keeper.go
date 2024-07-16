@@ -1,37 +1,45 @@
 package keeper
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"reflect"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	addresscodec "cosmossdk.io/core/address"
+	"cosmossdk.io/math"
+
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 
-	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
 type Keeper struct {
-	storeKey           storetypes.StoreKey
+	// address capable of executing gov messages (gov module account)
+	authority string
+
+	storeKey storetypes.StoreKey
+
 	cdc                codec.BinaryCodec
-	paramSpace         paramtypes.Subspace
 	scopedKeeper       ccv.ScopedKeeper
 	channelKeeper      ccv.ChannelKeeper
 	portKeeper         ccv.PortKeeper
@@ -42,8 +50,11 @@ type Keeper struct {
 	slashingKeeper     ccv.SlashingKeeper
 	distributionKeeper ccv.DistributionKeeper
 	bankKeeper         ccv.BankKeeper
-	govKeeper          ccv.GovKeeper
+	govKeeper          govkeeper.Keeper
 	feeCollectorName   string
+
+	validatorAddressCodec addresscodec.Codec
+	consensusAddressCodec addresscodec.Codec
 }
 
 // NewKeeper creates a new provider Keeper instance
@@ -54,69 +65,87 @@ func NewKeeper(
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper,
 	distributionKeeper ccv.DistributionKeeper, bankKeeper ccv.BankKeeper,
-	govKeeper ccv.GovKeeper, feeCollectorName string,
+	govKeeper govkeeper.Keeper,
+	authority string,
+	validatorAddressCodec, consensusAddressCodec addresscodec.Codec,
+	feeCollectorName string,
 ) Keeper {
-	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
-	}
-
 	k := Keeper{
-		cdc:                cdc,
-		storeKey:           key,
-		paramSpace:         paramSpace,
-		scopedKeeper:       scopedKeeper,
-		channelKeeper:      channelKeeper,
-		portKeeper:         portKeeper,
-		connectionKeeper:   connectionKeeper,
-		clientKeeper:       clientKeeper,
-		stakingKeeper:      stakingKeeper,
-		slashingKeeper:     slashingKeeper,
-		accountKeeper:      accountKeeper,
-		distributionKeeper: distributionKeeper,
-		bankKeeper:         bankKeeper,
-		govKeeper:          govKeeper,
-		feeCollectorName:   feeCollectorName,
+		cdc:                   cdc,
+		storeKey:              key,
+		authority:             authority,
+		scopedKeeper:          scopedKeeper,
+		channelKeeper:         channelKeeper,
+		portKeeper:            portKeeper,
+		connectionKeeper:      connectionKeeper,
+		clientKeeper:          clientKeeper,
+		stakingKeeper:         stakingKeeper,
+		slashingKeeper:        slashingKeeper,
+		accountKeeper:         accountKeeper,
+		distributionKeeper:    distributionKeeper,
+		bankKeeper:            bankKeeper,
+		feeCollectorName:      feeCollectorName,
+		validatorAddressCodec: validatorAddressCodec,
+		consensusAddressCodec: consensusAddressCodec,
+		govKeeper:             govKeeper,
 	}
 
 	k.mustValidateFields()
 	return k
 }
 
-// SetParamSpace sets the param space for the provider keeper.
-// Note: this is only used for testing!
-func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
-	k.paramSpace = ps
+// GetAuthority returns the x/ccv/provider module's authority.
+func (k Keeper) GetAuthority() string {
+	return k.authority
+}
+
+// ValidatorAddressCodec returns the app validator address codec.
+func (k Keeper) ValidatorAddressCodec() addresscodec.Codec {
+	return k.validatorAddressCodec
+}
+
+// ConsensusAddressCodec returns the app consensus address codec.
+func (k Keeper) ConsensusAddressCodec() addresscodec.Codec {
+	return k.consensusAddressCodec
 }
 
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 15 {
-		panic("number of fields in provider keeper is not 15")
+	if reflect.ValueOf(k).NumField() != 17 {
+		panic(fmt.Sprintf("number of fields in provider keeper is not 18 - have %d", reflect.ValueOf(k).NumField()))
 	}
 
-	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                               // 1
-	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                     // 2
-	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")                 // 3
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")             // 4
-	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")           // 5
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                 // 6
-	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")     // 7
-	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")           // 8
-	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")             // 9
-	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")           // 10
-	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")         // 11
-	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper") // 12
-	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                 // 13
-	ccv.PanicIfZeroOrNil(k.govKeeper, "govKeeper")                   // 14
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")     // 15
+	if k.validatorAddressCodec == nil || k.consensusAddressCodec == nil {
+		panic("validator and/or consensus address codec are nil")
+	}
+
+	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 1
+	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                           // 2
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 3
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 4
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 5
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 6
+	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")                 // 7
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 8
+	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")                 // 9
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 10
+	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper")       // 11
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                       // 12
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")           // 13
+	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 14
+	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 15
+	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 16
+
+	// this can be nil in tests
+	// ccv.PanicIfZeroOrNil(k.govKeeper, "govKeeper")                         // 17
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+ibchost.ModuleName+"-"+types.ModuleName)
+func (k Keeper) Logger(ctx context.Context) log.Logger {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	return sdkCtx.Logger().With("module", "x/"+ibchost.ModuleName+"-"+types.ModuleName)
 }
 
 // IsBound checks if the CCV module is already bound to the desired port
@@ -205,7 +234,7 @@ func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID u
 // GetAllProposedConsumerChainIDs returns the proposed chainID of all gov consumerAddition proposals that are still in the voting period.
 func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
 	defer iterator.Close()
 
 	proposedChains := []types.ProposedChain{}
@@ -246,7 +275,7 @@ func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
 	chainIDs := []string{}
 
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -289,7 +318,7 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // Thus, the returned array is in ascending order of channelIDs.
 func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.ChannelToChain) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -494,7 +523,7 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 // Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlockHeights []types.ValsetUpdateIdToHeight) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -690,7 +719,7 @@ func (k Keeper) GetSlashLog(
 	return bz != nil
 }
 
-func (k Keeper) BondDenom(ctx sdk.Context) string {
+func (k Keeper) BondDenom(ctx sdk.Context) (string, error) {
 	return k.stakingKeeper.BondDenom(ctx)
 }
 
@@ -789,7 +818,7 @@ func (k Keeper) GetAllOptedIn(
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -806,7 +835,7 @@ func (k Keeper) DeleteAllOptedIn(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 
 	var keysToDel [][]byte
 	defer iterator.Close()
@@ -824,7 +853,7 @@ func (k Keeper) SetConsumerCommissionRate(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr types.ProviderConsAddress,
-	commissionRate sdk.Dec,
+	commissionRate math.LegacyDec,
 ) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := commissionRate.Marshal()
@@ -844,18 +873,18 @@ func (k Keeper) GetConsumerCommissionRate(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr types.ProviderConsAddress,
-) (sdk.Dec, bool) {
+) (math.LegacyDec, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerCommissionRateKey(chainID, providerAddr))
 	if bz == nil {
-		return sdk.ZeroDec(), false
+		return math.LegacyZeroDec(), false
 	}
 
-	cr := sdk.Dec{}
+	cr := math.LegacyZeroDec()
 	// handle error gracefully since it's called in BeginBlockRD
 	if err := cr.Unmarshal(bz); err != nil {
 		k.Logger(ctx).Error("consumer commission rate unmarshalling failed: %s", err)
-		return sdk.ZeroDec(), false
+		return cr, false
 	}
 
 	return cr, true
@@ -869,7 +898,7 @@ func (k Keeper) GetAllCommissionRateValidators(
 ) (addresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.ConsumerCommissionRatePrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -980,7 +1009,7 @@ func (k Keeper) GetAllowList(
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.AllowlistPrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -1004,7 +1033,7 @@ func (k Keeper) IsAllowlisted(
 // DeleteAllowlist deletes all allowlisted validators
 func (k Keeper) DeleteAllowlist(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -1020,7 +1049,7 @@ func (k Keeper) DeleteAllowlist(ctx sdk.Context, chainID string) {
 // IsAllowlistEmpty returns `true` if no validator is allowlisted on chain `chainID`
 func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, chainID string) bool {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
 	defer iterator.Close()
 
 	return !iterator.Valid()
@@ -1043,7 +1072,7 @@ func (k Keeper) GetDenyList(
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.ChainIdWithLenKey(types.DenylistPrefix, chainID)
-	iterator := sdk.KVStorePrefixIterator(store, key)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -1067,7 +1096,7 @@ func (k Keeper) IsDenylisted(
 // DeleteDenylist deletes all denylisted validators
 func (k Keeper) DeleteDenylist(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -1083,7 +1112,7 @@ func (k Keeper) DeleteDenylist(ctx sdk.Context, chainID string) {
 // IsDenylistEmpty returns `true` if no validator is denylisted on chain `chainID`
 func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
 	defer iterator.Close()
 
 	return !iterator.Valid()

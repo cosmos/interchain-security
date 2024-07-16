@@ -16,9 +16,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	app "github.com/cosmos/interchain-security/v4/app/consumer"
-	consumerTypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	app "github.com/cosmos/interchain-security/v5/app/consumer"
+	consumerTypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const (
@@ -494,7 +494,9 @@ func TestConsumerGenesisTransformationFromV2ToCurrent(t *testing.T) {
 	require.EqualValues(t, srcGenesis.Params.ConsumerRedistributionFraction, resultGenesis.Params.ConsumerRedistributionFraction)
 	require.EqualValues(t, srcGenesis.Params.HistoricalEntries, resultGenesis.Params.HistoricalEntries)
 	require.EqualValues(t, srcGenesis.Params.UnbondingPeriod, resultGenesis.Params.UnbondingPeriod)
-	require.EqualValues(t, srcGenesis.Params.SoftOptOutThreshold, resultGenesis.Params.SoftOptOutThreshold)
+
+	// `SoftOptOutThreshold` is deprecated, so it should be set to zero the current version
+	require.EqualValues(t, "0", resultGenesis.Params.SoftOptOutThreshold)
 	require.EqualValues(t, srcGenesis.Params.RewardDenoms, resultGenesis.Params.RewardDenoms)
 	require.EqualValues(t, srcGenesis.Params.ProviderRewardDenoms, resultGenesis.Params.ProviderRewardDenoms)
 
@@ -565,7 +567,10 @@ func TestConsumerGenesisTransformationV330ToCurrent(t *testing.T) {
 	require.Equal(t, srcGenesis.Params.ConsumerRedistributionFraction, resultGenesis.Params.ConsumerRedistributionFraction)
 	require.Equal(t, srcGenesis.Params.HistoricalEntries, resultGenesis.Params.HistoricalEntries)
 	require.Equal(t, srcGenesis.Params.UnbondingPeriod, resultGenesis.Params.UnbondingPeriod)
-	require.Equal(t, srcGenesis.Params.SoftOptOutThreshold, resultGenesis.Params.SoftOptOutThreshold)
+
+	// `SoftOptOutThreshold` is deprecated, so it should be set to zero the current version
+	require.Equal(t, "0", resultGenesis.Params.SoftOptOutThreshold)
+
 	require.Equal(t, srcGenesis.Params.RewardDenoms, resultGenesis.Params.RewardDenoms)
 	require.Equal(t, srcGenesis.Params.ProviderRewardDenoms, resultGenesis.Params.ProviderRewardDenoms)
 
