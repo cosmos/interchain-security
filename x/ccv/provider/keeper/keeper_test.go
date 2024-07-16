@@ -877,7 +877,7 @@ func TestKeeperIntConsumerParams(t *testing.T) {
 			// Retrieve and check initial value
 			actualValue, found := tt.getFunc(ctx, chainID)
 			require.True(t, found)
-			require.Equal(t, initialValue, actualValue)
+			require.EqualValues(t, initialValue, actualValue)
 
 			// Update value
 			tt.settingFunc(ctx, chainID, int64(updatedValue))
@@ -885,7 +885,7 @@ func TestKeeperIntConsumerParams(t *testing.T) {
 			// Retrieve and check updated value
 			newActualValue, found := tt.getFunc(ctx, chainID)
 			require.True(t, found)
-			require.Equal(t, updatedValue, newActualValue)
+			require.EqualValues(t, updatedValue, newActualValue)
 
 			// Check non-existent chain ID
 			_, found = tt.getFunc(ctx, "not the chainID")
