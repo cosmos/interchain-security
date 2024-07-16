@@ -17,7 +17,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/oxyno-zeta/gomock-extra-matcher v1.2.0
 	github.com/spf13/cast v1.6.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.17.1
 	golang.org/x/crypto v0.22.0 // indirect
