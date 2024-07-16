@@ -103,7 +103,9 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().NoError(err)
 	s.Require().Equal(heightBefore+2, heightAfter)
 
-	// We've now advanced two blocks.
+	// this call was added starging cosmos-sdk v0.50.x
+	s.nextEpoch()
+
 	s.nextEpoch()
 
 	// Confirm the valset update Id was incremented twice on provider,

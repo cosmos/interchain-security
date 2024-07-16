@@ -1,26 +1,25 @@
-package vX
+package v8
 
 import (
 	"encoding/binary"
 	"time"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // CompleteUnbondingOps completes all unbonding operations.
 // Note that it must be executed before CleanupState.
-func CompleteUnbondingOps(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper, sk ccv.StakingKeeper) {
-	iterator := sdk.KVStorePrefixIterator(store, []byte{providertypes.UnbondingOpBytePrefix})
+func CompleteUnbondingOps(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper) {
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{providertypes.UnbondingOpBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		id := binary.BigEndian.Uint64(iterator.Key()[1:])
-		if err := sk.UnbondingCanComplete(ctx, id); err != nil {
+		if err := pk.UnbondingCanComplete(ctx, id); err != nil {
 			pk.Logger(ctx).Error("UnbondingCanComplete failed", "unbondingID", id, "error", err.Error())
 		}
 	}
@@ -28,8 +27,8 @@ func CompleteUnbondingOps(ctx sdk.Context, store storetypes.KVStore, pk provider
 
 // MigrateConsumerAddrsToPrune migrates the ConsumerAddrsToPrune index to ConsumerAddrsToPruneV2.
 // Note: This migration must be done before removing the VscSendTimestamp index
-func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper, sk ccv.StakingKeeper) {
-	iterator := sdk.KVStorePrefixIterator(store, []byte{providertypes.ConsumerAddrsToPruneBytePrefix})
+func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper) {
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{providertypes.ConsumerAddrsToPruneBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -56,7 +55,14 @@ func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk p
 			)
 			continue
 		}
-		pruneAfterTs := sentTime.Add(sk.UnbondingTime(ctx))
+		unbondingPeriod, err := pk.UnbondingTime(ctx)
+		if err != nil {
+			pk.Logger(ctx).Error(
+				"MigrateConsumerAddrsToPrune cannot get unbonding period from staking module",
+			)
+			continue
+		}
+		pruneAfterTs := sentTime.Add(unbondingPeriod)
 
 		var addrs providertypes.AddressList
 		err = addrs.Unmarshal(iterator.Value())
@@ -83,7 +89,7 @@ func CleanupState(store storetypes.KVStore) {
 }
 
 func removePrefix(store storetypes.KVStore, prefix byte) {
-	iterator := sdk.KVStorePrefixIterator(store, []byte{prefix})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{prefix})
 	defer iterator.Close()
 
 	var keysToDel [][]byte

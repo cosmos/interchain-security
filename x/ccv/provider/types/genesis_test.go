@@ -72,7 +72,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24),
 				nil,
 				nil,
 				nil,

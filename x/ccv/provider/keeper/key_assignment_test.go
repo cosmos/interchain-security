@@ -814,7 +814,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 		// Set the unbonding time to 60s so that a key is prunable after 60s
 		unbondingTimeInNs := time.Duration(60 * 1_000_000_000) // 60 seconds
-		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeInNs).AnyTimes()
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeInNs, nil).AnyTimes()
 
 		// The consumer chain has not yet been registered
 		// Apply some randomly generated key assignments

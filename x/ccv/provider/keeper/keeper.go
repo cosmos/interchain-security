@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"reflect"
+	"time"
 
 	addresscodec "cosmossdk.io/core/address"
 	"cosmossdk.io/math"
@@ -1155,4 +1156,12 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MinimumPowerInTopNKey(chainID))
+}
+
+func (k Keeper) UnbondingCanComplete(ctx sdk.Context, id uint64) error {
+	return k.stakingKeeper.UnbondingCanComplete(ctx, id)
+}
+
+func (k Keeper) UnbondingTime(ctx sdk.Context) (time.Duration, error) {
+	return k.stakingKeeper.UnbondingTime(ctx)
 }
