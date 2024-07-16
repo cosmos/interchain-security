@@ -682,3 +682,59 @@ func findConsumerValidator(t *testing.T, v types.ConsensusValidator, valsAfter [
 	}
 	return vAfter
 }
+
+// TestMinStake checks that FulfillsMinStake returns true if the validator has more than the min stake
+// and false otherwise
+func TestMinStake(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// create 2 validators
+	valA := createStakingValidator(ctx, mocks, 1, 1, 1)
+	valA.Tokens = math.NewInt(1)
+	valB := createStakingValidator(ctx, mocks, 2, 2, 2)
+	valB.Tokens = math.NewInt(2)
+
+	// get their cons addresses
+	valAConsAddr, err := valA.GetConsAddr()
+	require.NoError(t, err)
+
+	valBConsAddr, err := valB.GetConsAddr()
+	require.NoError(t, err)
+
+	// set up mocks
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
+
+	testCases := []struct {
+		name           string
+		minStake       int64
+		expectedFulfil []bool
+	}{
+		{
+			name:           "No min stake",
+			minStake:       0,
+			expectedFulfil: []bool{true, true},
+		},
+		{
+			name:           "Min stake set to 2",
+			minStake:       2,
+			expectedFulfil: []bool{false, true},
+		},
+		{
+			name:           "Min stake set to 3",
+			minStake:       3,
+			expectedFulfil: []bool{false, false},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			providerKeeper.SetMinStake(ctx, "chainID", tc.minStake)
+			for i, valAddr := range []sdk.ConsAddress{valAConsAddr, valBConsAddr} {
+				result := providerKeeper.FulfillsMinStake(ctx, "chainID", types.NewProviderConsAddress(valAddr))
+				require.Equal(t, tc.expectedFulfil[i], result)
+			}
+		})
+	}
+}
