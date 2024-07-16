@@ -124,6 +124,14 @@
     }
   },
   {
+    "ActionType": "main.OptInAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "alice"
+    },
+    "State": {}
+  },
+  {
     "ActionType": "main.VoteGovProposalAction",
     "Action": {
       "Chain": "provi",
@@ -184,7 +192,7 @@
           "Stake": 500000000
         }
       ],
-      "GenesisChanges": ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\""
+      "GenesisChanges": ""
     },
     "State": {
       "consu": {
@@ -262,8 +270,7 @@
         "ValBalances": null,
         "ProposedConsumerChains": null,
         "ValPowers": {
-          "alice": 500,
-          "bob": 20
+          "alice": 500
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
@@ -311,8 +318,7 @@
         "ValBalances": null,
         "ProposedConsumerChains": null,
         "ValPowers": {
-          "alice": 511,
-          "bob": 20
+          "alice": 511
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
@@ -354,7 +360,7 @@
         "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
-          "bob": 20
+          "bob": 0
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
@@ -406,7 +412,7 @@
         "ProposedConsumerChains": null,
         "ValPowers": {
           "alice": 511,
-          "bob": 20
+          "bob": 0
         },
         "StakedTokens": null,
         "IBCTransferParams": null,

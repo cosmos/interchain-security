@@ -21,7 +21,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		err := k.BindPort(ctx, ccv.ProviderPortID)
 		if err != nil {
 			// If the binding fails, the chain MUST NOT start
-			panic(fmt.Errorf("could not claim port capability: %v", err))
+			panic(fmt.Errorf("could not claim port capability: %w", err))
 		}
 	}
 

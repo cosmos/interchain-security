@@ -678,8 +678,6 @@ func New(
 		panic(err)
 	}
 
-	// create the simulation manager and define the order of the modules for deterministic simulations
-
 	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
 	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
 	app.UpgradeKeeper.SetUpgradeHandler(
@@ -743,7 +741,7 @@ func New(
 		},
 	)
 	if err != nil {
-		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
+		panic(fmt.Errorf("failed to create AnteHandler: %w", err))
 	}
 
 	app.SetInitChainer(app.InitChainer)
@@ -1060,7 +1058,5 @@ func MakeTestEncodingConfig() appencoding.EncodingConfig {
 
 func makeEncodingConfig() appencoding.EncodingConfig {
 	encodingConfig := appencoding.MakeTestEncodingConfig()
-	// std.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	// std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	return encodingConfig
 }

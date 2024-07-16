@@ -1,3 +1,7 @@
+---
+sidebar_position: 5
+---
+
 # Democracy modules
 
 This section is relevant for chains transitioning from a standalone chain and new consumer chains that require some functionality from the `x/staking` module.

@@ -7,10 +7,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
 
-// starts a provider chain and a consumer chain with two validators,
-// where the voting power is distributed in order that the smallest validator
-// can soft opt-out of validating the consumer chain.
-func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
+// starts a provider chain and an Opt-In consumer chain with one validator
+func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 	s := []Step{
 		{
 			// Create a provider chain with two validators, where one validator holds 96% of the voting power
@@ -83,6 +81,13 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 			},
 		},
 		{
+			Action: OptInAction{
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("alice"),
+			},
+			State: State{},
+		},
+		{
 			Action: VoteGovProposalAction{
 				Chain:      ChainID("provi"),
 				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
@@ -109,19 +114,12 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 		},
 		{
 			// start a consumer chain using a single big validator knowing that it holds more than 2/3 of the voting power
-			// and that the other validators hold less than 5% so they won't get jailed thanks to the sof opt-out mechanism.
 			Action: StartConsumerChainAction{
 				ConsumerChain: ChainID(consumerName),
 				ProviderChain: ChainID("provi"),
 				Validators: []StartChainValidator{
 					{Id: ValidatorID("alice"), Stake: 500000000, Allocation: 10000000000},
 				},
-				// For consumers that're launching with the provider being on an earlier version
-				// of ICS before the soft opt-out threshold was introduced, we need to set the
-				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-				// consumer binary doesn't panic. Sdk requires that all params are set to valid
-				// values from the genesis file.
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -176,7 +174,6 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 500,
-						ValidatorID("bob"):   20,
 					},
 				},
 			},
@@ -192,7 +189,6 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   20,
 					},
 				},
 			},
@@ -242,7 +238,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   20,
+						ValidatorID("bob"):   0,
 					},
 				},
 			},
@@ -282,7 +278,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 					// since its light client is frozen on the provider
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   20,
+						ValidatorID("bob"):   0,
 					},
 				},
 			},
