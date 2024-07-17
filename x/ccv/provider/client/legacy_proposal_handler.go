@@ -84,7 +84,8 @@ Where proposal.json contains:
 				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission,
 				proposal.DistributionTransmissionChannel, proposal.HistoricalEntries,
 				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod, proposal.TopN,
-				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist)
+				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist,
+				proposal.MinStake, proposal.MaxValidatorRank)
 
 			from := clientCtx.GetFromAddress()
 
@@ -261,7 +262,7 @@ Where proposal.json contains:
 
 			content := types.NewConsumerModificationProposal(
 				proposal.Title, proposal.Summary, proposal.ChainId, proposal.TopN,
-				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist)
+				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist, proposal.MinStake, proposal.MaxValidatorRank)
 
 			from := clientCtx.GetFromAddress()
 

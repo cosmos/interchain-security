@@ -83,6 +83,8 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *ty
 		ValidatorSetCap:    proposal.ValidatorSetCap,
 		Allowlist:          proposal.Allowlist,
 		Denylist:           proposal.Denylist,
+		MinStake:           proposal.MinStake,
+		MaxRank:            proposal.MaxRank,
 	}
 
 	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
@@ -392,6 +394,8 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
 		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
+		k.SetMinStake(cachedCtx, prop.ChainId, prop.MinStake)
+		k.SetMaxValidatorRank(cachedCtx, prop.ChainId, prop.MaxRank)
 
 		for _, address := range prop.Allowlist {
 			consAddr, err := sdk.ConsAddressFromBech32(address)

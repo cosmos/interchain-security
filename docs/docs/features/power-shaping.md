@@ -16,7 +16,7 @@ maximum, will validate the consumer chain.
 :::info
 This is only applicable to Opt In chains (chains with Top N = 0).
 :::
-1) **Capping the fraction of power any single validator can have**: The consumer chain can specify a maximum fraction
+2) **Capping the fraction of power any single validator can have**: The consumer chain can specify a maximum fraction
 of the total voting power that any single validator in its validator set should have.
 This is a security measure with the intention of making it harder for a single large validator to take over a consumer chain. This mitigates the risk of an Opt In chain with only a few validators being dominated by a validator with a large amount of stake opting in.
 For example, setting this fraction to e.g. 33% would mean that no single validator can have more than 33% of the total voting power,
@@ -28,7 +28,7 @@ This is a soft cap, and the actual power of a validator can exceed this fraction
 Rewards are distributed proportionally to validators with respect to their capped voting power on the consumer,
 not their total voting power on the provider.
 :::
-1) **Allowlist and denylist**: The consumer chain can specify a list of validators that are allowed or disallowed from participating in the validator set. If an allowlist is set, all validators not on the allowlist cannot validate the consumer chain. If a validator is on both lists, the denylist takes precedence, that is, they cannot validate the consumer chain. If neither list is set, all validators are able to validate the consumer chain.
+3) **Allowlist and denylist**: The consumer chain can specify a list of validators that are allowed or disallowed from participating in the validator set. If an allowlist is set, all validators not on the allowlist cannot validate the consumer chain. If a validator is on both lists, the denylist takes precedence, that is, they cannot validate the consumer chain. If neither list is set, all validators are able to validate the consumer chain.
 
 :::warning
 Note that if denylisting is used in a Top N consumer chain, then the chain might not be secured by N% of the total provider's
@@ -36,9 +36,13 @@ power. For example, consider that the top validator `V` on the provider chain ha
 then if `V` is denylisted, the consumer chain would only be secured by at least 40% of the provider's power.
 :::
 
+1) **Maximum validator rank**: The consumer chain can specify a maximum position in the validator set that a validator can have on the provider chain to be able to validate the consumer chain. This can be used to ensure that only validators with relatively large amounts of stake can validate the consumer chain. For example, setting this to 20 would mean only the 20 validators with the most voting stake on the provider chain can validate the consumer chain.
+
+2) **Minimum validator stake**: The consumer chain can specify a minimum amount of stake that a validator must have on the provider chain to be able to validate the consumer chain. This can be used to ensure that only validators with a certain amount of stake can validate the consumer chain. For example, setting this to 1000 would mean only validators with at least 1000 tokens staked on the provider chain can validate the consumer chain.
+
 All these mechanisms are set by the consumer chain in the `ConsumerAdditionProposal`. They operate *solely on the provider chain*, meaning the consumer chain simply receives the validator set after these rules have been applied and does not have any knowledge about whether they are applied.
 
-Each of these mechanisms is *set during the consumer addition proposal* (see [Onboarding](../consumer-development/onboarding.md#3-submit-a-governance-proposal)), and is currently *immutable* after the chain has been added.
+Each of these mechanisms is *set during the consumer addition proposal* (see [Onboarding](../consumer-development/onboarding.md#3-submit-a-governance-proposal)).
 
 The values can be seen by querying the list of consumer chains:
 ```bash

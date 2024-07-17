@@ -41,6 +41,8 @@ type ConsumerAdditionProposalJSON struct {
 	ValidatorSetCap    uint32   `json:"validator_set_cap"`
 	Allowlist          []string `json:"allowlist"`
 	Denylist           []string `json:"denylist"`
+	MinStake           uint64   `json:"min_stake"`
+	MaxValidatorRank   uint32   `json:"max_validator_rank"`
 }
 
 type ConsumerAdditionProposalReq struct {
@@ -172,6 +174,8 @@ type ConsumerModificationProposalJSON struct {
 	ValidatorSetCap    uint32   `json:"validator_set_cap"`
 	Allowlist          []string `json:"allowlist"`
 	Denylist           []string `json:"denylist"`
+	MinStake           uint64   `json:"min_stake"`
+	MaxValidatorRank   uint32   `json:"max_validator_rank"`
 
 	Deposit string `json:"deposit"`
 }
