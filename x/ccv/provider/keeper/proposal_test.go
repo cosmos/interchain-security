@@ -16,9 +16,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	abci "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
@@ -693,7 +692,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			"consumer_redistribution_fraction": "0.75",
 			"historical_entries": 10000,
 			"unbonding_period": 1728000000000000,
-			"soft_opt_out_threshold": "0.05",
+			"soft_opt_out_threshold": "0",
 			"reward_denoms": [],
 			"provider_reward_denoms": [],
 			"retry_delay_period": 3600000000000
