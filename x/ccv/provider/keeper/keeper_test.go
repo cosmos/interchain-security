@@ -745,38 +745,6 @@ func TestConsumerCommissionRate(t *testing.T) {
 	require.False(t, found)
 }
 
-// TestValidatorsPowerCap tests the `SetValidatorsPowerCap`, `GetValidatorsPowerCap`, and `DeleteValidatorsPowerCap` methods
-func TestValidatorsPowerCap(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	expectedPowerCap := uint32(10)
-	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", expectedPowerCap)
-	powerCap, found := providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
-	require.Equal(t, expectedPowerCap, powerCap)
-	require.True(t, found)
-
-	providerKeeper.DeleteValidatorsPowerCap(ctx, "chainID")
-	_, found = providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
-	require.False(t, found)
-}
-
-// TestValidatorSetCap tests the `SetValidatorSetCap`, `GetValidatorSetCap`, and `DeleteValidatorSetCap` methods
-func TestValidatorSetCap(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	expectedPowerCap := uint32(10)
-	providerKeeper.SetValidatorSetCap(ctx, "chainID", expectedPowerCap)
-	powerCap, found := providerKeeper.GetValidatorSetCap(ctx, "chainID")
-	require.Equal(t, expectedPowerCap, powerCap)
-	require.True(t, found)
-
-	providerKeeper.DeleteValidatorSetCap(ctx, "chainID")
-	_, found = providerKeeper.GetValidatorSetCap(ctx, "chainID")
-	require.False(t, found)
-}
-
 // TestAllowlist tests the `SetAllowlist`, `IsAllowlisted`, `DeleteAllowlist`, and `IsAllowlistEmpty` methods
 func TestAllowlist(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -838,18 +806,24 @@ func TestDenylist(t *testing.T) {
 // - MinimumPowerInTopN
 // - MinStake
 // - MaxValidatorRank
+// - ValidatorSetCap
+// - ValidatorPowersCap
 func TestKeeperIntConsumerParams(t *testing.T) {
 	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 	tests := []struct {
-		name        string
-		settingFunc func(sdk.Context, string, int64)
-		getFunc     func(sdk.Context, string) (int64, bool)
+		name         string
+		settingFunc  func(sdk.Context, string, int64)
+		getFunc      func(sdk.Context, string) (int64, bool)
+		initialValue int64
+		updatedValue int64
 	}{
 		{
-			name:        "Minimum Power In Top N",
-			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinimumPowerInTopN(ctx, id, val) },
-			getFunc:     func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinimumPowerInTopN(ctx, id) },
+			name:         "Minimum Power In Top N",
+			settingFunc:  func(ctx sdk.Context, id string, val int64) { k.SetMinimumPowerInTopN(ctx, id, val) },
+			getFunc:      func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinimumPowerInTopN(ctx, id) },
+			initialValue: 1000,
+			updatedValue: 2000,
 		},
 		{
 			name:        "Minimum Stake",
@@ -858,6 +832,8 @@ func TestKeeperIntConsumerParams(t *testing.T) {
 				val, found := k.GetMinStake(ctx, id)
 				return int64(val), found
 			},
+			initialValue: 1000,
+			updatedValue: 2000,
 		},
 		{
 			name:        "Maximum Validator Rank",
@@ -866,6 +842,28 @@ func TestKeeperIntConsumerParams(t *testing.T) {
 				val, found := k.GetMaxValidatorRank(ctx, id)
 				return int64(val), found
 			},
+			initialValue: 100,
+			updatedValue: 200,
+		},
+		{
+			name:        "Validator Set Cap",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetValidatorSetCap(ctx, id, uint32(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetValidatorSetCap(ctx, id)
+				return int64(val), found
+			},
+			initialValue: 10,
+			updatedValue: 200,
+		},
+		{
+			name:        "Validator Powers Cap",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetValidatorsPowerCap(ctx, id, uint32(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetValidatorsPowerCap(ctx, id)
+				return int64(val), found
+			},
+			initialValue: 10,
+			updatedValue: 11,
 		},
 	}
 
