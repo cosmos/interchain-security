@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: ADR Template
+title: ADR Fault Resolutions
 ---
 # ADR [018]: [Fault Resolutions]
 
