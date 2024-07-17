@@ -21,7 +21,6 @@ func GetConsumerParamsLegacy(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSub
 		getConsumerRedistributionFrac(ctx, paramSpace),
 		getHistoricalEntries(ctx, paramSpace),
 		getUnbondingPeriod(ctx, paramSpace),
-		getSoftOptOutThreshold(ctx, paramSpace),
 		getRewardDenoms(ctx, paramSpace),
 		getProviderRewardDenoms(ctx, paramSpace),
 		getRetryDelayPeriod(ctx, paramSpace),
@@ -87,14 +86,6 @@ func getUnbondingPeriod(ctx sdk.Context, paramStore ccvtypes.LegacyParamSubspace
 	var period time.Duration
 	paramStore.Get(ctx, ccvtypes.KeyConsumerUnbondingPeriod, &period)
 	return period
-}
-
-// getSoftOptOutThreshold returns the percentage of validators at the bottom of the set
-// that can opt out of running the consumer chain
-func getSoftOptOutThreshold(ctx sdk.Context, paramStore ccvtypes.LegacyParamSubspace) string {
-	var str string
-	paramStore.Get(ctx, ccvtypes.KeySoftOptOutThreshold, &str)
-	return str
 }
 
 func getRewardDenoms(ctx sdk.Context, paramStore ccvtypes.LegacyParamSubspace) []string {

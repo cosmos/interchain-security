@@ -46,8 +46,6 @@ func (ps testLegacyParamSubspace) Get(ctx sdk.Context, key []byte, ptr interface
 		*ptr.(*int64) = ps.HistoricalEntries
 	case string(ccvtypes.KeyConsumerUnbondingPeriod):
 		*ptr.(*time.Duration) = ps.UnbondingPeriod
-	case string(ccvtypes.KeySoftOptOutThreshold):
-		*ptr.(*string) = ps.SoftOptOutThreshold
 	case string(ccvtypes.KeyRewardDenoms):
 		*ptr.(*[]string) = ps.RewardDenoms
 	case string(ccvtypes.KeyProviderRewardDenoms):
