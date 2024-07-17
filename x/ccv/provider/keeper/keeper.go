@@ -1588,12 +1588,12 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 func (k Keeper) SetMinStake(
 	ctx sdk.Context,
 	chainID string,
-	minStake int64,
+	minStake uint64,
 ) {
 	store := ctx.KVStore(k.storeKey)
 
 	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, uint64(minStake))
+	binary.BigEndian.PutUint64(buf, minStake)
 
 	store.Set(types.MinStakeKey(chainID), buf)
 }
@@ -1603,13 +1603,13 @@ func (k Keeper) SetMinStake(
 func (k Keeper) GetMinStake(
 	ctx sdk.Context,
 	chainID string,
-) (int64, bool) {
+) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.MinStakeKey(chainID))
 	if buf == nil {
 		return 0, false
 	}
-	return int64(binary.BigEndian.Uint64(buf)), true
+	return binary.BigEndian.Uint64(buf), true
 }
 
 // DeleteMinStake removes the minimum stake required for a validator to validate
@@ -1627,12 +1627,12 @@ func (k Keeper) DeleteMinStake(
 func (k Keeper) SetMaxValidatorRank(
 	ctx sdk.Context,
 	chainID string,
-	maxRank int32,
+	maxRank uint32,
 ) {
 	store := ctx.KVStore(k.storeKey)
 
 	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, uint32(maxRank))
+	binary.BigEndian.PutUint32(buf, maxRank)
 
 	store.Set(types.MaxValidatorRankKey(chainID), buf)
 }
@@ -1642,13 +1642,13 @@ func (k Keeper) SetMaxValidatorRank(
 func (k Keeper) GetMaxValidatorRank(
 	ctx sdk.Context,
 	chainID string,
-) (int32, bool) {
+) (uint32, bool) {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.MaxValidatorRankKey(chainID))
 	if buf == nil {
 		return 0, false
 	}
-	return int32(binary.BigEndian.Uint32(buf)), true
+	return binary.BigEndian.Uint32(buf), true
 }
 
 // DeleteMaxValidatorRank removes the maximum position in the validator set a validator can have to validate

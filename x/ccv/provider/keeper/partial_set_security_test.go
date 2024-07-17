@@ -718,7 +718,7 @@ func TestMinStake(t *testing.T) {
 
 	testCases := []struct {
 		name           string
-		minStake       int64
+		minStake       uint64
 		expectedFulfil []bool
 	}{
 		{
@@ -763,7 +763,7 @@ func TestMaxValidatorRank(t *testing.T) {
 
 	testCases := []struct {
 		name                      string
-		maxRank                   int32
+		maxRank                   uint32
 		expectedProviderConsAddrs []types.ProviderConsAddress
 	}{
 		{

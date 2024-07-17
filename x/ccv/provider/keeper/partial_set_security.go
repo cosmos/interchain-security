@@ -322,17 +322,14 @@ func (k Keeper) FulfillsMinStake(ctx sdk.Context, chainID string, providerAddr t
 	}
 
 	// validator has enough stake to validate the chain
-	return validator.GetTokens().GTE(math.NewInt(minStake))
+	return validator.GetTokens().GTE(math.NewIntFromUint64(minStake))
 }
 
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
 func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsensusValidator {
-	// sort the bonded validators by power in descending order
+	// sort the bonded validators by number of staked tokens in descending order
 	sort.Slice(bondedValidators, func(i, j int) bool {
-		iTokens := bondedValidators[i].GetTokens()
-		jTokens := bondedValidators[j].GetTokens()
-		result := iTokens.GT(jTokens)
-		return result
+		return bondedValidators[i].GetTokens().GT(bondedValidators[j].GetTokens())
 	})
 
 	// take only the first `MaxValidatorRank` many validators; others are not allowed to validate
@@ -341,7 +338,7 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedVal
 		tmpValidators := bondedValidators[:maxRank]
 
 		// also include other validators that have the same number of tokens as the last validator in the list
-		for i := maxRank; int(i) < len(bondedValidators); i++ {
+		for i := int(maxRank); i < len(bondedValidators); i++ {
 			// if the validator has the same number of tokens as the last validator in the list, include it
 			if bondedValidators[i].GetTokens().Equal(bondedValidators[maxRank-1].GetTokens()) {
 				tmpValidators = append(tmpValidators, bondedValidators[i])

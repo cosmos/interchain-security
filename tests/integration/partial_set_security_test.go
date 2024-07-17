@@ -29,8 +29,8 @@ func TestMinStakeMaxRank(t *testing.T) {
 	testCases := []struct {
 		name                string
 		stakedTokens        []int64
-		minStake            int64
-		maxRank             int32
+		minStake            uint64
+		maxRank             uint32
 		expectedConsuValSet []int64
 	}{
 		{

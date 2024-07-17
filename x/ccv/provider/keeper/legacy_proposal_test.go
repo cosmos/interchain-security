@@ -294,16 +294,16 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	expectedValidatorSetCap := uint32(20)
 	expectedAllowlistedValidator := "cosmosvalcons1wpex7anfv3jhystyv3eq20r35a"
 	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
-	expectedMinStake := int64(0)
-	expectedMaxValidatorRank := int32(20)
+	expectedMinStake := uint64(0)
+	expectedMaxValidatorRank := uint32(20)
 	proposal := providertypes.NewConsumerModificationProposal("title", "description", chainID,
 		expectedTopN,
 		expectedValidatorsPowerCap,
 		expectedValidatorSetCap,
 		[]string{expectedAllowlistedValidator},
 		[]string{expectedDenylistedValidator},
-		int64(expectedMinStake),
-		int32(expectedMaxValidatorRank),
+		expectedMinStake,
+		expectedMaxValidatorRank,
 	).(*providertypes.ConsumerModificationProposal)
 
 	err := providerKeeper.HandleLegacyConsumerModificationProposal(ctx, proposal)

@@ -184,9 +184,9 @@ message MsgConsumerAddition {
   // signer address
   string authority = 18 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-  int64 min_stake = 19;
+  uint64 min_stake = 19;
   // Corresponds to the maximal rank in the provider chain validator set that a validator can have to validate on the consumer chain.
-  int32 max_rank = 20;
+  uint32 max_rank = 20;
 }
 
 // MsgConsumerAdditionResponse defines response type for MsgConsumerAddition messages
@@ -325,9 +325,9 @@ message MsgConsumerModification {
   // signer address
   string authority = 9 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-  int64 min_stake = 10;
+  uint64 min_stake = 10;
   // Corresponds to the maximal rank in the provider chain validator set that a validator can have to validate on the consumer chain.
-  int32 max_rank = 11;
+  uint32 max_rank = 11;
 }
 
 message MsgConsumerModificationResponse {}

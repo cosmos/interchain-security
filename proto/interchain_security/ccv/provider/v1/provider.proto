@@ -107,9 +107,9 @@ message ConsumerAdditionProposal {
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 19;
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-  int64 min_stake = 20;
+  uint64 min_stake = 20;
   // Corresponds to the maximal rank in the provider chain validator set that a validator can have to validate on the consumer chain.
-  int32 max_rank = 21;
+  uint32 max_rank = 21;
 }
 
 // ConsumerRemovalProposal is a governance proposal on the provider chain to
@@ -161,9 +161,9 @@ message ConsumerModificationProposal {
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-  int64 min_stake = 9;
+  uint64 min_stake = 9;
   // Corresponds to the maximal rank in the provider chain validator set that a validator can have to validate on the consumer chain.
-  int32 max_rank = 10;
+  uint32 max_rank = 10;
 }
 
 

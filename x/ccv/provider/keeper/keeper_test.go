@@ -853,12 +853,15 @@ func TestKeeperIntConsumerParams(t *testing.T) {
 		},
 		{
 			name:        "Minimum Stake",
-			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinStake(ctx, id, val) },
-			getFunc:     func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinStake(ctx, id) },
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinStake(ctx, id, uint64(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetMinStake(ctx, id)
+				return int64(val), found
+			},
 		},
 		{
 			name:        "Maximum Validator Rank",
-			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMaxValidatorRank(ctx, id, int32(val)) },
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMaxValidatorRank(ctx, id, uint32(val)) },
 			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
 				val, found := k.GetMaxValidatorRank(ctx, id)
 				return int64(val), found
