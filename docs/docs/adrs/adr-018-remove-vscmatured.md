@@ -9,7 +9,7 @@ title: Remove VSCMatured Packets
 
 ## Status
 
-Proposed
+Accepted 
 
 ## Context
 
