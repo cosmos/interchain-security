@@ -143,6 +143,10 @@ func (k Keeper) mustValidateFields() {
 	// ccv.PanicIfZeroOrNil(k.govKeeper, "govKeeper")                         // 17
 }
 
+func (k *Keeper) SetGovKeeper(govKeeper govkeeper.Keeper) {
+	k.govKeeper = govKeeper
+}
+
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx context.Context) log.Logger {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

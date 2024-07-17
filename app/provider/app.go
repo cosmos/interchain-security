@@ -373,15 +373,6 @@ func New(
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
-	app.MintKeeper = mintkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[minttypes.StoreKey]),
-		app.StakingKeeper,
-		app.AccountKeeper,
-		app.BankKeeper,
-		authtypes.FeeCollectorName,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
@@ -456,19 +447,6 @@ func New(
 		runtime.ProvideCometInfoService(),
 	)
 
-	govConfig := govtypes.DefaultConfig()
-	app.GovKeeper = govkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,
-		app.DistrKeeper,
-		app.MsgServiceRouter(),
-		govConfig,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
 	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
 		appCodec,
 		keys[providertypes.StoreKey],
@@ -483,11 +461,39 @@ func New(
 		app.AccountKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
-		*app.GovKeeper,
+		govkeeper.Keeper{}, // will be set after the GovKeeper is created
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 		authtypes.FeeCollectorName,
+	)
+
+	govConfig := govtypes.DefaultConfig()
+	app.GovKeeper = govkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.StakingKeeper,
+		app.DistrKeeper,
+		app.MsgServiceRouter(),
+		govConfig,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	// set the GovKeeper in the ProviderKeeper
+	app.ProviderKeeper.SetGovKeeper(*app.GovKeeper)
+
+	app.MintKeeper = mintkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[minttypes.StoreKey]),
+		// use the ProviderKeeper as StakingKeeper for mint
+		// because minting should be based on the consensus-active validators
+		app.ProviderKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		authtypes.FeeCollectorName,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	// gov router must be set after the provider keeper is created
