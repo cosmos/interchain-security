@@ -279,11 +279,6 @@ message ChannelToChain {
   string chain_id = 2;
 }
 
-message InitTimeoutTimestamp {
-  string chain_id = 1;
-  uint64 timestamp = 2;
-}
-
 // ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
 message ValidatorSetChangePackets {
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData list = 1
