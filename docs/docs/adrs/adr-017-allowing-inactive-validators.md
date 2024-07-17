@@ -62,12 +62,16 @@ The following changes to the state are required:
 * Store the provider consensus validator set in the provider module state under the `LastProviderConsensusValsPrefix` key. This is the last set of validators that the provider sent to the consensus engine. This is needed to compute the ValUpdates to send to the consensus engine (by diffing the current set with this last sent set).
 * Increase the `MaxValidators` parameter of the staking module to the desired size of the potential validator
 set of consumer chains.
+* Introduce two extra per-consumer-chain parameters: `MinStake` and `MaxValidatorRank`. `MinStake` is the minimum amount of stake a validator must have to be considered for validation on the consumer chain. `MaxValidatorRank` is the maximum rank of a validator that can validate on the consumer chain. The provider module will only consider the first `MaxValidatorRank` validators that have at least `MinStake` stake as potential validators for the consumer chain.
 
 ## Risk Mitigations
 
 To mitigate risks from validators with little stake, we introduce a minimum stake requirement for validators to be able to validate on consumer chains, which can be set by each consumer chain independently, with a default value set by the provider chain.
 
-Additionally, we indepdently allow individual consumer chains to disable this feature, which will disallow validators from outside the provider active set from validating on the consumer chain and revert them to the previous behaviour of only considering validators of the provider that are part of the active consensus validator set.
+Additionally, we independently allow individual consumer chains to set a maximum rank for validators.
+This means that validators above a certain position in the validator set cannot validate on the consumer chain.
+Setting this to be equal to `MaxProviderConsensusValidators` effectively disables inactive validators from validating on the consumer chain and thus
+disables the main feature described in this ADR.
 
 Additional risk mitigations are to increase the active set size slowly, and to monitor the effects on the network closely. For the first iteration, we propose to increase the active set size to 200 validators (while keeping the consensus validators to 180), thus letting the 20 validators with the most stake outside of the active set validate on consumer chains.
 

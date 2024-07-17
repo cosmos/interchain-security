@@ -191,6 +191,13 @@ const (
 	// sent to the consensus engine of the provider chain
 	LastProviderConsensusValsPrefix
 
+	// MinStakePrefix is the byte prefix for storing the mapping from consumer chains to the minimum stake required to be a validator on the consumer chain
+	MinStakePrefix
+
+	// MaxValidatorRankPrefix is the byte prefix for storing the mapping from consumer chains to the maximum position in the validator set
+	// a validator can have to be a validator on the consumer chain
+	MaxValidatorRankPrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -629,6 +636,17 @@ func MinimumPowerInTopNKey(chainID string) []byte {
 // in the last validator set sent to the consensus engine of the provider chain
 func LastProviderConsensusValidatorKey(providerAddr []byte) []byte {
 	return append([]byte{LastProviderConsensusValsPrefix}, providerAddr...)
+}
+
+// MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain `chainID`
+func MinStakeKey(chainID string) []byte {
+	return ChainIdWithLenKey(MinStakePrefix, chainID)
+}
+
+// MaxValidatorRankKey returns the key used to store the maximal position in the validator set
+// a validator can have to validate on consumer chain `chainID`
+func MaxValidatorRankKey(chainID string) []byte {
+	return ChainIdWithLenKey(MaxValidatorRankPrefix, chainID)
 }
 
 //
