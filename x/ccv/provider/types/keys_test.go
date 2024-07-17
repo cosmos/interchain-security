@@ -23,6 +23,52 @@ func TestNoDuplicates(t *testing.T) {
 	}
 }
 
+// Test that the value of all byte prefixes is preserved
+func TestPreserveBytePrefix(t *testing.T) {
+	require.Equal(t, uint8(0), providertypes.PortByteKey)
+	require.Equal(t, uint8(1), providertypes.MaturedUnbondingOpsByteKey)
+	require.Equal(t, uint8(2), providertypes.ValidatorSetUpdateIdByteKey)
+	require.Equal(t, uint8(3), providertypes.SlashMeterByteKey)
+	require.Equal(t, uint8(4), providertypes.SlashMeterReplenishTimeCandidateByteKey)
+	require.Equal(t, uint8(5), providertypes.ChainToChannelBytePrefix)
+	require.Equal(t, uint8(6), providertypes.ChannelToChainBytePrefix)
+	require.Equal(t, uint8(7), providertypes.ChainToClientBytePrefix)
+	require.Equal(t, uint8(8), providertypes.InitTimeoutTimestampBytePrefix)
+	require.Equal(t, uint8(9), providertypes.PendingCAPBytePrefix)
+	require.Equal(t, uint8(10), providertypes.PendingCRPBytePrefix)
+	require.Equal(t, uint8(11), providertypes.UnbondingOpBytePrefix)
+	require.Equal(t, uint8(12), providertypes.UnbondingOpIndexBytePrefix)
+	require.Equal(t, uint8(13), providertypes.ValsetUpdateBlockHeightBytePrefix)
+	require.Equal(t, uint8(14), providertypes.ConsumerGenesisBytePrefix)
+	require.Equal(t, uint8(15), providertypes.SlashAcksBytePrefix)
+	require.Equal(t, uint8(16), providertypes.InitChainHeightBytePrefix)
+	require.Equal(t, uint8(17), providertypes.PendingVSCsBytePrefix)
+	require.Equal(t, uint8(18), providertypes.VscSendTimestampBytePrefix)
+	require.Equal(t, uint8(19), providertypes.ThrottledPacketDataSizeBytePrefix)
+	require.Equal(t, uint8(20), providertypes.ThrottledPacketDataBytePrefix)
+	require.Equal(t, uint8(21), providertypes.GlobalSlashEntryBytePrefix)
+	require.Equal(t, uint8(22), providertypes.ConsumerValidatorsBytePrefix)
+	require.Equal(t, uint8(23), providertypes.ValidatorsByConsumerAddrBytePrefix)
+	require.Equal(t, uint8(24), providertypes.KeyAssignmentReplacementsBytePrefix)
+	require.Equal(t, uint8(25), providertypes.ConsumerAddrsToPruneBytePrefix)
+	require.Equal(t, uint8(26), providertypes.SlashLogBytePrefix)
+	require.Equal(t, uint8(27), providertypes.ConsumerRewardDenomsBytePrefix)
+	require.Equal(t, uint8(28), providertypes.VSCMaturedHandledThisBlockBytePrefix)
+	require.Equal(t, uint8(29), providertypes.EquivocationEvidenceMinHeightBytePrefix)
+	require.Equal(t, uint8(30), providertypes.ProposedConsumerChainByteKey)
+	require.Equal(t, uint8(31), providertypes.ConsumerValidatorBytePrefix)
+	require.Equal(t, uint8(32), providertypes.OptedInBytePrefix)
+	require.Equal(t, uint8(33), providertypes.TopNBytePrefix)
+	require.Equal(t, uint8(34), providertypes.ValidatorsPowerCapPrefix)
+	require.Equal(t, uint8(35), providertypes.ValidatorSetCapPrefix)
+	require.Equal(t, uint8(36), providertypes.AllowlistPrefix)
+	require.Equal(t, uint8(37), providertypes.DenylistPrefix)
+	require.Equal(t, uint8(38), providertypes.ConsumerRewardsAllocationBytePrefix)
+	require.Equal(t, uint8(39), providertypes.ConsumerCommissionRatePrefix)
+	require.Equal(t, uint8(40), providertypes.MinimumPowerInTopNBytePrefix)
+	require.Equal(t, uint8(41), providertypes.ConsumerAddrsToPruneV2BytePrefix)
+}
+
 // Returns all key prefixes to fully resolved keys, any of which should be a single, unique byte.
 func getAllKeyPrefixes() []byte {
 	return []byte{
