@@ -70,8 +70,8 @@ To mitigate risks from validators with little stake, we introduce a minimum stak
 
 Additionally, we independently allow individual consumer chains to set a maximum rank for validators.
 This means that validators above a certain position in the validator set cannot validate on the consumer chain.
-Setting this to be equal to `MaxProviderConsensusValidators` effectively disables this feature,
-which will disallow validators from outside the provider active set from validating on the consumer chain and revert them to the previous behaviour of only considering validators of the provider that are part of the active consensus validator set.
+Setting this to be equal to `MaxProviderConsensusValidators` effectively disables inactive validators from validating on the consumer chain and thus
+disables the main feature described in this ADR.
 
 Additional risk mitigations are to increase the active set size slowly, and to monitor the effects on the network closely. For the first iteration, we propose to increase the active set size to 200 validators (while keeping the consensus validators to 180), thus letting the 20 validators with the most stake outside of the active set validate on consumer chains.
 
