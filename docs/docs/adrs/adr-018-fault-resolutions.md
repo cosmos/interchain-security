@@ -5,7 +5,7 @@ title: ADR Template
 # ADR [018]: [Fault Resolutions]
 
 ## Changelog
-* 2024-07-06: Initial draft
+* 2024-07-17: Initial draft
 
 ## Status
 
@@ -96,6 +96,7 @@ to unbond in order to not be punished.
 
 * [CHIPs discussion phase: Partial Set Security](https://forum.cosmos.network/t/chips-discussion-phase-partial-set-security-updated/11775)
 
+* [Replicated vs. Mesh Security](https://informal.systems/blog/replicated-vs-mesh-security#risks-of-opt-in-security-also-known-as-ics-v-2)
 
 
 
