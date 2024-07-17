@@ -27,7 +27,8 @@ In cases of collusion, various types of misbehaviour can be performed by the val
 
 Currently, these types of attacks aren't handled in PSS, leaving the malicious validators unpunished.
 
-A potential solution is to use fraud proofs. This technology allows proving incorrect state transitions of a chain without a full node.
+A potential solution for the handling of incorrect executions is to use fraud proofs.
+ This technology allows proving incorrect state transitions of a chain without a full node.
  However, this is a complex technology, and there is no framework that works for Cosmos chains to this day.
 
 
