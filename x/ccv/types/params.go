@@ -27,9 +27,6 @@ const (
 	// decimal number. For example "0.75" would represent 75%.
 	DefaultConsumerRedistributeFrac = "0.75"
 
-	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
-	DefaultSoftOptOutThreshold = "0.05"
-
 	// Default number of historical info entries to persist in store.
 	// We use the same default as the staking module, but use a signed integer
 	// so that negative values can be caught during parameter validation in a readable way,
