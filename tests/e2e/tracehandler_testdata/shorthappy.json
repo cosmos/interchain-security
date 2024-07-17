@@ -34,6 +34,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -59,7 +60,11 @@
         "revision_height": 1
       },
       "DistributionChannel": "",
-      "TopN": 100
+      "TopN": 100,
+      "ValidatorsPowerCap": 0,
+      "ValidatorSetCap": 0,
+      "Allowlist": null,
+      "Denylist": null
     },
     "State": {
       "provi": {
@@ -73,6 +78,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -92,7 +98,7 @@
               },
               "Status": "2"
             },
-            "Type": "main.ConsumerAdditionProposal"
+            "Type": "e2e.ConsumerAdditionProposal"
           }
         }
       }
@@ -115,6 +121,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": {
@@ -147,6 +154,7 @@
         "ProposedConsumerChains": null,
         "ValPowers": null,
         "StakedTokens": null,
+        "IBCTransferParams": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -181,6 +189,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": {
@@ -224,6 +233,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -243,7 +253,7 @@
               },
               "Status": "3"
             },
-            "Type": "main.ConsumerAdditionProposal"
+            "Type": "e2e.ConsumerAdditionProposal"
           }
         }
       }
@@ -284,6 +294,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -304,6 +315,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -358,6 +370,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -378,6 +391,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -408,6 +422,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -439,6 +454,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -469,6 +485,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -500,6 +517,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -520,6 +538,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -551,6 +570,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -583,6 +603,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -603,6 +624,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -634,6 +656,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -663,6 +686,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -683,6 +707,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -713,6 +738,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -733,6 +759,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -764,6 +791,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -793,6 +821,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -813,6 +842,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -844,6 +874,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -873,6 +904,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -893,6 +925,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -924,6 +957,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -953,6 +987,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -973,6 +1008,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -1004,6 +1040,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -1033,6 +1070,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -1053,6 +1091,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -1084,6 +1123,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -1104,6 +1144,7 @@
         },
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -1139,6 +1180,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": {
           "consu": true
@@ -1157,7 +1199,7 @@
               "StopTime": 0,
               "Status": "2"
             },
-            "Type": "main.ConsumerRemovalProposal"
+            "Type": "e2e.ConsumerRemovalProposal"
           }
         }
       }
@@ -1188,6 +1230,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": {
           "consu": true
@@ -1206,7 +1249,7 @@
               "StopTime": 0,
               "Status": "4"
             },
-            "Type": "main.ConsumerRemovalProposal"
+            "Type": "e2e.ConsumerRemovalProposal"
           }
         }
       }
@@ -1230,6 +1273,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": {
           "consu": true
@@ -1248,7 +1292,7 @@
               "StopTime": 0,
               "Status": "2"
             },
-            "Type": "main.ConsumerRemovalProposal"
+            "Type": "e2e.ConsumerRemovalProposal"
           }
         }
       }
@@ -1279,6 +1323,7 @@
         "ValPowers": null,
         "StakedTokens": null,
         "IBCTransferParams": null,
+        "Params": null,
         "Rewards": null,
         "ConsumerChains": {},
         "AssignedKeys": null,
@@ -1295,7 +1340,7 @@
               "StopTime": 0,
               "Status": "3"
             },
-            "Type": "main.ConsumerRemovalProposal"
+            "Type": "e2e.ConsumerRemovalProposal"
           }
         }
       }
