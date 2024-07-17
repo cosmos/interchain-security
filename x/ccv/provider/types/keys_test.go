@@ -8,8 +8,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cryptoutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	cryptoutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.
@@ -63,6 +63,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.ConsumerCommissionRatePrefix,
 		providertypes.MinimumPowerInTopNBytePrefix,
 		providertypes.ConsumerAddrsToPruneV2BytePrefix,
+		providertypes.ParametersByteKey,
 	}
 }
 

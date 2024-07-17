@@ -13,13 +13,12 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // TestConsumerValidator tests the `SetConsumerValidator`, `IsConsumerValidator`, and `DeleteConsumerValidator` methods
@@ -111,16 +110,17 @@ func createConsumerValidator(index int, power int64, seed int) (types.ConsumerVa
 }
 
 // createStakingValidator helper function to generate a validator with the given power and with a provider address based on index
-func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, index int, power int64) stakingtypes.Validator {
-	providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{byte(index)}).PubKey()
-	consAddr := sdk.ConsAddress(providerConsPubKey.Address())
-	providerAddr := types.NewProviderConsAddress(consAddr)
-	pk, _ := cryptocodec.FromTmPubKeyInterface(providerConsPubKey)
+func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, index int, power int64, seed int) stakingtypes.Validator {
+	providerConsPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(seed).TMProtoCryptoPublicKey()
+
+	pk, _ := cryptocodec.FromCmtProtoPublicKey(providerConsPubKey)
 	pkAny, _ := codectypes.NewAnyWithValue(pk)
+	consAddr := sdk.ConsAddress(pk.Address())
+	providerAddr := types.NewProviderConsAddress(consAddr)
 	providerValidatorAddr := sdk.ValAddress(providerAddr.Address.Bytes())
 
 	mocks.MockStakingKeeper.EXPECT().
-		GetLastValidatorPower(ctx, providerValidatorAddr).Return(power).AnyTimes()
+		GetLastValidatorPower(ctx, providerValidatorAddr).Return(power, nil).AnyTimes()
 
 	return stakingtypes.Validator{
 		OperatorAddress: providerValidatorAddr.String(),
@@ -340,7 +340,7 @@ func TestFilterValidatorsConsiderAll(t *testing.T) {
 	var expectedValidators []types.ConsumerValidator
 
 	// create a staking validator A that has not set a consumer public key
-	valA := createStakingValidator(ctx, mocks, 1, 1)
+	valA := createStakingValidator(ctx, mocks, 1, 1, 1)
 	// because validator A has no consumer key set, the `ConsumerPublicKey` we expect is the key on the provider chain
 	valAConsAddr, _ := valA.GetConsAddr()
 	valAPublicKey, _ := valA.TmConsPublicKey()
@@ -351,7 +351,7 @@ func TestFilterValidatorsConsiderAll(t *testing.T) {
 	})
 
 	// create a staking validator B that has set a consumer public key
-	valB := createStakingValidator(ctx, mocks, 2, 2)
+	valB := createStakingValidator(ctx, mocks, 2, 2, 2)
 	// validator B has set a consumer key, the `ConsumerPublicKey` we expect is the key set by `SetValidatorConsumerPubKey`
 	valBConsumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	valBConsAddr, _ := valB.GetConsAddr()
@@ -382,7 +382,7 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	var expectedValidators []types.ConsumerValidator
 
 	// create a staking validator A that has not set a consumer public key
-	valA := createStakingValidator(ctx, mocks, 1, 1)
+	valA := createStakingValidator(ctx, mocks, 1, 1, 1)
 	// because validator A has no consumer key set, the `ConsumerPublicKey` we expect is the key on the provider chain
 	valAConsAddr, _ := valA.GetConsAddr()
 	valAPublicKey, _ := valA.TmConsPublicKey()
@@ -394,7 +394,7 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	expectedValidators = append(expectedValidators, expectedValAConsumerValidator)
 
 	// create a staking validator B that has set a consumer public key
-	valB := createStakingValidator(ctx, mocks, 2, 2)
+	valB := createStakingValidator(ctx, mocks, 2, 2, 2)
 	// validator B has set a consumer key, the `ConsumerPublicKey` we expect is the key set by `SetValidatorConsumerPubKey`
 	valBConsumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	valBConsAddr, _ := valB.GetConsAddr()
@@ -429,7 +429,7 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	require.Equal(t, expectedValidators, actualValidators)
 
 	// create a staking validator C that is not opted in, hence `expectedValidators` remains the same
-	valC := createStakingValidator(ctx, mocks, 3, 3)
+	valC := createStakingValidator(ctx, mocks, 3, 3, 3)
 	bondedValidators = []stakingtypes.Validator{valA, valB, valC}
 	actualValidators = providerKeeper.FilterValidators(ctx, "chainID", bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
@@ -448,7 +448,7 @@ func TestCreateConsumerValidator(t *testing.T) {
 	chainID := "chainID"
 
 	// create a validator which has set a consumer public key
-	valA := createStakingValidator(ctx, mocks, 0, 1)
+	valA := createStakingValidator(ctx, mocks, 0, 1, 1)
 	valAConsumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	valAConsAddr, _ := valA.GetConsAddr()
 	valAProviderConsAddr := types.NewProviderConsAddress(valAConsAddr)
@@ -463,7 +463,7 @@ func TestCreateConsumerValidator(t *testing.T) {
 	require.NoError(t, err)
 
 	// create a validator which has not set a consumer public key
-	valB := createStakingValidator(ctx, mocks, 1, 2)
+	valB := createStakingValidator(ctx, mocks, 1, 2, 2)
 	valBConsAddr, _ := valB.GetConsAddr()
 	valBProviderConsAddr := types.NewProviderConsAddress(valBConsAddr)
 	valBPublicKey, _ := valB.TmConsPublicKey()

@@ -10,7 +10,8 @@ import (
 	"testing"
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"cosmossdk.io/math"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
@@ -20,10 +21,10 @@ import (
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	cmttypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/interchain-security/v5/testutil/integration"
 
-	"github.com/cosmos/interchain-security/v4/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const verbose = false
@@ -161,8 +162,8 @@ func RunItfTrace(t *testing.T, path string) {
 		trustingPeriodPerChain[ChainId(consumer)] = time.Duration(params["TrustingPeriodPerChain"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 		ccvTimeoutPerChain[ChainId(consumer)] = time.Duration(params["CcvTimeout"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 	}
-	downtimeSlashPercentage := sdk.NewDec(params["DowntimeSlashPercentage"].Value.(int64))
-	doubleSignSlashPercentage := sdk.NewDec(params["DoubleSignSlashPercentage"].Value.(int64))
+	downtimeSlashPercentage := math.LegacyNewDec(params["DowntimeSlashPercentage"].Value.(int64))
+	doubleSignSlashPercentage := math.LegacyNewDec(params["DoubleSignSlashPercentage"].Value.(int64))
 	downtimeJailDuration := time.Duration(params["DowntimeJailDuration"].Value.(int64)) * time.Second
 
 	modelParams := ModelParams{
@@ -220,7 +221,8 @@ func RunItfTrace(t *testing.T, path string) {
 		driver.endAndBeginBlock("provider", 1*time.Nanosecond)
 	}
 
-	slashingParams := driver.providerSlashingKeeper().GetParams(driver.providerCtx())
+	slashingParams, err := driver.providerSlashingKeeper().GetParams(driver.providerCtx())
+	require.NoError(t, err, "Error getting slashing params")
 	slashingParams.DowntimeJailDuration = downtimeJailDuration
 	driver.providerSlashingKeeper().SetParams(driver.providerCtx(), slashingParams)
 
@@ -610,7 +612,8 @@ func CompareValidatorSets(
 	t.Helper()
 	modelValSet := ValidatorSet(currentModelState, "provider")
 
-	rawActualValSet := driver.providerValidatorSet()
+	rawActualValSet, err := driver.providerValidatorSet()
+	require.NoError(t, err, "Error getting provider validator set")
 
 	actualValSet := make(map[string]int64, len(rawActualValSet))
 
@@ -646,7 +649,8 @@ func CompareValidatorSets(
 				}
 
 				// get the validator for that address on the provider
-				providerVal, found := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), providerConsAddr.Address)
+				providerVal, err := driver.providerStakingKeeper().GetValidatorByConsAddr(driver.providerCtx(), providerConsAddr.Address)
+				require.Nil(t, err, "Error getting provider validator")
 				require.True(t, found, "Error getting provider validator")
 
 				// use the moniker of that validator
@@ -816,8 +820,8 @@ func CompareJailedValidators(
 		modelJailEndTime := modelJailEndTimes[i]
 
 		valConsAddr := sdk.ConsAddress(modelNamesToSystemConsAddr[modelJailedVal].Address)
-		valSigningInfo, found := driver.providerSlashingKeeper().GetValidatorSigningInfo(driver.providerCtx(), valConsAddr)
-		require.True(driver.t, found, "Error getting signing info for validator %v", modelJailedVal)
+		valSigningInfo, err := driver.providerSlashingKeeper().GetValidatorSigningInfo(driver.providerCtx(), valConsAddr)
+		require.NoError(driver.t, err, "Error getting signing info for validator %v", modelJailedVal)
 
 		systemJailEndTime := valSigningInfo.JailedUntil
 		actualTimeWithOffset := systemJailEndTime.Unix() - timeOffset.Unix()
@@ -844,7 +848,11 @@ func CompareJailedValidators(
 
 func (s *Stats) EnterStats(driver *Driver) {
 	// highest observed voting power
-	for _, val := range driver.providerValidatorSet() {
+	valSet, err := driver.providerValidatorSet()
+	if err != nil {
+		log.Fatalf("error getting validator set on provider: %v", err)
+	}
+	for _, val := range valSet {
 		if val.Tokens.Int64() > s.highestObservedValPower {
 			s.highestObservedValPower = val.Tokens.Int64()
 		}

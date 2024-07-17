@@ -3,24 +3,25 @@ package keeper
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 
-	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
+	evidencetypes "cosmossdk.io/x/evidence/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 //
@@ -35,6 +36,27 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	chainID string,
 	pubkey cryptotypes.PubKey,
 ) error {
+	// check that the evidence is for an ICS consumer chain
+	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"cannot find consumer chain %s",
+			chainID,
+		)
+	}
+
+	// check that the evidence is not too old
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, chainID)
+	if uint64(evidence.VoteA.Height) < minHeight {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
+			chainID,
+			evidence.VoteA.Height,
+			minHeight,
+		)
+	}
+
 	// verifies the double voting evidence using the consumer chain public key
 	if err := k.VerifyDoubleVotingEvidence(*evidence, chainID, pubkey); err != nil {
 		return err
@@ -222,7 +244,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	// create a map with the validators' address that signed header1
 	header1Signers := map[string]int{}
 	for idx, sign := range lightBlock1.Commit.Signatures {
-		if sign.Absent() {
+		if sign.BlockIDFlag == tmtypes.BlockIDFlagAbsent {
 			continue
 		}
 		header1Signers[sign.ValidatorAddress.String()] = idx
@@ -230,7 +252,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	// iterate over the header2 signers and check if they signed header1
 	for sigIdxHeader2, sign := range lightBlock2.Commit.Signatures {
-		if sign.Absent() {
+		if sign.BlockIDFlag == tmtypes.BlockIDFlagAbsent {
 			continue
 		}
 		if sigIdxHeader1, ok := header1Signers[sign.ValidatorAddress.String()]; ok {
@@ -269,17 +291,41 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 }
 
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
-// a valid light client attack on a light client that tracks an ICS consumer chain
+// a valid light client attack from an ICS consumer chain and that the light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+	consumerChainID := misbehaviour.Header1.Header.ChainID
+
 	// check that the misbehaviour is for an ICS consumer chain
-	clientId, found := k.GetConsumerClientId(ctx, misbehaviour.Header1.Header.ChainID)
+	clientId, found := k.GetConsumerClientId(ctx, consumerChainID)
 	if !found {
-		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", misbehaviour.Header1.Header.ChainID)
+		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", consumerChainID)
 	} else if misbehaviour.ClientId != clientId {
 		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain %s is %s got %s",
-			misbehaviour.Header1.Header.ChainID,
+			consumerChainID,
 			clientId,
 			misbehaviour.ClientId,
+		)
+	}
+
+	// Check that the headers are at the same height to ensure that
+	// the misbehaviour is for a light client attack and not a time violation,
+	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
+	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
+		return errorsmod.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
+	}
+
+	// Check that the evidence is not too old
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerChainID)
+	evidenceHeight := misbehaviour.Header1.GetHeight().GetRevisionHeight()
+	// Note that the revision number is not relevant for checking the age of evidence
+	// as it's already part of the chain ID and the minimum height is mapped to chain IDs
+	if evidenceHeight < minHeight {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
+			consumerChainID,
+			evidenceHeight,
+			minHeight,
 		)
 	}
 
@@ -289,13 +335,6 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	}
 
 	clientStore := k.clientKeeper.ClientStore(ctx, clientId)
-
-	// Check that the headers are at the same height to ensure that
-	// the misbehaviour is for a light client attack and not a time violation,
-	// see CheckForMisbehaviour in ibc-go/blob/v7.3.0/modules/light-clients/07-tendermint/misbehaviour_handle.go#L73
-	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
-		return errorsmod.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
-	}
 
 	// CheckForMisbehaviour verifies that the headers have different blockID hashes
 	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
@@ -354,9 +393,11 @@ func verifyLightBlockCommitSig(lightBlock tmtypes.LightBlock, sigIdx int) error 
 
 // JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
 func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-	if !found {
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
+	} else if err != nil {
+		return errorsmod.Wrapf(slashingtypes.ErrBadValidatorAddr, "unkown error looking for provider consensus address: %s", providerAddr.String())
 	}
 
 	if validator.IsUnbonded() {
@@ -364,23 +405,27 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 	}
 
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
+		return errorsmod.Wrapf(slashingtypes.ErrValidatorTombstoned, providerAddr.String())
 	}
 
 	// jail validator if not already
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
+		err := k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
+		if err != nil {
+			return err
+		}
 	}
 
-	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
+	err = k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
+	if err != nil {
+		return fmt.Errorf("fail to set jail duration for validator: %s: %s", providerAddr.String(), err)
+	}
 
 	// Tombstone the validator so that we cannot slash the validator more than once
 	// Note that we cannot simply use the fact that a validator is jailed to avoid slashing more than once
 	// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
 	// and in such a case the validator would not get slashed when we call `SlashValidator`.
-	k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
-
-	return nil
+	return k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
 }
 
 // ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured `undelegations` and
@@ -390,19 +435,21 @@ func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Vali
 	redelegations []stakingtypes.Redelegation, power int64, powerReduction math.Int,
 ) int64 {
 	// compute the total numbers of tokens currently being undelegated
-	undelegationsInTokens := sdk.NewInt(0)
+	undelegationsInTokens := math.NewInt(0)
 
 	// Note that we use a **cached** context to avoid any actual slashing of undelegations or redelegations.
 	cachedCtx, _ := ctx.CacheContext()
 	for _, u := range undelegations {
-		amountSlashed := k.stakingKeeper.SlashUnbondingDelegation(cachedCtx, u, 0, sdk.NewDec(1))
+		// v50: errors are ignored
+		amountSlashed, _ := k.stakingKeeper.SlashUnbondingDelegation(cachedCtx, u, 0, math.LegacyNewDec(1))
 		undelegationsInTokens = undelegationsInTokens.Add(amountSlashed)
 	}
 
 	// compute the total numbers of tokens currently being redelegated
-	redelegationsInTokens := sdk.NewInt(0)
+	redelegationsInTokens := math.NewInt(0)
 	for _, r := range redelegations {
-		amountSlashed := k.stakingKeeper.SlashRedelegation(cachedCtx, validator, r, 0, sdk.NewDec(1))
+		// v50 errors are ignored
+		amountSlashed, _ := k.stakingKeeper.SlashRedelegation(cachedCtx, validator, r, 0, math.LegacyNewDec(1))
 		redelegationsInTokens = redelegationsInTokens.Add(amountSlashed)
 	}
 
@@ -416,9 +463,11 @@ func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Vali
 
 // SlashValidator slashes validator with given provider Address
 func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-	if !found {
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
+	} else if err != nil {
+		return errorsmod.Wrapf(slashingtypes.ErrBadValidatorAddr, "unkown error looking for provider consensus address: %s", providerAddr.String())
 	}
 
 	if validator.IsUnbonded() {
@@ -429,28 +478,45 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}
 
-	undelegations := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator())
-	redelegations := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validator.GetOperator())
-	lastPower := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-	powerReduction := k.stakingKeeper.PowerReduction(ctx)
-	totalPower := k.ComputePowerToSlash(ctx, validator, undelegations, redelegations, lastPower, powerReduction)
-	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
-
-	consAdrr, err := validator.GetConsAddr()
+	valAddr, err := k.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	k.stakingKeeper.SlashWithInfractionReason(ctx, consAdrr, 0, totalPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+	undelegations, err := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	redelegations, err := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	lastPower, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	powerReduction := k.stakingKeeper.PowerReduction(ctx)
+	totalPower := k.ComputePowerToSlash(ctx, validator, undelegations, redelegations, lastPower, powerReduction)
+
+	slashFraction, err := k.slashingKeeper.SlashFractionDoubleSign(ctx)
+	if err != nil {
+		return err
+	}
+	consAdrr, err := validator.GetConsAddr()
+	if err != nil {
+		return err
+	}
+
+	_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, consAdrr, 0, totalPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+	return err
 }
 
 //
 // CRUD section
 //
 
-// SetEquivocationEvidenceMinHeight sets the the minimum height
+// SetEquivocationEvidenceMinHeight sets the minimum height
 // of a valid consumer equivocation evidence for a given consumer chain ID
 func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string, height uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -460,7 +526,7 @@ func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string
 	store.Set(types.EquivocationEvidenceMinHeightKey(chainID), heightBytes)
 }
 
-// GetEquivocationEvidenceMinHeight returns the the minimum height
+// GetEquivocationEvidenceMinHeight returns the minimum height
 // of a valid consumer equivocation evidence for a given consumer chain ID
 func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) uint64 {
 	store := ctx.KVStore(k.storeKey)
@@ -472,7 +538,7 @@ func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string
 	return binary.BigEndian.Uint64(bz)
 }
 
-// DeleteEquivocationEvidenceMinHeight deletes the the minimum height
+// DeleteEquivocationEvidenceMinHeight deletes the minimum height
 // of a valid consumer equivocation evidence for a given consumer chain ID
 func (k Keeper) DeleteEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)

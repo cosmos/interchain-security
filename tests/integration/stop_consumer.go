@@ -1,12 +1,13 @@
 package integration
 
 import (
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"cosmossdk.io/math"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // Tests the functionality of stopping a consumer chain at a higher level than unit tests
@@ -21,8 +22,8 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
 
-	validator, found := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
+	validator, err := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
+	s.Require().NoError(err)
 
 	// get delegator address
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -30,11 +31,11 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	// define variables required for test setup
 	var (
 		// bond amount
-		bondAmt = sdk.NewInt(1000000)
+		bondAmt = math.NewInt(1000000)
 		// number of unbonding operations performed
 		ubdOpsNum = 4
 		// store new shares created
-		testShares sdk.Dec
+		testShares math.LegacyDec
 	)
 
 	// populate the provider chain states to setup the test using the following operations:
@@ -62,7 +63,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 			func(suite *CCVTestSuite) error {
 				for i := 0; i < ubdOpsNum; i++ {
 					// undelegate one quarter of the shares
-					_, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
+					_, _, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
 					if err != nil {
 						return err
 					}

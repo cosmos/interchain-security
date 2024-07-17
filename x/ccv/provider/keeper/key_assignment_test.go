@@ -17,11 +17,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const ChainID = "chainID"
@@ -384,11 +384,11 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		},
 		{
 			name: "1",
-			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			mockSetup: func(sdkCtx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
-					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(sdkCtx,
 						consumerIdentities[0].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -406,30 +406,31 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		},
 		{
 			name: "2",
-			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			mockSetup: func(sdkCtx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				ctx := sdk.WrapSDKContext(sdkCtx)
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[1].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 					mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx),
 				)
 			},
-			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
-				err := k.AssignConsumerKey(ctx, chainID,
+			doActions: func(sdkCtx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(sdkCtx, chainID, "")
+				err := k.AssignConsumerKey(sdkCtx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				err = k.AssignConsumerKey(ctx, chainID,
+				err = k.AssignConsumerKey(sdkCtx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[1].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+				providerAddr, found := k.GetValidatorByConsumerAddr(sdkCtx, chainID,
 					consumerIdentities[1].ConsumerConsAddress())
 				require.True(t, found)
 				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
@@ -441,10 +442,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -471,7 +472,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						providerIdentities[0].SDKValConsAddress(),
-					).Return(providerIdentities[0].SDKStakingValidator(), true),
+					).Return(providerIdentities[0].SDKStakingValidator(), nil),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -489,7 +490,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -511,10 +512,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[1].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -541,10 +542,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -571,7 +572,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						providerIdentities[0].SDKValConsAddress(),
-					).Return(providerIdentities[0].SDKStakingValidator(), true),
+					).Return(providerIdentities[0].SDKStakingValidator(), nil),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -619,7 +620,7 @@ func TestCannotReassignDefaultKeyAssignment(t *testing.T) {
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 			cId.SDKValConsAddress(),
-		).Return(cId.SDKStakingValidator(), true), // found = true
+		).Return(cId.SDKStakingValidator(), nil), // nil == no error
 	)
 
 	// AssignConsumerKey should return an error if we try to re-assign the already existing default key assignment
@@ -749,12 +750,12 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
 			gomock.Any(),
 			gomock.Any(),
-		).DoAndReturn(func(_ interface{}, valAddr sdk.ValAddress) int64 {
+		).DoAndReturn(func(_ interface{}, valAddr sdk.ValAddress) (int64, error) {
 			// When the mocked method is called, locate the appropriate validator
 			// in the provider valset and return its power.
 			for i, id := range providerIDS {
-				if id.SDKStakingValidator().GetOperator().Equals(valAddr) {
-					return providerValset.power[i]
+				if id.SDKStakingValidator().GetOperator() == valAddr.String() {
+					return providerValset.power[i], nil
 				}
 			}
 			panic("must find validator")
@@ -807,13 +808,13 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		applyAssignments := func(assignments []Assignment) {
 			for _, a := range assignments {
 				// ignore err return, it can be possible for an error to occur
-				_ = k.AssignConsumerKey(ctx, CHAINID, a.val, a.ck)
+				_ = k.AssignConsumerKey(ctx, ChainID, a.val, a.ck)
 			}
 		}
 
 		// Set the unbonding time to 60s so that a key is prunable after 60s
 		unbondingTimeInNs := time.Duration(60 * 1_000_000_000) // 60 seconds
-		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeInNs).AnyTimes()
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeInNs, nil).AnyTimes()
 
 		// The consumer chain has not yet been registered
 		// Apply some randomly generated key assignments
@@ -827,7 +828,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		applyUpdatesAndIncrementVSCID(stakingUpdates)
 
 		// Register the consumer chain
-		k.SetConsumerClientId(ctx, CHAINID, "")
+		k.SetConsumerClientId(ctx, ChainID, "")
 
 		// Set the greatest block time up to which keys have been pruned. At the beginning, no pruning has taken
 		// place, so we set `greatestPrunedBlockTime` to 0, and set the current block time to 1.
@@ -847,7 +848,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			// prune all keys that can be pruned up to the current block time
 			greatestPrunedBlockTime = ctx.BlockTime().UnixNano()
-			k.PruneKeyAssignments(ctx, CHAINID)
+			k.PruneKeyAssignments(ctx, ChainID)
 
 			// Increase the block time by a small random amount up to UnbondingTime / 10. We do not increase the block time
 			// by UnbondingTime so that in the upcoming iteration of this `for` loop (i.e., new block), not all the keys
@@ -871,7 +872,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				// For each active validator on the provider chain
 				if 0 < providerValset.power[i] {
 					// Get the assigned key
-					ck, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, idP.ProviderConsAddress())
+					ck, found := k.GetValidatorConsumerPubKey(ctx, ChainID, idP.ProviderConsAddress())
 					if !found {
 						// Use default if unassigned
 						ck = idP.TMProtoCryptoPublicKey()
@@ -893,7 +894,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				consC := consumerValset.identities[i].ConsumerConsAddress()
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
-					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, ChainID, consC)
 					// Find the corresponding provider validator (must always be found)
 					for j, idP := range providerValset.identities {
 						if idP.SDKValConsAddress().Equals(consP.ToSdkConsAddr()) {
@@ -908,7 +909,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				Property: Pruning (bounded storage)
 				Check that all keys have been or will eventually be pruned.
 			*/
-			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
+			require.True(t, checkCorrectPruningProperty(ctx, k, ChainID))
 
 			/*
 				Property: Correct Consumer Initiated Slash Lookup
@@ -932,7 +933,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				consC := consumerValset.identities[i].ConsumerConsAddress()
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
-					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, ChainID, consC)
 
 					if _, found := consumerAddrToBlockTimeToProviderAddr[consC.String()]; !found {
 						consumerAddrToBlockTimeToProviderAddr[consC.String()] = map[uint64]string{}

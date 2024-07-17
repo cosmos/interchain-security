@@ -1,18 +1,15 @@
 package types
 
 import (
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 )
 
-// RegisterLegacyAminoCodec registers the necessary x/ibc transfer interfaces and concrete types
-// on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 }
 
@@ -33,7 +30,12 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgAssignConsumerKey{},
+		&MsgConsumerAddition{},
+		&MsgConsumerRemoval{},
+		&MsgChangeRewardDenoms{},
+		&MsgUpdateParams{},
 	)
+	// keep so existing proposals can be correctly deserialized
 	registry.RegisterImplementations(
 		(*govv1beta1.Content)(nil),
 		&EquivocationProposal{},

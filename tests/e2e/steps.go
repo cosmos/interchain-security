@@ -18,7 +18,7 @@ var compatibilitySteps = concatSteps(
 	compstepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsUnbond("consu"),
-	stepsRedelegateShort("consu"),
+	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
 	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
 	stepsStartRelayer(),
@@ -32,8 +32,6 @@ var happyPathSteps = concatSteps(
 	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
 	stepsUnbond("consu"),
 	stepsCancelUnbond("consu"),
-	stepsRedelegateForOptOut("consu"),
-	stepsDowntimeWithOptOut("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
 	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
@@ -46,7 +44,7 @@ var shortHappyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsUnbond("consu"),
-	stepsRedelegateShort("consu"),
+	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
 	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
 	stepsStartRelayer(),
@@ -58,12 +56,12 @@ var lightClientAttackSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsUnbond("consu"),
-	stepsRedelegateShort("consu"),
+	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
 	stepsLightClientAttackOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
 	stepsStartRelayer(),
-	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
-	stepsStopChain("consu", 4),                     // stop chain
+	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 3),                     // stop chain
 )
 
 var slashThrottleSteps = concatSteps(
@@ -121,7 +119,7 @@ var changeoverSteps = concatSteps(
 
 var consumerMisbehaviourSteps = concatSteps(
 	// start provider and consumer chain
-	stepsStartChainsWithSoftOptOut("consu"),
+	stepsStartChainsForConsumerMisbehaviour("consu"),
 	// make a consumer validator to misbehave and get jailed
 	stepsCauseConsumerMisbehaviour("consu"),
 )
@@ -137,6 +135,6 @@ var consumerDoubleDowntimeSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsUnbond("consu"),
-	stepsRedelegateShort("consu"),
+	stepsRedelegate("consu"),
 	stepsDoubleDowntime("consu"),
 )

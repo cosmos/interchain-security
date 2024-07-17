@@ -1,6 +1,7 @@
 package staking
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -21,6 +22,9 @@ var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+
+	_ module.HasABCIGenesis  = AppModule{}
+	_ module.HasABCIEndBlock = AppModule{}
 )
 
 // AppModule embeds the Cosmos SDK's x/staking AppModuleBasic.
@@ -41,11 +45,11 @@ type AppModule struct {
 
 // NewAppModule creates a new AppModule object using the native x/staking module
 // AppModule constructor.
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper, subspace exported.Subspace) AppModule {
-	stakingAppMod := staking.NewAppModule(cdc, &keeper, ak, bk, subspace)
+func NewAppModule(cdc codec.Codec, keeper *keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper, subspace exported.Subspace) AppModule {
+	stakingAppMod := staking.NewAppModule(cdc, keeper, ak, bk, subspace)
 	return AppModule{
 		AppModule:  stakingAppMod,
-		keeper:     keeper,
+		keeper:     *keeper,
 		accKeeper:  ak,
 		bankKeeper: bk,
 	}
@@ -78,7 +82,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // The ccv consumer Endblocker is ordered to run before the staking Endblocker,
 // so if PreCCV is true during one block, the ccv consumer Enblocker will return the proper validator updates,
 // the PreCCV flag will be toggled to false, and no validator updates should be returned by this method.
-func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	_ = am.keeper.BlockValidatorUpdates(ctx)
-	return []abci.ValidatorUpdate{}
+func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+	_, _ = am.keeper.BlockValidatorUpdates(ctx)
+	return []abci.ValidatorUpdate{}, nil
 }

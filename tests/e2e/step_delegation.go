@@ -220,58 +220,6 @@ func stepsCancelUnbond(consumerName string) []Step {
 	}
 }
 
-// stepsRedelegateForOptOut tests redelegation, and sets up voting powers s.t
-// alice will have less than 5% of the total voting power. This is needed to
-// test opt-out functionality.
-func stepsRedelegateForOptOut(consumerName string) []Step {
-	return []Step{
-		{
-			Action: RedelegateTokensAction{
-				Chain:    ChainID("provi"),
-				Src:      ValidatorID("alice"),
-				Dst:      ValidatorID("carol"),
-				TxSender: ValidatorID("alice"),
-				Amount:   450000000,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 60,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 950,
-					},
-				},
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						// Voting power changes not seen by consumer yet
-						ValidatorID("alice"): 510,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 500,
-					},
-				},
-			},
-		},
-		{
-			Action: RelayPacketsAction{
-				ChainA:  ChainID("provi"),
-				ChainB:  ChainID(consumerName),
-				Port:    "provider",
-				Channel: 0,
-			},
-			State: State{
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						// Now power changes are seen by consumer
-						ValidatorID("alice"): 60,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 950,
-					},
-				},
-			},
-		},
-	}
-}
-
 // stepsRedelegate tests redelegation and resulting validator power changes.
 func stepsRedelegate(consumerName string) []Step {
 	return []Step{
@@ -283,68 +231,15 @@ func stepsRedelegate(consumerName string) []Step {
 				TxSender: ValidatorID("carol"),
 				// redelegate s.t. alice has majority stake so non-faulty validators maintain more than
 				// 2/3 voting power during downtime tests below, avoiding chain halt
-				Amount: 449000000,
+				Amount: 400000000,
 			},
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 509,
+						ValidatorID("alice"): 910,
 						ValidatorID("bob"):   500,
 						// carol always uses a consumer assigned key
-						ValidatorID("carol"): 501,
-					},
-				},
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						// Voting power changes not seen by consumer yet
-						ValidatorID("alice"): 60,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 950,
-					},
-				},
-			},
-		},
-		{
-			Action: RelayPacketsAction{
-				ChainA:  ChainID("provi"),
-				ChainB:  ChainID(consumerName),
-				Port:    "provider",
-				Channel: 0,
-			},
-			State: State{
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						// Now power changes are seen by consumer
-						ValidatorID("alice"): 509,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 501,
-					},
-				},
-			},
-		},
-	}
-}
-
-// stepsRedelegate tests redelegation and resulting validator power changes.
-func stepsRedelegateShort(consumerName string) []Step {
-	return []Step{
-		{
-			Action: RedelegateTokensAction{
-				Chain:    ChainID("provi"),
-				Src:      ValidatorID("alice"),
-				Dst:      ValidatorID("carol"),
-				TxSender: ValidatorID("alice"),
-				// Leave alice with majority stake so non-faulty validators maintain more than
-				// 2/3 voting power during downtime tests below, avoiding chain halt
-				Amount: 1000000,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 509,
-						ValidatorID("bob"):   500,
-						// carol always uses a consumer assigned key
-						ValidatorID("carol"): 501,
+						ValidatorID("carol"): 100,
 					},
 				},
 				ChainID(consumerName): ChainState{
@@ -368,9 +263,9 @@ func stepsRedelegateShort(consumerName string) []Step {
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						// Now power changes are seen by consumer
-						ValidatorID("alice"): 509,
+						ValidatorID("alice"): 910,
 						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 501,
+						ValidatorID("carol"): 100,
 					},
 				},
 			},

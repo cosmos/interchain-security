@@ -2,9 +2,12 @@ package keeper_test
 
 import (
 	"bytes"
-	"math"
 	"sort"
 	"testing"
+
+	gomath "math"
+
+	"cosmossdk.io/math"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -17,10 +20,10 @@ import (
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 func TestHandleOptIn(t *testing.T) {
@@ -50,15 +53,15 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().
 			GetValidatorByConsAddr(gomock.Any(), gomock.Any()).
-			DoAndReturn(func(ctx sdk.Context, addr sdk.ConsAddress) (stakingtypes.Validator, bool) {
+			DoAndReturn(func(ctx sdk.Context, addr sdk.ConsAddress) (stakingtypes.Validator, error) {
 				if addr.Equals(providerAddr.Address) {
 					// Given `providerAddr`, `GetValidatorByConsAddr` returns a validator with the
 					// exact same `ConsensusPubkey`
 					pkAny, _ := codectypes.NewAnyWithValue(providerConsPubKey)
-					return stakingtypes.Validator{ConsensusPubkey: pkAny}, true
+					return stakingtypes.Validator{ConsensusPubkey: pkAny}, nil
 				} else {
 					// for any other consensus address, we cannot find a validator
-					return stakingtypes.Validator{}, false
+					return stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound
 				}
 			}).Times(2),
 	}
@@ -69,9 +72,10 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	// create a sample consumer key to assign to the `providerAddr` validator
 	// on the consumer chain with id `chainID`
 	consumerKey := "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}"
-	expectedConsumerPubKey, _ := providerKeeper.ParseConsumerKey(consumerKey)
+	expectedConsumerPubKey, err := providerKeeper.ParseConsumerKey(consumerKey)
+	require.NoError(t, err)
 
-	err := providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, consumerKey)
+	err = providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, consumerKey)
 	require.NoError(t, err)
 
 	// assert that the consumeKey was assigned to `providerAddr` validator on chain with id `chainID`
@@ -116,18 +120,18 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 	// set the chain as Top 50 and create 4 validators with 10%, 20%, 30%, and 40% of the total voting power
 	// respectively
 	providerKeeper.SetTopN(ctx, "chainID", 50)
-	valA := createStakingValidator(ctx, mocks, 1, 1) // 10% of the total voting power (can opt out)
+	valA := createStakingValidator(ctx, mocks, 1, 1, 1) // 10% of the total voting power (can opt out)
 	valAConsAddr, _ := valA.GetConsAddr()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, true).AnyTimes()
-	valB := createStakingValidator(ctx, mocks, 2, 2) // 20% of the total voting power (can opt out)
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
+	valB := createStakingValidator(ctx, mocks, 2, 2, 2) // 20% of the total voting power (can opt out)
 	valBConsAddr, _ := valB.GetConsAddr()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, true).AnyTimes()
-	valC := createStakingValidator(ctx, mocks, 3, 3) // 30% of the total voting power (cannot opt out)
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
+	valC := createStakingValidator(ctx, mocks, 3, 3, 3) // 30% of the total voting power (cannot opt out)
 	valCConsAddr, _ := valC.GetConsAddr()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, true).AnyTimes()
-	valD := createStakingValidator(ctx, mocks, 4, 4) // 40% of the total voting power (cannot opt out)
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, nil).AnyTimes()
+	valD := createStakingValidator(ctx, mocks, 4, 4, 4) // 40% of the total voting power (cannot opt out)
 	valDConsAddr, _ := valD.GetConsAddr()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, true).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, nil).AnyTimes()
 
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 4, []stakingtypes.Validator{valA, valB, valC, valD}, []int64{1, 2, 3, 4}, -1) // -1 to allow mocks AnyTimes
 
@@ -152,10 +156,10 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 	require.Error(t, providerKeeper.HandleOptOut(ctx, chainID, types.NewProviderConsAddress(valDConsAddr)))
 
 	// opting out a validator that cannot be found from a Top N chain should also return an error
-	notFoundValidator := createStakingValidator(ctx, mocks, 5, 5)
+	notFoundValidator := createStakingValidator(ctx, mocks, 5, 5, 5)
 	notFoundValidatorConsAddr, _ := notFoundValidator.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, notFoundValidatorConsAddr).
-		Return(stakingtypes.Validator{}, false)
+		Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound)
 	require.Error(t, providerKeeper.HandleOptOut(ctx, chainID, types.NewProviderConsAddress(notFoundValidatorConsAddr)))
 }
 
@@ -166,7 +170,7 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
 	// trying to set a commission rate to a unknown consumer chain
-	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, "unknownChainID", providerAddr, sdk.ZeroDec()))
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, "unknownChainID", providerAddr, math.LegacyZeroDec()))
 
 	// setup a pending consumer chain
 	chainID := "pendingChainID"
@@ -176,24 +180,24 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	_, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
 	require.False(t, found)
 
-	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(sdk.ZeroDec()).Times(1)
-	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, sdk.OneDec()))
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(math.LegacyZeroDec(), nil).Times(1)
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, math.LegacyOneDec()))
 
 	// check that the commission rate is now set
 	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
-	require.Equal(t, sdk.OneDec(), cr)
+	require.Equal(t, math.LegacyOneDec(), cr)
 	require.True(t, found)
 
 	// set minimum rate of 1/2
-	commissionRate := sdk.NewDec(1).Quo(sdk.NewDec(2))
-	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(commissionRate).AnyTimes()
+	commissionRate := math.LegacyNewDec(1).Quo(math.LegacyNewDec(2))
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(commissionRate, nil).AnyTimes()
 
 	// try to set a rate slightly below the minimum
 	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(
 		ctx,
 		chainID,
 		providerAddr,
-		commissionRate.Sub(sdk.NewDec(1).Quo(sdk.NewDec(100)))), // 0.5 - 0.01
+		commissionRate.Sub(math.LegacyNewDec(1).Quo(math.LegacyNewDec(100)))), // 0.5 - 0.01
 		"commission rate should be rejected (below min), but is not",
 	)
 
@@ -210,13 +214,13 @@ func TestOptInTopNValidators(t *testing.T) {
 	defer ctrl.Finish()
 
 	// create 4 validators with powers 1, 2, 3, and 1 respectively
-	valA := createStakingValidator(ctx, mocks, 1, 1)
+	valA := createStakingValidator(ctx, mocks, 1, 1, 1)
 	valAConsAddr, _ := valA.GetConsAddr()
-	valB := createStakingValidator(ctx, mocks, 2, 2)
+	valB := createStakingValidator(ctx, mocks, 2, 2, 2)
 	valBConsAddr, _ := valB.GetConsAddr()
-	valC := createStakingValidator(ctx, mocks, 3, 3)
+	valC := createStakingValidator(ctx, mocks, 3, 3, 3)
 	valCConsAddr, _ := valC.GetConsAddr()
-	valD := createStakingValidator(ctx, mocks, 4, 1)
+	valD := createStakingValidator(ctx, mocks, 4, 1, 4)
 	valDConsAddr, _ := valD.GetConsAddr()
 
 	// Start Test 1: opt in all validators with power >= 0
@@ -297,11 +301,11 @@ func TestComputeMinPowerInTopN(t *testing.T) {
 	// 1 => 100%
 
 	bondedValidators := []stakingtypes.Validator{
-		createStakingValidator(ctx, mocks, 1, 5),
-		createStakingValidator(ctx, mocks, 2, 10),
-		createStakingValidator(ctx, mocks, 3, 3),
-		createStakingValidator(ctx, mocks, 4, 1),
-		createStakingValidator(ctx, mocks, 5, 6),
+		createStakingValidator(ctx, mocks, 1, 5, 1),
+		createStakingValidator(ctx, mocks, 2, 10, 2),
+		createStakingValidator(ctx, mocks, 3, 3, 3),
+		createStakingValidator(ctx, mocks, 4, 1, 4),
+		createStakingValidator(ctx, mocks, 5, 6, 5),
 	}
 
 	m, err := providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 100)
@@ -356,7 +360,7 @@ func TestCanValidateChain(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validator := createStakingValidator(ctx, mocks, 0, 1)
+	validator := createStakingValidator(ctx, mocks, 0, 1, 1)
 	consAddr, _ := validator.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(consAddr)
 
@@ -366,7 +370,7 @@ func TestCanValidateChain(t *testing.T) {
 	require.True(t, providerKeeper.CanValidateChain(ctx, "chainID", providerAddr))
 
 	// create an allow list but do not add the validator `providerAddr` to it
-	validatorA := createStakingValidator(ctx, mocks, 1, 1)
+	validatorA := createStakingValidator(ctx, mocks, 1, 1, 2)
 	consAddrA, _ := validatorA.GetConsAddr()
 	providerKeeper.SetAllowlist(ctx, "chainID", types.NewProviderConsAddress(consAddrA))
 	require.False(t, providerKeeper.CanValidateChain(ctx, "chainID", providerAddr))
@@ -629,7 +633,7 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 	// (except for small changes by rounding errors)
 	equalSumIfCapSatisfiable := func(valsBefore, valsAfter []types.ConsumerValidator, percent uint32) bool {
 		if CapSatisfiable(valsBefore, percent) {
-			difference := math.Abs(float64(sumPowers(valsBefore) - sumPowers(valsAfter)))
+			difference := gomath.Abs(float64(sumPowers(valsBefore) - sumPowers(valsAfter)))
 			if difference > 1 {
 				// if the difference is more than a rounding error, they are not equal
 				return false

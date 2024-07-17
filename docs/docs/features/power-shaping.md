@@ -1,3 +1,7 @@
+---
+sidebar_position: 7
+---
+
 # Power Shaping
 
 To give consumer chains more flexibility in choosing their validator set, Interchain Security offers

@@ -5,11 +5,12 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // HandleOptIn prepares validator `providerAddr` to opt in to `chainID` with an optional `consumerKey` consumer public key.
@@ -29,9 +30,9 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 			return err
 		}
 
-		validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.Address)
-		if !found {
-			return stakingtypes.ErrNoValidatorFound
+		validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.Address)
+		if err != nil {
+			return err
 		}
 
 		err = k.AssignConsumerKey(ctx, chainID, validator, consumerTMPublicKey)
@@ -56,13 +57,18 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// a validator cannot opt out from a Top N chain if the validator is in the Top N validators
-		validator, validatorFound := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-		if !validatorFound {
-			return errorsmod.Wrapf(
-				stakingtypes.ErrNoValidatorFound,
-				"validator with consensus address %s could not be found", providerAddr.ToSdkConsAddr())
+		validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+		if err != nil {
+			return err
 		}
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
+		valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
+		if err != nil {
+			return err
+		}
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+		if err != nil {
+			return err
+		}
 		minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, chainID)
 		if !found {
 			return errorsmod.Wrapf(
@@ -85,13 +91,23 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 // OptInTopNValidators opts in to `chainID` all the `bondedValidators` that have at least `minPowerToOptIn` power
 func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, minPowerToOptIn int64) {
 	for _, val := range bondedValidators {
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+		if err != nil {
+			k.Logger(ctx).Error("could not retrieve validator address: %s: %s",
+				val.GetOperator(), err)
+			continue
+		}
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+		if err != nil {
+			k.Logger(ctx).Error("could not retrieve last power of validator address: %s: %s",
+				val.GetOperator(), err)
+			continue
+		}
 		if power >= minPowerToOptIn {
 			consAddr, err := val.GetConsAddr()
 			if err != nil {
-				k.Logger(ctx).Error("could not retrieve validators consensus address",
-					"validator", val,
-					"error", err)
+				k.Logger(ctx).Error("could not retrieve validators consensus address: %s: %s",
+					val, err)
 				continue
 			}
 
@@ -112,13 +128,20 @@ func (k Keeper) ComputeMinPowerInTopN(ctx sdk.Context, bondedValidators []stakin
 			" topN value (%d). topN has to be in (0, 100]", topN)
 	}
 
-	totalPower := sdk.ZeroDec()
+	totalPower := math.LegacyZeroDec()
 	var powers []int64
 
 	for _, val := range bondedValidators {
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+		if err != nil {
+			return 0, err
+		}
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+		if err != nil {
+			return 0, err
+		}
 		powers = append(powers, power)
-		totalPower = totalPower.Add(sdk.NewDec(power))
+		totalPower = totalPower.Add(math.LegacyNewDec(power))
 	}
 
 	// sort by powers descending
@@ -126,10 +149,10 @@ func (k Keeper) ComputeMinPowerInTopN(ctx sdk.Context, bondedValidators []stakin
 		return powers[i] > powers[j]
 	})
 
-	topNThreshold := sdk.NewDec(int64(topN)).QuoInt64(int64(100))
-	powerSum := sdk.ZeroDec()
+	topNThreshold := math.LegacyNewDec(int64(topN)).QuoInt64(int64(100))
+	powerSum := math.LegacyZeroDec()
 	for _, power := range powers {
-		powerSum = powerSum.Add(sdk.NewDec(power))
+		powerSum = powerSum.Add(math.LegacyNewDec(power))
 		if powerSum.Quo(totalPower).GTE(topNThreshold) {
 			return power, nil
 		}
@@ -212,7 +235,7 @@ func NoMoreThanPercentOfTheSum(validators []types.ConsumerValidator, percent uin
 	// ----------------
 
 	// Computes `floor((sum(validators) * percent) / 100)`
-	maxPower := sdk.NewDec(sum(validators)).Mul(sdk.NewDec(int64(percent))).QuoInt64(100).TruncateInt64()
+	maxPower := math.LegacyNewDec(sum(validators)).Mul(math.LegacyNewDec(int64(percent))).QuoInt64(100).TruncateInt64()
 
 	if maxPower == 0 {
 		// edge case: set `maxPower` to 1 to avoid setting the power of a validator to 0

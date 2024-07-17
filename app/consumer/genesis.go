@@ -15,9 +15,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
-
-	consumerTypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v4/x/ccv/types"
+	consumerTypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // The genesis state of the blockchain is represented here as a map of raw json
@@ -80,6 +79,9 @@ func transformToNew(jsonRaw []byte, ctx client.Context) (json.RawMessage, error)
 	if oldConsumerGenesis.Params.RetryDelayPeriod == 0 {
 		oldConsumerGenesis.Params.RetryDelayPeriod = types.DefaultRetryDelayPeriod
 	}
+
+	// `SoftOptOutThreshold` is deprecated in the current consumer implementation, so set to zero
+	oldConsumerGenesis.Params.SoftOptOutThreshold = "0"
 
 	// Versions before v3.3.x of provider genesis data fills up deprecated fields
 	// ProviderClientState, ConsensusState and InitialValSet in type GenesisState

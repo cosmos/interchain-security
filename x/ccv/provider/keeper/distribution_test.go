@@ -3,10 +3,11 @@ package keeper_test
 import (
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -14,14 +15,22 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 func TestComputeConsumerTotalVotingPower(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+
+	// `ComputeConsumerTotalVotingPower` used in this test retrieves the blocks per epoch, so we need to set this param
+	params := providertypes.DefaultParams()
+	params.BlocksPerEpoch = 1
+	keeper.SetParams(ctx, params)
+
+	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
+	ctx = ctx.WithBlockHeight(params.NumberOfEpochsToStartReceivingRewards * params.BlocksPerEpoch)
 
 	createVal := func(power int64) tmtypes.Validator {
 		signer := tmtypes.NewMockPV()
@@ -245,7 +254,7 @@ func TestSetConsumerRewardsAllocation(t *testing.T) {
 	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	rewardAllocation := providertypes.ConsumerRewardsAllocation{
-		Rewards: sdk.NewDecCoins(sdk.NewDecCoin("uatom", sdk.NewInt(1000))),
+		Rewards: sdk.NewDecCoins(sdk.NewDecCoin("uatom", math.NewInt(1000))),
 	}
 
 	providerKeeper.SetConsumerRewardsAllocation(ctx, "consumer-1", rewardAllocation)
@@ -269,4 +278,22 @@ func TestGetConsumerRewardsAllocationNil(t *testing.T) {
 		Rewards: nil,
 	}
 	require.Equal(t, expectedRewardAllocation, alloc)
+}
+
+func TestIsEligibleForConsumerRewards(t *testing.T) {
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	params := providertypes.DefaultParams()
+	params.NumberOfEpochsToStartReceivingRewards = 10
+	params.BlocksPerEpoch = 5
+	keeper.SetParams(ctx, params)
+
+	numberOfBlocks := params.NumberOfEpochsToStartReceivingRewards * params.BlocksPerEpoch
+
+	require.False(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks-1), 0))
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks), 0))
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 0))
+	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 1))
+	require.False(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 2))
 }

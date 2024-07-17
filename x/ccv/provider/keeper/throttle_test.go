@@ -9,12 +9,10 @@ import (
 
 	"cosmossdk.io/math"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // TestSlashMeterReplenishment tests the CheckForSlashMeterReplenishment, ReplenishSlashMeter,
@@ -30,20 +28,20 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		{
 			replenishPeriod:   time.Minute,
 			replenishFraction: "0.01",
-			totalPower:        sdktypes.NewInt(1000),
-			expectedAllowance: sdktypes.NewInt(10),
+			totalPower:        math.NewInt(1000),
+			expectedAllowance: math.NewInt(10),
 		},
 		{
 			replenishPeriod:   time.Hour,
 			replenishFraction: "0.1",
-			totalPower:        sdktypes.NewInt(100000),
-			expectedAllowance: sdktypes.NewInt(10000),
+			totalPower:        math.NewInt(100000),
+			expectedAllowance: math.NewInt(10000),
 		},
 		{
 			replenishPeriod:   30 * time.Minute,
 			replenishFraction: "0.5",
-			totalPower:        sdktypes.NewInt(1000000000000000),
-			expectedAllowance: sdktypes.NewInt(500000000000000),
+			totalPower:        math.NewInt(1000000000000000),
+			expectedAllowance: math.NewInt(500000000000000),
 		},
 	}
 	for _, tc := range testCases {
@@ -65,7 +63,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		// Any ctx is accepted, and the method will be called multiple times during the tests
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).AnyTimes(),
+				gomock.Any()).Return(tc.totalPower, nil).AnyTimes(),
 		)
 
 		// Now we can initialize the slash meter (this would happen in InitGenesis)
@@ -79,8 +77,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		require.Equal(t, now.Add(tc.replenishPeriod), initialReplenishCandidate)
 
 		// Decrement slash meter
-		providerKeeper.SetSlashMeter(ctx, providerKeeper.GetSlashMeter(ctx).Sub(sdktypes.NewInt(3)))
-		require.Equal(t, tc.expectedAllowance.Sub(sdktypes.NewInt(3)), providerKeeper.GetSlashMeter(ctx))
+		providerKeeper.SetSlashMeter(ctx, providerKeeper.GetSlashMeter(ctx).Sub(math.NewInt(3)))
+		require.Equal(t, tc.expectedAllowance.Sub(math.NewInt(3)), providerKeeper.GetSlashMeter(ctx))
 
 		// Check for replenishment, confirm meter is not replenished (since no time has passed since init)
 		meterBefore := providerKeeper.GetSlashMeter(ctx)
@@ -146,7 +144,7 @@ func TestConsecutiveReplenishments(t *testing.T) {
 	// Any ctx is accepted, and the method will be called multiple times during the tests
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			gomock.Any()).Return(sdktypes.NewInt(1000)).AnyTimes(),
+			gomock.Any()).Return(math.NewInt(1000), nil).AnyTimes(),
 	)
 
 	// Now we can initialize the slash meter (this would happen in InitGenesis)
@@ -159,45 +157,45 @@ func TestConsecutiveReplenishments(t *testing.T) {
 	require.Equal(t, now.Add(time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// Decrement slash meter to negative value that would take 4 replenishments to recover from
-	providerKeeper.SetSlashMeter(ctx, sdktypes.NewInt(-150))
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(-150))
 
 	// Confirm no replenishment occurs when no time has passed, replenish candidate is not updated
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(-150), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(-150), providerKeeper.GetSlashMeter(ctx))
 	require.Equal(t, now.Add(time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// Now increment block time past replenishment period and confirm that meter is replenished ONCE,
 	// and replenish candidate is updated to block time + replenish period
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Hour))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
 	require.Equal(t, now.Add(3*time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)) // Note 3 hours, not 2
 
 	// Simulate next block and check that no consecutive replenishments occur (replenish period has not passed)
 	// and replenish candidate is not updated
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Second))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
 	require.Equal(t, now.Add(3*time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// Increment block time past replenishment period and confirm that meter is replenished ONCE more
 	// and replenish candidate is updated to block time + replenish period
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(-50), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(-50), providerKeeper.GetSlashMeter(ctx))
 	require.Equal(t, now.Add(4*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// Replenishments should happen if we increment block times past replenishment period
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(0), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(0), providerKeeper.GetSlashMeter(ctx))
 	require.Equal(t, now.Add(5*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(0), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(0), providerKeeper.GetSlashMeter(ctx))
 	require.Equal(t, now.Add(5*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(50), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(50), providerKeeper.GetSlashMeter(ctx))
 	require.Equal(t, now.Add(6*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 }
 
@@ -219,28 +217,28 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect two calls, once for initialization, once for allowance check
-			ctx).Return(sdktypes.NewInt(1000)).Times(2),
+			ctx).Return(math.NewInt(1000), nil).Times(2),
 	)
 
 	// Initialize the slash meter (this would happen in InitGenesis)
 	providerKeeper.InitializeSlashMeter(ctx)
 
 	// Confirm slash meter is full, and allowance is expected value via params
-	require.Equal(t, sdktypes.NewInt(100), providerKeeper.GetSlashMeterAllowance(ctx))
-	require.Equal(t, sdktypes.NewInt(100), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(100), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, math.NewInt(100), providerKeeper.GetSlashMeter(ctx))
 
 	// Mutate context so mocked total power is less than before
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Microsecond)) // Don't add enough time for replenishment
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect two calls, once for replenish check, once for allowance check
-			ctx).Return(sdktypes.NewInt(500)).Times(2),
+			ctx).Return(math.NewInt(500), nil).Times(2),
 	)
 
 	// Replenishment should not happen here, but slash meter should be decremented to new allowance
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(50), providerKeeper.GetSlashMeterAllowance(ctx))
-	require.Equal(t, sdktypes.NewInt(50), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(50), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, math.NewInt(50), providerKeeper.GetSlashMeter(ctx))
 
 	// Mutate context so mocked total power is again less than before,
 	// with ctx time set to a time that will replenish meter
@@ -249,20 +247,20 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect three calls, once for replenish check,
 			// once for replenishment, once for allowance check
-			ctx).Return(sdktypes.NewInt(100)).Times(3),
+			ctx).Return(math.NewInt(100), nil).Times(3),
 	)
 
 	// Replenishment should happen here, slash meter should be decremented to new allowance regardless
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(10), providerKeeper.GetSlashMeterAllowance(ctx))
-	require.Equal(t, sdktypes.NewInt(10), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(10), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, math.NewInt(10), providerKeeper.GetSlashMeter(ctx))
 
 	// Mutate context so mocked total power is now more than before
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Microsecond)) // Don't add enough time for replenishment
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect two calls, once for replenish check, once for allowance check
-			ctx).Return(sdktypes.NewInt(5000)).Times(2),
+			ctx).Return(math.NewInt(5000), nil).Times(2),
 	)
 
 	//
@@ -271,8 +269,8 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 
 	// Replenishment should not happen here, slash meter should remain at previous value
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(500), providerKeeper.GetSlashMeterAllowance(ctx))
-	require.Equal(t, sdktypes.NewInt(10), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(500), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, math.NewInt(10), providerKeeper.GetSlashMeter(ctx))
 
 	// Mutate context so mocked total power is again more than before,
 	// with ctx time set to a time that will replenish meter
@@ -281,13 +279,13 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			// Expect three calls, once for replenish check,
 			// once for replenishment, once for allowance check
-			ctx).Return(sdktypes.NewInt(10000)).Times(3),
+			ctx).Return(math.NewInt(10000), nil).Times(3),
 	)
 
 	// Replenishment should happen here, slash meter should be set to new allowance
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	require.Equal(t, sdktypes.NewInt(1000), providerKeeper.GetSlashMeterAllowance(ctx))
-	require.Equal(t, sdktypes.NewInt(1000), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, math.NewInt(1000), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, math.NewInt(1000), providerKeeper.GetSlashMeter(ctx))
 }
 
 // TestNegativeSlashMeter tests behavior of the slash meter when it goes negative,
@@ -306,33 +304,33 @@ func TestNegativeSlashMeter(t *testing.T) {
 			// Slashing 100 of voting power makes total voting power = 900, and meter = -90.
 			// Expected replenish allowance is then 9, meaning it'd take 10 replenishes
 			// for meter to reach 0 in value, and 11 replenishes for meter to reach a value of 9.
-			slashedPower:           sdktypes.NewInt(100),
-			totalPower:             sdktypes.NewInt(1000),
+			slashedPower:           math.NewInt(100),
+			totalPower:             math.NewInt(1000),
 			replenishFraction:      "0.01",
 			numReplenishesTillFull: 11,
-			finalMeterValue:        sdktypes.NewInt(9),
+			finalMeterValue:        math.NewInt(9),
 		},
 		{
 			// Meter is initialized to a value of: 0.1*100 = 10.
 			// Slashing 30 of voting power makes total voting power = 70, and meter = -20.
 			// Expected replenish allowance is then 7, meaning it'd take 3 replenishes
 			// for meter to reach 1 in value, and 4 replenishes for meter to reach a value of 7.
-			slashedPower:           sdktypes.NewInt(30),
-			totalPower:             sdktypes.NewInt(100),
+			slashedPower:           math.NewInt(30),
+			totalPower:             math.NewInt(100),
 			replenishFraction:      "0.1",
 			numReplenishesTillFull: 4,
-			finalMeterValue:        sdktypes.NewInt(7),
+			finalMeterValue:        math.NewInt(7),
 		},
 		{
 			// Meter is initialized to a value of 1, since replenish fraction is too low, and min allowance is 1.
 			// Slashing 5 of voting power makes total voting power = 995, and meter = -4.
 			// Expected replenish allowance is then 1 (still minimum amount), meaning it'd take 4 replenishes
 			// for meter to reach 0 in value, and 5 replenishes for meter to reach a value of 1.
-			slashedPower:           sdktypes.NewInt(5),
-			totalPower:             sdktypes.NewInt(1000),
+			slashedPower:           math.NewInt(5),
+			totalPower:             math.NewInt(1000),
 			replenishFraction:      "0.0000001",
 			numReplenishesTillFull: 5,
-			finalMeterValue:        sdktypes.NewInt(1),
+			finalMeterValue:        math.NewInt(1),
 		},
 	}
 
@@ -349,9 +347,9 @@ func TestNegativeSlashMeter(t *testing.T) {
 		// then total power minus slashed power any amount of times
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).Times(1),
+				gomock.Any()).Return(tc.totalPower, nil).Times(1),
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower.Sub(tc.slashedPower)).AnyTimes(),
+				gomock.Any()).Return(tc.totalPower.Sub(tc.slashedPower), nil).AnyTimes(),
 		)
 
 		// Initialize the slash meter (using first mocked value)
@@ -360,11 +358,11 @@ func TestNegativeSlashMeter(t *testing.T) {
 		// remaining calls to GetLastTotalPower should return the second mocked value.
 
 		// Confirm that meter is initialized to expected initial allowance
-		decFrac, err := sdktypes.NewDecFromStr(tc.replenishFraction)
+		decFrac, err := math.LegacyNewDecFromStr(tc.replenishFraction)
 		require.NoError(t, err)
-		expectedInitAllowance := sdktypes.NewInt(decFrac.MulInt(tc.totalPower).RoundInt64())
+		expectedInitAllowance := math.NewInt(decFrac.MulInt(tc.totalPower).RoundInt64())
 		if expectedInitAllowance.IsZero() { // Allowances have a minimum of 1.
-			expectedInitAllowance = sdktypes.NewInt(1)
+			expectedInitAllowance = math.NewInt(1)
 		}
 		require.Equal(t, expectedInitAllowance, providerKeeper.GetSlashMeter(ctx))
 
@@ -374,9 +372,9 @@ func TestNegativeSlashMeter(t *testing.T) {
 		require.True(t, providerKeeper.GetSlashMeter(ctx).LT(before))
 
 		// New expected allowance is replenish fraction * (total power - slashed power)
-		expectedNewAllowance := sdktypes.NewInt(decFrac.MulInt(tc.totalPower.Sub(tc.slashedPower)).RoundInt64())
+		expectedNewAllowance := math.NewInt(decFrac.MulInt(tc.totalPower.Sub(tc.slashedPower)).RoundInt64())
 		if expectedNewAllowance.IsZero() {
-			expectedNewAllowance = sdktypes.NewInt(1)
+			expectedNewAllowance = math.NewInt(1)
 		}
 		require.Equal(t, expectedNewAllowance, providerKeeper.GetSlashMeterAllowance(ctx))
 
@@ -416,33 +414,33 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 	}{
 		{
 			replenishFraction: "0.00",
-			totalPower:        sdktypes.NewInt(100),
-			expectedAllowance: sdktypes.NewInt(1), // 0.0 * 100 = 0, 1 is returned
+			totalPower:        math.NewInt(100),
+			expectedAllowance: math.NewInt(1), // 0.0 * 100 = 0, 1 is returned
 		},
 		{
 			replenishFraction: "0.00000000001",
-			totalPower:        sdktypes.NewInt(100),
-			expectedAllowance: sdktypes.NewInt(1), // 0.00000000001 * 100 = 0 (bankers rounding), 1 is returned
+			totalPower:        math.NewInt(100),
+			expectedAllowance: math.NewInt(1), // 0.00000000001 * 100 = 0 (bankers rounding), 1 is returned
 		},
 		{
 			replenishFraction: "0.01",
-			totalPower:        sdktypes.NewInt(100),
-			expectedAllowance: sdktypes.NewInt(1), // 0.00000000001 * 100 = 0 (bankers rounding), 1 is returned
+			totalPower:        math.NewInt(100),
+			expectedAllowance: math.NewInt(1), // 0.00000000001 * 100 = 0 (bankers rounding), 1 is returned
 		},
 		{
 			replenishFraction: "0.015",
-			totalPower:        sdktypes.NewInt(100),
-			expectedAllowance: sdktypes.NewInt(2), // 0.015 * 10 = 2 (bankers rounding)
+			totalPower:        math.NewInt(100),
+			expectedAllowance: math.NewInt(2), // 0.015 * 10 = 2 (bankers rounding)
 		},
 		{
 			replenishFraction: "0.27",
-			totalPower:        sdktypes.NewInt(100),
-			expectedAllowance: sdktypes.NewInt(27),
+			totalPower:        math.NewInt(100),
+			expectedAllowance: math.NewInt(27),
 		},
 		{
 			replenishFraction: "0.34",
-			totalPower:        sdktypes.NewInt(10000000),
-			expectedAllowance: sdktypes.NewInt(3400000),
+			totalPower:        math.NewInt(10000000),
+			expectedAllowance: math.NewInt(3400000),
 		},
 	}
 	for _, tc := range testCases {
@@ -453,7 +451,7 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				gomock.Any()).Return(tc.totalPower).Times(1),
+				gomock.Any()).Return(tc.totalPower, nil).Times(1),
 		)
 
 		// Set desired params
@@ -473,18 +471,18 @@ func TestSlashMeter(t *testing.T) {
 		meterValue  math.Int
 		shouldPanic bool
 	}{
-		{meterValue: sdktypes.NewInt(-7999999999999999999), shouldPanic: true},
-		{meterValue: sdktypes.NewInt(-tmtypes.MaxTotalVotingPower - 1), shouldPanic: true},
-		{meterValue: sdktypes.NewInt(-tmtypes.MaxTotalVotingPower), shouldPanic: false},
-		{meterValue: sdktypes.NewInt(-50000000078987), shouldPanic: false},
-		{meterValue: sdktypes.NewInt(-4237), shouldPanic: false},
-		{meterValue: sdktypes.NewInt(0), shouldPanic: false},
-		{meterValue: sdktypes.NewInt(1), shouldPanic: false},
-		{meterValue: sdktypes.NewInt(4237897), shouldPanic: false},
-		{meterValue: sdktypes.NewInt(500078078987), shouldPanic: false},
-		{meterValue: sdktypes.NewInt(tmtypes.MaxTotalVotingPower), shouldPanic: false},
-		{meterValue: sdktypes.NewInt(tmtypes.MaxTotalVotingPower + 1), shouldPanic: true},
-		{meterValue: sdktypes.NewInt(7999974823991111199), shouldPanic: true},
+		{meterValue: math.NewInt(-7999999999999999999), shouldPanic: true},
+		{meterValue: math.NewInt(-tmtypes.MaxTotalVotingPower - 1), shouldPanic: true},
+		{meterValue: math.NewInt(-tmtypes.MaxTotalVotingPower), shouldPanic: false},
+		{meterValue: math.NewInt(-50000000078987), shouldPanic: false},
+		{meterValue: math.NewInt(-4237), shouldPanic: false},
+		{meterValue: math.NewInt(0), shouldPanic: false},
+		{meterValue: math.NewInt(1), shouldPanic: false},
+		{meterValue: math.NewInt(4237897), shouldPanic: false},
+		{meterValue: math.NewInt(500078078987), shouldPanic: false},
+		{meterValue: math.NewInt(tmtypes.MaxTotalVotingPower), shouldPanic: false},
+		{meterValue: math.NewInt(tmtypes.MaxTotalVotingPower + 1), shouldPanic: true},
+		{meterValue: math.NewInt(7999974823991111199), shouldPanic: true},
 	}
 
 	for _, tc := range testCases {

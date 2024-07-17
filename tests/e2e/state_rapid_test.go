@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"pgregory.net/rapid"
 )
 
@@ -40,7 +40,7 @@ func GetChainStateGen() *rapid.Generator[ChainState] {
 			proposals := GetProposalsGen().Draw(t, "Proposals")
 			valPowers := GetValPowersGen().Draw(t, "ValPowers")
 			stakedTokens := GetStakedTokensGen().Draw(t, "StakedTokens")
-			params := GetParamsGen().Draw(t, "Params")
+			ibctransferparams := GetIBCTransferParamsGen().Draw(t, "IBCTransferParams")
 			rewards := GetRewardsGen().Draw(t, "Rewards")
 			consumerChains := GetConsumerChainsGen().Draw(t, "ConsumerChains")
 			assignedKeys := GetAssignedKeysGen().Draw(t, "AssignedKeys")
@@ -53,7 +53,7 @@ func GetChainStateGen() *rapid.Generator[ChainState] {
 				Proposals:                      &proposals,
 				ValPowers:                      &valPowers,
 				StakedTokens:                   &stakedTokens,
-				Params:                         &params,
+				IBCTransferParams:              &ibctransferparams,
 				Rewards:                        &rewards,
 				ConsumerChains:                 &consumerChains,
 				AssignedKeys:                   &assignedKeys,
@@ -110,17 +110,26 @@ func GetRewardsGen() *rapid.Generator[Rewards] {
 	})
 }
 
-func GetParamsGen() *rapid.Generator[[]Param] {
-	return rapid.Custom(func(t *rapid.T) []Param {
-		return rapid.SliceOf(GetParamGen()).Draw(t, "Params")
+func GetIBCTransferParamsGen() *rapid.Generator[IBCTransferParams] {
+	return rapid.Custom(func(t *rapid.T) IBCTransferParams {
+		return IBCTransferParams{
+			SendEnabled:    rapid.Bool().Draw(t, "SendEnabled"),
+			ReceiveEnabled: rapid.Bool().Draw(t, "ReceiveEnabled"),
+		}
 	})
+
 }
 
-func GetParamGen() *rapid.Generator[Param] {
-	return rapid.Custom(func(t *rapid.T) Param {
-		return Param{
-			Key:   rapid.String().Draw(t, "Key"),
-			Value: rapid.String().Draw(t, "Value"),
+func GetIBCTransferParamsProposalGen() *rapid.Generator[IBCTransferParamsProposal] {
+	return rapid.Custom(func(t *rapid.T) IBCTransferParamsProposal {
+		return IBCTransferParamsProposal{
+			Title:   rapid.String().Draw(t, "Title"),
+			Deposit: rapid.Uint().Draw(t, "Deposit"),
+			Status:  rapid.String().Draw(t, "Status"),
+			Params: IBCTransferParams{
+				SendEnabled:    rapid.Bool().Draw(t, "SendEnabled"),
+				ReceiveEnabled: rapid.Bool().Draw(t, "ReceiveEnabled"),
+			},
 		}
 	})
 }
@@ -173,7 +182,7 @@ func GetProposalGen() *rapid.Generator[Proposal] {
 			GetConsumerAdditionProposalGen().AsAny(),
 			GetConsumerRemovalProposalGen().AsAny(),
 			GetTextProposalGen().AsAny(),
-			GetParamsProposalGen().AsAny(),
+			GetIBCTransferParamsProposalGen().AsAny(),
 		)
 		return gen.Draw(t, "Proposal").(Proposal)
 	})
@@ -209,18 +218,6 @@ func GetTextProposalGen() *rapid.Generator[TextProposal] {
 			Description: rapid.String().Draw(t, "Description"),
 			Deposit:     rapid.Uint().Draw(t, "Deposit"),
 			Status:      rapid.String().Draw(t, "Status"),
-		}
-	})
-}
-
-func GetParamsProposalGen() *rapid.Generator[ParamsProposal] {
-	return rapid.Custom(func(t *rapid.T) ParamsProposal {
-		return ParamsProposal{
-			Subspace: rapid.String().Draw(t, "Subspace"),
-			Key:      rapid.String().Draw(t, "Key"),
-			Value:    rapid.String().Draw(t, "Value"),
-			Deposit:  rapid.Uint().Draw(t, "Deposit"),
-			Status:   rapid.String().Draw(t, "Status"),
 		}
 	})
 }

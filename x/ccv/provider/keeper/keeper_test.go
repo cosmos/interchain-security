@@ -6,19 +6,19 @@ import (
 	"sort"
 	"testing"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"cosmossdk.io/math"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v4/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v4/testutil/keeper"
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const consumer = "consumer"
@@ -160,7 +160,7 @@ func TestPendingVSCs(t *testing.T) {
 	_, pks, _ := ibctesting.GenerateKeys(t, 4)
 	var ppks [4]tmprotocrypto.PublicKey
 	for i, pk := range pks {
-		ppks[i], _ = cryptocodec.ToTmProtoPublicKey(pk)
+		ppks[i], _ = cryptocodec.ToCmtProtoPublicKey(pk)
 	}
 
 	packetList := []ccv.ValidatorSetChangePacketData{
@@ -462,17 +462,17 @@ func TestConsumerCommissionRate(t *testing.T) {
 
 	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
 	require.False(t, found)
-	require.Equal(t, sdk.ZeroDec(), cr)
+	require.Equal(t, math.LegacyZeroDec(), cr)
 
-	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr1, sdk.OneDec())
+	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr1, math.LegacyOneDec())
 	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
 	require.True(t, found)
-	require.Equal(t, sdk.OneDec(), cr)
+	require.Equal(t, math.LegacyOneDec(), cr)
 
-	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr2, sdk.ZeroDec())
+	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr2, math.LegacyZeroDec())
 	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
 	require.True(t, found)
-	require.Equal(t, sdk.ZeroDec(), cr)
+	require.Equal(t, math.LegacyZeroDec(), cr)
 
 	provAddrs := providerKeeper.GetAllCommissionRateValidators(ctx, "chainID")
 	require.Len(t, provAddrs, 2)

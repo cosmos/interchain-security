@@ -11,8 +11,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/v4/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v4/x/ccv/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 var _ types.QueryServer = Keeper{}
@@ -268,8 +268,12 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 }
 
 // QueryParams returns all parameters and current values of provider
-func (k Keeper) QueryParams(c context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
+func (k Keeper) QueryParams(goCtx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	params := k.GetParams(ctx)
 
 	return &types.QueryParamsResponse{Params: params}, nil
@@ -380,7 +384,10 @@ func (k Keeper) hasToValidate(
 	}
 
 	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
-	bondedValidators := k.GetLastBondedValidators(ctx)
+	bondedValidators, err := k.GetLastBondedValidators(ctx)
+	if err != nil {
+		return false, nil
+	}
 	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
@@ -394,7 +401,11 @@ func (k Keeper) hasToValidate(
 	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
 	// the validator would have to validate in the next epoch
 	if k.IsOptedIn(ctx, chainID, provAddr) {
-		nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
+		lastVals, err := k.GetLastBondedValidators(ctx)
+		if err != nil {
+			return false, err
+		}
+		nextValidators := k.ComputeNextValidators(ctx, chainID, lastVals)
 		for _, v := range nextValidators {
 			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 			if provAddr.ToSdkConsAddr().Equals(consAddr) {
@@ -437,8 +448,8 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 	if found {
 		res.Rate = consumerRate
 	} else {
-		v, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-		if !ok {
+		v, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown validator: %s", consAddr.String()))
 		}
 		res.Rate = v.Commission.Rate
