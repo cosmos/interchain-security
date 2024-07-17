@@ -59,7 +59,7 @@ In addition, in order to prevent spamming, users are required to pay a fee of `1
 
 ### Validations
 
-The submission of a fault resolution fails if any of the following conditions are not met:
+The submission of a fault resolution succeeds only if all of the following conditions are met:
 
 - the consumer chain is an Opt-in chain
 - all listed validators were opted-in to the consumer chain in the past unbonding-period
