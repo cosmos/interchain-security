@@ -1,11 +1,11 @@
 ---
-sidebar_position: 2
+sidebar_position: 18
 title: ADR Fault Resolutions
 ---
-# ADR [018]: [Fault Resolutions]
+# ADR 018: Fault Resolutions
 
 ## Changelog
-* 2024-07-17: Initial draft
+* 17th July 2024: Initial draft
 
 ## Status
 
@@ -21,12 +21,11 @@ Partial Set Security ([PSS](./adr-015-partial-set-security.md)) allows a subset 
 
 In cases of collusion, various types of misbehaviour can be performed by the validators, such as:
 
-- Incorrect executions to break protocol rules in order to steal funds.
-- Liveness attacks to halt the chain or censor transactions.
-- Oracle attacks to falsify information used by the chain logic.
+* Incorrect executions to break protocol rules in order to steal funds.
+* Liveness attacks to halt the chain or censor transactions.
+* Oracle attacks to falsify information used by the chain logic.
 
-
-Currently, these type of attack aren't handled in PSS, leaving the malicious validators unpunished.
+Currently, these types of attacks aren't handled in PSS, leaving the malicious validators unpunished.
 
 A potential solution is to use fraud proofs. This technology allows proving incorrect state transitions of a chain without a full node.
  However, this is a complex technology, and there is no framework that works for Cosmos chains to this day.
@@ -53,13 +52,13 @@ If such a proposal passes, the proposal handler tombstones all the validators li
 The proposal has the following fields:
 
 - **Description**: This field should be filled with a fault definition describing the type of misbehavior that the validators executed
- on a Opt-in consumer chain. A fault definition should precisely describe how an attack was performed and why it is eligible as a slashable fault.
+ on an Opt-in consumer chain. A fault definition should precisely describe how an attack was performed and why it is eligible as a slashable fault.
 - **Consumer Chain**: The chain that the fault was related to.
 - **Validators**: The list of all the validators to be slashed.
 
 In addition, in order to prevent spamming, users are required to pay a fee of `100ATOM` to submit a fault resolution to the provider.
 
-### validations
+### Validations
 
 The submission of a fault resolution fails if any of the following conditions are not met:
 
@@ -67,10 +66,10 @@ The submission of a fault resolution fails if any of the following conditions ar
 - all listed validators were opted-in to the consumer chain in the past unbonding-period
 - the `100ATOM` fee is provided
 
-### additional considerations
+### Additional considerations
 
-Fault resolution proposals should be `expedited` to minimize the time given to the listed validators to
-to unbond in order to not be punished.
+Fault resolution proposals should be `expedited`  to minimize the time given to the listed validators to
+to unbond to avoid punishment (see [Expedited Proposals](https://docs.cosmos.network/v0.50/build/modules/gov#expedited-proposals)) .
 
 
 ## Consequences
@@ -86,7 +85,7 @@ to unbond in order to not be punished.
 
 ### Neutral
 
-- Fault definitions need to have a clear framework in order to avoid debates about whether or not an attack has actually take place.  
+- Fault definitions need to have a clear framework in order to avoid debates about whether an attack has actually taken place.  
 
 ## References
 
