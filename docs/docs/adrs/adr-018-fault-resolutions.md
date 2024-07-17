@@ -17,7 +17,7 @@ Partial Set Security ([PSS](./adr-015-partial-set-security.md)) allows a subset 
  While this shared security scheme has many advantages, it comes with a risk known as the
  [subset problem](https://informal.systems/blog/replicated-vs-mesh-security#risks-of-opt-in-security-also-known-as-ics-v-2).
  This problem arises when a malicious majority of validators from the provider chain collude and misbehave on a consumer chain.
- This threat is particularly relevant for Opt-in chains since they might be secured by a relatively small subset of the provider's validator set.  
+ This threat is particularly relevant for Opt-in chains, since they might be secured by a relatively small subset of the provider's validator set.  
 
 In cases of collusion, various types of misbehaviour can be performed by the validators, such as:
 
@@ -88,7 +88,7 @@ to unbond to avoid punishment (see [Expedited Proposals](https://docs.cosmos.net
 
 ## References
 
- <!-- TODO: add Fault Resolution CHIPs discussion here when it's published -->
+ * [Preventing intersubjective faults in ICS](https://forum.cosmos.network/t/preventing-intersubjective-faults-in-ics/14103)
 
 * [Enabling Opt-in and Mesh Security with Fraud Votes](https://forum.cosmos.network/t/enabling-opt-in-and-mesh-security-with-fraud-votes/10901)
 
