@@ -34,8 +34,7 @@ A potential solution is to use fraud proofs. This technology allows proving inco
 To address this risk in PSS, a governance-gated slashing solution can be used until fraud proof technology matures.
 
 
-This ADR proposes a fault resolution mechanism, which is a type of governance proposal that victims of faults can use to vote on the
- slashing of validators that misbehave on Opt-in consumer chains.
+This ADR proposes a fault resolution mechanism, which is a type of governance proposal that can be use to vote on the slashing of validators that misbehave on Opt-in consumer chains.
 
 In what follows, we describe the implementation of a fault resolution mechanism that handles incorrect executions on consumer chains,
  as a first iteration.
