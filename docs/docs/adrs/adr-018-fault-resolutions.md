@@ -1,6 +1,6 @@
 ---
 sidebar_position: 18
-title: ADR Fault Resolutions
+title: Fault Resolutions
 ---
 # ADR 018: Fault Resolutions
 
