@@ -55,7 +55,8 @@ The proposal has the following fields:
 - **Consumer Chain**: The chain that the fault was related to.
 - **Validators**: The list of all the validators to be slashed.
 
-In addition, in order to prevent spamming, users are required to pay a fee of `100ATOM` to submit a fault resolution to the provider.
+In addition, in order to prevent spamming, users must pay a default fee of `100ATOM` to submit a fault resolution to the provider.
+ This amount is stored in a new `consumer-fault-resolution-fee` parameter of the `provider` module.
 
 ### Validations
 
