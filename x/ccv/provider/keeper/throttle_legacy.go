@@ -26,7 +26,7 @@ func (k Keeper) LegacyGetAllThrottledPacketData(ctx sdktypes.Context, consumerCh
 	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
 
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.MustGetKeyPrefix("ThrottledPacketDataKey"), consumerChainID)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.MustGetKeyPrefix(providertypes.ThrottledPacketDataKeyName), consumerChainID)
 	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
@@ -60,7 +60,7 @@ func (k Keeper) LegacyGetAllThrottledPacketData(ctx sdktypes.Context, consumerCh
 // LegacyDeleteThrottledPacketDataForConsumer removes all throttled packet data that was queued on the provider for a given consumer chain.
 func (k Keeper) LegacyDeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.MustGetKeyPrefix("ThrottledPacketDataKey"), consumerChainID)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.MustGetKeyPrefix(providertypes.ThrottledPacketDataKeyName), consumerChainID)
 	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 

@@ -453,7 +453,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 // Note: this method is split out from BeginBlockInit to be easily unit tested.
 func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecute []types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.MustGetKeyPrefix("PendingCAPKey")})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.MustGetKeyPrefix(types.PendingCAPKeyName)})
 
 	defer iterator.Close()
 
@@ -484,7 +484,7 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecu
 // then they are ordered by chainID.
 func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.MustGetKeyPrefix("PendingCAPKey")})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.MustGetKeyPrefix(types.PendingCAPKeyName)})
 
 	defer iterator.Close()
 
@@ -593,7 +593,7 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 	propsToExecute := []types.ConsumerRemovalProposal{}
 
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.MustGetKeyPrefix("PendingCRPKey")})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.MustGetKeyPrefix(types.PendingCRPKeyName)})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -624,7 +624,7 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 // Thus, the returned array is in stopTime order.
 func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.MustGetKeyPrefix("PendingCRPKey")})
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.MustGetKeyPrefix(types.PendingCRPKeyName)})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {

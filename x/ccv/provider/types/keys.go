@@ -31,6 +31,94 @@ const (
 
 	// This address receives rewards from consumer chains
 	ConsumerRewardsPool = "consumer_rewards_pool"
+
+	// Names for the store keys.
+	// Used for storing the byte prefixes in the constant map.
+	// See getKeyPrefixes().
+
+	ParametersKeyName = "ParametersKey"
+
+	PortKeyName = "PortKey"
+
+	MaturedUnbondingOpsKeyName = "MaturedUnbondingOpsKey"
+
+	ValidatorSetUpdateIdKeyName = "ValidatorSetUpdateIdKey"
+
+	SlashMeterKeyName = "SlashMeterKey"
+
+	SlashMeterReplenishTimeCandidateKeyName = "SlashMeterReplenishTimeCandidateKey"
+
+	ChainToChannelKeyName = "ChainToChannelKey"
+
+	ChannelToChainKeyName = "ChannelToChainKey"
+
+	ChainToClientKeyName = "ChainToClientKey"
+
+	InitTimeoutTimestampKeyName = "InitTimeoutTimestampKey"
+
+	PendingCAPKeyName = "PendingCAPKey"
+
+	PendingCRPKeyName = "PendingCRPKey"
+
+	UnbondingOpKeyName = "UnbondingOpKey"
+
+	UnbondingOpIndexKeyName = "UnbondingOpIndexKey"
+
+	ValsetUpdateBlockHeightKeyName = "ValsetUpdateBlockHeightKey"
+
+	ConsumerGenesisKeyName = "ConsumerGenesisKey"
+
+	SlashAcksKeyName = "SlashAcksKey"
+
+	InitChainHeightKeyName = "InitChainHeightKey"
+
+	PendingVSCsKeyName = "PendingVSCsKey"
+
+	VscSendTimestampKeyName = "VscSendTimestampKey"
+
+	ThrottledPacketDataSizeKeyName = "ThrottledPacketDataSizeKey"
+
+	ThrottledPacketDataKeyName = "ThrottledPacketDataKey"
+
+	GlobalSlashEntryKeyName = "GlobalSlashEntryKey"
+
+	ConsumerValidatorsKeyName = "ConsumerValidatorsKey"
+
+	ValidatorsByConsumerAddrKeyName = "ValidatorsByConsumerAddrKey"
+
+	KeyAssignmentReplacementsKeyName = "DeprecatedKeyAssignmentReplacementsKey"
+
+	ConsumerAddrsToPruneKeyName = "ConsumerAddrsToPruneKey"
+
+	SlashLogKeyName = "SlashLogKey"
+
+	ConsumerRewardDenomsKeyName = "ConsumerRewardDenomsKey"
+
+	VSCMaturedHandledThisBlockKeyName = "VSCMaturedHandledThisBlockKey"
+
+	EquivocationEvidenceMinHeightKeyName = "EquivocationEvidenceMinHeightKey"
+
+	ProposedConsumerChainKeyName = "ProposedConsumerChainKey"
+
+	ConsumerValidatorKeyName = "ConsumerValidatorKey"
+
+	OptedInKeyName = "OptedInKey"
+
+	TopNKeyName = "TopNKey"
+
+	ValidatorsPowerCapKeyName = "ValidatorsPowerCapKey"
+
+	ValidatorSetCapKeyName = "ValidatorSetCapKey"
+
+	AllowlistKeyName = "AllowlistKey"
+
+	DenylistKeyName = "DenylistKey"
+
+	ConsumerRewardsAllocationKeyName = "ConsumerRewardsAllocationKey"
+
+	ConsumerCommissionRateKeyName = "ConsumerCommissionRateKey"
+
+	MinimumPowerInTopNKeyName = "MinimumPowerInTopNKey"
 )
 
 // getKeyPrefixes returns a constant map of all the byte prefixes for existing keys
@@ -39,169 +127,169 @@ func getKeyPrefixes() map[string]byte {
 		// ParametersKey is the is the key for storing provider's parameters.
 		// note that this was set to the max uint8 type value 0xFF in order to protect
 		// from using the ICS v5.0.0 provider module by mistake
-		"ParametersKey": byte(0xFF),
+		ParametersKeyName: byte(0xFF),
 
 		// PortKey defines the key to store the port ID in store
-		"PortKey": 0,
+		PortKeyName: 0,
 
 		// MaturedUnbondingOpsKey is the key that stores the list of all unbonding operations ids
 		// that have matured from a consumer chain perspective,
 		// i.e., no longer waiting on the unbonding period to elapse on any consumer chain
-		"MaturedUnbondingOpsKey": 1,
+		MaturedUnbondingOpsKeyName: 1,
 
 		// ValidatorSetUpdateIdKey is the key that stores the current validator set update id
-		"ValidatorSetUpdateIdKey": 2,
+		ValidatorSetUpdateIdKeyName: 2,
 
 		// SlashMeterKey is the key for storing the slash meter
-		"SlashMeterKey": 3,
+		SlashMeterKeyName: 3,
 
 		// SlashMeterReplenishTimeCandidateKey is the key for storing the slash meter replenish time candidate
-		"SlashMeterReplenishTimeCandidateKey": 4,
+		SlashMeterReplenishTimeCandidateKeyName: 4,
 
 		// ChainToChannelKey is the key for storing mapping
 		// from chainID to the channel ID that is used to send over validator set changes.
-		"ChainToChannelKey": 5,
+		ChainToChannelKeyName: 5,
 
 		// ChannelToChainKey is the key for storing mapping
 		// from the CCV channel ID to the consumer chain ID.
-		"ChannelToChainKey": 6,
+		ChannelToChainKeyName: 6,
 
 		// ChainToClientKey is the key for storing the client ID for a given consumer chainID.
-		"ChainToClientKey": 7,
+		ChainToClientKeyName: 7,
 
 		// InitTimeoutTimestampKey is the key for storing
 		// the init timeout timestamp for a given consumer chainID.
-		"InitTimeoutTimestampKey": 8,
+		InitTimeoutTimestampKeyName: 8,
 
 		// PendingCAPKey is the key for storing pending consumer addition proposals before the spawn time occurs.
 		// The key includes the BigEndian timestamp to allow for efficient chronological iteration
-		"PendingCAPKey": 9,
+		PendingCAPKeyName: 9,
 
 		// PendingCRPKey is the key for storing pending consumer removal proposals before the stop time occurs.
 		// The key includes the BigEndian timestamp to allow for efficient chronological iteration
-		"PendingCRPKey": 10,
+		PendingCRPKeyName: 10,
 
 		// UnbondingOpKey is the key that stores a record of all the ids of consumer chains that
 		// need to unbond before a given unbonding operation can unbond on this chain.
-		"UnbondingOpKey": 11,
+		UnbondingOpKeyName: 11,
 
 		// UnbondingOpIndexKey is key of the index for looking up which unbonding
 		// operations are waiting for a given consumer chain to unbond
-		"UnbondingOpIndexKey": 12,
+		UnbondingOpIndexKeyName: 12,
 
 		// ValsetUpdateBlockHeightKey is the key for storing the mapping from vscIDs to block heights
-		"ValsetUpdateBlockHeightKey": 13,
+		ValsetUpdateBlockHeightKeyName: 13,
 
 		// ConsumerGenesisKey stores consumer genesis state material (consensus state and client state) indexed by consumer chain id
-		"ConsumerGenesisKey": 14,
+		ConsumerGenesisKeyName: 14,
 
 		// SlashAcksKey is the key for storing consensus address of consumer chain validators successfully slashed on the provider chain
-		"SlashAcksKey": 15,
+		SlashAcksKeyName: 15,
 
 		// InitChainHeightKey is the key for storing the mapping from a chain id to the corresponding block height on the provider
 		// this consumer chain was initialized
-		"InitChainHeightKey": 16,
+		InitChainHeightKeyName: 16,
 
 		// PendingVSCsKey is the key for storing pending ValidatorSetChangePacket data
-		"PendingVSCsKey": 17,
+		PendingVSCsKeyName: 17,
 
 		// VscSendTimestampKey is the key for storing
 		// the list of VSC sending timestamps for a given consumer chainID.
-		"VscSendTimestampKey": 18,
+		VscSendTimestampKeyName: 18,
 
 		// ThrottledPacketDataSizeKey is the key for storing the size of chain-specific throttled packet data queues
-		"ThrottledPacketDataSizeKey": 19,
+		ThrottledPacketDataSizeKeyName: 19,
 
 		// ThrottledPacketDataKey is the key for storing throttled packet data
-		"ThrottledPacketDataKey": 20,
+		ThrottledPacketDataKeyName: 20,
 
 		// GlobalSlashEntryKey is the key for storing global slash queue entries
-		"GlobalSlashEntryKey": 21,
+		GlobalSlashEntryKeyName: 21,
 
 		// ConsumerValidatorsKey is the key for storing the validator assigned keys for every consumer chain
-		"ConsumerValidatorsKey": 22,
+		ConsumerValidatorsKeyName: 22,
 
 		// ValidatorsByConsumerAddrKey is the key for storing the mapping from validator addresses
 		// on consumer chains to validator addresses on the provider chain
-		"ValidatorsByConsumerAddrKey": 23,
+		ValidatorsByConsumerAddrKeyName: 23,
 
 		// DeprecatedKeyAssignmentReplacementsKey was the key used to store the key assignments that needed to be replaced in the current block
 		// NOTE: This prefix is deprecated, but left in place to avoid consumer state migrations
 		// [DEPRECATED]
-		"DeprecatedKeyAssignmentReplacementsKey": 24,
+		KeyAssignmentReplacementsKeyName: 24,
 
 		// ConsumerAddrsToPruneKey is the key for storing the mapping from VSC ids
 		// to consumer validators addresses needed for pruning
-		"ConsumerAddrsToPruneKey": 25,
+		ConsumerAddrsToPruneKeyName: 25,
 
 		// SlashLogKey is the key for storing the mapping from provider address to boolean
 		// denoting whether the provider address has committed any double signign infractions
-		"SlashLogKey": 26,
+		SlashLogKeyName: 26,
 
 		// ConsumerRewardDenomsKey is the key for storing a list of consumer reward denoms
-		"ConsumerRewardDenomsKey": 27,
+		ConsumerRewardDenomsKeyName: 27,
 
 		// VSCMaturedHandledThisBlockKey is the key for storing the number of vsc matured packets
 		// handled in the current block
-		"VSCMaturedHandledThisBlockKey": 28,
+		VSCMaturedHandledThisBlockKeyName: 28,
 
 		// EquivocationEvidenceMinHeightKey is the key for storing the mapping from consumer chain IDs
 		// to the minimum height of a valid consumer equivocation evidence
-		"EquivocationEvidenceMinHeightKey": 29,
+		EquivocationEvidenceMinHeightKeyName: 29,
 
 		// ProposedConsumerChainKey is the key for storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
-		"ProposedConsumerChainKey": 30,
+		ProposedConsumerChainKeyName: 30,
 
 		// ConsumerValidatorKey is the key for storing for each consumer chain all the consumer
 		// validators in this epoch that are validating the consumer chain
-		"ConsumerValidatorKey": 31,
+		ConsumerValidatorKeyName: 31,
 
 		// OptedInKey is the key for storing whether a validator is opted in to validate on a consumer chain
-		"OptedInKey": 32,
+		OptedInKeyName: 32,
 
 		// TopNKey is the key for storing the mapping from a consumer chain to the N value of this chain,
 		// that corresponds to the N% of the top validators that have to validate this consumer chain
-		"TopNKey": 33,
+		TopNKeyName: 33,
 
 		// ValidatorsPowerCapKey is the key for  storing the mapping from a consumer chain to the power-cap value of this chain,
 		// that corresponds to p% such that no validator can have more than p% of the voting power on the consumer chain.
 		// Operates on a best-effort basis.
-		"ValidatorsPowerCapKey": 34,
+		ValidatorsPowerCapKeyName: 34,
 
 		// ValidatorSetCapKey is the key for storing the mapping from a consumer chain to the validator-set cap value
 		// of this chain.
-		"ValidatorSetCapKey": 35,
+		ValidatorSetCapKeyName: 35,
 
 		// AllowlistKey is the key for storing the mapping from a consumer chain to the set of validators that are
 		// allowlisted.
-		"AllowlistKey": 36,
+		AllowlistKeyName: 36,
 
 		// DenylistKey is the key for storing the mapping from a consumer chain to the set of validators that are
 		// denylisted.
-		"DenylistKey": 37,
+		DenylistKeyName: 37,
 
 		// ConsumerRewardsAllocationKey is the key for storing for each consumer the ICS rewards
 		// allocated to the consumer rewards pool
-		"ConsumerRewardsAllocationKey": 38,
+		ConsumerRewardsAllocationKeyName: 38,
 
 		// ConsumerCommissionRateKey is the key for storing the commission rate
 		// per validator per consumer chain
-		"ConsumerCommissionRateKey": 39,
+		ConsumerCommissionRateKeyName: 39,
 
 		// MinimumPowerInTopNKey is the key for storing the
 		// minimum power required to be in the top N per consumer chain.
-		"MinimumPowerInTopNKey": 40,
+		MinimumPowerInTopNKeyName: 40,
 
-		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
+		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
 }
 
-// MustGetKeyPrefix returns the key prefix for a given index.
+// MustGetKeyPrefix returns the key prefix for a given key.
 // It panics if there is not byte prefix for the index.
-func MustGetKeyPrefix(index string) byte {
+func MustGetKeyPrefix(key string) byte {
 	keyPrefixes := getKeyPrefixes()
-	if prefix, found := keyPrefixes[index]; !found {
-		panic(fmt.Sprintf("could not find key prefix for index %s", index))
+	if prefix, found := keyPrefixes[key]; !found {
+		panic(fmt.Sprintf("could not find key prefix for index %s", key))
 	} else {
 		return prefix
 	}
@@ -218,59 +306,70 @@ func GetAllKeyPrefixes() []byte {
 	return prefixList
 }
 
+// GetAllKeys returns the names of all the keys.
+// Only used for testing
+func GetAllKeyNames() []string {
+	prefixMap := getKeyPrefixes()
+	keyList := make([]string, 0, len(prefixMap))
+	for key := range prefixMap {
+		keyList = append(keyList, key)
+	}
+	return keyList
+}
+
 //
 // Fully defined key func section
 //
 
 // ParametersKey returns the key for the parameters of the provider module in the store
 func ParametersKey() []byte {
-	return []byte{MustGetKeyPrefix("ParametersKey")}
+	return []byte{MustGetKeyPrefix(ParametersKeyName)}
 }
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
-	return []byte{MustGetKeyPrefix("PortKey")}
+	return []byte{MustGetKeyPrefix(PortKeyName)}
 }
 
 // MaturedUnbondingOpsKey returns the key for storing the list of matured unbonding operations.
 func MaturedUnbondingOpsKey() []byte {
-	return []byte{MustGetKeyPrefix("MaturedUnbondingOpsKey")}
+	return []byte{MustGetKeyPrefix(MaturedUnbondingOpsKeyName)}
 }
 
 // ValidatorSetUpdateIdKey is the key that stores the current validator set update id
 func ValidatorSetUpdateIdKey() []byte {
-	return []byte{MustGetKeyPrefix("ValidatorSetUpdateIdKey")}
+	return []byte{MustGetKeyPrefix(ValidatorSetUpdateIdKeyName)}
 }
 
 // SlashMeterKey returns the key storing the slash meter
 func SlashMeterKey() []byte {
-	return []byte{MustGetKeyPrefix("SlashMeterKey")}
+	return []byte{MustGetKeyPrefix(SlashMeterKeyName)}
 }
 
 // SlashMeterReplenishTimeCandidateKey returns the key storing the slash meter replenish time candidate
 func SlashMeterReplenishTimeCandidateKey() []byte {
-	return []byte{MustGetKeyPrefix("SlashMeterReplenishTimeCandidateKey")}
+	return []byte{MustGetKeyPrefix(SlashMeterReplenishTimeCandidateKeyName)}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
 func ChainToChannelKey(chainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("ChainToChannelKey")}, []byte(chainID)...)
+	return append([]byte{MustGetKeyPrefix(ChainToChannelKeyName)}, []byte(chainID)...)
 }
 
 // ChannelToChainKey returns the key under which the consumer chain ID will be stored for the given channelID.
 func ChannelToChainKey(channelID string) []byte {
-	return append([]byte{MustGetKeyPrefix("ChannelToChainKey")}, []byte(channelID)...)
+	return append([]byte{MustGetKeyPrefix(ChannelToChainKeyName)}, []byte(channelID)...)
 
 }
 
 // ChainToClientKey returns the key under which the clientID for the given chainID is stored.
 func ChainToClientKey(chainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("ChainToClientKey")}, []byte(chainID)...)
+	return append([]byte{MustGetKeyPrefix(ChainToClientKeyName)}, []byte(chainID)...)
 }
 
 // InitTimeoutTimestampKey returns the key under which the init timeout timestamp for the given chainID is stored.
 func InitTimeoutTimestampKey(chainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("InitTimeoutTimestampKey")}, []byte(chainID)...)
+	return append([]byte{MustGetKeyPrefix(InitTimeoutTimestampKeyName)}, []byte(chainID)...)
 }
 
 // PendingCAPKey returns the key under which a pending consumer addition proposal is stored.
@@ -279,7 +378,7 @@ func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
 	return ccvtypes.AppendMany(
 		// Append the prefix
-		[]byte{MustGetKeyPrefix("PendingCAPKey")},
+		[]byte{MustGetKeyPrefix(PendingCAPKeyName)},
 		// Append the time
 		sdk.Uint64ToBigEndian(ts),
 		// Append the chainId
@@ -293,7 +392,7 @@ func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
 	return ccvtypes.AppendMany(
 		// Append the prefix
-		[]byte{MustGetKeyPrefix("PendingCRPKey")},
+		[]byte{MustGetKeyPrefix(PendingCRPKeyName)},
 		// Append the time
 		sdk.Uint64ToBigEndian(ts),
 		// Append the chainId
@@ -306,71 +405,71 @@ func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 func UnbondingOpKey(id uint64) []byte {
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, id)
-	return append([]byte{MustGetKeyPrefix("UnbondingOpKey")}, bz...)
+	return append([]byte{MustGetKeyPrefix(UnbondingOpKeyName)}, bz...)
 }
 
 // UnbondingOpIndexKey returns an unbonding op index key
 // Note: chainId is hashed to a fixed length sequence of bytes here to prevent
 // injection attack between chainIDs.
 func UnbondingOpIndexKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(MustGetKeyPrefix("UnbondingOpIndexKey"), chainID, vscID)
+	return ChainIdAndUintIdKey(MustGetKeyPrefix(UnbondingOpIndexKeyName), chainID, vscID)
 }
 
 // ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
 // Removes the prefix + chainID from index key and returns only the key part.
 func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(MustGetKeyPrefix("UnbondingOpIndexKey"), key)
+	return ParseChainIdAndUintIdKey(MustGetKeyPrefix(UnbondingOpIndexKeyName), key)
 }
 
 // ValsetUpdateBlockHeightKey returns the key that storing the mapping from valset update ID to block height
 func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 	vuidBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
-	return append([]byte{MustGetKeyPrefix("ValsetUpdateBlockHeightKey")}, vuidBytes...)
+	return append([]byte{MustGetKeyPrefix(ValsetUpdateBlockHeightKeyName)}, vuidBytes...)
 }
 
 // ConsumerGenesisKey returns the key corresponding to consumer genesis state material
 // (consensus state and client state) indexed by consumer chain id
 func ConsumerGenesisKey(chainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("ConsumerGenesisKey")}, []byte(chainID)...)
+	return append([]byte{MustGetKeyPrefix(ConsumerGenesisKeyName)}, []byte(chainID)...)
 }
 
 // SlashAcksKey returns the key under which slashing acks are stored for a given chain ID
 func SlashAcksKey(chainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("SlashAcksKey")}, []byte(chainID)...)
+	return append([]byte{MustGetKeyPrefix(SlashAcksKeyName)}, []byte(chainID)...)
 }
 
 // InitChainHeightKey returns the key under which the block height for a given chain ID is stored
 func InitChainHeightKey(chainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("InitChainHeightKey")}, []byte(chainID)...)
+	return append([]byte{MustGetKeyPrefix(InitChainHeightKeyName)}, []byte(chainID)...)
 }
 
 // PendingVSCsKey returns the key under which
 // pending ValidatorSetChangePacket data is stored for a given chain ID
 func PendingVSCsKey(chainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("PendingVSCsKey")}, []byte(chainID)...)
+	return append([]byte{MustGetKeyPrefix(PendingVSCsKeyName)}, []byte(chainID)...)
 }
 
 // VscSendingTimestampKey returns the key under which the
 // sending timestamp of the VSCPacket with vsc ID is stored
 func VscSendingTimestampKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(MustGetKeyPrefix("VscSendTimestampKey"), chainID, vscID)
+	return ChainIdAndUintIdKey(MustGetKeyPrefix(VscSendTimestampKeyName), chainID, vscID)
 }
 
 // ParseVscTimeoutTimestampKey returns chain ID and vsc ID
 // for a VscSendingTimestampKey or an error if unparsable
 func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(MustGetKeyPrefix("VscSendTimestampKey"), bz)
+	return ParseChainIdAndUintIdKey(MustGetKeyPrefix(VscSendTimestampKeyName), bz)
 }
 
 // ThrottledPacketDataSizeKey returns the key storing the size of the throttled packet data queue for a given chain ID
 func ThrottledPacketDataSizeKey(consumerChainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("ThrottledPacketDataSizeKey")}, []byte(consumerChainID)...)
+	return append([]byte{MustGetKeyPrefix(ThrottledPacketDataSizeKeyName)}, []byte(consumerChainID)...)
 }
 
 // ThrottledPacketDataKey returns the key storing the throttled packet data queue for a given chain ID and ibc seq num
 func ThrottledPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
-	return ChainIdAndUintIdKey(MustGetKeyPrefix("ThrottledPacketDataKey"), consumerChainID, ibcSeqNum)
+	return ChainIdAndUintIdKey(MustGetKeyPrefix(ThrottledPacketDataKeyName), consumerChainID, ibcSeqNum)
 }
 
 // MustParseThrottledPacketDataKey parses a throttled packet data key or panics upon failure
@@ -384,7 +483,7 @@ func MustParseThrottledPacketDataKey(key []byte) (string, uint64) {
 
 // ParseThrottledPacketDataKey parses a throttled packet data key
 func ParseThrottledPacketDataKey(key []byte) (chainId string, ibcSeqNum uint64, err error) {
-	return ParseChainIdAndUintIdKey(MustGetKeyPrefix("ThrottledPacketDataKey"), key)
+	return ParseChainIdAndUintIdKey(MustGetKeyPrefix(ThrottledPacketDataKeyName), key)
 }
 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
@@ -392,7 +491,7 @@ func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
 	recvTime := uint64(entry.RecvTime.UTC().UnixNano())
 	return ccvtypes.AppendMany(
 		// Append byte prefix
-		[]byte{MustGetKeyPrefix("GlobalSlashEntryKey")},
+		[]byte{MustGetKeyPrefix(GlobalSlashEntryKeyName)},
 		// Append time bz
 		sdk.Uint64ToBigEndian(recvTime),
 		// Append ibc seq num
@@ -408,7 +507,7 @@ func MustParseGlobalSlashEntryKey(bz []byte) (
 	recvTime time.Time, consumerChainID string, ibcSeqNum uint64,
 ) {
 	// Prefix is in first byte
-	expectedPrefix := []byte{MustGetKeyPrefix("GlobalSlashEntryKey")}
+	expectedPrefix := []byte{MustGetKeyPrefix(GlobalSlashEntryKeyName)}
 	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {
 		panic(fmt.Sprintf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix))
 	}
@@ -429,46 +528,46 @@ func MustParseGlobalSlashEntryKey(bz []byte) (
 // ConsumerValidatorsKey returns the key under which the
 // validator assigned keys for every consumer chain are stored
 func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(MustGetKeyPrefix("ConsumerValidatorsKey"), chainID, addr.ToSdkConsAddr())
+	return ChainIdAndConsAddrKey(MustGetKeyPrefix(ConsumerValidatorsKeyName), chainID, addr.ToSdkConsAddr())
 
 }
 
 // ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
 // on consumer chains to validator addresses on the provider chain is stored
 func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
-	return ChainIdAndConsAddrKey(MustGetKeyPrefix("ValidatorsByConsumerAddrKey"), chainID, addr.ToSdkConsAddr())
+	return ChainIdAndConsAddrKey(MustGetKeyPrefix(ValidatorsByConsumerAddrKeyName), chainID, addr.ToSdkConsAddr())
 }
 
 // ConsumerAddrsToPruneKey returns the key under which the
 // mapping from VSC ids to consumer validators addresses is stored
 func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(MustGetKeyPrefix("ConsumerAddrsToPruneKey"), chainID, vscID)
+	return ChainIdAndUintIdKey(MustGetKeyPrefix(ConsumerAddrsToPruneKeyName), chainID, vscID)
 }
 
 // SlashLogKey returns the key to a validator's slash log
 func SlashLogKey(providerAddr ProviderConsAddress) []byte {
-	return append([]byte{MustGetKeyPrefix("SlashLogKey")}, providerAddr.ToSdkConsAddr().Bytes()...)
+	return append([]byte{MustGetKeyPrefix(SlashLogKeyName)}, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 func VSCMaturedHandledThisBlockKey() []byte {
-	return []byte{MustGetKeyPrefix("VSCMaturedHandledThisBlockKey")}
+	return []byte{MustGetKeyPrefix(VSCMaturedHandledThisBlockKeyName)}
 }
 
 // ConsumerRewardDenomsKey returns the key under which consumer reward denoms are stored
 func ConsumerRewardDenomsKey(denom string) []byte {
-	return append([]byte{MustGetKeyPrefix("ConsumerRewardDenomsKey")}, []byte(denom)...)
+	return append([]byte{MustGetKeyPrefix(ConsumerRewardDenomsKeyName)}, []byte(denom)...)
 }
 
 // EquivocationEvidenceMinHeightKey returns the key storing the minimum height
 // of a valid consumer equivocation evidence for a given consumer chain ID
 func EquivocationEvidenceMinHeightKey(consumerChainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("EquivocationEvidenceMinHeightKey")}, []byte(consumerChainID)...)
+	return append([]byte{MustGetKeyPrefix(EquivocationEvidenceMinHeightKeyName)}, []byte(consumerChainID)...)
 }
 
 // ProposedConsumerChainKey returns the key of proposed consumer chainId in consumerAddition gov proposal before voting finishes, the stored key format is prefix|proposalID, value is chainID
 func ProposedConsumerChainKey(proposalID uint64) []byte {
 	return ccvtypes.AppendMany(
-		[]byte{MustGetKeyPrefix("ProposedConsumerChainKey")},
+		[]byte{MustGetKeyPrefix(ProposedConsumerChainKeyName)},
 		sdk.Uint64ToBigEndian(proposalID),
 	)
 }
@@ -487,58 +586,58 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 
 // ConsumerValidatorKey returns the key of consumer chain `chainID` and validator with `providerAddr`
 func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
-	prefix := ChainIdWithLenKey(MustGetKeyPrefix("ConsumerValidatorKey"), chainID)
+	prefix := ChainIdWithLenKey(MustGetKeyPrefix(ConsumerValidatorKeyName), chainID)
 	return append(prefix, providerAddr...)
 }
 
 // TopNKey returns the key used to store the Top N value per consumer chain.
 // This value corresponds to the N% of the top validators that have to validate the consumer chain.
 func TopNKey(chainID string) []byte {
-	return ChainIdWithLenKey(MustGetKeyPrefix("TopNKey"), chainID)
+	return ChainIdWithLenKey(MustGetKeyPrefix(TopNKeyName), chainID)
 }
 
 // ValidatorSetPowerKey returns the key of consumer chain `chainID`
 func ValidatorsPowerCapKey(chainID string) []byte {
-	return ChainIdWithLenKey(MustGetKeyPrefix("ValidatorsPowerCapKey"), chainID)
+	return ChainIdWithLenKey(MustGetKeyPrefix(ValidatorsPowerCapKeyName), chainID)
 }
 
 // ValidatorSetCapKey returns the key of consumer chain `chainID`
 func ValidatorSetCapKey(chainID string) []byte {
-	return ChainIdWithLenKey(MustGetKeyPrefix("ValidatorSetCapKey"), chainID)
+	return ChainIdWithLenKey(MustGetKeyPrefix(ValidatorSetCapKeyName), chainID)
 }
 
 // AllowlistCapKey returns the key to a validator's slash log
 func AllowlistCapKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	return append(ChainIdWithLenKey(MustGetKeyPrefix("AllowlistKey"), chainID), providerAddr.ToSdkConsAddr().Bytes()...)
+	return append(ChainIdWithLenKey(MustGetKeyPrefix(AllowlistKeyName), chainID), providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // DenylistCapKey returns the key to a validator's slash log
 func DenylistCapKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	return append(ChainIdWithLenKey(MustGetKeyPrefix("DenylistKey"), chainID), providerAddr.ToSdkConsAddr().Bytes()...)
+	return append(ChainIdWithLenKey(MustGetKeyPrefix(DenylistKeyName), chainID), providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // OptedInKey returns the key used to store whether a validator is opted in on a consumer chain.
 func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	prefix := ChainIdWithLenKey(MustGetKeyPrefix("OptedInKey"), chainID)
+	prefix := ChainIdWithLenKey(MustGetKeyPrefix(OptedInKeyName), chainID)
 	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // ConsumerRewardsAllocationKey returns the key used to store the ICS rewards per consumer chain
 func ConsumerRewardsAllocationKey(chainID string) []byte {
-	return append([]byte{MustGetKeyPrefix("ConsumerRewardsAllocationKey")}, []byte(chainID)...)
+	return append([]byte{MustGetKeyPrefix(ConsumerRewardsAllocationKeyName)}, []byte(chainID)...)
 }
 
 // ConsumerCommissionRateKey returns the key used to store the commission rate per validator per consumer chain.
 func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress) []byte {
 	return ChainIdAndConsAddrKey(
-		MustGetKeyPrefix("ConsumerCommissionRateKey"),
+		MustGetKeyPrefix(ConsumerCommissionRateKeyName),
 		chainID,
 		providerAddr.ToSdkConsAddr(),
 	)
 }
 
 func MinimumPowerInTopNKey(chainID string) []byte {
-	return ChainIdWithLenKey(MustGetKeyPrefix("MinimumPowerInTopNKey"), chainID)
+	return ChainIdWithLenKey(MustGetKeyPrefix(MinimumPowerInTopNKeyName), chainID)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

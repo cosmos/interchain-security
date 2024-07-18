@@ -111,7 +111,7 @@ func (k Keeper) SetValidatorConsumerPubKey(
 func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
-	ConsumerValidatorsKey := types.MustGetKeyPrefix("ConsumerValidatorsKey")
+	ConsumerValidatorsKey := types.MustGetKeyPrefix(types.ConsumerValidatorsKeyName)
 	if chainID == nil {
 		// iterate over the validators public keys assigned for all consumer chains
 		prefix = []byte{ConsumerValidatorsKey}
@@ -196,7 +196,7 @@ func (k Keeper) SetValidatorByConsumerAddr(
 func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
-	ValidatorsByConsumerAddrKey := types.MustGetKeyPrefix("ValidatorsByConsumerAddrKey")
+	ValidatorsByConsumerAddrKey := types.MustGetKeyPrefix(types.ValidatorsByConsumerAddrKeyName)
 	if chainID == nil {
 		// iterate over the mappings from consensus addresses on all consumer chains
 		prefix = []byte{ValidatorsByConsumerAddrKey}
@@ -292,7 +292,7 @@ func (k Keeper) GetConsumerAddrsToPrune(
 // Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPrune) {
 	store := ctx.KVStore(k.storeKey)
-	ConsumerAddrsToPruneKey := types.MustGetKeyPrefix("ConsumerAddrsToPruneKey")
+	ConsumerAddrsToPruneKey := types.MustGetKeyPrefix(types.ConsumerAddrsToPruneKeyName)
 	iteratorPrefix := types.ChainIdWithLenKey(ConsumerAddrsToPruneKey, chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
