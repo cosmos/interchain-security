@@ -1165,3 +1165,7 @@ func (k Keeper) UnbondingCanComplete(ctx sdk.Context, id uint64) error {
 func (k Keeper) UnbondingTime(ctx sdk.Context) (time.Duration, error) {
 	return k.stakingKeeper.UnbondingTime(ctx)
 }
+
+func (k Keeper) GetBinaryCodec() codec.BinaryCodec {
+	return k.cdc
+}
