@@ -38,7 +38,7 @@ a) increase the `MaxValidators` parameter of the staking module
 
 b) do *not* take the updates for CometBFT directly from the bonded validators in the staking module, by wrapping the staking modules `EndBlocker` with a dummy EndBlocker that doesn't return any validator updates. Instead, we adjust the provider module to return validator updates on its EndBlocker. These validator updates are obtained by *filtering* the bonded validators to send only the first `MaxProviderConsensusValidators` (sorted by largest amount of stake first) many validators to CometBFT
 
-c) use the enlarged list of bonded validators from the staking module as basis for the validator set that the provider module sends to consumer chains (again after applying power shaping and filtering out validatiors that are not opted in).
+c) use the enlarged list of bonded validators from the staking module as basis for the validator set that the provider module sends to consumer chains (again after applying power shaping and filtering out validators that are not opted in).
 
 In consequence, the provider chain can keep a reasonably-sized consensus validator set, while giving consumer chains a much larger pool of potential validators.
 
