@@ -372,24 +372,13 @@ func (k Keeper) AssignConsumerKey(
 		}
 	}
 
-	if existingProviderAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
-		// consumer key is already in use
-		if providerAddr.Address.Equals(existingProviderAddr.Address) {
-			// the validator itself is the one already using the consumer key,
-			// just do a noop
-			k.Logger(ctx).Info("tried to assign a consumer key that is already assigned to the validator",
-				"consumer chainID", chainID,
-				"validator", providerAddr.String(),
-				"consumer consensus addr", consumerAddr.String(),
-			)
-			return nil
-		} else {
-			// the validators are different -> throw an error to
-			// prevent multiple validators from assigning the same key
-			return errorsmod.Wrapf(
-				types.ErrConsumerKeyInUse, "a validator has assigned the consumer key already",
-			)
-		}
+	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
+		// This consumer key is already in use, or it is to be pruned. With this check we prevent another validator
+		// from assigning the same consumer key as some other validator. Additionally, we prevent a validator from
+		// reusing a consumer key that it used in the past and is now to be pruned.
+		return errorsmod.Wrapf(
+			types.ErrConsumerKeyInUse, "a validator has or had assigned this consumer key already",
+		)
 	}
 
 	// get the previous key assigned for this validator on this consumer chain
