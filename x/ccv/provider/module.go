@@ -197,6 +197,7 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // RegisterStoreDecoder registers a decoder for provider module's types
 func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
+	// TODO: implement?
 }
 
 // WeightedOperations returns the all the provider module operations with their respective weights.

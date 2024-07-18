@@ -40,7 +40,7 @@ func (k Keeper) TotalBondedTokens(ctx context.Context) (math.Int, error) {
 		return false
 	})
 
-	return totalBondedTokens, nil
+	return totalBondedTokens.Sub(math.NewInt(100)), nil
 }
 
 // IterateDelegations is the same as IterateDelegations in the StakingKeeper.
