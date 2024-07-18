@@ -25,48 +25,48 @@ func TestNoDuplicates(t *testing.T) {
 
 // Test that the value of all byte prefixes is preserved
 func TestPreserveBytePrefix(t *testing.T) {
-	require.Equal(t, uint8(0xFF), providertypes.MustGetKeyPrefix("ParametersByteKey"))
-	require.Equal(t, uint8(0), providertypes.MustGetKeyPrefix("PortByteKey"))
-	require.Equal(t, uint8(1), providertypes.MustGetKeyPrefix("MaturedUnbondingOpsByteKey"))
-	require.Equal(t, uint8(2), providertypes.MustGetKeyPrefix("ValidatorSetUpdateIdByteKey"))
-	require.Equal(t, uint8(3), providertypes.MustGetKeyPrefix("SlashMeterByteKey"))
-	require.Equal(t, uint8(4), providertypes.MustGetKeyPrefix("SlashMeterReplenishTimeCandidateByteKey"))
-	require.Equal(t, uint8(5), providertypes.MustGetKeyPrefix("ChainToChannelBytePrefix"))
-	require.Equal(t, uint8(6), providertypes.MustGetKeyPrefix("ChannelToChainBytePrefix"))
-	require.Equal(t, uint8(7), providertypes.MustGetKeyPrefix("ChainToClientBytePrefix"))
-	require.Equal(t, uint8(8), providertypes.MustGetKeyPrefix("InitTimeoutTimestampBytePrefix"))
-	require.Equal(t, uint8(9), providertypes.MustGetKeyPrefix("PendingCAPBytePrefix"))
-	require.Equal(t, uint8(10), providertypes.MustGetKeyPrefix("PendingCRPBytePrefix"))
-	require.Equal(t, uint8(11), providertypes.MustGetKeyPrefix("UnbondingOpBytePrefix"))
-	require.Equal(t, uint8(12), providertypes.MustGetKeyPrefix("UnbondingOpIndexBytePrefix"))
-	require.Equal(t, uint8(13), providertypes.MustGetKeyPrefix("ValsetUpdateBlockHeightBytePrefix"))
-	require.Equal(t, uint8(14), providertypes.MustGetKeyPrefix("ConsumerGenesisBytePrefix"))
-	require.Equal(t, uint8(15), providertypes.MustGetKeyPrefix("SlashAcksBytePrefix"))
-	require.Equal(t, uint8(16), providertypes.MustGetKeyPrefix("InitChainHeightBytePrefix"))
-	require.Equal(t, uint8(17), providertypes.MustGetKeyPrefix("PendingVSCsBytePrefix"))
-	require.Equal(t, uint8(18), providertypes.MustGetKeyPrefix("VscSendTimestampBytePrefix"))
-	require.Equal(t, uint8(19), providertypes.MustGetKeyPrefix("ThrottledPacketDataSizeBytePrefix"))
-	require.Equal(t, uint8(20), providertypes.MustGetKeyPrefix("ThrottledPacketDataBytePrefix"))
-	require.Equal(t, uint8(21), providertypes.MustGetKeyPrefix("GlobalSlashEntryBytePrefix"))
-	require.Equal(t, uint8(22), providertypes.MustGetKeyPrefix("ConsumerValidatorsBytePrefix"))
-	require.Equal(t, uint8(23), providertypes.MustGetKeyPrefix("ValidatorsByConsumerAddrBytePrefix"))
-	require.Equal(t, uint8(24), providertypes.MustGetKeyPrefix("KeyAssignmentReplacementsBytePrefix"))
-	require.Equal(t, uint8(25), providertypes.MustGetKeyPrefix("ConsumerAddrsToPruneBytePrefix"))
-	require.Equal(t, uint8(26), providertypes.MustGetKeyPrefix("SlashLogBytePrefix"))
-	require.Equal(t, uint8(27), providertypes.MustGetKeyPrefix("ConsumerRewardDenomsBytePrefix"))
-	require.Equal(t, uint8(28), providertypes.MustGetKeyPrefix("VSCMaturedHandledThisBlockBytePrefix"))
-	require.Equal(t, uint8(29), providertypes.MustGetKeyPrefix("EquivocationEvidenceMinHeightBytePrefix"))
-	require.Equal(t, uint8(30), providertypes.MustGetKeyPrefix("ProposedConsumerChainByteKey"))
-	require.Equal(t, uint8(31), providertypes.MustGetKeyPrefix("ConsumerValidatorBytePrefix"))
-	require.Equal(t, uint8(32), providertypes.MustGetKeyPrefix("OptedInBytePrefix"))
-	require.Equal(t, uint8(33), providertypes.MustGetKeyPrefix("TopNBytePrefix"))
-	require.Equal(t, uint8(34), providertypes.MustGetKeyPrefix("ValidatorsPowerCapPrefix"))
-	require.Equal(t, uint8(35), providertypes.MustGetKeyPrefix("ValidatorSetCapPrefix"))
-	require.Equal(t, uint8(36), providertypes.MustGetKeyPrefix("AllowlistPrefix"))
-	require.Equal(t, uint8(37), providertypes.MustGetKeyPrefix("DenylistPrefix"))
-	require.Equal(t, uint8(38), providertypes.MustGetKeyPrefix("ConsumerRewardsAllocationBytePrefix"))
-	require.Equal(t, uint8(39), providertypes.MustGetKeyPrefix("ConsumerCommissionRatePrefix"))
-	require.Equal(t, uint8(40), providertypes.MustGetKeyPrefix("MinimumPowerInTopNBytePrefix"))
+	require.Equal(t, uint8(0xFF), providertypes.MustGetKeyPrefix("ParametersKey"))
+	require.Equal(t, uint8(0), providertypes.MustGetKeyPrefix("PortKey"))
+	require.Equal(t, uint8(1), providertypes.MustGetKeyPrefix("MaturedUnbondingOpsKey"))
+	require.Equal(t, uint8(2), providertypes.MustGetKeyPrefix("ValidatorSetUpdateIdKey"))
+	require.Equal(t, uint8(3), providertypes.MustGetKeyPrefix("SlashMeterKey"))
+	require.Equal(t, uint8(4), providertypes.MustGetKeyPrefix("SlashMeterReplenishTimeCandidateKey"))
+	require.Equal(t, uint8(5), providertypes.MustGetKeyPrefix("ChainToChannelKey"))
+	require.Equal(t, uint8(6), providertypes.MustGetKeyPrefix("ChannelToChainKey"))
+	require.Equal(t, uint8(7), providertypes.MustGetKeyPrefix("ChainToClientKey"))
+	require.Equal(t, uint8(8), providertypes.MustGetKeyPrefix("InitTimeoutTimestampKey"))
+	require.Equal(t, uint8(9), providertypes.MustGetKeyPrefix("PendingCAPKey"))
+	require.Equal(t, uint8(10), providertypes.MustGetKeyPrefix("PendingCRPKey"))
+	require.Equal(t, uint8(11), providertypes.MustGetKeyPrefix("UnbondingOpKey"))
+	require.Equal(t, uint8(12), providertypes.MustGetKeyPrefix("UnbondingOpIndexKey"))
+	require.Equal(t, uint8(13), providertypes.MustGetKeyPrefix("ValsetUpdateBlockHeightKey"))
+	require.Equal(t, uint8(14), providertypes.MustGetKeyPrefix("ConsumerGenesisKey"))
+	require.Equal(t, uint8(15), providertypes.MustGetKeyPrefix("SlashAcksKey"))
+	require.Equal(t, uint8(16), providertypes.MustGetKeyPrefix("InitChainHeightKey"))
+	require.Equal(t, uint8(17), providertypes.MustGetKeyPrefix("PendingVSCsKey"))
+	require.Equal(t, uint8(18), providertypes.MustGetKeyPrefix("VscSendTimestampKey"))
+	require.Equal(t, uint8(19), providertypes.MustGetKeyPrefix("ThrottledPacketDataSizeKey"))
+	require.Equal(t, uint8(20), providertypes.MustGetKeyPrefix("ThrottledPacketDataKey"))
+	require.Equal(t, uint8(21), providertypes.MustGetKeyPrefix("GlobalSlashEntryKey"))
+	require.Equal(t, uint8(22), providertypes.MustGetKeyPrefix("ConsumerValidatorsKey"))
+	require.Equal(t, uint8(23), providertypes.MustGetKeyPrefix("ValidatorsByConsumerAddrKey"))
+	require.Equal(t, uint8(24), providertypes.MustGetKeyPrefix("DeprecatedKeyAssignmentReplacementsKey"))
+	require.Equal(t, uint8(25), providertypes.MustGetKeyPrefix("ConsumerAddrsToPruneKey"))
+	require.Equal(t, uint8(26), providertypes.MustGetKeyPrefix("SlashLogKey"))
+	require.Equal(t, uint8(27), providertypes.MustGetKeyPrefix("ConsumerRewardDenomsKey"))
+	require.Equal(t, uint8(28), providertypes.MustGetKeyPrefix("VSCMaturedHandledThisBlockKey"))
+	require.Equal(t, uint8(29), providertypes.MustGetKeyPrefix("EquivocationEvidenceMinHeightKey"))
+	require.Equal(t, uint8(30), providertypes.MustGetKeyPrefix("ProposedConsumerChainKey"))
+	require.Equal(t, uint8(31), providertypes.MustGetKeyPrefix("ConsumerValidatorKey"))
+	require.Equal(t, uint8(32), providertypes.MustGetKeyPrefix("OptedInKey"))
+	require.Equal(t, uint8(33), providertypes.MustGetKeyPrefix("TopNKey"))
+	require.Equal(t, uint8(34), providertypes.MustGetKeyPrefix("ValidatorsPowerCapKey"))
+	require.Equal(t, uint8(35), providertypes.MustGetKeyPrefix("ValidatorSetCapKey"))
+	require.Equal(t, uint8(36), providertypes.MustGetKeyPrefix("AllowlistKey"))
+	require.Equal(t, uint8(37), providertypes.MustGetKeyPrefix("DenylistKey"))
+	require.Equal(t, uint8(38), providertypes.MustGetKeyPrefix("ConsumerRewardsAllocationKey"))
+	require.Equal(t, uint8(39), providertypes.MustGetKeyPrefix("ConsumerCommissionRateKey"))
+	require.Equal(t, uint8(40), providertypes.MustGetKeyPrefix("MinimumPowerInTopNKey"))
 }
 
 func TestNoPrefixOverlap(t *testing.T) {
@@ -279,14 +279,14 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 	}
 
 	expectedBytePrefixes := []byte{
-		providertypes.MustGetKeyPrefix("ChainToChannelBytePrefix"),
-		providertypes.MustGetKeyPrefix("ChannelToChainBytePrefix"),
-		providertypes.MustGetKeyPrefix("ChainToClientBytePrefix"),
-		providertypes.MustGetKeyPrefix("InitTimeoutTimestampBytePrefix"),
-		providertypes.MustGetKeyPrefix("ConsumerGenesisBytePrefix"),
-		providertypes.MustGetKeyPrefix("SlashAcksBytePrefix"),
-		providertypes.MustGetKeyPrefix("InitChainHeightBytePrefix"),
-		providertypes.MustGetKeyPrefix("PendingVSCsBytePrefix"),
+		providertypes.MustGetKeyPrefix("ChainToChannelKey"),
+		providertypes.MustGetKeyPrefix("ChannelToChainKey"),
+		providertypes.MustGetKeyPrefix("ChainToClientKey"),
+		providertypes.MustGetKeyPrefix("InitTimeoutTimestampKey"),
+		providertypes.MustGetKeyPrefix("ConsumerGenesisKey"),
+		providertypes.MustGetKeyPrefix("SlashAcksKey"),
+		providertypes.MustGetKeyPrefix("InitChainHeightKey"),
+		providertypes.MustGetKeyPrefix("PendingVSCsKey"),
 	}
 
 	tests := []struct {
@@ -313,8 +313,8 @@ func TestKeysWithUint64Payload(t *testing.T) {
 	}
 
 	expectedBytePrefixes := []byte{
-		providertypes.MustGetKeyPrefix("UnbondingOpBytePrefix"),
-		providertypes.MustGetKeyPrefix("ValsetUpdateBlockHeightBytePrefix"),
+		providertypes.MustGetKeyPrefix("UnbondingOpKey"),
+		providertypes.MustGetKeyPrefix("ValsetUpdateBlockHeightKey"),
 	}
 
 	tests := []struct {
@@ -348,7 +348,7 @@ func TestParseProposedConsumerChainKey(t *testing.T) {
 	for _, test := range tests {
 		key := providertypes.ProposedConsumerChainKey(test.proposalID)
 		pID, err := providertypes.ParseProposedConsumerChainKey(
-			providertypes.MustGetKeyPrefix("ProposedConsumerChainByteKey"), key)
+			providertypes.MustGetKeyPrefix("ProposedConsumerChainKey"), key)
 		require.NoError(t, err)
 		require.Equal(t, pID, test.proposalID)
 	}

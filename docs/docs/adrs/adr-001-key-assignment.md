@@ -25,15 +25,15 @@ It is possible to change the keys at any time by submitting a transaction (i.e.,
 
 - `ValidatorConsumerPubKey` - Stores the validator assigned keys for every consumer chain.
 ```golang
-ConsumerValidatorsBytePrefix | len(chainID) | chainID | providerConsAddress -> consumerKey
+0x16 | len(chainID) | chainID | providerConsAddress -> consumerKey
 ```
 - `ValidatorByConsumerAddr` - Stores the mapping from validator addresses on consumer chains to validator addresses on the provider chain. Needed for the consumer initiated slashing sub-protocol.
 ```golang
-ValidatorsByConsumerAddrBytePrefix | len(chainID) | chainID | consumerConsAddress -> providerConsAddress
+0x17 | len(chainID) | chainID | consumerConsAddress -> providerConsAddress
 ```
 - `ConsumerAddrsToPrune` - Stores the mapping from VSC ids to consumer validators addresses. Needed for pruning `ValidatorByConsumerAddr`. 
 ```golang
-ConsumerAddrsToPruneBytePrefix | len(chainID) | chainID | vscID -> []consumerConsAddresses
+0x19 | len(chainID) | chainID | vscID -> []consumerConsAddresses
 ```
 
 ### Protocol overview 

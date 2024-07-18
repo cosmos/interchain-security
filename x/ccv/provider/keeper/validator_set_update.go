@@ -53,7 +53,7 @@ func (k Keeper) DeleteConsumerValSet(
 	chainID string,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.MustGetKeyPrefix("ConsumerValidatorBytePrefix"), chainID)
+	key := types.ChainIdWithLenKey(types.MustGetKeyPrefix("ConsumerValidatorKey"), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 
 	var keysToDel [][]byte
@@ -96,7 +96,7 @@ func (k Keeper) GetConsumerValSet(
 	chainID string,
 ) (validators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.MustGetKeyPrefix("ConsumerValidatorBytePrefix"), chainID)
+	key := types.ChainIdWithLenKey(types.MustGetKeyPrefix("ConsumerValidatorKey"), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
