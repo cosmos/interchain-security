@@ -41,6 +41,11 @@ func MaxProviderConsensusValidatorsInvariant(k *Keeper) sdk.Invariant {
 // i.e. the functions from staking_keeper_interface.go
 func StakingKeeperEquivalenceInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
+		maxProviderConsensusValidators := k.GetParams(ctx).MaxProviderConsensusValidators
+		if maxProviderConsensusValidators == 0 {
+			return sdk.FormatInvariant(types.ModuleName, "staking-keeper-equivalence",
+				fmt.Sprintf("maxProviderConsensusVals is 0: %v", maxProviderConsensusValidators)), true
+		}
 		stakingKeeper := k.stakingKeeper
 
 		maxValidators, err := stakingKeeper.MaxValidators(ctx)
@@ -48,10 +53,6 @@ func StakingKeeperEquivalenceInvariant(k Keeper) sdk.Invariant {
 			return sdk.FormatInvariant(types.ModuleName, "staking-keeper-equivalence",
 				fmt.Sprintf("error getting max validators from staking keeper: %v", err)), true
 		}
-
-		maxProviderConsensusValidators := k.GetParams(ctx).MaxProviderConsensusValidators
-
-		fmt.Println(k.GetParams(ctx))
 
 		if maxValidators != uint32(maxProviderConsensusValidators) {
 			// the invariant should only check something if these two numbers are equal,
