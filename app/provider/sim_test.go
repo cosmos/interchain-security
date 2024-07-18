@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -38,6 +39,10 @@ func fauxMerkleModeOpt(bapp *baseapp.BaseApp) {
 func TestFullAppSimulation(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = "provi"
+
+	fmt.Println("========================================")
+	fmt.Println(config)
+	fmt.Println("========================================")
 
 	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
 	if skip {
