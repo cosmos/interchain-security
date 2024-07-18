@@ -474,7 +474,7 @@ func New(
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		app.StakingKeeper,
+		app.ProviderKeeper,
 		app.DistrKeeper,
 		app.MsgServiceRouter(),
 		govConfig,
