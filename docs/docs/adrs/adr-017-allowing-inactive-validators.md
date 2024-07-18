@@ -75,6 +75,46 @@ disables the main feature described in this ADR.
 
 Additional risk mitigations are to increase the active set size slowly, and to monitor the effects on the network closely. For the first iteration, we propose to increase the active set size to 200 validators (while keeping the consensus validators to 180), thus letting the 20 validators with the most stake outside of the active set validate on consumer chains.
 
+## Testing Scenarios
+
+In the following, 
+- bonded validators refers to all validators that have bonded stake, 
+- active validators refers to the validators that take part in consensus,
+- inactive validators refers to bonded validators that are not active validators.
+
+### Scenario 1: Inactive validators should not be considered by governance
+
+Inactive validators should not be considered for the purpose of governance.
+In particular, the governance module should not allow inactive validators to vote on proposals,
+and the quorum depends only on the stake bonded by active validators.
+
+This can be tested by creating a governance proposal, then trying to vote on it with inactive validators.
+The proposal should not pass.
+Afterwards, we create another proposal and vote on it with active validators, too.
+Then, the proposal should pass.
+
+### Scenario 2: Inactive validators should not get rewards from the provider chain
+
+Inactive validators should not get rewards from the provider chain.
+
+This can be tested by starting a provider chain with inactive validators and checking the rewards of inactive validators.
+
+### Scenario 3: Inactive validators should get rewards from consumer chains
+
+An inactive validator that is validating on a consumer chain should receive rewards in the consumer chain token.
+
+### Scenario 4: Inactive validators should not get slashed/jailed for downtime on the provider chain
+
+This can be tested by having an inactive validator go offline on the provider chain for long enough to accrue downtime.
+The validator should be neither slashed nor jailed for downtime.
+
+### Scenario 5: Inactive validators *should* get jailed for downtime on the provider chain
+
+This can be tested by having an inactive validator go offline on a consumer chain for long enough to accrue downtime.
+The consumer chain should send a SlashPacket to the provider chain, which should jail the validator.
+
+* **Mint**: 
+
 ## Consequences
 
 ### Positive
