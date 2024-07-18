@@ -359,20 +359,6 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 				".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 		}
-	} else if semver.Compare(consumerVersion, "v5.0.0-alpha1") < 0 { // TODO: change this to first published v5 release - once it's out
-		fmt.Println("Using consumer chain config for v4.x.x")
-		consumerConfig = ChainConfig{
-			ChainId:        ChainID("consu"),
-			AccountPrefix:  ConsumerAccountPrefix,
-			BinaryName:     "interchain-security-cd",
-			IpPrefix:       "7.7.8",
-			VotingWaitTime: 20,
-			GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-				".app_state.slashing.params.signed_blocks_window = \"20\" | " +
-				".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-				".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
-				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
-		}
 	} else {
 		fmt.Println("Using default consumer chain config")
 		consumerConfig = testCfg.chainConfigs[ChainID("consu")]
@@ -429,6 +415,25 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 			VotingWaitTime: 20,
 			GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
 				".app_state.gov.params.expedited_voting_period = \"10s\" | " +
+				// Custom slashing parameters for testing validator downtime functionality
+				// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+				".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+				".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+				".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+				".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+				".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+				".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
+				".app_state.provider.params.blocks_per_epoch = 3",
+		}
+	} else if semver.Compare(semver.MajorMinor(providerVersion), "v5.0.0") < 0 {
+		fmt.Println("Using provider chain config for v4.x.x")
+		providerConfig = ChainConfig{
+			ChainId:        ChainID("provi"),
+			AccountPrefix:  ProviderAccountPrefix,
+			BinaryName:     "interchain-security-pd",
+			IpPrefix:       "7.7.7",
+			VotingWaitTime: 20,
+			GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
 				// Custom slashing parameters for testing validator downtime functionality
 				// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 				".app_state.slashing.params.signed_blocks_window = \"10\" | " +
