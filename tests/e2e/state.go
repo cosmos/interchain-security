@@ -837,7 +837,7 @@ func (tr Commands) GetClientFrozenHeight(chain ChainID, clientID string) (uint64
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	return uint64(revHeight), uint64(revNumber)
+	return uint64(revNumber), uint64(revHeight)
 }
 
 func (tr Commands) GetHasToValidate(
