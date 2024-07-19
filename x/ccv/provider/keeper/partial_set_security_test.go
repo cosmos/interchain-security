@@ -804,6 +804,12 @@ func TestMaxValidatorRank(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			providerKeeper.SetMaxValidatorRank(ctx, "chainID", tc.maxRank)
+
+			// set max provider consensus vals to include all validators
+			params := providerKeeper.GetParams(ctx)
+			params.MaxProviderConsensusValidators = 180
+			providerKeeper.SetParams(ctx, params)
+
 			nextVals := providerKeeper.ComputeNextValidators(ctx, "chainID", vals)
 			nextConsAddrs := make([]types.ProviderConsAddress, len(nextVals))
 			for i, val := range nextVals {
