@@ -62,7 +62,10 @@ The following changes to the state are required:
 * Store the provider consensus validator set in the provider module state under the `LastProviderConsensusValsPrefix` key. This is the last set of validators that the provider sent to the consensus engine. This is needed to compute the ValUpdates to send to the consensus engine (by diffing the current set with this last sent set).
 * Increase the `MaxValidators` parameter of the staking module to the desired size of the potential validator
 set of consumer chains.
-* Introduce two extra per-consumer-chain parameters: `MinStake` and `MaxValidatorRank`. `MinStake` is the minimum amount of stake a validator must have to be considered for validation on the consumer chain. `MaxValidatorRank` is the maximum rank of a validator that can validate on the consumer chain. The provider module will only consider the first `MaxValidatorRank` validators that have at least `MinStake` stake as potential validators for the consumer chain.
+* Introduce extra per-consumer-chain parameters: 
+  * `MinStake`: is the minimum amount of stake a validator must have to be considered for validation on the consumer chain. 
+  * `MaxValidatorRank`: is the maximum rank in the provider validator set that can validate on the consumer chain. For example, setting this to 1 means only the validator with the most stake can validate on the consumer chain.
+  * `AllowInactiveVals`: is a boolean that determines whether validators that are not part of the active set on the provider chain can validate on the consumer chain. If this is set to `true`, validators outside the active set on the provider chain can validate on the consumer chain. If this is set to `true`, validators outside the active set on the provider chain cannot validate on the consumer chain.
 
 ## Risk Mitigations
 
