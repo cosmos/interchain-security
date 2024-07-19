@@ -305,7 +305,7 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
 			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
 			"partial-set-security-modification-proposal",
-			"active-set-changes",
+			"active-set-changes", "inactive-vals-topN",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")
