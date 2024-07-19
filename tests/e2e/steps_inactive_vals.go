@@ -499,3 +499,139 @@ func setupOptInChain() []Step {
 		},
 	}
 }
+
+func stepsInactiveValsWithTopN() []Step {
+	return []Step{
+		{
+			Action: StartChainAction{
+				Chain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0, // max consensus validators is 2, so alice should not be in power
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+					StakedTokens: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100000000,
+						ValidatorID("bob"):   200000000,
+						ValidatorID("carol"): 300000000,
+					},
+					Rewards: &Rewards{
+						IsNativeDenom:       true, // check for rewards in the provider denom
+						IsIncrementalReward: true, // we need to get incremental rewards
+						// if we would look at total rewards, alice would trivially also get rewards,
+						// because she gets rewards in the first block due to being in the genesis
+						IsRewarded: map[ValidatorID]bool{
+							ValidatorID("alice"): false,
+							ValidatorID("bob"):   true,
+							ValidatorID("carol"): true,
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: SubmitConsumerAdditionProposalAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				Deposit:       10000001,
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0,
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          51,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
+				Vote:       []string{"yes", "yes"},
+				PropNumber: 1,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+						},
+					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {}, // bob doesn't have to validate because he is not in the top N
+						ValidatorID("carol"): {"consu"},
+					},
+				},
+			},
+		},
+		{
+			Action: StartConsumerChainAction{
+				ConsumerChain: ChainID("consu"),
+				ProviderChain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+				// For consumers that're launching with the provider being on an earlier version
+				// of ICS before the soft opt-out threshold was introduced, we need to set the
+				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
+				// consumer binary doesn't panic. Sdk requires that all params are set to valid
+				// values from the genesis file.
+				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			Action: AddIbcConnectionAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				ClientA: 0,
+				ClientB: 0,
+			},
+			State: State{},
+		},
+		{
+			Action: AddIbcChannelAction{
+				ChainA:      ChainID("consu"),
+				ChainB:      ChainID("provi"),
+				ConnectionA: 0,
+				PortA:       "consumer",
+				PortB:       "provider",
+				Order:       "ordered",
+			},
+			State: State{},
+		},
+	}
+}

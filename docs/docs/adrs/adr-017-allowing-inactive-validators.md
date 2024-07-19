@@ -113,6 +113,15 @@ The validator should be neither slashed nor jailed for downtime.
 This can be tested by having an inactive validator go offline on a consumer chain for long enough to accrue downtime.
 The consumer chain should send a SlashPacket to the provider chain, which should jail the validator.
 
+### Scenario 6: Inactive validators should not be counted when computing the minimum power in the top N
+
+This can be tested like this:
+* Start a provider chain with validator powers alice=300, bob=200, charlie=100 and 2 max provider consensus validators
+  * So alice and bob will validate on the provider
+* Start a consumer chain with top N = 51%. 
+  * Without inactive validators, this means both alice and bob have to validate. But since charlie is inactive, this means bob is *not* in the top N
+* Verify that alice is in the top N, but bob is not
+
 * **Mint**: 
 
 ## Consequences

@@ -210,6 +210,12 @@ var stepChoices = map[string]StepChoice{
 		description: "test inactive validators on consumer",
 		testConfig:  InactiveProviderValsTestCfg,
 	},
+	"inactive-vals-topN": {
+		name:        "inactive-vals-topN",
+		steps:       stepsInactiveValsWithTopN(),
+		description: "test inactive validators on topN chain",
+		testConfig:  InactiveProviderValsTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
