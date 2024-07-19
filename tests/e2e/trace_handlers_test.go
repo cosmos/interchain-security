@@ -120,7 +120,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				},
 			},
 		}},
-		"IBC trasfer update params": {ChainState{
+		"IBC transfer update params": {ChainState{
 			ValBalances: &map[ValidatorID]uint{
 				ValidatorID("alice"): 9889999998,
 				ValidatorID("bob"):   9960000001,

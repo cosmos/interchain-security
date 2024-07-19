@@ -16,9 +16,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	abci "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
@@ -395,6 +394,8 @@ func TestStopConsumerChain(t *testing.T) {
 		expErr bool
 	}
 
+	consumerCID := "chainID"
+
 	tests := []testCase{
 		{
 			description: "proposal dropped, client doesn't exist",
@@ -407,6 +408,9 @@ func TestStopConsumerChain(t *testing.T) {
 			description: "valid stop of consumer chain, all mock calls hit",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
+
+				// set consumer minimum equivocation height
+				providerKeeper.SetEquivocationEvidenceMinHeight(ctx, consumerCID, 1)
 
 				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
 				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
@@ -425,7 +429,7 @@ func TestStopConsumerChain(t *testing.T) {
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
 
-		err := providerKeeper.StopConsumerChain(ctx, "chainID", true)
+		err := providerKeeper.StopConsumerChain(ctx, consumerCID, true)
 
 		if tc.expErr {
 			require.Error(t, err)
@@ -433,7 +437,7 @@ func TestStopConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
+		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, consumerCID, "channelID")
 
 		ctrl.Finish()
 	}
@@ -693,7 +697,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			"consumer_redistribution_fraction": "0.75",
 			"historical_entries": 10000,
 			"unbonding_period": 1728000000000000,
-			"soft_opt_out_threshold": "0.05",
+			"soft_opt_out_threshold": "0",
 			"reward_denoms": [],
 			"provider_reward_denoms": [],
 			"retry_delay_period": 3600000000000

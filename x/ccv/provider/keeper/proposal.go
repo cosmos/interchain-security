@@ -186,6 +186,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
 	k.DeleteMinimumPowerInTopN(ctx, chainID)
+	k.DeleteEquivocationEvidenceMinHeight(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
@@ -324,7 +325,6 @@ func (k Keeper) MakeConsumerGenesis(
 		prop.ConsumerRedistributionFraction,
 		prop.HistoricalEntries,
 		prop.UnbondingPeriod,
-		"0.05",
 		[]string{},
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,
