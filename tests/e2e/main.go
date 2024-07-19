@@ -224,7 +224,7 @@ var stepChoices = map[string]StepChoice{
 	},
 	"inactive-provider-validators-governance-basecase": {
 		name:        "inactive-provider-validators-governance-basecase",
-		steps:       stepsInactiveProviderValidatorsGovernanceComparison(),
+		steps:       stepsInactiveProviderValidatorsGovernanceBasecase(),
 		description: "comparison for governance when there are *no* inactive validators, to verify the difference to the governance test *with* inactive validators",
 		testConfig:  GovTestCfg,
 	},

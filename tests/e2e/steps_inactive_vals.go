@@ -477,6 +477,11 @@ func stepsOptInValidators(validators ...ValidatorID) []Step {
 	return s
 }
 
+// stepsInactiveProviderValidatorsGovernance validates that inactive validators
+// are not included in the calculation of the quorum for governance proposals.
+// It checks that when the quorum is met *among active validators*,
+// the proposal can pass, even though the quorum would not be met if inactive validators
+// would be counted.
 func stepsInactiveProviderValidatorsGovernance() []Step {
 	s := concatSteps(
 		[]Step{
@@ -561,7 +566,10 @@ func stepsInactiveProviderValidatorsGovernance() []Step {
 	return s
 }
 
-func stepsInactiveProviderValidatorsGovernanceComparison() []Step {
+// stepsInactiveProviderValidatorsGovernanceBasecase is a sanity check to go along with
+// stepsInactiveProviderValidatorsGovernance. It tests that with all validators being active,
+// the proposal does not pass if it does not meet the quorum among validators.
+func stepsInactiveProviderValidatorsGovernanceBasecase() []Step {
 	s := concatSteps(
 		[]Step{
 			{
@@ -645,6 +653,8 @@ func stepsInactiveProviderValidatorsGovernanceComparison() []Step {
 	return s
 }
 
+// stepsMaxRank validates that a validator with a rank higher than the specified maxRank parameter
+// cannot validate the consumer chain.
 func stepsMaxRank() []Step {
 	return concatSteps(
 		[]Step{
@@ -753,6 +763,8 @@ func stepsMaxRank() []Step {
 	)
 }
 
+// stepsMinStake validates that a validator with less stake than the specified minStake parameter
+// cannot validate the consumer chain.
 func stepsMinStake() []Step {
 	return concatSteps(
 		[]Step{
@@ -861,6 +873,8 @@ func stepsMinStake() []Step {
 	)
 }
 
+// This test case validates that inactive validators are not included when computing
+// the top N.
 func stepsInactiveValsWithTopN() []Step {
 	return []Step{
 		{
@@ -977,6 +991,9 @@ func stepsInactiveValsWithTopN() []Step {
 	}
 }
 
+// stepsInactiveValsMint tests the minting of tokens with inactive validators
+// It checks that inactive validators are not counted when computing whether the
+// inflation rate should go up or down.
 func stepsInactiveValsMint() []Step {
 	// total supply is 30000000000, bonded goal ratio makes it so we want 30000000 tokens bonded
 	return []Step{
@@ -1021,6 +1038,8 @@ func stepsInactiveValsMint() []Step {
 	}
 }
 
+// stepsMintBasecase tests the minting of tokens without inactive validators.
+// This is done as a sanity check to complement stepsInactiveValsMint.
 func stepsMintBasecase() []Step {
 	// total supply is 30000000000, bonded goal ratio makes it so we want 30000000 tokens bonded
 	return []Step{
@@ -1054,8 +1073,8 @@ func stepsMintBasecase() []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 28,
-						ValidatorID("bob"):   29,
+						ValidatorID("alice"): 27,
+						ValidatorID("bob"):   28,
 						ValidatorID("carol"): 79,
 					},
 					InflationRateChange: intPtr(-1), // inflation rate *still* goes down
