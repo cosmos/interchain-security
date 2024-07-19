@@ -216,6 +216,18 @@ var stepChoices = map[string]StepChoice{
 		description: "test inactive validators on topN chain",
 		testConfig:  InactiveProviderValsTestCfg,
 	},
+	"inactive-provider-validators-governance": {
+		name:        "inactive-provider-validators-governance",
+		steps:       stepsInactiveProviderValidatorsGovernance(),
+		description: "test governance with inactive validators",
+		testConfig:  InactiveValsGovTestCfg,
+	},
+	"inactive-provider-validators-governance-basecase": {
+		name:        "inactive-provider-validators-governance-basecase",
+		steps:       stepsInactiveProviderValidatorsGovernanceComparison(),
+		description: "comparison for governance when there are *no* inactive validators, to verify the difference to the governance test *with* inactive validators",
+		testConfig:  GovTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {

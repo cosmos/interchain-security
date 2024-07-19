@@ -93,6 +93,8 @@ const (
 	CompatibilityTestCfg        TestConfigType = "compatibility"
 	SmallMaxValidatorsTestCfg   TestConfigType = "small-max-validators"
 	InactiveProviderValsTestCfg TestConfigType = "inactive-provider-vals"
+	GovTestCfg                  TestConfigType = "gov"
+	InactiveValsGovTestCfg      TestConfigType = "inactive-vals-gov"
 )
 
 type TestConfig struct {
@@ -183,6 +185,10 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = SmallMaxValidatorsTestConfig()
 	case InactiveProviderValsTestCfg:
 		testCfg = InactiveProviderValsTestConfig()
+	case GovTestCfg:
+		testCfg = GovTestConfig()
+	case InactiveValsGovTestCfg:
+		testCfg = InactiveValsGovTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -587,6 +593,38 @@ func SmallMaxValidatorsTestConfig() TestConfig {
 	// set the MaxValidators to 2
 	proviConfig := cfg.chainConfigs[ChainID("provi")]
 	proviConfig.GenesisChanges += "| .app_state.staking.params.max_validators = 2"
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
+
+	carolConfig := cfg.validatorConfigs["carol"]
+	// make carol use her own key
+	carolConfig.UseConsumerKey = false
+	cfg.validatorConfigs["carol"] = carolConfig
+
+	return cfg
+}
+
+func GovTestConfig() TestConfig {
+	cfg := DefaultTestConfig()
+
+	// set the MaxValidators to 2
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += "| .app_state.gov.params.quorum = \"0.5\""
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
+
+	carolConfig := cfg.validatorConfigs["carol"]
+	// make carol use her own key
+	carolConfig.UseConsumerKey = false
+	cfg.validatorConfigs["carol"] = carolConfig
+
+	return cfg
+}
+
+func InactiveValsGovTestConfig() TestConfig {
+	cfg := InactiveProviderValsTestConfig()
+
+	// set the MaxValidators to 2
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += "| .app_state.gov.params.quorum = \"0.5\""
 	cfg.chainConfigs[ChainID("provi")] = proviConfig
 
 	carolConfig := cfg.validatorConfigs["carol"]

@@ -125,7 +125,20 @@ This can be tested like this:
   * Without inactive validators, this means both alice and bob have to validate. But since charlie is inactive, this means bob is *not* in the top N
 * Verify that alice is in the top N, but bob is not
 
-* **Mint**: 
+### Scenario 7: Mint does not consider inactive validators
+
+To compute the inflation rate, only the active validators should be considered.
+
+We can check this by querying the inflation rate from the mint module twice:
+Once with all validators active, and once with a lot of stake inactive.
+
+### Scenarios 8: Inactive validators can validate on consumer chains
+
+An inactive validator can opt in and validate on consumer chains (if min stake and max rank allow it)
+
+### Scenario 9: MinStake and MaxRank parameters are respected
+
+Validators that don't meet the criteria for a consumer chain cannot validate on it.
 
 ## Consequences
 

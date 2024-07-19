@@ -501,6 +501,174 @@ func setupOptInChain() []Step {
 	}
 }
 
+func stepsInactiveProviderValidatorsGovernance() []Step {
+	s := concatSteps(
+		[]Step{
+			{
+				Action: StartChainAction{
+					Chain: ChainID("provi"),
+					Validators: []StartChainValidator{
+						{Id: ValidatorID("alice"), Stake: 290000000, Allocation: 10000000000},
+						{Id: ValidatorID("bob"), Stake: 290000000, Allocation: 10000000000},
+						{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+					},
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 0, // max consensus validators is 1, so alice and bob should not be in power
+							ValidatorID("bob"):   0,
+							ValidatorID("carol"): 300,
+						},
+						StakedTokens: &map[ValidatorID]uint{
+							ValidatorID("alice"): 290000000,
+							ValidatorID("bob"):   290000000,
+							ValidatorID("carol"): 300000000,
+						},
+					},
+				},
+			},
+		},
+		[]Step{
+			// create a governance proposal
+			{
+				Action: SubmitConsumerAdditionProposalAction{
+					Chain:         ChainID("provi"),
+					From:          ValidatorID("alice"),
+					Deposit:       10000001,
+					ConsumerChain: ChainID("consu"),
+					SpawnTime:     0,
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					TopN:          51,
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						Proposals: &map[uint]Proposal{
+							1: ConsumerAdditionProposal{
+								Deposit:       10000001,
+								Chain:         ChainID("consu"),
+								SpawnTime:     0,
+								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							},
+						},
+					},
+				},
+			},
+			// vote for it with carol
+			{
+				Action: VoteGovProposalAction{
+					Chain:      ChainID("provi"),
+					From:       []ValidatorID{ValidatorID("carol")},
+					Vote:       []string{"yes"},
+					PropNumber: 1,
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						Proposals: &map[uint]Proposal{
+							1: ConsumerAdditionProposal{
+								Deposit:       10000001,
+								Chain:         ChainID("consu"),
+								SpawnTime:     0,
+								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+								// the proposal should have passed because carol voted for it.
+								// carol alone is enough to pass the quorum, because stake of the other validators is not counted
+								Status: strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	return s
+}
+
+func stepsInactiveProviderValidatorsGovernanceComparison() []Step {
+	s := concatSteps(
+		[]Step{
+			{
+				Action: StartChainAction{
+					Chain: ChainID("provi"),
+					Validators: []StartChainValidator{
+						{Id: ValidatorID("alice"), Stake: 290000000, Allocation: 10000000000},
+						{Id: ValidatorID("bob"), Stake: 290000000, Allocation: 10000000000},
+						{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+					},
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						ValPowers: &map[ValidatorID]uint{
+							ValidatorID("alice"): 290,
+							ValidatorID("bob"):   290,
+							ValidatorID("carol"): 300,
+						},
+						StakedTokens: &map[ValidatorID]uint{
+							ValidatorID("alice"): 290000000,
+							ValidatorID("bob"):   290000000,
+							ValidatorID("carol"): 300000000,
+						},
+					},
+				},
+			},
+		},
+		[]Step{
+			// create a governance proposal
+			{
+				Action: SubmitConsumerAdditionProposalAction{
+					Chain:         ChainID("provi"),
+					From:          ValidatorID("alice"),
+					Deposit:       10000001,
+					ConsumerChain: ChainID("consu"),
+					SpawnTime:     0,
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					TopN:          51,
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						Proposals: &map[uint]Proposal{
+							1: ConsumerAdditionProposal{
+								Deposit:       10000001,
+								Chain:         ChainID("consu"),
+								SpawnTime:     0,
+								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							},
+						},
+					},
+				},
+			},
+			// vote for it with carol
+			{
+				Action: VoteGovProposalAction{
+					Chain:      ChainID("provi"),
+					From:       []ValidatorID{ValidatorID("carol")},
+					Vote:       []string{"yes"},
+					PropNumber: 1,
+				},
+				State: State{
+					ChainID("provi"): ChainState{
+						Proposals: &map[uint]Proposal{
+							1: ConsumerAdditionProposal{
+								Deposit:       10000001,
+								Chain:         ChainID("consu"),
+								SpawnTime:     0,
+								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+								// the proposal should *not* have passed because only carol voted for it,
+								// and carol is not enough to pass the quorum
+								Status: strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_FAILED)),
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	return s
+}
+
 func stepsInactiveValsWithTopN() []Step {
 	return []Step{
 		{
