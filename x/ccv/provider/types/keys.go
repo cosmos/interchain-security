@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"sort"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -299,9 +300,14 @@ func MustGetKeyPrefix(key string) byte {
 // Only used for testing
 func GetAllKeyPrefixes() []byte {
 	prefixMap := getKeyPrefixes()
+	keys := make([]string, 0, len(prefixMap))
+	for k := range prefixMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	prefixList := make([]byte, 0, len(prefixMap))
-	for _, prefix := range prefixMap {
-		prefixList = append(prefixList, prefix)
+	for _, k := range keys {
+		prefixList = append(prefixList, prefixMap[k])
 	}
 	return prefixList
 }
@@ -310,11 +316,12 @@ func GetAllKeyPrefixes() []byte {
 // Only used for testing
 func GetAllKeyNames() []string {
 	prefixMap := getKeyPrefixes()
-	keyList := make([]string, 0, len(prefixMap))
-	for key := range prefixMap {
-		keyList = append(keyList, key)
+	keys := make([]string, 0, len(prefixMap))
+	for k := range prefixMap {
+		keys = append(keys, k)
 	}
-	return keyList
+	sort.Strings(keys)
+	return keys
 }
 
 //
