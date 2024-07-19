@@ -66,6 +66,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.ParametersByteKey,
 		providertypes.MinStakePrefix,
 		providertypes.MaxValidatorRankPrefix,
+		providertypes.AllowInactiveValidatorsPrefix,
 	}
 }
 
@@ -112,6 +113,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.EquivocationEvidenceMinHeightKey("chainID"),
 		providertypes.MinStakeKey("chainID"),
 		providertypes.MaxValidatorRankKey("chainID"),
+		providertypes.AllowInactiveValidatorsKey("chainID"),
 	}
 }
 

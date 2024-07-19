@@ -198,6 +198,10 @@ const (
 	// a validator can have to be a validator on the consumer chain
 	MaxValidatorRankPrefix
 
+	// AllowInactiveValidatorsPrefix is the byte prefix for storing the mapping from consumer chains to the boolean value
+	// that determines whether inactive validators can validate on that chain
+	AllowInactiveValidatorsPrefix
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -647,6 +651,10 @@ func MinStakeKey(chainID string) []byte {
 // a validator can have to validate on consumer chain `chainID`
 func MaxValidatorRankKey(chainID string) []byte {
 	return ChainIdWithLenKey(MaxValidatorRankPrefix, chainID)
+}
+
+func AllowInactiveValidatorsKey(chainID string) []byte {
+	return ChainIdWithLenKey(AllowInactiveValidatorsPrefix, chainID)
 }
 
 //

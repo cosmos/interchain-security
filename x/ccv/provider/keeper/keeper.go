@@ -1664,3 +1664,46 @@ func (k Keeper) DeleteMaxValidatorRank(
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MaxValidatorRankKey(chainID))
 }
+
+// SetAllowInactiveValidators sets whether inactive validators are allowed to validate
+// a given consumer chain.
+func (k Keeper) SetAllowInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+	allowed bool,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	var buf []byte
+	if allowed {
+		buf = []byte{1}
+	} else {
+		buf = []byte{0}
+	}
+
+	store.Set(types.AllowInactiveValidatorsKey(chainID), buf)
+}
+
+// GetAllowInactiveValidators returns whether inactive validators are allowed to validate
+// a given consumer chain.
+func (k Keeper) GetAllowInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+) (bool, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.AllowInactiveValidatorsKey(chainID))
+	if buf == nil {
+		return false, false
+	}
+	return buf[0] == 1, true
+}
+
+// DeleteAllowInactiveValidators removes the flag of whether inactive validators are allowed to validate
+// a given consumer chain.
+func (k Keeper) DeleteAllowInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.AllowInactiveValidatorsKey(chainID))
+}
