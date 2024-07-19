@@ -852,6 +852,11 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	// set a power-capping of 40%
 	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", 40)
 
+	// set max provider consensus validators to a value that is larger than the number of validators
+	params := providerKeeper.GetParams(ctx)
+	params.MaxProviderConsensusValidators = 180
+	providerKeeper.SetParams(ctx, params)
+
 	providerKeeper.QueueVSCPackets(ctx)
 
 	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, "chainID")
