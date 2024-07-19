@@ -137,6 +137,8 @@ This can be tested like this:
   * Without inactive validators, this means both alice and bob have to validate. But since charlie is inactive, this means bob is *not* in the top N
 * Verify that alice is in the top N, but bob is not
 
+Checked as part of the e2e test `inactive-vals-topN`.
+
 ### Scenario 7: Mint does not consider inactive validators
 
 To compute the inflation rate, only the active validators should be considered.
@@ -153,6 +155,8 @@ Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
 ### Scenario 9: MinStake and MaxRank parameters are respected
 
 Validators that don't meet the criteria for a consumer chain cannot validate on it.
+
+Checked in the e2e tests `min-stake` and `max-rank`.
 
 ## Consequences
 
