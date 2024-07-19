@@ -1,0 +1,1 @@
+- Add the `allow_inactive_vals` parameter for consumer chains to choose whether inactive validators can validate their chain ([\#2066](https://github.com/cosmos/interchain-security/pull/2066))
