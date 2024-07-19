@@ -394,6 +394,8 @@ func TestStopConsumerChain(t *testing.T) {
 		expErr bool
 	}
 
+	consumerCID := "chainID"
+
 	tests := []testCase{
 		{
 			description: "proposal dropped, client doesn't exist",
@@ -406,6 +408,9 @@ func TestStopConsumerChain(t *testing.T) {
 			description: "valid stop of consumer chain, all mock calls hit",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
+
+				// set consumer min height
+				providerKeeper.SetEquivocationEvidenceMinHeight(ctx, consumerCID, 1)
 
 				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
 				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
@@ -424,7 +429,7 @@ func TestStopConsumerChain(t *testing.T) {
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
 
-		err := providerKeeper.StopConsumerChain(ctx, "chainID", true)
+		err := providerKeeper.StopConsumerChain(ctx, consumerCID, true)
 
 		if tc.expErr {
 			require.Error(t, err)
@@ -432,7 +437,7 @@ func TestStopConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
+		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, consumerCID, "channelID")
 
 		ctrl.Finish()
 	}
