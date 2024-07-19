@@ -606,32 +606,12 @@ func stepsInactiveValsWithTopN() []Step {
 			State: State{
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 100,
-						ValidatorID("bob"):   200,
+						ValidatorID("alice"): 0, // alice and bob are not in the top N, so aren't in the validator set
+						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 300,
 					},
 				},
 			},
-		},
-		{
-			Action: AddIbcConnectionAction{
-				ChainA:  ChainID("consu"),
-				ChainB:  ChainID("provi"),
-				ClientA: 0,
-				ClientB: 0,
-			},
-			State: State{},
-		},
-		{
-			Action: AddIbcChannelAction{
-				ChainA:      ChainID("consu"),
-				ChainB:      ChainID("provi"),
-				ConnectionA: 0,
-				PortA:       "consumer",
-				PortB:       "provider",
-				Order:       "ordered",
-			},
-			State: State{},
 		},
 	}
 }

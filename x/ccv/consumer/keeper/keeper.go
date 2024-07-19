@@ -716,5 +716,9 @@ func (k Keeper) IsPrevStandaloneChain(ctx sdk.Context) bool {
 // GetLastBondedValidators iterates the last validator powers in the staking module
 // and returns the first MaxValidators many validators with the largest powers.
 func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
-	return ccv.GetLastBondedValidatorsUtil(ctx, k.standaloneStakingKeeper, k.Logger(ctx))
+	maxVals, err := k.standaloneStakingKeeper.MaxValidators(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.standaloneStakingKeeper, k.Logger(ctx), maxVals)
 }
