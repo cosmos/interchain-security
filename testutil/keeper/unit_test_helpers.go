@@ -273,6 +273,7 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
 	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
 	require.Empty(t, providerKeeper.GetAllCommissionRateValidators(ctx, expectedChainID))
+	require.Zero(t, providerKeeper.GetEquivocationEvidenceMinHeight(ctx, expectedChainID))
 }
 
 func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
