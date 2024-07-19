@@ -399,7 +399,7 @@ func PendingCAPKeyPrefix() []byte {
 }
 
 // PendingCAPKey returns the key under which a pending consumer addition proposal is stored.
-// The key has the following format: PendingCAPKey | timestamp.UnixNano() | chainID
+// The key has the following format: PendingCAPKeyPrefix | timestamp.UnixNano() | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
 	return ccvtypes.AppendMany(
@@ -418,7 +418,7 @@ func PendingCRPKeyPrefix() []byte {
 }
 
 // PendingCRPKey returns the key under which pending consumer removal proposals are stored.
-// The key has the following format: PendingCRPKey | timestamp.UnixNano() | chainID
+// The key has the following format: PendingCRPKeyPrefix | timestamp.UnixNano() | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
 	return ccvtypes.AppendMany(

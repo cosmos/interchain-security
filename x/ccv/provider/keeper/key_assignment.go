@@ -104,7 +104,7 @@ func (k Keeper) SetValidatorConsumerPubKey(
 // If chainID is nil, it returns all the validators public keys assigned for all consumer chains
 //
 // Note that the validators public keys assigned for a consumer chain are stored under keys
-// with the following format: UnbondingOpIndexKey | len(chainID) | chainID | providerAddress
+// with the following format: UnbondingOpIndexKeyPrefix | len(chainID) | chainID | providerAddress
 // Thus, the returned array is
 //   - in ascending order of providerAddresses, if chainID is not nil;
 //   - in undetermined order, if chainID is nil.
@@ -189,7 +189,7 @@ func (k Keeper) SetValidatorByConsumerAddr(
 // If chainID is nil, it returns all the mappings from consensus addresses on all consumer chains.
 //
 // Note that the mappings for a consumer chain are stored under keys with the following format:
-// ValidatorsByConsumerAddrKey | len(chainID) | chainID | consumerAddress
+// ValidatorsByConsumerAddrKeyPrefix | len(chainID) | chainID | consumerAddress
 // Thus, the returned array is
 //   - in ascending order of consumerAddresses, if chainID is not nil;
 //   - in undetermined order, if chainID is nil.
@@ -288,7 +288,7 @@ func (k Keeper) GetConsumerAddrsToPrune(
 // GetAllConsumerAddrsToPrune gets all consumer addresses that can be pruned for a given chainID.
 //
 // Note that the list of all consumer addresses is stored under keys with the following format:
-// ConsumerAddrsToPruneKey | len(chainID) | chainID | vscID
+// ConsumerAddrsToPruneKeyPrefix | len(chainID) | chainID | vscID
 // Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPrune) {
 	store := ctx.KVStore(k.storeKey)
