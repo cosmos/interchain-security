@@ -6,7 +6,7 @@
 
 ***Note that providers using v5.0.0 cannot upgrade to v5.1.0 cleanly***
 
-Providers using versions `v4.0.x`, `v4.1.x`, `v4.2.x`, `v4.3.x` and `v4.4.x` can upgrade to `v5.1.0`. 
+Providers using versions `v4.0.x`, `v4.1.x`, `v4.2.x`, `v4.3.x` and `v4.4.x` can upgrade to `v5.1.0`.
 
 Upgrading from `v4.x` to `v5.1.0` will upgrade the provider `consensus version` to 7.
 
@@ -30,7 +30,7 @@ v5.0.0 was a **consumer only release**.
 
 Upgrading the consumer from `v4.x` to `v5.0.0` will require state migrations. 
 
-Consumer versions `v4.0.x`, `v4.1.x`,, `v4.2.x`, `v4.3.x` and `v4.4.x` can cleanly be upgraded to `v5.0.0`.
+Consumer versions `v4.0.x`, `v4.1.x`, `v4.2.x`, `v4.3.x` and `v4.4.x` can cleanly be upgraded to `v5.0.0`.
 
 Upgrade code will be executed automatically during the upgrade procedure.
 
