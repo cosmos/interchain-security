@@ -2,11 +2,11 @@
 sidebar_position: 1
 ---
 
-# Upgrading to ICS v5.0.0
+# Upgrading to ICS v5.x from v4.x
 
-This ICS version uses cosmos-sdk v0.50.x and ibc-go v8.x.
+ICS `v5.x` version uses cosmos-sdk `v0.50.x` and ibc-go `v8.x`.
 
-To migrate you application to cosmos-sdk v0.50.x please use this [guide](https://docs.cosmos.network/v0.50/build/migrations/upgrading).
+To migrate you application to cosmos-sdk `v0.50.x` please use [this guide](https://docs.cosmos.network/v0.50/build/migrations/upgrading).
 
 To migrate your application to ibc-go v8.x.y please use the following guides:
  * [migrate ibc-go to v8.0.0](https://ibc.cosmos.network/main/migrations/v7-to-v8)
@@ -15,7 +15,13 @@ To migrate your application to ibc-go v8.x.y please use the following guides:
 
 ICS specific changes are outlined below.
 
-Pre-requisite version for this upgrade: `v4.x`.
+Pre-requisite version for this upgrade: any from the `v4.x` release line.
+
+## Note
+
+`v5.0.0` should not be used on the provider.
+
+The provider should be updated to `v5.1.0`.
 
 ## Provider
 
