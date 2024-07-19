@@ -671,107 +671,208 @@ func stepsInactiveProviderValidatorsGovernanceComparison() []Step {
 
 func stepsMaxRank() []Step {
 	return []Step{
-			{
-				Action: StartChainAction{
-					Chain: ChainID("provi"),
-					Validators: []StartChainValidator{
-						{Id: ValidatorID("alice"), Stake: 290000000, Allocation: 10000000000},
-						{Id: ValidatorID("bob"), Stake: 290000000, Allocation: 10000000000},
-						{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+		{
+			Action: StartChainAction{
+				Chain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 290000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 290000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0, // max consensus validators is 1, so alice and bob should not be in power
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 300,
+					},
+					StakedTokens: &map[ValidatorID]uint{
+						ValidatorID("alice"): 290000000,
+						ValidatorID("bob"):   290000000,
+						ValidatorID("carol"): 300000000,
 					},
 				},
-				State: State{
-					ChainID("provi"): ChainState{
-						ValPowers: &map[ValidatorID]uint{
-							ValidatorID("alice"): 0, // max consensus validators is 1, so alice and bob should not be in power
-							ValidatorID("bob"):   0,
-							ValidatorID("carol"): 300,
-						},
-						StakedTokens: &map[ValidatorID]uint{
-							ValidatorID("alice"): 290000000,
-							ValidatorID("bob"):   290000000,
-							ValidatorID("carol"): 300000000,
+			},
+		},
+		// create a governance proposal
+		{
+			Action: SubmitConsumerAdditionProposalAction{
+				Chain:            ChainID("provi"),
+				From:             ValidatorID("alice"),
+				Deposit:          10000001,
+				ConsumerChain:    ChainID("consu"),
+				SpawnTime:        0,
+				InitialHeight:    clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:             0,
+				MaxValidatorRank: 1,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 				},
 			},
 		},
-		[]Step{
-			// create a governance proposal
-			{
-				Action: SubmitConsumerAdditionProposalAction{
-					Chain:         ChainID("provi"),
-					From:          ValidatorID("alice"),
-					Deposit:       10000001,
-					ConsumerChain: ChainID("consu"),
-					SpawnTime:     0,
-					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-					TopN:          0,
-					MaxRank:       1,
-				},
-				State: State{
-					ChainID("provi"): ChainState{
-						Proposals: &map[uint]Proposal{
-							1: ConsumerAdditionProposal{
-								Deposit:       10000001,
-								Chain:         ChainID("consu"),
-								SpawnTime:     0,
-								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-							},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
+				Vote:       []string{"yes", "yes"},
+				PropNumber: 1,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
 			},
-			{
-				Action: VoteGovProposalAction{
-					Chain:      ChainID("provi"),
-					From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
-					Vote:       []string{"yes", "yes"},
-					PropNumber: 1,
+		},
+		{
+			// we start all the validators, but due to max rank of 1, only carol can validate
+			Action: StartConsumerChainAction{
+				ConsumerChain: ChainID("consu"),
+				ProviderChain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
 				},
-				State: State{
-					ChainID("provi"): ChainState{
-						Proposals: &map[uint]Proposal{
-							1: ConsumerAdditionProposal{
-								Deposit:       10000001,
-								Chain:         ChainID("consu"),
-								SpawnTime:     0,
-								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-							},
+				// For consumers that're launching with the provider being on an earlier version
+				// of ICS before the soft opt-out threshold was introduced, we need to set the
+				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
+				// consumer binary doesn't panic. Sdk requires that all params are set to valid
+				// values from the genesis file.
+				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 300, // due to max rank of 1, only carol can validate
+					},
+				},
+			},
+		},
+	}
+}
+
+func stepsMinStake() []Step {
+	return []Step{
+		{
+			Action: StartChainAction{
+				Chain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 290000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 290000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0, // max consensus validators is 1, so alice and bob should not be in power
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 300,
+					},
+					StakedTokens: &map[ValidatorID]uint{
+						ValidatorID("alice"): 290000000,
+						ValidatorID("bob"):   290000000,
+						ValidatorID("carol"): 300000000,
+					},
+				},
+			},
+		},
+		// create a governance proposal
+		{
+			Action: SubmitConsumerAdditionProposalAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				Deposit:       10000001,
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0,
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
+				MinStake:      300000000,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 						},
 					},
 				},
 			},
-			{
-				// we start all the validators, but due to max rank of 1, only carol can validate
-				Action: StartConsumerChainAction{
-					ConsumerChain: ChainID("consu"),
-					ProviderChain: ChainID("provi"),
-					Validators: []StartChainValidator{
-						{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
-						{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
-						{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
-					},
-					// For consumers that're launching with the provider being on an earlier version
-					// of ICS before the soft opt-out threshold was introduced, we need to set the
-					// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-					// consumer binary doesn't panic. Sdk requires that all params are set to valid
-					// values from the genesis file.
-					GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
-				},
-				State: State{
-					ChainID("consu"): ChainState{
-						ValPowers: &map[ValidatorID]uint{
-							ValidatorID("alice"): 100,
-							ValidatorID("bob"):   200,
-							ValidatorID("carol"): 300,
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
+				Vote:       []string{"yes", "yes"},
+				PropNumber: 1,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 						},
 					},
 				},
 			},
-		}
+		},
+		{
+			// we start all the validators, but due to max rank of 1, only carol can validate
+			Action: StartConsumerChainAction{
+				ConsumerChain: ChainID("consu"),
+				ProviderChain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+				// For consumers that're launching with the provider being on an earlier version
+				// of ICS before the soft opt-out threshold was introduced, we need to set the
+				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
+				// consumer binary doesn't panic. Sdk requires that all params are set to valid
+				// values from the genesis file.
+				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 300, // due to min stake of 300000000, only carol can validate
+					},
+				},
+			},
+		},
+	}
 }
 
 func stepsInactiveValsWithTopN() []Step {

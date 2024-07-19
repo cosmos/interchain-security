@@ -228,6 +228,18 @@ var stepChoices = map[string]StepChoice{
 		description: "comparison for governance when there are *no* inactive validators, to verify the difference to the governance test *with* inactive validators",
 		testConfig:  GovTestCfg,
 	},
+	"max-rank": {
+		name:        "max-rank",
+		steps:       stepsMaxRank(),
+		description: "checks that the max rank parameter for consumer chains is respected",
+		testConfig:  DefaultTestCfg,
+	},
+	"min-stake": {
+		name:        "min-stake",
+		steps:       stepsMinStake(),
+		description: "checks that the min stake parameter for consumer chains is respected",
+		testConfig:  DefaultTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
