@@ -355,13 +355,14 @@ func setupOptInChain() []Step {
 	return []Step{
 		{
 			Action: SubmitConsumerAdditionProposalAction{
-				Chain:         ChainID("provi"),
-				From:          ValidatorID("alice"),
-				Deposit:       10000001,
-				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0,
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				Chain:             ChainID("provi"),
+				From:              ValidatorID("alice"),
+				Deposit:           10000001,
+				ConsumerChain:     ChainID("consu"),
+				SpawnTime:         0,
+				InitialHeight:     clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:              0,
+				AllowInactiveVals: true,
 			},
 			State: State{
 				ChainID("provi"): ChainState{
