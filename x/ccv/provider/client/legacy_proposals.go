@@ -43,6 +43,7 @@ type ConsumerAdditionProposalJSON struct {
 	Denylist           []string `json:"denylist"`
 	MinStake           uint64   `json:"min_stake"`
 	MaxValidatorRank   uint32   `json:"max_validator_rank"`
+	AllowInactiveVals  bool     `json:"allow_inactive_vals"`
 }
 
 type ConsumerAdditionProposalReq struct {
@@ -176,6 +177,7 @@ type ConsumerModificationProposalJSON struct {
 	Denylist           []string `json:"denylist"`
 	MinStake           uint64   `json:"min_stake"`
 	MaxValidatorRank   uint32   `json:"max_validator_rank"`
+	AllowInactiveVals  bool     `json:"allow_inactive_vals"`
 
 	Deposit string `json:"deposit"`
 }

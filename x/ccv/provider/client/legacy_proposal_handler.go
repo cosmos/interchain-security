@@ -61,7 +61,10 @@ Where proposal.json contains:
     "validators_power_cap": 32,
     "validator_set_cap": 50,
     "allowlist": [],
-    "denylist": ["validatorAConsensusAddress", "validatorBConsensusAddress"]
+    "denylist": ["validatorAConsensusAddress", "validatorBConsensusAddress"],
+	"min_stake": 100000000000,
+	"max_validator_rank": 180,
+	"allow_inactive_vals": false
 }
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,7 +88,7 @@ Where proposal.json contains:
 				proposal.DistributionTransmissionChannel, proposal.HistoricalEntries,
 				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod, proposal.TopN,
 				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist,
-				proposal.MinStake, proposal.MaxValidatorRank)
+				proposal.MinStake, proposal.MaxValidatorRank, proposal.AllowInactiveVals)
 
 			from := clientCtx.GetFromAddress()
 
@@ -246,7 +249,10 @@ Where proposal.json contains:
     "validators_power_cap": 32,
     "validator_set_cap": 50,
     "allowlist": [],
-    "denylist": ["validatorAConsensusAddress", "validatorBConsensusAddress"]
+    "denylist": ["validatorAConsensusAddress", "validatorBConsensusAddress"],
+	"min_stake": 100000000000,
+	"max_validator_rank": 180,
+	"allow_inactive_vals": false
 }
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -262,7 +268,7 @@ Where proposal.json contains:
 
 			content := types.NewConsumerModificationProposal(
 				proposal.Title, proposal.Summary, proposal.ChainId, proposal.TopN,
-				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist, proposal.MinStake, proposal.MaxValidatorRank)
+				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist, proposal.MinStake, proposal.MaxValidatorRank, proposal.AllowInactiveVals)
 
 			from := clientCtx.GetFromAddress()
 
