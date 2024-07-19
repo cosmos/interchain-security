@@ -657,7 +657,7 @@ func stepsInactiveProviderValidatorsGovernanceComparison() []Step {
 								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 								// the proposal should *not* have passed because only carol voted for it,
 								// and carol is not enough to pass the quorum
-								Status: strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_FAILED)),
+								Status: strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_REJECTED)),
 							},
 						},
 					},
