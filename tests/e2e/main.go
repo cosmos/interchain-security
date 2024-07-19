@@ -232,13 +232,13 @@ var stepChoices = map[string]StepChoice{
 		name:        "max-rank",
 		steps:       stepsMaxRank(),
 		description: "checks that the max rank parameter for consumer chains is respected",
-		testConfig:  DefaultTestCfg,
+		testConfig:  GovTestCfg, // can reuse the GovTestCfg because all parameters there are ok to use here
 	},
 	"min-stake": {
 		name:        "min-stake",
 		steps:       stepsMinStake(),
 		description: "checks that the min stake parameter for consumer chains is respected",
-		testConfig:  DefaultTestCfg,
+		testConfig:  GovTestCfg, // see above: we reuse the GovTestCfg for convenience
 	},
 }
 
