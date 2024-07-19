@@ -88,13 +88,17 @@ In the following,
 ### Scenario 1: Inactive validators should not be considered by governance
 
 Inactive validators should not be considered for the purpose of governance.
-In particular, the governance module should not allow inactive validators to vote on proposals,
-and the quorum depends only on the stake bonded by active validators.
+In particular, the quorum should depend only on active validators.
 
-This can be tested by creating a governance proposal, then trying to vote on it with inactive validators.
-The proposal should not pass.
-Afterwards, we create another proposal and vote on it with active validators, too.
-Then, the proposal should pass.
+We test this by:
+* creating a provider chain (either with 3 active validators, or with only 1 active validator), a quorum of 50%, and 3 validators with alice=300, bob=299, charlie=299 stake
+* we create a governance proposal
+* alice votes for the proposal
+* we check that the proposal has the right status:
+  * in the scenario where we have 3 active validators, the proposal *should not* have passed, because alice alone is not enough to fulfill the quorum
+  * in the scenario where we have 1 active validator, the proposal *should* have passed, because alice is the only active validator, and thus fulfills the quorum
+
+Tested by the e2e tests `inactive-provider-validators-governance` (scenario with 1 active val) and `inactive-provider-validators-governance-basecase` (scenario with 3 active vals).
 
 ### Scenario 2: Inactive validators should not get rewards from the provider chain
 
@@ -102,19 +106,27 @@ Inactive validators should not get rewards from the provider chain.
 
 This can be tested by starting a provider chain with inactive validators and checking the rewards of inactive validators.
 
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
+
 ### Scenario 3: Inactive validators should get rewards from consumer chains
 
 An inactive validator that is validating on a consumer chain should receive rewards in the consumer chain token.
+
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
 
 ### Scenario 4: Inactive validators should not get slashed/jailed for downtime on the provider chain
 
 This can be tested by having an inactive validator go offline on the provider chain for long enough to accrue downtime.
 The validator should be neither slashed nor jailed for downtime.
 
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
+
 ### Scenario 5: Inactive validators *should* get jailed for downtime on the provider chain
 
 This can be tested by having an inactive validator go offline on a consumer chain for long enough to accrue downtime.
 The consumer chain should send a SlashPacket to the provider chain, which should jail the validator.
+
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
 
 ### Scenario 6: Inactive validators should not be counted when computing the minimum power in the top N
 
@@ -135,6 +147,8 @@ Once with all validators active, and once with a lot of stake inactive.
 ### Scenarios 8: Inactive validators can validate on consumer chains
 
 An inactive validator can opt in and validate on consumer chains (if min stake and max rank allow it)
+
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
 
 ### Scenario 9: MinStake and MaxRank parameters are respected
 
