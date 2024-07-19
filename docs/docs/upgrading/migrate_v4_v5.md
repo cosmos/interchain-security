@@ -17,6 +17,12 @@ ICS specific changes are outlined below.
 
 Pre-requisite version for this upgrade: any from the `v4.x` release line.
 
+## Note
+
+`v5.0.0` should not be used on the provider.
+T
+he provider should be updated to `v5.1.0`.
+
 ## Provider
 
 ### Keeper initialization
