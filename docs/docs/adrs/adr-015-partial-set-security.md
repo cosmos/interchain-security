@@ -66,7 +66,7 @@ In a future version of PSS, we intend to introduce a `ConsumerModificationPropos
 We augment the provider module’s state to keep track of the `top_N` value for each consumer chain. The key to store this information would be:
 
 ```
-0x21 | len(chainID) | chainID
+topNBytePrefix | len(chainID) | chainID
 ```
 
 To create the above key, we can use [`ChainIdWithLenKey`](https://github.com/cosmos/interchain-security/blob/v4.0.0/x/ccv/provider/types/keys.go#L418).
@@ -116,10 +116,10 @@ Naturally, a validator can always change the consumer key on a consumer chain by
 For each validator, we store a pair `(blockHeight, isOptedIn)` that contains the block height the validator opted in and whether the validator is currently opted in or not, under the key:
 
 ```
-0x20 | len(chainID) | chainID | addr
+optedInBytePrefix | len(chainID) | chainID | addr
 ```
 
-By using a prefix iterator on `0x20 | len(chainID) | chainID` we retrieve all the opted in validators.
+By using a prefix iterator on `optedInBytePrefix | len(chainID) | chainID` we retrieve all the opted in validators.
 
 We introduce the following `Keeper` methods.
 
@@ -173,7 +173,7 @@ Additionally, a validator that belongs to the top `N%` validators cannot opt out
 We also update the state of the opted-in validators when a validator has opted out by removing the opted-out validator.
 
 Note that only opted-in validators can be punished for downtime on a consumer chain.
-For this, we use historical info of all the validators that have opted in; We can examine the `blockHeight` stored under the key `0x20 | len(chainID) | chainID | addr` to see if a validator was opted in.
+For this, we use historical info of all the validators that have opted in; We can examine the `blockHeight` stored under the key `optedInBytePrefix | len(chainID) | chainID | addr` to see if a validator was opted in.
 This way we can jail validators for downtime knowing that indeed the validators have opted in at some point in the past.
 Otherwise, we can think of a scenario where a validator `V` is down for a period of time, but before `V` gets punished for downtime, validator `V` opts out, and then we do not know whether `V` should be punished or not.
 
