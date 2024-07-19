@@ -16,7 +16,6 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
@@ -54,7 +53,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		keeper.SetConsumerValidator(
 			ctx,
 			chainID,
-			types.ConsumerValidator{
+			providertypes.ConsumerValidator{
 				ProviderConsAddr: val.Address,
 				Power:            val.VotingPower,
 			},
