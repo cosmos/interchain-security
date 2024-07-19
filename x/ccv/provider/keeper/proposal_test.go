@@ -409,7 +409,7 @@ func TestStopConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
 
-				// set consumer min height
+				// set consumer minimum equivocation height
 				providerKeeper.SetEquivocationEvidenceMinHeight(ctx, consumerCID, 1)
 
 				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
