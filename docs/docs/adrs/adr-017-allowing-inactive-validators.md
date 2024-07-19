@@ -143,8 +143,17 @@ Checked as part of the e2e test `inactive-vals-topN`.
 
 To compute the inflation rate, only the active validators should be considered.
 
-We can check this by querying the inflation rate from the mint module twice:
-Once with all validators active, and once with a lot of stake inactive.
+We can check this by querying the inflation rate change over subsequent blocks.
+
+We start a provider chain with these arguments
+* 3 validators with powers alice=290, bob=280, charlie=270
+* either 1 or 3 active validators
+* a bonded goal of 300 tokens (this is given in percent, but we simplify here)
+
+If we have 3 validators active, then the inflation rate should *decrease* between blocks, because the bonded goal is exceeded as all validators are bonded.
+If we have only 1 validator active, then the inflation rate should *increase* between blocks, because the bonded goal is not met.
+
+Checked as part of the e2e tests `inactive-vals-mint` (scenario with 1 active val) and `mint-basecase` (scenario with 3 active vals).
 
 ### Scenarios 8: Inactive validators can validate on consumer chains
 

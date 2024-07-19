@@ -976,3 +976,91 @@ func stepsInactiveValsWithTopN() []Step {
 		},
 	}
 }
+
+func stepsInactiveValsMint() []Step {
+	// total supply is 30000000000, bonded goal ratio makes it so we want 30000000 tokens bonded
+	return []Step{
+		{
+			Action: StartChainAction{
+				Chain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 27000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 28000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 29000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 29, // other validators are not in power since only 1 can be active
+					},
+					InflationRateChange: intPtr(1), // inflation rate goes up because less than the goal is bonded, since only carol is active
+				},
+			},
+		},
+		{
+			Action: DelegateTokensAction{
+				Chain:  ChainID("provi"),
+				From:   ValidatorID("carol"),
+				To:     ValidatorID("carol"),
+				Amount: 50000000,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 79,
+					},
+					InflationRateChange: intPtr(-1), // inflation rate goes down now, because carol has more bonded than the goal
+				},
+			},
+		},
+	}
+}
+
+func stepsMintBasecase() []Step {
+	// total supply is 30000000000, bonded goal ratio makes it so we want 30000000 tokens bonded
+	return []Step{
+		{
+			Action: StartChainAction{
+				Chain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 27000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 28000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 29000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 27,
+						ValidatorID("bob"):   28,
+						ValidatorID("carol"): 29,
+					},
+					InflationRateChange: intPtr(-1), // inflation rate goes down because more than the goal is bonded
+				},
+			},
+		},
+		{
+			Action: DelegateTokensAction{
+				Chain:  ChainID("provi"),
+				From:   ValidatorID("carol"),
+				To:     ValidatorID("carol"),
+				Amount: 50000000,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 28,
+						ValidatorID("bob"):   29,
+						ValidatorID("carol"): 79,
+					},
+					InflationRateChange: intPtr(-1), // inflation rate *still* goes down
+				},
+			},
+		},
+	}
+}

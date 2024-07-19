@@ -240,6 +240,18 @@ var stepChoices = map[string]StepChoice{
 		description: "checks that the min stake parameter for consumer chains is respected",
 		testConfig:  GovTestCfg, // see above: we reuse the GovTestCfg for convenience
 	},
+	"inactive-vals-mint": {
+		name:        "inactive-vals-mint",
+		steps:       stepsInactiveValsMint(),
+		description: "test minting with inactive validators",
+		testConfig:  InactiveValsMintTestCfg,
+	},
+	"mint-basecase": {
+		name:        "mint-basecase",
+		steps:       stepsMintBasecase(),
+		description: "test minting without inactive validators as a sanity check",
+		testConfig:  MintTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
@@ -330,6 +342,8 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
 			"partial-set-security-modification-proposal",
 			"active-set-changes", "inactive-vals-topN",
+			"inactive-provider-validators-on-consumer", "inactive-provider-validators-governance",
+			"max-rank", "min-stake", "inactive-vals-mint",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

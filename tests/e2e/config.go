@@ -95,6 +95,8 @@ const (
 	InactiveProviderValsTestCfg TestConfigType = "inactive-provider-vals"
 	GovTestCfg                  TestConfigType = "gov"
 	InactiveValsGovTestCfg      TestConfigType = "inactive-vals-gov"
+	InactiveValsMintTestCfg     TestConfigType = "inactive-vals-mint"
+	MintTestCfg                 TestConfigType = "mint"
 )
 
 type TestConfig struct {
@@ -189,6 +191,10 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = GovTestConfig()
 	case InactiveValsGovTestCfg:
 		testCfg = InactiveValsGovTestConfig()
+	case InactiveValsMintTestCfg:
+		testCfg = InactiveValsMintTestConfig()
+	case MintTestCfg:
+		testCfg = MintTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -628,6 +634,33 @@ func InactiveValsGovTestConfig() TestConfig {
 	cfg.chainConfigs[ChainID("provi")] = proviConfig
 
 	return cfg
+}
+
+func MintTestConfig() TestConfig {
+	cfg := GovTestConfig()
+	AdjustMint(cfg)
+
+	return cfg
+}
+
+func InactiveValsMintTestConfig() TestConfig {
+	cfg := InactiveValsGovTestConfig()
+	AdjustMint(cfg)
+
+	return cfg
+}
+
+// AdjustMint adjusts the mint parameters to have a very low goal bonded amount
+// and a high inflation rate change
+func AdjustMint(cfg TestConfig) {
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	// total supply is 30000000000stake; we want to set the mint bonded goal to
+	// a small fraction of that
+	proviConfig.GenesisChanges += "| .app_state.mint.params.goal_bonded = \"0.001\"" +
+		"| .app_state.mint.params.inflation_rate_change = \"1\"" +
+		"| .app_state.mint.params.inflation_max = \"0.5\"" +
+		"| .app_state.mint.params.inflation_min = \"0.1\""
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
 }
 
 func MultiConsumerTestConfig() TestConfig {
