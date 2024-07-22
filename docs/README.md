@@ -58,7 +58,7 @@ cp supported_versions.json versions.json # needed to show the version dropdown
 npm run start
 ```
 
-Remove  `versions.json` when you are done so it does not interfere with your local documentation.
+Remove `versions.json` after use to prevent interference with local documentation.
 
 Remember to check back out to your working branch. Running `./sync_versions.sh` will leave you in a detached head state.
 (simply run `git checkout <working-branch>)
