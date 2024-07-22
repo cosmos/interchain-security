@@ -808,7 +808,8 @@ func TestDenylist(t *testing.T) {
 // - MaxValidatorRank
 // - ValidatorSetCap
 // - ValidatorPowersCap
-func TestKeeperIntConsumerParams(t *testing.T) {
+// - AllowInactiveValidators
+func TestKeeperConsumerParams(t *testing.T) {
 	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 	tests := []struct {
@@ -865,28 +866,40 @@ func TestKeeperIntConsumerParams(t *testing.T) {
 			initialValue: 10,
 			updatedValue: 11,
 		},
+		{
+			name:        "Allow Inactive Validators",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetAllowInactiveValidators(ctx, id, val == 1) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetAllowInactiveValidators(ctx, id)
+				res := int64(0) // default value
+				if val {
+					res = 1
+				}
+				return int64(res), found
+			},
+			initialValue: 1,
+			updatedValue: 0,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			chainID := "chainID"
-			initialValue := 1000
-			updatedValue := 2000
 			// Set initial value
-			tt.settingFunc(ctx, chainID, int64(initialValue))
+			tt.settingFunc(ctx, chainID, int64(tt.initialValue))
 
 			// Retrieve and check initial value
 			actualValue, found := tt.getFunc(ctx, chainID)
 			require.True(t, found)
-			require.EqualValues(t, initialValue, actualValue)
+			require.EqualValues(t, tt.initialValue, actualValue)
 
 			// Update value
-			tt.settingFunc(ctx, chainID, int64(updatedValue))
+			tt.settingFunc(ctx, chainID, int64(tt.updatedValue))
 
 			// Retrieve and check updated value
 			newActualValue, found := tt.getFunc(ctx, chainID)
 			require.True(t, found)
-			require.EqualValues(t, updatedValue, newActualValue)
+			require.EqualValues(t, tt.updatedValue, newActualValue)
 
 			// Check non-existent chain ID
 			_, found = tt.getFunc(ctx, "not the chainID")
