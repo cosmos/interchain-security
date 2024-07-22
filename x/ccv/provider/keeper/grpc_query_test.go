@@ -213,6 +213,11 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	// set `providerAddr` as an opted-in validator on "chain3"
 	pk.SetOptedIn(ctx, "chain3", providerAddr)
 
+	// set max provider consensus vals to include all validators
+	params := pk.GetParams(ctx)
+	params.MaxProviderConsensusValidators = 180
+	pk.SetParams(ctx, params)
+
 	// `providerAddr` has to validate "chain1" because it is a consumer validator in this chain, as well as "chain3"
 	// because it opted in, in "chain3" and `providerAddr` belongs to the bonded validators
 	expectedChains := []string{"chain1", "chain3"}

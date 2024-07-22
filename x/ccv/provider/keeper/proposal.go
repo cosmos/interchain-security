@@ -80,6 +80,7 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *ty
 		Denylist:           proposal.Denylist,
 		MinStake:           proposal.MinStake,
 		MaxRank:            proposal.MaxRank,
+		AllowInactiveVals:  proposal.AllowInactiveVals,
 	}
 
 	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
@@ -240,6 +241,9 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteValidatorSetCap(ctx, chainID)
 	k.DeleteAllowlist(ctx, chainID)
 	k.DeleteDenylist(ctx, chainID)
+	k.DeleteMaxValidatorRank(ctx, chainID)
+	k.DeleteAllowInactiveValidators(ctx, chainID)
+	k.DeleteMinStake(ctx, chainID)
 
 	k.DeleteAllOptedIn(ctx, chainID)
 	k.DeleteConsumerValSet(ctx, chainID)
@@ -286,14 +290,20 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 
 	if prop.Top_N > 0 {
+		// get the consensus active validators
+		activeValidators, err := k.GetLastActiveBondedValidators(ctx)
+		if err != nil {
+			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
+		}
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, prop.Top_N)
+		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, prop.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
-		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
 		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 	}
+	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
 	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
@@ -388,6 +398,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
 		k.SetMinStake(cachedCtx, prop.ChainId, prop.MinStake)
 		k.SetMaxValidatorRank(cachedCtx, prop.ChainId, prop.MaxRank)
+		k.SetAllowInactiveValidators(cachedCtx, prop.ChainId, prop.AllowInactiveVals)
 
 		for _, address := range prop.Allowlist {
 			consAddr, err := sdk.ConsAddressFromBech32(address)

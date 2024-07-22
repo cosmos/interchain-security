@@ -64,6 +64,7 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				nil,
 				0,
 				0,
+				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -96,6 +97,7 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				nil,
 				0,
 				0,
+				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -288,6 +290,7 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
 	providerKeeper.SetMinStake(ctx, chainID, 1000)
 	providerKeeper.SetMaxValidatorRank(ctx, chainID, 180)
+	providerKeeper.SetAllowInactiveValidators(ctx, chainID, true)
 
 	expectedTopN := uint32(75)
 	expectedValidatorsPowerCap := uint32(67)
@@ -296,6 +299,7 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
 	expectedMinStake := uint64(0)
 	expectedMaxValidatorRank := uint32(20)
+	expectedAllowInactiveValidators := false
 	proposal := providertypes.NewConsumerModificationProposal("title", "description", chainID,
 		expectedTopN,
 		expectedValidatorsPowerCap,
@@ -304,6 +308,7 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 		[]string{expectedDenylistedValidator},
 		expectedMinStake,
 		expectedMaxValidatorRank,
+		expectedAllowInactiveValidators,
 	).(*providertypes.ConsumerModificationProposal)
 
 	err := providerKeeper.HandleLegacyConsumerModificationProposal(ctx, proposal)
@@ -331,4 +336,7 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 
 	actualMaxValidatorRank, _ := providerKeeper.GetMaxValidatorRank(ctx, chainID)
 	require.Equal(t, expectedMaxValidatorRank, actualMaxValidatorRank)
+
+	actualAllowInactiveValidators, _ := providerKeeper.GetAllowInactiveValidators(ctx, chainID)
+	require.Equal(t, expectedAllowInactiveValidators, actualAllowInactiveValidators)
 }

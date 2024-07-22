@@ -187,6 +187,8 @@ message MsgConsumerAddition {
   uint64 min_stake = 19;
   // Corresponds to the maximal rank in the provider chain validator set that a validator can have to validate on the consumer chain.
   uint32 max_rank = 20;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 21;
 }
 
 // MsgConsumerAdditionResponse defines response type for MsgConsumerAddition messages
@@ -328,6 +330,8 @@ message MsgConsumerModification {
   uint64 min_stake = 10;
   // Corresponds to the maximal rank in the provider chain validator set that a validator can have to validate on the consumer chain.
   uint32 max_rank = 11;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 12;
 }
 
 message MsgConsumerModificationResponse {}
