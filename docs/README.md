@@ -88,7 +88,7 @@ The `./docs/legacy` directory gets included into the rest of the documentation u
 `versions.json` must remain empty or be removed from your worktree. Please avoid pushing it to github.
 * this file specifies which versions will be displayed in the supported versions drop down on the docs page
 * instead of using it, the supported versions should live in `supported_versions.json`
-* this file should only be be populated during deploy and never on your local machine
+* this file should only be populated during deployment and never on your local machine
 
 # Building on remote
 
