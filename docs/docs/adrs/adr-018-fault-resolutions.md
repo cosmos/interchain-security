@@ -29,13 +29,13 @@ Currently, these types of attacks aren't handled in PSS, leaving the malicious v
 
 A potential solution for the handling of incorrect executions is to use fraud proofs.
  This technology allows proving incorrect state transitions of a chain without a full node.
- However, this is a complex technology, and there is no framework that works for Cosmos chains to this day.
+ However, this is a complex technology and and there is no framework that works for Cosmos chains to this day.
 
 
-To address this risk in PSS, a governance-gated slashing solution can be used until fraud proof technology matures.
+To address this risk in PSS, a governance-gated slashing solution can be used to handle all types of misbehavior resulting from validator collusion. As fraud proof technology matures, part of the solution could potentially be automated.
 
 
-This ADR proposes a fault resolution mechanism, which is a type of governance proposal that can be use to vote on the slashing of validators that misbehave on Opt-in consumer chains.
+This ADR proposes a fault resolution mechanism, which is a type of governance proposal that can be used to vote on the slashing of validators that misbehave on Opt-in consumer chains.
 
 In what follows, we describe the implementation of a fault resolution mechanism that handles incorrect executions on consumer chains,
  as a first iteration.
@@ -46,13 +46,13 @@ In what follows, we describe the implementation of a fault resolution mechanism 
 The proposed solution introduces a new `consumer-fault-resolution` governance proposal type to the `provider` module, which allows
  validators to be penalised for committing faults on an Opt-in consumer chain.
 
-If such a proposal passes, the proposal handler tombstones all the validators listed in the proposal and slashes them by a predefined
+If such a proposal passes, the proposal handler tombstones all the validators listed in the proposal and slashes them by a per-consumer chain predefined
  amount or the default value used for double-sign infractions.
 
 The proposal has the following fields:
 
 - **Description**: This field should be filled with a fault definition describing the type of misbehavior that the validators executed
- on an Opt-in consumer chain. A fault definition should precisely describe how an attack was performed and why it is eligible as a slashable fault.
+ on an Opt-in consumer chain. A fault definition should precisely describe how an attack was performed and why it is eligible as a slashable fault, see fault definition (see [fault definitions](https://forum.cosmos.network/t/preventing-intersubjective-faults-in-ics/14103#fault-definitions-4) in "Preventing Intersubjective faults in ICS").
 - **Consumer Chain**: The chain that the fault was related to.
 - **Validators**: The list of all the validators to be slashed.
 
