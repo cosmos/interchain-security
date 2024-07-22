@@ -25,7 +25,7 @@ One of the cost of validating on the consumer chains is operational -- validator
 Although this cost varies from validator team to validator team (depending on how efficiently they can run their infrastructure), it doesn't depend on the total stake (or voting power) of the validators, so we can think of it as constant. 
 The other cost of validating comes from the risk of getting slashed. 
 
-Most chains in Cosmos (including the Cosmos Hub) use delelegated PoS -- users delegate their tokens to validators, which stake them in return for voting power. 
+Most chains in Cosmos (including the Cosmos Hub) use delegated PoS -- users delegate their tokens to validators, which stake them in return for voting power. 
 Therefore, validators act as representatives chosen by their delegators to represent their interests. 
 When validators misbehave, their stake is getting slashed, including the tokes delegated by users. 
 As validators don't need to have their own stake, delegators take the risk of validators misbehaving and having their assets slashed.
