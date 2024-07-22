@@ -41,9 +41,13 @@ This ADR addresses the high cost of ICS by proposing the deployment of consumer 
 
 To reduce the cost of ICS, consumer chains will be able to deploy as Proof of Reputation (PoR) chains.
 This means that when validators that opt in misbehave on the consumer chains (e.g., they double sign), their stake on the provider is not being slashed, instead they are being tombstoned on the provider.
-As a result, delegators incur no risk if their validators opt in on multiple PoR consumer chains.
+As a result, delegators incur (almost) no risk if their validators opt in on multiple PoR consumer chains.
+If their validators are tombstoned, then the delegators can redelegate to other validators. 
+However, delegators cannot redelegate multiple times, which means that if the new validators get also tombstoned, the delegators need to wait for the unbonding period to elapse. 
+
 This means that PoR consumer chains need only to cover the operational costs of the validators that opt in. 
-For example, if we take `$600` as the cost of running a validator node, a budget of `$3000` will be sufficient to cover the cost of four validators running a PoR consumer chain and have `$150` profit per validator as incentive.   
+For example, if we take `$600` as the cost of running a validator node, a budget of `$3000` will be sufficient to cover the cost of four validators running a PoR consumer chain and have `$150` profit per validator as incentive.
+In practice, this can be implemented via the per-consumer-chain commission rate that allows validators to have different commission rates on different consumer chains. 
 
 ### Security Model
 
@@ -64,7 +68,7 @@ One benefit of slashing is that it acts as a deterrent for someone buying a larg
 For example, an attacker could get `$15.000.000` worth of ATOM, which would give them around `1%` voting power on the Cosmos Hub (at the time of this writing).
 On a consumer chain, this voting power could be amplified depending on the other validators that opt in.
 However, by having the right [power shaping](https://cosmos.github.io/interchain-security/features/power-shaping) settings, the voting power of validators can be capped. 
-This means that even if the attacker manages to double sign without getting slashed, it doesn't benefit from this attack. 
+This means that even if the attacker manages to double sign without getting slashed, as long as they don't have 1/3+ of the voting power, they cannot benefit from the attack. 
 Moreover, the attacker might lose due to other factors, such as [token toxicity](https://forum.cosmos.network/t/enabling-opt-in-and-mesh-security-with-fraud-votes/10901).  
 
 ### Implementation
