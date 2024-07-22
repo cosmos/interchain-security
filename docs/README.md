@@ -79,7 +79,7 @@ The `./docs/legacy` directory gets included into the rest of the documentation u
 
 # Scripts and make commands
 
-`build_deploy.sh` script builds the documentation output directory for servig static html files. It should be executed on the remote server.
+`build_deploy.sh` script builds the documentation output directory for serving static HTML files. It should be executed on the remote server.
 
 `build_local.sh` will build the documentation locally by running `npm run build`. You can check the built web page by running `npm run serve` after the build command completes.
 
