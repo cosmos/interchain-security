@@ -357,8 +357,8 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
-		"query", "distribution", "delegation-total-rewards",
-		"--delegator-address", delAddresss,
+		"query", "distribution", "rewards",
+		delAddresss,
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
@@ -367,6 +367,7 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 	bz, err := cmd.CombinedOutput()
 
 	if err != nil {
+		log.Println("running cmd: ", cmd)
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 
