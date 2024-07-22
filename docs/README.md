@@ -85,7 +85,7 @@ The `./docs/legacy` directory gets included into the rest of the documentation u
 
 `sync_versions.sh` will fetch and build all docs versions specified in `supported_versions.json`. It is intended to be executed on the remote server.
 
-`versions.json` must remain empty or be removed from your worktree. Please avoid pushing it to github.
+`versions.json` must remain empty or be removed from your worktree. Avoid pushing it to GitHub.
 * this file specifies which versions will be displayed in the supported versions drop down on the docs page
 * instead of using it, the supported versions should live in `supported_versions.json`
 * this file should only be populated during deployment and never on your local machine
