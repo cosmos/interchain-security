@@ -116,6 +116,29 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 		chainState.HasToValidate = &hasToValidate
 	}
 
+	if modelState.InflationRateChange != nil {
+		// get the inflation rate now
+		inflationRateNow := tr.target.GetInflationRate(chain)
+
+		// wait a block
+		tr.waitBlocks(chain, 1, 10*time.Second)
+
+		// get the new inflation rate
+		inflationRateAfter := tr.target.GetInflationRate(chain)
+
+		// calculate the change
+		inflationRateChange := inflationRateAfter - inflationRateNow
+		var inflationRateChangeDirection int
+		if inflationRateChange > 0 {
+			inflationRateChangeDirection = 1
+		} else if inflationRateChange < 0 {
+			inflationRateChangeDirection = -1
+		} else {
+			inflationRateChangeDirection = 0
+		}
+		chainState.InflationRateChange = &inflationRateChangeDirection
+	}
+
 	if modelState.ConsumerPendingPacketQueueSize != nil {
 		pendingPacketQueueSize := tr.target.GetPendingPacketQueueSize(chain)
 		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
@@ -299,6 +322,10 @@ func (tr Chain) curlJsonRPCRequest(method, params, address string) {
 }
 
 func uintPtr(i uint) *uint {
+	return &i
+}
+
+func intPtr(i int) *int {
 	return &i
 }
 
@@ -865,6 +892,23 @@ func (tr Commands) GetHasToValidate(
 	}
 
 	return chains
+}
+
+func (tr Commands) GetInflationRate(
+	chain ChainID,
+) float64 {
+	binaryName := tr.chainConfigs[chain].BinaryName
+	bz, err := tr.target.ExecCommand(binaryName,
+		"query", "mint", "inflation",
+		`--node`, tr.GetQueryNode(chain),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	inflationRate := gjson.Get(string(bz), "inflation").Float()
+	return inflationRate
 }
 
 func (tr Commands) GetTrustedHeight(
