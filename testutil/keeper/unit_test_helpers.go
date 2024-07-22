@@ -299,6 +299,7 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		nil,
 		0,
 		0,
+		false,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop

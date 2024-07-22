@@ -36,9 +36,11 @@ power. For example, consider that the top validator `V` on the provider chain ha
 then if `V` is denylisted, the consumer chain would only be secured by at least 40% of the provider's power.
 :::
 
-1) **Maximum validator rank**: The consumer chain can specify a maximum position in the validator set that a validator can have on the provider chain to be able to validate the consumer chain. This can be used to ensure that only validators with relatively large amounts of stake can validate the consumer chain. For example, setting this to 20 would mean only the 20 validators with the most voting stake on the provider chain can validate the consumer chain.
+4) **Maximum validator rank**: The consumer chain can specify a maximum position in the validator set that a validator can have on the provider chain to be able to validate the consumer chain. This can be used to ensure that only validators with relatively large amounts of stake can validate the consumer chain. For example, setting this to 20 would mean only the 20 validators with the most voting stake on the provider chain can validate the consumer chain.
 
-2) **Minimum validator stake**: The consumer chain can specify a minimum amount of stake that a validator must have on the provider chain to be able to validate the consumer chain. This can be used to ensure that only validators with a certain amount of stake can validate the consumer chain. For example, setting this to 1000 would mean only validators with at least 1000 tokens staked on the provider chain can validate the consumer chain.
+5) **Minimum validator stake**: The consumer chain can specify a minimum amount of stake that a validator must have on the provider chain to be able to validate the consumer chain. This can be used to ensure that only validators with a certain amount of stake can validate the consumer chain. For example, setting this to 1000 would mean only validators with at least 1000 tokens staked on the provider chain can validate the consumer chain.
+
+6) **Allow inactive validators**: The consumer chain can specify whether provider validators that are *not* active in consensus may validate on the consumer chain or not. If this is set to `false`, only active validators on the provider chain can validate the consumer chain. If this is set to `true`, inactive validators can also validate the consumer chain. This can be useful for chains that want to have a larger validator set than the active validators on the provider chain, or for chains that want to have a more decentralized validator set. COnsumer chains that enable this feature should strongly consider setting a maximum validator rank and/or a minimum validator stake to ensure that only validators with some reputation/stake can validate the chain. 
 
 All these mechanisms are set by the consumer chain in the `ConsumerAdditionProposal`. They operate *solely on the provider chain*, meaning the consumer chain simply receives the validator set after these rules have been applied and does not have any knowledge about whether they are applied.
 
@@ -47,6 +49,8 @@ Each of these mechanisms is *set during the consumer addition proposal* (see [On
 The values can be seen by querying the list of consumer chains:
 ```bash
 interchain-security-pd query provider list-consumer-chains
+
+
 ```
 
 ## Guidelines for setting power shaping parameters

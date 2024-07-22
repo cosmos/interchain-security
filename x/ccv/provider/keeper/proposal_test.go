@@ -74,6 +74,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				nil,
 				0,
 				0,
+				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -106,6 +107,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				nil,
 				0,
 				0,
+				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -820,6 +822,7 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 			0,
 			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -838,6 +841,7 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 			0,
 			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time not passed", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -856,6 +860,7 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 			0,
 			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "invalid proposal: chain id already exists", "chain2", clienttypes.NewHeight(4, 5), []byte{}, []byte{},
@@ -874,6 +879,7 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 			0,
 			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "opt-in chain with at least one validator opted in", "chain5", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -892,6 +898,7 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 			0,
 			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "opt-in chain with no validator opted in", "chain6", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -910,6 +917,7 @@ func TestBeginBlockInit(t *testing.T) {
 			nil,
 			0,
 			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 	}
 

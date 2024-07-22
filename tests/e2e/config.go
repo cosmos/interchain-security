@@ -94,6 +94,10 @@ const (
 	CompatibilityTestCfg        TestConfigType = "compatibility"
 	SmallMaxValidatorsTestCfg   TestConfigType = "small-max-validators"
 	InactiveProviderValsTestCfg TestConfigType = "inactive-provider-vals"
+	GovTestCfg                  TestConfigType = "gov"
+	InactiveValsGovTestCfg      TestConfigType = "inactive-vals-gov"
+	InactiveValsMintTestCfg     TestConfigType = "inactive-vals-mint"
+	MintTestCfg                 TestConfigType = "mint"
 )
 
 type TestConfig struct {
@@ -184,6 +188,14 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = SmallMaxValidatorsTestConfig()
 	case InactiveProviderValsTestCfg:
 		testCfg = InactiveProviderValsTestConfig()
+	case GovTestCfg:
+		testCfg = GovTestConfig()
+	case InactiveValsGovTestCfg:
+		testCfg = InactiveValsGovTestConfig()
+	case InactiveValsMintTestCfg:
+		testCfg = InactiveValsMintTestConfig()
+	case MintTestCfg:
+		testCfg = MintTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -581,7 +593,7 @@ func InactiveProviderValsTestConfig() TestConfig {
 	tr.chainConfigs[ChainID("provi")] = proviConfig
 	tr.chainConfigs[ChainID("consu")] = consuConfig
 
-	// make is to that carol does not use a consumer key
+	// make it so that carol does not use a consumer key
 	carolConfig := tr.validatorConfigs[ValidatorID("carol")]
 	carolConfig.UseConsumerKey = false
 	tr.validatorConfigs[ValidatorID("carol")] = carolConfig
@@ -603,6 +615,60 @@ func SmallMaxValidatorsTestConfig() TestConfig {
 	cfg.validatorConfigs["carol"] = carolConfig
 
 	return cfg
+}
+
+func GovTestConfig() TestConfig {
+	cfg := DefaultTestConfig()
+
+	// set the quorum to 50%
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += "| .app_state.gov.params.quorum = \"0.5\""
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
+
+	carolConfig := cfg.validatorConfigs["carol"]
+	// make carol use her own key
+	carolConfig.UseConsumerKey = false
+	cfg.validatorConfigs["carol"] = carolConfig
+
+	return cfg
+}
+
+func InactiveValsGovTestConfig() TestConfig {
+	cfg := GovTestConfig()
+
+	// set the MaxValidators to 1
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += "| .app_state.staking.params.max_validators = 1"
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
+
+	return cfg
+}
+
+func MintTestConfig() TestConfig {
+	cfg := GovTestConfig()
+	AdjustMint(cfg)
+
+	return cfg
+}
+
+func InactiveValsMintTestConfig() TestConfig {
+	cfg := InactiveValsGovTestConfig()
+	AdjustMint(cfg)
+
+	return cfg
+}
+
+// AdjustMint adjusts the mint parameters to have a very low goal bonded amount
+// and a high inflation rate change
+func AdjustMint(cfg TestConfig) {
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	// total supply is 30000000000stake; we want to set the mint bonded goal to
+	// a small fraction of that
+	proviConfig.GenesisChanges += "| .app_state.mint.params.goal_bonded = \"0.001\"" +
+		"| .app_state.mint.params.inflation_rate_change = \"1\"" +
+		"| .app_state.mint.params.inflation_max = \"0.5\"" +
+		"| .app_state.mint.params.inflation_min = \"0.1\""
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
 }
 
 func MultiConsumerTestConfig() TestConfig {

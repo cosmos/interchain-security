@@ -210,6 +210,48 @@ var stepChoices = map[string]StepChoice{
 		description: "test inactive validators on consumer",
 		testConfig:  InactiveProviderValsTestCfg,
 	},
+	"inactive-vals-topN": {
+		name:        "inactive-vals-topN",
+		steps:       stepsInactiveValsWithTopN(),
+		description: "test inactive validators on topN chain",
+		testConfig:  InactiveProviderValsTestCfg,
+	},
+	"inactive-provider-validators-governance": {
+		name:        "inactive-provider-validators-governance",
+		steps:       stepsInactiveProviderValidatorsGovernance(),
+		description: "test governance with inactive validators",
+		testConfig:  InactiveValsGovTestCfg,
+	},
+	"inactive-provider-validators-governance-basecase": {
+		name:        "inactive-provider-validators-governance-basecase",
+		steps:       stepsInactiveProviderValidatorsGovernanceBasecase(),
+		description: "comparison for governance when there are *no* inactive validators, to verify the difference to the governance test *with* inactive validators",
+		testConfig:  GovTestCfg,
+	},
+	"max-rank": {
+		name:        "max-rank",
+		steps:       stepsMaxRank(),
+		description: "checks that the max rank parameter for consumer chains is respected",
+		testConfig:  GovTestCfg, // can reuse the GovTestCfg because all parameters there are ok to use here
+	},
+	"min-stake": {
+		name:        "min-stake",
+		steps:       stepsMinStake(),
+		description: "checks that the min stake parameter for consumer chains is respected",
+		testConfig:  GovTestCfg, // see above: we reuse the GovTestCfg for convenience
+	},
+	"inactive-vals-mint": {
+		name:        "inactive-vals-mint",
+		steps:       stepsInactiveValsMint(),
+		description: "test minting with inactive validators",
+		testConfig:  InactiveValsMintTestCfg,
+	},
+	"mint-basecase": {
+		name:        "mint-basecase",
+		steps:       stepsMintBasecase(),
+		description: "test minting without inactive validators as a sanity check",
+		testConfig:  MintTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
@@ -299,7 +341,9 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
 			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
 			"partial-set-security-modification-proposal",
-			"active-set-changes",
+			"active-set-changes", "inactive-vals-topN",
+			"inactive-provider-validators-on-consumer", "inactive-provider-validators-governance",
+			"max-rank", "min-stake", "inactive-vals-mint",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

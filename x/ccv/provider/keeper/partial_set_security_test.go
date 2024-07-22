@@ -804,6 +804,12 @@ func TestMaxValidatorRank(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			providerKeeper.SetMaxValidatorRank(ctx, "chainID", tc.maxRank)
+
+			// set max provider consensus vals to include all validators
+			params := providerKeeper.GetParams(ctx)
+			params.MaxProviderConsensusValidators = 180
+			providerKeeper.SetParams(ctx, params)
+
 			nextVals := providerKeeper.ComputeNextValidators(ctx, "chainID", vals)
 			nextConsAddrs := make([]types.ProviderConsAddress, len(nextVals))
 			for i, val := range nextVals {
@@ -813,4 +819,58 @@ func TestMaxValidatorRank(t *testing.T) {
 			require.ElementsMatch(t, tc.expectedProviderConsAddrs, nextConsAddrs)
 		})
 	}
+}
+
+// TestMaxProviderConsensusValidators checks that the number of validators in the next validator set is at most
+// the maxProviderConsensusValidators parameter if the consumer chain does not allow inactive validators to validate.
+func TestIfInactiveValsDisallowedProperty(t *testing.T) {
+	rapid.Check(t, func(r *rapid.T) {
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		// Generate a random number of validators with random powers
+		valPowers := rapid.SliceOfN(rapid.Int64Range(1, 100), 1, 100).Draw(r, "valPowers")
+		vals, consAddrs := createStakingValidatorsAndMocks(ctx, mocks, valPowers...)
+
+		// opt the validators in
+		for _, valAddr := range consAddrs {
+			providerKeeper.SetOptedIn(ctx, "chainID", valAddr)
+		}
+
+		// Randomly choose values for parameters
+		minStake := rapid.Uint64Range(0, 101).Draw(r, "minStake")
+		maxRank := rapid.Uint32Range(0, 11).Draw(r, "maxRank")
+		maxProviderConsensusVals := rapid.Uint32Range(1, 11).Draw(r, "maxProviderConsensusVals")
+
+		// Set up the parameters in the provider keeper
+		providerKeeper.SetAllowInactiveValidators(ctx, "chainID", false) // do not allow inactive validators
+		providerKeeper.SetMinStake(ctx, "chainID", minStake)
+		providerKeeper.SetMaxValidatorRank(ctx, "chainID", maxRank)
+		params := providerKeeper.GetParams(ctx)
+		params.MaxProviderConsensusValidators = int64(maxProviderConsensusVals)
+		providerKeeper.SetParams(ctx, params)
+
+		// Compute the next validators
+		nextVals := providerKeeper.ComputeNextValidators(ctx, "chainID", vals)
+
+		// Check that the length of nextVals is at most maxProviderConsensusVals
+		require.LessOrEqual(t, len(nextVals), int(maxProviderConsensusVals), "The length of nextVals should be at most maxProviderConsensusVals")
+
+		// Sanity check: we only get 0 next validators if either:
+		// - maxProviderConsensusVals is 0
+		// - the maximal validator power is less than the min stake
+		if len(nextVals) == 0 {
+			maxValPower := int64(0)
+			for _, power := range valPowers {
+				if power > maxValPower {
+					maxValPower = power
+				}
+			}
+			require.True(
+				t,
+				maxProviderConsensusVals == 0 || maxValPower < int64(minStake),
+				"The length of nextVals should only be 0 if either maxProviderConsensusVals is 0 or the maximal validator power is less than the min stake",
+			)
+		}
+	})
 }

@@ -94,6 +94,7 @@ func (k Keeper) HandleLegacyConsumerModificationProposal(ctx sdk.Context, p *typ
 	k.SetValidatorSetCap(ctx, p.ChainId, p.ValidatorSetCap)
 	k.SetMinStake(ctx, p.ChainId, p.MinStake)
 	k.SetMaxValidatorRank(ctx, p.ChainId, p.MaxRank)
+	k.SetAllowInactiveValidators(ctx, p.ChainId, p.AllowInactiveVals)
 
 	k.DeleteAllowlist(ctx, p.ChainId)
 	for _, address := range p.Allowlist {
@@ -125,11 +126,11 @@ func (k Keeper) HandleLegacyConsumerModificationProposal(ctx sdk.Context, p *typ
 	if p.Top_N != oldTopN {
 		if p.Top_N > 0 {
 			// if the chain receives a non-zero top N value, store the minimum power in the top N
-			bondedValidators, err := k.GetLastBondedValidators(ctx)
+			activeValidators, err := k.GetLastActiveBondedValidators(ctx)
 			if err != nil {
 				return err
 			}
-			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, p.Top_N)
+			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, p.Top_N)
 			if err != nil {
 				return err
 			}
