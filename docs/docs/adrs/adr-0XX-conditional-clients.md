@@ -21,7 +21,7 @@ However, this might come at a high cost.
 
 ### The Cost of PoS
 
-One of the cost of validating on the consumer chains is operational -- validators need to run and monitor full nodes of every consumer chain they opt in. 
+One of the cost of validating on the consumer chains is operational -- validators need to run and monitor full nodes of every consumer chain they opt in for. 
 Although this cost varies from validator team to validator team (depending on how efficiently they can run their infrastructure), it doesn't depend on the total stake (or voting power) of the validators, so we can think of it as constant. 
 The other cost of validating comes from the risk of getting slashed. 
 
