@@ -8,6 +8,7 @@ vendor/
 build/
 .vscode
 .idea
+__debug_*
 
 # docusaurus versioned docs created during build
 docs/versioned_docs
