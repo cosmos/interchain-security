@@ -1,6 +1,12 @@
 package integration
 
-// TestInitTimeout tests the init timeout
+// TestInitTimeout tests that the init timeout is respected.
+// @Long Description@
+// The test sets up a provider with a configured init timeout period.
+// It then creates a connection between the provider and consumer chains,
+// and then performs a handshake (stopping at various stages of the process to simulate a timeout).
+// It then increments the time by the init timeout period and checks that the chain was removed if the timeout was reached,
+// or that the chain was not removed if the handshake was indeed completed before the timeout.
 func (suite *CCVTestSuite) TestInitTimeout() {
 	testCases := []struct {
 		name      string

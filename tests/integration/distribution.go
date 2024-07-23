@@ -20,7 +20,15 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// This test is valid for minimal viable consumer chain
+// TesRewardsDistribution tests the distribution of rewards from the consumer chain to the provider chain.
+// @Long Description@
+// The test sets up a provider and consumer chain and completes the channel initialization.
+// Then, it sends tokens into the FeeCollector on the consumer chain,
+// and checks that these tokens distributed correctly across the provider and consumer chain.
+// It first checks that the tokens are distributed purely on the consumer chain,
+// then advances the block height to make the consumer chain send a packet with rewards to the provider chain.
+// It does not whitelist the consumer denom, so the tokens are expected to stay in
+// the ConsumerRewardsPool on the provider chain.
 func (s *CCVTestSuite) TestRewardsDistribution() {
 	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupCCVChannel(s.path)

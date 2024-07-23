@@ -1,0 +1,64 @@
+name: Generate testing docs
+
+on:
+    workflow_call:
+    pull_request:
+    merge_group:
+    push:
+      branches:
+        - main
+        - release/v*
+        - feat/*
+
+permissions:
+  contents: read
+
+jobs:
+    testing-docs:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - uses: actions/setup-go@v5
+          with:
+            go-version: "1.22"
+            check-latest: true
+            cache: true
+            cache-dependency-path: go.sum
+        - uses: technote-space/get-diff-action@v6.1.2
+          id: git_diff
+          with:
+            PATTERNS: |
+              tests/integration/**/*.go
+              **/Makefile
+              Makefile
+
+        - name: Generate testing docs
+          run: make testing-docs
+
+        - name: Check for changes
+          id: check_changes
+          run: |
+            if ! diff -q scripts/test_doc/test_documentation.md <(git show HEAD:scripts/test_doc/test_documentation.md); then
+              echo "Documentation is out of date!"
+              echo "::set-output name=needs_commit::true"
+    
+        - name: Configure Git
+          if: steps.check_changes.outputs.needs_commit == 'true'
+          run: |
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+    
+        - name: Commit changes
+          if: steps.check_changes.outputs.needs_commit == 'true'
+          run: |
+            git add scripts/test_doc/test_documentation.md
+            git commit -m "Update documentation"
+    
+        - name: Push changes
+          if: steps.check_changes.outputs.needs_commit == 'true'
+          uses: ad-m/github-push-action@v0.6.0
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}

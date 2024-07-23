@@ -14,6 +14,17 @@ Unit tests are useful for simple standalone functionality, and CRUD operations. 
 
 To run integration tests against your own consumer/provider implementations, use [instance_test.go](tests/integration/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](testutil/integration/interfaces.go), pattern match [specific_setup.go](testutil/ibc_testing/specific_setup.go), then pass in the appropriate types and parameters to the suite, as is done in `instance_test.go` for the dummy provider/consumer implementations.
 
+A list of test scenarios covered by integration tests can be found in [scripts/test_doc/test_documentation.md](scripts/test_doc/test_documentation.md).
+When adding an integration test, write a brief description as a docstring in the Golang code in this schema:
+```go
+// This is a test that tests foo and bar.
+// @Long Description@
+// Here is a detailed description
+// that goes into more detail and describes the scenario.
+```
+
+Then, run `make docs-test` to update the test documentation.
+
 ## Model-Based Tests (MBT)
 
 [MBT](tests/mbt/) tests are similar to integration tests, but they compare the system state to an expected state generated from a formally verified specification written in Quint.
