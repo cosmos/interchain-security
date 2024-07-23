@@ -101,13 +101,17 @@ func extractDocstrings(filePath string, out *os.File) []string {
 				}
 
 				// Format the description
+
+				// avoid breaking the table format: newlines need to be replaced
+				// for the short description, use spaces
+				shortDescription = strings.ReplaceAll(shortDescription, "\n", " ")
+				// for the long description, use breaks
+				longDescription = strings.ReplaceAll(longDescription, "\n", "<br>")
+
 				description := shortDescription
 				if longDescription != "" {
 					description += fmt.Sprintf("<details><summary>Details</summary>%s</details>", longDescription)
 				}
-				// for formatting the description in markdown table,
-				// replace newlines with spaces
-				description = strings.ReplaceAll(description, "\n", " ")
 
 				fmt.Fprintf(out, "| %s | %s | %s |\n", link, fn.Name.Name, description)
 			} else {

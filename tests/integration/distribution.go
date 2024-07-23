@@ -138,8 +138,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	consuValsRewards := consumerValsOutstandingRewardsFunc(s.providerCtx())
 
 	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
-	numberOfBlocksToStartReceivingRewards :=
-		providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
+	numberOfBlocksToStartReceivingRewards := providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
 
 	for s.providerCtx().BlockHeight() <= numberOfBlocksToStartReceivingRewards {
 		s.providerChain.NextBlock()
@@ -833,6 +832,17 @@ func (s *CCVTestSuite) prepareRewardDist() {
 	s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
 }
 
+// TestAllocateTokensToConsumerValidators tests the allocation of tokens to consumer validators.
+// @Long Description@
+// The test exclusively uses the provider chain.
+// It sets up a current set of consumer validators, then calls the AllocateTokensToConsumerValidators
+// function to allocate a number of tokens to the validators.
+// The test then checks that the expected number of tokens were allocated to the validators.
+// The test covers the following scenarios:
+// - The tokens to be allocated are empty
+// - The consumer validator set is empty
+// - The tokens are allocated to a single validator
+// - The tokens are allocated to multiple validators
 func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
