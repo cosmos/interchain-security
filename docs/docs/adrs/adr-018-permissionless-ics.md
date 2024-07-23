@@ -114,7 +114,7 @@ In the table below, we see the ones that are associated with a `chainId` and how
 | `MinimumPowerInTopNBytePrefix`          | Stores the minimum power needed to opt in for a chain                                                                        | Every epoch                                                                                              |
 | `ConsumerAddrsToPruneV2BytePrefix`      | Stores consumer addresses to be pruned (as part of `VSCMaturedPacket`s deprecation)                                          | Every `MsgAssignConsumerKey` or `MsgOptIn` and later during actual pruning                               |
 
-Everything stored under a key associated with a `chainId` needs to be migrated to new state under `consumerId`.
+Everything stored under one of the above keys is associated with a `chainId` and has to be migrated to new state under a `consumerId`.
 
 ### New Messages
 In what follows, we describe the new messages (i.e., `MsgRegisterConsumerChain`, `MsgInitializeConsumerChain`, and `MsgUpdateConsumerChain`)
