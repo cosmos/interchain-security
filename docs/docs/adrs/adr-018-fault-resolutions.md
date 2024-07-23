@@ -29,7 +29,7 @@ Currently, these types of attacks aren't handled in PSS, leaving the malicious v
 
 A potential solution for the handling of incorrect executions is to use fraud proofs.
  This technology allows proving incorrect state transitions of a chain without a full node.
- However, this is a complex technology and and there is no framework that works for Cosmos chains to this day.
+ However, this is a complex technology and there is no framework that works for Cosmos chains to this day.
 
 
 To address this risk in PSS, a governance-gated slashing solution can be used to handle all types of misbehavior resulting from validator collusion. As fraud proof technology matures, part of the solution could potentially be automated.
