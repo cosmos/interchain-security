@@ -16,6 +16,7 @@ To run integration tests against your own consumer/provider implementations, use
 
 A list of test scenarios covered by integration tests can be found in [scripts/test_doc/test_documentation.md](scripts/test_doc/test_documentation.md).
 When adding an integration test, write a brief description as a docstring in the Golang code in this schema:
+
 ```go
 // This is a test that tests foo and bar.
 // @Long Description@
