@@ -53,8 +53,9 @@ The proposal has the following fields:
 
 - **Description**: This field should be filled with a fault definition describing the type of misbehavior that the validators executed
  on an Opt-in consumer chain. A fault definition should precisely describe how an attack was performed and why it is eligible as a slashable fault, see fault definition (see [fault definitions](https://forum.cosmos.network/t/preventing-intersubjective-faults-in-ics/14103#fault-definitions-4) in "Preventing Intersubjective faults in ICS").
-- **Consumer Chain**: The chain that the fault was related to.
+- **Consumer Chain**: The consumer chain ID that the fault was related to.
 - **Validators**: The list of all the validators to be slashed.
+- **Evidence**: A free text form.
 
 In addition, in order to prevent spamming, users must pay a default fee of `100ATOM` to submit a fault resolution to the provider.
  This amount is stored in a new `consumer-fault-resolution-fee` parameter of the `provider` module.
