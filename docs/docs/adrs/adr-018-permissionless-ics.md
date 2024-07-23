@@ -52,7 +52,7 @@ passes and [at least one validator has opted in](https://github.com/cosmos/inter
 the chain can launch and moves to the _launched_ phase. While in launched phase, a Top N consumer chain can choose to modify
 its parameters through a `MsgConsumerModification` and an Opt In chain can change its parameters by issuing the `MsgUpdateConsumerChain` transaction.
 
-Lastly, a Top N chain can choose to  ICS by issuing a `MsgConsumerRemoval` and an Opt In chain can issue a transaction to stop the chain.
+Lastly, a Top N chain can choose to exit ICS by issuing a `MsgConsumerRemoval` and an Opt In chain can issue a transaction to stop the chain.
 After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed. We
 keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviours that occurred before the consumer chain stopped.
 
