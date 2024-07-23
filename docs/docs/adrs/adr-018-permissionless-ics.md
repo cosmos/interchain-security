@@ -167,7 +167,7 @@ This response of this message contains a single `string`, that is the `consumerI
 a consumer chain in its waiting phase. With the returned `consumerId`, validators can already opt in on the consumer
 chain to show their potential interest on the chain. Additionally, a front-end ICS launchpad can also present
 this chain. Additionally, this allows consumer chains to show that they are interested in joining ICS even though,
-they might not yet know the specific ICS parameters (see `MsgInitiateConsumerChain`) they would like to use. 
+they might not yet know the specific ICS parameters they would like to use (see `MsgInitiateConsumerChain`). 
 
 This message contains the `owner_address` that corresponds to the address that would be able to initiate or later update this consumer chain.
 We store the owner address of each Opt In consumer chain by creating an association between `consumerId`s and `owner_address`es.
