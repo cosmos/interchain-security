@@ -717,7 +717,12 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 }
 
 // TestAllocateTokens is a happy-path test of the consumer rewards pool allocation
-// to opted-in validators and the community pool
+// to opted-in validators and the community pool.
+// @Long Description@
+// The test sets up a provider chain and multiple consumer chains, and initializes the channels between them.
+// It funds the consumer rewards pools on the provider chain and allocates rewards to the consumer chains.
+// Then, it begins a new block to cause rewards to be distributed to the validators and the community pool,
+// and checks that the rewards are allocated as expected.
 func (s *CCVTestSuite) TestAllocateTokens() {
 	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupAllCCVChannels()
