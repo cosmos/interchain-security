@@ -34,25 +34,26 @@ and `MsgConsumerRemoval`) and we can only add, modify, or remove Opt In chains w
 Note however that a Top N chain can transform to an Opt In Chain through a `MsgConsumerModification` that sets `top_N == 0` but not vice versa.
 In what follows, what we describe applies mostly for transaction-based (i.e., Opt In) consumer chains, unless stated otherwise.
 
-A consumer chain can reside in four phases: i) waiting, ii) _prelaunched_, iii) _launched_, and iv) _stopped_ phase as seen
+A consumer chain can reside in four phases: i) _registered_, ii) _initialized_, iii) _launched_, and iv) _stopped_ phase as seen
 in the diagram below:
 ![Phases of a consumer chain](./adr18_phases_of_a_consumer_chain.png)
 
 
-When a Top N chain is first proposed through a `MsgConsumerAddition` proposal or an Opt In chain is registered (more on this later) using the `MsgRegisterConsumerChain` transaction,
-the consumer chain resides in the _waiting_ phase. A consumer chain in the waiting phase might not launch (i.e., the `MsgConsumerAddition` proposal does not pass or the registered Opt In chain is not set to launch) and hence is "waiting."
-At this phase, as well as in the prelaunched and launched phases, validators can choose to opt in on the consumer chain.
-If the `MsgConsumerAddition` of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgInitializeConsumerChain` transaction, then the chain moves to the _prelaunched_ phase.
-In the prelaunched phase, an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc. by issuing anew `MsgInitiateConsumerChain`.
+**Registered phase.** When a Top N chain is first proposed through a `MsgConsumerAddition` proposal or an Opt In chain is registered (more on this later) using the `MsgRegisterConsumerChain` transaction,
+the consumer chain resides in the _registered_ phase. A consumer chain in the registered phase might not launch (i.e., the `MsgConsumerAddition` proposal does not pass or the registered Opt In chain is not set to launch).
+At this phase, as well as in the initialized and launched phases, validators can choose to opt in on the consumer chain.
+
+**Initialized phase.** If the `MsgConsumerAddition` of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgInitializeConsumerChain` transaction, then the chain moves to the _initialized_ phase.
+In the initialized phase, an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc. by issuing anew `MsgInitializeConsumerChain`.
 This is not the case for Top N chains, where a `MsgConsumerModification` can only be issued after a consumer
 chain [has started](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/legacy_proposal.go#L89).
 
-When the [`spawnTime`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/provider.proto#L57)
+**Launched phase.** When the [`spawnTime`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/provider.proto#L57)
 passes and [at least one validator has opted in](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/proposal.go#L430)
 the chain can launch and moves to the _launched_ phase. While in launched phase, a Top N consumer chain can choose to modify
 its parameters through a `MsgConsumerModification` and an Opt In chain can change its parameters by issuing the `MsgUpdateConsumerChain` transaction.
 
-Lastly, a Top N chain can choose to exit ICS by issuing a `MsgConsumerRemoval` and an Opt In chain can issue a transaction to stop the chain.
+**Stopped phase.** Lastly, a Top N chain can choose to exit ICS by issuing a `MsgConsumerRemoval` and an Opt In chain can issue a transaction to stop the chain.
 After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed. We
 keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviours that occurred before the consumer chain stopped.
 
@@ -71,18 +72,10 @@ appropriate client (i.e., `clientID`) based on the actual chain they want to com
 consumer chains with the exact same `chainId`, and it is the responsibility of the validators to choose the one they wish
 to interact with by providing the right `consumerId`.
 
-Although a `counter`, we store it as a `string` and not as an integer (e.g., `uint64`) for three reasons:
-i) avoid extensive refactorings when moving from `chainId` that is of type `string` to `consumerId`,
-ii) simplify migrations because we do not need to keep different methods at the same time (e.g., `ChainToClientKey(string)`
-and `ChainToClientKeyV2(uint64)` to do something like `client := Get(ChainToClientKey("currentConsumerChain))` and
-`Set(ChainToClientKeyV2(1234), client)`, and iii) allow for easy ways to incorporate more data to a `consumerId` if needed in the future.
-
-
 Note that with Permissionless ICS, all interactions on a consumer chain have to use the `consumerId` instead of the `chainId`.
 For example, if a validator opts in on a chain using `MsgOptIn`, the validator has to provide the `consumerId`. To also
 provide the `consumerId` for Top N consumers chains, we store a mapping between `proposalID` to `consumerId`. This storing
 takes place in the [`AfterProposalSubmission`](https://github.com/cosmos/cosmos-sdk/blob/v0.50.8/x/gov/types/hooks.go#L19) hook.
-Note that in some cases, we still have to use the actual `chainId`, when, for example, we [verify equivocation evidence](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/consumer_equivocation.go#L143).
 Specifically, for the equivocation evidence, we update the `MsgSubmitConsumerMisbehaviour` and `MsgSubmitConsumerDoubleVoting` messages to include the `consumerId`,
 and change [Hermes](https://github.com/informalsystems/hermes) to include `consumerId` in those constructed messages as well.
 Hermes can find out the `consumerId` by querying the provider's `clientId` for some consumer chain (i.e., `query ccvconsumer provider-info`)
@@ -92,59 +85,39 @@ given the `consumerId`.
 
 #### State
 As a result of using `consumerId`, we have to migrate a substantial chunk of state to re-index it using `consumerId` as the key.
-To move from using the `chainId` to the new `consumerId`, we need to revamp the consumer chains' stored state in ICS. Currently, in
-ICS we have state that is indexed by a multitude of [keys](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/types/keys.go#L40).
-In the table below, we see which ones are associated with a `chainId` and how often state under those keys gets updated.
+Currently, in ICS we have state that is indexed by a multitude of [keys](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/types/keys.go#L40).
+In the table below, we see the ones that are associated with a `chainId` and how often state under those keys gets updated.
 
-| Key                                     | Description                                                                                                                                                                   |Associated with `chainId`?| How often are `chainId`-associated keys updated?                                                         |
-|-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------|----------------------------------------------------------------------------------------------------------|
-| `PortByteKey`                           | Global `portID`                                                                                                                                                               |NO                        |                                                                                                          |
-| `MaturedUnbondingOpsByteKey`            | Deprecated together with `VSCMaturedPacket`s                                                                                                                                  |-                         |                                                                                                          |
-| `ValidatorSetUpdateIdByteKey`           | Global for all consumer chains                                                                                                                                                |NO                        |                                                                                                          |
-| `SlashMeterByteKey`                     | Global for the provider                                                                                                                                                       |NO                        |                                                                                                          |
-| `SlashMeterReplenishTimeCandidateByteKey`| Global for the provider                                                                                                                                                       |NO                        |                                                                                                          |
-| `ChainToChannelBytePrefix`              | Stores the CCV `channelID` for a specific chain                                                                                                                               |**YES**                   | Only once (during set up)                                                                                |
-| `ChannelToChainBytePrefix`              | Stores `chainId` for a specific channel                                                                                                                                       |**YES**                   | Only once (during set up)                                                                                |
-| `ChainToClientBytePrefix`                | Stores the `clientID` for a specific chain                                                                                                                                    |**YES**                   | Only once (during set up)                                                                                |
-| `InitTimeoutTimestampBytePrefix`         | Deprecated together with `VSCMaturedPacket`s                                                                                                                                  |-                         |                                                                                                          |
-| `PendingCAPBytePrefix`                   | Stores pending consumer addition proposals                                                                                                                                    |**YES**                   | Only once (for successful proposal)                                                                      |
-| `PendingCRPBytePrefix`                   | Stores pending consumer removal proposals                                                                                                                                     |**YES**                   | Only once (for successful proposal)                                                                      |
-| `UnbondingOpBytePrefix`                  | Deprecated together with `VSCMaturedPacket`s                                                                                                                                  |-                         |                                                                                                          |
-| `UnbondingOpIndexBytePrefix`             | Deprecated together with `VSCMaturedPacket`s                                                                                                                                  |-                         |                                                                                                          |
-| `ValsetUpdateBlockHeightBytePrefix`      | Not needed anymore. Used to keep track of the infraction height.                                                                                                              |NO                        |                                                                                                          |
-| `ConsumerGenesisBytePrefix`              | Stores the consumer genesis for a specific chain                                                                                                                              |**YES**                   | Only once (during set up)                                                                                |
-| `SlashAcksBytePrefix`                    | Stores slash acks for a specific consumer chain                                                                                                                               |**YES**                   | Every time we receive a Slash packet                                                                     |
-| `InitChainHeightBytePrefix`              | Not needed anymore. Used to keep track of the infraction height.                                                                                                              |-                         |                                                                                                          |
-| `PendingVSCsBytePrefix`                  | Stores `VSCPacket`s for a specific consumer chian                                                                                                                             |**YES**                   | Every [epoch](https://github.com/cosmos/interchain-security/blob/v5.1.0/docs/docs/adrs/adr-014-epochs.md)  |
-| `VscSendTimestampBytePrefix`             | Deprecated together with `VSCMaturedPacket`s                                                                                                                                  |-                         |                                                                                                          |
-| `ThrottledPacketDataSizeBytePrefix`      | Deprecated                                                                                                                                                                    |-                         |                                                                                                          |
-| `ThrottledPacketDataBytePrefix`          | Deprecated                                                                                                                                                                    |-                         |                                                                                                          |
-| `GlobalSlashEntryBytePrefix`             | Deprecated                                                                                                                                                                    |-                         |                                                                                                          |
-| `ConsumerValidatorsBytePrefix`           | Stores consumer key per validator per consumer chain                                                                                                                          |**YES**                   | Every `MsgAssignConsumerKey` or `MsgOptIn`                                                               |
-| `ValidatorsByConsumerAddrBytePrefix`     | Stores consumer to provider validator address                                                                                                                                 |**YES**                   | Every `MsgAssignConsumerKey` or `MsgOptIn`                                                               |
-| `KeyAssignmentReplacementsBytePrefix`    | Deprecated                                                                                                                                                                    |-                         |                                                                                                          |
-| `ConsumerAddrsToPruneBytePrefix`         | Deprecated together with `VSCMaturedPacket`s                                                                                                                                  |-                         |                                                                                                          |
-| `SlashLogBytePrefix`                     | Not used (its [getter](https://github.com/cosmos/interchain-security/blob/v5.1.0/tests/integration/throttle.go#L454) is only used in an integration test). Can be deprecated. |-                         |                                                                                                          |
-| `ConsumerRewardDenomsBytePrefix`         | Global for all consumer chains                                                                                                                                                |NO                        |                                                                                                          |
-| `VSCMaturedHandledThisBlockBytePrefix`   | Deprecated together with `VSCMaturedPacket`s                                                                                                                                  |-                         |                                                                                                          |
-| `EquivocationEvidenceMinHeightBytePrefix` | Stores min height for a consumer chain                                                                                                                                        |**YES**                   | Only once (during set up)                                                                                |
-| `ProposedConsumerChainByteKey`           | Stores `proposalID`s for consumer chains with proposals in the voting period                                                                                                  |**YES**                   | Created when the proposal is submitted and deleted when the proposal's voting period ends                                                                                                           |
-| `ConsumerValidatorBytePrefix`            | Stores consumer validators for a specific chain                                                                                                                               |**YES**                   | Potentially at every epoch                                                                               |
-| `OptedInBytePrefix`                      | Stores opted-in validators for a specific chain                                                                                                                               |**YES**                   | Potentially at every block                                                                               |
-| `TopNBytePrefix`                         | Stores whether a consumer chain is Top N or not                                                                                                                               |**YES**                   | Every parameter update                                                                                   |
-| `ValidatorsPowerCapPrefix`               | Stores ther power cap of a chain                                                                                                                                              |**YES**                   | Every parameter update                                                                                   |
-| `ValidatorSetCapPrefix`                  | Stores the set cap of a chain                                                                                                                                                 |**YES**                   | Every parameter update                                                                                   |
-| `AllowlistPrefix`                        | Stores the allowlist of a chain                                                                                                                                               |**YES**                   | Every parameter update                                                                                   |
-| `DenylistPrefix`                         | Stores the denylist of a chain                                                                                                                                                |**YES**                   | Every parameter update                                                                                   |
-| `ConsumerRewardsAllocationBytePrefix`    | Stores the ICS rewards per chain                                                                                                                                              |**YES**                   | Every IBC transfer packet that sends rewards to the provider                                             |
-| `ConsumerCommissionRatePrefix`           | Comission rate per chain per validator                                                                                                                                        |**YES**                   | Every `MsgSetConsumerCommissionRate` message                                                             |
-| `MinimumPowerInTopNBytePrefix`           | Stores the minimum power needed to opt in for a chain                                                                                                                         |**YES**                   | Every epoch                                                                                              |
-| `ConsumerAddrsToPruneV2BytePrefix`       | Stores consumer addresses to be pruned (as part of `VSCMaturedPacket`s deprecation)                                                                                           |**YES**                   | Every `MsgAssignConsumerKey` or `MsgOptIn` and later during actual pruning                               |
+| Key                                     | Description                                                                                                                  | How often are `chainId`-associated keys updated?                                                         |
+|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `ChainToChannelBytePrefix`              | Stores the CCV `channelID` for a specific chain                                                                              | Only once (during set up)                                                                                |
+| `ChannelToChainBytePrefix`              | Stores `chainId` for a specific channel                                                                                      | Only once (during set up)                                                                                |
+| `ChainToClientBytePrefix`               | Stores the `clientID` for a specific chain                                                                                   | Only once (during set up)                                                                                |
+| `PendingCAPBytePrefix`                  | Stores pending consumer addition proposals                                                                                   | Only once (for successful proposal)                                                                      |
+| `PendingCRPBytePrefix`                  | Stores pending consumer removal proposals                                                                                    | Only once (for successful proposal)                                                                      |
+| `ConsumerGenesisBytePrefix`             | Stores the consumer genesis for a specific chain                                                                             | Only once (during set up)                                                                                |
+| `SlashAcksBytePrefix`                   | Stores slash acks for a specific consumer chain                                                                              | Every time we receive a Slash packet                                                                     |
+| `PendingVSCsBytePrefix`                 | Stores `VSCPacket`s for a specific consumer chain                                                                            | Every [epoch](https://github.com/cosmos/interchain-security/blob/v5.1.0/docs/docs/adrs/adr-014-epochs.md) |
+| `ConsumerValidatorsBytePrefix`          | Stores consumer key per validator per consumer chain                                                                         | Every `MsgAssignConsumerKey` or `MsgOptIn`                                                               |
+| `ValidatorsByConsumerAddrBytePrefix`    | Stores consumer to provider validator address                                                                                | Every `MsgAssignConsumerKey` or `MsgOptIn`                                                               |
+| `EquivocationEvidenceMinHeightBytePrefix`| Stores min height for a consumer chain                                                                                       | Only once (during set up)                                                                                |
+| `ProposedConsumerChainByteKey`          | Stores `proposalID`s for consumer chains with proposals in the voting period                                                 | Created when the proposal is submitted and deleted when the proposal's voting period ends                |
+| `ConsumerValidatorBytePrefix`           | Stores consumer validators for a specific chain                                                                              | Potentially at every epoch                                                                               |
+| `OptedInBytePrefix`                     | Stores opted-in validators for a specific chain                                                                              | Potentially at every block                                                                               |
+| `TopNBytePrefix`                        | Stores whether a consumer chain is Top N or not                                                                              | Every parameter update                                                                                   |
+| `ValidatorsPowerCapPrefix`              | Stores the power cap of a chain                                                                                              | Every parameter update                                                                                   |
+| `ValidatorSetCapPrefix`                 | Stores the set cap of a chain                                                                                                | Every parameter update                                                                                   |
+| `AllowlistPrefix`                       | Stores the allowlist of a chain                                                                                              | Every parameter update                                                                                   |
+| `DenylistPrefix`                        | Stores the denylist of a chain                                                                                               | Every parameter update                                                                                   |
+| `ConsumerRewardsAllocationBytePrefix`   | Stores the ICS rewards per chain                                                                                             | Every IBC transfer packet that sends rewards to the provider                                             |
+| `ConsumerCommissionRatePrefix`          | Commission rate per chain per validator                                                                                      | Every `MsgSetConsumerCommissionRate` message                                                             |
+| `MinimumPowerInTopNBytePrefix`          | Stores the minimum power needed to opt in for a chain                                                                        | Every epoch                                                                                              |
+| `ConsumerAddrsToPruneV2BytePrefix`      | Stores consumer addresses to be pruned (as part of `VSCMaturedPacket`s deprecation)                                          | Every `MsgAssignConsumerKey` or `MsgOptIn` and later during actual pruning                               |
 
 Everything stored under a key associated with a `chainId` needs to be migrated to new state under `consumerId`.
 
 ### New Messages
-In what follows, we describe the new messages (i.e., `MsgRegisterConsumerChain`, `MsgInitiateConsumerChain`, and `MsgUpdateConsumerChain`)
+In what follows, we describe the new messages (i.e., `MsgRegisterConsumerChain`, `MsgInitializeConsumerChain`, and `MsgUpdateConsumerChain`)
 that Permissionless ICS introduces, and on how those can be used.
 Then, we describe how to utilize these messages with our existing codebase.
 
@@ -163,23 +136,23 @@ message MsgRegisterConsumerChain {
 }
 ```
 
-This response of this message contains a single `string`, that is the `consumerId` for this registered consumer chain and initiates
-a consumer chain in its waiting phase. With the returned `consumerId`, validators can already opt in on the consumer
+This response of this message contains a single `string`, that is the `consumerId` for this registered consumer chain and initializes
+a consumer chain in its registered phase. With the returned `consumerId`, validators can already opt in on the consumer
 chain to show their potential interest on the chain. Additionally, a front-end ICS launchpad can also present
 this chain. Additionally, this allows consumer chains to show that they are interested in joining ICS even though,
-they might not yet know the specific ICS parameters they would like to use (see `MsgInitiateConsumerChain`). 
+they might not yet know the specific ICS parameters they would like to use (see `MsgInitializeConsumerChain`). 
 
-This message contains the `owner_address` that corresponds to the address that would be able to initiate or later update this consumer chain.
+This message contains the `owner_address` that corresponds to the address that would be able to initialize or later update this consumer chain.
 We store the owner address of each Opt In consumer chain by creating an association between `consumerId`s and `owner_address`es.
 Top N chains do not have an `onwer_address` because they can only be modified through governance proposals. 
 
 To prevent an attacker spamming the system by creating bogus consumer chains, we set a fixed cost for sending a `MsgRegisterConsumerChain` (configurable via a parameter).
 
 #### Launch a Consumer Chain
-To move a consumer chain to its prelaunched phase, we issue a `MsgInitiateConsumerChain` message that is as follows:
+To move a consumer chain to its initialized phase, we issue a `MsgInitializeConsumerChain` message that is as follows:
 
 ```protobuf
-message MsgInitiateConsumerChain {
+message MsgInitializeConsumerChain {
   // tx signer address
   string signer;
   // consumer id of the to-be-updated consumer chain
@@ -274,16 +247,16 @@ well as in Opt In chains. As a result, we deprecate `ConsumerAdditionProposal`.
 For each `consumerId`, we store its corresponding `PrelaunchConsumerChainRecord`. For Top N chains, we can perform this
 store by using the [`AfterProposalVotingPeriodEnded`](https://github.com/cosmos/cosmos-sdk/blob/v0.50.8/x/gov/types/hooks.go#L52).
 
-To execute a `MsgInitiateConsumerChain`, we use the `PrelaunchConsumerChainRecord` under the hoods, with the `top_N` set to 0.
+To execute a `MsgInitializeConsumerChain`, we use the `PrelaunchConsumerChainRecord` under the hoods, with the `top_N` set to 0.
 We need to extensively check the fields of the provided `PrelaunchConsumerChainRecord` to guarantee that no consumer
 chain launches with problematic parameters (e.g., we need to have maximum length for the `chainId`, etc.).
 As a starter we look into the [usual validity conditions](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/types/msg.go#L244).
 
-For all chains in the prelaunch phase, we keep a mapping between `consumerId` and the underlying `PrelaunchConsumerChainRecord`.
+For all chains in the initialized phase, we keep a mapping between `consumerId` and the underlying `PrelaunchConsumerChainRecord`.
 This way, we can respond to queries that ask for all the consumer chain's parameters. For example, retrieving the
 `spawn_time` of consumer chain with a given `consumerId`.
 
-`MsgInitiateConsumerChain` can be executed multiple times for the same consumer chain during its prelaunch phase
+`MsgInitializeConsumerChain` can be executed multiple times for the same consumer chain during its initialized phase
 to potentially change its to-be-launched parameters (e.g., `spawnTime`).
 
 #### Update a Consumer Chain
