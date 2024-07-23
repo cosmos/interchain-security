@@ -11,7 +11,8 @@ on:
         - feat/*
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write      # 'write' access to pull requests
 
 jobs:
     testing-docs:
