@@ -42,7 +42,7 @@ in the diagram below:
 When a Top N chain is first proposed through a `MsgConsumerAddition` proposal or an Opt In chain is registered (more on this later) using the `MsgRegisterConsumerChain` transaction,
 the consumer chain resides in the _waiting_ phase. A consumer chain in the waiting phase might not launch (i.e., the `MsgConsumerAddition` proposal does not pass or the registered Opt In chain is not set to launch) and hence is "waiting."
 At this phase, as well as in the prelaunched and launched phases, validators can choose to opt in on the consumer chain.
-If the `MsgConsumerAddition` of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgInitiateConsumerChain` transaction, then the chain moves to the _prelaunched_ phase.
+If the `MsgConsumerAddition` of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgInitializeConsumerChain` transaction, then the chain moves to the _prelaunched_ phase.
 In the prelaunched phase, an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc. by issuing anew `MsgInitiateConsumerChain`.
 This is not the case for Top N chains, where a `MsgConsumerModification` can only be issued after a consumer
 chain [has started](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/legacy_proposal.go#L89).
