@@ -45,27 +45,8 @@ jobs:
             git show HEAD:scripts/test_doc/test_documentation.md > committed_file.md
             cp scripts/test_doc/test_documentation.md generated_file.md
             if ! diff -q generated_file.md committed_file.md; then
-              echo "Documentation is out of date!"
-              echo "::set-output name=needs_commit::true"
+              echo "Documentation for integration tests is out of date. Please run `make testing-docs`!"
+              exit 1
             else
-              echo "::set-output name=needs_commit::false"
+              echo "Documentation is up to date."
             fi
-    
-        - name: Configure Git
-          if: steps.check_changes.outputs.needs_commit == 'true'
-          run: |
-            git config --global user.name 'github-actions[bot]'
-            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-    
-        - name: Commit changes
-          if: steps.check_changes.outputs.needs_commit == 'true'
-          run: |
-            git add scripts/test_doc/test_documentation.md
-            git commit -m "Update documentation"
-    
-        - name: Push changes
-          if: steps.check_changes.outputs.needs_commit == 'true'
-          uses: ad-m/github-push-action@v0.6.0
-          with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            branch: ${{ github.ref }}
