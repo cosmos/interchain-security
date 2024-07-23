@@ -390,7 +390,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 // * passing a misbehaviour older than the min equivocation evidence height (returns an error)
 // * one header of the misbehaviour has insufficient voting power (returns an error)
 // * passing a valid misbehaviour (no error)
-// It does not test actually submitting the misbehaviour to the chain or or freezing the client.
+// It does not test actually submitting the misbehaviour to the chain or freezing the client.
 func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
