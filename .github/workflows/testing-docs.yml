@@ -1,4 +1,4 @@
-name: Generate testing docs
+name: Check up-to-date testing docs
 
 on:
     workflow_call:
