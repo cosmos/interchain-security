@@ -2,6 +2,7 @@
 
 | File | Function | Short Description |
 |------|----------|-------------------|
+| [changeover.go](../../tests/integration/changeover.go#L17) | TestRecycleTransferChannel | TestRecycleTransferChannel tests that an existing transfer channel can be reused when transitioning from a standalone to a consumer chain.<details><summary>Details</summary>The test case: * sets up a provider chain and a standalone chain * creates a connection between the two chains * creates a transfer channel between the two chains * transitions the standalone chain to a consumer chain * confirms that no extra transfer channel is created, and instead the existing channel is reused</details> |
 | [channel_init.go](../../tests/integration/channel_init.go#L4) | TestInitTimeout | TestInitTimeout tests the init timeout |
 | [distribution.go](../../tests/integration/distribution.go#L24) | TestRewardsDistribution | This test is valid for minimal viable consumer chain |
 | [distribution.go](../../tests/integration/distribution.go#L187) | TestSendRewardsRetries | TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks |

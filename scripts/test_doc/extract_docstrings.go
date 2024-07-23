@@ -90,7 +90,7 @@ func extractDocstrings(filePath string, out *os.File) []string {
 				link := fmt.Sprintf("[%s](%s#L%d)", relativePath, filePath, fset.Position(fn.Pos()).Line)
 
 				// Split the docstring based on the separator "========"
-				parts := strings.Split(doc, "\n@Long description@\n")
+				parts := strings.Split(doc, "\n@Long Description@\n")
 				var shortDescription, longDescription string
 				if len(parts) > 1 {
 					shortDescription = strings.TrimSpace(parts[0])

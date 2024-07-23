@@ -5,6 +5,15 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 )
 
+// TestRecycleTransferChannel tests that an existing transfer channel can be reused when transitioning from
+// a standalone to a consumer chain.
+// @Long Description@
+// The test case:
+// * sets up a provider chain and a standalone chain
+// * creates a connection between the two chains
+// * creates a transfer channel between the two chains
+// * transitions the standalone chain to a consumer chain
+// * confirms that no extra transfer channel is created, and instead the existing channel is reused
 func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 
