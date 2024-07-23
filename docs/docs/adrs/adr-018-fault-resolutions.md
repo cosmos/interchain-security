@@ -1,8 +1,8 @@
 ---
 sidebar_position: 19
-title: Incorrect Executions
+title: Fault Resolutions
 ---
-# ADR 018: Incorrect Executions
+# ADR 018: Fault Resolutions
 
 ## Changelog
 * 17th July 2024: Initial draft
