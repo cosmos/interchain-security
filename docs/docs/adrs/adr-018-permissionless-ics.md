@@ -68,7 +68,7 @@ an increasing counter (i.e., `counter`), thus we can support multiple consumer c
 Another way to understand this is with an analogy between consumer chains and IBC clients: Imagine having multiple IBC clients
 that each point to different consumer chains, but all share the exact same `chainId`. It is then up to the user to select the
 appropriate client (i.e., `clientID`) based on the actual chain they want to communicate with. Similarly, there can be multiple
-consumer chains with the exact same `chainId`, and it is the responsibility of the validator to choose the one they wish
+consumer chains with the exact same `chainId`, and it is the responsibility of the validators to choose the one they wish
 to interact with by providing the right `consumerId`.
 
 Although a `counter`, we store it as a `string` and not as an integer (e.g., `uint64`) for three reasons:
