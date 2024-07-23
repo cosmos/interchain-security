@@ -47,6 +47,4 @@ jobs:
             if ! diff -q generated_file.md committed_file.md; then
               echo "Documentation for integration tests is out of date. Please run `make testing-docs`!"
               exit 1
-            else
-              echo "Documentation is up to date."
             fi
