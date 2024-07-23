@@ -1,8 +1,8 @@
 ---
 sidebar_position: 19
-title: Fault Resolutions
+title: Incorrect Executions
 ---
-# ADR 018: Fault Resolutions
+# ADR 018: Incorrect Executions
 
 ## Changelog
 * 17th July 2024: Initial draft
@@ -35,7 +35,7 @@ A potential solution for the handling of incorrect executions is to use fraud pr
 To address this risk in PSS, a governance-gated slashing solution can be used to handle all types of misbehavior resulting from validator collusion. As fraud proof technology matures, part of the solution could potentially be automated.
 
 
-This ADR proposes a fault resolution mechanism, which is a type of governance proposal that can be used to vote on the slashing of validators that misbehave on Opt-in consumer chains.
+This ADR proposes a *fault resolution* mechanism, which is a type of governance proposal that can be used to vote on the slashing of validators that misbehave on Opt-in consumer chains (see [fault resolutions](https://forum.cosmos.network/t/preventing-intersubjective-faults-in-ics/14103#fault-resolutions-3) in "Preventing Intersubjective faults in ICS").
 
 In what follows, we describe the implementation of a fault resolution mechanism that handles incorrect executions on consumer chains,
  as a first iteration.
@@ -70,8 +70,8 @@ The submission of a fault resolution succeeds only if all of the following condi
 
 ### Additional considerations
 
-Fault resolution proposals should be `expedited`  to minimize the time given to the listed validators to
-to unbond to avoid punishment (see [Expedited Proposals](https://docs.cosmos.network/v0.50/build/modules/gov#expedited-proposals)) .
+Fault resolution proposals should be `expedited` to minimize the time given to the listed validators
+ to unbond to avoid punishment (see [Expedited Proposals](https://docs.cosmos.network/v0.50/build/modules/gov#expedited-proposals)) .
 
 
 ## Consequences
