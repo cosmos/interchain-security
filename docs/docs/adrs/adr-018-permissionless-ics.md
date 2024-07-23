@@ -29,9 +29,9 @@ Nevertheless, ICS does not eliminate the `MsgConsumerAddition` governance propos
 for Top N chains. Because of this, this ADR outlines a solution that attempts to preserve as much of the governance proposal code
 as possible.
 Additionally, to make the distinction between governance-proposed versus transaction-launched chains clearer, in Permissionless ICS,
-we can only add, modify, or remove Top N chains with governance proposals (i.e., `ConsumerAdditionProposal`, `ConsumerModificationProposal`,
-and `ConsumerRemovalProposal`) and we can only add, modify, or remove Opt In chains with transactions.
-Note however that a Top N chain can transform to an Opt In Chain through a `ConsumerModificationProposal` that sets `top_N == 0` but not vice versa.
+we can only add, modify, or remove Top N chains with governance proposals (i.e., `MsgConsumerAddition`, `MsgConsumerModification`,
+and `MsgConsumerRemoval`) and we can only add, modify, or remove Opt In chains with transactions.
+Note however that a Top N chain can transform to an Opt In Chain through a `MsgConsumerModification` that sets `top_N == 0` but not vice versa.
 In what follows, what we describe applies mostly for transaction-based (i.e., Opt In) consumer chains, unless stated otherwise.
 
 A consumer chain can reside in four phases: i) waiting, ii) _prelaunched_, iii) _launched_, and iv) _stopped_ phase as seen
@@ -39,20 +39,20 @@ in the diagram below:
 ![Phases of a consumer chain](./adr18_phases_of_a_consumer_chain.png)
 
 
-When a Top N chain is first proposed through a `ConsumerAdditionProposal` or an Opt In chain is registered (more on this later) using the `MsgRegisterConsumerChain` transaction,
-the consumer chain resides in the _waiting_ phase. A consumer chain in the waiting phase might not launch (i.e., the `ConsumerAdditionProposal` does not pass or the registered Opt In chain is not set to launch) and hence is "waiting."
+When a Top N chain is first proposed through a `MsgConsumerAddition` proposal or an Opt In chain is registered (more on this later) using the `MsgRegisterConsumerChain` transaction,
+the consumer chain resides in the _waiting_ phase. A consumer chain in the waiting phase might not launch (i.e., the `MsgConsumerAddition` proposal does not pass or the registered Opt In chain is not set to launch) and hence is "waiting."
 At this phase, as well as in the prelaunched and launched phases, validators can choose to opt in on the consumer chain.
-If the `ConsumerAdditionProposal` of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgInitiateConsumerChain` transaction, then the chain moves to the _prelaunched_ phase.
+If the `MsgConsumerAddition` of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgInitiateConsumerChain` transaction, then the chain moves to the _prelaunched_ phase.
 In the prelaunched phase, an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc. by issuing anew `MsgInitiateConsumerChain`.
-This is not the case for Top N chains, where a `ConsumerModificationProposal` can only be issued after a consumer
+This is not the case for Top N chains, where a `MsgConsumerModification` can only be issued after a consumer
 chain [has started](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/legacy_proposal.go#L89).
 
 When the [`spawnTime`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/provider.proto#L57)
 passes and [at least one validator has opted in](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/proposal.go#L430)
 the chain can launch and moves to the _launched_ phase. While in launched phase, a Top N consumer chain can choose to modify
-its parameters through a `ConsumerModificationProposal` and an Opt In chain can change its parameters by issuing the `MsgUpdateConsumerChain` transaction.
+its parameters through a `MsgConsumerModification` and an Opt In chain can change its parameters by issuing the `MsgUpdateConsumerChain` transaction.
 
-Lastly, a Top N chain can choose to  ICS by issuing a `ConsumerRemovalProposal` and an Opt In chain can issue a transaction to stop the chain.
+Lastly, a Top N chain can choose to  ICS by issuing a `MsgConsumerRemoval` and an Opt In chain can issue a transaction to stop the chain.
 After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed. We
 keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviours that occurred before the consumer chain stopped.
 
@@ -326,7 +326,7 @@ Because we only have two consumer chains at the moment, this is not going to be 
 consumer chains that are being voted upon. Similarly, all the messages, queries, etc. would need to be changed to operate on a `consumerId`
 instead of a `chainId`.
 
-Note that we also need to modify `ConsumerModificationProposal` to contain `owner_address` if and only if `top_N` is set to 0.
+Note that we also need to modify `MsgConsumerModification` to contain `owner_address` if and only if `top_N` is set to 0.
 
 ## Consequences
 
