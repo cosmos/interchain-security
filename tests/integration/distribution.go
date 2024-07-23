@@ -191,6 +191,13 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 }
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
+// @Long Description@
+// The test sets up a provider and consumer chain and completes the channel initialization.
+// It fills the fee pool on the consumer chain,
+// then corrupts the transmission channel and tries to send rewards to the provider chain,
+// which should fail.
+// The test then advances the block height to trigger a retry of the reward transmission,
+// and confirms that this time, the transmission is successful.
 func (s *CCVTestSuite) TestSendRewardsRetries() {
 	// TODO: this setup can be consolidated with other tests in the file
 
