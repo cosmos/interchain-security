@@ -44,6 +44,8 @@ jobs:
             if ! diff -q scripts/test_doc/test_documentation.md <(git show HEAD:scripts/test_doc/test_documentation.md); then
               echo "Documentation is out of date!"
               echo "::set-output name=needs_commit::true"
+            else
+              echo "::set-output name=needs_commit::false"
     
         - name: Configure Git
           if: steps.check_changes.outputs.needs_commit == 'true'
