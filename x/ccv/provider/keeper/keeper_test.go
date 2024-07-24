@@ -880,7 +880,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 				if allows {
 					return 1, true
 				}
-				return 0, false
+				return 0, true
 			},
 			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteAllowInactiveValidators(ctx, id) },
 			initialValue: 1,
