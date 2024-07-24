@@ -128,15 +128,24 @@ func (tr *TestConfig) Initialize() {
 // Note: if no matching version is found an empty string is returned
 func getIcsVersion(reference string) string {
 	icsVersion := ""
-	if reference == "" {
+
+	if reference == "" || reference == VLatest {
 		return icsVersion
 	}
+
 	if semver.IsValid(reference) {
 		// remove build suffix
 		return semver.Canonical(reference)
 	}
 
-	for _, tag := range []string{"v2.0.0", "v2.4.0", "v2.4.0-lsm", "v3.1.0", "v3.2.0", "v3.3.0", "v4.0.0", "v4.1.1", "v4.1.1-lsm"} {
+	// List of all tags matching vX.Y.Z or vX.Y.Z-lsm in ascending order
+	cmd := exec.Command("git", "tag", "-l", "--sort", "v:refname", "v*.?", "v*.?-lsm", "v*.??", "v*.??-lsm")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		panic(fmt.Sprintf("Error getting sorted tag list from git: %s", err.Error()))
+	}
+	icsVersions := strings.Split(string(out), "\n")
+	for _, tag := range icsVersions {
 		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
 		cmd := exec.Command("git", "merge-base", "--is-ancestor", reference, tag)
 		out, err := cmd.CombinedOutput()

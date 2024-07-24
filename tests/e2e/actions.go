@@ -1000,10 +1000,10 @@ func (tr Chain) addChainToGorelayer(
 	}
 
 	addChainCommand := tr.target.ExecCommand("rly", "chains", "add", "--file", chainConfigFileName, string(ChainId))
-	e2e.ExecuteCommand(addChainCommand, "add chain")
+	e2e.ExecuteCommand(addChainCommand, "add chain", verbose)
 
 	keyRestoreCommand := tr.target.ExecCommand("rly", "keys", "restore", string(ChainId), "default", tr.testConfig.validatorConfigs[action.Validator].Mnemonic)
-	e2e.ExecuteCommand(keyRestoreCommand, "restore keys")
+	e2e.ExecuteCommand(keyRestoreCommand, "restore keys", verbose)
 }
 
 func (tr Chain) addChainToHermes(
@@ -1109,7 +1109,7 @@ func (tr Chain) addIbcConnectionGorelayer(
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	pathConfigCommand := tr.target.ExecCommand("bash", "-c", bashCommand)
-	e2e.ExecuteCommand(pathConfigCommand, "add path config")
+	e2e.ExecuteCommand(pathConfigCommand, "add path config", verbose)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newPathCommand := tr.target.ExecCommand("rly",
@@ -1120,12 +1120,12 @@ func (tr Chain) addIbcConnectionGorelayer(
 		"--file", pathConfigFileName,
 	)
 
-	e2e.ExecuteCommand(newPathCommand, "new path")
+	e2e.ExecuteCommand(newPathCommand, "new path", verbose)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newClientsCommand := tr.target.ExecCommand("rly", "transact", "clients", pathName)
 
-	e2e.ExecuteCommand(newClientsCommand, "new clients")
+	e2e.ExecuteCommand(newClientsCommand, "new clients", verbose)
 
 	tr.waitBlocks(action.ChainA, 1, 10*time.Second)
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
@@ -1133,7 +1133,7 @@ func (tr Chain) addIbcConnectionGorelayer(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newConnectionCommand := tr.target.ExecCommand("rly", "transact", "connection", pathName)
 
-	e2e.ExecuteCommand(newConnectionCommand, "new connection")
+	e2e.ExecuteCommand(newConnectionCommand, "new connection", verbose)
 
 	tr.waitBlocks(action.ChainA, 1, 10*time.Second)
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
@@ -1300,7 +1300,7 @@ func (tr Chain) addIbcChannelGorelayer(
 		"--order", action.Order,
 		"--debug",
 	)
-	e2e.ExecuteCommand(cmd, "addChannel")
+	e2e.ExecuteCommand(cmd, "addChannel", verbose)
 }
 
 func (tr Chain) addIbcChannelHermes(
@@ -1373,8 +1373,7 @@ func (tr Chain) transferChannelComplete(
 		log.Fatal("transferChannelComplete is not implemented for rly")
 	}
 
-	chanOpenTryCmd := tr.target.ExecCommand("hermes",
-		"tx", "chan-open-try",
+	chanOpenTryCmd := tr.target.ExecCommand("hermes", "tx", "chan-open-try",
 		"--dst-chain", string(tr.testConfig.chainConfigs[action.ChainB].ChainId),
 		"--src-chain", string(tr.testConfig.chainConfigs[action.ChainA].ChainId),
 		"--dst-connection", "connection-"+fmt.Sprint(action.ConnectionA),
@@ -1382,7 +1381,8 @@ func (tr Chain) transferChannelComplete(
 		"--src-port", action.PortA,
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelA),
 	)
-	e2e.ExecuteCommand(chanOpenTryCmd, "transferChanOpenTry")
+
+	e2e.ExecuteCommand(chanOpenTryCmd, "transferChanOpenTry", verbose)
 
 	chanOpenAckCmd := tr.target.ExecCommand("hermes",
 		"tx", "chan-open-ack",
@@ -1395,7 +1395,7 @@ func (tr Chain) transferChannelComplete(
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelB),
 	)
 
-	e2e.ExecuteCommand(chanOpenAckCmd, "transferChanOpenAck")
+	e2e.ExecuteCommand(chanOpenAckCmd, "transferChanOpenAck", verbose)
 
 	chanOpenConfirmCmd := tr.target.ExecCommand("hermes",
 		"tx", "chan-open-confirm",
@@ -1407,7 +1407,7 @@ func (tr Chain) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.ChannelB),
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelA),
 	)
-	e2e.ExecuteCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
+	e2e.ExecuteCommand(chanOpenConfirmCmd, "transferChanOpenConfirm", verbose)
 }
 
 type RelayPacketsAction struct {
