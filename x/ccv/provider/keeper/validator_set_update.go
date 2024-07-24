@@ -53,7 +53,8 @@ func (k Keeper) DeleteConsumerValSet(
 	chainID string,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
+	// get the key byte prefix for ConsumerValidator
+	key := types.ChainIdWithLenKey(types.ConsumerValidatorKeyPrefix(), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 
 	var keysToDel [][]byte
@@ -96,7 +97,7 @@ func (k Keeper) GetConsumerValSet(
 	chainID string,
 ) (validators []types.ConsumerValidator) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
+	key := types.ChainIdWithLenKey(types.ConsumerValidatorKeyPrefix(), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -160,6 +161,10 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validat
 		return types.ConsumerValidator{}, err
 	}
 	power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+	if err != nil {
+		return types.ConsumerValidator{}, fmt.Errorf("could not retrieve validator's (%+v) power: %w",
+			validator, err)
+	}
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
 		return types.ConsumerValidator{}, fmt.Errorf("could not retrieve validator's (%+v) consensus address: %w",

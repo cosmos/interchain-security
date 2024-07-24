@@ -160,7 +160,7 @@ message MsgConsumerAddition {
   // channel is created on top of the same connection as the CCV channel.
   // Note that transfer_channel_id is the ID of the channel end on the consumer
   // chain. it is most relevant for chains performing a sovereign to consumer
-  // changeover in order to maintan the existing ibc transfer channel
+  // changeover in order to maintain the existing ibc transfer channel
   string distribution_transmission_channel = 12;
   // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
   // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power

@@ -123,7 +123,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		relayAllCommittedPackets(s, s.providerChain, bundle.Path,
 			ccv.ProviderPortID, bundle.Path.EndpointB.ChannelID, 1)
 
-		// check that each consumer updated its VSC ID for the subsequent not commited block ctx.BlockHeight()
+		// check that each consumer updated its VSC ID for the subsequent not committed block ctx.BlockHeight()
 		consumerKeeper := bundle.GetKeeper()
 		ctx := bundle.GetCtx()
 		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(

@@ -468,7 +468,6 @@ func (tr Chain) submitConsumerModificationProposal(
 	}
 
 	bz, err = cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}

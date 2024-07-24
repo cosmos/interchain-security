@@ -14,7 +14,7 @@ import (
 )
 
 // tests AfterProposalSubmission and AfterProposalVotingPeriodEnded hooks
-// hooks require adding a proposal in the gov module and regitering a consumer chain with the provider module
+// hooks require adding a proposal in the gov module and registering a consumer chain with the provider module
 func (s *CCVTestSuite) TestAfterPropSubmissionAndVotingPeriodEnded() {
 	ctx := s.providerChain.GetContext()
 	providerKeeper := s.providerApp.GetProviderKeeper()

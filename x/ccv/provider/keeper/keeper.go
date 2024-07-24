@@ -235,12 +235,12 @@ func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID u
 // GetAllProposedConsumerChainIDs returns the proposed chainID of all gov consumerAddition proposals that are still in the voting period.
 func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
+	iterator := storetypes.KVStorePrefixIterator(store, types.ProposedConsumerChainKeyPrefix())
 	defer iterator.Close()
 
 	proposedChains := []types.ProposedChain{}
 	for ; iterator.Valid(); iterator.Next() {
-		proposalID, err := types.ParseProposedConsumerChainKey(types.ProposedConsumerChainByteKey, iterator.Key())
+		proposalID, err := types.ParseProposedConsumerChainKey(iterator.Key())
 		if err != nil {
 			panic(fmt.Errorf("proposed chains cannot be parsed: %w", err))
 		}
@@ -270,13 +270,13 @@ func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
 // Note that the registered consumer chains are stored under keys with the following format:
-// ChainToClientBytePrefix | chainID
+// ChainToClientKeyPrefix | chainID
 // Thus, the returned array is in ascending order of chainIDs.
 func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
 	chainIDs := []string{}
 
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainToClientKeyPrefix())
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -315,11 +315,11 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 //
 // Note that mapping from CCV channel IDs to consumer chainIDs
 // is stored under keys with the following format:
-// ChannelToChainBytePrefix | channelID
+// ChannelToChainKeyPrefix | channelID
 // Thus, the returned array is in ascending order of channelIDs.
 func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.ChannelToChain) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChannelToChainKeyPrefix())
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -520,11 +520,11 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 // GetAllValsetUpdateBlockHeights gets all the block heights for all valset updates
 //
 // Note that the mapping from vscIDs to block heights is stored under keys with the following format:
-// ValsetUpdateBlockHeightBytePrefix | vscID
+// ValsetUpdateBlockHeightKeyPrefix | vscID
 // Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlockHeights []types.ValsetUpdateIdToHeight) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.ValsetUpdateBlockHeightKeyPrefix())
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -818,7 +818,7 @@ func (k Keeper) GetAllOptedIn(
 	chainID string,
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	key := types.ChainIdWithLenKey(types.OptedInKeyPrefix(), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -835,7 +835,7 @@ func (k Keeper) DeleteAllOptedIn(
 	chainID string,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.OptedInBytePrefix, chainID)
+	key := types.ChainIdWithLenKey(types.OptedInKeyPrefix(), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 
 	var keysToDel [][]byte
@@ -898,7 +898,7 @@ func (k Keeper) GetAllCommissionRateValidators(
 	chainID string,
 ) (addresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.ConsumerCommissionRatePrefix, chainID)
+	key := types.ChainIdWithLenKey(types.ConsumerCommissionRateKeyPrefix(), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -1000,7 +1000,7 @@ func (k Keeper) SetAllowlist(
 	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.AllowlistCapKey(chainID, providerAddr), []byte{})
+	store.Set(types.AllowlistKey(chainID, providerAddr), []byte{})
 }
 
 // GetAllowList returns all allowlisted validators
@@ -1009,7 +1009,7 @@ func (k Keeper) GetAllowList(
 	chainID string,
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.AllowlistPrefix, chainID)
+	key := types.ChainIdWithLenKey(types.AllowlistKeyPrefix(), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -1027,14 +1027,14 @@ func (k Keeper) IsAllowlisted(
 	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.AllowlistCapKey(chainID, providerAddr))
+	bz := store.Get(types.AllowlistKey(chainID, providerAddr))
 	return bz != nil
 }
 
 // DeleteAllowlist deletes all allowlisted validators
 func (k Keeper) DeleteAllowlist(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistKeyPrefix(), chainID))
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -1050,7 +1050,7 @@ func (k Keeper) DeleteAllowlist(ctx sdk.Context, chainID string) {
 // IsAllowlistEmpty returns `true` if no validator is allowlisted on chain `chainID`
 func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, chainID string) bool {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistPrefix, chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.AllowlistKeyPrefix(), chainID))
 	defer iterator.Close()
 
 	return !iterator.Valid()
@@ -1063,7 +1063,7 @@ func (k Keeper) SetDenylist(
 	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.DenylistCapKey(chainID, providerAddr), []byte{})
+	store.Set(types.DenylistKey(chainID, providerAddr), []byte{})
 }
 
 // GetDenyList returns all denylisted validators
@@ -1072,7 +1072,7 @@ func (k Keeper) GetDenyList(
 	chainID string,
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ChainIdWithLenKey(types.DenylistPrefix, chainID)
+	key := types.ChainIdWithLenKey(types.DenylistKeyPrefix(), chainID)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -1090,14 +1090,14 @@ func (k Keeper) IsDenylisted(
 	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.DenylistCapKey(chainID, providerAddr))
+	bz := store.Get(types.DenylistKey(chainID, providerAddr))
 	return bz != nil
 }
 
 // DeleteDenylist deletes all denylisted validators
 func (k Keeper) DeleteDenylist(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistKeyPrefix(), chainID))
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -1113,7 +1113,7 @@ func (k Keeper) DeleteDenylist(ctx sdk.Context, chainID string) {
 // IsDenylistEmpty returns `true` if no validator is denylisted on chain `chainID`
 func (k Keeper) IsDenylistEmpty(ctx sdk.Context, chainID string) bool {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistPrefix, chainID))
+	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.DenylistKeyPrefix(), chainID))
 	defer iterator.Close()
 
 	return !iterator.Valid()

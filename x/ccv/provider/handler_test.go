@@ -128,7 +128,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 			chainID:  "chainid",
 		},
 		{
-			name: "success: consumer key in use, but by the same validator",
+			name: "fail: consumer key in use by the same validator",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
@@ -147,7 +147,33 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
-			expError: false,
+			expError: true,
+			chainID:  "chainid",
+		},
+		{
+			name: "fail: consumer key in use by other validator",
+			setup: func(ctx sdk.Context,
+				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+			) {
+				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
+					ChainId: "chainid",
+				})
+
+				// Use the consumer key already used by some other validator
+				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr2)
+
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidator(
+						ctx, providerCryptoId.SDKValOpAddress(),
+						// validator should not be missing
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerConsAddr.ToSdkConsAddr(),
+						// return false - no other validator uses the consumer key to validate *on the provider*
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
+				)
+			},
+			expError: true,
 			chainID:  "chainid",
 		},
 	}
