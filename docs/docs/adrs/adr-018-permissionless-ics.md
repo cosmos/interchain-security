@@ -40,7 +40,7 @@ in the diagram below:
 
 
 **Registered phase.** When a Top N chain is first proposed through a `MsgConsumerAddition` proposal or an Opt In chain is registered (more on this later) using the `MsgRegisterConsumerChain` transaction,
-the consumer chain resides in the _registered_ phase. A consumer chain in the registered phase might not launch (i.e., the `MsgConsumerAddition` proposal does not pass or the registered Opt In chain is not set to launch).
+the consumer chain resides in the _registered_ phase. A consumer chain in the registered phase might end up not launching, i.e., the `MsgConsumerAddition` proposal does not pass or the registered Opt In chain is never initialized (see below).
 At this phase, as well as in the initialized and launched phases, validators can choose to opt in on the consumer chain.
 
 **Initialized phase.** If the `MsgConsumerAddition` of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgInitializeConsumerChain` transaction, then the chain moves to the _initialized_ phase.
