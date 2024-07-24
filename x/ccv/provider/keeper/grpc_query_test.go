@@ -11,7 +11,6 @@ import (
 	"github.com/golang/mock/gomock"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -22,7 +21,7 @@ import (
 func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	chainID := consumer
 
-	providerConsAddress, err := sdktypes.ConsAddressFromBech32("cosmosvalcons1wpex7anfv3jhystyv3eq20r35a")
+	providerConsAddress, err := sdk.ConsAddressFromBech32("cosmosvalcons1wpex7anfv3jhystyv3eq20r35a")
 	require.NoError(t, err)
 	providerAddr := types.NewProviderConsAddress(providerConsAddress)
 

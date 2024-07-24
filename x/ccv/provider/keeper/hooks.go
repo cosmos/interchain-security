@@ -10,7 +10,6 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -95,7 +94,7 @@ func (h Hooks) AfterUnbondingInitiated(goCtx context.Context, id uint64) error {
 
 	// get all consumers where the validator is in the validator set
 	for _, chainID := range h.k.GetAllRegisteredConsumerChainIDs(ctx) {
-		if h.k.IsConsumerValidator(ctx, chainID, types.NewProviderConsAddress(consAddr)) {
+		if h.k.IsConsumerValidator(ctx, chainID, providertypes.NewProviderConsAddress(consAddr)) {
 			consumerChainIDS = append(consumerChainIDS, chainID)
 		}
 	}

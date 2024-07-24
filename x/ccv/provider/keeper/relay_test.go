@@ -19,11 +19,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/testutil/crypto"
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -111,7 +109,7 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 
 	// opt in validator A and set as a consumer validator
 	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
-	consumerValidatorA := types.ConsumerValidator{
+	consumerValidatorA := providertypes.ConsumerValidator{
 		ProviderConsAddr:  valAConsAddr,
 		Power:             1,
 		ConsumerPublicKey: &valAPubKey,
@@ -813,7 +811,7 @@ func TestEndBlockVSU(t *testing.T) {
 	var lastValidators []stakingtypes.Validator
 	var powers []int64
 	for i := 0; i < 4; i++ {
-		validator := crypto.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
+		validator := cryptotestutil.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
 		lastValidators = append(lastValidators, validator)
 		valAdrr, err := sdk.ValAddressFromBech32(validator.GetOperator())
 		require.NoError(t, err)
