@@ -39,21 +39,6 @@ const config = {
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
           routeBasePath: "/",
-          versions: {
-            current: {
-              path: "/",
-              label: "main",
-              banner: "unreleased",
-            },
-            "v4.2.0-docs": {
-              path: "/v4.2.0/",
-              label: "v4.2.0",
-              banner: "none",
-            },
-            "v5.0.0": {
-              banner: "unreleased",
-            },
-          },
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           exclude: ["**/templates/*"],

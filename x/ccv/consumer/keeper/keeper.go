@@ -387,7 +387,7 @@ func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacke
 // GetAllPacketMaturityTimes returns a slice of all PacketMaturityTimes, sorted by maturity times.
 //
 // Note that PacketMaturityTimes are stored under keys with the following format:
-// PacketMaturityTimeBytePrefix | maturityTime.UnixNano() | vscID
+// PacketMaturityTimeKeyPrefix | maturityTime.UnixNano() | vscID
 // Thus, the returned array is in ascending order of maturityTimes.
 // If two entries have the same maturityTime, then they are ordered by vscID.
 func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
@@ -489,7 +489,7 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 // GetAllHeightToValsetUpdateIDs returns a list of all the block heights to valset update IDs in the store
 //
 // Note that the block height to vscID mapping is stored under keys with the following format:
-// HeightValsetUpdateIDBytePrefix | height
+// HeightValsetUpdateIDKeyPrefix | height
 // Thus, the returned array is in ascending order of heights.
 func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
 	store := ctx.KVStore(k.storeKey)
@@ -531,7 +531,7 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddre
 // GetAllOutstandingDowntimes gets an array of the validator addresses of outstanding downtime flags
 //
 // Note that the outstanding downtime flags are stored under keys with the following format:
-// OutstandingDowntimeBytePrefix | consAddress
+// OutstandingDowntimeKeyPrefix | consAddress
 // Thus, the returned array is in ascending order of consAddresses.
 func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []types.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
@@ -580,7 +580,7 @@ func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 // GetAllCCValidator returns all cross-chain validators
 //
 // Note that the cross-chain validators are stored under keys with the following format:
-// CrossChainValidatorBytePrefix | address
+// CrossChainValidatorKeyPrefix | address
 // Thus, the returned array is in ascending order of addresses.
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
