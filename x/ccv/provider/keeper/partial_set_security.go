@@ -322,7 +322,7 @@ func (k Keeper) FulfillsMinStake(ctx sdk.Context, chainID string, providerAddr t
 	}
 
 	// validator has enough stake to validate the chain
-	return validator.GetTokens().GTE(math.NewIntFromUint64(minStake))
+	return validator.GetBondedTokens().GTE(math.NewIntFromUint64(minStake))
 }
 
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.

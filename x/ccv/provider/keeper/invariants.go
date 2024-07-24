@@ -20,7 +20,10 @@ func MaxProviderConsensusValidatorsInvariant(k *Keeper) sdk.Invariant {
 		params := k.GetParams(ctx)
 		maxProviderConsensusValidators := params.MaxProviderConsensusValidators
 
-		consensusValidators := k.GetLastProviderConsensusValSet(ctx)
+		consensusValidators, err := k.GetLastProviderConsensusValSet(ctx)
+		if err != nil {
+			panic(fmt.Errorf("failed to get last provider consensus validator set: %w", err))
+		}
 		if int64(len(consensusValidators)) > maxProviderConsensusValidators {
 			return sdk.FormatInvariant(types.ModuleName, "max-provider-validators",
 				fmt.Sprintf("number of provider consensus validators: %d, exceeds max: %d",

@@ -76,7 +76,7 @@ func (k Keeper) GetConsumerValidator(ctx sdk.Context, chainID string, providerAd
 func (k Keeper) GetConsumerValSet(
 	ctx sdk.Context,
 	chainID string,
-) []types.ConsensusValidator {
+) ([]types.ConsensusValidator, error) {
 	return k.getValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID))
 }
 

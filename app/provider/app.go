@@ -474,6 +474,8 @@ func New(
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
+		// use the ProviderKeeper as StakingKeeper for gov
+		// because governance should be based on the consensus-active validators
 		app.ProviderKeeper,
 		app.DistrKeeper,
 		app.MsgServiceRouter(),

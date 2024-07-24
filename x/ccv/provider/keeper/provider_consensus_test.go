@@ -24,8 +24,10 @@ func TestSetLastProviderConsensusValidator(t *testing.T) {
 	providerKeeper.SetLastProviderConsensusValidator(ctx, validator)
 
 	// Retrieve the stored validator
-	storedValidator := providerKeeper.GetLastProviderConsensusValSet(ctx)[0]
+	vals, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	require.NoError(t, err, "failed to get stored validator")
 
+	storedValidator := vals[0]
 	require.Equal(t, validator, storedValidator, "stored validator does not match")
 }
 
@@ -50,7 +52,8 @@ func TestSetLastProviderConsensusValSet(t *testing.T) {
 	providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
 
 	// Retrieve the stored validator set
-	storedValidators := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	storedValidators, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	require.NoError(t, err, "failed to get stored validator set")
 	require.Equal(t, nextValidators, storedValidators, "stored validator set does not match")
 }
 
@@ -70,7 +73,8 @@ func TestDeleteLastProviderConsensusValidator(t *testing.T) {
 	providerKeeper.DeleteLastProviderConsensusValidator(ctx, types.NewProviderConsAddress(validator.ProviderConsAddr))
 
 	// Ensure the validator is deleted
-	storedValidators := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	storedValidators, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	require.NoError(t, err, "failed to get stored validator set")
 	require.Empty(t, storedValidators, "validator set should be empty")
 }
 
@@ -98,7 +102,8 @@ func TestDeleteLastProviderConsensusValSet(t *testing.T) {
 	providerKeeper.DeleteLastProviderConsensusValSet(ctx)
 
 	// Ensure the validator set is empty
-	storedValidators := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	storedValidators, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	require.NoError(t, err, "failed to get stored validator set")
 	require.Empty(t, storedValidators, "validator set should be empty")
 }
 
@@ -118,7 +123,8 @@ func TestGetLastTotalProviderConsensusPower(t *testing.T) {
 	nextValidators := []types.ConsensusValidator{validator1, validator2}
 	providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
 	// Get the total power of the last stored validator set
-	totalPower := providerKeeper.GetLastTotalProviderConsensusPower(ctx)
+	totalPower, err := providerKeeper.GetLastTotalProviderConsensusPower(ctx)
+	require.NoError(t, err, "failed to get total power")
 	expectedTotalPower := math.NewInt(5)
 	require.Equal(t, expectedTotalPower, totalPower, "total power does not match")
 }

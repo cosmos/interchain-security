@@ -197,7 +197,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.True(t, pk.PendingConsumerRemovalPropExists(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
 
-	providerConsensusValSet := pk.GetLastProviderConsensusValSet(ctx)
+	providerConsensusValSet, err := pk.GetLastProviderConsensusValSet(ctx)
+	require.NoError(t, err)
 	require.Equal(t,
 		[]providertypes.ConsensusValidator{{
 			ProviderConsAddr: provAddr.Address,

@@ -816,6 +816,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 		name         string
 		settingFunc  func(sdk.Context, string, int64)
 		getFunc      func(sdk.Context, string) (int64, bool)
+		deleteFunc   func(sdk.Context, string)
 		initialValue int64
 		updatedValue int64
 	}{
@@ -823,6 +824,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 			name:         "Minimum Power In Top N",
 			settingFunc:  func(ctx sdk.Context, id string, val int64) { k.SetMinimumPowerInTopN(ctx, id, val) },
 			getFunc:      func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinimumPowerInTopN(ctx, id) },
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinimumPowerInTopN(ctx, id) },
 			initialValue: 1000,
 			updatedValue: 2000,
 		},
@@ -833,6 +835,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 				val, found := k.GetMinStake(ctx, id)
 				return int64(val), found
 			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinStake(ctx, id) },
 			initialValue: 1000,
 			updatedValue: 2000,
 		},
@@ -843,6 +846,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 				val, found := k.GetMaxValidatorRank(ctx, id)
 				return int64(val), found
 			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMaxValidatorRank(ctx, id) },
 			initialValue: 100,
 			updatedValue: 200,
 		},
@@ -853,6 +857,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 				val, found := k.GetValidatorSetCap(ctx, id)
 				return int64(val), found
 			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorSetCap(ctx, id) },
 			initialValue: 10,
 			updatedValue: 200,
 		},
@@ -863,6 +868,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 				val, found := k.GetValidatorsPowerCap(ctx, id)
 				return int64(val), found
 			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorsPowerCap(ctx, id) },
 			initialValue: 10,
 			updatedValue: 11,
 		},
@@ -877,6 +883,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 				}
 				return int64(res), found
 			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteAllowInactiveValidators(ctx, id) },
 			initialValue: 1,
 			updatedValue: 0,
 		},
@@ -903,6 +910,20 @@ func TestKeeperConsumerParams(t *testing.T) {
 
 			// Check non-existent chain ID
 			_, found = tt.getFunc(ctx, "not the chainID")
+			require.False(t, found)
+
+			// Delete value
+			tt.deleteFunc(ctx, chainID)
+
+			// Check that value was deleted
+			_, found = tt.getFunc(ctx, chainID)
+			require.False(t, found)
+
+			// Try deleting again
+			tt.deleteFunc(ctx, chainID)
+
+			// Check that the value is still deleted
+			_, found = tt.getFunc(ctx, chainID)
 			require.False(t, found)
 		})
 	}

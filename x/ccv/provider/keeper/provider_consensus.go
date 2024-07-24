@@ -47,7 +47,7 @@ func (k Keeper) DeleteLastProviderConsensusValSet(
 // validator set sent to the consensus engine on the provider
 func (k Keeper) GetLastProviderConsensusValSet(
 	ctx sdk.Context,
-) []types.ConsensusValidator {
+) ([]types.ConsensusValidator, error) {
 	return k.getValSet(ctx, []byte{types.LastProviderConsensusValsPrefix})
 }
 
@@ -55,7 +55,7 @@ func (k Keeper) GetLastProviderConsensusValSet(
 // validator set sent to the consensus engine on the provider
 func (k Keeper) GetLastTotalProviderConsensusPower(
 	ctx sdk.Context,
-) math.Int {
+) (math.Int, error) {
 	return k.getTotalPower(ctx, []byte{types.LastProviderConsensusValsPrefix})
 }
 

@@ -83,7 +83,8 @@ func TestGetConsumerValSet(t *testing.T) {
 			})
 	}
 
-	actualValidators := providerKeeper.GetConsumerValSet(ctx, "chainID")
+	actualValidators, err := providerKeeper.GetConsumerValSet(ctx, "chainID")
+	require.NoError(t, err)
 
 	// sort validators first to be able to compare
 	sortValidators := func(validators []types.ConsensusValidator) {
@@ -306,14 +307,20 @@ func TestSetConsumerValSet(t *testing.T) {
 	}
 
 	// set the `currentValidators` for chain `chainID`
-	require.Empty(t, providerKeeper.GetConsumerValSet(ctx, chainID))
+	valSet, err := providerKeeper.GetConsumerValSet(ctx, chainID)
+	require.NoError(t, err)
+	require.Empty(t, valSet)
 	for _, validator := range currentValidators {
 		providerKeeper.SetConsumerValidator(ctx, chainID, validator)
 	}
-	require.NotEmpty(t, providerKeeper.GetConsumerValSet(ctx, chainID))
+
+	valSet, err = providerKeeper.GetConsumerValSet(ctx, chainID)
+	require.NoError(t, err)
+	require.NotEmpty(t, valSet)
 
 	providerKeeper.SetConsumerValSet(ctx, chainID, nextValidators)
-	nextCurrentValidators := providerKeeper.GetConsumerValSet(ctx, chainID)
+	nextCurrentValidators, err := providerKeeper.GetConsumerValSet(ctx, chainID)
+	require.NoError(t, err)
 
 	// sort validators first to be able to compare
 	sortValidators := func(validators []types.ConsensusValidator) {

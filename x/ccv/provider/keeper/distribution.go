@@ -191,7 +191,17 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	}
 
 	// Allocate tokens by iterating over the consumer validators
-	for _, consumerVal := range k.GetConsumerValSet(ctx, chainID) {
+	consumerVals, err := k.GetConsumerValSet(ctx, chainID)
+	if err != nil {
+		k.Logger(ctx).Error(
+			"cannot get consumer validator set while allocating rewards from consumer chain",
+			chainID,
+			"error",
+			err,
+		)
+		return allocated
+	}
+	for _, consumerVal := range consumerVals {
 		// if a validator is not eligible, this means that the other eligible validators would get more rewards
 		if !k.IsEligibleForConsumerRewards(ctx, consumerVal.JoinHeight) {
 			continue
@@ -272,7 +282,17 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 // for the given consumer chain
 func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
 	// sum the consumer validators set voting powers
-	for _, v := range k.GetConsumerValSet(ctx, chainID) {
+	vals, err := k.GetConsumerValSet(ctx, chainID)
+	if err != nil {
+		k.Logger(ctx).Error(
+			"cannot get consumer validator set while computing total voting power for consumer chain",
+			chainID,
+			"error",
+			err,
+		)
+		return
+	}
+	for _, v := range vals {
 
 		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
 		if !k.IsEligibleForConsumerRewards(ctx, v.JoinHeight) {

@@ -106,9 +106,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 	k.SetParams(ctx, genState.Params)
 	k.InitializeSlashMeter(ctx)
 
-	// Set the last provider consensus validator set
-	k.SetLastProviderConsensusValSet(ctx, genState.LastProviderConsensusValidators)
-
 	return k.InitGenesisValUpdates(ctx)
 }
 
@@ -203,6 +200,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	params := k.GetParams(ctx)
 
+	lastProviderConsensusValSet, err := k.GetLastProviderConsensusValSet(ctx)
+	if err != nil {
+		panic(fmt.Errorf("retrieving last provider consensus validator set: %w", err))
+	}
+
 	return types.NewGenesisState(
 		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
@@ -217,6 +219,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		consumerAddrsToPrune,
 		k.GetAllInitTimeoutTimestamps(ctx),
 		exportedVscSendTimestamps,
-		k.GetLastProviderConsensusValSet(ctx),
+		lastProviderConsensusValSet,
 	)
 }

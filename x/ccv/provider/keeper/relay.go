@@ -186,7 +186,10 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	}
 
 	// get the last validator set sent to consensus
-	currentValidators := k.GetLastProviderConsensusValSet(ctx)
+	currentValidators, err := k.GetLastProviderConsensusValSet(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to get last provider consensus validator set: %w", err))
+	}
 
 	nextValidators := []types.ConsensusValidator{}
 	maxValidators := k.GetMaxProviderConsensusValidators(ctx)
@@ -277,7 +280,10 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	}
 
 	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
-		currentValidators := k.GetConsumerValSet(ctx, chainID)
+		currentValidators, err := k.GetConsumerValSet(ctx, chainID)
+		if err != nil {
+			panic(fmt.Errorf("failed to get consumer validators: %w", err))
+		}
 		topN, _ := k.GetTopN(ctx, chainID)
 
 		if topN > 0 {
