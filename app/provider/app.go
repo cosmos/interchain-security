@@ -631,6 +631,8 @@ func New(
 		providertypes.ModuleName,
 	)
 
+	// NOTE: provider module needs to come after the staking module, since
+	// it needs the information the staking module provides to compute validator updates.
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
@@ -657,6 +659,8 @@ func New(
 	// NOTE: Capability module must occur first so that it can initialize any capabilities
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
+	// NOTE: The provider module must come after genutils and staking, since it relies on the
+	// information about the validators these modules provide to compute validator updates.
 	app.MM.SetOrderInitGenesis(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
