@@ -172,7 +172,10 @@ func (am AppModule) BeginBlock(goCtx context.Context) error {
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
 	am.keeper.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
-	am.keeper.TrackHistoricalInfo(ctx)
+	err := am.keeper.TrackHistoricalInfo(ctx)
+	if err != nil {
+		am.keeper.Logger(ctx).Warn("failed to track historical info", "error", err)
+	}
 	return nil
 }
 
