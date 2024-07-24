@@ -138,7 +138,7 @@ func getIcsVersion(reference string) string {
 		return semver.Canonical(reference)
 	}
 
-	// List of all tags matching vX.Y.Z or vX.Y.X-lsm in ascending order
+	// List of all tags matching vX.Y.Z or vX.Y.Z-lsm in ascending order
 	cmd := exec.Command("git", "tag", "-l", "--sort", "v:refname", "v*.?", "v*.?-lsm", "v*.??", "v*.??-lsm")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
