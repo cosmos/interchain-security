@@ -801,6 +801,28 @@ func TestDenylist(t *testing.T) {
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 }
 
+// TestAllowInactiveValidators tests the `SetAllowInactiveValidators` and `AllowsInactiveValidators` methods
+func TestAllowInactiveValidators(t *testing.T) {
+	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	chainID := "chainID"
+
+	// check that by default, AllowsInactiveValidators returns false
+	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
+
+	// set the chain to allow inactive validators
+	k.SetAllowInactiveValidators(ctx, chainID, true)
+
+	// check that AllowsInactiveValidators returns true
+	require.True(t, k.AllowsInactiveValidators(ctx, chainID))
+
+	// set the chain to not allow inactive validators
+	k.SetAllowInactiveValidators(ctx, chainID, false)
+
+	// check that AllowsInactiveValidators returns false
+	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
+}
+
 // Tests setting, getting and deleting parameters that are stored per-consumer chain.
 // The tests cover the following parameters:
 // - MinimumPowerInTopN
@@ -808,7 +830,6 @@ func TestDenylist(t *testing.T) {
 // - MaxValidatorRank
 // - ValidatorSetCap
 // - ValidatorPowersCap
-// - AllowInactiveValidators
 func TestKeeperConsumerParams(t *testing.T) {
 	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
@@ -871,20 +892,6 @@ func TestKeeperConsumerParams(t *testing.T) {
 			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorsPowerCap(ctx, id) },
 			initialValue: 10,
 			updatedValue: 11,
-		},
-		{
-			name:        "Allow Inactive Validators",
-			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetAllowInactiveValidators(ctx, id, val == 1) },
-			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
-				allows := k.AllowsInactiveValidators(ctx, id)
-				if allows {
-					return 1, true
-				}
-				return 0, true
-			},
-			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteAllowInactiveValidators(ctx, id) },
-			initialValue: 1,
-			updatedValue: 0,
 		},
 	}
 

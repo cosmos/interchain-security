@@ -688,6 +688,7 @@ func createStakingValidatorsAndMocks(ctx sdk.Context, mocks testkeeper.MockedKee
 	for i, power := range powers {
 		val := createStakingValidator(ctx, mocks, i, power, i)
 		val.Tokens = math.NewInt(power)
+		val.Status = stakingtypes.Bonded
 		validators = append(validators, val)
 	}
 
@@ -854,7 +855,7 @@ func TestIfInactiveValsDisallowedProperty(t *testing.T) {
 		nextVals := providerKeeper.ComputeNextValidators(ctx, "chainID", vals)
 
 		// Check that the length of nextVals is at most maxProviderConsensusVals
-		require.LessOrEqual(t, len(nextVals), int(maxProviderConsensusVals), "The length of nextVals should be at most maxProviderConsensusVals")
+		require.LessOrEqual(r, len(nextVals), int(maxProviderConsensusVals), "The length of nextVals should be at most maxProviderConsensusVals")
 
 		// Sanity check: we only get 0 next validators if either:
 		// - maxProviderConsensusVals is 0
@@ -867,7 +868,7 @@ func TestIfInactiveValsDisallowedProperty(t *testing.T) {
 				}
 			}
 			require.True(
-				t,
+				r,
 				maxProviderConsensusVals == 0 || maxValPower < int64(minStake),
 				"The length of nextVals should only be 0 if either maxProviderConsensusVals is 0 or the maximal validator power is less than the min stake",
 			)
