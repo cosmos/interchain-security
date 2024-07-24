@@ -44,7 +44,7 @@ the consumer chain resides in the _registered_ phase. A consumer chain in the re
 At this phase, as well as in the initialized and launched phases, validators can choose to opt in on the consumer chain.
 
 **Initialized phase.** If the `MsgConsumerAddition` of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgInitializeConsumerChain` transaction, then the chain moves to the _initialized_ phase.
-In the initialized phase, an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc. by issuing anew `MsgInitializeConsumerChain`.
+In the initialized phase, an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc. by issuing a new `MsgInitializeConsumerChain`.
 This is not the case for Top N chains, where a `MsgConsumerModification` can only be issued after a consumer
 chain [has started](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/legacy_proposal.go#L89).
 
