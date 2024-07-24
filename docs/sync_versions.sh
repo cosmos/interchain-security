@@ -7,7 +7,7 @@
 if git diff-index --quiet HEAD --; then
     # initial branch
     COMMIT=$(git rev-parse HEAD)
-    for version in $(jq -r .[] versions.json); do
+    for version in $(jq -r .[] supported_versions.json); do
         echo "Building docusaurus $version docs ..."
         git checkout $version
         npm cache clean --force && npm install && npm run docusaurus docs:version $version
