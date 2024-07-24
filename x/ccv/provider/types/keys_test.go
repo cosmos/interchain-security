@@ -190,6 +190,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerRewardsAllocationKey("chainID"),
 		providertypes.ConsumerCommissionRateKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.MinimumPowerInTopNKey("chainID"),
+		providertypes.LastProviderConsensusValidatorKey([]byte{0x05}),
 		providertypes.MinStakeKey("chainID"),
 		providertypes.MaxValidatorRankKey("chainID"),
 		providertypes.AllowInactiveValidatorsKey("chainID"),
