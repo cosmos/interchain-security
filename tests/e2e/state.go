@@ -389,21 +389,24 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.chainConfigs[chain].BinaryName
-	bz, err := tr.target.ExecCommand(binaryName,
+	cmd := tr.target.ExecCommand(binaryName,
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 		`--node`, tr.GetQueryNode(chain),
-		`-o`, `json`,
-	).CombinedOutput()
+		`-o`, `json`)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println("Error getting governance proposal", proposal, "\n\t cmd: ", cmd, "\n\t err:", err, "\n\t out: ", string(bz))
+	}
 
 	prop := TextProposal{}
-
+	propRaw := string(bz)
 	if err != nil {
 		if noProposalRegex.Match(bz) {
 			return prop
 		}
 
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal(err, "\n", propRaw)
 	}
 
 	// for legacy proposal types submitted using "tx submit-legacyproposal" (cosmos-sdk/v1/MsgExecLegacyContent)
@@ -454,6 +457,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			},
 		}
 	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
+	case "cosmos-sdk/MsgSoftwareUpgrade":
 		height := rawContent.Get("plan.height").Uint()
 		title := rawContent.Get("plan.name").String()
 		return UpgradeProposal{

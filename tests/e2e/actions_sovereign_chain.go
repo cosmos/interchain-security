@@ -110,7 +110,82 @@ type LegacyUpgradeProposalAction struct {
 	UpgradeHeight uint64
 }
 
+func (tr *Chain) submitUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
+
+	metadata := "ipfs://CID"
+	deposit := "10000000stake"
+	summary := "my summary"
+	expedited := false
+	authority := "consumer10d07y265gmmuvt4z0w9aw880jnsr700jlh7295" //todo: get it from the gov module
+	proposalJson := fmt.Sprintf(`
+{
+	"messages": [
+		{
+			"@type": "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade",
+			"authority": "%s",
+			"plan": {
+				"name": "sovereign-changeover",
+				"height": "%d",
+				"info": "my upgrade info",
+				"upgraded_client_state": null
+			}
+		}
+  	],
+	"metadata": "%s",
+	"title": "%s",
+	"summary": "%s",
+	"deposit": "%s",
+	"expedited": %t
+}`, authority, action.UpgradeHeight, metadata, action.UpgradeTitle, summary, deposit, expedited)
+
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalPath := "/temp-proposal.json"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, proposalJson, proposalPath),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	submit := fmt.Sprintf(
+		`%s tx gov submit-proposal %s\
+		--gas 900000 \
+		--from validator%s \
+		--keyring-backend test \
+		--chain-id %s \
+		--home %s \
+		--node %s \
+		-y`,
+		tr.testConfig.chainConfigs[ChainID("sover")].BinaryName,
+		proposalPath,
+		action.Proposer,
+		tr.testConfig.chainConfigs[ChainID("sover")].ChainId,
+		tr.getValidatorHome(ChainID("sover"), action.Proposer),
+		tr.getValidatorNode(ChainID("sover"), action.Proposer),
+	)
+	cmd := tr.target.ExecCommand("/bin/bash", "-c", submit)
+
+	if verbose {
+		fmt.Println("submitUpgradeProposal cmd:", cmd.String())
+	}
+
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	if verbose {
+		log.Println("Response to submit-proposal: ", string(bz))
+	}
+
+	tr.waitBlocks(action.ChainID, 1, 15*time.Second)
+}
+
 func (tr *Chain) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
+	//tr.submitLegacyUpgradeProposalX(action, target, verbose)
+	tr.submitUpgradeProposal(action, verbose)
+}
+
+func (tr *Chain) submitLegacyUpgradeProposalX(action LegacyUpgradeProposalAction, verbose bool) {
 	submit := fmt.Sprintf(
 		`%s tx gov submit-legacy-proposal software-upgrade %s \
 		--title  %s \
