@@ -1672,30 +1672,31 @@ func (k Keeper) SetAllowInactiveValidators(
 	chainID string,
 	allowed bool,
 ) {
-	store := ctx.KVStore(k.storeKey)
-
-	var buf []byte
 	if allowed {
-		buf = []byte{1}
+		k.AllowInactiveValidators(ctx, chainID)
 	} else {
-		buf = []byte{0}
+		k.DeleteAllowInactiveValidators(ctx, chainID)
 	}
-
-	store.Set(types.AllowInactiveValidatorsKey(chainID), buf)
 }
 
-// GetAllowInactiveValidators returns whether inactive validators are allowed to validate
+// AllowInactiveValidators sets the flag to signal that inactive validators are allowed to validate
 // a given consumer chain.
-func (k Keeper) GetAllowInactiveValidators(
+func (k Keeper) AllowInactiveValidators(
 	ctx sdk.Context,
 	chainID string,
-) (bool, bool) {
+) {
 	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.AllowInactiveValidatorsKey(chainID))
-	if buf == nil {
-		return false, false
-	}
-	return buf[0] == 1, true
+	store.Set(types.AllowInactiveValidatorsKey(chainID), []byte{})
+}
+
+// AllowsInactiveValidators returns whether inactive validators are allowed to validate
+// a given consumer chain.
+func (k Keeper) AllowsInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Has(types.AllowInactiveValidatorsKey(chainID))
 }
 
 // DeleteAllowInactiveValidators removes the flag of whether inactive validators are allowed to validate

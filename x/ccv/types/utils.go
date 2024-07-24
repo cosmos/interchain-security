@@ -126,7 +126,7 @@ func GetConsAddrFromBech32(bech32str string) (sdk.ConsAddress, error) {
 }
 
 // GetLastBondedValidatorsUtil iterates the last validator powers in the staking module
-// and returns the first MaxValidators many validators with the largest powers.
+// and returns the first maxVals many validators with the largest powers.
 func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, logger log.Logger, maxVals uint32) ([]stakingtypes.Validator, error) {
 	lastPowers := make([]stakingtypes.LastValidatorPower, maxVals)
 

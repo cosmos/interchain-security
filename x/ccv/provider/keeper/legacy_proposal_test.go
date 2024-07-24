@@ -337,6 +337,6 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	actualMaxValidatorRank, _ := providerKeeper.GetMaxValidatorRank(ctx, chainID)
 	require.Equal(t, expectedMaxValidatorRank, actualMaxValidatorRank)
 
-	actualAllowInactiveValidators, _ := providerKeeper.GetAllowInactiveValidators(ctx, chainID)
+	actualAllowInactiveValidators := providerKeeper.AllowsInactiveValidators(ctx, chainID)
 	require.Equal(t, expectedAllowInactiveValidators, actualAllowInactiveValidators)
 }

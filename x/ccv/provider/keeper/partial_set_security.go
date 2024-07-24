@@ -334,8 +334,8 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedVal
 
 	// if inactive validators are not allowed, only consider the first `MaxProviderConsensusValidators` validators
 	// since those are the ones that participate in consensus
-	allowInactiveVals, found := k.GetAllowInactiveValidators(ctx, chainID)
-	if !allowInactiveVals || !found {
+	allowInactiveVals := k.AllowsInactiveValidators(ctx, chainID)
+	if !allowInactiveVals {
 		// only leave the first MaxProviderConsensusValidators bonded validators
 		maxProviderConsensusVals := k.GetMaxProviderConsensusValidators(ctx)
 		if len(bondedValidators) > int(maxProviderConsensusVals) {

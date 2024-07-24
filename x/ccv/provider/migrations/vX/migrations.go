@@ -1,4 +1,4 @@
-package v6
+package vX
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"

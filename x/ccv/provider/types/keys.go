@@ -453,6 +453,27 @@ func EquivocationEvidenceMinHeightKey(consumerChainID string) []byte {
 	return append([]byte{EquivocationEvidenceMinHeightBytePrefix}, []byte(consumerChainID)...)
 }
 
+// LastProviderConsensusValidatorKey returns the key of the validator with `providerAddr`
+// in the last validator set sent to the consensus engine of the provider chain
+func LastProviderConsensusValidatorKey(providerAddr []byte) []byte {
+	return append([]byte{LastProviderConsensusValsPrefix}, providerAddr...)
+}
+
+// MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain `chainID`
+func MinStakeKey(chainID string) []byte {
+	return ChainIdWithLenKey(MinStakePrefix, chainID)
+}
+
+// MaxValidatorRankKey returns the key used to store the maximal position in the validator set
+// a validator can have to validate on consumer chain `chainID`
+func MaxValidatorRankKey(chainID string) []byte {
+	return ChainIdWithLenKey(MaxValidatorRankPrefix, chainID)
+}
+
+func AllowInactiveValidatorsKey(chainID string) []byte {
+	return ChainIdWithLenKey(AllowInactiveValidatorsPrefix, chainID)
+}
+
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
 
 //
@@ -634,27 +655,6 @@ func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress)
 
 func MinimumPowerInTopNKey(chainID string) []byte {
 	return ChainIdWithLenKey(MinimumPowerInTopNBytePrefix, chainID)
-}
-
-// LastProviderConsensusValidatorKey returns the key of the validator with `providerAddr`
-// in the last validator set sent to the consensus engine of the provider chain
-func LastProviderConsensusValidatorKey(providerAddr []byte) []byte {
-	return append([]byte{LastProviderConsensusValsPrefix}, providerAddr...)
-}
-
-// MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain `chainID`
-func MinStakeKey(chainID string) []byte {
-	return ChainIdWithLenKey(MinStakePrefix, chainID)
-}
-
-// MaxValidatorRankKey returns the key used to store the maximal position in the validator set
-// a validator can have to validate on consumer chain `chainID`
-func MaxValidatorRankKey(chainID string) []byte {
-	return ChainIdWithLenKey(MaxValidatorRankPrefix, chainID)
-}
-
-func AllowInactiveValidatorsKey(chainID string) []byte {
-	return ChainIdWithLenKey(AllowInactiveValidatorsPrefix, chainID)
 }
 
 //

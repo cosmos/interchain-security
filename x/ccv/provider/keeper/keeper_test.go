@@ -801,7 +801,7 @@ func TestDenylist(t *testing.T) {
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 }
 
-// Tests setting, getting and deleting number parameters that are stored per-consumer chain.
+// Tests setting, getting and deleting parameters that are stored per-consumer chain.
 // The tests cover the following parameters:
 // - MinimumPowerInTopN
 // - MinStake
@@ -876,12 +876,11 @@ func TestKeeperConsumerParams(t *testing.T) {
 			name:        "Allow Inactive Validators",
 			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetAllowInactiveValidators(ctx, id, val == 1) },
 			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
-				val, found := k.GetAllowInactiveValidators(ctx, id)
-				res := int64(0) // default value
-				if val {
-					res = 1
+				allows := k.AllowsInactiveValidators(ctx, id)
+				if allows {
+					return 1, true
 				}
-				return int64(res), found
+				return 0, false
 			},
 			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteAllowInactiveValidators(ctx, id) },
 			initialValue: 1,
