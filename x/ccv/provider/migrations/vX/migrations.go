@@ -15,10 +15,11 @@ func InitializeMaxValidatorsForExistingConsumers(ctx sdk.Context, providerKeeper
 	}
 }
 
-// InitializeAllowInactiveVals initializes the allow inactive validators parameter to be false
-// for all existing consumer chains.
-func InitializeAllowInactiveVals(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
-	for _, chainID := range providerKeeper.GetAllRegisteredConsumerChainIDs(ctx) {
-		providerKeeper.SetAllowInactiveValidators(ctx, chainID, false)
+// InitializeMaxProviderConsensusParam initializes the MaxProviderConsensusValidators parameter.
+func InitializeMaxProviderConsensusParam(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
+	params := providerKeeper.GetParams(ctx)
+	if params.MaxProviderConsensusValidators == 0 {
+		params.MaxProviderConsensusValidators = 180
+		providerKeeper.SetParams(ctx, params)
 	}
 }
