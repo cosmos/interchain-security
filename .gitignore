@@ -10,5 +10,6 @@ build/
 .idea
 
 # docusaurus versioned docs created during build
+docs/versions.json
 docs/versioned_docs
 docs/versioned_sidebars

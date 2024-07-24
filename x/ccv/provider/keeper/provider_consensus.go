@@ -17,13 +17,13 @@ func (k Keeper) SetLastProviderConsensusValidator(
 	ctx sdk.Context,
 	validator types.ConsensusValidator,
 ) {
-	k.setValidator(ctx, []byte{types.LastProviderConsensusValsPrefix}, validator)
+	k.setValidator(ctx, []byte{types.LastProviderConsensusValsPrefix()}, validator)
 }
 
 // SetLastProviderConsensusValSet resets the stored last validator set sent to the consensus engine on the provider
 // to the provided `nextValidators“.
 func (k Keeper) SetLastProviderConsensusValSet(ctx sdk.Context, nextValidators []types.ConsensusValidator) {
-	k.setValSet(ctx, []byte{types.LastProviderConsensusValsPrefix}, nextValidators)
+	k.setValSet(ctx, []byte{types.LastProviderConsensusValsPrefix()}, nextValidators)
 }
 
 // DeleteLastProviderConsensusValidator removes the validator with `providerConsAddr` address
@@ -32,7 +32,7 @@ func (k Keeper) DeleteLastProviderConsensusValidator(
 	ctx sdk.Context,
 	providerConsAddr types.ProviderConsAddress,
 ) {
-	k.deleteValidator(ctx, []byte{types.LastProviderConsensusValsPrefix}, providerConsAddr)
+	k.deleteValidator(ctx, []byte{types.LastProviderConsensusValsPrefix()}, providerConsAddr)
 }
 
 // DeleteLastProviderConsensusValSet deletes all the stored validators from the
@@ -40,7 +40,7 @@ func (k Keeper) DeleteLastProviderConsensusValidator(
 func (k Keeper) DeleteLastProviderConsensusValSet(
 	ctx sdk.Context,
 ) {
-	k.deleteValSet(ctx, []byte{types.LastProviderConsensusValsPrefix})
+	k.deleteValSet(ctx, []byte{types.LastProviderConsensusValsPrefix()})
 }
 
 // GetLastProviderConsensusValSet returns the last stored
@@ -48,7 +48,7 @@ func (k Keeper) DeleteLastProviderConsensusValSet(
 func (k Keeper) GetLastProviderConsensusValSet(
 	ctx sdk.Context,
 ) ([]types.ConsensusValidator, error) {
-	return k.getValSet(ctx, []byte{types.LastProviderConsensusValsPrefix})
+	return k.getValSet(ctx, []byte{types.LastProviderConsensusValsPrefix()})
 }
 
 // GetLastTotalProviderConsensusPower returns the total power of the last stored
@@ -56,7 +56,7 @@ func (k Keeper) GetLastProviderConsensusValSet(
 func (k Keeper) GetLastTotalProviderConsensusPower(
 	ctx sdk.Context,
 ) (math.Int, error) {
-	return k.getTotalPower(ctx, []byte{types.LastProviderConsensusValsPrefix})
+	return k.getTotalPower(ctx, []byte{types.LastProviderConsensusValsPrefix()})
 }
 
 // CreateProviderConsensusValidator creates a new ConsensusValidator from the given staking validator

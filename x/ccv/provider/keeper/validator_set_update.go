@@ -14,7 +14,7 @@ import (
 
 // GetConsumerChainConsensusValidatorsKey returns the store key for consumer validators of the consumer chain with `chainID`
 func (k Keeper) GetConsumerChainConsensusValidatorsKey(ctx sdk.Context, chainID string) []byte {
-	return types.ChainIdWithLenKey(types.ConsumerValidatorBytePrefix, chainID)
+	return types.ChainIdWithLenKey(types.ConsumerValidatorsKeyPrefix(), chainID)
 }
 
 // SetConsumerValidator sets provided consumer `validator` on the consumer chain with `chainID`
@@ -128,6 +128,10 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validat
 		return types.ConsensusValidator{}, err
 	}
 	power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+	if err != nil {
+		return types.ConsensusValidator{}, fmt.Errorf("could not retrieve validator's (%+v) power: %w",
+			validator, err)
+	}
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
 		return types.ConsensusValidator{}, fmt.Errorf("could not retrieve validator's (%+v) consensus address: %w",

@@ -86,6 +86,7 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	// assert that the `consumerAddr` to `providerAddr` association was set as well
 	consumerAddr, _ := ccvtypes.TMCryptoPublicKeyToConsAddr(actualConsumerPubKey)
 	actualProviderConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(ctx, "chainID", types.NewConsumerConsAddress(consumerAddr))
+	require.True(t, found)
 	require.Equal(t, providerAddr, actualProviderConsAddr)
 }
 
