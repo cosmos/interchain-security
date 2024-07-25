@@ -142,8 +142,7 @@ message MsgRegisterConsumerChain {
 
 This response of this message contains a single `string`, that is the `consumerId` for this registered consumer chain and initializes
 a consumer chain in its registered phase. With the returned `consumerId`, validators can already opt in on the consumer
-chain to show their potential interest on the chain. Additionally, a front-end ICS launchpad can also present
-this chain. Additionally, this allows consumer chains to show that they are interested in joining ICS even though,
+chain to show their potential interest on the chain. Additionally, this allows consumer chains to show that they are interested in joining ICS even though,
 they might not yet know the specific ICS parameters they would like to use (see `MsgInitializeConsumerChain`). 
 
 This message contains the `owner_address` that corresponds to the address that would be able to initialize or later update this consumer chain.
