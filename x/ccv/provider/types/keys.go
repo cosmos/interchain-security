@@ -41,7 +41,7 @@ const (
 
 	PortKeyName = "PortKey"
 
-	DeprecatedMaturedUnbondingOpsKeyName = "MaturedUnbondingOpsKey"
+	DeprecatedMaturedUnbondingOpsKeyName = "DeprecatedMaturedUnbondingOpsKey"
 
 	ValidatorSetUpdateIdKeyName = "ValidatorSetUpdateIdKey"
 
@@ -55,15 +55,15 @@ const (
 
 	ChainToClientKeyName = "ChainToClientKey"
 
-	DeprecatedInitTimeoutTimestampKeyName = "InitTimeoutTimestampKey"
+	DeprecatedInitTimeoutTimestampKeyName = "DeprecatedInitTimeoutTimestampKey"
 
 	PendingCAPKeyName = "PendingCAPKey"
 
 	PendingCRPKeyName = "PendingCRPKey"
 
-	DeprecatedUnbondingOpKeyName = "UnbondingOpKey"
+	DeprecatedUnbondingOpKeyName = "DeprecatedUnbondingOpKey"
 
-	DeprecatedUnbondingOpIndexKeyName = "UnbondingOpIndexKey"
+	DeprecatedUnbondingOpIndexKeyName = "DeprecatedUnbondingOpIndexKey"
 
 	ValsetUpdateBlockHeightKeyName = "ValsetUpdateBlockHeightKey"
 
@@ -75,7 +75,7 @@ const (
 
 	PendingVSCsKeyName = "PendingVSCsKey"
 
-	DeprecatedVscSendTimestampKeyName = "VscSendTimestampKey"
+	DeprecatedVscSendTimestampKeyName = "DeprecatedVscSendTimestampKey"
 
 	ThrottledPacketDataSizeKeyName = "ThrottledPacketDataSizeKey"
 
@@ -87,15 +87,15 @@ const (
 
 	ValidatorsByConsumerAddrKeyName = "ValidatorsByConsumerAddrKey"
 
-	DeprecatedKeyAssignmentReplacementsKeyName = "KeyAssignmentReplacementsKey"
+	DeprecatedKeyAssignmentReplacementsKeyName = "DeprecatedKeyAssignmentReplacementsKey"
 
-	DeprecatedConsumerAddrsToPruneKeyName = "ConsumerAddrsToPruneKey"
+	DeprecatedConsumerAddrsToPruneKeyName = "DeprecatedConsumerAddrsToPruneKey"
 
 	SlashLogKeyName = "SlashLogKey"
 
 	ConsumerRewardDenomsKeyName = "ConsumerRewardDenomsKey"
 
-	DeprecatedVSCMaturedHandledThisBlockKeyName = "VSCMaturedHandledThisBlockKey"
+	DeprecatedVSCMaturedHandledThisBlockKeyName = "DeprecatedVSCMaturedHandledThisBlockKey"
 
 	EquivocationEvidenceMinHeightKeyName = "EquivocationEvidenceMinHeightKey"
 

@@ -23,8 +23,6 @@ func TestMigrateParams(t *testing.T) {
 	inMemParams.ParamsSubspace.Set(ctx, providertypes.KeyTemplateClient, defaultParams.TemplateClient)
 	inMemParams.ParamsSubspace.Set(ctx, providertypes.KeyTrustingPeriodFraction, defaultParams.TrustingPeriodFraction)
 	inMemParams.ParamsSubspace.Set(ctx, ccvtypes.KeyCCVTimeoutPeriod, defaultParams.CcvTimeoutPeriod)
-	inMemParams.ParamsSubspace.Set(ctx, providertypes.KeyInitTimeoutPeriod, defaultParams.InitTimeoutPeriod)
-	inMemParams.ParamsSubspace.Set(ctx, providertypes.KeyVscTimeoutPeriod, defaultParams.VscTimeoutPeriod)
 	inMemParams.ParamsSubspace.Set(ctx, providertypes.KeySlashMeterReplenishPeriod, defaultParams.SlashMeterReplenishPeriod)
 	inMemParams.ParamsSubspace.Set(ctx, providertypes.KeySlashMeterReplenishFraction, defaultParams.SlashMeterReplenishFraction)
 	inMemParams.ParamsSubspace.Set(ctx, providertypes.KeyConsumerRewardDenomRegistrationFee, defaultParams.ConsumerRewardDenomRegistrationFee)

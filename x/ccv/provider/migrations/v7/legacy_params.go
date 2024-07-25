@@ -10,11 +10,6 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-var (
-	KeyInitTimeoutPeriod = []byte("InitTimeoutPeriod")
-	KeyVscTimeoutPeriod  = []byte("VscTimeoutPeriod")
-)
-
 // getTemplateClient returns the template client for provider proposals
 func getTemplateClient(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace) *ibctmtypes.ClientState {
 	var cs ibctmtypes.ClientState
@@ -34,20 +29,6 @@ func getTrustingPeriodFraction(ctx sdk.Context, paramSpace ccvtypes.LegacyParamS
 func getCCVTimeoutPeriod(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace) time.Duration {
 	var p time.Duration
 	paramSpace.Get(ctx, ccvtypes.KeyCCVTimeoutPeriod, &p)
-	return p
-}
-
-// getInitTimeoutPeriod returns the init timeout period
-func getInitTimeoutPeriod(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace) time.Duration {
-	var p time.Duration
-	paramSpace.Get(ctx, KeyInitTimeoutPeriod, &p)
-	return p
-}
-
-// getVscTimeoutPeriod returns the vsc timeout period
-func getVscTimeoutPeriod(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace) time.Duration {
-	var p time.Duration
-	paramSpace.Get(ctx, KeyVscTimeoutPeriod, &p)
 	return p
 }
 
@@ -93,8 +74,6 @@ func GetParamsLegacy(ctx sdk.Context, paramspace ccvtypes.LegacyParamSubspace) t
 		getTemplateClient(ctx, paramspace),
 		getTrustingPeriodFraction(ctx, paramspace),
 		getCCVTimeoutPeriod(ctx, paramspace),
-		getInitTimeoutPeriod(ctx, paramspace),
-		getVscTimeoutPeriod(ctx, paramspace),
 		getSlashMeterReplenishPeriod(ctx, paramspace),
 		getSlashMeterReplenishFraction(ctx, paramspace),
 		getConsumerRewardDenomRegistrationFee(ctx, paramspace),
