@@ -250,7 +250,8 @@ func (k Keeper) AppendConsumerAddrsToPrune(
 	consumerAddr types.ConsumerConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerAddrsToPruneV2Key(chainID, pruneTs))
+	storeKey := types.ConsumerAddrsToPruneV2Key(chainID, pruneTs)
+	bz := store.Get(storeKey)
 	var consumerAddrsToPrune types.AddressList
 	if bz != nil {
 		err := consumerAddrsToPrune.Unmarshal(bz)
@@ -267,7 +268,7 @@ func (k Keeper) AppendConsumerAddrsToPrune(
 		// consumerAddrsToPrune is instantiated in this method and should be able to be marshaled.
 		panic(err)
 	}
-	store.Set(types.ConsumerAddrsToPruneV2Key(chainID, pruneTs), bz)
+	store.Set(storeKey, bz)
 }
 
 // GetConsumerAddrsToPrune returns the list of consumer addresses to prune stored under timestamp ts.
