@@ -12,13 +12,13 @@ import (
 )
 
 const (
-	LegacyUnbondingOpBytePrefix                = 11
-	LegacyConsumerAddrsToPruneBytePrefix       = 25
-	LegacyMaturedUnbondingOpsByteKey           = 1
-	LegacyUnbondingOpIndexBytePrefix           = 12
-	LegacyInitTimeoutTimestampBytePrefix       = 8
-	LegacyVscSendTimestampBytePrefix           = 18
-	LegacyVSCMaturedHandledThisBlockBytePrefix = 28
+	LegacyUnbondingOpBytePrefix                = byte(11)
+	LegacyConsumerAddrsToPruneBytePrefix       = byte(25)
+	LegacyMaturedUnbondingOpsByteKey           = byte(1)
+	LegacyUnbondingOpIndexBytePrefix           = byte(12)
+	LegacyInitTimeoutTimestampBytePrefix       = byte(8)
+	LegacyVscSendTimestampBytePrefix           = byte(18)
+	LegacyVSCMaturedHandledThisBlockBytePrefix = byte(28)
 )
 
 // CompleteUnbondingOps completes all unbonding operations.
