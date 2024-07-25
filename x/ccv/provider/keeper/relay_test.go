@@ -854,6 +854,74 @@ func TestEndBlockVSU(t *testing.T) {
 	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
 }
 
+// TestProviderValidatorUpdates tests that the provider validator updates are correctly calculated,
+// taking into account the MaxProviderConsensusValidators parameter
+func TestProviderValidatorUpdates(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Mocking bonded validators in the staking keeper
+	validators := []stakingtypes.Validator{
+		createStakingValidator(ctx, mocks, 3, 30, 3),
+		createStakingValidator(ctx, mocks, 2, 20, 2),
+		createStakingValidator(ctx, mocks, 1, 10, 1),
+	}
+	// sort validators by power
+	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(ctx).Return(validators, nil).Times(1)
+
+	// set up a validator that we will only use for the last provider consensus validator set
+	removedValidator := createStakingValidator(ctx, mocks, 4, 40, 4)
+
+	// Set up the last provider consensus validators
+	consensusVals := make([]providertypes.ConsensusValidator, 0, len(validators))
+	// add the removed validator
+	removedConsensusVal, err := providerKeeper.CreateProviderConsensusValidator(ctx, removedValidator)
+	require.NoError(t, err)
+	consensusVals = append(consensusVals, removedConsensusVal)
+	for _, val := range validators[1:] { // skip the first validator (validator 3)
+		consensusVal, err := providerKeeper.CreateProviderConsensusValidator(ctx, val)
+		require.NoError(t, err)
+		consensusVals = append(consensusVals, consensusVal)
+	}
+	// consensusVals is now [removedValidator, validator 2, validator 1]
+
+	// Set the last provider consensus validator set
+	providerKeeper.SetLastProviderConsensusValSet(ctx, consensusVals)
+
+	// Set the max number of validators
+	maxProviderConsensusValidators := int64(2)
+	params := providerKeeper.GetParams(ctx)
+	params.MaxProviderConsensusValidators = maxProviderConsensusValidators
+	providerKeeper.SetParams(ctx, params)
+
+	// expected validator updates
+
+	// validator 3 is added
+	// removed validator is set to 0 power
+	// validator 1 is set to 0 power (because maxProviderConsensusValidators is 2)
+	// validator 2 is untouched
+	expectedUpdates := []abci.ValidatorUpdate{
+		{
+			PubKey: testkeeper.Must(validators[0].CmtConsPublicKey()),
+			Power:  30,
+		},
+		{
+			PubKey: testkeeper.Must(removedValidator.CmtConsPublicKey()),
+			Power:  0,
+		},
+		{
+			PubKey: testkeeper.Must(validators[2].CmtConsPublicKey()),
+			Power:  0,
+		},
+	}
+
+	// Execute the function
+	updates := providerKeeper.ProviderValidatorUpdates(ctx)
+
+	// Assertions
+	require.ElementsMatch(t, expectedUpdates, updates, "The validator updates should match the expected updates")
+}
+
 // TestQueueVSCPacketsWithPowerCapping tests queueing validator set updates with power capping
 func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))

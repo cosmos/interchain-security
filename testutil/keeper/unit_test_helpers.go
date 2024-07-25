@@ -316,3 +316,13 @@ func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
 	require.NoError(t, err)
 	return validator
 }
+
+// Must panics if err is not nil, otherwise returns v.
+// This is useful to get a value from a function that returns a value and an error
+// in a single line.
+func Must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
