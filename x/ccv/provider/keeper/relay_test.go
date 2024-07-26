@@ -943,7 +943,7 @@ func TestBlocksUntilNextEpoch(t *testing.T) {
 	ctx = ctx.WithBlockHeight(5)
 	require.Equal(t, uint64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
 
-	// with block height of 10 we expect 0 blocks until the next epoch
+	// with block height of 10 we expect 10 blocks until the next epoch, since the last epoch ends with this block
 	ctx = ctx.WithBlockHeight(10)
 	require.Equal(t, uint64(10), providerKeeper.BlocksUntilNextEpoch(ctx))
 
