@@ -19,12 +19,12 @@ import (
 // won't correspond to at least one voting power
 const stake_multiplier = 1000000
 
-// TestMinStakeMaxRank tests the min stake and max rank parameters.
+// TestMinStake tests the min stake parameter.
 // It starts a provider and single consumer chain,
 // sets the initial powers according to the input, and then
-// sets the min stake and max rank parameters according to the test case.
+// sets the min stake parameter according to the test case.
 // Finally, it checks that the validator set on the consumer chain is as expected
-// according to the min stake and max rank parameters.
+// according to the min stake parameter.
 func TestMinStake(t *testing.T) {
 	testCases := []struct {
 		name                string
@@ -138,7 +138,7 @@ func TestMinStake(t *testing.T) {
 
 			// adjust parameters
 
-			// set the maxRank and minStake according to the test case
+			// set the minStake according to the test case
 			providerKeeper.SetMinStake(s.providerChain.GetContext(), s.consumerChain.ChainID, tc.minStake)
 
 			// undelegate and delegate to trigger a vscupdate

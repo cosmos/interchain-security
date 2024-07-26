@@ -733,7 +733,7 @@ func stepsMinStake() []Step {
 				},
 			},
 			{
-				// we start all the validators, but due to max rank of 1, only carol can validate
+				// we start all the validators, but due to the min stake, only carol can validate
 				Action: StartConsumerChainAction{
 					ConsumerChain: ChainID("consu"),
 					ProviderChain: ChainID("provi"),

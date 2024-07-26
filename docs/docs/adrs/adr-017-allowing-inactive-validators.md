@@ -70,11 +70,6 @@ set of consumer chains.
 
 To mitigate risks from validators with little stake, we introduce a minimum stake requirement for validators to be able to validate on consumer chains, which can be set by each consumer chain independently, with a default value set by the provider chain.
 
-Additionally, we independently allow individual consumer chains to set a maximum rank for validators.
-This means that validators above a certain position in the validator set cannot validate on the consumer chain.
-Setting this to be equal to `MaxProviderConsensusValidators` effectively disables inactive validators from validating on the consumer chain and thus
-disables the main feature described in this ADR.
-
 Additional risk mitigations are to increase the active set size slowly, and to monitor the effects on the network closely. For the first iteration, we propose to increase the active set size to 200 validators (while keeping the consensus validators to 180), thus letting the 20 validators with the most stake outside of the active set validate on consumer chains.
 
 ## Testing Scenarios
@@ -156,7 +151,7 @@ Checked as part of the e2e tests `inactive-vals-mint` (scenario with 1 active va
 
 ### Scenarios 8: Inactive validators can validate on consumer chains
 
-An inactive validator can opt in and validate on consumer chains (if min stake and max rank allow it)
+An inactive validator can opt in and validate on consumer chains (if min stake allows it)
 
 Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
 
