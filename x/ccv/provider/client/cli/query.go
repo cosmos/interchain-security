@@ -601,7 +601,7 @@ func CmdOldestUnconfirmedVsc() *cobra.Command {
 func CmdBlocksUntilNextEpoch() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "blocks-until-next-epoch",
-		Short: "Query the number of blocks until the next epoch begins and validator updates are sent to consumer chain",
+		Short: "Query the number of blocks until the next epoch begins and validator updates are sent to consumer chains",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
