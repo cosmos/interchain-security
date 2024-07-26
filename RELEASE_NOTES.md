@@ -1,7 +1,7 @@
 # Replicated Security v5.1.1  Release Notes
 
 ## 📝 Changelog
-Check out the [changelog](https://github.com/cosmos/interchain-security/blob/v5.1.0/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/v5.1.0...v5.1.1) from last release.
+Check out the [changelog](https://github.com/cosmos/interchain-security/blob/v5.1.1/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/v5.1.0...v5.1.1) from last release.
 
 <!-- Add the following line for major or minor releases -->
 Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/v5.1.x/UPGRADING.md) when migrating from `v4.3.x` to `v5.1.x`.
