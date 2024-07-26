@@ -318,7 +318,7 @@ func (tr Chain) curlJsonRPCRequest(method, params, address string) {
 	cmd := tr.target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
 	verbosity := false
-	e2e.ExecuteCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+	e2e.ExecuteCommand(cmd, "curlJsonRPCRequest", verbosity)
 }
 
 func uintPtr(i uint) *uint {
@@ -398,6 +398,7 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
+		log.Println("running cmd: ", cmd)
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 

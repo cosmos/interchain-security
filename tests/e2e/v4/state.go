@@ -539,7 +539,7 @@ func (tr Commands) curlJsonRPCRequest(method, params, address string) {
 	cmd := tr.Target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
 	verbosity := false
-	e2e.ExecuteCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+	e2e.ExecuteCommand(cmd, "curlJsonRPCRequest", verbosity)
 }
 
 // GetClientFrozenHeight returns the frozen height for a client with the given client ID
