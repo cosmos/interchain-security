@@ -60,8 +60,9 @@ func StakingKeeperEquivalenceInvariant(k Keeper) sdk.Invariant {
 		if maxValidators != uint32(maxProviderConsensusValidators) {
 			// the invariant should only check something if these two numbers are equal,
 			// so skip in this case
+			k.Logger(ctx).Info("skipping staking keeper equivalence invariant check because max validators is equal to max provider consensus validators")
 			return sdk.FormatInvariant(types.ModuleName, "staking-keeper-equivalence",
-				fmt.Sprintf("maxValidators: %v, maxProviderVals: %v", maxValidators, maxProviderConsensusValidators)), true
+				fmt.Sprintf("maxValidators: %v, maxProviderVals: %v", maxValidators, maxProviderConsensusValidators)), false
 		}
 
 		// check that the staking keeper and the provider keeper return the same values
