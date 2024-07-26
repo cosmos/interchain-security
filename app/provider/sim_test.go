@@ -18,6 +18,8 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
 	providerapp "github.com/cosmos/interchain-security/v5/app/provider"
+
+	spew "github.com/davecgh/go-spew/spew"
 )
 
 func init() {
@@ -41,7 +43,8 @@ func TestFullAppSimulation(t *testing.T) {
 	config.ChainID = "provi"
 
 	fmt.Println("========================================")
-	fmt.Println(config)
+	fmt.Println("Running with the configuration:")
+	fmt.Println(spew.Sdump(config))
 	fmt.Println("========================================")
 
 	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
