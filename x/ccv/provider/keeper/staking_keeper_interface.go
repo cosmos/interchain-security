@@ -35,12 +35,12 @@ func (k Keeper) TotalBondedTokens(ctx context.Context) (math.Int, error) {
 	totalBondedTokens := math.ZeroInt()
 
 	k.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) (stop bool) {
-		tokens := validator.GetTokens()
+		tokens := validator.GetBondedTokens()
 		totalBondedTokens = totalBondedTokens.Add(tokens)
 		return false
 	})
 
-	return totalBondedTokens.Sub(math.NewInt(100)), nil
+	return totalBondedTokens, nil
 }
 
 // IterateDelegations is the same as IterateDelegations in the StakingKeeper.
