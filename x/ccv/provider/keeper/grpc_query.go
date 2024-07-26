@@ -495,5 +495,5 @@ func (k Keeper) QueryBlocksUntilNextEpoch(goCtx context.Context, req *types.Quer
 	// Calculate the blocks until the next epoch
 	blocksUntilNextEpoch := k.BlocksUntilNextEpoch(ctx)
 
-	return &types.QueryBlocksUntilNextEpochResponse{BlocksUntilNextEpoch: blocksUntilNextEpoch}, nil
+	return &types.QueryBlocksUntilNextEpochResponse{BlocksUntilNextEpoch: uint64(blocksUntilNextEpoch)}, nil
 }
