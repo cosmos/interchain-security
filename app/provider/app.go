@@ -664,7 +664,6 @@ func New(
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
 		minttypes.ModuleName,
-		crisistypes.ModuleName,
 		ibcexported.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -674,6 +673,7 @@ func New(
 		vestingtypes.ModuleName,
 		providertypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		crisistypes.ModuleName, // crisis needs to be last so that the genesis state is consistent when it checks invariants
 	)
 
 	app.MM.RegisterInvariants(&app.CrisisKeeper)
