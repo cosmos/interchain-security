@@ -267,8 +267,7 @@ This way, we can respond to queries that ask for all the consumer chain's parame
 to potentially change its to-be-launched parameters (e.g., `spawnTime`).
 
 A Top N can move to the initialized phase only if the owner of the registered chain issues a governance proposal
-with two messages, `MsgInitializeConsumer` and `MsgUpdateConsumer`, and the proposal passes. A Top N chain cannot be
-launched if either of those two messages has already been executed outside a governance proposal before a proposal is made.
+with two messages, `MsgInitializeConsumer` and `MsgUpdateConsumer`, and the proposal passes.
 
 #### Modify a Consumer Chain
 We reuse the [MsgConsumerModification](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/tx.proto#L294)
@@ -332,6 +331,8 @@ We need to perform multiple migrations. All state needs to be reindex based on a
 Because we only have two consumer chains at the moment, this is not going to be an expensive migration even if we have some live
 consumer chains that are being voted upon. Similarly, all the messages, queries, etc. would need to be changed to operate on a `consumerId`
 instead of a `chainId`.
+
+It is **important** to migrate any ongoing `ConsumerAdditionProposal`s when we upgrade before we actually deprecate `ConsumerAdditionProposal`s.
 
 ## Consequences
 
