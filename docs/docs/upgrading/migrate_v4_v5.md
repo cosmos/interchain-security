@@ -21,7 +21,7 @@ Pre-requisite version for this upgrade: any from the `v4.x` release line.
 
 `v5.0.0` should not be used on the provider.
 
-The provider should be updated to `v5.1.0`.
+The provider should be updated to `v5.1.1`.
 
 ## Provider
 

@@ -1,20 +1,20 @@
 # Upgrading Replicated Security
 
-## [v5.1.x](https://github.com/cosmos/interchain-security/releases/tag/v5.1.0)
+## [v5.1.x](https://github.com/cosmos/interchain-security/releases/tag/v5.1.1)
 
 ### Provider
 
-***Note that providers using v5.0.0 cannot upgrade to v5.1.0 cleanly***
+***Note that providers using v5.0.0 cannot upgrade to v5.1.1 cleanly***
 
-Providers using versions `v4.0.x`, `v4.1.x`, `v4.2.x`, `v4.3.x` and `v4.4.x` can upgrade to `v5.1.0`.
+Providers using versions `v4.0.x`, `v4.1.x`, `v4.2.x`, `v4.3.x` and `v4.4.x` can upgrade to `v5.1.1`.
 
-Upgrading from `v4.x` to `v5.1.0` will upgrade the provider `consensus version` to 7.
+Upgrading from `v4.x` to `v5.1.1` will upgrade the provider `consensus version` to 7.
 
 Upgrade code will be executed automatically during the upgrade procedure.
 
 ### Consumer
 
-Upgrading the consumer from `v5.0.0` to `v5.1.0` will not require state migration. 
+Upgrading the consumer from `v5.0.0` to `v5.1.1` will not require state migration. 
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
