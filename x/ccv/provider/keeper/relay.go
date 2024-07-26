@@ -166,7 +166,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 // Returns 0 if the current block is the last block of the epoch
 func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 	epochLength := k.GetBlocksPerEpoch(ctx)
-	return int64(epochLength - ctx.BlockHeight()%epochLength)
+	return int64(epochLength - (ctx.BlockHeight()%epochLength))
 }
 
 // SendVSCPackets iterates over all registered consumers and sends pending
