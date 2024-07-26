@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/cosmos/cosmos-sdk/codec"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -20,13 +19,20 @@ import (
 type Migrator struct {
 	providerKeeper providerkeeper.Keeper
 	paramSpace     paramtypes.Subspace
-	cdc            codec.BinaryCodec
 	storeKey       storetypes.StoreKey
 }
 
 // NewMigrator returns a new Migrator.
-func NewMigrator(providerKeeper providerkeeper.Keeper, paramSpace paramtypes.Subspace) Migrator {
-	return Migrator{providerKeeper: providerKeeper, paramSpace: paramSpace}
+func NewMigrator(
+	providerKeeper providerkeeper.Keeper,
+	paramSpace paramtypes.Subspace,
+	storeKey storetypes.StoreKey,
+) Migrator {
+	return Migrator{
+		providerKeeper: providerKeeper,
+		paramSpace:     paramSpace,
+		storeKey:       storeKey,
+	}
 }
 
 // Migrating consensus version 1 to 2 is a no-op.
@@ -83,7 +89,9 @@ func (m Migrator) Migrate6to7(ctx sdktypes.Context) error {
 func (m Migrator) Migrate7to8(ctx sdktypes.Context) error {
 	store := ctx.KVStore(m.storeKey)
 	v8.CompleteUnbondingOps(ctx, store, m.providerKeeper)
-	v8.MigrateConsumerAddrsToPrune(ctx, store, m.providerKeeper)
+	if err := v8.MigrateConsumerAddrsToPrune(ctx, store, m.providerKeeper); err != nil {
+		return err
+	}
 	v8.CleanupState(store)
 
 	return nil

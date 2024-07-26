@@ -41,9 +41,14 @@ func CompleteUnbondingOps(ctx sdk.Context, store storetypes.KVStore, pk provider
 
 // MigrateConsumerAddrsToPrune migrates the ConsumerAddrsToPrune index to ConsumerAddrsToPruneV2.
 // Note: This migration must be done before removing the VscSendTimestamp index
-func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper) {
+func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper) error {
 	iterator := storetypes.KVStorePrefixIterator(store, []byte{LegacyConsumerAddrsToPruneBytePrefix})
 	defer iterator.Close()
+
+	unbondingPeriod, err := pk.UnbondingTime(ctx)
+	if err != nil {
+		return err
+	}
 
 	for ; iterator.Valid(); iterator.Next() {
 		chainID, vscID, err := providertypes.ParseChainIdAndUintIdKey(LegacyConsumerAddrsToPruneBytePrefix, iterator.Key())
@@ -72,14 +77,7 @@ func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk p
 			)
 			continue
 		}
-		unbondingPeriod, err := pk.UnbondingTime(ctx)
-		if err != nil {
-			pk.Logger(ctx).Error(
-				"MigrateConsumerAddrsToPrune cannot get unbonding period from staking module",
-			)
-			continue
-		}
-		pruneAfterTs := sentTime.Add(unbondingPeriod)
+		pruneAfterTs := sentTime.Add(unbondingPeriod).UTC()
 
 		var addrs providertypes.AddressList
 		err = addrs.Unmarshal(iterator.Value())
@@ -93,6 +91,8 @@ func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk p
 			pk.AppendConsumerAddrsToPrune(ctx, chainID, pruneAfterTs, consumerAddr)
 		}
 	}
+
+	return nil
 }
 
 // CleanupState removes deprecated state
