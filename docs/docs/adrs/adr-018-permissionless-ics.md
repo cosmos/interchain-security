@@ -22,39 +22,62 @@ This ADR presents _Permissionless_ ICS, a way in which an [_Opt In_](adr-015-par
 ICS without needing a governance proposal but by simply issuing a transaction.
 
 ## Decision
+In Permissionless ICS, launching an Opt In chain is **only** possible through a transaction and not through a [`MsgConsumerAddition`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/tx.proto#L111)
+proposal. Naturally, Permissionless ICS does not eliminate governance proposals, as proposals are still necessary for Top N chains.
+Because of this, this ADR outlines a solution that also refactors governance proposals (i.e., `MsgConsumerAddition`, `MsgConsumerModification`, and `MsgConsumerRemoval`)
+so that Top N and Opt In chains can share as much functionality as possible.
+Note, that to make the distinction between governance-proposed versus transaction-launched chains clearer, in Permissionless ICS,
+we can only launch, update, or stop Top N chains with governance proposals, and we can only launch, update, or stop Opt In chains with transactions.
+Additionally, a Top N chain can transform to an Opt In chain through a gov proposal, but for simplicity, in this first
+iteration of Permissionless, an Opt In chain cannot transform to a Top N chain.
 
 ### The Phases of a Consumer Chain
-In Permissionless ICS, launching an Opt In chain is **only** possible through a transaction and not through a [`MsgConsumerAddition`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/tx.proto#L111)
-proposal. Nevertheless, ICS does not eliminate the `MsgConsumerAddition` governance proposal, as proposals are still necessary
-for Top N chains. Because of this, this ADR outlines a solution that attempts to preserve as much of the governance proposal code
-as possible.
-Additionally, to make the distinction between governance-proposed versus transaction-launched chains clearer, in Permissionless ICS,
-we can only add, modify, or remove Top N chains with governance proposals (i.e., `MsgConsumerAddition`, `MsgConsumerModification`,
-and `MsgConsumerRemoval`) and we can only add, modify, or remove Opt In chains with transactions.
-Note however that a Top N chain can transform to an Opt In Chain through a `MsgConsumerModification` proposal that sets `top_N == 0` but not vice versa.
+
+We first present the notion of an _owner_ of a consumer chain before showing the specific phases of a consumer chain.
+
+**Owner.** A consumer chain has an _owner_, which is simply an address. Only the owner can interact (i.e., launch, update, or stop)
+with the chain. The owner of an Opt In chain is the one who signed the initial transaction to register a consumer chain (more on this later).
+Naturally, an Opt In chain can change its owner at any point. The owner of a Top N chain is the account of the governance module.
+Therefore, any changes on a Top N chain have to go through governance proposals.
 
 A consumer chain can reside in four phases: i) _registered_, ii) _initialized_, iii) _launched_, and iv) _stopped_ phase as seen
 in the diagram below:
 ![Phases of a consumer chain](./adr18_phases_of_a_consumer_chain.png)
 
+**Registered phase.** In the _registered phase_, a consumer chain is assigned a unique identifier that identifies a consumer chain
+that can later be used to interact with the specific consumer chain (e.g., when a validator opts in on a chain).
+After a chain has been registered, it can later be initialized and then launched. Specifically, Permissionless ICS introduces
+a `MsgRegisterConsumer` message that can be used to register **both** Top N and Opt In consumer chains.
+In the registered phase, it is not yet known if the consumer chain would end up being a Top N or an Opt In chain and hence
+the owner of the consumer chain at this phase is the one that signed the `MsgRegisterConsumer`.
+Note that currently, a consumer chain is registered when first proposed through a `MsgConsumerAddition` proposal
+message but with Permissionless ICS, the `MsgConsumerAddition` is deprecated and chains have to issue a `MsgRegisterConsumer` message instead.
+A consumer chain in the registered phase might not launch, e.g., a later governance proposal might not pass or
+the Opt In chain might never be initialized.
 
-**Registered phase.** When a Top N chain is first proposed through a `MsgConsumerAddition` proposal or an Opt In chain is registered using the `MsgConsumerRegistration` transaction (more on this later),
-the consumer chain resides in the _registered_ phase. A consumer chain in the registered phase might end up not launching, i.e., the `MsgConsumerAddition` proposal does not pass or the registered Opt In chain is never initialized (see below).
-At this phase, as well as in the initialized and launched phases, validators can choose to opt in on the consumer chain.
+**Initialized phase.** The _initialized phase_ means that the chain has set all the needed parameters to launch but has
+not yet launched. To initialize an Opt In chain, the owner of the chain has to issue a `MsgInitializeConsumer` message
+and potentially a `MsgUpdateConsumer` if they want to set up specific parameters (e.g., [power-shaping features](https://cosmos.github.io/interchain-security/features/power-shaping)).
+Similarly, a Top N chain has to issue the same two messages (i.e, `MsgInitializeConsumer`, `MsgUpdateConsumer`) as part of a
+governance proposal and if the governance proposal passes, the consumer chain is considered to be initialized. The moment
+a governance proposal is proposed for a Top N chain, the owner changes to be the account of the governance module.
+While in the initialized phase, an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc.
+by issuing a new `MsgInitializeConsumer` or `MsgUpdateConsumer` messages.
+This is not the case for Top N chains, where a `MsgUpdateConsumer` can only be issued after a consumer
+chain [has launched](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/legacy_proposal.go#L89).
 
-**Initialized phase.** If the `MsgConsumerAddition` proposal of a Top N chain passes or a registered Opt In chain is set to launch with the `MsgConsumerInitialization` transaction, then the chain moves to the _initialized_ phase.
-In the initialized phase, an Opt In chain can choose to change the consumer chain parameters, such as `spawnTime`, etc. by issuing a new `MsgConsumerInitialization`.
-This is not the case for Top N chains, where a `MsgConsumerModification` can only be issued after a consumer
-chain [has started](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/legacy_proposal.go#L89).
-
-**Launched phase.** When the [`spawnTime`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/provider.proto#L57)
+**Launched phase.** In the _launched phase_ the consumer chain is running and is consuming a subset of the validator set
+of the provider. When the [`spawnTime`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/provider.proto#L57)
 passes and [at least one validator has opted in](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/keeper/proposal.go#L430)
-the chain can launch and moves to the _launched_ phase. While in launched phase, a Top N consumer chain can choose to modify
-its parameters through a `MsgConsumerModification` and an Opt In chain can change its parameters by issuing the `MsgConsumerModification` transaction.
+the chain can launch and moves to the launched phase. Note that a Top N chain can launch if and only if the `spawnTime` has passed and
+the initialization proposal has successfully passed. While in launched phase, a consumer chain can choose to modify
+its parameters through `MsgUpdateConsumer`. Naturally, only the owner of the chain can issue `MsgUpdateConsumer`, thus
+for Top N chains, the chain can be updated only through a governance proposal that contains a `MsgUpdateConsumer`.
 
-**Stopped phase.** Lastly, a Top N chain can choose to exit ICS by issuing a `MsgConsumerRemoval` and an Opt In chain can issue a transaction to stop the chain.
-After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed. We
-keep track of the consumer chain's state for some period, so that we are able to punish validators for misbehaviours that occurred before the consumer chain stopped.
+**Stopped phase.** Lastly, the owner of a chain can choose to exit ICS by executing a `MsgRemoveConsumer`.
+After some period of time (e.g., provider's unbonding period), all state related to the stopped consumer chain can be removed.
+We keep track of the state of the consumer chain for some period, so that we are able to punish validators for misbehaviours
+that occurred before the consumer chain stopped.
 
 Note that everything described so far and everything that follows applies to consumer chains that transition from standalone chains as well.
 
@@ -67,7 +90,7 @@ To tackle this problem, in Permissionless ICS, we introduce the `consumerId` tha
 an increasing counter (i.e., `counter`), thus we can support multiple consumer chains with the same `chainId`.
 Another way to understand this is with an analogy between consumer chains and IBC clients: Imagine having multiple IBC clients
 that each point to different consumer chains, but all share the exact same `chainId`. It is then up to the user to select the
-appropriate client (i.e., `clientID`) based on the actual chain they want to communicate with. Similarly, there can be multiple
+appropriate client (i.e., `clientId`) based on the actual chain they want to communicate with. Similarly, there can be multiple
 consumer chains with the exact same `chainId`, and it is the responsibility of the validators to choose the one they wish
 to interact with by providing the right `consumerId`.
 
@@ -87,7 +110,7 @@ As a result of using `consumerId`, we have to migrate a substantial chunk of sta
 Currently, in ICS we have state that is indexed by a multitude of [keys](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/types/keys.go#L40).
 In the table below, we see the ones that are associated with a `chainId` and how often state under those keys gets updated.
 Additionally, for each key, the table shows whose action can lead to the setting or deletion of the state associated with that key.
-An action can stem either from: i) a consumer chain (e.g., through a `MsgConsumerModification` message, an IBC packet sent over to the provider, etc.),
+An action can stem either from: i) a consumer chain (e.g., through a `MsgUpdateConsumer` message, an IBC packet sent over to the provider, etc.),
 ii) a provider chain (e.g., at the end of a block some action is taken), or by iii) a validator (e.g., through a `MsgAssignConsumerKey` message)
 or a combination of them.
 
@@ -120,60 +143,55 @@ or a combination of them.
 Everything stored under one of the above keys is associated with a `chainId` and has to be migrated to new state under a `consumerId`.
 
 ### New Messages
-In this section, we describe the new messages (i.e., `MsgConsumerRegistration` and `MsgConsumerInitialization`)
-that Permissionless ICS introduces, and the reused ones (i.e., `MsgConsumerModification` and `MsgConsumerRemoval`) and
-on how they can be used.
+In this section, we describe the new messages (i.e., `MsgRegisterConsumer`, `MsgInitializeConsumer`,  `MsgUpdateConsumer` and `MsgRemoveConsumer`)
+that Permissionless ICS introduces.
 Then, we describe how to utilize these messages with our existing codebase.
 
 #### Register a Consumer Chain
-We first have to register an Opt In chain before launching it. This is done through the following message.
+We first have to register a chain before launching it, irrespectively of whether it is Top N or Opt In.
+This is done through the following message:
 ```protobuf
-message MsgConsumerRegistration {
-  // the registration config that contains information for the registered chain
-  ConsumerRegistrationConfig registration_config;
+message MsgRegisterConsumer {
+  // the registration record that contains information for the registered chain
+  ConsumerRegistrationRecord registration_record;
 }
 ```
 
-where `ConsumerRegistrationConfig` contains information about the to-be-launched consumer chain before it launches.
+where `ConsumerRegistrationRecord` contains information about the to-be-launched consumer chain before it launches.
 
 ```protobuf
-message ConsumerRegistrationConfig {
+message ConsumerRegistrationRecord {
   // the title of the chain to-be-launched 
   string title;
   // the description of the chain to-be-launched
   string description;
   // the chain id of the new consumer chain
   string chain_id;
-  // the owner of this consumer chain
-  string owner_address;
 }
 ```
 
 This response of this message contains a single `string`, that is the `consumerId` for this registered consumer chain and sets
 a consumer chain in its registered phase. With the returned `consumerId`, validators can already opt in on the consumer
-chain to show their potential interest on the chain. Additionally, this allows consumer chains to show that they are interested
-in joining ICS even though, they might not yet know the specific ICS parameters they would like to use (see `MsgConsumerInitialization`).
+chain to show their potential interest on the chain.
 
-`ConsumerRegistrationConfig` contains the `owner_address` that corresponds to the address that would be able to initialize or later update this consumer chain.
-We store the owner address of each Opt In consumer chain by creating an association between `consumerId`s and `owner_address`es.
-Top N chains have as the `onwer_address` the address of the governance account, because they can only be modified through governance proposals. 
+The owner of the consumer chain is the one that signed the `MsgRegisterConsumer` message.
 
-To prevent an attacker spamming the system by creating bogus consumer chains, we set a fixed cost for sending a `MsgConsumerRegistration` (configurable via a parameter).
+To prevent an attacker spamming the system by creating bogus consumer chains, we set a fixed cost for sending a `MsgRegisterConsumer` (configurable via a parameter).
 
 #### Initialize a Consumer Chain
-To move a consumer chain to its initialized phase, we issue a `MsgConsumerInitialization` message that is as follows:
+To move an Opt In consumer chain to its initialized phase, we issue a `MsgInitializeConsumer` message that is as follows:
 
 ```protobuf
-message MsgConsumerInitialization {
+message MsgInitializeConsumer {
   // consumer id of the to-be-updated consumer chain
   string consumer_id;
-  // the initialization config that contains initialization parameters for the upcoming chain
-  ConsumerInitializationConfig initialization_config;
+  // the initialization record that contains initialization parameters for the upcoming chain
+  ConsumerInitializationRecord initialization_record;
 }
 ```
-where `ConsumerInitializationConfig` contains the following:
+where `ConsumerInitializationRecord` contains the following:
 ```protobuf
-message ConsumerInitializationConfig {
+message ConsumerInitializationRecord {
   // ---------- ---------- ----------
   // Following fields are used when the consumer chain launches and are not needed by the provider afterwards.
   // ---------- ---------- ----------
@@ -231,42 +249,47 @@ message ConsumerInitializationConfig {
 }
 ```
 
-`ConsumerInitializationConfig` contains _almost_ everything that is contained in [`MsgConsumerAddition`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/tx.proto#L111).
+`ConsumerInitializationRecord` contains _almost_ everything that is contained in [`MsgConsumerAddition`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/tx.proto#L111).
 Note that as part of this work, we deprecate [`ConsumerAdditionProposal`](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/provider.proto#L30).
 
-For each `consumerId`, we store its corresponding `ConsumerInitializationConfig`. For Top N chains, we can perform this
+For each `consumerId`, we store its corresponding `ConsumerInitializationRecord`. For Top N chains, we can perform this
 store by using the [`AfterProposalVotingPeriodEnded`](https://github.com/cosmos/cosmos-sdk/blob/v0.50.8/x/gov/types/hooks.go#L52).
 
-Note that we need to extensively check the fields of the provided `ConsumerInitializationConfig` to guarantee that no consumer
+Note that we need to extensively check the fields of the provided `ConsumerInitializationRecord` to guarantee that no consumer
 chain launches with problematic parameters (e.g., we need to have maximum length for the `chainId`, etc.).
 As a starter we look into the [usual validity conditions](https://github.com/cosmos/interchain-security/blob/v5.1.0/x/ccv/provider/types/msg.go#L244).
 
-For all chains in the initialized phase, we keep a mapping between `consumerId` and the underlying `ConsumerInitializationConfig`.
+For all chains in the initialized phase, we keep a mapping between `consumerId` and the underlying `ConsumerInitializationRecord`.
 This way, we can respond to queries that ask for all the consumer chain's parameters. For example, retrieving the
 `spawn_time` of consumer chain with a given `consumerId`.
 
-`MsgConsumerInitialization` can be executed multiple times for the same consumer chain during its initialized phase
+`MsgInitializeConsumer` can be executed multiple times for the same Opt In consumer chain during its initialized phase
 to potentially change its to-be-launched parameters (e.g., `spawnTime`).
+
+A Top N can move to the initialized phase only if the owner of the registered chain issues a governance proposal
+with two messages, `MsgInitializeConsumer` and `MsgUpdateConsumer`, and the proposal passes. A Top N chain cannot be
+launched if either of those two messages has already been executed outside a governance proposal before a proposal is made.
 
 #### Modify a Consumer Chain
 We reuse the [MsgConsumerModification](https://github.com/cosmos/interchain-security/blob/v5.1.0/proto/interchain_security/ccv/provider/v1/tx.proto#L294)
-message to update parameters of an Opt In chain that is in its initialized or launched phase. This message can only be executed by the owner of a consumer
+message to update parameters of an Opt In chain that is in its initialized or launched phase, but rename the message
+to `MsgUpdateConsumer`. This message can only be executed by the owner of a consumer
 chain and hence only the owner can change the parameters (e.g., `validators_power_cap`, `allowlist`, etc.)
 of the consumer chain. Recall that if the consumer chain is a Top N chain, then the owner is the address of the
 governance account.
 
-We refactor `MsgConsumerModification` to be as follows:
+We refactor `MsgUpdateConsumer` to be as follows:
 ```protobuf
-message MsgConsumerModification {
+message MsgUpdateConsumer {
   // consumer id of the to-be-updated consumer chain
   string consumer_id;
-  ConsumerModificationConfig consumer_modification_config; 
+  ConsumerUpdateRecord update_record; 
 }
 ```
 
-where `ConsumerModificationConfig` contains the following:
+where `ConsumerUpdateRecord` contains the following:
 ```
-message ConsumerModificationConfig {
+message ConsumerUpdateRecord {
   // `owner_address` cannot be modified by a Top N chain, unless it moves to an Opt In chain (i.e., `top_N == 0`)
   string owner_address;
   uint32 top_N;
@@ -277,21 +300,20 @@ message ConsumerModificationConfig {
 }
 ```
 
-Note, that even though a consumer chain is initialized with all the arguments in `ConsumerInitializationConfig`,
-the `MsgConsumerModification` updates only the `owner_address` and the `consumer_modification_config`. This is because 
+Note, that even though a consumer chain is initialized with all the arguments in `ConsumerUpdateRecord`,
+the `MsgUpdateConsumer` updates only the `owner_address` and the `consumer_update_record`. This is because 
 all the other arguments are either useless (e.g., `spawnTime`) after a chain has started, or can be updated directly
 by the consumer chain params (e.g., `consumer_redistribution_fraction`).
 
 #### Remove (Stop) a Consumer Chain
-We reuse the `MsgConsumerRemoval` so we can stop any Opt In chain at any point in time. Note that all relevant state for this consumer chain
-remains on the provider's state before getting removed after the time of an unbonding period (of the provider) has passed. This is to enable
-potential slashing for any infraction that might have been incurred until now.
-Note however that we never recycle previously-used `consumerId`s. Naturally, this message can only be issued by the owner
-of the consumer chain.
+We reuse the `MsgConsumerRemoval` (renamed to `MsgRemoveConsumer`) so we can stop any Opt In chain at any point in time.
+Note that all relevant state for this consumer chain remains on the provider's state before getting removed after the time
+of an unbonding period (of the provider) has passed. This is to enable potential slashing for any infraction that might have been incurred until now.
+Note however that we never recycle previously-used `consumerId`s. Naturally, this message can only be issued by the owner of the consumer chain.
 
 ```protobuf
-message MsgConsumerRemoval {
-  // the consumerId as returned by `MsgLaunchConsumerChain`
+message MsgRemoveConsumer {
+  // the consumerId as returned by `MsgRegisterConsumer`
   string consumer_id;
   // the time on the provider chain at which all validators are responsible to
   // stop their consumer chain validator node
@@ -299,18 +321,13 @@ message MsgConsumerRemoval {
 }
 ```
 
+#### Examples of Launching a Consumer Chain
+The figures below depict some examples of some of the phases a consumer chain resides in to launch.
+
+![Examples of a launching consumer chain](./adr18_flows_of_launching_a_consumer_chain.png)
+
+
 ### Additional Modifications
-Because we introduce `ConsumerRegistrationConfig`, `ConsumerInitializationConfig`, and `ConsumerModificationConfig`, we refactor
-`MsgConsumerAddition` to be as follows:
-
-```
-message MsgConsumerAddition {
-  ConsumerRegistrationConfig consumer_registration_config;
-  ConsumerInitializationConfig consumer_initialization_config;
-  ConsumerModificationConfig consumer_modification_config;
-}
-```
-
 We need to perform multiple migrations. All state needs to be reindex based on a `consumerId` instead of the `chainId`.
 Because we only have two consumer chains at the moment, this is not going to be an expensive migration even if we have some live
 consumer chains that are being voted upon. Similarly, all the messages, queries, etc. would need to be changed to operate on a `consumerId`
