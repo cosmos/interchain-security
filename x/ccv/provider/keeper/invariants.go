@@ -94,10 +94,10 @@ func StakingKeeperEquivalenceInvariant(k Keeper) sdk.Invariant {
 		for i, providerVal := range providerBondedValidators {
 			stakingVal := stakingBondedValidators[i]
 
-			if providerVal.Equal(&stakingVal) {
+			if !providerVal.Equal(&stakingVal) {
 				return sdk.FormatInvariant(types.ModuleName, "staking-keeper-equivalence",
 					fmt.Sprintf("provider validator: %v, staking validator: %v",
-						providerVal.GetOperator(), stakingVal.GetOperator())), true
+						providerVal, stakingVal)), true
 			}
 		}
 
