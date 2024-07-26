@@ -27,13 +27,13 @@ func TestProviderProposalHandler(t *testing.T) {
 	hourFromNow := now.Add(time.Hour).UTC()
 
 	testCases := []struct {
-		name                        string
-		content                     govv1beta1.Content
-		blockTime                   time.Time
-		expValidConsumerAddition    bool
-		expValidConsumerRemoval     bool
-		expValidChangeRewardDenom   bool
-		expValidChangeConsumerModif bool
+		name                      string
+		content                   govv1beta1.Content
+		blockTime                 time.Time
+		expValidConsumerAddition  bool
+		expValidConsumerRemoval   bool
+		expValidChangeRewardDenom bool
+		expValidConsumerModif     bool
 	}{
 		{
 			name: "valid consumer addition proposal",
@@ -80,8 +80,8 @@ func TestProviderProposalHandler(t *testing.T) {
 				[]string{"addr1"},
 				nil,
 			),
-			blockTime:                   hourFromNow,
-			expValidChangeConsumerModif: true,
+			blockTime:             hourFromNow,
+			expValidConsumerModif: true,
 		},
 		{
 			name:      "nil proposal",
@@ -125,7 +125,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		case tc.expValidChangeRewardDenom:
 			// Nothing to mock
 
-		case tc.expValidChangeConsumerModif:
+		case tc.expValidConsumerModif:
 			// set up a consumer client, so it seems that "chainID" is running
 			providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 		}
@@ -135,7 +135,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		err := proposalHandler(ctx, tc.content)
 
 		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
-			tc.expValidChangeRewardDenom || tc.expValidChangeConsumerModif {
+			tc.expValidChangeRewardDenom || tc.expValidConsumerModif {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)
