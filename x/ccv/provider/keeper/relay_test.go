@@ -924,3 +924,30 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 
 	require.Equal(t, expectedQueuedVSCPackets, actualQueuedVSCPackets)
 }
+
+// TestBlocksUntilNextEpoch tests the `BlocksUntilNextEpoch` method
+func TestBlocksUntilNextEpoch(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// 10 blocks constitute an epoch
+	params := providertypes.DefaultParams()
+	params.BlocksPerEpoch = 10
+	providerKeeper.SetParams(ctx, params)
+
+	// with block height of 1 we expect 9 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(1)
+	require.Equal(t, uint64(9), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 5 we expect 5 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(5)
+	require.Equal(t, uint64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 10 we expect 0 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(10)
+	require.Equal(t, uint64(10), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 15 we expect 5 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(15)
+	require.Equal(t, uint64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
+}
