@@ -40,6 +40,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	cmd.AddCommand(CmdOldestUnconfirmedVsc())
+	cmd.AddCommand(CmdBlocksUntilNextEpoch())
 	return cmd
 }
 
