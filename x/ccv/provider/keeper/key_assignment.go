@@ -318,10 +318,14 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 		if _, pruneTs, err := types.ParseChainIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key()); err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
-			panic(err)
+			k.Logger(ctx).Error("ParseChainIdAndTsKey failed",
+				"key", string(iterator.Key()),
+				"error", err.Error(),
+			)
+			continue
 		} else if pruneTs.After(ts) {
 			// An error here would indicate something is wrong the iterator
-			k.Logger(ctx).Error("iterator in GetConsumerAddrsToPrune failed", "key", string(iterator.Key()))
+			k.Logger(ctx).Error("iterator in ConsumeConsumerAddrsToPrune failed", "key", string(iterator.Key()))
 			continue
 		}
 
@@ -331,7 +335,11 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 		if err := addrs.Unmarshal(iterator.Value()); err != nil {
 			// An error here would indicate something is very wrong,
 			// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPrune.
-			panic(err)
+			k.Logger(ctx).Error("unmarshaling in ConsumeConsumerAddrsToPrune failed",
+				"key", string(iterator.Key()),
+				"error", err.Error(),
+			)
+			continue
 		}
 
 		consumerAddrsToPrune.Addresses = append(consumerAddrsToPrune.Addresses, addrs.Addresses...)

@@ -225,15 +225,16 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 
 	keeper.AppendConsumerAddrsToPrune(ctx, chainID, ts1, consumerAddr1)
 
-	addrsToPrune = keeper.ConsumeConsumerAddrsToPrune(ctx, chainID, ts2).Addresses
+	addrsToPrune = keeper.ConsumeConsumerAddrsToPrune(ctx, chainID, ts1).Addresses
 	require.NotEmpty(t, addrsToPrune, "addresses to prune was returned")
-	require.Len(t, addrsToPrune, 2, "addresses to prune is not len 2")
+	require.Len(t, addrsToPrune, 1, "addresses to prune is not len 1")
 	require.Equal(t, addrsToPrune[0], consumerAddr1.ToSdkConsAddr().Bytes())
-	require.Equal(t, addrsToPrune[1], consumerAddr2.ToSdkConsAddr().Bytes())
 	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, ts1).Addresses
 	require.Empty(t, addrsToPrune, "addresses to prune was returned")
 	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, ts2).Addresses
-	require.Empty(t, addrsToPrune, "addresses to prune was returned")
+	require.NotEmpty(t, addrsToPrune, "addresses to prune is empty")
+	require.Len(t, addrsToPrune, 1, "addresses to prune is not len 1")
+	require.Equal(t, addrsToPrune[0], consumerAddr2.ToSdkConsAddr().Bytes())
 }
 
 func TestGetAllConsumerAddrsToPrune(t *testing.T) {
