@@ -25,7 +25,11 @@ const (
 // Note that it must be executed before CleanupState.
 func CompleteUnbondingOps(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper) {
 	iterator := storetypes.KVStorePrefixIterator(store, []byte{LegacyUnbondingOpBytePrefix})
-	defer iterator.Close()
+	defer func() {
+		if err := iterator.Close(); err != nil {
+			pk.Logger(ctx).Error("Failed to close iterator", "error", err)
+		}
+	}()
 
 	for ; iterator.Valid(); iterator.Next() {
 		id := binary.BigEndian.Uint64(iterator.Key()[1:])
@@ -44,7 +48,10 @@ func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk p
 	for ; iterator.Valid(); iterator.Next() {
 		chainID, vscID, err := providertypes.ParseChainIdAndUintIdKey(LegacyConsumerAddrsToPruneBytePrefix, iterator.Key())
 		if err != nil {
-			pk.Logger(ctx).Error("ParseChainIdAndUintIdKey failed", "key", string(iterator.Key()))
+			pk.Logger(ctx).Error("ParseChainIdAndUintIdKey failed while migrating ConsumerAddrsToPrune",
+				"key", string(iterator.Key()),
+				"error", err.Error(),
+			)
 			continue
 		}
 		// use the VscSendTimestamp index to compute the timestamp after which this consumer address can be pruned

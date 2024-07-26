@@ -155,7 +155,7 @@ Note that these removals require state migration.
 
 To stop the consumer chains from sending `VSCMaturedPackets`, it is sufficient to not store the maturity time of `VSCPacket`s when receiving them, i.e., do not call `SetPacketMaturityTime` from the `OnRecvVSCPacket()` method. 
 Note that eventually, no additional `VSCMaturedPackets` will be added to the sending queue as `QueueVSCMaturedPackets` iterates over elapsed maturity times. 
-In addition, to cleanup the code, the `QueueVSCMaturedPackets` must be removed. 
+In addition, to clean up the code, the `QueueVSCMaturedPackets` must be removed. 
 
 #### Messages
 
