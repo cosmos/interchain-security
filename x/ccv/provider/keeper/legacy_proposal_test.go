@@ -63,7 +63,6 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				nil,
 				nil,
 				0,
-				0,
 				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
@@ -95,7 +94,6 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				0,
 				nil,
 				nil,
-				0,
 				0,
 				false,
 			).(*providertypes.ConsumerAdditionProposal),
@@ -289,7 +287,6 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
 	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
 	providerKeeper.SetMinStake(ctx, chainID, 1000)
-	providerKeeper.SetMaxValidatorRank(ctx, chainID, 180)
 	providerKeeper.SetAllowInactiveValidators(ctx, chainID, true)
 
 	expectedTopN := uint32(75)
@@ -298,7 +295,6 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	expectedAllowlistedValidator := "cosmosvalcons1wpex7anfv3jhystyv3eq20r35a"
 	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
 	expectedMinStake := uint64(0)
-	expectedMaxValidatorRank := uint32(20)
 	expectedAllowInactiveValidators := false
 	proposal := providertypes.NewConsumerModificationProposal("title", "description", chainID,
 		expectedTopN,
@@ -307,7 +303,6 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 		[]string{expectedAllowlistedValidator},
 		[]string{expectedDenylistedValidator},
 		expectedMinStake,
-		expectedMaxValidatorRank,
 		expectedAllowInactiveValidators,
 	).(*providertypes.ConsumerModificationProposal)
 
@@ -333,9 +328,6 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 
 	actualMinStake, _ := providerKeeper.GetMinStake(ctx, chainID)
 	require.Equal(t, expectedMinStake, actualMinStake)
-
-	actualMaxValidatorRank, _ := providerKeeper.GetMaxValidatorRank(ctx, chainID)
-	require.Equal(t, expectedMaxValidatorRank, actualMaxValidatorRank)
 
 	actualAllowInactiveValidators := providerKeeper.AllowsInactiveValidators(ctx, chainID)
 	require.Equal(t, expectedAllowInactiveValidators, actualAllowInactiveValidators)

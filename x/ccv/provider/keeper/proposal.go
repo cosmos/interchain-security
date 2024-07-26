@@ -84,7 +84,6 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *ty
 		Allowlist:          proposal.Allowlist,
 		Denylist:           proposal.Denylist,
 		MinStake:           proposal.MinStake,
-		MaxRank:            proposal.MaxRank,
 		AllowInactiveVals:  proposal.AllowInactiveVals,
 	}
 
@@ -250,7 +249,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteValidatorSetCap(ctx, chainID)
 	k.DeleteAllowlist(ctx, chainID)
 	k.DeleteDenylist(ctx, chainID)
-	k.DeleteMaxValidatorRank(ctx, chainID)
 	k.DeleteAllowInactiveValidators(ctx, chainID)
 	k.DeleteMinStake(ctx, chainID)
 
@@ -405,7 +403,6 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
 		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
 		k.SetMinStake(cachedCtx, prop.ChainId, prop.MinStake)
-		k.SetMaxValidatorRank(cachedCtx, prop.ChainId, prop.MaxRank)
 		k.SetAllowInactiveValidators(cachedCtx, prop.ChainId, prop.AllowInactiveVals)
 
 		for _, address := range prop.Allowlist {

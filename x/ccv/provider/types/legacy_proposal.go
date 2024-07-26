@@ -59,7 +59,6 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 	allowlist []string,
 	denylist []string,
 	minStake uint64,
-	maxValidatorRank uint32,
 	allowInactiveVals bool,
 ) govv1beta1.Content {
 	return &ConsumerAdditionProposal{
@@ -83,7 +82,6 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 		Allowlist:                         allowlist,
 		Denylist:                          denylist,
 		MinStake:                          minStake,
-		MaxRank:                           maxValidatorRank,
 		AllowInactiveVals:                 allowInactiveVals,
 	}
 }
@@ -250,7 +248,6 @@ func NewConsumerModificationProposal(title, description, chainID string,
 	allowlist []string,
 	denylist []string,
 	minStake uint64,
-	maxValidatorRank uint32,
 	allowInactiveVals bool,
 ) govv1beta1.Content {
 	return &ConsumerModificationProposal{
@@ -263,7 +260,6 @@ func NewConsumerModificationProposal(title, description, chainID string,
 		Allowlist:          allowlist,
 		Denylist:           denylist,
 		MinStake:           minStake,
-		MaxRank:            maxValidatorRank,
 		AllowInactiveVals:  allowInactiveVals,
 	}
 }

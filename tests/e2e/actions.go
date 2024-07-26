@@ -263,7 +263,6 @@ type SubmitConsumerAdditionProposalAction struct {
 	ValidatorSetCap     uint32
 	Allowlist           []string
 	Denylist            []string
-	MaxValidatorRank    uint32
 	MinStake            uint64
 	AllowInactiveVals   bool
 }
@@ -295,7 +294,6 @@ func (tr Chain) submitConsumerAdditionProposal(
 		ValidatorSetCap:                   action.ValidatorSetCap,
 		Allowlist:                         action.Allowlist,
 		Denylist:                          action.Denylist,
-		MaxValidatorRank:                  action.MaxValidatorRank,
 		MinStake:                          action.MinStake,
 		AllowInactiveVals:                 action.AllowInactiveVals,
 	}

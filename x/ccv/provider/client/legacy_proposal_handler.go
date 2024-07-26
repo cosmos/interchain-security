@@ -63,7 +63,6 @@ Where proposal.json contains:
     "allowlist": [],
     "denylist": ["validatorAConsensusAddress", "validatorBConsensusAddress"],
 	"min_stake": 100000000000,
-	"max_validator_rank": 180,
 	"allow_inactive_vals": false
 }
 		`,
@@ -88,7 +87,7 @@ Where proposal.json contains:
 				proposal.DistributionTransmissionChannel, proposal.HistoricalEntries,
 				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod, proposal.TopN,
 				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist,
-				proposal.MinStake, proposal.MaxValidatorRank, proposal.AllowInactiveVals)
+				proposal.MinStake, proposal.AllowInactiveVals)
 
 			from := clientCtx.GetFromAddress()
 
@@ -251,7 +250,6 @@ Where proposal.json contains:
     "allowlist": [],
     "denylist": ["validatorAConsensusAddress", "validatorBConsensusAddress"],
 	"min_stake": 100000000000,
-	"max_validator_rank": 180,
 	"allow_inactive_vals": false
 }
 		`,
@@ -268,7 +266,7 @@ Where proposal.json contains:
 
 			content := types.NewConsumerModificationProposal(
 				proposal.Title, proposal.Summary, proposal.ChainId, proposal.TopN,
-				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist, proposal.MinStake, proposal.MaxValidatorRank, proposal.AllowInactiveVals)
+				proposal.ValidatorsPowerCap, proposal.ValidatorSetCap, proposal.Allowlist, proposal.Denylist, proposal.MinStake, proposal.AllowInactiveVals)
 
 			from := clientCtx.GetFromAddress()
 

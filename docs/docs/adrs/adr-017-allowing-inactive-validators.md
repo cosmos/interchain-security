@@ -64,7 +64,6 @@ The following changes to the state are required:
 set of consumer chains.
 * Introduce extra per-consumer-chain parameters: 
   * `MinStake`: is the minimum amount of stake a validator must have to be considered for validation on the consumer chain. 
-  * `MaxValidatorRank`: is the maximum rank in the provider validator set that can validate on the consumer chain. For example, setting this to 1 means only the validator with the most stake can validate on the consumer chain.
   * `AllowInactiveVals`: is a boolean that determines whether validators that are not part of the active set on the provider chain can validate on the consumer chain. If this is set to `true`, validators outside the active set on the provider chain can validate on the consumer chain. If this is set to `true`, validators outside the active set on the provider chain cannot validate on the consumer chain.
 
 ## Risk Mitigations
@@ -161,11 +160,11 @@ An inactive validator can opt in and validate on consumer chains (if min stake a
 
 Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
 
-### Scenario 9: MinStake and MaxRank parameters are respected
+### Scenario 9: MinStake parameters is respected
 
 Validators that don't meet the criteria for a consumer chain cannot validate on it.
 
-Checked in the e2e tests `min-stake` and `max-rank`.
+Checked in the e2e tests `min-stake`.
 
 ## Consequences
 

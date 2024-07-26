@@ -343,24 +343,6 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedVal
 		}
 	}
 
-	// take only the first `MaxValidatorRank` many validators; others are not allowed to validate
-	maxRank, found := k.GetMaxValidatorRank(ctx, chainID)
-	if found && maxRank > 0 && int(maxRank) < len(bondedValidators) {
-		tmpValidators := bondedValidators[:maxRank]
-
-		// also include other validators that have the same number of tokens as the last validator in the list
-		for i := int(maxRank); i < len(bondedValidators); i++ {
-			// if the validator has the same number of tokens as the last validator in the list, include it
-			if bondedValidators[i].GetTokens().Equal(bondedValidators[maxRank-1].GetTokens()) {
-				tmpValidators = append(tmpValidators, bondedValidators[i])
-			} else {
-				// since validators are sorted, we can break if we get to a validator with less tokens
-				break
-			}
-		}
-		bondedValidators = tmpValidators
-	}
-
 	nextValidators := k.FilterValidators(ctx, chainID, bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
 			return k.CanValidateChain(ctx, chainID, providerAddr) && k.FulfillsMinStake(ctx, chainID, providerAddr)

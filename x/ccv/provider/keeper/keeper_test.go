@@ -827,7 +827,6 @@ func TestAllowInactiveValidators(t *testing.T) {
 // The tests cover the following parameters:
 // - MinimumPowerInTopN
 // - MinStake
-// - MaxValidatorRank
 // - ValidatorSetCap
 // - ValidatorPowersCap
 func TestKeeperConsumerParams(t *testing.T) {
@@ -859,17 +858,6 @@ func TestKeeperConsumerParams(t *testing.T) {
 			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinStake(ctx, id) },
 			initialValue: 1000,
 			updatedValue: 2000,
-		},
-		{
-			name:        "Maximum Validator Rank",
-			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMaxValidatorRank(ctx, id, uint32(val)) },
-			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
-				val, found := k.GetMaxValidatorRank(ctx, id)
-				return int64(val), found
-			},
-			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMaxValidatorRank(ctx, id) },
-			initialValue: 100,
-			updatedValue: 200,
 		},
 		{
 			name:        "Validator Set Cap",

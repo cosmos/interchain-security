@@ -25,16 +25,15 @@ const stake_multiplier = 1000000
 // sets the min stake and max rank parameters according to the test case.
 // Finally, it checks that the validator set on the consumer chain is as expected
 // according to the min stake and max rank parameters.
-func TestMinStakeMaxRank(t *testing.T) {
+func TestMinStake(t *testing.T) {
 	testCases := []struct {
 		name                string
 		stakedTokens        []int64
 		minStake            uint64
-		maxRank             uint32
 		expectedConsuValSet []int64
 	}{
 		{
-			name: "disabled min stake and max rank",
+			name: "disabled min stake",
 			stakedTokens: []int64{
 				1 * stake_multiplier,
 				2 * stake_multiplier,
@@ -42,7 +41,6 @@ func TestMinStakeMaxRank(t *testing.T) {
 				4 * stake_multiplier,
 			},
 			minStake: 0,
-			maxRank:  0,
 			expectedConsuValSet: []int64{
 				1 * stake_multiplier,
 				2 * stake_multiplier,
@@ -59,52 +57,8 @@ func TestMinStakeMaxRank(t *testing.T) {
 				4 * stake_multiplier,
 			},
 			minStake: 3 * stake_multiplier,
-			maxRank:  0,
 			expectedConsuValSet: []int64{
 				3 * stake_multiplier,
-				4 * stake_multiplier,
-			},
-		},
-		{
-			name: "validator rank - standard case",
-			stakedTokens: []int64{
-				1 * stake_multiplier,
-				2 * stake_multiplier,
-				3 * stake_multiplier,
-				4 * stake_multiplier,
-			},
-			minStake: 0,
-			maxRank:  2,
-			expectedConsuValSet: []int64{
-				3 * stake_multiplier,
-				4 * stake_multiplier,
-			},
-		},
-		{
-			name: "check max rank precedence over min stake",
-			stakedTokens: []int64{
-				1 * stake_multiplier,
-				2 * stake_multiplier,
-				3 * stake_multiplier,
-				4 * stake_multiplier,
-			},
-			minStake: 4 * stake_multiplier,
-			maxRank:  2,
-			expectedConsuValSet: []int64{
-				4 * stake_multiplier,
-			},
-		},
-		{
-			name: "check min stake precedence over max rank",
-			stakedTokens: []int64{
-				1 * stake_multiplier,
-				2 * stake_multiplier,
-				3 * stake_multiplier,
-				4 * stake_multiplier,
-			},
-			minStake: 2 * stake_multiplier,
-			maxRank:  1,
-			expectedConsuValSet: []int64{
 				4 * stake_multiplier,
 			},
 		},
@@ -117,23 +71,6 @@ func TestMinStakeMaxRank(t *testing.T) {
 				2 * stake_multiplier,
 			},
 			minStake: 2 * stake_multiplier,
-			maxRank:  0,
-			expectedConsuValSet: []int64{
-				2 * stake_multiplier,
-				2 * stake_multiplier,
-				2 * stake_multiplier,
-			},
-		},
-		{
-			name: "check max rank with multiple equal stakes",
-			stakedTokens: []int64{
-				1 * stake_multiplier,
-				2 * stake_multiplier,
-				2 * stake_multiplier,
-				2 * stake_multiplier,
-			},
-			minStake: 0,
-			maxRank:  1,
 			expectedConsuValSet: []int64{
 				2 * stake_multiplier,
 				2 * stake_multiplier,
@@ -202,7 +139,6 @@ func TestMinStakeMaxRank(t *testing.T) {
 			// adjust parameters
 
 			// set the maxRank and minStake according to the test case
-			providerKeeper.SetMaxValidatorRank(s.providerChain.GetContext(), s.consumerChain.ChainID, tc.maxRank)
 			providerKeeper.SetMinStake(s.providerChain.GetContext(), s.consumerChain.ChainID, tc.minStake)
 
 			// undelegate and delegate to trigger a vscupdate

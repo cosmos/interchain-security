@@ -751,78 +751,6 @@ func TestMinStake(t *testing.T) {
 	}
 }
 
-func TestMaxValidatorRank(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// create validators
-	vals, consAddrs := createStakingValidatorsAndMocks(ctx, mocks, 1, 2, 3, 4, 5, 5)
-
-	// opt the validators in
-	for _, valAddr := range consAddrs {
-		providerKeeper.SetOptedIn(ctx, "chainID", valAddr)
-	}
-
-	testCases := []struct {
-		name                      string
-		maxRank                   uint32
-		expectedProviderConsAddrs []types.ProviderConsAddress
-	}{
-		{
-			name:                      "No max rank",
-			maxRank:                   0,
-			expectedProviderConsAddrs: consAddrs,
-		},
-		{
-			name:    "Max rank set to 1",
-			maxRank: 1,
-			// include the last two validators which each have 5 power
-			expectedProviderConsAddrs: consAddrs[len(consAddrs)-2:],
-		},
-		{
-			name:    "Max rank set to 2",
-			maxRank: 2,
-			// still only include the last two validators
-			expectedProviderConsAddrs: consAddrs[len(consAddrs)-2:],
-		},
-		{
-			name:    "Max rank set to 3",
-			maxRank: 3,
-			// now include the third to last validator as well
-			expectedProviderConsAddrs: consAddrs[len(consAddrs)-3:],
-		},
-		{
-			name:                      "Max rank set to 6",
-			maxRank:                   6,
-			expectedProviderConsAddrs: consAddrs,
-		},
-		{
-			name:                      "Max rank set to 10",
-			maxRank:                   10,
-			expectedProviderConsAddrs: consAddrs,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			providerKeeper.SetMaxValidatorRank(ctx, "chainID", tc.maxRank)
-
-			// set max provider consensus vals to include all validators
-			params := providerKeeper.GetParams(ctx)
-			params.MaxProviderConsensusValidators = 180
-			providerKeeper.SetParams(ctx, params)
-
-			nextVals := providerKeeper.ComputeNextValidators(ctx, "chainID", vals)
-			nextConsAddrs := make([]types.ProviderConsAddress, len(nextVals))
-			for i, val := range nextVals {
-				nextConsAddrs[i] = types.NewProviderConsAddress(val.ProviderConsAddr)
-			}
-			// check that the expected validators are the same as the next validator set, disregarding ordering
-			require.ElementsMatch(t, tc.expectedProviderConsAddrs, nextConsAddrs)
-		})
-	}
-}
-
 // TestMaxProviderConsensusValidators checks that the number of validators in the next validator set is at most
 // the maxProviderConsensusValidators parameter if the consumer chain does not allow inactive validators to validate.
 func TestIfInactiveValsDisallowedProperty(t *testing.T) {
@@ -841,13 +769,11 @@ func TestIfInactiveValsDisallowedProperty(t *testing.T) {
 
 		// Randomly choose values for parameters
 		minStake := rapid.Uint64Range(0, 101).Draw(r, "minStake")
-		maxRank := rapid.Uint32Range(0, 11).Draw(r, "maxRank")
 		maxProviderConsensusVals := rapid.Uint32Range(1, 11).Draw(r, "maxProviderConsensusVals")
 
 		// Set up the parameters in the provider keeper
 		providerKeeper.SetAllowInactiveValidators(ctx, "chainID", false) // do not allow inactive validators
 		providerKeeper.SetMinStake(ctx, "chainID", minStake)
-		providerKeeper.SetMaxValidatorRank(ctx, "chainID", maxRank)
 		params := providerKeeper.GetParams(ctx)
 		params.MaxProviderConsensusValidators = int64(maxProviderConsensusVals)
 		providerKeeper.SetParams(ctx, params)

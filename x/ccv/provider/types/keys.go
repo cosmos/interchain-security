@@ -125,8 +125,6 @@ const (
 
 	MinStakeKeyName = "MinStakeKey"
 
-	MaxValidatorRankKeyName = "MaxValidatorRankKey"
-
 	AllowInactiveValidatorsKeyName = "AllowInactiveValidatorsKey"
 )
 
@@ -296,13 +294,9 @@ func getKeyPrefixes() map[string]byte {
 		// MinStakeKey is the byte prefix for storing the mapping from consumer chains to the minimum stake required to be a validator on the consumer chain
 		MinStakeKeyName: 42,
 
-		// MaxValidatorRankKey is the byte prefix for storing the mapping from consumer chains to the maximum position in the validator set
-		// a validator can have to be a validator on the consumer chain
-		MaxValidatorRankKeyName: 43,
-
 		// AllowInactiveValidatorsKey is the byte prefix for storing the mapping from consumer chains to the boolean value
 		// that determines whether inactive validators can validate on that chain
-		AllowInactiveValidatorsKeyName: 44,
+		AllowInactiveValidatorsKeyName: 43,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -796,12 +790,6 @@ func LastProviderConsensusValsPrefix() byte {
 // MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain `chainID`
 func MinStakeKey(chainID string) []byte {
 	return ChainIdWithLenKey(mustGetKeyPrefix(MinStakeKeyName), chainID)
-}
-
-// MaxValidatorRankKey returns the key used to store the maximal position in the validator set
-// a validator can have to validate on consumer chain `chainID`
-func MaxValidatorRankKey(chainID string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(MaxValidatorRankKeyName), chainID)
 }
 
 func AllowInactiveValidatorsKey(chainID string) []byte {
