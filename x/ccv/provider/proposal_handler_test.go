@@ -27,12 +27,13 @@ func TestProviderProposalHandler(t *testing.T) {
 	hourFromNow := now.Add(time.Hour).UTC()
 
 	testCases := []struct {
-		name                      string
-		content                   govv1beta1.Content
-		blockTime                 time.Time
-		expValidConsumerAddition  bool
-		expValidConsumerRemoval   bool
-		expValidChangeRewardDenom bool
+		name                        string
+		content                     govv1beta1.Content
+		blockTime                   time.Time
+		expValidConsumerAddition    bool
+		expValidConsumerRemoval     bool
+		expValidChangeRewardDenom   bool
+		expValidChangeConsumerModif bool
 	}{
 		{
 			name: "valid consumer addition proposal",
@@ -68,6 +69,19 @@ func TestProviderProposalHandler(t *testing.T) {
 				"title", "description", []string{"denom1"}, []string{"denom2"}),
 			blockTime:                 hourFromNow,
 			expValidChangeRewardDenom: true,
+		},
+		{
+			name: "valid consumer modification proposal",
+			content: providertypes.NewConsumerModificationProposal(
+				"title", "description", "chainID",
+				50,
+				100,
+				34,
+				[]string{"addr1"},
+				nil,
+			),
+			blockTime:                   hourFromNow,
+			expValidChangeConsumerModif: true,
 		},
 		{
 			name:      "nil proposal",
@@ -110,6 +124,10 @@ func TestProviderProposalHandler(t *testing.T) {
 			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		case tc.expValidChangeRewardDenom:
 			// Nothing to mock
+
+		case tc.expValidChangeConsumerModif:
+			// set up a consumer client, so it seems that "chainID" is running
+			providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 		}
 
 		// Execution
@@ -117,7 +135,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		err := proposalHandler(ctx, tc.content)
 
 		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
-			tc.expValidChangeRewardDenom {
+			tc.expValidChangeRewardDenom || tc.expValidChangeConsumerModif {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)
