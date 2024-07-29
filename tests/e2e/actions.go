@@ -2393,7 +2393,7 @@ func (tr Chain) optOut(action OptOutAction, target ExecutionTarget, verbose bool
 	}
 
 	// Use: "opt-out [consumer-chain-id]",
-	optIn := fmt.Sprintf(
+	optOut := fmt.Sprintf(
 		`%s tx provider opt-out %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
 		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
 		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
@@ -2406,7 +2406,7 @@ func (tr Chain) optOut(action OptOutAction, target ExecutionTarget, verbose bool
 
 	cmd := target.ExecCommand(
 		"/bin/bash", "-c",
-		optIn,
+		optOut,
 	)
 
 	if verbose {
@@ -2425,6 +2425,71 @@ func (tr Chain) optOut(action OptOutAction, target ExecutionTarget, verbose bool
 	} else {
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
+		}
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
+}
+
+type SetConsumerCommissionRateAction struct {
+	Chain          ChainID
+	Validator      ValidatorID
+	CommissionRate float64
+
+	// depending on the execution, this action might throw an error (e.g., when no consumer chain exists)
+	ExpectError   bool
+	ExpectedError string
+}
+
+func (tr Chain) setConsumerCommissionRate(action SetConsumerCommissionRateAction, target ExecutionTarget, verbose bool) {
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
+	gas := "auto"
+	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
+	if tr.testConfig.useCometmock {
+		gas = "9000000"
+	}
+
+	// Use: "set-consumer-commission-rate [consumer-chain-id] [commission-rate]"
+	setCommissionRate := fmt.Sprintf(
+		`%s tx provider set-consumer-commission-rate %s %f --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
+		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		action.CommissionRate,
+		action.Validator,
+		tr.testConfig.chainConfigs[ChainID("provi")].ChainId,
+		tr.getValidatorHome(ChainID("provi"), action.Validator),
+		tr.getValidatorNode(ChainID("provi"), action.Validator),
+		gas,
+	)
+
+	cmd := target.ExecCommand(
+		"/bin/bash", "-c",
+		setCommissionRate,
+	)
+
+	if verbose {
+		fmt.Println("setConsumerCommissionRate cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil && !action.ExpectError {
+		log.Fatalf("unexpected error during commssion rate set - output: %s, err: %s", string(bz), err)
+	}
+
+	if action.ExpectError && !tr.testConfig.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+		if err == nil || !strings.Contains(string(bz), action.ExpectedError) {
+			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.ExpectedError, (bz))
+		}
+
+		if verbose {
+			fmt.Printf("got expected error during commssion rate set | err: %s | output: %s \n", err, string(bz))
+		}
+	}
+
+	if !tr.testConfig.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+		if err != nil && verbose {
+			fmt.Printf("got error during commssion rate set | err: %s | output: %s \n", err, string(bz))
 		}
 	}
 

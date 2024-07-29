@@ -30,6 +30,16 @@ func stepsOptInChain() []Step {
 			},
 		},
 		{
+			Action: SetConsumerCommissionRateAction{
+				Chain:          ChainID("consu"),
+				Validator:      ValidatorID("bob"),
+				CommissionRate: 0.123,
+				ExpectError:    true,
+				ExpectedError:  "unknown consumer chain",
+			},
+			State: State{},
+		},
+		{
 			Action: SubmitConsumerAdditionProposalAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
@@ -87,6 +97,31 @@ func stepsOptInChain() []Step {
 						ValidatorID("alice"): {},
 						ValidatorID("bob"):   {},
 						ValidatorID("carol"): {},
+					},
+				},
+				ChainID("consu"): ChainState{
+					// no consumer commission rates were set and hence we get
+					// the default (i.e., 0.1) commission rate the validators have on the provider
+					ConsumerCommissionRates: &map[ValidatorID]float64{
+						ValidatorID("alice"): 0.1,
+						ValidatorID("bob"):   0.1,
+						ValidatorID("carol"): 0.1,
+					},
+				},
+			},
+		},
+		{
+			Action: SetConsumerCommissionRateAction{
+				Chain:          ChainID("consu"),
+				Validator:      ValidatorID("bob"),
+				CommissionRate: 0.123,
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ConsumerCommissionRates: &map[ValidatorID]float64{
+						ValidatorID("alice"): 0.1,
+						ValidatorID("bob"):   0.123,
+						ValidatorID("carol"): 0.1,
 					},
 				},
 			},
