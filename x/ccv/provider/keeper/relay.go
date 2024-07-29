@@ -149,7 +149,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
-	if k.BlocksUntilNextEpoch(ctx) == k.GetBlocksPerEpoch(ctx) {
+	if k.BlocksUntilNextEpoch(ctx) == 0 {
 		// only queue and send VSCPackets at the boundaries of an epoch
 
 		// collect validator updates
@@ -163,10 +163,16 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 }
 
 // BlocksUntilNextEpoch returns the number of blocks until the next epoch starts
-// Returns 0 if the current block is the last block of the epoch
+// Returns 0 if VSCPackets are sent in the current block,
+// which is done in the first block of each epoch.
 func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
-	epochLength := k.GetBlocksPerEpoch(ctx)
-	return int64(epochLength - (ctx.BlockHeight()%epochLength))
+	blocksSinceEpochStart := ctx.BlockHeight() % k.GetBlocksPerEpoch(ctx)
+
+	if blocksSinceEpochStart == 0 {
+		return 0
+	} else {
+		return int64(k.GetBlocksPerEpoch(ctx) - blocksSinceEpochStart)
+	}
 }
 
 // SendVSCPackets iterates over all registered consumers and sends pending

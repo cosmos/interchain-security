@@ -937,17 +937,26 @@ func TestBlocksUntilNextEpoch(t *testing.T) {
 
 	// with block height of 1 we expect 9 blocks until the next epoch
 	ctx = ctx.WithBlockHeight(1)
-	require.Equal(t, uint64(9), providerKeeper.BlocksUntilNextEpoch(ctx))
+	require.Equal(t, int64(9), providerKeeper.BlocksUntilNextEpoch(ctx))
 
 	// with block height of 5 we expect 5 blocks until the next epoch
 	ctx = ctx.WithBlockHeight(5)
-	require.Equal(t, uint64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
+	require.Equal(t, int64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
 
-	// with block height of 10 we expect 10 blocks until the next epoch, since the last epoch ends with this block
+	// with block height of 10 we expect 0 blocks until the next epoch, since
+	// this epoch is the one where we send the VSC packet
 	ctx = ctx.WithBlockHeight(10)
-	require.Equal(t, uint64(10), providerKeeper.BlocksUntilNextEpoch(ctx))
+	require.Equal(t, int64(0), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 11 we expect 9 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(11)
+	require.Equal(t, int64(9), providerKeeper.BlocksUntilNextEpoch(ctx))
 
 	// with block height of 15 we expect 5 blocks until the next epoch
 	ctx = ctx.WithBlockHeight(15)
-	require.Equal(t, uint64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
+	require.Equal(t, int64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 19 we expect 1 block until the next epoch
+	ctx = ctx.WithBlockHeight(19)
+	require.Equal(t, int64(1), providerKeeper.BlocksUntilNextEpoch(ctx))
 }
