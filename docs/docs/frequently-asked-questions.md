@@ -138,6 +138,9 @@ Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consu
 
 ## How do I know when the next validator update will be sent to the consumer chain?
 Validator updates are sent to the consumer chain every `BlocksPerEpoch` blocks.
+Keep in mind that depending on the status of relayers between the Hub and the consumer chain,
+it might take a while for the validator update to be processed and applied on the consumer chain.
+
 To query how many blocks are left until the next epoch starts,
 run the following command:
 ```bash
