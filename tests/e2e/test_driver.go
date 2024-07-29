@@ -207,6 +207,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.optIn(action, td.target, td.verbose)
 	case OptOutAction:
 		target.optOut(action, td.target, td.verbose)
+	case SetConsumerCommissionRateAction:
+		target.setConsumerCommissionRate(action, td.target, td.verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}
