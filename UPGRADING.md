@@ -1,5 +1,32 @@
 # Upgrading Replicated Security
 
+## ...
+
+### Provider
+
+Upgrading a provider from X to Y requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
+
+```go
+// InitializeMaxValidatorsForExistingConsumers initializes the max validators
+// parameter for existing consumers to the MaxProviderConsensusValidators parameter.
+// This is necessary to avoid those consumer chains having an excessive amount of validators.
+func InitializeMaxValidatorsForExistingConsumers(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
+	maxVals := providerKeeper.GetParams(ctx).MaxProviderConsensusValidators
+	for _, chainID := range providerKeeper.GetAllRegisteredConsumerChainIDs(ctx) {
+		providerKeeper.SetValidatorSetCap(ctx, chainID, uint32(maxVals))
+	}
+}
+
+// InitializeMaxProviderConsensusParam initializes the MaxProviderConsensusValidators parameter.
+func InitializeMaxProviderConsensusParam(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
+	params := providerKeeper.GetParams(ctx)
+	if params.MaxProviderConsensusValidators == 0 {
+		params.MaxProviderConsensusValidators = 180
+		providerKeeper.SetParams(ctx, params)
+	}
+}
+```
+
 ## [v5.1.x](https://github.com/cosmos/interchain-security/releases/tag/v5.1.0)
 
 ### Provider
