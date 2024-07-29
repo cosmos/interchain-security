@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v5.1.1
+
+*July 26, 2024*
+
+### API BREAKING
+
+- [Provider](x/ccv/provider)
+  - Fix incorrect message defitions in the proto files of the provider module
+    ([\#2095](https://github.com/cosmos/interchain-security/pull/2095))
+
+### STATE BREAKING
+
+- [Provider](x/ccv/provider)
+  - Fix incorrect message defitions in the proto files of the provider module
+    ([\#2095](https://github.com/cosmos/interchain-security/pull/2095))
+
 ## v5.1.0
 
 *July 19, 2024*
