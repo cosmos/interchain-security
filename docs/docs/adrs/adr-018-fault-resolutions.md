@@ -35,11 +35,10 @@ A potential solution for the handling of incorrect executions is to use fraud pr
 To address this risk in PSS, a governance-gated slashing solution can be used to handle all types of misbehavior resulting from validator collusion. As fraud proof technology matures, part of the solution could potentially be automated.
 
 
-This ADR proposes a *fault resolution* mechanism, which is a type of governance proposal that can be used to vote on the slashing of validators that misbehave on Opt-in consumer chains (see [fault resolutions](https://forum.cosmos.network/t/preventing-intersubjective-faults-in-ics/14103#fault-resolutions-3) in "Preventing Intersubjective faults in ICS").
+This ADR proposes a fault resolution mechanism, which is a type of governance proposal that can be used to vote on the slashing of validators that misbehave on Opt-in consumer chains (see [fault resolutions](https://forum.cosmos.network/t/preventing-intersubjective-faults-in-ics/14103#fault-resolutions-3) in "Preventing Intersubjective faults in ICS").
 
 In what follows, we describe the implementation of a fault resolution mechanism for any intersubjective fault.
-Note that in this first iteration, only incorrect executions are defined
- (see [Incorrect Executions](https://forum.cosmos.network/t/preventing-intersubjective-faults-in-ics/14103#incorrect-execution-fault-definition-5) in "Preventing Intersubjective faults in ICS").
+ Note that in the first iteration, it is only incorrect executions that are defined as a fault and are therefore dealt with by the mechanism (see [Incorrect Executions](https://forum.cosmos.network/t/preventing-intersubjective-faults-in-ics/14103#incorrect-execution-fault-definition-5) in "Preventing Intersubjective faults in ICS").
 
 
 ## Decision
