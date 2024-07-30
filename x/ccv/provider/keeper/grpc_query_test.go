@@ -50,12 +50,12 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	require.Error(t, err)
 
 	// Request with chainId is invalid
-	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ChainId: "invalidChainId"})
+	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: "invalidChainId"})
 	require.NoError(t, err)
 	require.Equal(t, []*types.PairValConAddrProviderAndConsumer{}, response.PairValConAddr)
 
 	// Request is valid
-	response, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ChainId: chainID})
+	response, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: chainID})
 	require.NoError(t, err)
 
 	expectedResult := types.PairValConAddrProviderAndConsumer{
@@ -74,7 +74,7 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 	defer ctrl.Finish()
 
 	req := types.QueryConsumerChainOptedInValidatorsRequest{
-		ChainId: chainID,
+		ConsumerId: chainID,
 	}
 
 	// error returned from not yet proposed or not yet registered chain
@@ -103,7 +103,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	defer ctrl.Finish()
 
 	req := types.QueryConsumerValidatorsRequest{
-		ChainId: chainID,
+		ConsumerId: chainID,
 	}
 
 	// error returned from not-started chain
@@ -190,7 +190,7 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	req := types.QueryValidatorConsumerCommissionRateRequest{
-		ChainId:         chainID,
+		ConsumerId:      chainID,
 		ProviderAddress: providerAddr.String(),
 	}
 

@@ -455,11 +455,11 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 		ExpDeleted bool
 	}{
 		{
-			ConsumerRemovalProposal: providertypes.ConsumerRemovalProposal{ChainId: "8", StopTime: time.Now().UTC()},
+			ConsumerRemovalProposal: providertypes.ConsumerRemovalProposal{ConsumerId: "8", StopTime: time.Now().UTC()},
 			ExpDeleted:              true,
 		},
 		{
-			ConsumerRemovalProposal: providertypes.ConsumerRemovalProposal{ChainId: "9", StopTime: time.Now().UTC().Add(time.Hour)},
+			ConsumerRemovalProposal: providertypes.ConsumerRemovalProposal{ConsumerId: "9", StopTime: time.Now().UTC().Add(time.Hour)},
 			ExpDeleted:              false,
 		},
 	}
@@ -478,13 +478,13 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 	providerKeeper.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
-		res := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.ChainId, tc.StopTime)
+		res := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.ConsumerId, tc.StopTime)
 		if !tc.ExpDeleted {
-			require.NotEmpty(t, res, "consumer removal prop was deleted: %s %s", tc.ChainId, tc.StopTime.String())
+			require.NotEmpty(t, res, "consumer removal prop was deleted: %s %s", tc.ConsumerId, tc.StopTime.String())
 			continue
 		}
-		require.Empty(t, res, "consumer removal prop was not deleted %s %s", tc.ChainId, tc.StopTime.String())
-		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
+		require.Empty(t, res, "consumer removal prop was not deleted %s %s", tc.ConsumerId, tc.StopTime.String())
+		require.Equal(t, propsToExecute[numDeleted].ConsumerId, tc.ConsumerId)
 		numDeleted += 1
 	}
 }
@@ -493,11 +493,11 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 // that are ready to execute are accessed in order by timestamp via the iterator
 func TestGetConsumerRemovalPropsToExecute(t *testing.T) {
 	now := time.Now().UTC()
-	sampleProp1 := providertypes.ConsumerRemovalProposal{ChainId: "chain-2", StopTime: now}
-	sampleProp2 := providertypes.ConsumerRemovalProposal{ChainId: "chain-1", StopTime: now.Add(time.Hour)}
-	sampleProp3 := providertypes.ConsumerRemovalProposal{ChainId: "chain-4", StopTime: now.Add(-time.Hour)}
-	sampleProp4 := providertypes.ConsumerRemovalProposal{ChainId: "chain-3", StopTime: now}
-	sampleProp5 := providertypes.ConsumerRemovalProposal{ChainId: "chain-1", StopTime: now.Add(2 * time.Hour)}
+	sampleProp1 := providertypes.ConsumerRemovalProposal{ConsumerId: "chain-2", StopTime: now}
+	sampleProp2 := providertypes.ConsumerRemovalProposal{ConsumerId: "chain-1", StopTime: now.Add(time.Hour)}
+	sampleProp3 := providertypes.ConsumerRemovalProposal{ConsumerId: "chain-4", StopTime: now.Add(-time.Hour)}
+	sampleProp4 := providertypes.ConsumerRemovalProposal{ConsumerId: "chain-3", StopTime: now}
+	sampleProp5 := providertypes.ConsumerRemovalProposal{ConsumerId: "chain-1", StopTime: now.Add(2 * time.Hour)}
 
 	getExpectedOrder := func(props []providertypes.ConsumerRemovalProposal, accessTime time.Time) []providertypes.ConsumerRemovalProposal {
 		expectedOrder := []providertypes.ConsumerRemovalProposal{}
@@ -510,7 +510,7 @@ func TestGetConsumerRemovalPropsToExecute(t *testing.T) {
 		sort.Slice(expectedOrder, func(i, j int) bool {
 			if expectedOrder[i].StopTime.UTC() == expectedOrder[j].StopTime.UTC() {
 				// proposals with same StopTime
-				return expectedOrder[i].ChainId < expectedOrder[j].ChainId
+				return expectedOrder[i].ConsumerId < expectedOrder[j].ConsumerId
 			}
 			return expectedOrder[i].StopTime.UTC().Before(expectedOrder[j].StopTime.UTC())
 		})
@@ -569,11 +569,11 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 
 	now := time.Now().UTC()
 	props := []providertypes.ConsumerRemovalProposal{
-		{ChainId: "chain-2", StopTime: now},
-		{ChainId: "chain-1", StopTime: now.Add(2 * time.Hour)},
-		{ChainId: "chain-4", StopTime: now.Add(-time.Hour)},
-		{ChainId: "chain-3", StopTime: now.Add(4 * time.Hour)},
-		{ChainId: "chain-1", StopTime: now},
+		{ConsumerId: "chain-2", StopTime: now},
+		{ConsumerId: "chain-1", StopTime: now.Add(2 * time.Hour)},
+		{ConsumerId: "chain-4", StopTime: now.Add(-time.Hour)},
+		{ConsumerId: "chain-3", StopTime: now.Add(4 * time.Hour)},
+		{ConsumerId: "chain-1", StopTime: now},
 	}
 	expectedGetAllOrder := props
 	// sorting by StopTime.UnixNano()
@@ -583,7 +583,7 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 		cmpTimestamps := bytes.Compare(sdk.Uint64ToBigEndian(tsi), sdk.Uint64ToBigEndian(tsj))
 		if cmpTimestamps == 0 {
 			// proposals with same StopTime
-			return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
+			return expectedGetAllOrder[i].ConsumerId < expectedGetAllOrder[j].ConsumerId
 		}
 		return cmpTimestamps == -1
 	})
@@ -1043,8 +1043,8 @@ func TestBeginBlockCCR(t *testing.T) {
 		// A consumer chain is setup corresponding to each prop, making these mocks necessary
 		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1)
 		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
-			prop.ChainId, clienttypes.NewHeight(2, 3))...)
-		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
+			prop.ConsumerId, clienttypes.NewHeight(2, 3))...)
+		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ConsumerId)...)
 	}
 	// Only first two consumer chains should be stopped
 	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
@@ -1058,7 +1058,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	for _, prop := range pendingProps {
 		// Setup a valid consumer chain for each prop
 		additionProp := testkeeper.GetTestConsumerAdditionProp()
-		additionProp.ChainId = prop.ChainId
+		additionProp.ChainId = prop.ConsumerId
 		additionProp.InitialHeight = clienttypes.NewHeight(2, 3)
 
 		err := providerKeeper.CreateConsumerClient(ctx, additionProp)
@@ -1084,15 +1084,15 @@ func TestBeginBlockCCR(t *testing.T) {
 
 	// Only the 3rd (final) proposal is still stored as pending
 	found := providerKeeper.PendingConsumerRemovalPropExists(
-		ctx, pendingProps[0].ChainId, pendingProps[0].StopTime)
+		ctx, pendingProps[0].ConsumerId, pendingProps[0].StopTime)
 	require.False(t, found)
 	found = providerKeeper.PendingConsumerRemovalPropExists(
-		ctx, pendingProps[1].ChainId, pendingProps[1].StopTime)
+		ctx, pendingProps[1].ConsumerId, pendingProps[1].StopTime)
 	require.False(t, found)
 	found = providerKeeper.PendingConsumerRemovalPropExists(
-		ctx, pendingProps[2].ChainId, pendingProps[2].StopTime)
+		ctx, pendingProps[2].ConsumerId, pendingProps[2].StopTime)
 	require.True(t, found)
 	found = providerKeeper.PendingConsumerRemovalPropExists(
-		ctx, invalidProp.ChainId, invalidProp.StopTime)
+		ctx, invalidProp.ConsumerId, invalidProp.StopTime)
 	require.False(t, found)
 }

@@ -17,5 +17,5 @@ func TestValidateConsumerId(t *testing.T) {
 
 	// valid consumer id
 	require.NoError(t, types.ValidateConsumerId("0"))
-	require.NoError(t, types.ValidateConsumerId("18446744073709551616")) // 2^64 - 1
+	require.NoError(t, types.ValidateConsumerId("18446744073709551615")) // 2^64 - 1
 }
