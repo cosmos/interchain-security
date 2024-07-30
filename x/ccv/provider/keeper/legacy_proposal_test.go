@@ -243,7 +243,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		}
 
-		tc.setupMocks(ctx, providerKeeper, tc.prop.ChainId)
+		tc.setupMocks(ctx, providerKeeper, tc.prop.ConsumerId)
 
 		err := providerKeeper.HandleLegacyConsumerRemovalProposal(ctx, tc.prop)
 
@@ -251,7 +251,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			require.NoError(t, err)
 
 			// Proposal should be stored as pending
-			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ConsumerId, tc.prop.StopTime)
 			require.True(t, found)
 
 			// confirm that the channel was not closed
@@ -261,7 +261,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			require.Error(t, err)
 
 			// Expect no pending proposal to exist
-			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ConsumerId, tc.prop.StopTime)
 			require.False(t, found)
 		}
 
