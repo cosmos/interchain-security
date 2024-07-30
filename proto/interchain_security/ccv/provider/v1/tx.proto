@@ -24,12 +24,12 @@ service Msg {
   rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
   rpc SubmitConsumerDoubleVoting(MsgSubmitConsumerDoubleVoting) returns (MsgSubmitConsumerDoubleVotingResponse);
   rpc ConsumerAddition(MsgConsumerAddition) returns (MsgConsumerAdditionResponse);
-  rpc ConsumerRemoval(MsgConsumerRemoval) returns (MsgConsumerRemovalResponse);
+  rpc RemoveConsumer(MsgRemoveConsumer) returns (MsgRemoveConsumerResponse);
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
   rpc OptIn(MsgOptIn) returns (MsgOptInResponse);
   rpc OptOut(MsgOptOut) returns (MsgOptOutResponse);
   rpc SetConsumerCommissionRate(MsgSetConsumerCommissionRate) returns (MsgSetConsumerCommissionRateResponse);
-  rpc ConsumerModification(MsgConsumerModification) returns (MsgConsumerModificationResponse);
+  rpc UpdateConsumer(MsgUpdateConsumer) returns (MsgUpdateConsumerResponse);
 }
 
 
@@ -193,13 +193,9 @@ message MsgConsumerAddition {
 message MsgConsumerAdditionResponse {}
 
 
-// MsgConsumerRemoval message contains a governance proposal on the provider chain to
-// remove (and stop) a consumer chain. If it passes, all the consumer chain's
-// state is removed from the provider chain. The outstanding unbonding operation
-// funds are released.
-//
-// Note: this replaces ConsumerRemovalProposal which is deprecated and will be removed soon
-message MsgConsumerRemoval {
+// MsgConsumerRemoval defines the message used to remove (and stop) a consumer chain.
+// If it passes, all the consumer chain's state is eventually removed from the provider chain.
+message MsgRemoveConsumer {
   option (cosmos.msg.v1.signer) = "authority";
 
   // the consumer id of the consumer chain to be stopped
@@ -212,8 +208,8 @@ message MsgConsumerRemoval {
   string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
-// MsgConsumerRemovalResponse defines response type for MsgConsumerRemoval messages
-message MsgConsumerRemovalResponse {}
+// MsgRemoveConsumerResponse defines response type for MsgRemoveConsumer messages
+message MsgRemoveConsumerResponse {}
 
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
@@ -294,19 +290,16 @@ message MsgSetConsumerCommissionRate {
 
 message MsgSetConsumerCommissionRateResponse {}
 
-// MsgConsumerModification message contains a governance proposal on the provider chain to
-// modify a running consumer chain. If it passes, the consumer chain's
-// parameters are updated.
-//
-// Note: this replaces ConsumerModificationProposal which is deprecated and will be removed soon
-message MsgConsumerModification {
+// MsgConsumerModification defines the message used to modify a running consumer chain.
+// If it passes, the consumer chain's parameters are updated.
+message MsgUpdateConsumer {
   option (cosmos.msg.v1.signer) = "authority";
 
   // the title of the proposal
   string title = 1;
   // the description of the proposal
   string description = 2;
-  // the consumer id of the consumer chain to be modified
+  // the consumer id of the consumer chain to be updated
   string consumer_id = 3;
   // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
   // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
@@ -335,4 +328,5 @@ message MsgConsumerModification {
   bool allow_inactive_vals = 11;
 }
 
-message MsgConsumerModificationResponse {}
+// MsgUpdateConsumerResponse defines response type for MsgUpdateConsumer messages
+message MsgUpdateConsumerResponse {}
