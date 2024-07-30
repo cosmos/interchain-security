@@ -101,11 +101,10 @@ func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsume
 	return &types.MsgConsumerAdditionResponse{}, nil
 }
 
-// ConsumerRemoval defines an RPC handler method for MsgConsumerRemoval
-func (k msgServer) ConsumerRemoval(
+// RemoveConsumer defines an RPC handler method for MsgRemoveConsumer
+func (k msgServer) RemoveConsumer(
 	goCtx context.Context,
-	msg *types.MsgConsumerRemoval,
-) (*types.MsgConsumerRemovalResponse, error) {
+	msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
@@ -116,7 +115,7 @@ func (k msgServer) ConsumerRemoval(
 		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
 	}
 
-	return &types.MsgConsumerRemovalResponse{}, nil
+	return &types.MsgRemoveConsumerResponse{}, nil
 }
 
 // ChangeRewardDenoms defines a rpc handler method for MsgChangeRewardDenoms
@@ -309,7 +308,7 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 	return &types.MsgSetConsumerCommissionRateResponse{}, nil
 }
 
-func (k msgServer) ConsumerModification(goCtx context.Context, msg *types.MsgConsumerModification) (*types.MsgConsumerModificationResponse, error) {
+func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateConsumer) (*types.MsgUpdateConsumerResponse, error) {
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
@@ -317,8 +316,8 @@ func (k msgServer) ConsumerModification(goCtx context.Context, msg *types.MsgCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	err := k.Keeper.HandleConsumerModificationProposal(ctx, msg)
 	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerModification proposal")
+		return nil, errorsmod.Wrapf(err, "failed handling UpdateConsumer proposal")
 	}
 
-	return &types.MsgConsumerModificationResponse{}, nil
+	return &types.MsgUpdateConsumerResponse{}, nil
 }

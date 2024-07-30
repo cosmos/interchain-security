@@ -32,7 +32,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		(*sdk.Msg)(nil),
 		&MsgAssignConsumerKey{},
 		&MsgConsumerAddition{},
-		&MsgConsumerRemoval{},
+		&MsgRemoveConsumer{},
 		&MsgChangeRewardDenoms{},
 		&MsgUpdateParams{},
 	)

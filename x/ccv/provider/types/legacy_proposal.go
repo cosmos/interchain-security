@@ -20,8 +20,8 @@ import (
 
 const (
 	ProposalTypeConsumerAddition     = "ConsumerAddition"
-	ProposalTypeConsumerRemoval      = "ConsumerRemoval"
-	ProposalTypeConsumerModification = "ConsumerModification"
+	ProposalTypeConsumerRemoval      = "RemoveConsumer"
+	ProposalTypeConsumerModification = "UpdateConsumer"
 	ProposalTypeEquivocation         = "Equivocation"
 	ProposalTypeChangeRewardDenoms   = "ChangeRewardDenoms"
 )

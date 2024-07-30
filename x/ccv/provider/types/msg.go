@@ -32,8 +32,8 @@ const (
 var (
 	_ sdk.Msg = (*MsgAssignConsumerKey)(nil)
 	_ sdk.Msg = (*MsgConsumerAddition)(nil)
-	_ sdk.Msg = (*MsgConsumerRemoval)(nil)
-	_ sdk.Msg = (*MsgConsumerModification)(nil)
+	_ sdk.Msg = (*MsgRemoveConsumer)(nil)
+	_ sdk.Msg = (*MsgUpdateConsumer)(nil)
 	_ sdk.Msg = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.Msg = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.Msg = (*MsgSubmitConsumerDoubleVoting)(nil)
@@ -43,8 +43,8 @@ var (
 
 	_ sdk.HasValidateBasic = (*MsgAssignConsumerKey)(nil)
 	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerRemoval)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerModification)(nil)
+	_ sdk.HasValidateBasic = (*MsgRemoveConsumer)(nil)
+	_ sdk.HasValidateBasic = (*MsgUpdateConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerDoubleVoting)(nil)
@@ -293,7 +293,7 @@ func (msg *MsgConsumerAddition) ValidateBasic() error {
 	return nil
 }
 
-func (msg *MsgConsumerRemoval) ValidateBasic() error {
+func (msg *MsgRemoveConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func (msg *MsgConsumerRemoval) ValidateBasic() error {
 }
 
 // ValidateBasic implements the sdk.Msg interface.
-func (msg *MsgConsumerModification) ValidateBasic() error {
+func (msg *MsgUpdateConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
 		return err
 	}
