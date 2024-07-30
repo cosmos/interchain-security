@@ -518,50 +518,6 @@ func ParseThrottledPacketDataKey(key []byte) (chainId string, ibcSeqNum uint64, 
 	return ParseChainIdAndUintIdKey(ThrottledPacketDataKeyPrefix(), key)
 }
 
-// GlobalSlashEntryKeyPrefix returns the key for storing a global slash queue entry.
-func GlobalSlashEntryKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(GlobalSlashEntryKeyName)}
-}
-
-// GlobalSlashEntryKey returns the key for storing a global slash queue entry.
-func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
-	recvTime := uint64(entry.RecvTime.UTC().UnixNano())
-	return ccvtypes.AppendMany(
-		// Append byte prefix
-		GlobalSlashEntryKeyPrefix(),
-		// Append time bz
-		sdk.Uint64ToBigEndian(recvTime),
-		// Append ibc seq num
-		sdk.Uint64ToBigEndian(entry.IbcSeqNum),
-		// Append consumer chain id
-		[]byte(entry.ConsumerChainID),
-	)
-}
-
-// MustParseGlobalSlashEntryKey returns the received time and chainID for a global slash queue entry key,
-// or panics if the key is invalid.
-func MustParseGlobalSlashEntryKey(bz []byte) (
-	recvTime time.Time, consumerChainID string, ibcSeqNum uint64,
-) {
-	// Prefix is in first byte
-	expectedPrefix := GlobalSlashEntryKeyPrefix()
-	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {
-		panic(fmt.Sprintf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix))
-	}
-
-	// 8 bytes for uint64 storing time bytes
-	timeBz := sdk.BigEndianToUint64(bz[1:9])
-	recvTime = time.Unix(0, int64(timeBz)).UTC()
-
-	// 8 bytes for uint64 storing ibc seq num
-	ibcSeqNum = sdk.BigEndianToUint64(bz[9:17])
-
-	// ChainID is stored after 8 byte ibc seq num
-	chainID := string(bz[17:])
-
-	return recvTime, chainID, ibcSeqNum
-}
-
 // ConsumerValidatorsKey returns the key for storing the validator assigned keys for every consumer chain
 func ConsumerValidatorsKeyPrefix() byte {
 	return mustGetKeyPrefix(ConsumerValidatorsKeyName)
