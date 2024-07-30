@@ -335,7 +335,7 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string,
 	// check that the consumer chain exists
 	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
 		return errorsmod.Wrapf(
-			types.ErrUnknownConsumerChainId,
+			types.ErrUnknownConsumerId,
 			"unknown consumer chain, with id: %s", chainID)
 	}
 

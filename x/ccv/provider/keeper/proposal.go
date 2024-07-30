@@ -53,8 +53,8 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.
 // Will replace legacy handler HandleLegacyConsumerRemovalProposal
 func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgConsumerRemoval) error {
 	p := types.ConsumerRemovalProposal{
-		ChainId:  proposal.ChainId,
-		StopTime: proposal.StopTime,
+		ConsumerId: proposal.ConsumerId,
+		StopTime:   proposal.StopTime,
 	}
 
 	return k.HandleLegacyConsumerRemovalProposal(ctx, &p)
@@ -76,7 +76,7 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *ty
 	p := types.ConsumerModificationProposal{
 		Title:              proposal.Title,
 		Description:        proposal.Description,
-		ChainId:            proposal.ChainId,
+		ConsumerId:         proposal.ConsumerId,
 		Top_N:              proposal.Top_N,
 		ValidatorsPowerCap: proposal.ValidatorsPowerCap,
 		ValidatorSetCap:    proposal.ValidatorSetCap,
@@ -517,7 +517,7 @@ func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.Consu
 		// An error here would indicate something is very wrong
 		panic(fmt.Errorf("failed to marshal consumer removal proposal: %w", err))
 	}
-	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
+	store.Set(types.PendingCRPKey(prop.StopTime, prop.ConsumerId), bz)
 }
 
 // PendingConsumerRemovalPropExists checks whether a pending consumer removal proposal
@@ -537,7 +537,7 @@ func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
-		store.Delete(types.PendingCRPKey(p.StopTime, p.ChainId))
+		store.Delete(types.PendingCRPKey(p.StopTime, p.ConsumerId))
 	}
 }
 
@@ -565,7 +565,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 		writeFn()
 
 		k.Logger(ctx).Info("executed consumer removal proposal",
-			"chainID", prop.ChainId,
+			"consumer id", prop.ConsumerId,
 			"title", prop.Title,
 			"stop time", prop.StopTime.UTC(),
 		)
@@ -646,6 +646,6 @@ func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.Consume
 // from a given consumer removal proposal in a cached context
 func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
-	err = k.StopConsumerChain(cc, p.ChainId, true)
+	err = k.StopConsumerChain(cc, p.ConsumerId, true)
 	return
 }

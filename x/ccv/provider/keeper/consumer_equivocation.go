@@ -28,44 +28,44 @@ import (
 // Double Voting section
 //
 
-// HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain ID
+// HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer id
 // and a public key and, if successful, executes the slashing, jailing, and tombstoning of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(
 	ctx sdk.Context,
 	evidence *tmtypes.DuplicateVoteEvidence,
-	chainID string,
+	consumerId string,
 	pubkey cryptotypes.PubKey,
 ) error {
 	// check that the evidence is for an ICS consumer chain
-	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+	if _, found := k.GetConsumerClientId(ctx, consumerId); !found {
 		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"cannot find consumer chain %s",
-			chainID,
+			consumerId,
 		)
 	}
 
 	// check that the evidence is not too old
-	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, chainID)
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerId)
 	if uint64(evidence.VoteA.Height) < minHeight {
 		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
-			chainID,
+			consumerId,
 			evidence.VoteA.Height,
 			minHeight,
 		)
 	}
 
 	// verifies the double voting evidence using the consumer chain public key
-	if err := k.VerifyDoubleVotingEvidence(*evidence, chainID, pubkey); err != nil {
+	if err := k.VerifyDoubleVotingEvidence(*evidence, consumerId, pubkey); err != nil {
 		return err
 	}
 
 	// get the validator's consensus address on the provider
 	providerAddr := k.GetProviderAddrFromConsumerAddr(
 		ctx,
-		chainID,
+		consumerId,
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
@@ -85,10 +85,10 @@ func (k Keeper) HandleConsumerDoubleVoting(
 }
 
 // VerifyDoubleVotingEvidence verifies a double voting evidence
-// for a given chain id and a validator public key
+// for a given consumer id and a validator public key
 func (k Keeper) VerifyDoubleVotingEvidence(
 	evidence tmtypes.DuplicateVoteEvidence,
-	chainID string,
+	consumerId string,
 	pubkey cryptotypes.PubKey,
 ) error {
 	if pubkey == nil {
@@ -140,10 +140,10 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	vb := evidence.VoteB.ToProto()
 
 	// signatures must be valid
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, va), evidence.VoteA.Signature) {
+	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(consumerId, va), evidence.VoteA.Signature) {
 		return fmt.Errorf("verifying VoteA: %w", tmtypes.ErrVoteInvalidSignature)
 	}
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, vb), evidence.VoteB.Signature) {
+	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(consumerId, vb), evidence.VoteB.Signature) {
 		return fmt.Errorf("verifying VoteB: %w", tmtypes.ErrVoteInvalidSignature)
 	}
 
@@ -517,20 +517,20 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 //
 
 // SetEquivocationEvidenceMinHeight sets the minimum height
-// of a valid consumer equivocation evidence for a given consumer chain ID
-func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string, height uint64) {
+// of a valid consumer equivocation evidence for a given consumer id
+func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, consumerId string, height uint64) {
 	store := ctx.KVStore(k.storeKey)
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, height)
 
-	store.Set(types.EquivocationEvidenceMinHeightKey(chainID), heightBytes)
+	store.Set(types.EquivocationEvidenceMinHeightKey(consumerId), heightBytes)
 }
 
 // GetEquivocationEvidenceMinHeight returns the minimum height
-// of a valid consumer equivocation evidence for a given consumer chain ID
-func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) uint64 {
+// of a valid consumer equivocation evidence for a given consumer id
+func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, consumerId string) uint64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.EquivocationEvidenceMinHeightKey(chainID))
+	bz := store.Get(types.EquivocationEvidenceMinHeightKey(consumerId))
 	if bz == nil {
 		return 0
 	}
@@ -539,8 +539,8 @@ func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string
 }
 
 // DeleteEquivocationEvidenceMinHeight deletes the minimum height
-// of a valid consumer equivocation evidence for a given consumer chain ID
-func (k Keeper) DeleteEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) {
+// of a valid consumer equivocation evidence for a given consumer id
+func (k Keeper) DeleteEquivocationEvidenceMinHeight(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.EquivocationEvidenceMinHeightKey(chainID))
+	store.Delete(types.EquivocationEvidenceMinHeightKey(consumerId))
 }
