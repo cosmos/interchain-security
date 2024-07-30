@@ -108,15 +108,34 @@ type UpgradeProposalAction struct {
 	UpgradeTitle  string
 	Proposer      ValidatorID
 	UpgradeHeight uint64
+	Expedited     bool
 }
 
 func (tr *Chain) submitUpgradeProposal(action UpgradeProposalAction, verbose bool) {
 
+	// Get authority address
+	binary := tr.testConfig.chainConfigs[ChainID("sover")].BinaryName
+	cmd := tr.target.ExecCommand(binary,
+		"query", "upgrade", "authority",
+		"--node", tr.getValidatorNode(ChainID("sover"), action.Proposer),
+		"-o", "json")
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("failed running command '%s': %v", cmd, err)
+	}
+
+	var authority struct {
+		Address string `json:"address"`
+	}
+	err = json.Unmarshal(bz, &authority)
+	if err != nil {
+		log.Fatalf("Failed getting authority: err=%v, data=%s", err, string(bz))
+	}
+
+	// Upgrade Proposal Content
 	metadata := "ipfs://CID"
 	deposit := "10000000stake"
 	summary := "my summary"
-	expedited := false
-	authority := "consumer10d07y265gmmuvt4z0w9aw880jnsr700jlh7295" //todo: get it from the gov module
 	proposalJson := fmt.Sprintf(`
 {
 	"messages": [
@@ -136,37 +155,30 @@ func (tr *Chain) submitUpgradeProposal(action UpgradeProposalAction, verbose boo
 	"summary": "%s",
 	"deposit": "%s",
 	"expedited": %t
-}`, authority, action.UpgradeHeight, metadata, action.UpgradeTitle, summary, deposit, expedited)
+}`, authority.Address, action.UpgradeHeight, metadata, action.UpgradeTitle, summary, deposit, action.Expedited)
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
 	proposalPath := "/temp-proposal.json"
-	bz, err := tr.target.ExecCommand(
+	bz, err = tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, proposalJson, proposalPath),
 	).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	submit := fmt.Sprintf(
-		`%s tx gov submit-proposal %s\
-		--gas 900000 \
-		--from validator%s \
-		--keyring-backend test \
-		--chain-id %s \
-		--home %s \
-		--node %s \
-		-y`,
-		tr.testConfig.chainConfigs[ChainID("sover")].BinaryName,
-		proposalPath,
-		action.Proposer,
-		tr.testConfig.chainConfigs[ChainID("sover")].ChainId,
-		tr.getValidatorHome(ChainID("sover"), action.Proposer),
-		tr.getValidatorNode(ChainID("sover"), action.Proposer),
-	)
-	cmd := tr.target.ExecCommand("/bin/bash", "-c", submit)
+	// Submit Proposal
+	cmd = tr.target.ExecCommand(binary,
+		"tx", "gov", "submit-proposal", proposalPath,
+		"--gas", "900000",
+		"--from", "validator"+string(action.Proposer),
+		"--keyring-backend", "test",
+		"--chain-id", string(tr.testConfig.chainConfigs[ChainID("sover")].ChainId),
+		"--home", tr.getValidatorHome(ChainID("sover"), action.Proposer),
+		"--node", tr.getValidatorNode(ChainID("sover"), action.Proposer),
+		"-y")
 
 	if verbose {
-		fmt.Println("submitUpgradeProposal cmd:", cmd.String())
+		fmt.Println("Submit proposal:", cmd.String())
 	}
 
 	bz, err = cmd.CombinedOutput()
@@ -175,45 +187,6 @@ func (tr *Chain) submitUpgradeProposal(action UpgradeProposalAction, verbose boo
 	}
 	if verbose {
 		log.Println("Response to submit-proposal: ", string(bz))
-	}
-
-	tr.waitBlocks(action.ChainID, 1, 15*time.Second)
-}
-
-func (tr *Chain) submitLegacyUpgradeProposalX(action UpgradeProposalAction, verbose bool) {
-	submit := fmt.Sprintf(
-		`%s tx gov submit-legacy-proposal software-upgrade %s \
-		--title  %s \
-		--deposit 10000000stake \
-		--upgrade-height %s \
-		--upgrade-info "perform changeover" \
-		--description "perform changeover" \
-		--gas 900000 \
-		--from validator%s \
-		--keyring-backend test \
-		--chain-id %s \
-		--home %s \
-		--node %s \
-		--no-validate \
-		-y`,
-		tr.testConfig.chainConfigs[ChainID("sover")].BinaryName,
-		action.UpgradeTitle,
-		action.UpgradeTitle,
-		fmt.Sprint(action.UpgradeHeight),
-		action.Proposer,
-		tr.testConfig.chainConfigs[ChainID("sover")].ChainId,
-		tr.getValidatorHome(ChainID("sover"), action.Proposer),
-		tr.getValidatorNode(ChainID("sover"), action.Proposer),
-	)
-	cmd := tr.target.ExecCommand("/bin/bash", "-c", submit)
-
-	if verbose {
-		fmt.Println("submitUpgradeProposal cmd:", cmd.String())
-	}
-
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
 	}
 
 	tr.waitBlocks(action.ChainID, 1, 15*time.Second)

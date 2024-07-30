@@ -202,6 +202,7 @@ func stepsUpgradeChain() []Step {
 				UpgradeTitle:  "sovereign-changeover",
 				Proposer:      ValidatorID("alice"),
 				UpgradeHeight: 110,
+				Expedited:     false,
 			},
 			State: State{
 				ChainID("sover"): ChainState{

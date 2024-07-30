@@ -410,18 +410,18 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 	}
 
 	// for legacy proposal types submitted using "tx submit-legacyproposal" (cosmos-sdk/v1/MsgExecLegacyContent)
-	propType := gjson.Get(string(bz), `proposal.messages.0.value.content.type`).String()
-	rawContent := gjson.Get(string(bz), `proposal.messages.0.value.content.value`)
+	propType := gjson.Get(propRaw, `proposal.messages.0.value.content.type`).String()
+	rawContent := gjson.Get(propRaw, `proposal.messages.0.value.content.value`)
 
 	// for current (>= v47) prop types submitted using "tx submit-proposal"
 	if propType == "" {
-		propType = gjson.Get(string(bz), `proposal.messages.0.type`).String()
-		rawContent = gjson.Get(string(bz), `proposal.messages.0.value`)
+		propType = gjson.Get(propRaw, `proposal.messages.0.type`).String()
+		rawContent = gjson.Get(propRaw, `proposal.messages.0.value`)
 	}
 
-	title := gjson.Get(string(bz), `proposal.title`).String()
-	deposit := gjson.Get(string(bz), `proposal.total_deposit.#(denom=="stake").amount`).Uint()
-	status := gjson.Get(string(bz), `proposal.status`).String()
+	title := gjson.Get(propRaw, `proposal.title`).String()
+	deposit := gjson.Get(propRaw, `proposal.total_deposit.#(denom=="stake").amount`).Uint()
+	status := gjson.Get(propRaw, `proposal.status`).String()
 
 	switch propType {
 	case "/cosmos.gov.v1beta1.TextProposal":
@@ -488,7 +488,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 	case "/ibc.applications.transfer.v1.MsgUpdateParams":
 		var params IBCTransferParams
 		if err := json.Unmarshal([]byte(rawContent.Get("params").String()), &params); err != nil {
-			log.Fatal("cannot unmarshal ibc-transfer params: ", err, "\n", string(bz))
+			log.Fatal("cannot unmarshal ibc-transfer params: ", err, "\n", propRaw)
 		}
 
 		return IBCTransferParamsProposal{
@@ -518,13 +518,13 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		return ParamsProposal{
 			Deposit:  uint(deposit),
 			Status:   status,
-			Subspace: gjson.Get(string(bz), `messages.0.content.changes.0.subspace`).String(),
-			Key:      gjson.Get(string(bz), `messages.0.content.changes.0.key`).String(),
-			Value:    gjson.Get(string(bz), `messages.0.content.changes.0.value`).String(),
+			Subspace: gjson.Get(propRaw, `messages.0.content.changes.0.subspace`).String(),
+			Key:      gjson.Get(propRaw, `messages.0.content.changes.0.key`).String(),
+			Value:    gjson.Get(propRaw, `messages.0.content.changes.0.value`).String(),
 		}
 	}
 
-	log.Fatal("received unknown proposal type: ", propType, "proposal JSON:", string(bz))
+	log.Fatal("received unknown proposal type: ", propType, "proposal JSON:", propRaw)
 
 	return nil
 }
