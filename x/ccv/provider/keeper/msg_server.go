@@ -321,3 +321,17 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	return &types.MsgUpdateConsumerResponse{}, nil
 }
+
+// RegisterConsumer registers a consumer chain
+func (k msgServer) RegisterConsumer(goCtx context.Context, msg *types.MsgRegisterConsumer) (*types.MsgRegisterConsumerResponse, error) {
+	//ctx := sdk.UnwrapSDKContext(goCtx)
+
+	return &types.MsgRegisterConsumerResponse{}, nil
+}
+
+// InitializeConsumer registers a consumer chain
+func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgInitializeConsumer) (*types.MsgInitializeConsumerResponse, error) {
+	//ctx := sdk.UnwrapSDKContext(goCtx)
+
+	return &types.MsgInitializeConsumerResponse{}, nil
+}
