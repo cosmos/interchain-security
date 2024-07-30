@@ -161,9 +161,9 @@ where `ConsumerRegistrationRecord` contains information about the to-be-launched
 
 ```protobuf
 message ConsumerRegistrationRecord {
-  // the title of the chain to-be-launched 
+  // the title of the chain to-be-registered 
   string title;
-  // the description of the chain to-be-launched
+  // the description of the chain to-be-registered
   string description;
   // the chain id of the new consumer chain
   string chain_id;
@@ -183,7 +183,7 @@ To move an Opt In consumer chain to its initialized phase, we issue a `MsgInitia
 
 ```protobuf
 message MsgInitializeConsumer {
-  // consumer id of the to-be-updated consumer chain
+  // consumer id of the to-be-initialized consumer chain
   string consumer_id;
   // the initialization record that contains initialization parameters for the upcoming chain
   ConsumerInitializationRecord initialization_record;

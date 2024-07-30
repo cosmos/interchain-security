@@ -23,13 +23,15 @@ service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
   rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
   rpc SubmitConsumerDoubleVoting(MsgSubmitConsumerDoubleVoting) returns (MsgSubmitConsumerDoubleVotingResponse);
+  rpc RegisterConsumer(MsgRegisterConsumer) returns (MsgRegisterConsumerResponse);
   rpc ConsumerAddition(MsgConsumerAddition) returns (MsgConsumerAdditionResponse);
+  rpc InitializeConsumer(MsgInitializeConsumer) returns (MsgInitializeConsumerResponse);
+  rpc UpdateConsumer(MsgUpdateConsumer) returns (MsgUpdateConsumerResponse);
   rpc RemoveConsumer(MsgRemoveConsumer) returns (MsgRemoveConsumerResponse);
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
   rpc OptIn(MsgOptIn) returns (MsgOptInResponse);
   rpc OptOut(MsgOptOut) returns (MsgOptOutResponse);
   rpc SetConsumerCommissionRate(MsgSetConsumerCommissionRate) returns (MsgSetConsumerCommissionRateResponse);
-  rpc UpdateConsumer(MsgUpdateConsumer) returns (MsgUpdateConsumerResponse);
 }
 
 
@@ -295,38 +297,142 @@ message MsgSetConsumerCommissionRateResponse {}
 message MsgUpdateConsumer {
   option (cosmos.msg.v1.signer) = "authority";
 
-  // the title of the proposal
-  string title = 1;
-  // the description of the proposal
-  string description = 2;
+  // signer address
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
   // the consumer id of the consumer chain to be updated
-  string consumer_id = 3;
+  string consumer_id = 2;
+
+  ConsumerUpdateRecord update_record = 3;
+}
+
+// ConsumerUpdateRecord is the record that contains parameters to modify in the to-be-updated chain
+message ConsumerUpdateRecord {
+  //
+  string owner_address = 1;
   // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
   // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
   // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
   // A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
-  uint32 top_N = 4;
+  uint32 top_N = 2;
   // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
   // `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
   // consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
   // 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
   // to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
-  uint32 validators_power_cap = 5;
+  uint32 validators_power_cap = 3;
   // Corresponds to the maximum number of validators that can validate a consumer chain.
   // Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
-  uint32 validator_set_cap = 6;
+  uint32 validator_set_cap = 4;
   // Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
   // the consumer chain.
-  repeated string allowlist = 7;
+  repeated string allowlist = 5;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
-  repeated string denylist = 8;
-  // signer address
-  string authority = 9 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated string denylist = 6;
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-  uint64 min_stake = 10;
+  uint64 min_stake = 7;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
-  bool allow_inactive_vals = 11;
+  bool allow_inactive_vals = 8;
 }
 
 // MsgUpdateConsumerResponse defines response type for MsgUpdateConsumer messages
 message MsgUpdateConsumerResponse {}
+
+// MsgRegisterConsumer defines the message that registers a consumer chain
+message MsgRegisterConsumer {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // signer address
+  string signer = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  ConsumerRegistrationRecord registration_record = 2;
+}
+
+// ConsumerRegistrationRecord is the record that contains information for the registered chain
+message ConsumerRegistrationRecord {
+  // the title of the chain to-be-registered
+  string title = 1;
+  // the description of the chain to-be-registered
+  string description = 2;
+  // the chain id of the new consumer chain
+  string chain_id = 3;
+}
+
+// MsgRegisterConsumerResponse defines response type for MsgRegisterConsumer
+message MsgRegisterConsumerResponse {
+  string consumer_id = 1;
+}
+
+// MsgInitializeConsumer defines the message that initializes the consumer chain with the given consumer id
+message MsgInitializeConsumer {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // signer address
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // consumer id of the to-be-initialized consumer chain
+  string consumer_id = 2;
+
+  ConsumerInitializationRecord initialization_record = 3;
+}
+
+// ConsumerInitializationRecord is the record that contains information for the to-be-initialized chain
+message ConsumerInitializationRecord {
+  // ---------- ---------- ----------
+  // Following fields are used when the consumer chain launches and are not needed by the provider afterwards.
+  // ---------- ---------- ----------
+
+  // the proposed initial height of new consumer chain.
+  // For a completely new chain, this will be {0,1}. However, it may be
+  // different if this is a chain that is converting to a consumer chain.
+  ibc.core.client.v1.Height initial_height = 1 [ (gogoproto.nullable) = false ];
+  // The hash of the consumer chain genesis state without the consumer CCV
+  // module genesis params. It is used for off-chain confirmation of
+  // genesis.json validity by validators and other parties.
+  bytes genesis_hash = 2;
+  // The hash of the consumer chain binary that should be run by validators on
+  // chain initialization. It is used for off-chain confirmation of binary
+  // validity by validators and other parties.
+  bytes binary_hash = 3;
+  // spawn time is the time on the provider chain at which the consumer chain
+  // genesis is finalized and all validators will be responsible for starting
+  // their consumer chain validator node.
+  google.protobuf.Timestamp spawn_time = 4 [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  // Unbonding period for the consumer,
+  // which should be smaller than that of the provider in general.
+  google.protobuf.Duration unbonding_period = 5  [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+
+
+  // ---------- ---------- ----------
+  // Following fields are used to construct the consumer genesis of the to-be-launched consumer chain
+  // and are set up as params on the consumer chain. Those params can then be directly modified by the consumer chain.
+  // ---------- ---------- ----------
+
+  // Sent CCV related IBC packets will timeout after this duration
+  google.protobuf.Duration ccv_timeout_period = 6  [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  // Sent transfer related IBC packets will timeout after this duration
+  google.protobuf.Duration transfer_timeout_period = 7 [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  // The fraction of tokens allocated to the consumer redistribution address
+  // during distribution events. The fraction is a string representing a
+  // decimal number. For example "0.75" would represent 75%.
+  string consumer_redistribution_fraction = 8;
+  // BlocksPerDistributionTransmission is the number of blocks between
+  // ibc-token-transfers from the consumer chain to the provider chain. On
+  // sending transmission event, `consumer_redistribution_fraction` of the
+  // accumulated tokens are sent to the consumer redistribution address.
+  int64 blocks_per_distribution_transmission = 9;
+  // The number of historical info entries to persist in store.
+  // This param is a part of the cosmos sdk staking module. In the case of
+  // a ccv enabled consumer chain, the ccv module acts as the staking module.
+  int64 historical_entries = 10;
+  // The ID of a token transfer channel used for the Reward Distribution
+  // sub-protocol. If DistributionTransmissionChannel == "", a new transfer
+  // channel is created on top of the same connection as the CCV channel.
+  // Note that transfer_channel_id is the ID of the channel end on the consumer
+  // chain. it is most relevant for chains performing a sovereign to consumer
+  // changeover in order to maintain the existing ibc transfer channel
+  string distribution_transmission_channel = 11;
+}
+
+// MsgInitializeConsumerResponse defines response type for MsgRegisterConsumer
+message MsgInitializeConsumerResponse {}
