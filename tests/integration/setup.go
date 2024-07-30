@@ -156,7 +156,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
 
 	// remove props so they don't interfere with the rest of the setup
-	c // if not removed here, setupConsumerCallback will have 2 proposals for adding the first consumer chain
+	// if not removed here, setupConsumerCallback will have 2 proposals for adding the first consumer chain
 	providerKeeper.DeletePendingConsumerAdditionProps(suite.providerCtx(), ps...)
 
 	// start consumer chains

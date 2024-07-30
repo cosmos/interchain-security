@@ -81,7 +81,7 @@ const (
 
 	ThrottledPacketDataKeyName = "ThrottledPacketDataKey"
 
-	GlobalSlashEntryKeyName = "GlobalSlashEntryKey"
+	GlobalSlashEntryKeyName = "DeprecatedGlobalSlashEntryKey"
 
 	ConsumerValidatorsKeyName = "ConsumerValidatorsKey"
 
@@ -223,6 +223,7 @@ func getKeyPrefixes() map[string]byte {
 		ThrottledPacketDataKeyName: 20,
 
 		// GlobalSlashEntryKey is the key for storing global slash queue entries
+		// [DEPRECATED]
 		GlobalSlashEntryKeyName: 21,
 
 		// ConsumerValidatorsKey is the key for storing the validator assigned keys for every consumer chain
