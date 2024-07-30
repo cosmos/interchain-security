@@ -310,7 +310,7 @@ func (msg *MsgUpdateConsumer) ValidateBasic() error {
 		return err
 	}
 
-	err := ValidatePSSFeatures(msg.Top_N, msg.ValidatorsPowerCap)
+	err := ValidatePSSFeatures(msg.UpdateRecord.Top_N, msg.UpdateRecord.ValidatorsPowerCap)
 	if err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
 	}

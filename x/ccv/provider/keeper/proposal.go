@@ -74,16 +74,17 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 // HandleConsumerModificationProposal modifies a running consumer chain
 func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *types.MsgUpdateConsumer) error {
 	p := types.ConsumerModificationProposal{
-		Title:              proposal.Title,
-		Description:        proposal.Description,
+		// TODO (PERMISSIONLESS)
+		//Title:              proposal.UpdateRecord.Title,
+		//Description:        proposal.UpdateRecord.Description,
 		ConsumerId:         proposal.ConsumerId,
-		Top_N:              proposal.Top_N,
-		ValidatorsPowerCap: proposal.ValidatorsPowerCap,
-		ValidatorSetCap:    proposal.ValidatorSetCap,
-		Allowlist:          proposal.Allowlist,
-		Denylist:           proposal.Denylist,
-		MinStake:           proposal.MinStake,
-		AllowInactiveVals:  proposal.AllowInactiveVals,
+		Top_N:              proposal.UpdateRecord.Top_N,
+		ValidatorsPowerCap: proposal.UpdateRecord.ValidatorsPowerCap,
+		ValidatorSetCap:    proposal.UpdateRecord.ValidatorSetCap,
+		Allowlist:          proposal.UpdateRecord.Allowlist,
+		Denylist:           proposal.UpdateRecord.Denylist,
+		MinStake:           proposal.UpdateRecord.MinStake,
+		AllowInactiveVals:  proposal.UpdateRecord.AllowInactiveVals,
 	}
 
 	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
