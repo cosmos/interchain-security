@@ -149,7 +149,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
-	if ctx.BlockHeight()%k.GetBlocksPerEpoch(ctx) == 0 {
+	if k.BlocksUntilNextEpoch(ctx) == 0 {
 		// only queue and send VSCPackets at the boundaries of an epoch
 
 		// collect validator updates
@@ -159,6 +159,19 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 		// if the CCV channel is not established for a consumer chain,
 		// the updates will remain queued until the channel is established
 		k.SendVSCPackets(ctx)
+	}
+}
+
+// BlocksUntilNextEpoch returns the number of blocks until the next epoch starts
+// Returns 0 if VSCPackets are sent in the current block,
+// which is done in the first block of each epoch.
+func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
+	blocksSinceEpochStart := ctx.BlockHeight() % k.GetBlocksPerEpoch(ctx)
+
+	if blocksSinceEpochStart == 0 {
+		return 0
+	} else {
+		return int64(k.GetBlocksPerEpoch(ctx) - blocksSinceEpochStart)
 	}
 }
 

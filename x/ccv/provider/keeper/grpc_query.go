@@ -488,3 +488,13 @@ func (k Keeper) QueryOldestUnconfirmedVsc(goCtx context.Context, req *types.Quer
 
 	return &types.QueryOldestUnconfirmedVscResponse{VscSendTimestamp: ts}, nil
 }
+
+// QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
+func (k Keeper) QueryBlocksUntilNextEpoch(goCtx context.Context, req *types.QueryBlocksUntilNextEpochRequest) (*types.QueryBlocksUntilNextEpochResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Calculate the blocks until the next epoch
+	blocksUntilNextEpoch := k.BlocksUntilNextEpoch(ctx)
+
+	return &types.QueryBlocksUntilNextEpochResponse{BlocksUntilNextEpoch: uint64(blocksUntilNextEpoch)}, nil
+}

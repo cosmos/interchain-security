@@ -40,6 +40,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	cmd.AddCommand(CmdOldestUnconfirmedVsc())
+	cmd.AddCommand(CmdBlocksUntilNextEpoch())
 	return cmd
 }
 
@@ -589,6 +590,33 @@ func CmdOldestUnconfirmedVsc() *cobra.Command {
 			}
 
 			return clientCtx.PrintProto(&res.VscSendTimestamp)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdBlocksUntilNextEpoch() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "blocks-until-next-epoch",
+		Short: "Query the number of blocks until the next epoch begins and validator updates are sent to consumer chains",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryBlocksUntilNextEpochRequest{}
+			res, err := queryClient.QueryBlocksUntilNextEpoch(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
 		},
 	}
 
