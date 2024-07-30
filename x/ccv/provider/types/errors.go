@@ -8,10 +8,10 @@ import (
 var (
 	ErrInvalidConsumerAdditionProposal     = errorsmod.Register(ModuleName, 1, "invalid consumer addition proposal")
 	ErrInvalidConsumerRemovalProp          = errorsmod.Register(ModuleName, 2, "invalid consumer removal proposal")
-	ErrUnknownConsumerChainId              = errorsmod.Register(ModuleName, 3, "no consumer chain with this chain id")
+	ErrUnknownConsumerId                   = errorsmod.Register(ModuleName, 3, "no consumer chain with this consumer id")
 	ErrUnknownConsumerChannelId            = errorsmod.Register(ModuleName, 4, "no consumer chain with this channel id")
 	ErrInvalidConsumerConsensusPubKey      = errorsmod.Register(ModuleName, 5, "empty consumer consensus public key")
-	ErrInvalidConsumerChainID              = errorsmod.Register(ModuleName, 6, "invalid consumer chain id")
+	ErrInvalidConsumerId                   = errorsmod.Register(ModuleName, 6, "invalid consumer id")
 	ErrConsumerKeyNotFound                 = errorsmod.Register(ModuleName, 7, "consumer key not found")
 	ErrNoValidatorConsumerAddress          = errorsmod.Register(ModuleName, 8, "error getting validator consumer address")
 	ErrNoValidatorProviderAddress          = errorsmod.Register(ModuleName, 9, "error getting validator provider address")
@@ -31,5 +31,4 @@ var (
 	ErrNoUnbondingTime                     = errorsmod.Register(ModuleName, 23, "provider unbonding time not found")
 	ErrInvalidAddress                      = errorsmod.Register(ModuleName, 24, "invalid address")
 	ErrUnauthorized                        = errorsmod.Register(ModuleName, 25, "unauthorized")
-	ErrBlankConsumerChainID                = errorsmod.Register(ModuleName, 26, "consumer chain id must not be blank")
 )

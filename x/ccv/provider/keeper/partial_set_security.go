@@ -18,7 +18,7 @@ import (
 func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, consumerKey string) error {
 	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
 		return errorsmod.Wrapf(
-			types.ErrUnknownConsumerChainId,
+			types.ErrUnknownConsumerId,
 			"opting in to an unknown consumer chain, with id: %s", chainID)
 	}
 
@@ -51,7 +51,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 		// A validator can only opt out from a running chain. We check this by checking the consumer client id, because
 		// `SetConsumerClientId` is set when the chain starts in `CreateConsumerClientInCachedCtx` of `BeginBlockInit`.
 		return errorsmod.Wrapf(
-			types.ErrUnknownConsumerChainId,
+			types.ErrUnknownConsumerId,
 			"opting out of an unknown or not running consumer chain, with id: %s", chainID)
 	}
 
@@ -72,7 +72,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 		minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, chainID)
 		if !found {
 			return errorsmod.Wrapf(
-				types.ErrUnknownConsumerChainId,
+				types.ErrUnknownConsumerId,
 				"Could not find minimum power in top N for chain with id: %s", chainID)
 		}
 

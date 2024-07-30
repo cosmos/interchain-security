@@ -67,11 +67,11 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, err
 	}
 
-	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
+	if err := k.Keeper.AssignConsumerKey(ctx, msg.ConsumerId, validator, consumerTMPublicKey); err != nil {
 		return nil, err
 	}
 	k.Logger(ctx).Info("assigned consumer key",
-		"consumer chainID", msg.ChainId,
+		"consumer id", msg.ConsumerId,
 		"validator operator addr", msg.ProviderAddr,
 		"consumer public key", msg.ConsumerKey,
 	)
@@ -223,7 +223,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 	}
 	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, msg.ConsumerKey)
+	err = k.Keeper.HandleOptIn(ctx, msg.ConsumerId, providerConsAddr, msg.ConsumerKey)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +259,7 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 	}
 	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	err = k.Keeper.HandleOptOut(ctx, msg.ChainId, providerConsAddr)
+	err = k.Keeper.HandleOptOut(ctx, msg.ConsumerId, providerConsAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -293,14 +293,14 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 		return nil, err
 	}
 
-	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ChainId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
+	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ConsumerId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
 		return nil, err
 	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeSetConsumerCommissionRate,
-			sdk.NewAttribute(types.AttributeConsumerChainID, msg.ChainId),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
 		),

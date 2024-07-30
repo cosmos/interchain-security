@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -54,11 +55,11 @@ var (
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
-func NewMsgAssignConsumerKey(chainID string, providerValidatorAddress sdk.ValAddress,
+func NewMsgAssignConsumerKey(consumerId string, providerValidatorAddress sdk.ValAddress,
 	consumerConsensusPubKey, signer string,
 ) (*MsgAssignConsumerKey, error) {
 	return &MsgAssignConsumerKey{
-		ChainId:      chainID,
+		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
 		Signer:       signer,
@@ -94,14 +95,14 @@ func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgAssignConsumerKey) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
+	if strings.TrimSpace(msg.ConsumerId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumerId cannot be blank")
 	}
 	// It is possible to assign keys for consumer chains that are not yet approved.
 	// This can only be done by a signing validator, but it is still sensible
 	// to limit the chainID size to prevent abuse.
-	if 128 < len(msg.ChainId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	if 128 < len(msg.ConsumerId) {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot exceed 128 length")
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -243,7 +244,7 @@ func (msg *MsgConsumerAddition) GetSigners() []sdk.AccAddress {
 // ValidateBasic implements the sdk.Msg interface.
 func (msg *MsgConsumerAddition) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
-		return ErrBlankConsumerChainID
+		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "chain id cannot be blank")
 	}
 
 	if msg.InitialHeight.IsZero() {
@@ -293,8 +294,8 @@ func (msg *MsgConsumerAddition) ValidateBasic() error {
 }
 
 func (msg *MsgConsumerRemoval) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 
 	if msg.StopTime.IsZero() {
@@ -305,8 +306,8 @@ func (msg *MsgConsumerRemoval) ValidateBasic() error {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg *MsgConsumerModification) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return ErrBlankConsumerChainID
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 
 	err := ValidatePSSFeatures(msg.Top_N, msg.ValidatorsPowerCap)
@@ -318,9 +319,9 @@ func (msg *MsgConsumerModification) ValidateBasic() error {
 }
 
 // NewMsgOptIn creates a new NewMsgOptIn instance.
-func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
+func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
 	return &MsgOptIn{
-		ChainId:      chainID,
+		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
 		Signer:       signer,
@@ -348,14 +349,14 @@ func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgOptIn) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
+	if strings.TrimSpace(msg.ConsumerId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot be blank")
 	}
 	// It is possible to opt in to validate on consumer chains that are not yet approved.
 	// This can only be done by a signing validator, but it is still sensible
-	// to limit the chainID size to prevent abuse.
-	if 128 < len(msg.ChainId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	// to limit the consumerId size to prevent abuse.
+	if 128 < len(msg.ConsumerId) {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot exceed 128 length")
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -371,9 +372,9 @@ func (msg MsgOptIn) ValidateBasic() error {
 }
 
 // NewMsgOptOut creates a new NewMsgOptIn instance.
-func NewMsgOptOut(chainID string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
+func NewMsgOptOut(consumerId string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
 	return &MsgOptOut{
-		ChainId:      chainID,
+		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
 		Signer:       signer,
 	}, nil
@@ -406,14 +407,14 @@ func (msg MsgOptOut) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgOptOut) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
+	if strings.TrimSpace(msg.ConsumerId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot be blank")
 	}
 	// It is possible to assign keys for consumer chains that are not yet approved.
 	// This can only be done by a signing validator, but it is still sensible
 	// to limit the chainID size to prevent abuse.
-	if 128 < len(msg.ChainId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	if 128 < len(msg.ConsumerId) {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot exceed 128 length")
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -423,9 +424,9 @@ func (msg MsgOptOut) ValidateBasic() error {
 }
 
 // NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
-func NewMsgSetConsumerCommissionRate(chainID string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
+func NewMsgSetConsumerCommissionRate(consumerId string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
 	return &MsgSetConsumerCommissionRate{
-		ChainId:      chainID,
+		ConsumerId:   consumerId,
 		Rate:         commission,
 		ProviderAddr: providerValidatorAddress.String(),
 		Signer:       signer,
@@ -441,12 +442,12 @@ func (msg MsgSetConsumerCommissionRate) Type() string {
 }
 
 func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
+	if strings.TrimSpace(msg.ConsumerId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot be blank")
 	}
 
-	if 128 < len(msg.ChainId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	if 128 < len(msg.ConsumerId) {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot exceed 128 length")
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -506,4 +507,19 @@ func (msg MsgSetConsumerCommissionRate) GetSigners() []sdk.AccAddress {
 func (msg MsgSetConsumerCommissionRate) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
+}
+
+// ValidateConsumerId validates the provided consumer id and returns an error if it is not valid
+func ValidateConsumerId(consumerId string) error {
+	if strings.TrimSpace(consumerId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot be blank")
+	}
+
+	// check that `consumerId` corresponds to a `uint64`
+	_, err := strconv.ParseUint(consumerId, 10, 64)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id (%s) cannot be parsed: %s", consumerId, err.Error())
+	}
+
+	return nil
 }

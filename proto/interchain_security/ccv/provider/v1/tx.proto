@@ -39,8 +39,8 @@ message MsgAssignConsumerKey {
   option (gogoproto.goproto_getters) = false;
 
 
-  // The chain id of the consumer chain to assign a consensus public key to
-  string chain_id = 1;
+  // The consumer id of the consumer chain to assign a consensus public key to
+  string consumer_id = 1;
   // The validator address on the provider
   string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // The consensus public key to use on the consumer.
@@ -202,8 +202,8 @@ message MsgConsumerAdditionResponse {}
 message MsgConsumerRemoval {
   option (cosmos.msg.v1.signer) = "authority";
 
-  // the chain-id of the consumer chain to be stopped
-  string chain_id = 1;
+  // the consumer id of the consumer chain to be stopped
+  string consumer_id = 1;
   // the time on the provider chain at which all validators are responsible to
   // stop their consumer chain validator node
   google.protobuf.Timestamp stop_time = 2
@@ -238,8 +238,8 @@ message MsgOptIn {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
   option (cosmos.msg.v1.signer) = "signer";
-  // the chain id of the consumer chain to opt in to
-  string chain_id = 1;
+  // the consumer id of the consumer chain to opt in to
+  string consumer_id = 1;
   // the validator address on the provider
   string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // (optional) The consensus public key to use on the consumer in json string format corresponding to proto-any,
@@ -258,8 +258,8 @@ message MsgOptOut {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
   option (cosmos.msg.v1.signer) = "signer";
-  // the chain id of the consumer chain to opt out from
-  string chain_id = 1;
+  // the consumer id of the consumer chain to opt out from
+  string consumer_id = 1;
   // the validator address on the provider
   string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // signer address
@@ -276,10 +276,10 @@ message MsgSetConsumerCommissionRate {
   option (gogoproto.goproto_getters) = false;
   option (cosmos.msg.v1.signer) = "signer";
 
-   // The validator address on the provider
-   string provider_addr = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
-  // The chain id of the consumer chain to set a commission rate
-  string chain_id = 2;
+  // The validator address on the provider
+  string provider_addr = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The consumer id of the consumer chain to set a commission rate
+  string consumer_id = 2;
   // The rate to charge delegators on the consumer chain, as a fraction
   // TODO: migrate rate from sdk.Dec to math.LegacyDec
   string rate = 3 [
@@ -306,8 +306,8 @@ message MsgConsumerModification {
   string title = 1;
   // the description of the proposal
   string description = 2;
-  // the chain-id of the consumer chain to be modified
-  string chain_id = 3;
+  // the consumer id of the consumer chain to be modified
+  string consumer_id = 3;
   // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
   // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
   // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
