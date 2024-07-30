@@ -129,8 +129,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.startChain(action, td.verbose)
 	case StartSovereignChainAction:
 		target.startSovereignChain(action, td.verbose)
-	case LegacyUpgradeProposalAction:
-		target.submitLegacyUpgradeProposal(action, td.verbose)
+	case UpgradeProposalAction:
+		target.submitUpgradeProposal(action, td.verbose)
 	case WaitUntilBlockAction:
 		target.waitUntilBlockOnChain(action)
 	case ChangeoverChainAction:

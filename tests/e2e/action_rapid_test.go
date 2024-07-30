@@ -163,9 +163,9 @@ func GetStartSovereignChainActionGen() *rapid.Generator[StartSovereignChainActio
 	})
 }
 
-func GetSubmitLegacyUpgradeProposalActionGen() *rapid.Generator[LegacyUpgradeProposalAction] {
-	return rapid.Custom(func(t *rapid.T) LegacyUpgradeProposalAction {
-		return LegacyUpgradeProposalAction{
+func GetSubmitLegacyUpgradeProposalActionGen() *rapid.Generator[UpgradeProposalAction] {
+	return rapid.Custom(func(t *rapid.T) UpgradeProposalAction {
+		return UpgradeProposalAction{
 			ChainID:       GetChainIDGen().Draw(t, "ChainID"),
 			UpgradeTitle:  rapid.String().Draw(t, "UpgradeTitle"),
 			Proposer:      GetValidatorIDGen().Draw(t, "Proposer"),

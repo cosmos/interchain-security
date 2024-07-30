@@ -103,14 +103,14 @@ func (tr Chain) startSovereignChain(
 	}, verbose)
 }
 
-type LegacyUpgradeProposalAction struct {
+type UpgradeProposalAction struct {
 	ChainID       ChainID
 	UpgradeTitle  string
 	Proposer      ValidatorID
 	UpgradeHeight uint64
 }
 
-func (tr *Chain) submitUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
+func (tr *Chain) submitUpgradeProposal(action UpgradeProposalAction, verbose bool) {
 
 	metadata := "ipfs://CID"
 	deposit := "10000000stake"
@@ -180,12 +180,7 @@ func (tr *Chain) submitUpgradeProposal(action LegacyUpgradeProposalAction, verbo
 	tr.waitBlocks(action.ChainID, 1, 15*time.Second)
 }
 
-func (tr *Chain) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
-	//tr.submitLegacyUpgradeProposalX(action, target, verbose)
-	tr.submitUpgradeProposal(action, verbose)
-}
-
-func (tr *Chain) submitLegacyUpgradeProposalX(action LegacyUpgradeProposalAction, verbose bool) {
+func (tr *Chain) submitLegacyUpgradeProposalX(action UpgradeProposalAction, verbose bool) {
 	submit := fmt.Sprintf(
 		`%s tx gov submit-legacy-proposal software-upgrade %s \
 		--title  %s \
