@@ -156,7 +156,7 @@ require (
 	cosmossdk.io/x/upgrade v0.1.1
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/ibc-go/modules/capability v1.0.0
-	github.com/cosmos/ibc-go/v8 v8.3.2
+	github.com/cosmos/ibc-go/v8 v8.4.0
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.18.2
 	golang.org/x/mod v0.17.0
