@@ -183,6 +183,11 @@ message MsgConsumerAddition {
   repeated string denylist = 17;
   // signer address
   string authority = 18 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Corresponds to a list of provider consensus addresses of validators that should have PRIORITY to validate on the consumer chain,
+  // meaning as long as they are eligible/opted in to validate on the consumer chain, the validator set will be
+  // filled with these validators first, and other validators will be added to the validator set only if there are
+  // not enough eligible priority validators.
+  repeated string prioritylist = 19;
 }
 
 // MsgConsumerAdditionResponse defines response type for MsgConsumerAddition messages
@@ -325,6 +330,11 @@ message MsgConsumerModification {
   repeated string denylist = 8;
   // signer address
   string authority = 9 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Corresponds to a list of provider consensus addresses of validators that should have PRIORITY to validate on the consumer chain,
+  // meaning as long as they are eligible/opted in to validate on the consumer chain, the validator set will be
+  // filled with these validators first, and other validators will be added to the validator set only if there are
+  // not enough eligible priority validators.
+  repeated string prioritylist = 10;
 }
 
 message MsgConsumerModificationResponse {}
