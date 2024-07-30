@@ -213,7 +213,7 @@ func NewConsumerRemovalProposal(title, description, chainID string, stopTime tim
 	return &ConsumerRemovalProposal{
 		Title:       title,
 		Description: description,
-		ChainId:     chainID,
+		ConsumerId:  chainID,
 		StopTime:    stopTime,
 	}
 }
@@ -230,7 +230,7 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 		return err
 	}
 
-	if strings.TrimSpace(sccp.ChainId) == "" {
+	if strings.TrimSpace(sccp.ConsumerId) == "" {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
 	}
 
@@ -253,7 +253,7 @@ func NewConsumerModificationProposal(title, description, chainID string,
 	return &ConsumerModificationProposal{
 		Title:              title,
 		Description:        description,
-		ChainId:            chainID,
+		ConsumerId:         chainID,
 		Top_N:              topN,
 		ValidatorsPowerCap: validatorsPowerCap,
 		ValidatorSetCap:    validatorSetCap,
@@ -278,7 +278,7 @@ func (cccp *ConsumerModificationProposal) ValidateBasic() error {
 		return err
 	}
 
-	if strings.TrimSpace(cccp.ChainId) == "" {
+	if strings.TrimSpace(cccp.ConsumerId) == "" {
 		return errorsmod.Wrap(ErrInvalidConsumerModificationProposal, "consumer chain id must not be blank")
 	}
 

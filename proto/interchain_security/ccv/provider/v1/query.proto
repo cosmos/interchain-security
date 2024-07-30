@@ -18,7 +18,7 @@ service Query {
   rpc QueryConsumerGenesis(QueryConsumerGenesisRequest)
       returns (QueryConsumerGenesisResponse) {
     option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumer_genesis/{chain_id}";
+        "/interchain_security/ccv/provider/consumer_genesis/{consumer_id}";
   }
 
   // ConsumerChains queries active consumer chains supported by the provider
@@ -91,7 +91,7 @@ service Query {
     QueryAllPairsValConAddrByConsumerChainIDRequest)
     returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
       option (google.api.http).get =
-    "/interchain_security/ccv/provider/consumer_chain_id";
+    "/interchain_security/ccv/provider/{consumer_id}";
     }
 
   // QueryParams returns all current values of provider parameters
@@ -107,7 +107,7 @@ service Query {
     QueryConsumerChainOptedInValidatorsRequest)
     returns (QueryConsumerChainOptedInValidatorsResponse) {
       option (google.api.http).get =
-    "/interchain_security/ccv/provider/opted_in_validators/{chain_id}";
+    "/interchain_security/ccv/provider/opted_in_validators/{consumer_id}";
     }
 
   // QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
@@ -125,7 +125,7 @@ service Query {
     QueryValidatorConsumerCommissionRateRequest)
     returns (QueryValidatorConsumerCommissionRateResponse) {
       option (google.api.http).get =
-    "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}";
+    "/interchain_security/ccv/provider/consumer_commission_rate/{consumer_id}/{provider_address}";
     }
 
   // QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
@@ -134,7 +134,7 @@ service Query {
   rpc QueryConsumerValidators(QueryConsumerValidatorsRequest)
       returns (QueryConsumerValidatorsResponse) {
         option (google.api.http).get =
-            "/interchain_security/ccv/provider/consumer_validators/{chain_id}";
+            "/interchain_security/ccv/provider/consumer_validators/{consumer_id}";
   }
 
   // QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
@@ -146,7 +146,7 @@ service Query {
   }
 }
 
-message QueryConsumerGenesisRequest { string chain_id = 1; }
+message QueryConsumerGenesisRequest { string consumer_id = 1; }
 
 message QueryConsumerGenesisResponse {
   interchain_security.ccv.v1.ConsumerGenesisState genesis_state = 1
@@ -193,7 +193,7 @@ message QueryValidatorConsumerAddrRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
   // The id of the consumer chain
-  string chain_id = 1;
+  string consumer_id = 1;
   // The consensus address of the validator on the provider chain
   string provider_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
 }
@@ -251,7 +251,7 @@ message ProposedChain {
 
 message QueryAllPairsValConAddrByConsumerChainIDRequest {
   // The id of the consumer chain
-  string chain_id = 1;
+  string consumer_id = 1;
 }
 
 message QueryAllPairsValConAddrByConsumerChainIDResponse {
@@ -273,7 +273,7 @@ message QueryParamsResponse {
 }
 
 message QueryConsumerChainOptedInValidatorsRequest {
-  string chain_id = 1;
+  string consumer_id = 1;
 }
 
 message QueryConsumerChainOptedInValidatorsResponse {
@@ -282,7 +282,7 @@ message QueryConsumerChainOptedInValidatorsResponse {
 }
 
 message QueryConsumerValidatorsRequest {
-  string chain_id = 1;
+  string consumer_id = 1;
 }
 
 message QueryConsumerValidatorsValidator {
@@ -308,7 +308,7 @@ message QueryConsumerChainsValidatorHasToValidateResponse {
 }
 
 message QueryValidatorConsumerCommissionRateRequest {
-  string chain_id = 1;
+  string consumer_id = 1;
     // The consensus address of the validator on the provider chain
   string provider_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
 }
