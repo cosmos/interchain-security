@@ -122,6 +122,12 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(44), providertypes.AllowInactiveValidatorsKey("chainID")[0])
 	i++
+	require.Equal(t, uint8(45), providertypes.ConsumerIdKey()[0])
+	i++
+	require.Equal(t, uint8(46), providertypes.ConsumerIdToChainIdKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(47), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()
 	require.Equal(t, len(prefixes), i)
@@ -189,6 +195,9 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.MinStakeKey("chainID"),
 		providertypes.AllowInactiveValidatorsKey("chainID"),
 		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ConsumerIdKey(),
+		providertypes.ConsumerIdToChainIdKey("consumerId"),
+		providertypes.ClientIdToConsumerIdKey("clientId"),
 	}
 }
 

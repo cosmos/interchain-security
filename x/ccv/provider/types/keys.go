@@ -128,6 +128,12 @@ const (
 	AllowInactiveValidatorsKeyName = "AllowInactiveValidatorsKey"
 
 	ConsumerAddrsToPruneV2KeyName = "ConsumerAddrsToPruneV2Key"
+
+	ConsumerIdKeyName = "ConsumerIdKey"
+
+	ConsumerIdToChainIdKeyName = "ConsumerIdToChainIdKey"
+
+	ClientIdToConsumerIdKeyName = "ClientIdToConsumerIdKey"
 )
 
 // getKeyPrefixes returns a constant map of all the byte prefixes for existing keys
@@ -320,6 +326,15 @@ func getKeyPrefixes() map[string]byte {
 		// AllowInactiveValidatorsKey is the byte prefix for storing the mapping from consumer chains to the boolean value
 		// that determines whether inactive validators can validate on that chain
 		AllowInactiveValidatorsKeyName: 44,
+
+		// ConsumerIdKeyName is the key for storing the consumer id for the next registered consumer chain
+		ConsumerIdKeyName: 45,
+
+		// ConsumerIdToChainIdKeyName is the key for storing the chain id for the given consumer id
+		ConsumerIdToChainIdKeyName: 46,
+
+		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
+		ClientIdToConsumerIdKeyName: 47,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -703,6 +718,29 @@ func MinStakeKey(chainID string) []byte {
 
 func AllowInactiveValidatorsKey(chainID string) []byte {
 	return ChainIdWithLenKey(mustGetKeyPrefix(AllowInactiveValidatorsKeyName), chainID)
+}
+
+// ConsumerIdKey returns the key used to store the consumerId of the next registered chain
+func ConsumerIdKey() []byte {
+	return []byte{mustGetKeyPrefix(ConsumerIdKeyName)}
+}
+
+// ConsumerIdToChainIdKey returns the chain id that corresponds to this consumer id
+func ConsumerIdToChainIdKey(consumerId string) []byte {
+	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToChainIdKeyName), consumerId)
+}
+
+// ClientIdToConsumerIdKey returns the consumer id that corresponds to this client id
+func ClientIdToConsumerIdKey(clientId string) []byte {
+	clientIdLength := len(clientId)
+	return ccvtypes.AppendMany(
+		// Append the prefix
+		[]byte{mustGetKeyPrefix(ClientIdToConsumerIdKeyName)},
+		// Append the chainID length
+		sdk.Uint64ToBigEndian(uint64(clientIdLength)),
+		// Append the chainID
+		[]byte(clientId),
+	)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
