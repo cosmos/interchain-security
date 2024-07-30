@@ -51,7 +51,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.
 
 // Wrapper for the new proposal message MsgConsumerRemoval
 // Will replace legacy handler HandleLegacyConsumerRemovalProposal
-func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgConsumerRemoval) error {
+func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgRemoveConsumer) error {
 	p := types.ConsumerRemovalProposal{
 		ConsumerId: proposal.ConsumerId,
 		StopTime:   proposal.StopTime,
@@ -72,7 +72,7 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 }
 
 // HandleConsumerModificationProposal modifies a running consumer chain
-func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *types.MsgConsumerModification) error {
+func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *types.MsgUpdateConsumer) error {
 	p := types.ConsumerModificationProposal{
 		Title:              proposal.Title,
 		Description:        proposal.Description,
