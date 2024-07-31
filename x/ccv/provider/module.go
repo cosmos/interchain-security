@@ -9,6 +9,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -101,13 +102,15 @@ type AppModule struct {
 	AppModuleBasic
 	keeper     *keeper.Keeper
 	paramSpace paramtypes.Subspace
+	storeKey   storetypes.StoreKey
 }
 
 // NewAppModule creates a new provider module
-func NewAppModule(k *keeper.Keeper, paramSpace paramtypes.Subspace) AppModule {
+func NewAppModule(k *keeper.Keeper, paramSpace paramtypes.Subspace, storeKey storetypes.StoreKey) AppModule {
 	return AppModule{
 		keeper:     k,
 		paramSpace: paramSpace,
+		storeKey:   storeKey,
 	}
 }
 
@@ -121,7 +124,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-	migrator := migrations.NewMigrator(*am.keeper, am.paramSpace)
+	migrator := migrations.NewMigrator(*am.keeper, am.paramSpace, am.storeKey)
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 2, migrator.Migrate2to3); err != nil {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 2 -> 3", providertypes.ModuleName, err))
 	}
@@ -132,10 +135,13 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 4 -> 5", providertypes.ModuleName, err))
 	}
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 5, migrator.Migrate5to6); err != nil {
-		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
+		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 5 -> 6", providertypes.ModuleName, err))
 	}
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 6, migrator.Migrate6to7); err != nil {
-		panic(fmt.Sprintf("failed to register migrator for %s: %s", providertypes.ModuleName, err))
+		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 6 -> 7", providertypes.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(providertypes.ModuleName, 7, migrator.Migrate7to8); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 7 -> 8", providertypes.ModuleName, err))
 	}
 }
 
@@ -157,7 +163,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 7 }
+func (AppModule) ConsensusVersion() uint64 { return 8 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx context.Context) error {
@@ -181,8 +187,6 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 	// EndBlock logic needed for the Consumer Initiated Slashing sub-protocol.
 	// Important: EndBlockCIS must be called before EndBlockVSU
 	am.keeper.EndBlockCIS(sdkCtx)
-	// EndBlock logic needed for the Consumer Chain Removal sub-protocol
-	am.keeper.EndBlockCCR(sdkCtx)
 	// EndBlock logic needed for the Validator Set Update sub-protocol
 	am.keeper.EndBlockVSU(sdkCtx)
 

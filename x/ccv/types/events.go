@@ -15,7 +15,6 @@ const (
 	EventTypeExecuteConsumerChainSlash  = "execute_consumer_chain_slash"
 	EventTypeFeeDistribution            = "fee_distribution"
 	EventTypeConsumerSlashRequest       = "consumer_slash_request"
-	EventTypeVSCMatured                 = "vsc_matured"
 
 	AttributeKeyAckSuccess            = "success"
 	AttributeKeyAck                   = "acknowledgement"

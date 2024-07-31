@@ -129,23 +129,10 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel bool) {
 	channelID := s.path.EndpointB.ChannelID
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	if checkChannel {
 		// check channel's state is closed
 		s.Require().Equal(channeltypes.CLOSED, s.path.EndpointB.GetChannel().State)
-	}
-
-	// check UnbondingOps were deleted and undelegation entries aren't onHold
-	for _, unbondingOpsIndex := range providerKeeper.GetAllUnbondingOpIndexes(s.providerCtx(), chainID) {
-		_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, unbondingOpsIndex.VscId)
-		s.Require().False(found)
-		for _, ubdID := range unbondingOpsIndex.UnbondingOpIds {
-			_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), unbondingOpsIndex.UnbondingOpIds[ubdID])
-			s.Require().False(found)
-			ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingID(s.providerCtx(), unbondingOpsIndex.UnbondingOpIds[ubdID])
-			s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
-		}
 	}
 
 	// verify consumer chain's states are removed

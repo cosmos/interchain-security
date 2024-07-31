@@ -650,8 +650,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		// They must be populated with reasonable values to satisfy SetParams though.
 		TrustingPeriodFraction:      providertypes.DefaultTrustingPeriodFraction,
 		CcvTimeoutPeriod:            ccvtypes.DefaultCCVTimeoutPeriod,
-		InitTimeoutPeriod:           providertypes.DefaultInitTimeoutPeriod,
-		VscTimeoutPeriod:            providertypes.DefaultVscTimeoutPeriod,
 		SlashMeterReplenishPeriod:   providertypes.DefaultSlashMeterReplenishPeriod,
 		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: sdk.Coin{

@@ -31,7 +31,7 @@ func TestOnChanOpenInit(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 		t, keeperParams)
 	defer ctrl.Finish()
-	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
+	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace, keeperParams.StoreKey)
 
 	// OnChanOpenInit must error for provider even with correct arguments
 	_, err := providerModule.OnChanOpenInit(
@@ -119,7 +119,7 @@ func TestOnChanOpenTry(t *testing.T) {
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, keeperParams)
-		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
+		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace, keeperParams.StoreKey)
 
 		providerKeeper.SetPort(ctx, ccv.ProviderPortID)
 		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientIDToConsumer")
@@ -190,7 +190,7 @@ func TestOnChanOpenAck(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 		t, keeperParams)
 	defer ctrl.Finish()
-	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
+	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace, keeperParams.StoreKey)
 
 	// OnChanOpenAck must error for provider even with correct arguments
 	err := providerModule.OnChanOpenAck(
@@ -312,7 +312,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 			providerKeeper.SetChainToChannel(ctx, "consumerChainID", "existingChannelID")
 		}
 
-		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
+		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace, keeperParams.StoreKey)
 
 		err := providerModule.OnChanOpenConfirm(ctx, "providerPortID", "channelID")
 

@@ -11,9 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -133,27 +131,6 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	require.Equal(t, chainHeight, cv.JoinHeight, "the consumer validator's height was not correctly set")
 }
 
-// TestOnRecvVSCMaturedPacket tests the OnRecvVSCMaturedPacket method of the keeper.
-//
-// Note: Handling logic itself is not tested here.
-func TestOnRecvVSCMaturedPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
-
-	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
-
-	// Execute on recv for chain-1, confirm v1 result ack is returned
-	err := executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-1", 1)
-	require.NoError(t, err)
-
-	// Now queue a slash packet data instance for chain-2, confirm v1 result ack is returned
-	err = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
-	require.NoError(t, err)
-}
-
 // TestOnRecvDowntimeSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets.
 func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -255,22 +232,6 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	// slash log should be empty for a random validator address in this testcase
 	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).ProviderConsAddress()
 	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
-}
-
-func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
-	channelID string, ibcSeqNum uint64,
-) error {
-	t.Helper()
-	// Instantiate vsc matured packet data and bytes
-	data := testkeeper.GetNewVSCMaturedPacketData()
-	dataBz, err := data.Marshal()
-	require.NoError(t, err)
-
-	return providerKeeper.OnRecvVSCMaturedPacket(
-		ctx,
-		channeltypes.NewPacket(dataBz, ibcSeqNum, "srcPort", "srcChan", "provider-port", channelID, clienttypes.Height{}, 1),
-		data,
-	)
 }
 
 func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
@@ -507,184 +468,6 @@ func TestHandleSlashPacket(t *testing.T) {
 			ctrl.Finish()
 		})
 	}
-}
-
-// TestHandleVSCMaturedPacket tests the handling of VSCMatured packets.
-// Note that this method also tests the behaviour of AfterUnbondingInitiated.
-func TestHandleVSCMaturedPacket(t *testing.T) {
-	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// Init vscID
-	pk.SetValidatorSetUpdateId(ctx, 1)
-
-	// Start first unbonding without any consumers registered
-	var unbondingOpId uint64 = 1
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_Undefined, stakingtypes.ErrNoUnbondingType),
-	)
-
-	err := pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
-	require.NoError(t, err)
-	// Check that no unbonding op was stored
-	_, found := pk.GetUnbondingOp(ctx, unbondingOpId)
-	require.False(t, found)
-
-	// Increment vscID
-	pk.IncrementValidatorSetUpdateId(ctx)
-	require.Equal(t, uint64(2), pk.GetValidatorSetUpdateId(ctx))
-
-	// Register first consumer
-	pk.SetConsumerClientId(ctx, "chain-1", "client-1")
-
-	// Create 2 validators
-	vals := []stakingtypes.Validator{}
-	valsPk := []cryptotypes.PubKey{}
-	for i := 0; i < 2; i++ {
-		pubkey, err := cryptocodec.FromTmPubKeyInterface(cryptotestutil.NewCryptoIdentityFromIntSeed(54321 + i).TMCryptoPubKey())
-		require.NoError(t, err)
-		valsPk = append(valsPk, pubkey)
-		pkAny, err := codectypes.NewAnyWithValue(pubkey)
-		require.NoError(t, err)
-		vals = append(vals, stakingtypes.Validator{ConsensusPubkey: pkAny})
-	}
-
-	// Opt-in one validator to consumer
-	pk.SetConsumerValidator(ctx, "chain-1", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[0].Address()})
-
-	// Start second unbonding
-	unbondingOpId = 2
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_UnbondingDelegation, nil),
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingDelegationByUnbondingID(ctx, unbondingOpId).Return(
-			stakingtypes.UnbondingDelegation{
-				ValidatorAddress: sdk.ValAddress([]byte{1}).String(),
-			}, nil),
-		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-			Return(vals[0], nil),
-		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
-	)
-	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
-	require.NoError(t, err)
-	// Check that an unbonding op was stored
-	expectedChains := []string{"chain-1"}
-	unbondingOp, found := pk.GetUnbondingOp(ctx, unbondingOpId)
-	require.True(t, found)
-	require.Equal(t, unbondingOpId, unbondingOp.Id)
-	require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
-	// Check that the unbonding op index was stored
-	expectedUnbondingOpIds := []uint64{unbondingOpId}
-	ids, found := pk.GetUnbondingOpIndex(ctx, "chain-1", pk.GetValidatorSetUpdateId(ctx))
-	require.True(t, found)
-	require.Equal(t, expectedUnbondingOpIds, ids)
-
-	// Increment vscID
-	pk.IncrementValidatorSetUpdateId(ctx)
-	require.Equal(t, uint64(3), pk.GetValidatorSetUpdateId(ctx))
-
-	// Registered second consumer
-	pk.SetConsumerClientId(ctx, "chain-2", "client-2")
-
-	// Opt-in both validators to second consumer
-	pk.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[0].Address()})
-	pk.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[1].Address()})
-
-	// Start third and fourth unbonding
-	unbondingOpIds := []uint64{3, 4}
-	for _, id := range unbondingOpIds {
-		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, id).Return(stakingtypes.UnbondingType_Redelegation, nil),
-			mocks.MockStakingKeeper.EXPECT().GetRedelegationByUnbondingID(ctx, id).Return(
-				stakingtypes.Redelegation{
-					ValidatorSrcAddress: sdk.ValAddress([]byte{1}).String(),
-				}, nil),
-			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-				Return(vals[0], nil),
-			mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, id).Return(nil),
-		)
-		err = pk.Hooks().AfterUnbondingInitiated(ctx, id)
-		require.NoError(t, err)
-	}
-	// Check that the unbonding ops were stored
-	expectedChains = []string{"chain-1", "chain-2"}
-	for _, id := range unbondingOpIds {
-		unbondingOp, found = pk.GetUnbondingOp(ctx, id)
-		require.True(t, found)
-		require.Equal(t, id, unbondingOp.Id)
-		require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
-	}
-	// Check that the unbonding op index was stored
-	for _, chainID := range expectedChains {
-		ids, found := pk.GetUnbondingOpIndex(ctx, chainID, pk.GetValidatorSetUpdateId(ctx))
-		require.True(t, found)
-		require.Equal(t, unbondingOpIds, ids)
-	}
-
-	// Increment vscID
-	pk.IncrementValidatorSetUpdateId(ctx)
-	require.Equal(t, uint64(4), pk.GetValidatorSetUpdateId(ctx))
-
-	// Start fith unbonding
-	unbondingOpId = 5
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_ValidatorUnbonding, nil),
-		mocks.MockStakingKeeper.EXPECT().GetValidatorByUnbondingID(ctx, unbondingOpId).Return(
-			stakingtypes.Validator{
-				OperatorAddress: sdk.ValAddress([]byte{1}).String(),
-			}, nil),
-		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-			Return(vals[1], nil),
-		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
-	)
-	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
-	require.NoError(t, err)
-
-	// Check that an unbonding op was stored for chain-2 only
-	// since it's the only consumer the unbonding validator has opted-in to
-	expectedChains = []string{"chain-2"}
-	unbondingOp, found = pk.GetUnbondingOp(ctx, unbondingOpId)
-	require.True(t, found)
-	require.Equal(t, unbondingOpId, unbondingOp.Id)
-	require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
-
-	// Handle VSCMatured packet from chain-1 for vscID 1.
-	// Note that no VSCPacket was sent as the chain was not yet registered,
-	// but the code should still work
-	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 1})
-	require.Empty(t, pk.ConsumeMaturedUnbondingOps(ctx))
-
-	// Handle VSCMatured packet from chain-1 for vscID 2.
-	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
-	// Check that the unbonding operation with ID=2 can complete
-	require.Equal(t, []uint64{2}, pk.ConsumeMaturedUnbondingOps(ctx))
-	// Check that the unbonding op index was removed
-	_, found = pk.GetUnbondingOpIndex(ctx, "chain-1", 2)
-	require.False(t, found)
-
-	// Handle VSCMatured packet from chain-2 for vscID 3.
-	pk.HandleVSCMaturedPacket(ctx, "chain-2", ccv.VSCMaturedPacketData{ValsetUpdateId: 3})
-	// Check that the unbonding operations with IDs 3 and 4 no longer wait for chain-2
-	expectedChains = []string{"chain-1"}
-	unbondingOpIds = []uint64{3, 4}
-	for _, id := range unbondingOpIds {
-		unbondingOp, found := pk.GetUnbondingOp(ctx, id)
-		require.True(t, found)
-		require.Equal(t, id, unbondingOp.Id)
-		require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
-	}
-	// Check that no unbonding operation can complete
-	require.Empty(t, pk.ConsumeMaturedUnbondingOps(ctx))
-	// Check that the unbonding op index was removed
-	_, found = pk.GetUnbondingOpIndex(ctx, "chain-2", 3)
-	require.False(t, found)
-
-	// Handle VSCMatured packet from chain-1 for vscID 3.
-	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 3})
-	// Check that the unbonding operations with IDs 3 and 4 can complete
-	require.Equal(t, unbondingOpIds, pk.ConsumeMaturedUnbondingOps(ctx))
-	// Check that the unbonding op index was removed
-	_, found = pk.GetUnbondingOpIndex(ctx, "chain-1", 3)
-	require.False(t, found)
 }
 
 // TestSendVSCPacketsToChainFailure tests the SendVSCPacketsToChain method failing

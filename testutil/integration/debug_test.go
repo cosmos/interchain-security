@@ -50,14 +50,6 @@ func findAndCallMethod(t *testing.T, suite any, methodName string) {
 }
 
 //
-// Channel init tests
-//
-
-func TestInitTimeout(t *testing.T) {
-	runCCVTestByName(t, "TestInitTimeout")
-}
-
-//
 // Consumer democracy tests
 //
 
@@ -201,28 +193,8 @@ func TestSlashAllValidators(t *testing.T) {
 // Unbonding tests
 //
 
-func TestUndelegationNormalOperation(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationNormalOperation")
-}
-
-func TestUndelegationVscTimeout(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationVscTimeout")
-}
-
-func TestUndelegationDuringInit(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationDuringInit")
-}
-
-func TestUnbondingNoConsumer(t *testing.T) {
-	runCCVTestByName(t, "TestUnbondingNoConsumer")
-}
-
-func TestRedelegationNoConsumer(t *testing.T) {
-	runCCVTestByName(t, "TestRedelegationNoConsumer")
-}
-
-func TestRedelegationProviderFirst(t *testing.T) {
-	runCCVTestByName(t, "TestRedelegationProviderFirst")
+func TestUndelegationCompletion(t *testing.T) {
+	runCCVTestByName(t, "TestUndelegationCompletion")
 }
 
 //

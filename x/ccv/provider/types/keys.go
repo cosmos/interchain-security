@@ -41,7 +41,7 @@ const (
 
 	PortKeyName = "PortKey"
 
-	MaturedUnbondingOpsKeyName = "MaturedUnbondingOpsKey"
+	DeprecatedMaturedUnbondingOpsKeyName = "DeprecatedMaturedUnbondingOpsKey"
 
 	ValidatorSetUpdateIdKeyName = "ValidatorSetUpdateIdKey"
 
@@ -55,15 +55,15 @@ const (
 
 	ChainToClientKeyName = "ChainToClientKey"
 
-	InitTimeoutTimestampKeyName = "InitTimeoutTimestampKey"
+	DeprecatedInitTimeoutTimestampKeyName = "DeprecatedInitTimeoutTimestampKey"
 
 	PendingCAPKeyName = "PendingCAPKey"
 
 	PendingCRPKeyName = "PendingCRPKey"
 
-	UnbondingOpKeyName = "UnbondingOpKey"
+	DeprecatedUnbondingOpKeyName = "DeprecatedUnbondingOpKey"
 
-	UnbondingOpIndexKeyName = "UnbondingOpIndexKey"
+	DeprecatedUnbondingOpIndexKeyName = "DeprecatedUnbondingOpIndexKey"
 
 	ValsetUpdateBlockHeightKeyName = "ValsetUpdateBlockHeightKey"
 
@@ -75,7 +75,7 @@ const (
 
 	PendingVSCsKeyName = "PendingVSCsKey"
 
-	VscSendTimestampKeyName = "VscSendTimestampKey"
+	DeprecatedVscSendTimestampKeyName = "DeprecatedVscSendTimestampKey"
 
 	ThrottledPacketDataSizeKeyName = "ThrottledPacketDataSizeKey"
 
@@ -87,15 +87,15 @@ const (
 
 	ValidatorsByConsumerAddrKeyName = "ValidatorsByConsumerAddrKey"
 
-	KeyAssignmentReplacementsKeyName = "DeprecatedKeyAssignmentReplacementsKey"
+	DeprecatedKeyAssignmentReplacementsKeyName = "DeprecatedKeyAssignmentReplacementsKey"
 
-	ConsumerAddrsToPruneKeyName = "ConsumerAddrsToPruneKey"
+	DeprecatedConsumerAddrsToPruneKeyName = "DeprecatedConsumerAddrsToPruneKey"
 
 	SlashLogKeyName = "SlashLogKey"
 
 	ConsumerRewardDenomsKeyName = "ConsumerRewardDenomsKey"
 
-	VSCMaturedHandledThisBlockKeyName = "VSCMaturedHandledThisBlockKey"
+	DeprecatedVSCMaturedHandledThisBlockKeyName = "DeprecatedVSCMaturedHandledThisBlockKey"
 
 	EquivocationEvidenceMinHeightKeyName = "EquivocationEvidenceMinHeightKey"
 
@@ -120,6 +120,8 @@ const (
 	ConsumerCommissionRateKeyName = "ConsumerCommissionRateKey"
 
 	MinimumPowerInTopNKeyName = "MinimumPowerInTopNKey"
+
+	ConsumerAddrsToPruneV2KeyName = "ConsumerAddrsToPruneV2Key"
 )
 
 // getKeyPrefixes returns a constant map of all the byte prefixes for existing keys
@@ -136,7 +138,9 @@ func getKeyPrefixes() map[string]byte {
 		// MaturedUnbondingOpsKey is the key that stores the list of all unbonding operations ids
 		// that have matured from a consumer chain perspective,
 		// i.e., no longer waiting on the unbonding period to elapse on any consumer chain
-		MaturedUnbondingOpsKeyName: 1,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedMaturedUnbondingOpsKeyName: 1,
 
 		// ValidatorSetUpdateIdKey is the key that stores the current validator set update id
 		ValidatorSetUpdateIdKeyName: 2,
@@ -160,7 +164,9 @@ func getKeyPrefixes() map[string]byte {
 
 		// InitTimeoutTimestampKey is the key for storing
 		// the init timeout timestamp for a given consumer chainID.
-		InitTimeoutTimestampKeyName: 8,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedInitTimeoutTimestampKeyName: 8,
 
 		// PendingCAPKey is the key for storing pending consumer addition proposals before the spawn time occurs.
 		// The key includes the BigEndian timestamp to allow for efficient chronological iteration
@@ -172,11 +178,15 @@ func getKeyPrefixes() map[string]byte {
 
 		// UnbondingOpKey is the key that stores a record of all the ids of consumer chains that
 		// need to unbond before a given unbonding operation can unbond on this chain.
-		UnbondingOpKeyName: 11,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedUnbondingOpKeyName: 11,
 
 		// UnbondingOpIndexKey is key of the index for looking up which unbonding
 		// operations are waiting for a given consumer chain to unbond
-		UnbondingOpIndexKeyName: 12,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedUnbondingOpIndexKeyName: 12,
 
 		// ValsetUpdateBlockHeightKey is the key for storing the mapping from vscIDs to block heights
 		ValsetUpdateBlockHeightKeyName: 13,
@@ -196,7 +206,9 @@ func getKeyPrefixes() map[string]byte {
 
 		// VscSendTimestampKey is the key for storing
 		// the list of VSC sending timestamps for a given consumer chainID.
-		VscSendTimestampKeyName: 18,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedVscSendTimestampKeyName: 18,
 
 		// ThrottledPacketDataSizeKey is the key for storing the size of chain-specific throttled packet data queues
 		ThrottledPacketDataSizeKeyName: 19,
@@ -217,11 +229,13 @@ func getKeyPrefixes() map[string]byte {
 		// DeprecatedKeyAssignmentReplacementsKey was the key used to store the key assignments that needed to be replaced in the current block
 		// NOTE: This prefix is deprecated, but left in place to avoid consumer state migrations
 		// [DEPRECATED]
-		KeyAssignmentReplacementsKeyName: 24,
+		DeprecatedKeyAssignmentReplacementsKeyName: 24,
 
 		// ConsumerAddrsToPruneKey is the key for storing the mapping from VSC ids
 		// to consumer validators addresses needed for pruning
-		ConsumerAddrsToPruneKeyName: 25,
+		// NOTE: This prefix is deprecated, but left in place to avoid consumer state migrations
+		// [DEPRECATED]
+		DeprecatedConsumerAddrsToPruneKeyName: 25,
 
 		// SlashLogKey is the key for storing the mapping from provider address to boolean
 		// denoting whether the provider address has committed any double signign infractions
@@ -232,7 +246,9 @@ func getKeyPrefixes() map[string]byte {
 
 		// VSCMaturedHandledThisBlockKey is the key for storing the number of vsc matured packets
 		// handled in the current block
-		VSCMaturedHandledThisBlockKeyName: 28,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedVSCMaturedHandledThisBlockKeyName: 28,
 
 		// EquivocationEvidenceMinHeightKey is the key for storing the mapping from consumer chain IDs
 		// to the minimum height of a valid consumer equivocation evidence
@@ -280,6 +296,10 @@ func getKeyPrefixes() map[string]byte {
 		// MinimumPowerInTopNKey is the key for storing the
 		// minimum power required to be in the top N per consumer chain.
 		MinimumPowerInTopNKeyName: 40,
+
+		// ConsumerAddrsToPruneV2Key is the key for storing
+		// consumer validators addresses that need to be pruned.
+		ConsumerAddrsToPruneV2KeyName: 41,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -338,11 +358,6 @@ func PortKey() []byte {
 	return []byte{mustGetKeyPrefix(PortKeyName)}
 }
 
-// MaturedUnbondingOpsKey returns the key for storing the list of matured unbonding operations.
-func MaturedUnbondingOpsKey() []byte {
-	return []byte{mustGetKeyPrefix(MaturedUnbondingOpsKeyName)}
-}
-
 // ValidatorSetUpdateIdKey is the key that stores the current validator set update id
 func ValidatorSetUpdateIdKey() []byte {
 	return []byte{mustGetKeyPrefix(ValidatorSetUpdateIdKeyName)}
@@ -383,16 +398,6 @@ func ChainToClientKey(chainID string) []byte {
 	return append(ChainToClientKeyPrefix(), []byte(chainID)...)
 }
 
-// InitTimeoutTimestampKeyPrefix returns the key prefix for storing the init timeout timestamps
-func InitTimeoutTimestampKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(InitTimeoutTimestampKeyName)}
-}
-
-// InitTimeoutTimestampKey returns the key under which the init timeout timestamp for the given chainID is stored.
-func InitTimeoutTimestampKey(chainID string) []byte {
-	return append(InitTimeoutTimestampKeyPrefix(), []byte(chainID)...)
-}
-
 // PendingCAPKeyPrefix returns the key prefix for storing a pending consumer addition proposal
 func PendingCAPKeyPrefix() []byte {
 	return []byte{mustGetKeyPrefix(PendingCAPKeyName)}
@@ -431,36 +436,6 @@ func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	)
 }
 
-// UnbondingOpKeyPrefix returns the key prefix that stores a record of all the ids of consumer chains that
-// need to unbond before a given unbonding operation can unbond on this chain.
-func UnbondingOpKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(UnbondingOpKeyName)}
-}
-
-// UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
-// need to unbond before a given unbonding operation can unbond on this chain.
-func UnbondingOpKey(id uint64) []byte {
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, id)
-	return append(UnbondingOpKeyPrefix(), bz...)
-}
-
-// UnbondingOpIndexKeyPrefix returns the key prefix for storing an unbonding op index
-func UnbondingOpIndexKeyPrefix() byte {
-	return mustGetKeyPrefix(UnbondingOpIndexKeyName)
-}
-
-// UnbondingOpIndexKey returns the key for storing an unbonding op index
-func UnbondingOpIndexKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(UnbondingOpIndexKeyPrefix(), chainID, vscID)
-}
-
-// ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
-// Removes the prefix + chainID from index key and returns only the key part.
-func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(UnbondingOpIndexKeyPrefix(), key)
-}
-
 // ValsetUpdateBlockHeightKeyPrefix returns the key prefix that storing the mapping from valset update ID to block height
 func ValsetUpdateBlockHeightKeyPrefix() []byte {
 	return []byte{mustGetKeyPrefix(ValsetUpdateBlockHeightKeyName)}
@@ -493,23 +468,6 @@ func InitChainHeightKey(chainID string) []byte {
 // pending ValidatorSetChangePacket data is stored for a given chain ID
 func PendingVSCsKey(chainID string) []byte {
 	return append([]byte{mustGetKeyPrefix(PendingVSCsKeyName)}, []byte(chainID)...)
-}
-
-// VscSendingTimestampKeyPrefix returns the key for storing the sending timestamp of VSCPackets
-func VscSendingTimestampKeyPrefix() byte {
-	return mustGetKeyPrefix(VscSendTimestampKeyName)
-}
-
-// VscSendingTimestampKey returns the key under which the
-// sending timestamp of the VSCPacket with vsc ID is stored
-func VscSendingTimestampKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(VscSendingTimestampKeyPrefix(), chainID, vscID)
-}
-
-// ParseVscTimeoutTimestampKey returns chain ID and vsc ID
-// for a VscSendingTimestampKey or an error if unparsable
-func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(VscSendingTimestampKeyPrefix(), bz)
 }
 
 // ThrottledPacketDataSizeKey returns the key storing the size of the throttled packet data queue for a given chain ID
@@ -608,25 +566,9 @@ func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byt
 	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrKeyPrefix(), chainID, addr.ToSdkConsAddr())
 }
 
-// ConsumerAddrsToPruneKeyPrefix returns the key prefix for storing the
-// mapping from VSC ids to consumer validators addresses
-func ConsumerAddrsToPruneKeyPrefix() byte {
-	return mustGetKeyPrefix(ConsumerAddrsToPruneKeyName)
-}
-
-// ConsumerAddrsToPruneKey returns the key for storing the
-// mapping from VSC ids to consumer validators addresses
-func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(ConsumerAddrsToPruneKeyPrefix(), chainID, vscID)
-}
-
 // SlashLogKey returns the key to a validator's slash log
 func SlashLogKey(providerAddr ProviderConsAddress) []byte {
 	return append([]byte{mustGetKeyPrefix(SlashLogKeyName)}, providerAddr.ToSdkConsAddr().Bytes()...)
-}
-
-func VSCMaturedHandledThisBlockKey() []byte {
-	return []byte{mustGetKeyPrefix(VSCMaturedHandledThisBlockKeyName)}
 }
 
 // ConsumerRewardDenomsKeyPrefix returns the key prefix for storing consumer reward denoms
@@ -757,6 +699,20 @@ func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress)
 
 func MinimumPowerInTopNKey(chainID string) []byte {
 	return ChainIdWithLenKey(mustGetKeyPrefix(MinimumPowerInTopNKeyName), chainID)
+}
+
+// ConsumerAddrsToPruneV2KeyPrefix returns the key prefix for storing the consumer validators
+// addresses that need to be pruned. These are stored as a
+// (chainID, ts) -> (consumer_address1, consumer_address2, ...) mapping, where ts is the
+// timestamp at which the consumer validators addresses can be pruned.
+func ConsumerAddrsToPruneV2KeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerAddrsToPruneV2KeyName)
+}
+
+// ConsumerAddrsToPruneV2Key returns the key for storing the consumer validators
+// addresses that need to be pruned.
+func ConsumerAddrsToPruneV2Key(chainID string, pruneTs time.Time) []byte {
+	return ChainIdAndTsKey(ConsumerAddrsToPruneV2KeyPrefix(), chainID, pruneTs)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
