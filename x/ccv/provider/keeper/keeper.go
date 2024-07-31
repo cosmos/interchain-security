@@ -641,12 +641,12 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 	store.Delete(types.InitChainHeightKey(chainID))
 }
 
-// GetPendingVSCPackets returns the list of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
+// GetPendingVSCPackets returns the list of pending ValidatorSetChange packets stored under consumer id
+func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, consumerId string) []ccv.ValidatorSetChangePacketData {
 	var packets types.ValidatorSetChangePackets
 
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingVSCsKey(chainID))
+	bz := store.Get(types.PendingVSCsKey(consumerId))
 	if bz == nil {
 		return []ccv.ValidatorSetChangePacketData{}
 	}
@@ -659,9 +659,9 @@ func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.Vali
 }
 
 // AppendPendingVSCPackets adds the given ValidatorSetChange packet to the list
-// of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPackets ...ccv.ValidatorSetChangePacketData) {
-	pds := append(k.GetPendingVSCPackets(ctx, chainID), newPackets...)
+// of pending ValidatorSetChange packets stored under consumer id
+func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, consumerId string, newPackets ...ccv.ValidatorSetChangePacketData) {
+	pds := append(k.GetPendingVSCPackets(ctx, consumerId), newPackets...)
 
 	store := ctx.KVStore(k.storeKey)
 	packets := types.ValidatorSetChangePackets{List: pds}
@@ -671,7 +671,7 @@ func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPack
 		// packets is instantiated in this method and should be able to be marshaled.
 		panic(fmt.Errorf("cannot marshal pending validator set changes: %w", err))
 	}
-	store.Set(types.PendingVSCsKey(chainID), buf)
+	store.Set(types.PendingVSCsKey(consumerId), buf)
 }
 
 // DeletePendingVSCPackets deletes the list of pending ValidatorSetChange packets for chain ID
@@ -680,26 +680,26 @@ func (k Keeper) DeletePendingVSCPackets(ctx sdk.Context, chainID string) {
 	store.Delete(types.PendingVSCsKey(chainID))
 }
 
-// SetConsumerClientId sets the client ID for the given chain ID
-func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
+// SetConsumerClientId sets the client id for the given consumer id
+func (k Keeper) SetConsumerClientId(ctx sdk.Context, consumerId, clientID string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToClientIdKey(chainID), []byte(clientID))
+	store.Set(types.ConsumerIdToClientIdKey(consumerId), []byte(clientID))
 }
 
-// GetConsumerClientId returns the client ID for the given chain ID.
-func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
+// GetConsumerClientId returns the client id for the given consumer id.
+func (k Keeper) GetConsumerClientId(ctx sdk.Context, consumerId string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ConsumerIdToClientIdKey(chainID))
+	clientIdBytes := store.Get(types.ConsumerIdToClientIdKey(consumerId))
 	if clientIdBytes == nil {
 		return "", false
 	}
 	return string(clientIdBytes), true
 }
 
-// DeleteConsumerClientId removes from the store the clientID for the given chainID.
-func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
+// DeleteConsumerClientId removes from the store the client id for the given consumer id.
+func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToClientIdKey(chainID))
+	store.Delete(types.ConsumerIdToClientIdKey(consumerId))
 }
 
 // SetSlashLog updates validator's slash log for a consumer chain

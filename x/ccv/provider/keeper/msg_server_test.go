@@ -30,6 +30,9 @@ func TestRegisterConsumer(t *testing.T) {
 	require.Equal(t, expectedRecord, actualRecord)
 	ownerAddress, found := providerKeeper.GetConsumerIdToOwnerAddress(ctx, "0")
 	require.Equal(t, "signer", ownerAddress)
+	chainId, found := providerKeeper.GetConsumerIdToChainId(ctx, "0")
+	require.True(t, found)
+	require.Equal(t, "chain_id", chainId)
 
 	expectedRecord = providertypes.ConsumerRegistrationRecord{
 		Title:       "title2",
@@ -46,6 +49,9 @@ func TestRegisterConsumer(t *testing.T) {
 	require.Equal(t, expectedRecord, actualRecord)
 	ownerAddress, found = providerKeeper.GetConsumerIdToOwnerAddress(ctx, "1")
 	require.Equal(t, "signer2", ownerAddress)
+	chainId, found = providerKeeper.GetConsumerIdToChainId(ctx, "1")
+	require.True(t, found)
+	require.Equal(t, "chain_id2", chainId)
 }
 
 func TestInitializeConsumer(t *testing.T) {
