@@ -33,6 +33,9 @@ func TestRegisterConsumer(t *testing.T) {
 	chainId, found := providerKeeper.GetConsumerIdToChainId(ctx, "0")
 	require.True(t, found)
 	require.Equal(t, "chain_id", chainId)
+	phase, found := providerKeeper.GetConsumerIdToPhase(ctx, "0")
+	require.True(t, found)
+	require.Equal(t, providerkeeper.Registered, phase)
 
 	expectedRecord = providertypes.ConsumerRegistrationRecord{
 		Title:       "title2",
@@ -52,6 +55,10 @@ func TestRegisterConsumer(t *testing.T) {
 	chainId, found = providerKeeper.GetConsumerIdToChainId(ctx, "1")
 	require.True(t, found)
 	require.Equal(t, "chain_id2", chainId)
+	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, "1")
+	require.True(t, found)
+	require.Equal(t, providerkeeper.Registered, phase)
+
 }
 
 func TestInitializeConsumer(t *testing.T) {
@@ -60,13 +67,29 @@ func TestInitializeConsumer(t *testing.T) {
 
 	msgServer := providerkeeper.NewMsgServerImpl(&providerKeeper)
 
-	// initializing a non-registered chain should give an error
+	// initializing a chain with no phase, or a chain that is launched or stopped should give an error
 	_, err := msgServer.InitializeConsumer(ctx,
 		&providertypes.MsgInitializeConsumer{
 			Authority:            "signer",
 			ConsumerId:           "0",
 			InitializationRecord: &providertypes.ConsumerInitializationRecord{}})
-	require.ErrorContains(t, err, "no registered chain")
+	require.ErrorContains(t, err, "its registered or initialized phase")
+
+	providerKeeper.SetConsumerIdToPhase(ctx, "0", providerkeeper.Launched)
+	_, err = msgServer.InitializeConsumer(ctx,
+		&providertypes.MsgInitializeConsumer{
+			Authority:            "signer",
+			ConsumerId:           "0",
+			InitializationRecord: &providertypes.ConsumerInitializationRecord{}})
+	require.ErrorContains(t, err, "its registered or initialized phase")
+
+	providerKeeper.SetConsumerIdToPhase(ctx, "0", providerkeeper.Stopped)
+	_, err = msgServer.InitializeConsumer(ctx,
+		&providertypes.MsgInitializeConsumer{
+			Authority:            "signer",
+			ConsumerId:           "0",
+			InitializationRecord: &providertypes.ConsumerInitializationRecord{}})
+	require.ErrorContains(t, err, "its registered or initialized phase")
 
 	// register chains with consumers ids "0" and "1"
 	_, _ = msgServer.RegisterConsumer(ctx,

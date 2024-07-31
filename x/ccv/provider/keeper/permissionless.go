@@ -7,6 +7,16 @@ import (
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
+// ConsumerPhase captures the phases of a consumer chain according to `docs/docs/adrs/adr-018-permissionless-ics.md`
+type ConsumerPhase byte
+
+const (
+	Registered ConsumerPhase = iota
+	Initialized
+	Launched
+	Stopped
+)
+
 // setConsumerId sets the provided consumerId
 func (k Keeper) setConsumerId(ctx sdk.Context, consumerId uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -143,6 +153,29 @@ func (k Keeper) DeleteConsumerIdToOwnerAddress(ctx sdk.Context, consumerId strin
 	store.Delete(types.ConsumerIdToOwnerAddressKey(consumerId))
 }
 
+// GetConsumerIdToPhase returns the phase associated with this consumer id
+func (k Keeper) GetConsumerIdToPhase(ctx sdk.Context, consumerId string) (ConsumerPhase, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.ConsumerIdToPhaseKey(consumerId))
+	if buf == nil {
+		return ConsumerPhase(0), false
+	}
+	return ConsumerPhase(buf[0]), true
+}
+
+// SetConsumerIdToPhase sets the phase associated with this consumer id
+// TODO (PERMISSIONLESS): use this method when launching and when stopping a chian
+func (k Keeper) SetConsumerIdToPhase(ctx sdk.Context, consumerId string, phase ConsumerPhase) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ConsumerIdToPhaseKey(consumerId), []byte{byte(phase)})
+}
+
+// DeleteConsumerIdToPhase deletes the phase associated with this consumer id
+func (k Keeper) DeleteConsumerIdToPhase(ctx sdk.Context, consumerId string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerIdToPhaseKey(consumerId))
+}
+
 // GetClientIdToConsumerId returns the consumer id associated with this client id
 func (k Keeper) GetClientIdToConsumerId(ctx sdk.Context, clientId string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
@@ -163,4 +196,10 @@ func (k Keeper) SetClientIdToConsumerId(ctx sdk.Context, clientId string, consum
 func (k Keeper) DeleteClientIdToConsumerId(ctx sdk.Context, clientId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ClientIdToConsumerIdKey(clientId))
+}
+
+// IsConsumerLaunched returns true if the consumer chain with the provided id is launched
+func (k Keeper) IsConsumerLaunched(ctx sdk.Context, consumerId string) bool {
+	_, found := k.GetConsumerClientId(ctx, consumerId)
+	return found
 }

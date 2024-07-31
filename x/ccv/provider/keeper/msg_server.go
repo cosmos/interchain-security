@@ -318,6 +318,7 @@ func (k msgServer) RegisterConsumer(goCtx context.Context, msg *types.MsgRegiste
 	k.Keeper.SetConsumerIdToRegistrationRecord(ctx, consumerId, *msg.RegistrationRecord)
 	k.Keeper.SetConsumerIdToOwnerAddress(ctx, consumerId, msg.Signer)
 	k.Keeper.SetConsumerIdToChainId(ctx, consumerId, msg.RegistrationRecord.ChainId)
+	k.Keeper.SetConsumerIdToPhase(ctx, consumerId, Registered)
 
 	return &types.MsgRegisterConsumerResponse{ConsumerId: consumerId}, nil
 }
@@ -327,10 +328,11 @@ func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgIniti
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	consumerId := msg.ConsumerId
-	_, found := k.Keeper.GetConsumerIdToRegistrationRecord(ctx, consumerId)
-	if !found {
-		// fix error type
-		return nil, errorsmod.Wrapf(types.ErrInvalidConsumerModificationProposal, "no registered chain with consumer id: %s", msg.GetConsumerId())
+
+	phase, found := k.Keeper.GetConsumerIdToPhase(ctx, consumerId)
+	if !found || (phase != Registered && phase != Initialized) {
+		return nil, errorsmod.Wrapf(types.ErrInitialization,
+			"chain with consumer id: %s has to be in its registered or initialized phase", consumerId)
 	}
 
 	ownerAddress, found := k.Keeper.GetConsumerIdToOwnerAddress(ctx, consumerId)
@@ -343,6 +345,7 @@ func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgIniti
 	}
 
 	k.Keeper.SetConsumerIdToInitializationRecord(ctx, consumerId, *msg.InitializationRecord)
+	k.Keeper.SetConsumerIdToPhase(ctx, consumerId, Initialized)
 
 	return &types.MsgInitializeConsumerResponse{}, nil
 }
