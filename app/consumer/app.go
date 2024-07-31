@@ -490,7 +490,6 @@ func New(
 		vestingtypes.ModuleName,
 		ibcconsumertypes.ModuleName,
 	)
-	app.SetPreBlocker(app.PreBlocker)
 
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
