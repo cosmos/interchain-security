@@ -367,6 +367,22 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
 // Spec tag:[CCV-PCF-BBLOCK-INIT.1]
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
+	// TODO (PERMISSIONLESS)
+	//consumerIds := k.GetInitializedConsumersReadyToLaunch(ctx)
+	//
+	//for _, consumerId := range consumerIds {
+	//	record, found := k.GetConsumerIdToInitializationRecord(ctx, consumerId)
+	//	if !found {
+	//		// something is off
+	//	}
+	//	// set the chain ...(have it all in one method)
+	//	// call the method LaunchConsumer
+	//	// cachedCtx, ...
+	//	// k.LaunchConsumerChain(cachedTx, ...)
+	//	// k.SetPhase(Launched)
+	//
+	//	// CHANGE THEIR PHASE ...
+	//}
 	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
 	for i, prop := range propsToExecute {

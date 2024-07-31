@@ -755,6 +755,11 @@ func ConsumerIdToRegistrationRecordKey(consumerId string) []byte {
 	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToRegistrationRecordKeyName), consumerId)
 }
 
+// ConsumerIdToInitializationRecordKeyNameKeyPrefix returns the key prefix for storing consumer initialization records
+func ConsumerIdToInitializationRecordKeyNameKeyPrefix() []byte {
+	return []byte{mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName)}
+}
+
 // ConsumerIdToInitializationRecordKey returns the key used to store the initialization record that corresponds to this consumer id
 func ConsumerIdToInitializationRecordKey(consumerId string) []byte {
 	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName), consumerId)
