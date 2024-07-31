@@ -118,7 +118,7 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, consumerId *stri
 		prefix = []byte{consumerValidatorsKeyPrefix}
 	} else {
 		// iterate over the validators public keys assigned for consumerId
-		prefix = types.ChainIdWithLenKey(consumerValidatorsKeyPrefix, *consumerId)
+		prefix = types.ConsumerIdWithLenKey(consumerValidatorsKeyPrefix, *consumerId)
 	}
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
@@ -203,7 +203,7 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, consumerId *stri
 		prefix = []byte{validatorsByConsumerAddrKeyPrefix}
 	} else {
 		// iterate over the mappings from consensus addresses on consumerId
-		prefix = types.ChainIdWithLenKey(validatorsByConsumerAddrKeyPrefix, *consumerId)
+		prefix = types.ConsumerIdWithLenKey(validatorsByConsumerAddrKeyPrefix, *consumerId)
 	}
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
@@ -307,7 +307,7 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 ) (consumerAddrsToPrune types.AddressList) {
 	store := ctx.KVStore(k.storeKey)
 	consumerAddrsToPruneKeyPrefix := types.ConsumerAddrsToPruneV2KeyPrefix()
-	startPrefix := types.ChainIdWithLenKey(consumerAddrsToPruneKeyPrefix, chainID)
+	startPrefix := types.ConsumerIdWithLenKey(consumerAddrsToPruneKeyPrefix, chainID)
 	iterator := store.Iterator(startPrefix,
 		storetypes.InclusiveEndBytes(types.ConsumerAddrsToPruneV2Key(chainID, ts)))
 	defer iterator.Close()

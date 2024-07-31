@@ -41,11 +41,11 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(4), providertypes.SlashMeterReplenishTimeCandidateKey()[0])
 	i++
-	require.Equal(t, byte(5), providertypes.ChainToChannelKey("chainID")[0])
+	require.Equal(t, uint8(5), providertypes.ConsumerIdToChannelIdKey("chainID")[0])
 	i++
-	require.Equal(t, byte(6), providertypes.ChannelToChainKeyPrefix()[0])
+	require.Equal(t, uint8(6), providertypes.ChannelIdToConsumerIdKeyPrefix()[0])
 	i++
-	require.Equal(t, byte(7), providertypes.ChainToClientKeyPrefix()[0])
+	require.Equal(t, uint8(7), providertypes.ConsumerIdToClientIdKeyPrefix()[0])
 	i++
 	// reserve 8 as deprecated
 	i++
@@ -169,9 +169,10 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ValidatorSetUpdateIdKey(),
 		providertypes.SlashMeterKey(),
 		providertypes.SlashMeterReplenishTimeCandidateKey(),
-		providertypes.ChainToChannelKey("chainID"),
-		providertypes.ChannelToChainKey("channelID"),
-		providertypes.ChainToClientKey("chainID"),
+		providertypes.ConsumerIdToChannelIdKey("chainID"),
+		providertypes.ChannelToConsumerIdKey("channelID"),
+		providertypes.ConsumerIdToClientIdKey("chainID"),
+		providertypes.InitTimeoutTimestampKey("chainID"),
 		providertypes.PendingCAPKey(time.Time{}, "chainID"),
 		providertypes.PendingCRPKey(time.Time{}, "chainID"),
 		providertypes.ValsetUpdateBlockHeightKey(7),
@@ -310,7 +311,7 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := providertypes.ChainIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
+		key := providertypes.ConsumerIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + consAddr bytes
 		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
@@ -325,9 +326,10 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 // Test key packing functions with the format <prefix><stringID>
 func TestKeysWithPrefixAndId(t *testing.T) {
 	funcs := []func(string) []byte{
-		providertypes.ChainToChannelKey,
-		providertypes.ChannelToChainKey,
-		providertypes.ChainToClientKey,
+		providertypes.ConsumerIdToChannelIdKey,
+		providertypes.ChannelToConsumerIdKey,
+		providertypes.ConsumerIdToClientIdKey,
+		providertypes.InitTimeoutTimestampKey,
 		providertypes.ConsumerGenesisKey,
 		providertypes.SlashAcksKey,
 		providertypes.InitChainHeightKey,

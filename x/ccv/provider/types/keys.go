@@ -49,11 +49,11 @@ const (
 
 	SlashMeterReplenishTimeCandidateKeyName = "SlashMeterReplenishTimeCandidateKey"
 
-	ChainToChannelKeyName = "ChainToChannelKey"
+	ChainToChannelKeyName = "ConsumerIdToChannelIdKey"
 
-	ChannelToChainKeyName = "ChannelToChainKey"
+	ChannelToChainKeyName = "ChannelToConsumerIdKey"
 
-	ChainToClientKeyName = "ChainToClientKey"
+	ChainToClientKeyName = "ConsumerIdToClientIdKey"
 
 	DeprecatedInitTimeoutTimestampKeyName = "DeprecatedInitTimeoutTimestampKey"
 
@@ -169,15 +169,15 @@ func getKeyPrefixes() map[string]byte {
 		// SlashMeterReplenishTimeCandidateKey is the key for storing the slash meter replenish time candidate
 		SlashMeterReplenishTimeCandidateKeyName: 4,
 
-		// ChainToChannelKey is the key for storing mapping
+		// ConsumerIdToChannelIdKey is the key for storing mapping
 		// from chainID to the channel ID that is used to send over validator set changes.
 		ChainToChannelKeyName: 5,
 
-		// ChannelToChainKey is the key for storing mapping
+		// ChannelToConsumerIdKey is the key for storing mapping
 		// from the CCV channel ID to the consumer chain ID.
 		ChannelToChainKeyName: 6,
 
-		// ChainToClientKey is the key for storing the client ID for a given consumer chainID.
+		// ConsumerIdToClientIdKey is the key for storing the client ID for a given consumer chainID.
 		ChainToClientKeyName: 7,
 
 		// InitTimeoutTimestampKey is the key for storing
@@ -423,29 +423,29 @@ func SlashMeterReplenishTimeCandidateKey() []byte {
 	return []byte{mustGetKeyPrefix(SlashMeterReplenishTimeCandidateKeyName)}
 }
 
-// ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
-func ChainToChannelKey(chainID string) []byte {
-	return append([]byte{mustGetKeyPrefix(ChainToChannelKeyName)}, []byte(chainID)...)
+// ConsumerIdToChannelIdKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
+func ConsumerIdToChannelIdKey(consumerId string) []byte {
+	return append([]byte{mustGetKeyPrefix(ChainToChannelKeyName)}, []byte(consumerId)...)
 }
 
-// ChannelToChainKeyPrefix returns the key prefix for storing the consumer chain IDs.
-func ChannelToChainKeyPrefix() []byte {
+// ChannelIdToConsumerIdKeyPrefix returns the key prefix for storing the consumer chain ids.
+func ChannelIdToConsumerIdKeyPrefix() []byte {
 	return []byte{mustGetKeyPrefix(ChannelToChainKeyName)}
 }
 
-// ChannelToChainKey returns the key under which the consumer chain ID will be stored for the given channelID.
-func ChannelToChainKey(channelID string) []byte {
-	return append(ChannelToChainKeyPrefix(), []byte(channelID)...)
+// ChannelToConsumerIdKey returns the key under which the consumer chain id will be stored for the given channelId.
+func ChannelToConsumerIdKey(channelId string) []byte {
+	return append(ChannelIdToConsumerIdKeyPrefix(), []byte(channelId)...)
 }
 
-// ChainToClientKeyPrefix returns the key prefix for storing the clientID for the given chainID.
-func ChainToClientKeyPrefix() []byte {
+// ConsumerIdToClientIdKeyPrefix returns the key prefix for storing the clientId for the given consumerId.
+func ConsumerIdToClientIdKeyPrefix() []byte {
 	return []byte{mustGetKeyPrefix(ChainToClientKeyName)}
 }
 
-// ChainToClientKey returns the key under which the clientID for the given chainID is stored.
-func ChainToClientKey(chainID string) []byte {
-	return append(ChainToClientKeyPrefix(), []byte(chainID)...)
+// ConsumerIdToClientIdKey returns the key under which the clientId for the given consumerId is stored.
+func ConsumerIdToClientIdKey(consumerId string) []byte {
+	return append(ConsumerIdToClientIdKeyPrefix(), []byte(consumerId)...)
 }
 
 // PendingCAPKeyPrefix returns the key prefix for storing a pending consumer addition proposal
@@ -499,14 +499,14 @@ func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 }
 
 // ConsumerGenesisKey returns the key corresponding to consumer genesis state material
-// (consensus state and client state) indexed by consumer chain id
-func ConsumerGenesisKey(chainID string) []byte {
-	return append([]byte{mustGetKeyPrefix(ConsumerGenesisKeyName)}, []byte(chainID)...)
+// (consensus state and client state) indexed by consumer id
+func ConsumerGenesisKey(consumerId string) []byte {
+	return append([]byte{mustGetKeyPrefix(ConsumerGenesisKeyName)}, []byte(consumerId)...)
 }
 
-// SlashAcksKey returns the key under which slashing acks are stored for a given chain ID
-func SlashAcksKey(chainID string) []byte {
-	return append([]byte{mustGetKeyPrefix(SlashAcksKeyName)}, []byte(chainID)...)
+// SlashAcksKey returns the key under which slashing acks are stored for a given consumer id
+func SlashAcksKey(consumerId string) []byte {
+	return append([]byte{mustGetKeyPrefix(SlashAcksKeyName)}, []byte(consumerId)...)
 }
 
 // InitChainHeightKey returns the key under which the block height for a given chain ID is stored
@@ -556,8 +556,8 @@ func ConsumerValidatorsKeyPrefix() byte {
 
 // ConsumerValidatorsKey returns the key under which the
 // validator assigned keys for every consumer chain are stored
-func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ConsumerValidatorsKeyPrefix(), chainID, addr.ToSdkConsAddr())
+func ConsumerValidatorsKey(consumerId string, addr ProviderConsAddress) []byte {
+	return ConsumerIdAndConsAddrKey(ConsumerValidatorsKeyPrefix(), consumerId, addr.ToSdkConsAddr())
 }
 
 // ValidatorsByConsumerAddrKeyPrefix returns the key prefix for storing the mapping from validator addresses
@@ -568,8 +568,8 @@ func ValidatorsByConsumerAddrKeyPrefix() byte {
 
 // ValidatorsByConsumerAddrKey returns the key for storing the mapping from validator addresses
 // on consumer chains to validator addresses on the provider chain
-func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrKeyPrefix(), chainID, addr.ToSdkConsAddr())
+func ValidatorsByConsumerAddrKey(consumerId string, addr ConsumerConsAddress) []byte {
+	return ConsumerIdAndConsAddrKey(ValidatorsByConsumerAddrKeyPrefix(), consumerId, addr.ToSdkConsAddr())
 }
 
 // SlashLogKey returns the key to a validator's slash log
@@ -588,9 +588,9 @@ func ConsumerRewardDenomsKey(denom string) []byte {
 }
 
 // EquivocationEvidenceMinHeightKey returns the key storing the minimum height
-// of a valid consumer equivocation evidence for a given consumer chain ID
-func EquivocationEvidenceMinHeightKey(consumerChainID string) []byte {
-	return append([]byte{mustGetKeyPrefix(EquivocationEvidenceMinHeightKeyName)}, []byte(consumerChainID)...)
+// of a valid consumer equivocation evidence for a given consumer id
+func EquivocationEvidenceMinHeightKey(consumerId string) []byte {
+	return append([]byte{mustGetKeyPrefix(EquivocationEvidenceMinHeightKeyName)}, []byte(consumerId)...)
 }
 
 // ProposedConsumerChainKeyPrefix returns the key prefix for storing proposed consumer chainId
@@ -625,26 +625,26 @@ func ConsumerValidatorKeyPrefix() byte {
 }
 
 // ConsumerValidatorKey returns the key for storing consumer validators
-// for the given consumer chain `chainID` and validator with `providerAddr`
-func ConsumerValidatorKey(chainID string, providerAddr []byte) []byte {
-	prefix := ChainIdWithLenKey(ConsumerValidatorKeyPrefix(), chainID)
+// for the given consumer chain `consumerId` and validator with `providerAddr`
+func ConsumerValidatorKey(consumerId string, providerAddr []byte) []byte {
+	prefix := ConsumerIdWithLenKey(ConsumerValidatorKeyPrefix(), consumerId)
 	return append(prefix, providerAddr...)
 }
 
 // TopNKey returns the key used to store the Top N value per consumer chain.
 // This value corresponds to the N% of the top validators that have to validate the consumer chain.
-func TopNKey(chainID string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(TopNKeyName), chainID)
+func TopNKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(TopNKeyName), consumerId)
 }
 
-// ValidatorSetPowerKey returns the key of consumer chain `chainID`
-func ValidatorsPowerCapKey(chainID string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(ValidatorsPowerCapKeyName), chainID)
+// ValidatorSetPowerKey returns the key of consumer `consumerId`
+func ValidatorsPowerCapKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ValidatorsPowerCapKeyName), consumerId)
 }
 
 // ValidatorSetCapKey returns the key of consumer chain `chainID`
-func ValidatorSetCapKey(chainID string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(ValidatorSetCapKeyName), chainID)
+func ValidatorSetCapKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ValidatorSetCapKeyName), consumerId)
 }
 
 // AllowlistKeyPrefix returns the key prefix for storing consumer chains allowlists
@@ -653,9 +653,9 @@ func AllowlistKeyPrefix() byte {
 }
 
 // AllowlistKey returns the key for storing consumer chains allowlists
-func AllowlistKey(chainID string, providerAddr ProviderConsAddress) []byte {
+func AllowlistKey(consumerId string, providerAddr ProviderConsAddress) []byte {
 	return append(
-		ChainIdWithLenKey(AllowlistKeyPrefix(), chainID),
+		ConsumerIdWithLenKey(AllowlistKeyPrefix(), consumerId),
 		providerAddr.ToSdkConsAddr().Bytes()...,
 	)
 }
@@ -666,9 +666,9 @@ func DenylistKeyPrefix() byte {
 }
 
 // DenylistKey returns the key for storing consumer chains denylists
-func DenylistKey(chainID string, providerAddr ProviderConsAddress) []byte {
+func DenylistKey(consumerId string, providerAddr ProviderConsAddress) []byte {
 	return append(
-		ChainIdWithLenKey(DenylistKeyPrefix(), chainID),
+		ConsumerIdWithLenKey(DenylistKeyPrefix(), consumerId),
 		providerAddr.ToSdkConsAddr().Bytes()...,
 	)
 }
@@ -679,14 +679,14 @@ func OptedInKeyPrefix() byte {
 }
 
 // OptedInKey returns the key used to store whether a validator is opted in on a consumer chain.
-func OptedInKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	prefix := ChainIdWithLenKey(OptedInKeyPrefix(), chainID)
+func OptedInKey(consumerId string, providerAddr ProviderConsAddress) []byte {
+	prefix := ConsumerIdWithLenKey(OptedInKeyPrefix(), consumerId)
 	return append(prefix, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // ConsumerRewardsAllocationKey returns the key used to store the ICS rewards per consumer chain
-func ConsumerRewardsAllocationKey(chainID string) []byte {
-	return append([]byte{mustGetKeyPrefix(ConsumerRewardsAllocationKeyName)}, []byte(chainID)...)
+func ConsumerRewardsAllocationKey(consumerId string) []byte {
+	return append([]byte{mustGetKeyPrefix(ConsumerRewardsAllocationKeyName)}, []byte(consumerId)...)
 }
 
 // ConsumerCommissionRateKeyPrefix returns the key prefix for storing the commission rate per validator per consumer chain.
@@ -695,16 +695,16 @@ func ConsumerCommissionRateKeyPrefix() byte {
 }
 
 // ConsumerCommissionRateKey returns the key used to store the commission rate per validator per consumer chain.
-func ConsumerCommissionRateKey(chainID string, providerAddr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(
+func ConsumerCommissionRateKey(consumerId string, providerAddr ProviderConsAddress) []byte {
+	return ConsumerIdAndConsAddrKey(
 		ConsumerCommissionRateKeyPrefix(),
-		chainID,
+		consumerId,
 		providerAddr.ToSdkConsAddr(),
 	)
 }
 
-func MinimumPowerInTopNKey(chainID string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(MinimumPowerInTopNKeyName), chainID)
+func MinimumPowerInTopNKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(MinimumPowerInTopNKeyName), consumerId)
 }
 
 // ConsumerAddrsToPruneV2KeyPrefix returns the key prefix for storing the consumer validators
@@ -742,22 +742,22 @@ func ConsumerIdKey() []byte {
 
 // ConsumerIdToChainIdKey returns the key used to store the chain id that corresponds to this consumer id
 func ConsumerIdToChainIdKey(consumerId string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToChainIdKeyName), consumerId)
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToChainIdKeyName), consumerId)
 }
 
 // ConsumerIdToRegistrationRecordKey returns the key used to store the registration record that corresponds to this consumer id
 func ConsumerIdToRegistrationRecordKey(consumerId string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToRegistrationRecordKeyName), consumerId)
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToRegistrationRecordKeyName), consumerId)
 }
 
 // ConsumerIdToInitializationRecordKey returns the key used to store the initialization record that corresponds to this consumer id
 func ConsumerIdToInitializationRecordKey(consumerId string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName), consumerId)
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName), consumerId)
 }
 
 // ConsumerIdToOwnerAddressKey returns the key used to store the owner address that corresponds to this consumer id
 func ConsumerIdToOwnerAddressKey(consumerId string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToOwnerAddressKeyName), consumerId)
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToOwnerAddressKeyName), consumerId)
 }
 
 // ClientIdToConsumerIdKey returns the consumer id that corresponds to this client id
@@ -786,7 +786,7 @@ func ClientIdToConsumerIdKey(clientId string) []byte {
 // ChainIdAndTsKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | timestamp
 func ChainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
-	partialKey := ChainIdWithLenKey(prefix, chainID)
+	partialKey := ConsumerIdWithLenKey(prefix, chainID)
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	return ccvtypes.AppendMany(
 		// Append the partialKey
@@ -796,17 +796,16 @@ func ChainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
 	)
 }
 
-// ChainIdWithLenKey returns the key with the following format:
-// bytePrefix | len(chainID) | chainID
-func ChainIdWithLenKey(prefix byte, chainID string) []byte {
-	chainIdL := len(chainID)
+// ConsumerIdWithLenKey returns the key with the following format:
+// bytePrefix | len(consumerId) | consumerId
+func ConsumerIdWithLenKey(prefix byte, consumerId string) []byte {
 	return ccvtypes.AppendMany(
 		// Append the prefix
 		[]byte{prefix},
 		// Append the chainID length
-		sdk.Uint64ToBigEndian(uint64(chainIdL)),
+		sdk.Uint64ToBigEndian(uint64(len(consumerId))),
 		// Append the chainID
-		[]byte(chainID),
+		[]byte(consumerId),
 	)
 }
 
@@ -829,7 +828,7 @@ func ParseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 // ChainIdAndUintIdKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | uint64(ID)
 func ChainIdAndUintIdKey(prefix byte, chainID string, uintId uint64) []byte {
-	partialKey := ChainIdWithLenKey(prefix, chainID)
+	partialKey := ConsumerIdWithLenKey(prefix, chainID)
 	return ccvtypes.AppendMany(
 		// Append the partialKey
 		partialKey,
@@ -851,10 +850,10 @@ func ParseChainIdAndUintIdKey(prefix byte, bz []byte) (string, uint64, error) {
 	return chainID, uintID, nil
 }
 
-// ChainIdAndConsAddrKey returns the key with the following format:
-// bytePrefix | len(chainID) | chainID | ConsAddress
-func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
-	partialKey := ChainIdWithLenKey(prefix, chainID)
+// ConsumerIdAndConsAddrKey returns the key with the following format:
+// bytePrefix | len(consumerId) | consumerId | ConsAddress
+func ConsumerIdAndConsAddrKey(prefix byte, consumerId string, addr sdk.ConsAddress) []byte {
+	partialKey := ConsumerIdWithLenKey(prefix, consumerId)
 	return ccvtypes.AppendMany(
 		// Append the partialKey
 		partialKey,
@@ -863,7 +862,7 @@ func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []
 	)
 }
 
-// ParseChainIdAndConsAddrKey returns the chain ID and ConsAddress for a ChainIdAndConsAddrKey key
+// ParseChainIdAndConsAddrKey returns the chain ID and ConsAddress for a ConsumerIdAndConsAddrKey key
 func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
