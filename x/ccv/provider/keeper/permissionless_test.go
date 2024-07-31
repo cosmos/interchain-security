@@ -191,3 +191,14 @@ func TestConsumerIdToOwnerAddress(t *testing.T) {
 	_, found = providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
 	require.False(t, found)
 }
+
+func TestIsConsumerLaunched(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	require.False(t, providerKeeper.IsConsumerLaunched(ctx, "consumerId"))
+
+	// set a consumer client id which is what happens when the chain launches
+	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientId")
+	require.True(t, providerKeeper.IsConsumerLaunched(ctx, "consumerId"))
+}

@@ -137,7 +137,9 @@ const (
 
 	ConsumerIdToInitializationRecordKeyName = "ConsumerIdToInitializationRecordKey"
 
-	ConsumerIdToOwnerAddressKeyName = "ConsumerIdToOwnerAddress"
+	ConsumerIdToOwnerAddressKeyName = "ConsumerIdToOwnerAddressKey"
+
+	ConsumerIdToPhaseKeyName = "ConsumerIdToPhaseKey"
 
 	ClientIdToConsumerIdKeyName = "ClientIdToConsumerIdKey"
 )
@@ -348,8 +350,11 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerIdToOwnerAddressKeyName is the key for storing the owner address for the given consumer id
 		ConsumerIdToOwnerAddressKeyName: 49,
 
+		// ConsumerIdToPhaseKeyName is the key for storing the phase of a consumer chain with the given consumer id
+		ConsumerIdToPhaseKeyName: 50,
+
 		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
-		ClientIdToConsumerIdKeyName: 50,
+		ClientIdToConsumerIdKeyName: 51,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -758,6 +763,11 @@ func ConsumerIdToInitializationRecordKey(consumerId string) []byte {
 // ConsumerIdToOwnerAddressKey returns the key used to store the owner address that corresponds to this consumer id
 func ConsumerIdToOwnerAddressKey(consumerId string) []byte {
 	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToOwnerAddressKeyName), consumerId)
+}
+
+// ConsumerIdToPhaseKey returns the key used to store the phase that corresponds to this consumer id
+func ConsumerIdToPhaseKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPhaseKeyName), consumerId)
 }
 
 // ClientIdToConsumerIdKey returns the consumer id that corresponds to this client id
