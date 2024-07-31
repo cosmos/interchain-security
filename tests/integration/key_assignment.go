@@ -10,9 +10,26 @@ import (
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
+// TestKeyAssignment tests key assignments relayed from the provider chain to the consumer chain at different times in the protocol lifecycle.
+// @Long Description@
+// Each test scenarios sets up a provider chain and then assigns a key for a validator.
+// However, the assignment comes at different times in the protocol lifecycle.
+// The test covers the following scenarios:
+// * successfully assign the key before the CCV channel initialization is complete, then check that a VSCPacket is indeed queud
+// * successfully assign the key after the CCV channel initialization is complete
+// * successfully assign the key during an same epoch where the validator power changes
+// * get an error when assigning the same key twice in the same block by different validators
+// * get an error when assigning the same key twice in the same block by the same validator
+// * successfully assign two different keys in the same block by one validator
+// * get an error when assigning the same key twice in different blocks by different validators
+// * get an error when assigning the same key twice in different blocks by the same validator
+// For each scenario where the key assignment does not produce an error,
+// the test also checks that VSCPackets are relayed to the consumer chain and that the clients on
+// the provider and consumer chain can be updated.
 func (s *CCVTestSuite) TestKeyAssignment() {
 	testCases := []struct {
 		name           string
@@ -28,6 +45,9 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
+
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
 
 				// check that a VSCPacket is queued
 				s.nextEpoch()
@@ -51,6 +71,10 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
+
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
 				s.nextEpoch()
 
 				return nil
@@ -73,6 +97,9 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				delAddr := s.providerChain.SenderAccount.GetAddress()
 				delegate(s, delAddr, bondAmt)
 
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
 				s.nextEpoch()
 
 				return nil
@@ -90,12 +117,25 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
 				// same key assignment, but different validator
 				validator2, _ := generateNewConsumerKey(s, 1)
 				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator2, consumerKey)
+
+				// check that the key was not assigned to the second validator
+				valConsAddr2, getConsAddrErr := validator2.GetConsAddr() // make sure we don't override err, which we are saving for below
+				s.Require().NoError(getConsAddrErr)
+				actualConsumerKey2, found := pk.GetValidatorConsumerPubKey(s.providerCtx(), s.consumerChain.ChainID, types.NewProviderConsAddress(valConsAddr2))
+				s.Require().True(found)
+				// the key for the second validator should *not* be the one we just assigned to the first validator
+				s.Require().NotEqual(consumerKey, actualConsumerKey2)
+
 				if err != nil {
 					return err
 				}
+
 				s.nextEpoch()
 
 				return nil
@@ -113,7 +153,10 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
-				// same key assignment, but different validator
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
+				// same key assignment, same validator
 				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
 				if err != nil {
 					return err
@@ -135,12 +178,19 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
 				// same key assignment
 				validator, consumerKey = generateNewConsumerKey(s, 0)
 				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
 				if err != nil {
 					return err
 				}
+
+				// check that the second key was also assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
 				s.nextEpoch()
 
 				return nil
@@ -157,6 +207,10 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
+
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
 				s.nextEpoch()
 
 				// same key assignment
@@ -165,6 +219,15 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
+
+				// check that the key was not assigned to the second validator
+				valConsAddr2, getConsAddrErr := validator2.GetConsAddr() // make sure we don't override err, which we are saving for below
+				s.Require().NoError(getConsAddrErr)
+				actualConsumerKey2, found := pk.GetValidatorConsumerPubKey(s.providerCtx(), s.consumerChain.ChainID, types.NewProviderConsAddress(valConsAddr2))
+				s.Require().True(found)
+				// the key for the second validator should *not* be the one we just assigned to the first validator
+				s.Require().NotEqual(consumerKey, actualConsumerKey2)
+
 				s.nextEpoch()
 
 				return nil
@@ -181,6 +244,10 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
+
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
 				s.nextEpoch()
 
 				// same key assignment
@@ -204,6 +271,10 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
+
+				// check that the key was assigned correctly
+				s.CheckKeyAssignment(validator, consumerKey)
+
 				s.nextEpoch()
 
 				// same key assignment
@@ -212,6 +283,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
+
 				s.nextEpoch()
 
 				return nil
@@ -284,6 +356,15 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 			s.SetupTest()
 		}
 	}
+}
+
+// CheckKeyAssignmentCorrectly checks if the key was assigned correctly.
+func (s *CCVTestSuite) CheckKeyAssignment(validator stakingtypes.Validator, consumerKey tmprotocrypto.PublicKey) {
+	valConsAddr, err := validator.GetConsAddr()
+	s.Require().NoError(err)
+	actualConsumerKey, found := s.providerApp.GetProviderKeeper().GetValidatorConsumerPubKey(s.providerCtx(), s.consumerChain.ChainID, types.NewProviderConsAddress(valConsAddr))
+	s.Require().True(found)
+	s.Require().Equal(consumerKey, actualConsumerKey)
 }
 
 // generateNewConsumerKey generate new consumer key for the validator with valIndex

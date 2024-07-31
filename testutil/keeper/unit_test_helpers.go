@@ -207,7 +207,7 @@ func GetNewSlashPacketData() types.SlashPacketData {
 			Power:   int64(binary.BigEndian.Uint64(b1)),
 		},
 		ValsetUpdateId: binary.BigEndian.Uint64(b2),
-		Infraction:     stakingtypes.Infraction(binary.BigEndian.Uint64(b2) % 3),
+		Infraction:     stakingtypes.Infraction(binary.BigEndian.Uint64(b3) % 3),
 	}
 }
 

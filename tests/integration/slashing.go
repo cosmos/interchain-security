@@ -255,6 +255,11 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().NoError(err)
 }
 
+// TestSlashPacketAcknowledgement tests the handling of a slash packet acknowledgement.
+// @Long Description@
+// It sets up a provider and consumer chain, with channel initialization between them performed,
+// then sends a slash packet with randomized fields from the consumer to the provider.
+// The provider processes the packet
 func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()

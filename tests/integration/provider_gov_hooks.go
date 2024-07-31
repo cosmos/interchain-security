@@ -48,6 +48,15 @@ func (s *CCVTestSuite) TestAfterPropSubmissionAndVotingPeriodEnded() {
 	s.Require().Empty(providerKeeper.GetProposedConsumerChain(ctx, proposal.Id))
 }
 
+// TestGetConsumerAdditionLegacyPropFromProp manually calls the GetConsumerAdditionLegacyPropFromProp hook on
+// various types of proposals to test the behavior of the hook.
+// @Long Description@
+// The tes case created a provider chain,
+// then submits a Proposal with various different types of content.
+// Then, it tries to get the ConsumerAdditionProposal from the proposal using the hook.
+// Test cases include a proposal with no messages; a proposal with a transfer message; a proposal with an unrelated legacy proposal;
+// a proposal with an invalid legacy proposal; and a proposal with a ConsumerAdditionProposal.
+// In the case of a valid ConsumerAdditionProposal, the test verifies that the proposal is found and returned by the hook.
 func (s *CCVTestSuite) TestGetConsumerAdditionLegacyPropFromProp() {
 	ctx := s.providerChain.GetContext()
 	proposer := s.providerChain.SenderAccount
@@ -121,7 +130,7 @@ func (s *CCVTestSuite) TestGetConsumerAdditionLegacyPropFromProp() {
 				proposal, err = v1.NewProposal([]sdk.Msg{}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", proposer.GetAddress(), false)
 				s.Require().NoError(err)
 			} else {
-				// cover variolus cases where proposal has messages but only some are consumer addition proposals
+				// cover various cases where proposal has messages but only some are consumer addition proposals
 				proposal, err = v1.NewProposal([]sdk.Msg{tc.propMsg}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", proposer.GetAddress(), false)
 				s.Require().NoError(err)
 			}

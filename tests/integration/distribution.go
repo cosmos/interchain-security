@@ -20,7 +20,15 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// This test is valid for minimal viable consumer chain
+// TesRewardsDistribution tests the distribution of rewards from the consumer chain to the provider chain.
+// @Long Description@
+// The test sets up a provider and consumer chain and completes the channel initialization.
+// Then, it sends tokens into the FeeCollector on the consumer chain,
+// and checks that these tokens distributed correctly across the provider and consumer chain.
+// It first checks that the tokens are distributed purely on the consumer chain,
+// then advances the block height to make the consumer chain send a packet with rewards to the provider chain.
+// It does not whitelist the consumer denom, so the tokens are expected to stay in
+// the ConsumerRewardsPool on the provider chain.
 func (s *CCVTestSuite) TestRewardsDistribution() {
 	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupCCVChannel(s.path)
@@ -138,8 +146,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	consuValsRewards := consumerValsOutstandingRewardsFunc(s.providerCtx())
 
 	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
-	numberOfBlocksToStartReceivingRewards :=
-		providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
+	numberOfBlocksToStartReceivingRewards := providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
 
 	for s.providerCtx().BlockHeight() <= numberOfBlocksToStartReceivingRewards {
 		s.providerChain.NextBlock()
@@ -184,6 +191,13 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 }
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
+// @Long Description@
+// The test sets up a provider and consumer chain and completes the channel initialization.
+// It fills the fee pool on the consumer chain,
+// then corrupts the transmission channel and tries to send rewards to the provider chain,
+// which should fail.
+// The test then advances the block height to trigger a retry of the reward transmission,
+// and confirms that this time, the transmission is successful.
 func (s *CCVTestSuite) TestSendRewardsRetries() {
 	// TODO: this setup can be consolidated with other tests in the file
 
@@ -703,7 +717,12 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 }
 
 // TestAllocateTokens is a happy-path test of the consumer rewards pool allocation
-// to opted-in validators and the community pool
+// to opted-in validators and the community pool.
+// @Long Description@
+// The test sets up a provider chain and multiple consumer chains, and initializes the channels between them.
+// It funds the consumer rewards pools on the provider chain and allocates rewards to the consumer chains.
+// Then, it begins a new block to cause rewards to be distributed to the validators and the community pool,
+// and checks that the rewards are allocated as expected.
 func (s *CCVTestSuite) TestAllocateTokens() {
 	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupAllCCVChannels()
@@ -833,6 +852,17 @@ func (s *CCVTestSuite) prepareRewardDist() {
 	s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
 }
 
+// TestAllocateTokensToConsumerValidators tests the allocation of tokens to consumer validators.
+// @Long Description@
+// The test exclusively uses the provider chain.
+// It sets up a current set of consumer validators, then calls the AllocateTokensToConsumerValidators
+// function to allocate a number of tokens to the validators.
+// The test then checks that the expected number of tokens were allocated to the validators.
+// The test covers the following scenarios:
+// - The tokens to be allocated are empty
+// - The consumer validator set is empty
+// - The tokens are allocated to a single validator
+// - The tokens are allocated to multiple validators
 func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	distributionKeeper := s.providerApp.GetTestDistributionKeeper()

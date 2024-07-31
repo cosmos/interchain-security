@@ -1,0 +1,50 @@
+name: Check up-to-date testing docs
+
+on:
+    workflow_call:
+    pull_request:
+    merge_group:
+    push:
+      branches:
+        - main
+        - release/v*
+        - feat/*
+
+permissions:
+  contents: write
+  pull-requests: write      # 'write' access to pull requests
+
+jobs:
+    testing-docs:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - uses: actions/setup-go@v5
+          with:
+            go-version: "1.22"
+            check-latest: true
+            cache: true
+            cache-dependency-path: go.sum
+        - uses: technote-space/get-diff-action@v6.1.2
+          id: git_diff
+          with:
+            PATTERNS: |
+              tests/integration/**/*.go
+              **/Makefile
+              Makefile
+
+        - name: Generate testing docs
+          run: make testing-docs
+
+        - name: Check for changes
+          id: check_changes
+          run: |
+            git show HEAD:scripts/test_doc/test_documentation.md > committed_file.md
+            cp scripts/test_doc/test_documentation.md generated_file.md
+            if ! diff -q generated_file.md committed_file.md; then
+              echo "Documentation for integration tests is out of date. Please run `make testing-docs`!"
+              exit 1
+            fi

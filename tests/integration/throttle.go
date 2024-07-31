@@ -382,6 +382,12 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	}
 }
 
+// TestDoubleSignDoesNotAffectThrottling tests that a large number of double sign slash packets
+// do not affect the throttling mechanism.
+// @Long Description@
+// This test sets up a scenario where 3 validators are slashed for double signing, and the 4th is not.
+// It then sends 500 double sign slash packets from a consumer to the provider in a single block.
+// The test confirms that the slash meter is not affected by this, and that no validators are jailed.
 func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
