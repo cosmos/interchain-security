@@ -116,6 +116,11 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 		chainState.HasToValidate = &hasToValidate
 	}
 
+	if modelState.ConsumerCommissionRates != nil {
+		consumerCommissionRates := tr.GetConsumerCommissionRates(chain, *modelState.ConsumerCommissionRates)
+		chainState.ConsumerCommissionRates = &consumerCommissionRates
+	}
+
 	if modelState.ConsumerPendingPacketQueueSize != nil {
 		pendingPacketQueueSize := tr.target.GetPendingPacketQueueSize(chain)
 		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
@@ -295,7 +300,7 @@ func (tr Chain) curlJsonRPCRequest(method, params, address string) {
 	cmd := tr.target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
 	verbosity := false
-	e2e.ExecuteCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+	e2e.ExecuteCommand(cmd, "curlJsonRPCRequest", verbosity)
 }
 
 func uintPtr(i uint) *uint {
@@ -357,8 +362,8 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
-		"query", "distribution", "delegation-total-rewards",
-		"--delegator-address", delAddresss,
+		"query", "distribution", "rewards",
+		delAddresss,
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
@@ -367,6 +372,7 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 	bz, err := cmd.CombinedOutput()
 
 	if err != nil {
+		log.Println("running cmd: ", cmd)
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 
@@ -950,4 +956,34 @@ func (tr Commands) GetQueryNodeIP(chain ChainID) string {
 			tr.validatorConfigs[ValidatorID("alice")].IpSuffix)
 	}
 	return fmt.Sprintf("%s.253", tr.chainConfigs[chain].IpPrefix)
+}
+
+// GetConsumerCommissionRate returns the commission rate of the given validator on the given consumerChain
+func (tr Commands) GetConsumerCommissionRate(consumerChain ChainID, validator ValidatorID) float64 {
+	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	cmd := tr.target.ExecCommand(binaryName,
+		"query", "provider", "validator-consumer-commission-rate",
+		string(consumerChain), tr.validatorConfigs[validator].ValconsAddress,
+		`--node`, tr.GetQueryNode(ChainID("provi")),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	rate, err := strconv.ParseFloat(gjson.Get(string(bz), "rate").String(), 64)
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	return rate
+}
+
+func (tr Chain) GetConsumerCommissionRates(chain ChainID, modelState map[ValidatorID]float64) map[ValidatorID]float64 {
+	actualState := map[ValidatorID]float64{}
+	for k := range modelState {
+		actualState[k] = tr.target.GetConsumerCommissionRate(chain, k)
+	}
+
+	return actualState
 }

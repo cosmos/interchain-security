@@ -457,3 +457,13 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 
 	return res, nil
 }
+
+// QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
+func (k Keeper) QueryBlocksUntilNextEpoch(goCtx context.Context, req *types.QueryBlocksUntilNextEpochRequest) (*types.QueryBlocksUntilNextEpochResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Calculate the blocks until the next epoch
+	blocksUntilNextEpoch := k.BlocksUntilNextEpoch(ctx)
+
+	return &types.QueryBlocksUntilNextEpochResponse{BlocksUntilNextEpoch: uint64(blocksUntilNextEpoch)}, nil
+}

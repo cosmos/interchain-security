@@ -270,6 +270,8 @@ message MsgOptOutResponse {}
 message MsgSetConsumerCommissionRate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "signer";
+
    // The validator address on the provider
    string provider_addr = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // The chain id of the consumer chain to set a commission rate
@@ -281,7 +283,9 @@ message MsgSetConsumerCommissionRate {
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
-  }
+  // signer address
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
 
 
 message MsgSetConsumerCommissionRateResponse {}
@@ -292,6 +296,8 @@ message MsgSetConsumerCommissionRateResponse {}
 //
 // Note: this replaces ConsumerModificationProposal which is deprecated and will be removed soon
 message MsgConsumerModification {
+  option (cosmos.msg.v1.signer) = "authority";
+
   // the title of the proposal
   string title = 1;
   // the description of the proposal

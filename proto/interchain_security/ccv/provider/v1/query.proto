@@ -136,6 +136,14 @@ service Query {
         option (google.api.http).get =
             "/interchain_security/ccv/provider/consumer_validators/{chain_id}";
   }
+
+  // QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
+  // starts and validator updates are sent to the consumer chains
+  rpc QueryBlocksUntilNextEpoch(QueryBlocksUntilNextEpochRequest)
+      returns (QueryBlocksUntilNextEpochResponse) {
+        option (google.api.http).get =
+            "/interchain_security/ccv/provider/blocks_until_next_epoch";
+  }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -311,4 +319,11 @@ message QueryValidatorConsumerCommissionRateResponse {
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
+}
+
+message QueryBlocksUntilNextEpochRequest { }
+
+message QueryBlocksUntilNextEpochResponse {
+  // The number of blocks until the next epoch starts
+  uint64 blocks_until_next_epoch = 1;
 }

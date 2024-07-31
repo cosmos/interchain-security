@@ -325,7 +325,8 @@ func NewSetConsumerCommissionRateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			msg := types.NewMsgSetConsumerCommissionRate(args[0], commission, sdk.ValAddress(providerValAddr))
+			signer := clientCtx.GetFromAddress().String()
+			msg := types.NewMsgSetConsumerCommissionRate(args[0], commission, sdk.ValAddress(providerValAddr), signer)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
