@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	"encoding/binary"
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -198,8 +199,28 @@ func (k Keeper) DeleteClientIdToConsumerId(ctx sdk.Context, clientId string) {
 	store.Delete(types.ClientIdToConsumerIdKey(clientId))
 }
 
-// IsConsumerLaunched returns true if the consumer chain with the provided id is launched
-func (k Keeper) IsConsumerLaunched(ctx sdk.Context, consumerId string) bool {
-	_, found := k.GetConsumerClientId(ctx, consumerId)
-	return found
+// GetInitializedConsumersReadyToLaunch returns the consumer ids of the pending initialized consumer chains
+// that are ready to launch,  i.e., consumer clients to be created.
+func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context) []string {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToInitializationRecordKeyNameKeyPrefix())
+	defer iterator.Close()
+
+	var consumerIds []string
+
+	for ; iterator.Valid(); iterator.Next() {
+		var record types.ConsumerInitializationRecord
+		err := record.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal consumer record: %w for consumer id: %s", err, string(iterator.Value())))
+		}
+
+		if !ctx.BlockTime().Before(record.SpawnTime) {
+			// the `consumerId` resides in the whole key, but we skip the first byte (because it's the `ConsumerIdKey`)
+			// plus 8 more bytes for the `uint64` in the key that contains the length of the `consumerId`
+			consumerIds = append(consumerIds, string(iterator.Key()[1+8:]))
+		}
+	}
+
+	return consumerIds
 }

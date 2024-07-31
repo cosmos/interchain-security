@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -192,13 +193,54 @@ func TestConsumerIdToOwnerAddress(t *testing.T) {
 	require.False(t, found)
 }
 
-func TestIsConsumerLaunched(t *testing.T) {
+// TestConsumerIdToPhase tests the getter, setter, and deletion methods of the consumer id to phase methods
+func TestConsumerIdToPhase(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	require.False(t, providerKeeper.IsConsumerLaunched(ctx, "consumerId"))
+	_, found := providerKeeper.GetConsumerIdToPhase(ctx, "consumerId")
+	require.False(t, found)
 
-	// set a consumer client id which is what happens when the chain launches
-	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientId")
-	require.True(t, providerKeeper.IsConsumerLaunched(ctx, "consumerId"))
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId", keeper.Registered)
+	phase, found := providerKeeper.GetConsumerIdToPhase(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, keeper.Registered, phase)
+
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId", keeper.Launched)
+	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, keeper.Launched, phase)
+}
+
+// TestGetInitializedConsumersReadyToLaunch tests that the ready to-be-launched consumer chains are returned
+func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// no chains to-be-launched exist
+	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+
+	// set 3 initialization records with different spawn times
+	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId1",
+		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(10, 0)})
+	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId2",
+		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(20, 0)})
+	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId3",
+		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(30, 0)})
+
+	// time has not yet reached the spawn time of "consumerId1"
+	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
+	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+
+	// time has reached the spawn time of "consumerId1"
+	ctx = ctx.WithBlockTime(time.Unix(10, 0))
+	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+
+	// time has reached the spawn time of "consumerId1" and "consumerId2"
+	ctx = ctx.WithBlockTime(time.Unix(20, 0))
+	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+
+	// time has reached the spawn time of all chains
+	ctx = ctx.WithBlockTime(time.Unix(30, 0))
+	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
 }
