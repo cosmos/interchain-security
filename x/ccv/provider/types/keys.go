@@ -515,9 +515,9 @@ func InitChainHeightKey(chainID string) []byte {
 }
 
 // PendingVSCsKey returns the key under which
-// pending ValidatorSetChangePacket data is stored for a given chain ID
-func PendingVSCsKey(chainID string) []byte {
-	return append([]byte{mustGetKeyPrefix(PendingVSCsKeyName)}, []byte(chainID)...)
+// pending ValidatorSetChangePacket data is stored for a given consumer id
+func PendingVSCsKey(consumerId string) []byte {
+	return append([]byte{mustGetKeyPrefix(PendingVSCsKeyName)}, []byte(consumerId)...)
 }
 
 // ThrottledPacketDataSizeKey returns the key storing the size of the throttled packet data queue for a given chain ID
