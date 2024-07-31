@@ -1,9 +1,12 @@
 package keeper_test
 
 import (
+	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 // TestConsumerId tests methods for retrieving and incrementing consumer id
@@ -29,7 +32,7 @@ func TestConsumerId(t *testing.T) {
 	require.Equal(t, uint64(2), consumerId)
 }
 
-// TestConsumerIdToChainId tests the getter, setter, and deletion methods for the consumer id to chain id
+// TestConsumerIdToChainId tests the getter, setter, and deletion methods of the consumer id to chain id methos
 func TestConsumerIdToChainId(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -42,6 +45,7 @@ func TestConsumerIdToChainId(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, "chainId", chainId)
 
+	// assert that overwriting the current chain id record works
 	providerKeeper.SetConsumerIdToChainId(ctx, "consumerId", "chainId2")
 	chainId, found = providerKeeper.GetConsumerIdToChainId(ctx, "consumerId")
 	require.True(t, found)
@@ -53,7 +57,7 @@ func TestConsumerIdToChainId(t *testing.T) {
 	require.Equal(t, "", chainId)
 }
 
-// TestClientIdToConsumerId tests the getter, setter, and deletion methods for the client id to consumer id
+// TestClientIdToConsumerId tests the getter, setter, and deletion methods of the client id to consumer id methods
 func TestClientIdToConsumerId(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -66,6 +70,7 @@ func TestClientIdToConsumerId(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, "consumerId", consumerId)
 
+	// assert that overwriting the current consumer id record works
 	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", "consumerId2")
 	consumerId, found = providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
 	require.True(t, found)
@@ -75,4 +80,114 @@ func TestClientIdToConsumerId(t *testing.T) {
 	consumerId, found = providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
 	require.False(t, found)
 	require.Equal(t, "", consumerId)
+}
+
+// TestConsumerIdToRegistrationRecord tests the getter, setter, and deletion methods of the consumer id to registration record methods
+func TestConsumerIdToRegistrationRecord(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	_, found := providerKeeper.GetConsumerIdToRegistrationRecord(ctx, "consumerId")
+	require.False(t, found)
+
+	expectedRecord := providertypes.ConsumerRegistrationRecord{
+		Title:       "title",
+		Description: "description",
+		ChainId:     "chain_id",
+	}
+	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "consumerId", expectedRecord)
+	actualRecord, found := providerKeeper.GetConsumerIdToRegistrationRecord(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, expectedRecord, actualRecord)
+
+	// assert that overwriting the current registration record works
+	expectedRecord = providertypes.ConsumerRegistrationRecord{
+		Title:       "title 2",
+		Description: "description 2",
+		ChainId:     "chain_id2",
+	}
+	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "consumerId", expectedRecord)
+	actualRecord, found = providerKeeper.GetConsumerIdToRegistrationRecord(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, expectedRecord, actualRecord)
+
+	providerKeeper.DeleteConsumerIdToRegistrationRecord(ctx, "consumerId")
+	actualRecord, found = providerKeeper.GetConsumerIdToRegistrationRecord(ctx, "consumerId")
+	require.False(t, found)
+	require.Equal(t, providertypes.ConsumerRegistrationRecord{}, actualRecord)
+}
+
+// TestConsumerIdToInitializationRecord tests the getter, setter, and deletion methods of the consumer id to initialization record methods
+func TestConsumerIdToInitializationRecord(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	_, found := providerKeeper.GetConsumerIdToInitializationRecord(ctx, "consumerId")
+	require.False(t, found)
+
+	expectedRecord := providertypes.ConsumerInitializationRecord{
+		InitialHeight:                     types.Height{RevisionNumber: 1, RevisionHeight: 2},
+		GenesisHash:                       []byte{0, 1},
+		BinaryHash:                        []byte{2, 3},
+		SpawnTime:                         time.Unix(1, 2).UTC(),
+		UnbondingPeriod:                   3456,
+		CcvTimeoutPeriod:                  789,
+		TransferTimeoutPeriod:             101112,
+		ConsumerRedistributionFraction:    "consumer_redistribution_fraction",
+		BlocksPerDistributionTransmission: 123,
+		HistoricalEntries:                 456,
+		DistributionTransmissionChannel:   "distribution_transmission_channel",
+	}
+	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId", expectedRecord)
+	actualRecord, found := providerKeeper.GetConsumerIdToInitializationRecord(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, expectedRecord, actualRecord)
+
+	// assert that overwriting the current initialization record works
+	expectedRecord = providertypes.ConsumerInitializationRecord{
+		InitialHeight:                     types.Height{RevisionNumber: 2, RevisionHeight: 3},
+		GenesisHash:                       []byte{2, 3},
+		BinaryHash:                        []byte{4, 5},
+		SpawnTime:                         time.Unix(2, 3).UTC(),
+		UnbondingPeriod:                   789,
+		CcvTimeoutPeriod:                  101112,
+		TransferTimeoutPeriod:             131415,
+		ConsumerRedistributionFraction:    "consumer_redistribution_fraction2",
+		BlocksPerDistributionTransmission: 456,
+		HistoricalEntries:                 789,
+		DistributionTransmissionChannel:   "distribution_transmission_channel2",
+	}
+	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId", expectedRecord)
+	actualRecord, found = providerKeeper.GetConsumerIdToInitializationRecord(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, expectedRecord, actualRecord)
+
+	providerKeeper.DeleteConsumerIdToInitializationRecord(ctx, "consumerId")
+	actualRecord, found = providerKeeper.GetConsumerIdToInitializationRecord(ctx, "consumerId")
+	require.False(t, found)
+	require.Equal(t, providertypes.ConsumerInitializationRecord{}, actualRecord)
+}
+
+// TestConsumerIdToOwnerAddress tests the getter, setter, and deletion methods of the owner address to registration record methods
+func TestConsumerIdToOwnerAddress(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	_, found := providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
+	require.False(t, found)
+
+	providerKeeper.SetConsumerIdToOwnerAddress(ctx, "consumerId", "owner_address")
+	address, found := providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, "owner_address", address)
+
+	// assert that overwriting the current owner address works
+	providerKeeper.SetConsumerIdToOwnerAddress(ctx, "consumerId", "owner_address2")
+	address, found = providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, "owner_address2", address)
+
+	providerKeeper.DeleteConsumerIdToOwnerAddress(ctx, "consumerId")
+	_, found = providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
+	require.False(t, found)
 }

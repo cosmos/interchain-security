@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"strconv"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -308,6 +309,44 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 	return &types.MsgSetConsumerCommissionRateResponse{}, nil
 }
 
+// RegisterConsumer registers a consumer chain
+func (k msgServer) RegisterConsumer(goCtx context.Context, msg *types.MsgRegisterConsumer) (*types.MsgRegisterConsumerResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	consumerId := strconv.FormatUint(k.Keeper.FetchAndIncrementConsumerId(ctx), 10)
+
+	k.Keeper.SetConsumerIdToRegistrationRecord(ctx, consumerId, *msg.RegistrationRecord)
+	k.Keeper.SetConsumerIdToOwnerAddress(ctx, consumerId, msg.Signer)
+
+	return &types.MsgRegisterConsumerResponse{ConsumerId: consumerId}, nil
+}
+
+// InitializeConsumer initializes a consumer chain
+func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgInitializeConsumer) (*types.MsgInitializeConsumerResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	consumerId := msg.ConsumerId
+	_, found := k.Keeper.GetConsumerIdToRegistrationRecord(ctx, consumerId)
+	if !found {
+		// fix error type
+		return nil, errorsmod.Wrapf(types.ErrInvalidConsumerModificationProposal, "no registered chain with consumer id: %s", msg.GetConsumerId())
+	}
+
+	ownerAddress, found := k.Keeper.GetConsumerIdToOwnerAddress(ctx, consumerId)
+	if k.GetAuthority() == msg.Authority {
+		// message is executed as part of governance proposal and hence we change the owner address
+		// to be the one of the module account address
+		k.Keeper.SetConsumerIdToOwnerAddress(ctx, consumerId, k.GetAuthority())
+	} else if msg.Authority != ownerAddress {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Authority)
+	}
+
+	k.Keeper.SetConsumerIdToInitializationRecord(ctx, consumerId, *msg.InitializationRecord)
+
+	return &types.MsgInitializeConsumerResponse{}, nil
+}
+
+// UpdateConsumer updates a consumer chain
 func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateConsumer) (*types.MsgUpdateConsumerResponse, error) {
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
@@ -320,18 +359,4 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	}
 
 	return &types.MsgUpdateConsumerResponse{}, nil
-}
-
-// RegisterConsumer registers a consumer chain
-func (k msgServer) RegisterConsumer(goCtx context.Context, msg *types.MsgRegisterConsumer) (*types.MsgRegisterConsumerResponse, error) {
-	//ctx := sdk.UnwrapSDKContext(goCtx)
-
-	return &types.MsgRegisterConsumerResponse{}, nil
-}
-
-// InitializeConsumer registers a consumer chain
-func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgInitializeConsumer) (*types.MsgInitializeConsumerResponse, error) {
-	//ctx := sdk.UnwrapSDKContext(goCtx)
-
-	return &types.MsgInitializeConsumerResponse{}, nil
 }
