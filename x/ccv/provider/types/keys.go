@@ -133,6 +133,12 @@ const (
 
 	ConsumerIdToChainIdKeyName = "ConsumerIdToChainIdKey"
 
+	ConsumerIdToRegistrationRecordKeyName = "ConsumerIdToRegistrationRecordKey"
+
+	ConsumerIdToInitializationRecordKeyName = "ConsumerIdToInitializationRecordKey"
+
+	ConsumerIdToOwnerAddressKeyName = "ConsumerIdToOwnerAddress"
+
 	ClientIdToConsumerIdKeyName = "ClientIdToConsumerIdKey"
 )
 
@@ -333,8 +339,17 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerIdToChainIdKeyName is the key for storing the chain id for the given consumer id
 		ConsumerIdToChainIdKeyName: 46,
 
+		// ConsumerIdToRegistrationRecordKeyName is the key for storing the registration record for the given consumer id
+		ConsumerIdToRegistrationRecordKeyName: 47,
+
+		// ConsumerIdToInitializationRecordKeyName is the key for storing the initialization record for the given consumer id
+		ConsumerIdToInitializationRecordKeyName: 48,
+
+		// ConsumerIdToOwnerAddressKeyName is the key for storing the owner address for the given consumer id
+		ConsumerIdToOwnerAddressKeyName: 49,
+
 		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
-		ClientIdToConsumerIdKeyName: 47,
+		ClientIdToConsumerIdKeyName: 50,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -725,9 +740,24 @@ func ConsumerIdKey() []byte {
 	return []byte{mustGetKeyPrefix(ConsumerIdKeyName)}
 }
 
-// ConsumerIdToChainIdKey returns the chain id that corresponds to this consumer id
+// ConsumerIdToChainIdKey returns the key used to store the chain id that corresponds to this consumer id
 func ConsumerIdToChainIdKey(consumerId string) []byte {
 	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToChainIdKeyName), consumerId)
+}
+
+// ConsumerIdToRegistrationRecordKey returns the key used to store the registration record that corresponds to this consumer id
+func ConsumerIdToRegistrationRecordKey(consumerId string) []byte {
+	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToRegistrationRecordKeyName), consumerId)
+}
+
+// ConsumerIdToInitializationRecordKey returns the key used to store the initialization record that corresponds to this consumer id
+func ConsumerIdToInitializationRecordKey(consumerId string) []byte {
+	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName), consumerId)
+}
+
+// ConsumerIdToOwnerAddressKey returns the key used to store the owner address that corresponds to this consumer id
+func ConsumerIdToOwnerAddressKey(consumerId string) []byte {
+	return ChainIdWithLenKey(mustGetKeyPrefix(ConsumerIdToOwnerAddressKeyName), consumerId)
 }
 
 // ClientIdToConsumerIdKey returns the consumer id that corresponds to this client id
