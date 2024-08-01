@@ -1,15 +1,15 @@
 ---
-sidebar_position: 19
+sidebar_position: 20
 title: Permissionless ICS
 ---
-# ADR 18: Permissionless Interchain Security
+# ADR 019: Permissionless Interchain Security
 
 ## Changelog
 * 27th of June, 2024: Initial draft
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 Currently, a consumer chain can join _Interchain Security_ (ICS) only through a [governance proposal](../features/proposals.md).
@@ -42,7 +42,7 @@ Therefore, any changes on a Top N chain have to go through governance proposals.
 
 A consumer chain can reside in four phases: i) _registered_, ii) _initialized_, iii) _launched_, and iv) _stopped_ phase as seen
 in the diagram below:
-![Phases of a consumer chain](./adr18_phases_of_a_consumer_chain.png)
+![Phases of a consumer chain](./figures/adr19_phases_of_a_consumer_chain.png)
 
 **Registered phase.** In the _registered phase_, a consumer chain is assigned a unique identifier that identifies a consumer chain
 that can later be used to interact with the specific consumer chain (e.g., when a validator opts in on a chain).
@@ -323,7 +323,7 @@ message MsgRemoveConsumer {
 #### Examples of Launching a Consumer Chain
 The figures below depict some examples of some of the phases a consumer chain resides in to launch.
 
-![Examples of a launching consumer chain](./adr18_flows_of_launching_a_consumer_chain.png)
+![Examples of a launching consumer chain](./figures/adr19_flows_of_launching_a_consumer_chain.png)
 
 
 ### Additional Modifications

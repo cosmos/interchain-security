@@ -10,7 +10,7 @@ title: ICS with Inactive Provider Validators
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
