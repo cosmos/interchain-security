@@ -113,11 +113,11 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(41), providertypes.ConsumerAddrsToPruneV2KeyPrefix())
 	i++
-	require.Equal(t, uint8(41), providertypes.LastProviderConsensusValsPrefix())
+	require.Equal(t, byte(42), providertypes.LastProviderConsensusValsPrefix())
 	i++
-	require.Equal(t, uint8(42), providertypes.MinStakeKey("chainID")[0])
+	require.Equal(t, byte(43), providertypes.MinStakeKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(43), providertypes.AllowInactiveValidatorsKey("chainID")[0])
+	require.Equal(t, byte(44), providertypes.AllowInactiveValidatorsKey("chainID")[0])
 	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()

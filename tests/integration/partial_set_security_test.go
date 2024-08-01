@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"slices"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -141,14 +142,21 @@ func TestMinStake(t *testing.T) {
 			// set the minStake according to the test case
 			providerKeeper.SetMinStake(s.providerChain.GetContext(), s.consumerChain.ChainID, tc.minStake)
 
-			// undelegate and delegate to trigger a vscupdate
+			// delegate and undelegate to trigger a vscupdate
+
+			// first delegate
 			delegateAndUndelegate(s, delegatorAccount.SenderAccount.GetAddress(), math.NewInt(1*stake_multiplier), 1)
 
 			// end the epoch to apply the updates
 			s.nextEpoch()
 
-			// Relay 1 VSC packet from provider to consumer
-			relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+			if slices.Equal(tc.stakedTokens, tc.expectedConsuValSet) {
+				// don't expect to relay a packet
+				relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 0)
+			} else {
+				// Relay 1 VSC packet from provider to consumer
+				relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+			}
 
 			// end the block on the consumer to apply the updates
 			s.consumerChain.NextBlock()
