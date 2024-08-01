@@ -2,7 +2,7 @@
 sidebar_position: 20
 title: Permissionless ICS
 ---
-# ADR 18: Permissionless Interchain Security
+# ADR 019: Permissionless Interchain Security
 
 ## Changelog
 * 27th of June, 2024: Initial draft
