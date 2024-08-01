@@ -41,13 +41,14 @@ To suggest an ADR, please make use of the [ADR template](https://github.com/cosm
 - [ADR 013: Slashing on the provider for consumer equivocation](./adr-013-equivocation-slashing.md)
 - [ADR 014: Epochs](./adr-014-epochs.md)
 - [ADR 015: Partial Set Security](./adr-015-partial-set-security.md)
+- [ADR 017: ICS with Inactive Provider Validators](./adr-017-allowing-inactive-validators.md)
 - [ADR 018: Remove VSCMatured Packets](./adr-018-remove-vscmatured.md)
+- [ADR 18: Permissionless Interchain Security](./adr-019-permissionless-ics.md)
 
 ### Proposed
 
 - [ADR 011: Improving testing and increasing confidence](./adr-011-improving-test-confidence.md)
 - [ADR 016: Security aggregation](./adr-016-securityaggregation.md)
-- [ADR 017: ICS with Inactive Provider Validators](./adr-017-allowing-inactive-validators.md)
 
 ### Rejected
 
