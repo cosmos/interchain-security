@@ -39,6 +39,7 @@ const config = {
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
           routeBasePath: "/",
+          lastVersion: "current",
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           exclude: ["**/templates/*"],
