@@ -360,7 +360,7 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, consumerId string) (consumerAddrsToPrune []types.ConsumerAddrsToPruneV2) {
 	store := ctx.KVStore(k.storeKey)
 	consumerAddrsToPruneKeyPrefix := types.ConsumerAddrsToPruneV2KeyPrefix()
-	iteratorPrefix := types.ChainIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
+	iteratorPrefix := types.ConsumerIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
 	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {

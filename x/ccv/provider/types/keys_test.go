@@ -132,7 +132,9 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, uint8(49), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
 	i++
-	require.Equal(t, uint8(50), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	require.Equal(t, uint8(47), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(48), providertypes.ClientIdToConsumerIdKey("clientId")[0])
 	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()
@@ -172,7 +174,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerIdToChannelIdKey("chainID"),
 		providertypes.ChannelToConsumerIdKey("channelID"),
 		providertypes.ConsumerIdToClientIdKey("chainID"),
-		providertypes.InitTimeoutTimestampKey("chainID"),
 		providertypes.PendingCAPKey(time.Time{}, "chainID"),
 		providertypes.PendingCRPKey(time.Time{}, "chainID"),
 		providertypes.ValsetUpdateBlockHeightKey(7),
@@ -207,6 +208,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerIdToRegistrationRecordKey("consumerId"),
 		providertypes.ConsumerIdToInitializationRecordKey("consumerId"),
 		providertypes.ConsumerIdToOwnerAddressKey("consumerId"),
+		providertypes.ConsumerIdToPhaseKey("consumerId"),
 		providertypes.ClientIdToConsumerIdKey("clientId"),
 	}
 }
@@ -329,7 +331,6 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		providertypes.ConsumerIdToChannelIdKey,
 		providertypes.ChannelToConsumerIdKey,
 		providertypes.ConsumerIdToClientIdKey,
-		providertypes.InitTimeoutTimestampKey,
 		providertypes.ConsumerGenesisKey,
 		providertypes.SlashAcksKey,
 		providertypes.InitChainHeightKey,
