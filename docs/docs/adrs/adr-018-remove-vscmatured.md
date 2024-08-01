@@ -37,7 +37,7 @@ This would result in a discrepancy between a light client’s view of the `Unbon
 ## Decision
 
 This ADR proposes the removal of `VSCMaturedPackets`. The reason is twofold. 
-First, `VSCMaturedPackets` provide a "false" sense of correctness as the attack discribed above is still possible.
+First, `VSCMaturedPackets` provide a "false" sense of correctness as the attack described above is still possible.
 Second, `VSCMaturedPackets` add considerable complexity to the ICS protocol -- an extra message plus the pausing of unbonding operations that can affect the UX.
 
 To simplify the upgrading process, removing `VSCMaturedPackets` can be done in two releases:
