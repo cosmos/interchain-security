@@ -81,7 +81,7 @@ const (
 
 	ThrottledPacketDataKeyName = "ThrottledPacketDataKey"
 
-	GlobalSlashEntryKeyName = "DeprecatedGlobalSlashEntryKey"
+	DeprecatedGlobalSlashEntryKeyName = "DeprecatedGlobalSlashEntryKey"
 
 	ConsumerValidatorsKeyName = "ConsumerValidatorsKey"
 
@@ -238,7 +238,7 @@ func getKeyPrefixes() map[string]byte {
 
 		// GlobalSlashEntryKey is the key for storing global slash queue entries
 		// [DEPRECATED]
-		GlobalSlashEntryKeyName: 21,
+		DeprecatedGlobalSlashEntryKeyName: 21,
 
 		// ConsumerValidatorsKey is the key for storing the validator assigned keys for every consumer chain
 		ConsumerValidatorsKeyName: 22,
@@ -732,12 +732,12 @@ func LastProviderConsensusValsPrefix() []byte {
 }
 
 // MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain `chainID`
-func MinStakeKey(chainID string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(MinStakeKeyName), chainID)
+func MinStakeKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(MinStakeKeyName), consumerId)
 }
 
-func AllowInactiveValidatorsKey(chainID string) []byte {
-	return ChainIdWithLenKey(mustGetKeyPrefix(AllowInactiveValidatorsKeyName), chainID)
+func AllowInactiveValidatorsKey(consumerId string) []byte {
+	return ConsumerIddWithLenKey(mustGetKeyPrefix(AllowInactiveValidatorsKeyName), consumerId)
 }
 
 // ConsumerIdKey returns the key used to store the consumerId of the next registered chain
