@@ -41,15 +41,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 		p := prop
 		k.SetPendingConsumerRemovalProp(ctx, &p)
 	}
-	for _, ubdOp := range genState.UnbondingOps {
-		k.SetUnbondingOp(ctx, ubdOp)
-	}
-
-	// Note that MatureUnbondingOps aren't stored across blocks, but it
-	// might be used after implementing standalone to consumer transition
-	if genState.MatureUnbondingOps != nil {
-		k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids)
-	}
 
 	// Set initial state for each consumer chain
 	for _, cs := range genState.ConsumerStates {
@@ -59,9 +50,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 			// An error here would indicate something is very wrong,
 			// the ConsumerGenesis validated in ConsumerState.Validate().
 			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
-		}
-		for _, ubdOpIndex := range cs.UnbondingOpsIndex {
-			k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.GetVscId(), ubdOpIndex.GetUnbondingOpIds())
 		}
 		// check if the CCV channel was established
 		if cs.ChannelId != "" {
@@ -86,20 +74,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 		k.SetValidatorByConsumerAddr(ctx, item.ChainId, consumerAddr, providerAddr)
 	}
 
-	for _, item := range genState.ConsumerAddrsToPrune {
+	for _, item := range genState.ConsumerAddrsToPruneV2 {
 		for _, addr := range item.ConsumerAddrs.Addresses {
 			consumerAddr := types.NewConsumerConsAddress(addr)
-			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, consumerAddr)
-		}
-	}
-
-	for _, item := range genState.InitTimeoutTimestamps {
-		k.SetInitTimeoutTimestamp(ctx, item.ChainId, item.Timestamp)
-	}
-
-	for _, item := range genState.ExportedVscSendTimestamps {
-		for _, vscSendTimestamp := range item.VscSendTimestamps {
-			k.SetVscSendTimestamp(ctx, item.ChainId, vscSendTimestamp.VscId, vscSendTimestamp.Timestamp)
+			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.PruneTs, consumerAddr)
 		}
 	}
 
@@ -153,7 +131,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// get a list of all registered consumer chains
 	registeredChainIDs := k.GetAllRegisteredConsumerChainIDs(ctx)
 
-	var exportedVscSendTimestamps []types.ExportedVscSendTimestamp
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
 	for _, chainID := range registeredChainIDs {
@@ -168,10 +145,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:           chainID,
-			ClientId:          clientID,
-			ConsumerGenesis:   gen,
-			UnbondingOpsIndex: k.GetAllUnbondingOpIndexes(ctx, chainID),
+			ChainId:         chainID,
+			ClientId:        clientID,
+			ConsumerGenesis: gen,
 		}
 
 		// try to find channel id for the current consumer chain
@@ -187,13 +163,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chainID)
 		consumerStates = append(consumerStates, cs)
-
-		vscSendTimestamps := k.GetAllVscSendTimestamps(ctx, chainID)
-		exportedVscSendTimestamps = append(exportedVscSendTimestamps, types.ExportedVscSendTimestamp{ChainId: chainID, VscSendTimestamps: vscSendTimestamps})
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
-	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
+	consumerAddrsToPrune := []types.ConsumerAddrsToPruneV2{}
 	for _, chainID := range registeredChainIDs {
 		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chainID)...)
 	}
@@ -209,16 +182,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
-		k.GetAllUnbondingOps(ctx),
-		&types.MaturedUnbondingOps{Ids: k.GetMaturedUnbondingOps(ctx)},
 		k.GetAllPendingConsumerAdditionProps(ctx),
 		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,
 		k.GetAllValidatorConsumerPubKeys(ctx, nil),
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),
 		consumerAddrsToPrune,
-		k.GetAllInitTimeoutTimestamps(ctx),
-		exportedVscSendTimestamps,
 		lastProviderConsensusValSet,
 	)
 }

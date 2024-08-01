@@ -423,11 +423,12 @@ func (msg MsgOptOut) ValidateBasic() error {
 }
 
 // NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
-func NewMsgSetConsumerCommissionRate(chainID string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress) *MsgSetConsumerCommissionRate {
+func NewMsgSetConsumerCommissionRate(chainID string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
 	return &MsgSetConsumerCommissionRate{
 		ChainId:      chainID,
 		Rate:         commission,
 		ProviderAddr: providerValidatorAddress.String(),
+		Signer:       signer,
 	}
 }
 

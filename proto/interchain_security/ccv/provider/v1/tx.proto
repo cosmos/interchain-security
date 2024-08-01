@@ -289,7 +289,7 @@ message MsgSetConsumerCommissionRate {
     ];
   // signer address
   string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  }
+}
 
 
 message MsgSetConsumerCommissionRateResponse {}

@@ -128,13 +128,6 @@ service Query {
     "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}";
     }
 
-  // QueryOldestUnconfirmedVsc returns the send timestamp of the oldest unconfirmed VSCPacket for a given chainID
-  rpc QueryOldestUnconfirmedVsc(QueryOldestUnconfirmedVscRequest)
-    returns (QueryOldestUnconfirmedVscResponse) {
-      option (google.api.http).get =
-      "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}";
-    }
-
   // QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
   // Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
   // because a VSCPacket could be delayed to be delivered on the consumer chain.
@@ -142,6 +135,14 @@ service Query {
       returns (QueryConsumerValidatorsResponse) {
         option (google.api.http).get =
             "/interchain_security/ccv/provider/consumer_validators/{chain_id}";
+  }
+
+  // QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
+  // starts and validator updates are sent to the consumer chains
+  rpc QueryBlocksUntilNextEpoch(QueryBlocksUntilNextEpochRequest)
+      returns (QueryBlocksUntilNextEpochResponse) {
+        option (google.api.http).get =
+            "/interchain_security/ccv/provider/blocks_until_next_epoch";
   }
 }
 
@@ -320,9 +321,9 @@ message QueryValidatorConsumerCommissionRateResponse {
     ];
 }
 
-message QueryOldestUnconfirmedVscRequest { string chain_id = 1; }
+message QueryBlocksUntilNextEpochRequest { }
 
-message QueryOldestUnconfirmedVscResponse {
-  interchain_security.ccv.provider.v1.VscSendTimestamp vsc_send_timestamp = 1
-      [ (gogoproto.nullable) = false ];
+message QueryBlocksUntilNextEpochResponse {
+  // The number of blocks until the next epoch starts
+  uint64 blocks_until_next_epoch = 1;
 }

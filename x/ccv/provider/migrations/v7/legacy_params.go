@@ -32,20 +32,6 @@ func getCCVTimeoutPeriod(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspac
 	return p
 }
 
-// getInitTimeoutPeriod returns the init timeout period
-func getInitTimeoutPeriod(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace) time.Duration {
-	var p time.Duration
-	paramSpace.Get(ctx, types.KeyInitTimeoutPeriod, &p)
-	return p
-}
-
-// getVscTimeoutPeriod returns the vsc timeout period
-func getVscTimeoutPeriod(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace) time.Duration {
-	var p time.Duration
-	paramSpace.Get(ctx, types.KeyVscTimeoutPeriod, &p)
-	return p
-}
-
 // getSlashMeterReplenishPeriod returns the period in which:
 // Once the slash meter becomes not-full, the slash meter is replenished after this period.
 func getSlashMeterReplenishPeriod(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSubspace) time.Duration {
@@ -88,8 +74,6 @@ func GetParamsLegacy(ctx sdk.Context, paramspace ccvtypes.LegacyParamSubspace) t
 		getTemplateClient(ctx, paramspace),
 		getTrustingPeriodFraction(ctx, paramspace),
 		getCCVTimeoutPeriod(ctx, paramspace),
-		getInitTimeoutPeriod(ctx, paramspace),
-		getVscTimeoutPeriod(ctx, paramspace),
 		getSlashMeterReplenishPeriod(ctx, paramspace),
 		getSlashMeterReplenishFraction(ctx, paramspace),
 		getConsumerRewardDenomRegistrationFee(ctx, paramspace),

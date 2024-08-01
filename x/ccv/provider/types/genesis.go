@@ -16,32 +16,24 @@ func NewGenesisState(
 	vscID uint64,
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
-	unbondingOps []UnbondingOp,
-	matureUbdOps *MaturedUnbondingOps,
 	additionProposals []ConsumerAdditionProposal,
 	removalProposals []ConsumerRemovalProposal,
 	params Params,
 	validatorConsumerPubkeys []ValidatorConsumerPubKey,
 	validatorsByConsumerAddr []ValidatorByConsumerAddr,
-	consumerAddrsToPrune []ConsumerAddrsToPrune,
-	initTimeoutTimestamps []InitTimeoutTimestamp,
-	exportedVscSendTimestamps []ExportedVscSendTimestamp,
+	consumerAddrsToPrune []ConsumerAddrsToPruneV2,
 	lastProviderConsensusValidators []ConsensusValidator,
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:                  vscID,
 		ValsetUpdateIdToHeight:          vscIdToHeights,
 		ConsumerStates:                  consumerStates,
-		UnbondingOps:                    unbondingOps,
-		MatureUnbondingOps:              matureUbdOps,
 		ConsumerAdditionProposals:       additionProposals,
 		ConsumerRemovalProposals:        removalProposals,
 		Params:                          params,
 		ValidatorConsumerPubkeys:        validatorConsumerPubkeys,
 		ValidatorsByConsumerAddr:        validatorsByConsumerAddr,
-		ConsumerAddrsToPrune:            consumerAddrsToPrune,
-		InitTimeoutTimestamps:           initTimeoutTimestamps,
-		ExportedVscSendTimestamps:       exportedVscSendTimestamps,
+		ConsumerAddrsToPruneV2:          consumerAddrsToPrune,
 		LastProviderConsensusValidators: lastProviderConsensusValidators,
 	}
 }
@@ -57,12 +49,6 @@ func DefaultGenesisState() *GenesisState {
 func (gs GenesisState) Validate() error {
 	if gs.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
-	}
-
-	for _, ubdOp := range gs.UnbondingOps {
-		if err := gs.ValidateUnbondingOp(ubdOp); err != nil {
-			return err
-		}
 	}
 
 	for _, prop := range gs.ConsumerAdditionProposals {
@@ -96,41 +82,9 @@ func (gs GenesisState) Validate() error {
 
 	if err := KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
 		gs.ValidatorsByConsumerAddr,
-		gs.ConsumerAddrsToPrune,
+		gs.ConsumerAddrsToPruneV2,
 	); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
-	if len(ubdOp.UnbondingConsumerChains) == 0 {
-		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
-	}
-
-	// Check that the ID is set correctly in the UnbondingOpsIndex
-	for _, chainID := range ubdOp.UnbondingConsumerChains {
-		found := false
-
-		// Find consumer state for this consumer chain
-		for _, cs := range gs.ConsumerStates {
-			if cs.ChainId != chainID {
-				continue
-			}
-			for _, vscUnbondingOps := range cs.UnbondingOpsIndex {
-				for _, id := range vscUnbondingOps.GetUnbondingOpIds() {
-					if id == ubdOp.Id {
-						found = true
-						break
-					}
-				}
-			}
-		}
-		if !found {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis,
-				fmt.Sprintf("unbonding operation without UnbondingOpsIndex, opID=%d, chainID=%s", ubdOp.Id, chainID))
-		}
 	}
 
 	return nil
@@ -166,15 +120,6 @@ func (cs ConsumerState) Validate() error {
 		}
 		if err := validateSlashAcksAddress(pVSC.SlashAcks); err != nil {
 			return err
-		}
-	}
-
-	for _, ubdOpIdx := range cs.UnbondingOpsIndex {
-		if ubdOpIdx.VscId == 0 {
-			return fmt.Errorf("UnbondingOpsIndex vscID cannot be equal to zero")
-		}
-		if len(ubdOpIdx.UnbondingOpIds) == 0 {
-			return fmt.Errorf("unbonding operation index cannot be empty: %#v", ubdOpIdx)
 		}
 	}
 

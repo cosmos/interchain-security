@@ -129,8 +129,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.startChain(action, td.verbose)
 	case StartSovereignChainAction:
 		target.startSovereignChain(action, td.verbose)
-	case LegacyUpgradeProposalAction:
-		target.submitLegacyUpgradeProposal(action, td.verbose)
+	case UpgradeProposalAction:
+		target.submitUpgradeProposal(action, td.verbose)
 	case WaitUntilBlockAction:
 		target.waitUntilBlockOnChain(action)
 	case ChangeoverChainAction:
@@ -207,6 +207,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.optIn(action, td.target, td.verbose)
 	case OptOutAction:
 		target.optOut(action, td.target, td.verbose)
+	case SetConsumerCommissionRateAction:
+		target.setConsumerCommissionRate(action, td.target, td.verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}

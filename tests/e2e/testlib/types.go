@@ -38,6 +38,7 @@ type ChainCommands interface {
 	GetValStakedTokens(chain ChainID, validatorAddress string) uint
 	GetQueryNodeIP(chain ChainID) string
 	GetInflationRate(chain ChainID) float64
+	GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64
 }
 
 // TODO: replace ExecutionTarget with new TargetDriver interface
@@ -171,6 +172,7 @@ type ChainState struct {
 	ClientsFrozenHeights           *map[string]clienttypes.Height
 	HasToValidate                  *map[ValidatorID][]ChainID // only relevant to provider chain
 	InflationRateChange            *int                       // whether the inflation rate between two blocks changes negatively (any negative number), is equal (0), or changes positively (any positive number)
+	ConsumerCommissionRates        *map[ValidatorID]float64
 }
 
 // custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info

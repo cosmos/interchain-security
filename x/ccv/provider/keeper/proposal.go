@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -143,10 +142,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	}
 	k.SetConsumerClientId(ctx, chainID, clientID)
 
-	// add the init timeout timestamp for this consumer chain
-	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
-	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
-
 	k.Logger(ctx).Info("consumer chain registered (client created)",
 		"chainID", chainID,
 		"clientID", clientID,
@@ -159,7 +154,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 			sdk.NewAttribute(ccv.AttributeChainID, chainID),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
 			sdk.NewAttribute(types.AttributeInitialHeight, prop.InitialHeight.String()),
-			sdk.NewAttribute(types.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
 			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
 			sdk.NewAttribute(types.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
 		),
@@ -184,7 +178,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
-	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
 	k.DeleteMinimumPowerInTopN(ctx, chainID)
@@ -209,9 +202,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		}
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
-
-		// delete VSC send timestamps
-		k.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	}
 
 	// delete consumer commission rate
@@ -223,26 +213,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteInitChainHeight(ctx, chainID)
 	k.DeleteSlashAcks(ctx, chainID)
 	k.DeletePendingVSCPackets(ctx, chainID)
-
-	// release unbonding operations
-	for _, unbondingOpsIndex := range k.GetAllUnbondingOpIndexes(ctx, chainID) {
-		// iterate over the unbonding operations for the current VSC ID
-		var maturedIds []uint64
-		for _, id := range unbondingOpsIndex.UnbondingOpIds {
-			// Remove consumer chain ID from unbonding op record.
-			// Note that RemoveConsumerFromUnbondingOp cannot panic here
-			// as it is expected that for all UnbondingOpIds in every
-			// VscUnbondingOps returned by GetAllUnbondingOpIndexes
-			// there is an unbonding op in store that can be retrieved
-			// via via GetUnbondingOp.
-			if k.RemoveConsumerFromUnbondingOp(ctx, id, chainID) {
-				// Store id of matured unbonding op for later completion of unbonding in staking module
-				maturedIds = append(maturedIds, id)
-			}
-		}
-		k.AppendMaturedUnbondingOps(ctx, maturedIds)
-		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
-	}
 
 	k.DeleteTopN(ctx, chainID)
 	k.DeleteValidatorsPowerCap(ctx, chainID)

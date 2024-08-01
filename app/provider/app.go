@@ -512,7 +512,11 @@ func New(
 		govtypes.NewMultiGovHooks(app.ProviderKeeper.Hooks()),
 	)
 
-	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
+	providerModule := ibcprovider.NewAppModule(
+		&app.ProviderKeeper,
+		app.GetSubspace(providertypes.ModuleName),
+		keys[providertypes.StoreKey],
+	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
