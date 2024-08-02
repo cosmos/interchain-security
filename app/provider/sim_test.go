@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 
@@ -41,6 +42,12 @@ func fauxMerkleModeOpt(bapp *baseapp.BaseApp) {
 func TestFullAppSimulation(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = "provi"
+
+	// if no seed is provided (aka we use the default seed), override this by choosing an actually random seed
+	if config.Seed == simcli.DefaultSeedValue {
+		fmt.Printf("Default seed value %v detected, using random seed value\n", simcli.DefaultSeedValue)
+		config.Seed = int64(rand.Uint32())
+	}
 
 	fmt.Println("========================================")
 	fmt.Println("Running with the configuration:")
