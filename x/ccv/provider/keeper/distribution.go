@@ -176,7 +176,7 @@ func (k Keeper) IsEligibleForConsumerRewards(ctx sdk.Context, consumerValidatorH
 // to the given consumer chain's validator set
 func (k Keeper) AllocateTokensToConsumerValidators(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	tokens sdk.DecCoins,
 ) (allocated sdk.DecCoins) {
 	// return early if the tokens are empty
@@ -185,17 +185,17 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	}
 
 	// get the total voting power of the consumer valset
-	totalPower := math.LegacyNewDec(k.ComputeConsumerTotalVotingPower(ctx, chainID))
+	totalPower := math.LegacyNewDec(k.ComputeConsumerTotalVotingPower(ctx, consumerId))
 	if totalPower.IsZero() {
 		return allocated
 	}
 
 	// Allocate tokens by iterating over the consumer validators
-	consumerVals, err := k.GetConsumerValSet(ctx, chainID)
+	consumerVals, err := k.GetConsumerValSet(ctx, consumerId)
 	if err != nil {
 		k.Logger(ctx).Error(
 			"cannot get consumer validator set while allocating rewards from consumer chain",
-			chainID,
+			consumerId,
 			"error",
 			err,
 		)
@@ -220,7 +220,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 				"cannot find validator by consensus address",
 				consAddr,
 				"while allocating rewards from consumer chain",
-				chainID,
+				consumerId,
 				"error",
 				err,
 			)
@@ -228,7 +228,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		}
 
 		// check if the validator set a custom commission rate for the consumer chain
-		if cr, found := k.GetConsumerCommissionRate(ctx, chainID, types.NewProviderConsAddress(consAddr)); found {
+		if cr, found := k.GetConsumerCommissionRate(ctx, consumerId, types.NewProviderConsAddress(consAddr)); found {
 			// set the validator commission rate
 			val.Commission.CommissionRates.Rate = cr
 		}
@@ -241,7 +241,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		)
 		if err != nil {
 			k.Logger(ctx).Error("fail to allocate tokens to validator :%s while allocating rewards from consumer chain: %s",
-				consAddr, chainID)
+				consAddr, consumerId)
 			continue
 		}
 
@@ -254,19 +254,19 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 // consumer reward pools getter and setter
 
-// GetConsumerRewardsAllocation returns the consumer rewards allocation for the given chain ID
-func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, chainID string) (pool types.ConsumerRewardsAllocation) {
+// GetConsumerRewardsAllocation returns the consumer rewards allocation for the given consumer id
+func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, consumerId string) (pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
-	b := store.Get(types.ConsumerRewardsAllocationKey(chainID))
+	b := store.Get(types.ConsumerRewardsAllocationKey(consumerId))
 	k.cdc.MustUnmarshal(b, &pool)
 	return
 }
 
-// SetConsumerRewardsAllocation sets the consumer rewards allocation for the given chain ID
-func (k Keeper) SetConsumerRewardsAllocation(ctx sdk.Context, chainID string, pool types.ConsumerRewardsAllocation) {
+// SetConsumerRewardsAllocation sets the consumer rewards allocation for the given consumer id
+func (k Keeper) SetConsumerRewardsAllocation(ctx sdk.Context, consumerId string, pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
 	b := k.cdc.MustMarshal(&pool)
-	store.Set(types.ConsumerRewardsAllocationKey(chainID), b)
+	store.Set(types.ConsumerRewardsAllocationKey(consumerId), b)
 }
 
 // GetConsumerRewardsPool returns the balance
@@ -280,20 +280,19 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 
 // ComputeConsumerTotalVotingPower returns the validator set total voting power
 // for the given consumer chain
-func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
+func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, consumerId string) (totalPower int64) {
 	// sum the consumer validators set voting powers
-	vals, err := k.GetConsumerValSet(ctx, chainID)
+	vals, err := k.GetConsumerValSet(ctx, consumerId)
 	if err != nil {
 		k.Logger(ctx).Error(
 			"cannot get consumer validator set while computing total voting power for consumer chain",
-			chainID,
+			consumerId,
 			"error",
 			err,
 		)
 		return
 	}
 	for _, v := range vals {
-
 		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
 		if !k.IsEligibleForConsumerRewards(ctx, v.JoinHeight) {
 			continue
@@ -331,12 +330,12 @@ func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet cha
 
 // HandleSetConsumerCommissionRate sets a per-consumer chain commission rate for the given provider address
 // on the condition that the given consumer chain exists.
-func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, commissionRate math.LegacyDec) error {
+func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, commissionRate math.LegacyDec) error {
 	// check that the consumer chain exists
-	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
+	if !k.IsConsumerProposedOrRegistered(ctx, consumerId) {
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerId,
-			"unknown consumer chain, with id: %s", chainID)
+			"unknown consumer chain, with id: %s", consumerId)
 	}
 
 	// validate against the minimum commission rate
@@ -353,7 +352,7 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string,
 	// set per-consumer chain commission rate for the validator address
 	return k.SetConsumerCommissionRate(
 		ctx,
-		chainID,
+		consumerId,
 		providerAddr,
 		commissionRate,
 	)

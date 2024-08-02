@@ -60,43 +60,43 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 }
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
-func (k Keeper) GetConsumerChain(ctx sdk.Context, chainID string) (types.Chain, error) {
-	clientID, found := k.GetConsumerClientId(ctx, chainID)
+func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chain, error) {
+	clientID, found := k.GetConsumerClientId(ctx, consumerId)
 	if !found {
-		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", chainID)
+		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", consumerId)
 	}
 
-	topN, found := k.GetTopN(ctx, chainID)
+	topN, found := k.GetTopN(ctx, consumerId)
 	if !found {
-		k.Logger(ctx).Error("failed to get top N, treating as 0", "chain", chainID)
+		k.Logger(ctx).Error("failed to get top N, treating as 0", "chain", consumerId)
 		topN = 0
 	}
 
 	// Get the minimal power in the top N for the consumer chain
-	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, chainID)
+	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
 	if !found {
-		k.Logger(ctx).Error("failed to get minimum power in top N, treating as -1", "chain", chainID)
+		k.Logger(ctx).Error("failed to get minimum power in top N, treating as -1", "chain", consumerId)
 		minPowerInTopN = -1
 	}
 
-	validatorSetCap, _ := k.GetValidatorSetCap(ctx, chainID)
+	validatorSetCap, _ := k.GetValidatorSetCap(ctx, consumerId)
 
-	validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, chainID)
+	validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, consumerId)
 
-	allowlist := k.GetAllowList(ctx, chainID)
+	allowlist := k.GetAllowList(ctx, consumerId)
 	strAllowlist := make([]string, len(allowlist))
 	for i, addr := range allowlist {
 		strAllowlist[i] = addr.String()
 	}
 
-	denylist := k.GetDenyList(ctx, chainID)
+	denylist := k.GetDenyList(ctx, consumerId)
 	strDenylist := make([]string, len(denylist))
 	for i, addr := range denylist {
 		strDenylist[i] = addr.String()
 	}
 
 	return types.Chain{
-		ChainId:            chainID,
+		ChainId:            consumerId,
 		ClientId:           clientID,
 		Top_N:              topN,
 		MinPowerInTop_N:    minPowerInTopN,
@@ -401,10 +401,10 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 func (k Keeper) hasToValidate(
 	ctx sdk.Context,
 	provAddr types.ProviderConsAddress,
-	chainID string,
+	consumerId string,
 ) (bool, error) {
 	// if the validator was sent as part of the packet in the last epoch, it has to validate
-	if k.IsConsumerValidator(ctx, chainID, provAddr) {
+	if k.IsConsumerValidator(ctx, consumerId, provAddr) {
 		return true, nil
 	}
 
@@ -413,24 +413,24 @@ func (k Keeper) hasToValidate(
 	if err != nil {
 		return false, nil
 	}
-	if topN, found := k.GetTopN(ctx, chainID); found && topN > 0 {
+	if topN, found := k.GetTopN(ctx, consumerId); found && topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
+		minPower, found := k.GetMinimumPowerInTopN(ctx, consumerId)
 		if found {
-			k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
+			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		} else {
-			k.Logger(ctx).Error("did not find min power in top N for chain", "chain", chainID)
+			k.Logger(ctx).Error("did not find min power in top N for chain", "chain", consumerId)
 		}
 	}
 
 	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
 	// the validator would have to validate in the next epoch
-	if k.IsOptedIn(ctx, chainID, provAddr) {
+	if k.IsOptedIn(ctx, consumerId, provAddr) {
 		lastVals, err := k.GetLastBondedValidators(ctx)
 		if err != nil {
 			return false, err
 		}
-		nextValidators := k.ComputeNextValidators(ctx, chainID, lastVals)
+		nextValidators := k.ComputeNextValidators(ctx, consumerId, lastVals)
 		for _, v := range nextValidators {
 			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 			if provAddr.ToSdkConsAddr().Equals(consAddr) {
