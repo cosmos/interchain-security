@@ -23,32 +23,6 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// Wrapper for the new proposal message MsgConsumerAddition
-// Will replace legacy handler HandleLegacyConsumerAdditionProposal
-func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.MsgConsumerAddition) error {
-	p := types.ConsumerAdditionProposal{
-		ChainId:                           proposal.ChainId,
-		InitialHeight:                     proposal.InitialHeight,
-		GenesisHash:                       proposal.GenesisHash,
-		BinaryHash:                        proposal.BinaryHash,
-		SpawnTime:                         proposal.SpawnTime,
-		UnbondingPeriod:                   proposal.UnbondingPeriod,
-		CcvTimeoutPeriod:                  proposal.CcvTimeoutPeriod,
-		TransferTimeoutPeriod:             proposal.TransferTimeoutPeriod,
-		ConsumerRedistributionFraction:    proposal.ConsumerRedistributionFraction,
-		BlocksPerDistributionTransmission: proposal.BlocksPerDistributionTransmission,
-		HistoricalEntries:                 proposal.HistoricalEntries,
-		DistributionTransmissionChannel:   proposal.DistributionTransmissionChannel,
-		Top_N:                             proposal.Top_N,
-		ValidatorsPowerCap:                proposal.ValidatorsPowerCap,
-		ValidatorSetCap:                   proposal.ValidatorSetCap,
-		Allowlist:                         proposal.Allowlist,
-		Denylist:                          proposal.Denylist,
-	}
-
-	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)
-}
-
 // Wrapper for the new proposal message MsgConsumerRemoval
 // Will replace legacy handler HandleLegacyConsumerRemovalProposal
 func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgRemoveConsumer) error {
@@ -92,27 +66,37 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *ty
 
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
-//
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
-// Spec tag: [CCV-PCF-CRCLIENT.1]
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditionProposal) error {
-	chainID := prop.ChainId
-	// check that a client for this chain does not exist
-	if _, found := k.GetConsumerClientId(ctx, chainID); found {
-		return errorsmod.Wrap(types.ErrDuplicateConsumerChain,
-			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
+	initializationRecord, found := k.GetConsumerIdToInitializationRecord(ctx, consumerId)
+	if !found {
+		return errorsmod.Wrapf(types.ErrNoInitializationRecord,
+			"initialization record for consumer chain: %s is missing", consumerId)
 	}
 
+	phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
+	if !found || phase != Initialized {
+		return errorsmod.Wrapf(types.ErrInvalidPhase,
+			"cannot create client for consumer chain that is neither in the initialized phase: %s", consumerId)
+	}
+
+	// TODO (PERMISSIONLESS): make this a function ... GetChainId(consumerId) ...
+	registrationRecord, found := k.GetConsumerIdToRegistrationRecord(ctx, consumerId)
+	if !found {
+		return errorsmod.Wrapf(types.ErrNoChainId,
+			"the chain id for this consumer chain: %s is missing", consumerId)
+	}
+	chainId := registrationRecord.ChainId
+
 	// Set minimum height for equivocation evidence from this consumer chain
-	k.SetEquivocationEvidenceMinHeight(ctx, chainID, prop.InitialHeight.RevisionHeight)
+	k.SetEquivocationEvidenceMinHeight(ctx, consumerId, initializationRecord.InitialHeight.RevisionHeight)
 
 	// Consumers start out with the unbonding period from the consumer addition prop
-	consumerUnbondingPeriod := prop.UnbondingPeriod
+	consumerUnbondingPeriod := initializationRecord.UnbondingPeriod
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)
-	clientState.ChainId = chainID
-	clientState.LatestHeight = prop.InitialHeight
+	clientState.ChainId = chainId
+	clientState.LatestHeight = initializationRecord.InitialHeight
 
 	trustPeriod, err := ccv.CalculateTrustPeriod(consumerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
 	if err != nil {
@@ -121,11 +105,11 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	clientState.TrustingPeriod = trustPeriod
 	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
-	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, prop)
+	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, consumerId)
 	if err != nil {
 		return err
 	}
-	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
+	err = k.SetConsumerGenesis(ctx, consumerId, consumerGen)
 	if err != nil {
 		return err
 	}
@@ -141,20 +125,20 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	if err != nil {
 		return err
 	}
-	k.SetConsumerClientId(ctx, chainID, clientID)
+	k.SetConsumerClientId(ctx, consumerId, clientID)
 
 	k.Logger(ctx).Info("consumer chain registered (client created)",
-		"chainID", chainID,
-		"clientID", clientID,
+		"consumer id", consumerId,
+		"client id", clientID,
 	)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeConsumerClientCreated,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeChainID, chainID),
+			sdk.NewAttribute(ccv.AttributeChainID, consumerId),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
-			sdk.NewAttribute(types.AttributeInitialHeight, prop.InitialHeight.String()),
+			sdk.NewAttribute(types.AttributeInitialHeight, initializationRecord.InitialHeight.String()),
 			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
 			sdk.NewAttribute(types.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
 		),
@@ -163,29 +147,25 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	return nil
 }
 
-// StopConsumerChain cleans up the states for the given consumer chain ID and
-// completes the outstanding unbonding operations on the consumer chain.
-//
-// This method implements StopConsumerChain from spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
-// Spec tag: [CCV-PCF-STCC.1]
-func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
-	// check that a client for chainID exists
-	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+// StopConsumerChain cleans up the states for the given consumer id
+func (k Keeper) StopConsumerChain(ctx sdk.Context, consumerId string, closeChan bool) (err error) {
+	// check that a client for consumerId exists
+	// TODO (PERMISSIONLESS): change to use phases instead
+	if _, found := k.GetConsumerClientId(ctx, consumerId); !found {
 		return errorsmod.Wrap(types.ErrConsumerChainNotFound,
-			fmt.Sprintf("cannot stop non-existent consumer chain: %s", chainID))
+			fmt.Sprintf("cannot stop non-existent consumer chain: %s", consumerId))
 	}
 
 	// clean up states
-	k.DeleteConsumerClientId(ctx, chainID)
-	k.DeleteConsumerGenesis(ctx, chainID)
+	k.DeleteConsumerClientId(ctx, consumerId)
+	k.DeleteConsumerGenesis(ctx, consumerId)
 	// Note: this call panics if the key assignment state is invalid
-	k.DeleteKeyAssignments(ctx, chainID)
-	k.DeleteMinimumPowerInTopN(ctx, chainID)
-	k.DeleteEquivocationEvidenceMinHeight(ctx, chainID)
+	k.DeleteKeyAssignments(ctx, consumerId)
+	k.DeleteMinimumPowerInTopN(ctx, consumerId)
+	k.DeleteEquivocationEvidenceMinHeight(ctx, consumerId)
 
 	// close channel and delete the mappings between chain ID and channel ID
-	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+	if channelID, found := k.GetConsumerIdToChannelId(ctx, consumerId); found {
 		if closeChan {
 			// Close the channel for the given channel ID on the condition
 			// that the channel exists and isn't already in the CLOSED state
@@ -194,49 +174,57 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 				err := k.chanCloseInit(ctx, channelID)
 				if err != nil {
 					k.Logger(ctx).Error("channel to consumer chain could not be closed",
-						"chainID", chainID,
+						"consumerId", consumerId,
 						"channelID", channelID,
 						"error", err.Error(),
 					)
 				}
 			}
 		}
-		k.DeleteChainToChannel(ctx, chainID)
-		k.DeleteChannelToChain(ctx, channelID)
+		k.DeleteConsumerIdToChannelId(ctx, consumerId)
+		k.DeleteChannelIdToConsumerId(ctx, channelID)
 	}
 
 	// delete consumer commission rate
-	provAddrs := k.GetAllCommissionRateValidators(ctx, chainID)
+	provAddrs := k.GetAllCommissionRateValidators(ctx, consumerId)
 	for _, addr := range provAddrs {
-		k.DeleteConsumerCommissionRate(ctx, chainID, addr)
+		k.DeleteConsumerCommissionRate(ctx, consumerId, addr)
 	}
 
-	k.DeleteInitChainHeight(ctx, chainID)
-	k.DeleteSlashAcks(ctx, chainID)
-	k.DeletePendingVSCPackets(ctx, chainID)
+	k.DeleteInitChainHeight(ctx, consumerId)
+	k.DeleteSlashAcks(ctx, consumerId)
+	k.DeletePendingVSCPackets(ctx, consumerId)
 
-	k.DeleteTopN(ctx, chainID)
-	k.DeleteValidatorsPowerCap(ctx, chainID)
-	k.DeleteValidatorSetCap(ctx, chainID)
-	k.DeleteAllowlist(ctx, chainID)
-	k.DeleteDenylist(ctx, chainID)
-	k.DeleteMinStake(ctx, chainID)
-	k.DisableInactiveValidators(ctx, chainID)
+	k.DeleteTopN(ctx, consumerId)
+	k.DeleteValidatorsPowerCap(ctx, consumerId)
+	k.DeleteValidatorSetCap(ctx, consumerId)
+	k.DeleteAllowlist(ctx, consumerId)
+	k.DeleteDenylist(ctx, consumerId)
+	k.DeleteMinStake(ctx, consumerId)
+	k.DisableInactiveValidators(ctx, consumerId)
 
-	k.DeleteAllOptedIn(ctx, chainID)
-	k.DeleteConsumerValSet(ctx, chainID)
+	k.DeleteAllOptedIn(ctx, consumerId)
+	k.DeleteConsumerValSet(ctx, consumerId)
 
-	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
+	k.Logger(ctx).Info("consumer chain removed from provider", "consumerId", consumerId)
 
 	return nil
 }
 
-// MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
+// MakeConsumerGenesis returns the created consumer genesis state for consumer chain `consumerId`,
+// as well as the validator hash of the initial validator set of the consumer chain
 func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
-	prop *types.ConsumerAdditionProposal,
+	consumerId string,
 ) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
-	chainID := prop.ChainId
+	initializationRecord, found := k.GetConsumerIdToInitializationRecord(ctx, consumerId)
+	if !found {
+		return gen, nil, errorsmod.Wrapf(types.ErrNoInitializationRecord,
+			"initialization record for consumer chain: %s is missing", consumerId)
+
+	}
+	updateRecord := k.GetConsumerIdToUpdateRecordOrDefault(ctx, consumerId, DefaultUpdateRecord)
+
 	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
 	if err != nil {
 		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "unbonding time not found: %s", err)
@@ -267,7 +255,7 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 	}
 
-	if prop.Top_N > 0 {
+	if updateRecord.Top_N > 0 {
 		// get the consensus active validators
 		// we do not want to base the power calculation for the top N
 		// on inactive validators, too, since the top N will be a percentage of the active set power
@@ -277,17 +265,16 @@ func (k Keeper) MakeConsumerGenesis(
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
 		}
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, prop.Top_N)
+		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, updateRecord.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
-		k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
-		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+		k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
+		k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
 	}
 	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
-	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
-
-	k.SetConsumerValSet(ctx, chainID, nextValidators)
+	nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators)
+	k.SetConsumerValSet(ctx, consumerId, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
 	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsensusValidator{}, nextValidators)
@@ -301,14 +288,14 @@ func (k Keeper) MakeConsumerGenesis(
 
 	consumerGenesisParams := ccv.NewParams(
 		true,
-		prop.BlocksPerDistributionTransmission,
-		prop.DistributionTransmissionChannel,
+		initializationRecord.BlocksPerDistributionTransmission,
+		initializationRecord.DistributionTransmissionChannel,
 		"", // providerFeePoolAddrStr,
-		prop.CcvTimeoutPeriod,
-		prop.TransferTimeoutPeriod,
-		prop.ConsumerRedistributionFraction,
-		prop.HistoricalEntries,
-		prop.UnbondingPeriod,
+		initializationRecord.CcvTimeoutPeriod,
+		initializationRecord.TransferTimeoutPeriod,
+		initializationRecord.ConsumerRedistributionFraction,
+		initializationRecord.HistoricalEntries,
+		initializationRecord.UnbondingPeriod,
 		[]string{},
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,
@@ -361,92 +348,21 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 	return prop, true
 }
 
-// BeginBlockInit iterates over the pending consumer addition proposals in order, and creates
-// clients for props in which the spawn time has passed. Executed proposals are deleted.
-//
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
-// Spec tag:[CCV-PCF-BBLOCK-INIT.1]
+// BeginBlockInit iterates over the initialized consumers chains and creates clients for chains
+// in which the spawn time has passed
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
-	// TODO (PERMISSIONLESS)
-	//consumerIds := k.GetInitializedConsumersReadyToLaunch(ctx)
-	//
-	//for _, consumerId := range consumerIds {
-	//	record, found := k.GetConsumerIdToInitializationRecord(ctx, consumerId)
-	//	if !found {
-	//		// something is off
-	//	}
-	//	// set the chain ...(have it all in one method)
-	//	// call the method LaunchConsumer
-	//	// cachedCtx, ...
-	//	// k.LaunchConsumerChain(cachedTx, ...)
-	//	// k.SetPhase(Launched)
-	//
-	//	// CHANGE THEIR PHASE ...
-	//}
-	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
-
-	for i, prop := range propsToExecute {
-		// create consumer client in a cached context to handle errors
+	for _, consumerId := range k.GetInitializedConsumersReadyToLaunch(ctx) {
 		cachedCtx, writeFn := ctx.CacheContext()
-
-		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
-		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
-		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
-		k.SetMinStake(cachedCtx, prop.ChainId, prop.MinStake)
-		k.SetInactiveValidatorsAllowed(cachedCtx, prop.ChainId, prop.AllowInactiveVals)
-
-		for _, address := range prop.Allowlist {
-			consAddr, err := sdk.ConsAddressFromBech32(address)
-			if err != nil {
-				continue
-			}
-
-			k.SetAllowlist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
-		}
-
-		for _, address := range prop.Denylist {
-			consAddr, err := sdk.ConsAddressFromBech32(address)
-			if err != nil {
-				continue
-			}
-
-			k.SetDenylist(cachedCtx, prop.ChainId, types.NewProviderConsAddress(consAddr))
-		}
-
-		err := k.CreateConsumerClient(cachedCtx, &propsToExecute[i])
+		err := k.LaunchConsumer(cachedCtx, consumerId)
 		if err != nil {
-			// drop the proposal
-			ctx.Logger().Info("consumer client could not be created: %w", err)
+			ctx.Logger().Error("could not launch chain",
+				"consumerId", consumerId,
+				"error", err)
 			continue
 		}
-
-		consumerGenesis, found := k.GetConsumerGenesis(cachedCtx, prop.ChainId)
-		if !found {
-			// drop the proposal
-			ctx.Logger().Info("consumer genesis could not be created")
-			continue
-		}
-
-		if len(consumerGenesis.Provider.InitialValSet) == 0 {
-			// drop the proposal
-			ctx.Logger().Info("consumer genesis initial validator set is empty - no validators opted in")
-			continue
-		}
-
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
-		// write cache
+		k.SetConsumerIdToPhase(cachedCtx, consumerId, Launched)
 		writeFn()
-
-		k.Logger(ctx).Info("executed consumer addition proposal",
-			"chainID", prop.ChainId,
-			"title", prop.Title,
-			"spawn time", prop.SpawnTime.UTC(),
-		)
 	}
-	// delete the executed proposals
-	k.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
 }
 
 // GetConsumerAdditionPropsToExecute returns the pending consumer addition proposals
@@ -643,14 +559,6 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 	}
 
 	return props
-}
-
-// CreateConsumerClientInCachedCtx creates a consumer client
-// from a given consumer addition proposal in a cached context
-func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.ConsumerAdditionProposal) (cc sdk.Context, writeCache func(), err error) {
-	cc, writeCache = ctx.CacheContext()
-	err = k.CreateConsumerClient(cc, &p)
-	return
 }
 
 // StopConsumerChainInCachedCtx stop a consumer chain

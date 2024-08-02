@@ -189,26 +189,26 @@ func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
-// SetChainToChannel sets the mapping from a consumer chainID to the CCV channel ID for that consumer chain.
-func (k Keeper) SetChainToChannel(ctx sdk.Context, chainID, channelID string) {
+// SetConsumerIdToChannelId sets the mapping from a consumer id to the CCV channel id for that consumer chain.
+func (k Keeper) SetConsumerIdToChannelId(ctx sdk.Context, consumerId, channelId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToChannelIdKey(chainID), []byte(channelID))
+	store.Set(types.ConsumerIdToChannelIdKey(consumerId), []byte(channelId))
 }
 
-// GetChainToChannel gets the CCV channelID for the given consumer chainID
-func (k Keeper) GetChainToChannel(ctx sdk.Context, chainID string) (string, bool) {
+// GetConsumerIdToChannelId gets the CCV channelId for the given consumer chainID
+func (k Keeper) GetConsumerIdToChannelId(ctx sdk.Context, consumerId string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerIdToChannelIdKey(chainID))
+	bz := store.Get(types.ConsumerIdToChannelIdKey(consumerId))
 	if bz == nil {
 		return "", false
 	}
 	return string(bz), true
 }
 
-// DeleteChainToChannel deletes the CCV channel ID for the given consumer chain ID
-func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
+// DeleteConsumerIdToChannelId deletes the CCV channel id for the given consumer id
+func (k Keeper) DeleteConsumerIdToChannelId(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToChannelIdKey(chainID))
+	store.Delete(types.ConsumerIdToChannelIdKey(consumerId))
 }
 
 // SetProposedConsumerChain stores a consumer chainId corresponding to a submitted consumer addition proposal
@@ -292,14 +292,14 @@ func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
 	return chainIDs
 }
 
-// SetChannelToChain sets the mapping from the CCV channel ID to the consumer chainID.
-func (k Keeper) SetChannelToChain(ctx sdk.Context, channelID, chainID string) {
+// SetChannelToConsumerId sets the mapping from the CCV channel id to the consumer id.
+func (k Keeper) SetChannelToConsumerId(ctx sdk.Context, channelId, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ChannelToConsumerIdKey(channelID), []byte(chainID))
+	store.Set(types.ChannelToConsumerIdKey(channelId), []byte(consumerId))
 }
 
-// GetChannelToChain gets the consumer chainID for a given CCV channelID
-func (k Keeper) GetChannelToChain(ctx sdk.Context, channelID string) (string, bool) {
+// GetChannelIdToConsumerId gets the consumer id for a given CCV channel id
+func (k Keeper) GetChannelIdToConsumerId(ctx sdk.Context, channelID string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ChannelToConsumerIdKey(channelID))
 	if bz == nil {
@@ -308,10 +308,10 @@ func (k Keeper) GetChannelToChain(ctx sdk.Context, channelID string) (string, bo
 	return string(bz), true
 }
 
-// DeleteChannelToChain deletes the consumer chain ID for a given CCV channelID
-func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
+// DeleteChannelIdToConsumerId deletes the consumer id for a given CCV channel id
+func (k Keeper) DeleteChannelIdToConsumerId(ctx sdk.Context, channelId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ChannelToConsumerIdKey(channelID))
+	store.Delete(types.ChannelToConsumerIdKey(channelId))
 }
 
 // GetAllChannelToChains gets all channel to chain mappings. If a mapping exists,
@@ -392,7 +392,7 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
-	if prevChannel, ok := k.GetChainToChannel(ctx, tmClient.ChainId); ok {
+	if prevChannel, ok := k.GetConsumerIdToChannelId(ctx, tmClient.ChainId); ok {
 		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, tmClient.ChainId)
 	}
 	return nil
@@ -418,18 +418,22 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	if err != nil {
 		return err
 	}
+	consumerId, found := k.GetClientIdToConsumerId(ctx, clientID)
+	if !found {
+		return errorsmod.Wrapf(types.ErrNoConsumerId, "cannot find a consumer chain associated for this client: %s", clientID)
+	}
 	// Verify that there isn't already a CCV channel for the consumer chain
 	chainID := tmClient.ChainId
-	if prevChannelID, ok := k.GetChainToChannel(ctx, chainID); ok {
+	if prevChannelID, ok := k.GetConsumerIdToChannelId(ctx, consumerId); ok {
 		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannelID, chainID)
 	}
 
 	// the CCV channel is established:
 	// - set channel mappings
-	k.SetChainToChannel(ctx, chainID, channelID)
-	k.SetChannelToChain(ctx, channelID, chainID)
+	k.SetConsumerIdToChannelId(ctx, consumerId, channelID)
+	k.SetChannelToConsumerId(ctx, channelID, consumerId)
 	// - set current block height for the consumer chain initialization
-	k.SetInitChainHeight(ctx, chainID, uint64(ctx.BlockHeight()))
+	k.SetInitChainHeight(ctx, consumerId, uint64(ctx.BlockHeight()))
 
 	// emit event on successful addition
 	ctx.EventManager().EmitEvent(

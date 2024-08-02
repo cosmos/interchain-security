@@ -141,10 +141,10 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
 	s.Require().False(found)
 
-	_, found = providerKeeper.GetChainToChannel(s.providerCtx(), chainID)
+	_, found = providerKeeper.GetConsumerIdToChannelId(s.providerCtx(), chainID)
 	s.Require().False(found)
 
-	_, found = providerKeeper.GetChannelToChain(s.providerCtx(), channelID)
+	_, found = providerKeeper.GetChannelIdToConsumerId(s.providerCtx(), channelID)
 	s.Require().False(found)
 
 	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))

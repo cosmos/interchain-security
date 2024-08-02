@@ -139,8 +139,8 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
+	providerKeeper.SetChannelToConsumerId(ctx, "channel-1", "chain-1")
+	providerKeeper.SetChannelToConsumerId(ctx, "channel-2", "chain-2")
 
 	// Generate a new slash packet data instance with double sign infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
@@ -212,8 +212,8 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
+	providerKeeper.SetChannelToConsumerId(ctx, "channel-1", "chain-1")
+	providerKeeper.SetChannelToConsumerId(ctx, "channel-2", "chain-2")
 
 	// Generate a new slash packet data instance with double sign infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
@@ -294,7 +294,7 @@ func TestValidateSlashPacket(t *testing.T) {
 		packet := channeltypes.Packet{DestinationChannel: "channel-9"}
 
 		// Pseudo setup ccv channel for channel ID specified in packet.
-		providerKeeper.SetChannelToChain(ctx, "channel-9", "consumer-chain-id")
+		providerKeeper.SetChannelToConsumerId(ctx, "channel-9", "consumer-chain-id")
 
 		// Setup init chain height for consumer (allowing 0 vscID to be valid).
 		providerKeeper.SetInitChainHeight(ctx, "consumer-chain-id", uint64(89))
@@ -497,6 +497,7 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	gomock.InOrder(mockCalls...)
 
 	// Execute setup
+	providerKeeper.SetClientIdToConsumerId(ctx, "clientID", "consumerChainID")
 	err := providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
 	providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
@@ -514,7 +515,7 @@ func TestOnTimeoutPacketWithNoChainFound(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// We do not `SetChannelToChain` for "channelID" and therefore `OnTimeoutPacket` fails
+	// We do not `SetChannelToConsumerId` for "channelID" and therefore `OnTimeoutPacket` fails
 	packet := channeltypes.Packet{
 		SourceChannel: "channelID",
 	}
@@ -530,7 +531,7 @@ func TestOnTimeoutPacketStopsChain(t *testing.T) {
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
-	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks, "consumerId")
 
 	packet := channeltypes.Packet{
 		SourceChannel: "channelID",
@@ -566,7 +567,7 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 	require.True(t, strings.Contains(err.Error(), providertypes.ErrUnknownConsumerChannelId.Error()))
 
 	// test that we stop the consumer chain when `OnAcknowledgementPacket` returns an error and the chain is found
-	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks, "consumerId")
 	packet := channeltypes.Packet{
 		SourceChannel: "channelID",
 	}

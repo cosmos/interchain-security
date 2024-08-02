@@ -104,7 +104,7 @@ func TestOnChanOpenTry(t *testing.T) {
 		{
 			"other CCV channel exists for this consumer chain",
 			func(params *params, keeper *providerkeeper.Keeper) {
-				keeper.SetChainToChannel(
+				keeper.SetConsumerIdToChannelId(
 					params.ctx,
 					"consumerChainID",
 					"some existing channel ID",
@@ -309,8 +309,10 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		gomock.InOrder(tc.mockExpectations(ctx, mocks)...)
 
 		if tc.setDuplicateChannel {
-			providerKeeper.SetChainToChannel(ctx, "consumerChainID", "existingChannelID")
+			providerKeeper.SetConsumerIdToChannelId(ctx, "consumerChainID", "existingChannelID")
 		}
+
+		providerKeeper.SetClientIdToConsumerId(ctx, "clientID", "consumerChainID")
 
 		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace, keeperParams.StoreKey)
 
@@ -320,11 +322,11 @@ func TestOnChanOpenConfirm(t *testing.T) {
 
 			require.NoError(t, err)
 			// Validate channel mappings
-			channelID, found := providerKeeper.GetChainToChannel(ctx, "consumerChainID")
+			channelID, found := providerKeeper.GetConsumerIdToChannelId(ctx, "consumerChainID")
 			require.True(t, found)
 			require.Equal(t, "channelID", channelID)
 
-			chainID, found := providerKeeper.GetChannelToChain(ctx, "channelID")
+			chainID, found := providerKeeper.GetChannelIdToConsumerId(ctx, "channelID")
 			require.True(t, found)
 			require.Equal(t, "consumerChainID", chainID)
 
