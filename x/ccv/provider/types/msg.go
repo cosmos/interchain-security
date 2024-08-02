@@ -31,7 +31,6 @@ const (
 
 var (
 	_ sdk.Msg = (*MsgAssignConsumerKey)(nil)
-	_ sdk.Msg = (*MsgConsumerAddition)(nil)
 	_ sdk.Msg = (*MsgRemoveConsumer)(nil)
 	_ sdk.Msg = (*MsgUpdateConsumer)(nil)
 	_ sdk.Msg = (*MsgChangeRewardDenoms)(nil)
@@ -42,7 +41,6 @@ var (
 	_ sdk.Msg = (*MsgSetConsumerCommissionRate)(nil)
 
 	_ sdk.HasValidateBasic = (*MsgAssignConsumerKey)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
 	_ sdk.HasValidateBasic = (*MsgRemoveConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgUpdateConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
@@ -226,71 +224,6 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 		panic(err)
 	}
 	return []sdk.AccAddress{addr}
-}
-
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-// If the validator address is not same as delegator's, then the validator must
-// sign the msg as well.
-func (msg *MsgConsumerAddition) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
-// ValidateBasic implements the sdk.Msg interface.
-func (msg *MsgConsumerAddition) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "chain id cannot be blank")
-	}
-
-	if msg.InitialHeight.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
-	}
-
-	if len(msg.GenesisHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "genesis hash cannot be empty")
-	}
-	if len(msg.BinaryHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "binary hash cannot be empty")
-	}
-
-	if msg.SpawnTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateStringFraction(msg.ConsumerRedistributionFraction); err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
-	}
-
-	if err := ccvtypes.ValidatePositiveInt64(msg.BlocksPerDistributionTransmission); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
-	}
-
-	if err := ccvtypes.ValidateDistributionTransmissionChannel(msg.DistributionTransmissionChannel); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "distribution transmission channel")
-	}
-
-	if err := ccvtypes.ValidatePositiveInt64(msg.HistoricalEntries); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
-	}
-
-	if err := ccvtypes.ValidateDuration(msg.CcvTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateDuration(msg.TransferTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateDuration(msg.UnbondingPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
-	}
-
-	return nil
 }
 
 func (msg *MsgRemoveConsumer) ValidateBasic() error {
