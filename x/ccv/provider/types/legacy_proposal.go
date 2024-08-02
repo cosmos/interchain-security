@@ -231,11 +231,11 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 	}
 
 	if strings.TrimSpace(sccp.ConsumerId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
+		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "consumer chain id must not be blank")
 	}
 
 	if sccp.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
+		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "spawn time cannot be zero")
 	}
 	return nil
 }
@@ -279,12 +279,12 @@ func (cccp *ConsumerModificationProposal) ValidateBasic() error {
 	}
 
 	if strings.TrimSpace(cccp.ConsumerId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerModificationProposal, "consumer chain id must not be blank")
+		return errorsmod.Wrap(ErrInvalidUpdateRecord, "consumer chain id must not be blank")
 	}
 
 	err := ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap)
 	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
+		return errorsmod.Wrapf(ErrInvalidUpdateRecord, "invalid PSS features: %s", err.Error())
 	}
 	return nil
 }

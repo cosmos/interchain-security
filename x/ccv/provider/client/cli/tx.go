@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"cosmossdk.io/math"
 
@@ -36,6 +37,10 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
 	cmd.AddCommand(NewSubmitConsumerMisbehaviourCmd())
 	cmd.AddCommand(NewSubmitConsumerDoubleVotingCmd())
+	cmd.AddCommand(NewRegisterConsumerCmd())
+	cmd.AddCommand(NewInitializeConsumerCmd())
+	cmd.AddCommand(NewUpdateConsumerCmd())
+	cmd.AddCommand(NewRemoveConsumerCmd())
 	cmd.AddCommand(NewOptInCmd())
 	cmd.AddCommand(NewOptOutCmd())
 	cmd.AddCommand(NewSetConsumerCommissionRateCmd())
@@ -191,6 +196,221 @@ Example:
 			}
 
 			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, &ev, &header)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewRegisterConsumerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "register-consumer [path/to/registration-record.json]",
+		Short: "register a consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Register a consumer chain to get back the assigned consumer id of this chain.
+Note that the one that signs this message is the owner of this consumer chain. The owner can be later
+changed by updating the consumer chain.
+
+Example:
+%s tx provider register-cosumer [path/to/registration-record.json] --from node0 --home ../node0 --chain-id $CID
+`, version.AppName)),
+		Args: cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			signer := clientCtx.GetFromAddress().String()
+			registrationRecord := types.ConsumerRegistrationRecord{}
+			registrationRecordJson, err := os.ReadFile(args[0])
+			if err != nil {
+				return err
+			}
+			if err := json.Unmarshal(registrationRecordJson, &registrationRecord); err != nil {
+				return fmt.Errorf("registration record unmarshalling failed: %w", err)
+			}
+
+			msg, err := types.NewMsgRegisterConsumer(signer, registrationRecord)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewInitializeConsumerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "initialize-consumer [consumer-id] [path/to/initialization-record.json]",
+		Short: "initialize a consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Initialize a consumer chain to get it ready to launch
+Note that only the owner of the chain can initialize it.
+
+Example:
+%s tx provider initialize-cosumer [consumer-id] [path/to/initialization-record.json] --from node0 --home ../node0 --chain-id $CID
+`, version.AppName)),
+		Args: cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			signer := clientCtx.GetFromAddress().String()
+			consumerId := args[0]
+			initializationRecord := types.ConsumerInitializationRecord{}
+			initializationRecordJson, err := os.ReadFile(args[1])
+			if err != nil {
+				return err
+			}
+			if err := json.Unmarshal(initializationRecordJson, &initializationRecord); err != nil {
+				return fmt.Errorf("initialization record unmarshalling failed: %w", err)
+			}
+
+			msg, err := types.NewMsgInitializeConsumer(signer, consumerId, initializationRecord)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewUpdateConsumerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update-consumer [consumer-id] [path/to/update-record.json]",
+		Short: "update a consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Update a consumer chain to change its running parameters (e.g., the allow list).
+Note that only the owner of the chain can initialize it.
+
+Example:
+%s tx provider update-cosumer [consumer-id] [path/to/update-record.json] --from node0 --home ../node0 --chain-id $CID
+`, version.AppName)),
+		Args: cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			signer := clientCtx.GetFromAddress().String()
+			consumerId := args[0]
+			updateRecord := types.ConsumerUpdateRecord{}
+			updateRecordJson, err := os.ReadFile(args[1])
+			if err != nil {
+				return err
+			}
+			if err := json.Unmarshal(updateRecordJson, &updateRecord); err != nil {
+				return fmt.Errorf("update record unmarshalling failed: %w", err)
+			}
+
+			msg, err := types.NewMsgUpdateConsumer(signer, consumerId, updateRecord)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewRemoveConsumerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "remove-consumer [consumer-id] [stop-time-layout] [stop-time-value]",
+		Short: "remove a consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Removes (and stops) a consumer chain. Note that only the owner of the chain can remove it.
+Stop time is parsed by using the layout and the value (see https://pkg.go.dev/time#Parse).
+
+Example:
+%s tx provider remove-cosumer [consumer-id] [stop-time-layout] [stop-time-value] --from node0 --home ../node0 --chain-id $CID
+`, version.AppName)),
+		Args: cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			signer := clientCtx.GetFromAddress().String()
+			consumerId := args[0]
+			stopTimeLayout := args[1]
+			stopTimeValue := args[2]
+
+			stopTime, err := time.Parse(stopTimeLayout, stopTimeValue)
+			if err != nil {
+				return err
+			}
+
+			msg, err := types.NewMsgRemoveConsumer(signer, consumerId, stopTime)
 			if err != nil {
 				return err
 			}
