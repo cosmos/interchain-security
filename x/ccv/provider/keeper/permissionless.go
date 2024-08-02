@@ -60,28 +60,6 @@ func (k Keeper) FetchAndIncrementConsumerId(ctx sdk.Context) uint64 {
 	return consumerId
 }
 
-// GetConsumerIdToChainId returns the chain id associated with this consumer id
-func (k Keeper) GetConsumerIdToChainId(ctx sdk.Context, consumerId string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.ConsumerIdToChainIdKey(consumerId))
-	if buf == nil {
-		return "", false
-	}
-	return string(buf), true
-}
-
-// SetConsumerIdToChainId sets the chain id associated with this consumer id
-func (k Keeper) SetConsumerIdToChainId(ctx sdk.Context, consumerId string, chainId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToChainIdKey(consumerId), []byte(chainId))
-}
-
-// DeleteConsumerIdToChainId deletes the chain id to consumer id association
-func (k Keeper) DeleteConsumerIdToChainId(ctx sdk.Context, consumerId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToChainIdKey(consumerId))
-}
-
 // GetConsumerIdToRegistrationRecord returns the registration record associated with this consumer id
 func (k Keeper) GetConsumerIdToRegistrationRecord(ctx sdk.Context, consumerId string) (types.ConsumerRegistrationRecord, bool) {
 	store := ctx.KVStore(k.storeKey)
