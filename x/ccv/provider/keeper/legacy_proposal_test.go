@@ -287,7 +287,7 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
 	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
 	providerKeeper.SetMinStake(ctx, chainID, 1000)
-	providerKeeper.SetAllowInactiveValidators(ctx, chainID, true)
+	providerKeeper.SetInactiveValidatorsAllowed(ctx, chainID, true)
 
 	expectedTopN := uint32(75)
 	expectedValidatorsPowerCap := uint32(67)

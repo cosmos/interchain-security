@@ -555,13 +555,13 @@ func TestAllowInactiveValidators(t *testing.T) {
 	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
 
 	// set the chain to allow inactive validators
-	k.SetAllowInactiveValidators(ctx, chainID, true)
+	k.SetInactiveValidatorsAllowed(ctx, chainID, true)
 
 	// check that AllowsInactiveValidators returns true
 	require.True(t, k.AllowsInactiveValidators(ctx, chainID))
 
 	// set the chain to not allow inactive validators
-	k.SetAllowInactiveValidators(ctx, chainID, false)
+	k.SetInactiveValidatorsAllowed(ctx, chainID, false)
 
 	// check that AllowsInactiveValidators returns false
 	require.False(t, k.AllowsInactiveValidators(ctx, chainID))

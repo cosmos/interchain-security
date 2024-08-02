@@ -1201,23 +1201,23 @@ func (k Keeper) DeleteMinStake(
 	store.Delete(types.MinStakeKey(chainID))
 }
 
-// SetAllowInactiveValidators sets whether inactive validators are allowed to validate
+// SetInactiveValidatorsAllowed sets whether inactive validators are allowed to validate
 // a given consumer chain.
-func (k Keeper) SetAllowInactiveValidators(
+func (k Keeper) SetInactiveValidatorsAllowed(
 	ctx sdk.Context,
 	chainID string,
 	allowed bool,
 ) {
 	if allowed {
-		k.AllowInactiveValidators(ctx, chainID)
+		k.EnableInactiveValidators(ctx, chainID)
 	} else {
-		k.DeleteAllowInactiveValidators(ctx, chainID)
+		k.DisableInactiveValidators(ctx, chainID)
 	}
 }
 
-// AllowInactiveValidators sets the flag to signal that inactive validators are allowed to validate
+// EnableInactiveValidators sets the flag to signal that inactive validators are allowed to validate
 // a given consumer chain.
-func (k Keeper) AllowInactiveValidators(
+func (k Keeper) EnableInactiveValidators(
 	ctx sdk.Context,
 	chainID string,
 ) {
@@ -1235,9 +1235,9 @@ func (k Keeper) AllowsInactiveValidators(
 	return store.Has(types.AllowInactiveValidatorsKey(chainID))
 }
 
-// DeleteAllowInactiveValidators removes the flag of whether inactive validators are allowed to validate
+// DisableInactiveValidators removes the flag of whether inactive validators are allowed to validate
 // a given consumer chain.
-func (k Keeper) DeleteAllowInactiveValidators(
+func (k Keeper) DisableInactiveValidators(
 	ctx sdk.Context,
 	chainID string,
 ) {

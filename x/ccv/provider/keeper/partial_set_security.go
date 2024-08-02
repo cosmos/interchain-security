@@ -329,7 +329,7 @@ func (k Keeper) FulfillsMinStake(ctx sdk.Context, chainID string, providerAddr t
 func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsensusValidator {
 	// sort the bonded validators by number of staked tokens in descending order
 	sort.Slice(bondedValidators, func(i, j int) bool {
-		return bondedValidators[i].GetTokens().GT(bondedValidators[j].GetTokens())
+		return bondedValidators[i].GetBondedTokens().GT(bondedValidators[j].GetTokens())
 	})
 
 	// if inactive validators are not allowed, only consider the first `MaxProviderConsensusValidators` validators

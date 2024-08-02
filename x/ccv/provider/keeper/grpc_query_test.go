@@ -170,7 +170,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 
 	// set max provider consensus vals to include all validators
 	params := pk.GetParams(ctx)
-	params.MaxProviderConsensusValidators = 180
+	params.MaxProviderConsensusValidators = 3
 	pk.SetParams(ctx, params)
 
 	// `providerAddr` has to validate "chain1" because it is a consumer validator in this chain, as well as "chain3"

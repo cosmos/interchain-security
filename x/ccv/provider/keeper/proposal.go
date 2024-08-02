@@ -219,8 +219,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteValidatorSetCap(ctx, chainID)
 	k.DeleteAllowlist(ctx, chainID)
 	k.DeleteDenylist(ctx, chainID)
-	k.DeleteAllowInactiveValidators(ctx, chainID)
 	k.DeleteMinStake(ctx, chainID)
+	k.DisableInactiveValidators(ctx, chainID)
 
 	k.DeleteAllOptedIn(ctx, chainID)
 	k.DeleteConsumerValSet(ctx, chainID)
@@ -268,6 +268,9 @@ func (k Keeper) MakeConsumerGenesis(
 
 	if prop.Top_N > 0 {
 		// get the consensus active validators
+		// we do not want to base the power calculation for the top N
+		// on inactive validators, too, since the top N will be a percentage of the active set power
+		// otherwise, it could be that inactive validators are forced to validate
 		activeValidators, err := k.GetLastActiveBondedValidators(ctx)
 		if err != nil {
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
@@ -373,7 +376,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
 		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
 		k.SetMinStake(cachedCtx, prop.ChainId, prop.MinStake)
-		k.SetAllowInactiveValidators(cachedCtx, prop.ChainId, prop.AllowInactiveVals)
+		k.SetInactiveValidatorsAllowed(cachedCtx, prop.ChainId, prop.AllowInactiveVals)
 
 		for _, address := range prop.Allowlist {
 			consAddr, err := sdk.ConsAddressFromBech32(address)

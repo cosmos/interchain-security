@@ -709,9 +709,9 @@ func createStakingValidatorsAndMocks(ctx sdk.Context, mocks testkeeper.MockedKee
 	return validators, consAddrs
 }
 
-// TestMinStake checks that FulfillsMinStake returns true if the validator has more than the min stake
+// TestFulfillsMinStake checks that FulfillsMinStake returns true if the validator has at least the min stake
 // and false otherwise
-func TestMinStake(t *testing.T) {
+func TestFulfillsMinStake(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -719,24 +719,24 @@ func TestMinStake(t *testing.T) {
 	_, consAddrs := createStakingValidatorsAndMocks(ctx, mocks, 1, 2)
 
 	testCases := []struct {
-		name           string
-		minStake       uint64
-		expectedFulfil []bool
+		name            string
+		minStake        uint64
+		expectedFulfill []bool
 	}{
 		{
-			name:           "No min stake",
-			minStake:       0,
-			expectedFulfil: []bool{true, true},
+			name:            "No min stake",
+			minStake:        0,
+			expectedFulfill: []bool{true, true},
 		},
 		{
-			name:           "Min stake set to 2",
-			minStake:       2,
-			expectedFulfil: []bool{false, true},
+			name:            "Min stake set to 2",
+			minStake:        2,
+			expectedFulfill: []bool{false, true},
 		},
 		{
-			name:           "Min stake set to 3",
-			minStake:       3,
-			expectedFulfil: []bool{false, false},
+			name:            "Min stake set to 3",
+			minStake:        3,
+			expectedFulfill: []bool{false, false},
 		},
 	}
 
@@ -745,14 +745,14 @@ func TestMinStake(t *testing.T) {
 			providerKeeper.SetMinStake(ctx, "chainID", tc.minStake)
 			for i, valAddr := range consAddrs {
 				result := providerKeeper.FulfillsMinStake(ctx, "chainID", valAddr)
-				require.Equal(t, tc.expectedFulfil[i], result)
+				require.Equal(t, tc.expectedFulfill[i], result)
 			}
 		})
 	}
 }
 
-// TestMaxProviderConsensusValidators checks that the number of validators in the next validator set is at most
-// the maxProviderConsensusValidators parameter if the consumer chain does not allow inactive validators to validate.
+// TestIfInactiveValsDisallowedProperty checks that the number of validators in the next validator set is at most
+// the MaxProviderConsensusValidators parameter if the consumer chain does not allow inactive validators to validate.
 func TestIfInactiveValsDisallowedProperty(t *testing.T) {
 	rapid.Check(t, func(r *rapid.T) {
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -772,7 +772,9 @@ func TestIfInactiveValsDisallowedProperty(t *testing.T) {
 		maxProviderConsensusVals := rapid.Uint32Range(1, 11).Draw(r, "maxProviderConsensusVals")
 
 		// Set up the parameters in the provider keeper
-		providerKeeper.SetAllowInactiveValidators(ctx, "chainID", false) // do not allow inactive validators
+
+		// do not allow inactive validators
+		providerKeeper.SetInactiveValidatorsAllowed(ctx, "chainID", false)
 		providerKeeper.SetMinStake(ctx, "chainID", minStake)
 		params := providerKeeper.GetParams(ctx)
 		params.MaxProviderConsensusValidators = int64(maxProviderConsensusVals)
