@@ -328,16 +328,27 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
-			"changeover", "happy-path",
-			"democracy-reward", "democracy",
-			"slash-throttle", "consumer-double-sign", "consumer-misbehaviour",
-			"consumer-double-downtime", "partial-set-security-opt-in", "partial-set-security-top-n",
-			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
-			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
+			"changeover",
+			"happy-path",
+			"democracy-reward",
+			"democracy",
+			"slash-throttle",
+			"consumer-double-sign",
+			"consumer-misbehaviour",
+			"consumer-double-downtime",
+			"partial-set-security-opt-in",
+			"partial-set-security-top-n",
+			"partial-set-security-validator-set-cap",
+			"partial-set-security-validators-power-cap",
+			"partial-set-security-validators-allowlisted",
+			"partial-set-security-validators-denylisted",
 			"partial-set-security-modification-proposal",
-			"active-set-changes", "inactive-vals-topN",
-			"inactive-provider-validators-on-consumer", "inactive-provider-validators-governance",
-			"min-stake", "inactive-vals-mint",
+			"active-set-changes",
+			"inactive-provider-validators-on-consumer",
+			"inactive-vals-topN",
+			"inactive-provider-validators-governance",
+			"min-stake",
+			"inactive-vals-mint",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")
