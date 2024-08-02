@@ -663,7 +663,7 @@ func (m *MsgConsumerAdditionResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgConsumerAdditionResponse proto.InternalMessageInfo
 
-// MsgConsumerRemoval defines the message used to remove (and stop) a consumer chain.
+// MsgRemoveConsumer defines the message used to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is eventually removed from the provider chain.
 type MsgRemoveConsumer struct {
 	// the consumer id of the consumer chain to be stopped
@@ -1114,7 +1114,7 @@ func (m *MsgSetConsumerCommissionRateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSetConsumerCommissionRateResponse proto.InternalMessageInfo
 
-// MsgConsumerModification defines the message used to modify a running consumer chain.
+// MsgUpdateConsumer defines the message used to modify a running consumer chain.
 // If it passes, the consumer chain's parameters are updated.
 type MsgUpdateConsumer struct {
 	// signer address
