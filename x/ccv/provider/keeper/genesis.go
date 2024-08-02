@@ -98,7 +98,7 @@ func (k Keeper) InitGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 	}
 
 	// restrict the set to the first MaxProviderConsensusValidators
-	maxVals := k.GetParams(ctx).MaxProviderConsensusValidators
+	maxVals := k.GetMaxProviderConsensusValidators(ctx)
 	if int64(len(valSet)) > maxVals {
 		k.Logger(ctx).Info(fmt.Sprintf("reducing validator set from %d to %d", len(valSet), maxVals))
 		valSet = valSet[:maxVals]
