@@ -53,9 +53,6 @@ message GenesisState {
   // empty for a new chain
   repeated ConsumerAddrsToPruneV2 consumer_addrs_to_prune_v2 = 14
       [ (gogoproto.nullable) = false ];
-
-  repeated ConsensusValidator last_provider_consensus_validators = 15
-      [ (gogoproto.nullable) = false ];
 }
 
 // The provider CCV module's knowledge of consumer state. 

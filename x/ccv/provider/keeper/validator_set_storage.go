@@ -10,8 +10,9 @@ import (
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
-// getValidatorKey constructs the key to access a given validator, stored under a given prefix.
-func (k Keeper) getValidatorKey(prefix []byte, providerAddr types.ProviderConsAddress) []byte {
+// GetValidatorKey constructs the key to access a given validator, stored under a given prefix.
+// This method is public for testing.
+func GetValidatorKey(prefix []byte, providerAddr types.ProviderConsAddress) []byte {
 	return append(prefix, providerAddr.ToSdkConsAddr()...)
 }
 
@@ -27,7 +28,7 @@ func (k Keeper) setValidator(
 		return fmt.Errorf("marshalling ConsumerValidator: %w", err)
 	}
 
-	store.Set(k.getValidatorKey(prefix, types.NewProviderConsAddress(validator.ProviderConsAddr)), bz)
+	store.Set(GetValidatorKey(prefix, types.NewProviderConsAddress(validator.ProviderConsAddr)), bz)
 	return nil
 }
 
@@ -51,7 +52,7 @@ func (k Keeper) deleteValidator(
 	providerConsAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(k.getValidatorKey(prefix, providerConsAddr))
+	store.Delete(GetValidatorKey(prefix, providerConsAddr))
 }
 
 // deleteValSet deletes all the stored consumer validators under the given prefix.
@@ -76,7 +77,7 @@ func (k Keeper) deleteValSet(
 // in the validator set stored under the given prefix.
 func (k Keeper) isValidator(ctx sdk.Context, prefix []byte, providerAddr types.ProviderConsAddress) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(k.getValidatorKey(prefix, providerAddr)) != nil
+	return store.Get(GetValidatorKey(prefix, providerAddr)) != nil
 }
 
 // getValSet returns all the validators stored under the given prefix.

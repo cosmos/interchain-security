@@ -173,11 +173,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	params := k.GetParams(ctx)
 
-	lastProviderConsensusValSet, err := k.GetLastProviderConsensusValSet(ctx)
-	if err != nil {
-		panic(fmt.Errorf("retrieving last provider consensus validator set: %w", err))
-	}
-
 	return types.NewGenesisState(
 		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
@@ -188,6 +183,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAllValidatorConsumerPubKeys(ctx, nil),
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),
 		consumerAddrsToPrune,
-		lastProviderConsensusValSet,
 	)
 }

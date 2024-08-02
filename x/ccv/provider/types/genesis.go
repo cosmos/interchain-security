@@ -22,19 +22,17 @@ func NewGenesisState(
 	validatorConsumerPubkeys []ValidatorConsumerPubKey,
 	validatorsByConsumerAddr []ValidatorByConsumerAddr,
 	consumerAddrsToPrune []ConsumerAddrsToPruneV2,
-	lastProviderConsensusValidators []ConsensusValidator,
 ) *GenesisState {
 	return &GenesisState{
-		ValsetUpdateId:                  vscID,
-		ValsetUpdateIdToHeight:          vscIdToHeights,
-		ConsumerStates:                  consumerStates,
-		ConsumerAdditionProposals:       additionProposals,
-		ConsumerRemovalProposals:        removalProposals,
-		Params:                          params,
-		ValidatorConsumerPubkeys:        validatorConsumerPubkeys,
-		ValidatorsByConsumerAddr:        validatorsByConsumerAddr,
-		ConsumerAddrsToPruneV2:          consumerAddrsToPrune,
-		LastProviderConsensusValidators: lastProviderConsensusValidators,
+		ValsetUpdateId:            vscID,
+		ValsetUpdateIdToHeight:    vscIdToHeights,
+		ConsumerStates:            consumerStates,
+		ConsumerAdditionProposals: additionProposals,
+		ConsumerRemovalProposals:  removalProposals,
+		Params:                    params,
+		ValidatorConsumerPubkeys:  validatorConsumerPubkeys,
+		ValidatorsByConsumerAddr:  validatorsByConsumerAddr,
+		ConsumerAddrsToPruneV2:    consumerAddrsToPrune,
 	}
 }
 

@@ -65,7 +65,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
 	// to compute the minimum power in the top N
 	valUpdates := k.ProviderValidatorUpdates(ctx)
 
-	if ctx.BlockHeight()%k.GetBlocksPerEpoch(ctx) == 0 {
+	if k.BlocksUntilNextEpoch(ctx) == 0 {
 		// only queue and send VSCPackets at the boundaries of an epoch
 
 		// collect validator updates
@@ -206,20 +206,25 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			// of the active validators
 			activeValidators, err := k.GetLastActiveBondedValidators(ctx)
+			var minPower int64
 			if err != nil {
 				// we just log here and do not panic because panic-ing would halt the provider chain
 				k.Logger(ctx).Error("failed to get active validators", "error", err)
-			}
-			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
-			if err == nil {
-				// set the minimal power of validators in the top N in the store
-				k.SetMinimumPowerInTopN(ctx, chainID, minPower)
-
-				k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
+				// assume that the minPower is 0, since we cannot compute it because the validator set is broken
+				minPower = 0
+				k.Logger(ctx).Error("failed to compute min power to opt in for chain; assuming min power is 0", "chain", chainID, "error", err)
 			} else {
-				// we just log here and do not panic because panic-ing would halt the provider chain
-				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+				minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+				if err != nil {
+					// we just log here and do not panic because panic-ing would halt the provider chain
+					k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+					minPower = 0
+				}
 			}
+			// set the minimal power of validators in the top N in the store
+			k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+
+			k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
 		}
 
 		nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)

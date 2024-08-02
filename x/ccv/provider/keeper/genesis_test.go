@@ -39,13 +39,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 
-	// at genesis, the validator has 100 power
-	lastProviderConsensusValidators := []providertypes.ConsensusValidator{{
-		ProviderConsAddr: provAddr.Address,
-		Power:            100,
-		PublicKey:        &provPubKey,
-	}}
-
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
 		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
@@ -99,7 +92,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}},
 			},
 		},
-		lastProviderConsensusValidators,
 	)
 
 	// Instantiate in-mem provider keeper with mocks
