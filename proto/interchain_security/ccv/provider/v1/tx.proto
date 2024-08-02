@@ -195,7 +195,7 @@ message MsgConsumerAddition {
 message MsgConsumerAdditionResponse {}
 
 
-// MsgConsumerRemoval defines the message used to remove (and stop) a consumer chain.
+// MsgRemoveConsumer defines the message used to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is eventually removed from the provider chain.
 message MsgRemoveConsumer {
   option (cosmos.msg.v1.signer) = "authority";
@@ -292,7 +292,7 @@ message MsgSetConsumerCommissionRate {
 
 message MsgSetConsumerCommissionRateResponse {}
 
-// MsgConsumerModification defines the message used to modify a running consumer chain.
+// MsgUpdateConsumer defines the message used to modify a running consumer chain.
 // If it passes, the consumer chain's parameters are updated.
 message MsgUpdateConsumer {
   option (cosmos.msg.v1.signer) = "authority";
