@@ -138,8 +138,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	consuValsRewards := consumerValsOutstandingRewardsFunc(s.providerCtx())
 
 	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
-	numberOfBlocksToStartReceivingRewards :=
-		providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
+	numberOfBlocksToStartReceivingRewards := providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
 
 	for s.providerCtx().BlockHeight() <= numberOfBlocksToStartReceivingRewards {
 		s.providerChain.NextBlock()
@@ -659,8 +658,13 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(transfertypes.ModuleName)
 			s.Require().True(ok)
 
+			receiverAddrBytes, err := sdk.GetFromBech32(data.Receiver, "cosmos")
+			s.Require().NoError(err)
+
+			receiverAccAddr := sdk.AccAddress(receiverAddrBytes)
+
 			// save the IBC transfer rewards transferred
-			rewardsPoolBalance := bankKeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver))
+			rewardsPoolBalance := bankKeeper.GetAllBalances(s.providerCtx(), receiverAccAddr)
 
 			// save the consumer's rewards allocated
 			consumerRewardsAllocations := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
@@ -675,7 +679,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			}
 
 			// compute the balance and allocation difference
-			rewardsTransferred := bankKeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver)).
+			rewardsTransferred := bankKeeper.GetAllBalances(s.providerCtx(), receiverAccAddr).
 				Sub(rewardsPoolBalance...)
 			rewardsAllocated := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID).
 				Rewards.Sub(consumerRewardsAllocations.Rewards)
