@@ -149,24 +149,24 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 	}
 }
 
-func TestHandleConsumerModificationProposal(t *testing.T) {
+func TestUpdateConsumer(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	consumerId := "0"
 
-	// set up a consumer client, so it seems that "chainID" is running
-	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+	// set up a consumer client, so it seems that chain is running
+	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
 
 	// set PSS-related fields to update them later on
-	providerKeeper.SetTopN(ctx, chainID, 50)
-	providerKeeper.SetValidatorSetCap(ctx, chainID, 10)
-	providerKeeper.SetValidatorsPowerCap(ctx, chainID, 34)
-	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
-	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
-	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
-	providerKeeper.SetMinStake(ctx, chainID, 1000)
-	providerKeeper.SetInactiveValidatorsAllowed(ctx, chainID, true)
+	providerKeeper.SetTopN(ctx, consumerId, 50)
+	providerKeeper.SetValidatorSetCap(ctx, consumerId, 10)
+	providerKeeper.SetValidatorsPowerCap(ctx, consumerId, 34)
+	providerKeeper.SetAllowlist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
+	providerKeeper.SetAllowlist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
+	providerKeeper.SetDenylist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
+	providerKeeper.SetMinStake(ctx, consumerId, 1000)
+	providerKeeper.SetInactiveValidatorsAllowed(ctx, consumerId, true)
 
 	expectedTopN := uint32(75)
 	expectedValidatorsPowerCap := uint32(67)
@@ -175,39 +175,40 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
 	expectedMinStake := uint64(0)
 	expectedAllowInactiveValidators := false
-	proposal := providertypes.NewConsumerModificationProposal("title", "description", chainID,
-		expectedTopN,
-		expectedValidatorsPowerCap,
-		expectedValidatorSetCap,
-		[]string{expectedAllowlistedValidator},
-		[]string{expectedDenylistedValidator},
-		expectedMinStake,
-		expectedAllowInactiveValidators,
-	).(*providertypes.ConsumerModificationProposal)
 
-	err := providerKeeper.HandleLegacyConsumerModificationProposal(ctx, proposal)
+	updateRecord := providertypes.ConsumerUpdateRecord{
+		Top_N:              expectedTopN,
+		ValidatorsPowerCap: expectedValidatorsPowerCap,
+		ValidatorSetCap:    expectedValidatorSetCap,
+		Allowlist:          []string{expectedAllowlistedValidator},
+		Denylist:           []string{expectedDenylistedValidator},
+	}
+
+	providerKeeper.SetConsumerIdToPhase(ctx, consumerId, providerkeeper.Initialized)
+	providerKeeper.SetConsumerIdToUpdateRecord(ctx, consumerId, updateRecord)
+	err := providerKeeper.UpdateConsumer(ctx, consumerId)
 	require.NoError(t, err)
 
-	actualTopN, _ := providerKeeper.GetTopN(ctx, chainID)
+	actualTopN, _ := providerKeeper.GetTopN(ctx, consumerId)
 	require.Equal(t, expectedTopN, actualTopN)
-	actualValidatorsPowerCap, _ := providerKeeper.GetValidatorsPowerCap(ctx, chainID)
+	actualValidatorsPowerCap, _ := providerKeeper.GetValidatorsPowerCap(ctx, consumerId)
 	require.Equal(t, expectedValidatorsPowerCap, actualValidatorsPowerCap)
-	actualValidatorSetCap, _ := providerKeeper.GetValidatorSetCap(ctx, chainID)
+	actualValidatorSetCap, _ := providerKeeper.GetValidatorSetCap(ctx, consumerId)
 	require.Equal(t, expectedValidatorSetCap, actualValidatorSetCap)
 
 	allowlistedValidator, err := sdk.ConsAddressFromBech32(expectedAllowlistedValidator)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(providerKeeper.GetAllowList(ctx, chainID)))
-	require.Equal(t, providertypes.NewProviderConsAddress(allowlistedValidator), providerKeeper.GetAllowList(ctx, chainID)[0])
+	require.Equal(t, 1, len(providerKeeper.GetAllowList(ctx, consumerId)))
+	require.Equal(t, providertypes.NewProviderConsAddress(allowlistedValidator), providerKeeper.GetAllowList(ctx, consumerId)[0])
 
 	denylistedValidator, err := sdk.ConsAddressFromBech32(expectedDenylistedValidator)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, chainID)))
-	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, chainID)[0])
+	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, consumerId)))
+	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, consumerId)[0])
 
-	actualMinStake, _ := providerKeeper.GetMinStake(ctx, chainID)
+	actualMinStake, _ := providerKeeper.GetMinStake(ctx, consumerId)
 	require.Equal(t, expectedMinStake, actualMinStake)
 
-	actualAllowInactiveValidators := providerKeeper.AllowsInactiveValidators(ctx, chainID)
+	actualAllowInactiveValidators := providerKeeper.AllowsInactiveValidators(ctx, consumerId)
 	require.Equal(t, expectedAllowInactiveValidators, actualAllowInactiveValidators)
 }

@@ -121,6 +121,21 @@ func (k Keeper) DeleteConsumerIdToInitializationRecord(ctx sdk.Context, consumer
 }
 
 // GetConsumerIdToUpdateRecord returns the update record associated with this consumer id
+func (k Keeper) GetConsumerIdToUpdateRecord(ctx sdk.Context, consumerId string) (types.ConsumerUpdateRecord, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerIdToUpdateRecordKey(consumerId))
+	if bz == nil {
+		return types.ConsumerUpdateRecord{}, false
+	}
+	var record types.ConsumerUpdateRecord
+	if err := record.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("failed to unmarshal record: %w", err))
+	}
+	return record, true
+}
+
+// GetConsumerIdToUpdateRecordOrDefault returns the update record associated with this consumer id or the default record
+// if there is no update record associated with this consumer id
 func (k Keeper) GetConsumerIdToUpdateRecordOrDefault(ctx sdk.Context, consumerId string, defaultRecord types.ConsumerUpdateRecord) types.ConsumerUpdateRecord {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerIdToUpdateRecordKey(consumerId))
@@ -261,5 +276,71 @@ func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
 	// The cached context is created with a new EventManager so we merge the event
 	// into the original context
 	ctx.EventManager().EmitEvents(ctx.EventManager().Events())
+	return nil
+}
+
+func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
+	phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
+	if !found || phase == Stopped {
+		return errorsmod.Wrapf(types.ErrInvalidPhase,
+			"cannot update stopped or not existing chain: %s", consumerId)
+	}
+
+	updateRecord, found := k.GetConsumerIdToUpdateRecord(ctx, consumerId)
+	if !found {
+		// TODO (permissionless) -- not really an invalid update record
+		return errorsmod.Wrapf(types.ErrInvalidUpdateRecord,
+			"did not find update record for chain: %s", consumerId)
+	}
+
+	k.SetTopN(ctx, consumerId, updateRecord.Top_N)
+	k.SetValidatorsPowerCap(ctx, consumerId, updateRecord.ValidatorsPowerCap)
+	k.SetValidatorSetCap(ctx, consumerId, updateRecord.ValidatorSetCap)
+
+	k.DeleteAllowlist(ctx, consumerId)
+	for _, address := range updateRecord.Allowlist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetAllowlist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
+	}
+
+	k.DeleteDenylist(ctx, consumerId)
+	for _, address := range updateRecord.Denylist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetDenylist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
+	}
+
+	oldTopN, found := k.GetTopN(ctx, consumerId)
+	if !found {
+		oldTopN = 0
+		k.Logger(ctx).Info("consumer chain top N not found, treating as 0", "consumerId", consumerId)
+	}
+
+	// if the top N changes, we need to update the new minimum power in top N
+	if updateRecord.Top_N != oldTopN {
+		if updateRecord.Top_N > 0 {
+			// if the chain receives a non-zero top N value, store the minimum power in the top N
+			bondedValidators, err := k.GetLastBondedValidators(ctx)
+			if err != nil {
+				return err
+			}
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, updateRecord.Top_N)
+			if err != nil {
+				return err
+			}
+			k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
+		} else {
+			// if the chain receives a zero top N value, we delete the min power
+			k.DeleteMinimumPowerInTopN(ctx, consumerId)
+		}
+	}
+
 	return nil
 }
