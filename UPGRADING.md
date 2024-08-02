@@ -4,7 +4,7 @@
 
 ### Provider
 
-Upgrading a provider from X to Y requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
+Upgrading a provider from v5.1.x requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
 
 ```go
 // InitializeMaxValidatorsForExistingConsumers initializes the max validators
