@@ -137,6 +137,8 @@ const (
 
 	ConsumerIdToInitializationRecordKeyName = "ConsumerIdToInitializationRecordKey"
 
+	ConsumerIdToUpdateRecordKeyName = "ConsumerIdToUpdateRecordKey"
+
 	ConsumerIdToOwnerAddressKeyName = "ConsumerIdToOwnerAddressKey"
 
 	ConsumerIdToPhaseKeyName = "ConsumerIdToPhaseKey"
@@ -346,6 +348,9 @@ func getKeyPrefixes() map[string]byte {
 
 		// ConsumerIdToInitializationRecordKeyName is the key for storing the initialization record for the given consumer id
 		ConsumerIdToInitializationRecordKeyName: 48,
+
+		// ConsumerIdToUpdateRecordKeyName is the key for storing the update record for the given consumer id
+		ConsumerIdToUpdateRecordKeyName: 46,
 
 		// ConsumerIdToOwnerAddressKeyName is the key for storing the owner address for the given consumer id
 		ConsumerIdToOwnerAddressKeyName: 49,
@@ -737,7 +742,7 @@ func MinStakeKey(consumerId string) []byte {
 }
 
 func AllowInactiveValidatorsKey(consumerId string) []byte {
-	return ConsumerIddWithLenKey(mustGetKeyPrefix(AllowInactiveValidatorsKeyName), consumerId)
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(AllowInactiveValidatorsKeyName), consumerId)
 }
 
 // ConsumerIdKey returns the key used to store the consumerId of the next registered chain
@@ -763,6 +768,11 @@ func ConsumerIdToInitializationRecordKeyNameKeyPrefix() []byte {
 // ConsumerIdToInitializationRecordKey returns the key used to store the initialization record that corresponds to this consumer id
 func ConsumerIdToInitializationRecordKey(consumerId string) []byte {
 	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName), consumerId)
+}
+
+// ConsumerIdToUpdateRecordKey returns the key used to store the update record that corresponds to this consumer id
+func ConsumerIdToUpdateRecordKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToUpdateRecordKeyName), consumerId)
 }
 
 // ConsumerIdToOwnerAddressKey returns the key used to store the owner address that corresponds to this consumer id

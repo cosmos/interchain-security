@@ -18,7 +18,7 @@ func NewProviderProposalHandler(k keeper.Keeper) govv1beta1.Handler {
 	return func(ctx sdk.Context, content govv1beta1.Content) error {
 		switch c := content.(type) {
 		case *types.ConsumerAdditionProposal:
-			return k.HandleLegacyConsumerAdditionProposal(ctx, c)
+			return nil
 		case *types.ConsumerRemovalProposal:
 			return k.HandleLegacyConsumerRemovalProposal(ctx, c)
 		case *types.ConsumerModificationProposal:

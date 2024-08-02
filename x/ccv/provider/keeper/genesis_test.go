@@ -132,7 +132,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, expectedCandidate, pk.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// check local provider chain states
-	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
+	chainID, found := pk.GetChannelIdToConsumerId(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)
 	require.Equal(t, cChainIDs[0], chainID)
 	require.Equal(t, vscID, pk.GetValidatorSetUpdateId(ctx))
@@ -189,7 +189,7 @@ func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, 
 		require.Equal(t, cs.ClientId, clientID)
 
 		if expChan := cs.ChannelId; expChan != "" {
-			gotChan, found := pk.GetChainToChannel(ctx, chainID)
+			gotChan, found := pk.GetConsumerIdToChannelId(ctx, chainID)
 			require.True(t, found)
 			require.Equal(t, expChan, gotChan)
 		}

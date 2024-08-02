@@ -231,7 +231,7 @@ func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
 			)
 
 			if tc.expCCVChannel {
-				keeper.SetChainToChannel(ctx, chainID, ccvChannel)
+				keeper.SetConsumerIdToChannelId(ctx, chainID, ccvChannel)
 			}
 
 			if !tc.expErr {

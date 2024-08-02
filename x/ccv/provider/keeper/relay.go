@@ -30,7 +30,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			"channelID", packet.SourceChannel,
 			"error", err,
 		)
-		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
+		if chainID, ok := k.GetChannelIdToConsumerId(ctx, packet.SourceChannel); ok {
 			// stop consumer chain and release unbonding
 			return k.StopConsumerChain(ctx, chainID, false)
 		}
@@ -42,7 +42,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 // OnTimeoutPacket aborts the transaction if no chain exists for the destination channel,
 // otherwise it stops the chain
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
-	chainID, found := k.GetChannelToChain(ctx, packet.SourceChannel)
+	chainID, found := k.GetChannelIdToConsumerId(ctx, packet.SourceChannel)
 	if !found {
 		k.Logger(ctx).Error("packet timeout, unknown channel:", "channelID", packet.SourceChannel)
 		// abort transaction
@@ -138,7 +138,7 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 func (k Keeper) SendVSCPackets(ctx sdk.Context) {
 	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
 		// check if CCV channel is established and send
-		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+		if channelID, found := k.GetConsumerIdToChannelId(ctx, chainID); found {
 			k.SendVSCPacketsToChain(ctx, chainID, channelID)
 		}
 	}
@@ -279,7 +279,7 @@ func (k Keeper) OnRecvSlashPacket(
 	data ccv.SlashPacketData,
 ) (ccv.PacketAckResult, error) {
 	// check that the channel is established, panic if not
-	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
+	chainID, found := k.GetChannelIdToConsumerId(ctx, packet.DestinationChannel)
 	if !found {
 		// SlashPacket packet was sent on a channel different than any of the established CCV channels;
 		// this should never happen

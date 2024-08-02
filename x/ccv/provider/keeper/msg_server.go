@@ -94,11 +94,6 @@ func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsume
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerAdditionProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
-	}
 	return &types.MsgConsumerAdditionResponse{}, nil
 }
 
@@ -331,11 +326,11 @@ func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgIniti
 
 	phase, found := k.Keeper.GetConsumerIdToPhase(ctx, consumerId)
 	if !found || (phase != Registered && phase != Initialized) {
-		return nil, errorsmod.Wrapf(types.ErrInitialization,
+		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
 			"chain with consumer id: %s has to be in its registered or initialized phase", consumerId)
 	}
 
-	ownerAddress, found := k.Keeper.GetConsumerIdToOwnerAddress(ctx, consumerId)
+	ownerAddress, _ := k.Keeper.GetConsumerIdToOwnerAddress(ctx, consumerId)
 	if k.GetAuthority() == msg.Authority {
 		// message is executed as part of governance proposal and hence we change the owner address
 		// to be the one of the module account address
@@ -350,17 +345,15 @@ func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgIniti
 	return &types.MsgInitializeConsumerResponse{}, nil
 }
 
-// UpdateConsumer updates a consumer chain
+// UpdateConsumer updates the record of a consumer chain
 func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateConsumer) (*types.MsgUpdateConsumerResponse, error) {
-	if k.GetAuthority() != msg.Authority {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	ownerAddress, _ := k.Keeper.GetConsumerIdToOwnerAddress(ctx, msg.ConsumerId)
+
+	if k.GetAuthority() != msg.Authority && msg.Authority != ownerAddress {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerModificationProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling UpdateConsumer proposal")
-	}
-
+	k.Keeper.SetConsumerIdToUpdateRecord(ctx, msg.ConsumerId, *msg.UpdateRecord)
 	return &types.MsgUpdateConsumerResponse{}, nil
 }
