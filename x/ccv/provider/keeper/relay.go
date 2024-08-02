@@ -206,21 +206,17 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			// of the active validators
 			activeValidators, err := k.GetLastActiveBondedValidators(ctx)
-			var minPower int64
 			if err != nil {
-				// we just log here and do not panic because panic-ing would halt the provider chain
-				k.Logger(ctx).Error("failed to get active validators", "error", err)
-				// assume that the minPower is 0, since we cannot compute it because the validator set is broken
-				minPower = 0
-				k.Logger(ctx).Error("failed to compute min power to opt in for chain; assuming min power is 0", "chain", chainID, "error", err)
-			} else {
-				minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
-				if err != nil {
-					// we just log here and do not panic because panic-ing would halt the provider chain
-					k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
-					minPower = 0
-				}
+				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
+				panic(fmt.Errorf("failed to get active validators: %w", err))
 			}
+
+			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			if err != nil {
+				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
+				panic(fmt.Errorf("failed to compute min power to opt in for chain %v: %w", chainID, err))
+			}
+
 			// set the minimal power of validators in the top N in the store
 			k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 
