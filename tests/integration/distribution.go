@@ -658,6 +658,8 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(transfertypes.ModuleName)
 			s.Require().True(ok)
 
+			// the prefix is hardcoded to cosmos, since this code might run on a chain where sdk.Config.bech32AddressPrefix
+			// is set to something different and would otherwise fail when decoding the hardcoded address
 			receiverAddrBytes, err := sdk.GetFromBech32(data.Receiver, "cosmos")
 			s.Require().NoError(err)
 
