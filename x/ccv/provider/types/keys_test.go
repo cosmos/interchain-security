@@ -130,13 +130,9 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, uint8(49), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
 	i++
-	require.Equal(t, uint8(46), providertypes.ConsumerIdToUpdateRecordKey("consumerId")[0])
+	require.Equal(t, uint8(50), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
 	i++
-	require.Equal(t, uint8(47), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
-	i++
-	require.Equal(t, uint8(48), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
-	i++
-	require.Equal(t, uint8(49), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	require.Equal(t, uint8(51), providertypes.ClientIdToConsumerIdKey("clientId")[0])
 	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()
@@ -206,7 +202,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.AllowInactiveValidatorsKey("chainID"),
 		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerIdKey(),
-		providertypes.ConsumerIdToChainIdKey("consumerId"),
 		providertypes.ConsumerIdToRegistrationRecordKey("consumerId"),
 		providertypes.ConsumerIdToInitializationRecordKey("consumerId"),
 		providertypes.ConsumerIdToUpdateRecordKey("consumerId"),

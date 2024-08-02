@@ -33,31 +33,6 @@ func TestConsumerId(t *testing.T) {
 	require.Equal(t, uint64(2), consumerId)
 }
 
-// TestConsumerIdToChainId tests the getter, setter, and deletion methods of the consumer id to chain id methos
-func TestConsumerIdToChainId(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	_, found := providerKeeper.GetConsumerIdToChainId(ctx, "consumerId")
-	require.False(t, found)
-
-	providerKeeper.SetConsumerIdToChainId(ctx, "consumerId", "chainId")
-	chainId, found := providerKeeper.GetConsumerIdToChainId(ctx, "consumerId")
-	require.True(t, found)
-	require.Equal(t, "chainId", chainId)
-
-	// assert that overwriting the current chain id record works
-	providerKeeper.SetConsumerIdToChainId(ctx, "consumerId", "chainId2")
-	chainId, found = providerKeeper.GetConsumerIdToChainId(ctx, "consumerId")
-	require.True(t, found)
-	require.Equal(t, "chainId2", chainId)
-
-	providerKeeper.DeleteConsumerIdToChainId(ctx, "consumerId")
-	chainId, found = providerKeeper.GetConsumerIdToChainId(ctx, "consumerId")
-	require.False(t, found)
-	require.Equal(t, "", chainId)
-}
-
 // TestClientIdToConsumerId tests the getter, setter, and deletion methods of the client id to consumer id methods
 func TestClientIdToConsumerId(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))

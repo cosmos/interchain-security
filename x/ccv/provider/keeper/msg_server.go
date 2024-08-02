@@ -312,7 +312,6 @@ func (k msgServer) RegisterConsumer(goCtx context.Context, msg *types.MsgRegiste
 
 	k.Keeper.SetConsumerIdToRegistrationRecord(ctx, consumerId, *msg.RegistrationRecord)
 	k.Keeper.SetConsumerIdToOwnerAddress(ctx, consumerId, msg.Signer)
-	k.Keeper.SetConsumerIdToChainId(ctx, consumerId, msg.RegistrationRecord.ChainId)
 	k.Keeper.SetConsumerIdToPhase(ctx, consumerId, Registered)
 
 	return &types.MsgRegisterConsumerResponse{ConsumerId: consumerId}, nil

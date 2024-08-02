@@ -131,8 +131,6 @@ const (
 
 	ConsumerIdKeyName = "ConsumerIdKey"
 
-	ConsumerIdToChainIdKeyName = "ConsumerIdToChainIdKey"
-
 	ConsumerIdToRegistrationRecordKeyName = "ConsumerIdToRegistrationRecordKey"
 
 	ConsumerIdToInitializationRecordKeyName = "ConsumerIdToInitializationRecordKey"
@@ -340,17 +338,14 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerIdKeyName is the key for storing the consumer id for the next registered consumer chain
 		ConsumerIdKeyName: 45,
 
-		// ConsumerIdToChainIdKeyName is the key for storing the chain id for the given consumer id
-		ConsumerIdToChainIdKeyName: 46,
-
 		// ConsumerIdToRegistrationRecordKeyName is the key for storing the registration record for the given consumer id
-		ConsumerIdToRegistrationRecordKeyName: 47,
+		ConsumerIdToRegistrationRecordKeyName: 46,
 
 		// ConsumerIdToInitializationRecordKeyName is the key for storing the initialization record for the given consumer id
-		ConsumerIdToInitializationRecordKeyName: 48,
+		ConsumerIdToInitializationRecordKeyName: 47,
 
 		// ConsumerIdToUpdateRecordKeyName is the key for storing the update record for the given consumer id
-		ConsumerIdToUpdateRecordKeyName: 46,
+		ConsumerIdToUpdateRecordKeyName: 48,
 
 		// ConsumerIdToOwnerAddressKeyName is the key for storing the owner address for the given consumer id
 		ConsumerIdToOwnerAddressKeyName: 49,
@@ -748,11 +743,6 @@ func AllowInactiveValidatorsKey(consumerId string) []byte {
 // ConsumerIdKey returns the key used to store the consumerId of the next registered chain
 func ConsumerIdKey() []byte {
 	return []byte{mustGetKeyPrefix(ConsumerIdKeyName)}
-}
-
-// ConsumerIdToChainIdKey returns the key used to store the chain id that corresponds to this consumer id
-func ConsumerIdToChainIdKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToChainIdKeyName), consumerId)
 }
 
 // ConsumerIdToRegistrationRecordKey returns the key used to store the registration record that corresponds to this consumer id
