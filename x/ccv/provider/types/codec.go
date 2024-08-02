@@ -31,7 +31,6 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgAssignConsumerKey{},
-		&MsgConsumerAddition{},
 		&MsgRemoveConsumer{},
 		&MsgChangeRewardDenoms{},
 		&MsgUpdateParams{},
