@@ -18,7 +18,7 @@ import (
 // this is needed because 1000000 tokens = 1 voting power, so lower multipliers
 // will be verbose and harder to read because small token numbers
 // won't correspond to at least one voting power
-const stake_multiplier = 1000000
+const stakeMultiplier = 1000000
 
 // TestMinStake tests the min stake parameter.
 // It starts a provider and single consumer chain,
@@ -36,46 +36,46 @@ func TestMinStake(t *testing.T) {
 		{
 			name: "disabled min stake",
 			stakedTokens: []int64{
-				1 * stake_multiplier,
-				2 * stake_multiplier,
-				3 * stake_multiplier,
-				4 * stake_multiplier,
+				1 * stakeMultiplier,
+				2 * stakeMultiplier,
+				3 * stakeMultiplier,
+				4 * stakeMultiplier,
 			},
 			minStake: 0,
 			expectedConsuValSet: []int64{
-				1 * stake_multiplier,
-				2 * stake_multiplier,
-				3 * stake_multiplier,
-				4 * stake_multiplier,
+				1 * stakeMultiplier,
+				2 * stakeMultiplier,
+				3 * stakeMultiplier,
+				4 * stakeMultiplier,
 			},
 		},
 		{
 			name: "stake multiplier - standard case",
 			stakedTokens: []int64{
-				1 * stake_multiplier,
-				2 * stake_multiplier,
-				3 * stake_multiplier,
-				4 * stake_multiplier,
+				1 * stakeMultiplier,
+				2 * stakeMultiplier,
+				3 * stakeMultiplier,
+				4 * stakeMultiplier,
 			},
-			minStake: 3 * stake_multiplier,
+			minStake: 3 * stakeMultiplier,
 			expectedConsuValSet: []int64{
-				3 * stake_multiplier,
-				4 * stake_multiplier,
+				3 * stakeMultiplier,
+				4 * stakeMultiplier,
 			},
 		},
 		{
 			name: "check min stake with multiple equal stakes",
 			stakedTokens: []int64{
-				1 * stake_multiplier,
-				2 * stake_multiplier,
-				2 * stake_multiplier,
-				2 * stake_multiplier,
+				1 * stakeMultiplier,
+				2 * stakeMultiplier,
+				2 * stakeMultiplier,
+				2 * stakeMultiplier,
 			},
-			minStake: 2 * stake_multiplier,
+			minStake: 2 * stakeMultiplier,
 			expectedConsuValSet: []int64{
-				2 * stake_multiplier,
-				2 * stake_multiplier,
-				2 * stake_multiplier,
+				2 * stakeMultiplier,
+				2 * stakeMultiplier,
+				2 * stakeMultiplier,
 			},
 		},
 	}
@@ -132,7 +132,7 @@ func TestMinStake(t *testing.T) {
 			consuValPowers := make([]int64, len(consuValSet.Validators))
 			for i, consuVal := range consuValSet.Validators {
 				// voting power corresponds to staked tokens at a 1:stake_multiplier ratio
-				consuValPowers[i] = consuVal.VotingPower * stake_multiplier
+				consuValPowers[i] = consuVal.VotingPower * stakeMultiplier
 			}
 
 			s.Require().ElementsMatch(consuValPowers, tc.stakedTokens)
@@ -145,7 +145,7 @@ func TestMinStake(t *testing.T) {
 			// delegate and undelegate to trigger a vscupdate
 
 			// first delegate
-			delegateAndUndelegate(s, delegatorAccount.SenderAccount.GetAddress(), math.NewInt(1*stake_multiplier), 1)
+			delegateAndUndelegate(s, delegatorAccount.SenderAccount.GetAddress(), math.NewInt(1*stakeMultiplier), 1)
 
 			// end the epoch to apply the updates
 			s.nextEpoch()
@@ -166,7 +166,7 @@ func TestMinStake(t *testing.T) {
 			newConsuValPowers := make([]int64, len(newConsuValSet.Validators))
 			for i, consuVal := range newConsuValSet.Validators {
 				// voting power corresponds to staked tokens at a 1:stake_multiplier ratio
-				newConsuValPowers[i] = consuVal.VotingPower * stake_multiplier
+				newConsuValPowers[i] = consuVal.VotingPower * stakeMultiplier
 			}
 
 			// check that the new validator set is as expected
