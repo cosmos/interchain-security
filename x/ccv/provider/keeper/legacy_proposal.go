@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -55,66 +54,6 @@ func (k Keeper) HandleLegacyConsumerRemovalProposal(ctx sdk.Context, p *types.Co
 		"title", p.Title,
 		"stop time", p.StopTime.UTC(),
 	)
-
-	return nil
-}
-
-// HandleConsumerModificationProposal modifies a running consumer chain
-func (k Keeper) HandleLegacyConsumerModificationProposal(ctx sdk.Context, p *types.ConsumerModificationProposal) error {
-	if _, found := k.GetConsumerClientId(ctx, p.ConsumerId); !found {
-		return errorsmod.Wrapf(types.ErrInvalidConsumerId, "chain with consumer id %s is not launched", p.ConsumerId)
-	}
-
-	k.SetTopN(ctx, p.ConsumerId, p.Top_N)
-	k.SetValidatorsPowerCap(ctx, p.ConsumerId, p.ValidatorsPowerCap)
-	k.SetValidatorSetCap(ctx, p.ConsumerId, p.ValidatorSetCap)
-	k.SetMinStake(ctx, p.ConsumerId, p.MinStake)
-	k.SetInactiveValidatorsAllowed(ctx, p.ConsumerId, p.AllowInactiveVals)
-
-	k.DeleteAllowlist(ctx, p.ConsumerId)
-	for _, address := range p.Allowlist {
-		consAddr, err := sdk.ConsAddressFromBech32(address)
-		if err != nil {
-			continue
-		}
-
-		k.SetAllowlist(ctx, p.ConsumerId, types.NewProviderConsAddress(consAddr))
-	}
-
-	k.DeleteDenylist(ctx, p.ConsumerId)
-	for _, address := range p.Denylist {
-		consAddr, err := sdk.ConsAddressFromBech32(address)
-		if err != nil {
-			continue
-		}
-
-		k.SetDenylist(ctx, p.ConsumerId, types.NewProviderConsAddress(consAddr))
-	}
-
-	oldTopN, found := k.GetTopN(ctx, p.ConsumerId)
-	if !found {
-		oldTopN = 0
-		k.Logger(ctx).Info("consumer chain top N not found, treating as 0", "chainID", p.ConsumerId)
-	}
-
-	// if the top N changes, we need to update the new minimum power in top N
-	if p.Top_N != oldTopN {
-		if p.Top_N > 0 {
-			// if the chain receives a non-zero top N value, store the minimum power in the top N
-			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
-			if err != nil {
-				return err
-			}
-			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, p.Top_N)
-			if err != nil {
-				return err
-			}
-			k.SetMinimumPowerInTopN(ctx, p.ConsumerId, minPower)
-		} else {
-			// if the chain receives a zero top N value, we delete the min power
-			k.DeleteMinimumPowerInTopN(ctx, p.ConsumerId)
-		}
-	}
 
 	return nil
 }
