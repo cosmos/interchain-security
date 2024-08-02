@@ -45,25 +45,6 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 	return k.HandleLegacyConsumerRewardDenomProposal(ctx, &p)
 }
 
-// HandleConsumerModificationProposal modifies a running consumer chain
-func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *types.MsgUpdateConsumer) error {
-	p := types.ConsumerModificationProposal{
-		// TODO (PERMISSIONLESS)
-		//Title:              proposal.UpdateRecord.Title,
-		//Description:        proposal.UpdateRecord.Description,
-		ConsumerId:         proposal.ConsumerId,
-		Top_N:              proposal.UpdateRecord.Top_N,
-		ValidatorsPowerCap: proposal.UpdateRecord.ValidatorsPowerCap,
-		ValidatorSetCap:    proposal.UpdateRecord.ValidatorSetCap,
-		Allowlist:          proposal.UpdateRecord.Allowlist,
-		Denylist:           proposal.UpdateRecord.Denylist,
-		MinStake:           proposal.UpdateRecord.MinStake,
-		AllowInactiveVals:  proposal.UpdateRecord.AllowInactiveVals,
-	}
-
-	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
-}
-
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
@@ -205,6 +186,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, consumerId string, closeChan 
 
 	k.DeleteAllOptedIn(ctx, consumerId)
 	k.DeleteConsumerValSet(ctx, consumerId)
+
+	// TODO (PERMISSIONLESS) add newly-added state to be deleted
 
 	k.Logger(ctx).Info("consumer chain removed from provider", "consumerId", consumerId)
 

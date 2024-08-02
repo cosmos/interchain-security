@@ -544,80 +544,65 @@ func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 
 func TestConsumerModificationProposalValidateBasic(t *testing.T) {
 	testCases := []struct {
-		name     string
-		proposal govv1beta1.Content
-		expPass  bool
+		name         string
+		updateRecord types.ConsumerUpdateRecord
+		expPass      bool
 	}{
 		{
 			"success",
-			types.NewConsumerModificationProposal("title", "description", "chainID",
-				50,
-				100,
-				34,
-				[]string{"addr1"},
-				nil,
-				0,
-				false,
-			),
+			types.ConsumerUpdateRecord{
+				Top_N:              50,
+				ValidatorsPowerCap: 100,
+				ValidatorSetCap:    34,
+				Allowlist:          []string{"addr1"},
+				Denylist:           nil,
+				MinStake:           0,
+				AllowInactiveVals:  false,
+			},
 			true,
 		},
 		{
-			"invalid chain id",
-			types.NewConsumerModificationProposal("title", "description", "  ",
-				0,
-				0,
-				0,
-				nil,
-				nil,
-				0,
-				false,
-			),
-			false,
-		},
-		{
 			"top N is invalid",
-			types.NewConsumerModificationProposal("title", "description", "chainID",
-				10,
-				0,
-				0,
-				nil,
-				nil,
-				0,
-				false,
-			),
+			types.ConsumerUpdateRecord{
+				Top_N:              10,
+				ValidatorsPowerCap: 0,
+				ValidatorSetCap:    0,
+				Allowlist:          nil,
+				Denylist:           nil,
+			},
 			false,
 		},
 		{
 			"validators power cap is invalid",
-			types.NewConsumerModificationProposal("title", "description", "chainID",
-				50,
-				101,
-				0,
-				nil,
-				nil,
-				0,
-				false,
-			),
+			types.ConsumerUpdateRecord{
+				Top_N:              50,
+				ValidatorsPowerCap: 101,
+				ValidatorSetCap:    0,
+				Allowlist:          nil,
+				Denylist:           nil,
+				MinStake:           0,
+				AllowInactiveVals:  false,
+			},
 			false,
 		},
 		{
 			"valid proposal",
-			types.NewConsumerModificationProposal("title", "description", "chainID",
-				0,
-				34,
-				101,
-				[]string{"addr1"},
-				[]string{"addr2", "addr3"},
-				0,
-				false,
-			),
+			types.ConsumerUpdateRecord{
+				Top_N:              54,
+				ValidatorsPowerCap: 92,
+				ValidatorSetCap:    0,
+				Allowlist:          []string{"addr1"},
+				Denylist:           []string{"addr2", "addr3"},
+				MinStake:           0,
+				AllowInactiveVals:  false,
+			},
 			true,
 		},
 	}
 
 	for _, tc := range testCases {
-
-		err := tc.proposal.ValidateBasic()
+		msg, _ := types.NewMsgUpdateConsumer("", "0", tc.updateRecord)
+		err := msg.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)
 		} else {

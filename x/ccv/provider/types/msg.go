@@ -345,7 +345,6 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 	}
 
 	return nil
-	return nil
 }
 
 // Type implements the sdk.Msg interface.
