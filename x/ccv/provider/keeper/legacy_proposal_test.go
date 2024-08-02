@@ -4,13 +4,10 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -19,124 +16,6 @@ import (
 //
 // Initialization sub-protocol related tests of proposal.go
 //
-
-// Tests the HandleConsumerAdditionProposal method against the SpawnConsumerChainProposalHandler spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
-// Spec tag: [CCV-PCF-HCAPROP.1]
-func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
-	type testCase struct {
-		description string
-		malleate    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
-		prop        *providertypes.ConsumerAdditionProposal
-		// Time when prop is handled
-		blockTime time.Time
-		// Whether it's expected that the proposal is successfully verified
-		// and appended to the pending proposals
-		expAppendProp bool
-	}
-
-	// Snapshot times asserted in tests
-	now := time.Now().UTC()
-
-	tests := []testCase{
-		{
-			description: "expect to append valid proposal",
-			malleate:    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {},
-			prop: providertypes.NewConsumerAdditionProposal(
-				"title",
-				"description",
-				"chainID",
-				clienttypes.NewHeight(2, 3),
-				[]byte("gen_hash"),
-				[]byte("bin_hash"),
-				now, // Spawn time
-				"0.75",
-				10,
-				"",
-				10000,
-				100000000000,
-				100000000000,
-				100000000000,
-				0,
-				0,
-				0,
-				nil,
-				nil,
-				0,
-				false,
-			).(*providertypes.ConsumerAdditionProposal),
-			blockTime:     now,
-			expAppendProp: true,
-		},
-		{
-			description: "expect to not append invalid proposal using an already existing chain id",
-			malleate: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "anyClientId")
-			},
-
-			prop: providertypes.NewConsumerAdditionProposal(
-				"title",
-				"description",
-				"chainID",
-				clienttypes.NewHeight(2, 3),
-				[]byte("gen_hash"),
-				[]byte("bin_hash"),
-				now,
-				"0.75",
-				10,
-				"",
-				10000,
-				100000000000,
-				100000000000,
-				100000000000,
-				0,
-				0,
-				0,
-				nil,
-				nil,
-				0,
-				false,
-			).(*providertypes.ConsumerAdditionProposal),
-			blockTime:     now,
-			expAppendProp: false,
-		},
-	}
-
-	for _, tc := range tests {
-		// Common setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
-		ctx = ctx.WithBlockTime(tc.blockTime)
-
-		if tc.expAppendProp {
-			// Mock calls are only asserted if we expect a client to be created.
-			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, 1)
-			gomock.InOrder(
-				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
-			)
-		}
-
-		tc.malleate(ctx, providerKeeper, tc.prop.ChainId)
-
-		err := providerKeeper.HandleLegacyConsumerAdditionProposal(ctx, tc.prop)
-
-		if tc.expAppendProp {
-			require.NoError(t, err)
-			// check that prop was added to the stored pending props
-			gotProposal, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
-			require.True(t, found)
-			require.Equal(t, *tc.prop, gotProposal)
-		} else {
-			require.Error(t, err)
-			// check that prop wasn't added to the stored pending props
-			_, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
-			require.False(t, found)
-		}
-
-		ctrl.Finish()
-	}
-}
 
 // TestHandleConsumerRemovalProposal tests HandleConsumerRemovalProposal against its corresponding spec method.
 //
@@ -238,7 +117,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 		// Note: when expAppendProp is false, no mocks are setup,
 		// meaning no external keeper methods are allowed to be called.
 		if tc.expAppendProp {
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks, tc.prop.ConsumerId)
 			// Valid client creation is asserted with mock expectations here
 			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		}
@@ -255,7 +134,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			require.True(t, found)
 
 			// confirm that the channel was not closed
-			_, found = providerKeeper.GetChainToChannel(ctx, tc.chainId)
+			_, found = providerKeeper.GetConsumerIdToChannelId(ctx, tc.chainId)
 			require.True(t, found)
 		} else {
 			require.Error(t, err)

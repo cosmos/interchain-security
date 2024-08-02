@@ -219,6 +219,7 @@ func GetNewSlashPacketData() types.SlashPacketData {
 // Also see `TestProviderStateIsCleanedAfterConsumerChainIsStopped`.
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
+	consumerId string,
 ) {
 	t.Helper()
 
@@ -230,9 +231,14 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 
 	gomock.InOrder(expectations...)
 
-	prop := GetTestConsumerAdditionProp()
-	err := providerKeeper.CreateConsumerClient(ctx, prop)
+	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, consumerId, GetTestRegistrationRecord())
+	providerKeeper.SetConsumerIdToInitializationRecord(ctx, consumerId, GetTestInitializationRecord())
+	providerKeeper.SetConsumerIdToUpdateRecord(ctx, consumerId, GetTestUpdateRecord())
+	providerKeeper.SetConsumerIdToPhase(ctx, consumerId, providerkeeper.Initialized)
+
+	err := providerKeeper.CreateConsumerClient(ctx, consumerId)
 	require.NoError(t, err)
+	providerKeeper.SetClientIdToConsumerId(ctx, "clientID", consumerId)
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
 }
@@ -240,30 +246,64 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 // TestProviderStateIsCleanedAfterConsumerChainIsStopped executes test assertions for the provider's state being cleaned
 // after a stopped consumer chain.
 func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	expectedChainID, expectedChannelID string,
+	consumerId, expectedChannelID string,
 ) {
 	t.Helper()
-	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	_, found := providerKeeper.GetConsumerClientId(ctx, consumerId)
 	require.False(t, found)
-	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
+	_, found = providerKeeper.GetConsumerIdToChannelId(ctx, consumerId)
 	require.False(t, found)
-	_, found = providerKeeper.GetChannelToChain(ctx, expectedChannelID)
+	_, found = providerKeeper.GetChannelIdToConsumerId(ctx, expectedChannelID)
 	require.False(t, found)
-	_, found = providerKeeper.GetInitChainHeight(ctx, expectedChainID)
+	_, found = providerKeeper.GetInitChainHeight(ctx, consumerId)
 	require.False(t, found)
-	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
+	acks := providerKeeper.GetSlashAcks(ctx, consumerId)
 	require.Empty(t, acks)
 
 	// in case the chain was successfully stopped, it should not contain a Top N associated to it
-	_, found = providerKeeper.GetTopN(ctx, expectedChainID)
+	_, found = providerKeeper.GetTopN(ctx, consumerId)
 	require.False(t, found)
 
 	// test key assignment state is cleaned
-	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID))
-	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
-	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
-	require.Empty(t, providerKeeper.GetAllCommissionRateValidators(ctx, expectedChainID))
-	require.Zero(t, providerKeeper.GetEquivocationEvidenceMinHeight(ctx, expectedChainID))
+	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &consumerId))
+	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &consumerId))
+	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, consumerId))
+	require.Empty(t, providerKeeper.GetAllCommissionRateValidators(ctx, consumerId))
+	require.Zero(t, providerKeeper.GetEquivocationEvidenceMinHeight(ctx, consumerId))
+}
+
+func GetTestRegistrationRecord() providertypes.ConsumerRegistrationRecord {
+	return providertypes.ConsumerRegistrationRecord{
+		Title:       "title",
+		Description: "description",
+		ChainId:     "chainID",
+	}
+}
+
+func GetTestInitializationRecord() providertypes.ConsumerInitializationRecord {
+	return providertypes.ConsumerInitializationRecord{
+		InitialHeight:                     clienttypes.NewHeight(4, 5),
+		GenesisHash:                       []byte("gen_hash"),
+		BinaryHash:                        []byte("bin_hash"),
+		SpawnTime:                         time.Now(),
+		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
+		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
+		DistributionTransmissionChannel:   "",
+		HistoricalEntries:                 types.DefaultHistoricalEntries,
+		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
+		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
+		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
+	}
+}
+
+func GetTestUpdateRecord() providertypes.ConsumerUpdateRecord {
+	return providertypes.ConsumerUpdateRecord{
+		Top_N:              0,
+		ValidatorsPowerCap: 0,
+		ValidatorSetCap:    0,
+		Allowlist:          nil,
+		Denylist:           nil,
+	}
 }
 
 func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	"encoding/binary"
 	"fmt"
@@ -17,6 +18,15 @@ const (
 	Launched
 	Stopped
 )
+
+var DefaultUpdateRecord = types.ConsumerUpdateRecord{
+	OwnerAddress:       "",
+	Top_N:              0,
+	ValidatorsPowerCap: 0,
+	ValidatorSetCap:    0,
+	Allowlist:          []string{},
+	Denylist:           []string{},
+}
 
 // setConsumerId sets the provided consumerId
 func (k Keeper) setConsumerId(ctx sdk.Context, consumerId uint64) {
@@ -126,10 +136,40 @@ func (k Keeper) SetConsumerIdToInitializationRecord(ctx sdk.Context, consumerId 
 	store.Set(types.ConsumerIdToInitializationRecordKey(consumerId), bz)
 }
 
-// DeleteConsumerIdToInitializationRecord deletes the initializatoin record associated with this consumer id
+// DeleteConsumerIdToInitializationRecord deletes the initialization record associated with this consumer id
 func (k Keeper) DeleteConsumerIdToInitializationRecord(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerIdToInitializationRecordKey(consumerId))
+}
+
+// GetConsumerIdToUpdateRecord returns the update record associated with this consumer id
+func (k Keeper) GetConsumerIdToUpdateRecordOrDefault(ctx sdk.Context, consumerId string, defaultRecord types.ConsumerUpdateRecord) types.ConsumerUpdateRecord {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerIdToUpdateRecordKey(consumerId))
+	if bz == nil {
+		return defaultRecord
+	}
+	var record types.ConsumerUpdateRecord
+	if err := record.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("failed to unmarshal record: %w", err))
+	}
+	return record
+}
+
+// SetConsumerIdToUpdateRecord sets the update record associated with this consumer id
+func (k Keeper) SetConsumerIdToUpdateRecord(ctx sdk.Context, consumerId string, record types.ConsumerUpdateRecord) {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := record.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal record (%+v): %w", record, err))
+	}
+	store.Set(types.ConsumerIdToUpdateRecordKey(consumerId), bz)
+}
+
+// DeleteConsumerIdToUpdateRecord deletes the update record associated with this consumer id
+func (k Keeper) DeleteConsumerIdToUpdateRecord(ctx sdk.Context, consumerId string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerIdToUpdateRecordKey(consumerId))
 }
 
 // GetConsumerIdToOwnerAddress returns the owner address associated with this consumer id
@@ -223,4 +263,25 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context) []string {
 	}
 
 	return consumerIds
+}
+
+func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
+	err := k.CreateConsumerClient(ctx, consumerId)
+	if err != nil {
+		return err
+	}
+
+	consumerGenesis, found := k.GetConsumerGenesis(ctx, consumerId)
+	if !found {
+		return errorsmod.Wrapf(types.ErrNoConsumerGenesis, "consumer genesis could not be found")
+	}
+
+	if len(consumerGenesis.Provider.InitialValSet) == 0 {
+		return errorsmod.Wrapf(types.ErrInvalidConsumerGenesis, "consumer genesis initial validator set is empty - no validators opted in")
+	}
+
+	// The cached context is created with a new EventManager so we merge the event
+	// into the original context
+	ctx.EventManager().EmitEvents(ctx.EventManager().Events())
+	return nil
 }

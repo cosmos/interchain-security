@@ -35,30 +35,6 @@ func (k Keeper) HandleLegacyConsumerRewardDenomProposal(ctx sdk.Context, p *type
 	return nil
 }
 
-// HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
-// If the client can be successfully created in a cached context, it stores the proposal as a pending proposal.
-//
-// Note: This method implements SpawnConsumerChainProposalHandler in spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
-// Spec tag: [CCV-PCF-HCAPROP.1]
-func (k Keeper) HandleLegacyConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
-	// verify the consumer addition proposal execution
-	// in cached context and discard the cached writes
-	if _, _, err := k.CreateConsumerClientInCachedCtx(ctx, *p); err != nil {
-		return err
-	}
-
-	k.SetPendingConsumerAdditionProp(ctx, p)
-
-	k.Logger(ctx).Info("consumer addition proposal enqueued",
-		"chainID", p.ChainId,
-		"title", p.Title,
-		"spawn time", p.SpawnTime.UTC(),
-	)
-
-	return nil
-}
-
 // HandleConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the consumer can be successfully stopped in a cached context, it stores the proposal as a pending proposal.
 //
