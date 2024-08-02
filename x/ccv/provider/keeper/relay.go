@@ -107,7 +107,7 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	for _, val := range bondedValidators[:maxValidators] {
 		nextValidator, err := k.CreateProviderConsensusValidator(ctx, val)
 		if err != nil {
-			k.Logger(ctx).Error("error when creating provider consensus validator", "error", err)
+			k.Logger(ctx).Error("error when creating provider consensus validator", "error", err, "validator", val)
 			continue
 		}
 		nextValidators = append(nextValidators, nextValidator)

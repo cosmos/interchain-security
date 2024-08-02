@@ -665,16 +665,5 @@ func uintPtr(i uint) *uint {
 func (tr Commands) GetInflationRate(
 	chain ChainID,
 ) float64 {
-	binaryName := tr.ChainConfigs[chain].BinaryName
-	bz, err := tr.Target.ExecCommand(binaryName,
-		"query", "mint", "inflation",
-		`--node`, tr.GetQueryNode(chain),
-		`-o`, `json`,
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	inflationRate := gjson.Get(string(bz), "inflation").Float()
-	return inflationRate
+	panic("'GetInflationRate' is not implemented in this version")
 }

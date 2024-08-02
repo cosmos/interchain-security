@@ -98,11 +98,16 @@ func TestDeleteLastProviderConsensusValSet(t *testing.T) {
 
 	providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
 
+	// check that the set is not empty
+	storedValidators, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	require.NoError(t, err, "failed to get stored validator set")
+	require.NotEmpty(t, storedValidators, "validator set should not be empty")
+
 	// Delete the stored validator set
 	providerKeeper.DeleteLastProviderConsensusValSet(ctx)
 
 	// Ensure the validator set is empty
-	storedValidators, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
+	storedValidators, err = providerKeeper.GetLastProviderConsensusValSet(ctx)
 	require.NoError(t, err, "failed to get stored validator set")
 	require.Empty(t, storedValidators, "validator set should be empty")
 }

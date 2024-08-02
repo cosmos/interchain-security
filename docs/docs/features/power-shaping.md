@@ -47,8 +47,6 @@ Each of these mechanisms is *set during the consumer addition proposal* (see [On
 The values can be seen by querying the list of consumer chains:
 ```bash
 interchain-security-pd query provider list-consumer-chains
-
-
 ```
 
 ## Guidelines for setting power shaping parameters

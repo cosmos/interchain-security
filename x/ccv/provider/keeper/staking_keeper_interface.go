@@ -11,7 +11,7 @@ import (
 // IterateBondedValidatorsByPower iterates over the consensus-active validators by power.
 // The same as IterateBondedValidatorsByPower in the StakingKeeper,
 // but only returns the first MaxProviderConsensusValidators validators.
-// This is used to implement the interface of the staking keeper to interface with
+// This is used to implement the interface of the staking keeper to interact with
 // modules that need to reference the consensus-active validators.
 func (k Keeper) IterateBondedValidatorsByPower(ctx context.Context, fn func(index int64, validator stakingtypes.ValidatorI) (stop bool)) error {
 	maxProviderConsensusVals := k.GetMaxProviderConsensusValidators(sdk.UnwrapSDKContext(ctx))

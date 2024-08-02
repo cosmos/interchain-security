@@ -21,7 +21,7 @@ func (k Keeper) SetLastProviderConsensusValidator(
 }
 
 // SetLastProviderConsensusValSet resets the stored last validator set sent to the consensus engine on the provider
-// to the provided `nextValidators“.
+// to the provided `nextValidators`.
 func (k Keeper) SetLastProviderConsensusValSet(ctx sdk.Context, nextValidators []types.ConsensusValidator) {
 	k.setValSet(ctx, types.LastProviderConsensusValsPrefix(), nextValidators)
 }

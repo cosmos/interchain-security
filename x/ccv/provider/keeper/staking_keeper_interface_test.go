@@ -63,7 +63,7 @@ func TestStakingKeeperInterface(t *testing.T) {
 			mockTotalSupply: 60,
 			// 30 + 20 + 10 = 60
 			expectedTotalBonded: math.NewInt(60),
-			expectedBondedRatio: math.LegacyNewDec(100).Quo(math.LegacyNewDec(100)), // 100% bonded
+			expectedBondedRatio: math.LegacyNewDec(60).Quo(math.LegacyNewDec(60)), // 100% bonded
 		},
 		{
 			name:            "validators with equal powers",
@@ -73,7 +73,7 @@ func TestStakingKeeperInterface(t *testing.T) {
 			mockTotalSupply: 1000,
 			// 30 + 30 + 20 = 80
 			expectedTotalBonded: math.NewInt(80),
-			expectedBondedRatio: math.LegacyNewDec(8).Quo(math.LegacyNewDec(100)), // 8% bonded
+			expectedBondedRatio: math.LegacyNewDec(80).Quo(math.LegacyNewDec(1000)), // 8% bonded
 		},
 	}
 
@@ -93,7 +93,7 @@ func TestStakingKeeperInterface(t *testing.T) {
 			sort.Slice(
 				vals,
 				func(i, j int) bool {
-					return vals[i].GetTokens().Int64() > vals[j].GetTokens().Int64()
+					return vals[i].GetBondedTokens().Int64() > vals[j].GetTokens().Int64()
 				},
 			)
 

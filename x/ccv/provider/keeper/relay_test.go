@@ -643,13 +643,13 @@ func TestProviderValidatorUpdates(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// Mocking bonded validators in the staking keeper
+	// Mocking bonded validators in the staking keeper.
+	// be aware that the powers need to be in descending order
 	validators := []stakingtypes.Validator{
 		createStakingValidator(ctx, mocks, 3, 30, 3),
 		createStakingValidator(ctx, mocks, 2, 20, 2),
 		createStakingValidator(ctx, mocks, 1, 10, 1),
 	}
-	// sort validators by power
 	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(ctx).Return(validators, nil).Times(1)
 
 	// set up a validator that we will only use for the last provider consensus validator set

@@ -10,10 +10,16 @@ import (
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
+// The functions here are meant to provide a generic interface to a validator set that
+// is stored under a certain prefix.
+// It is used to store the validator set for the consumer chain and the last validator set
+// sent to the consensus engine on the provider; see
+// provider_consensus.go and validator_set_update.go
+
 // GetValidatorKey constructs the key to access a given validator, stored under a given prefix.
 // This method is public for testing.
-func GetValidatorKey(prefix []byte, providerAddr types.ProviderConsAddress) []byte {
-	return append(prefix, providerAddr.ToSdkConsAddr()...)
+func GetValidatorKey(prefix []byte, providerConsAddr types.ProviderConsAddress) []byte {
+	return append(prefix, providerConsAddr.ToSdkConsAddr()...)
 }
 
 // setValidator stores the given `validator` in the validator set stored under the given prefix.
@@ -25,7 +31,7 @@ func (k Keeper) setValidator(
 	store := ctx.KVStore(k.storeKey)
 	bz, err := validator.Marshal()
 	if err != nil {
-		return fmt.Errorf("marshalling ConsumerValidator: %w", err)
+		return fmt.Errorf("marshalling ConsensusValidator: %w", err)
 	}
 
 	store.Set(GetValidatorKey(prefix, types.NewProviderConsAddress(validator.ProviderConsAddr)), bz)
@@ -44,7 +50,7 @@ func (k Keeper) setValSet(ctx sdk.Context, prefix []byte, nextValidators []types
 	return nil
 }
 
-// deleteValidator removes validator with `providerAddr` address from the
+// deleteValidator removes validator with `providerConsAddr` address from the
 // validator set stored under the given prefix.
 func (k Keeper) deleteValidator(
 	ctx sdk.Context,
@@ -73,11 +79,11 @@ func (k Keeper) deleteValSet(
 	}
 }
 
-// isValidator returns `true` if the validator with `providerAddr` exists
+// isValidator returns `true` if the validator with `providerConsAddr` exists
 // in the validator set stored under the given prefix.
-func (k Keeper) isValidator(ctx sdk.Context, prefix []byte, providerAddr types.ProviderConsAddress) bool {
+func (k Keeper) isValidator(ctx sdk.Context, prefix []byte, providerConsAddr types.ProviderConsAddress) bool {
 	store := ctx.KVStore(k.storeKey)
-	return store.Get(GetValidatorKey(prefix, providerAddr)) != nil
+	return store.Get(GetValidatorKey(prefix, providerConsAddr)) != nil
 }
 
 // getValSet returns all the validators stored under the given prefix.
@@ -93,7 +99,7 @@ func (k Keeper) getValSet(
 		iterator.Value()
 		var validator types.ConsensusValidator
 		if err := validator.Unmarshal(iterator.Value()); err != nil {
-			return validators, fmt.Errorf("unmarshalling ConsumerValidator: %w", err)
+			return validators, fmt.Errorf("unmarshalling ConsensusValidator: %w", err)
 		}
 		validators = append(validators, validator)
 	}
