@@ -49,11 +49,11 @@ const (
 
 	SlashMeterReplenishTimeCandidateKeyName = "SlashMeterReplenishTimeCandidateKey"
 
-	ChainToChannelKeyName = "ConsumerIdToChannelIdKey"
+	ConsumerIdToChannelIdKeyName = "ConsumerIdToChannelIdKey"
 
-	ChannelToChainKeyName = "ChannelToConsumerIdKey"
+	ChannelIdToConsumerIdKeyName = "ChannelToConsumerIdKey"
 
-	ChainToClientKeyName = "ConsumerIdToClientIdKey"
+	ConsumerIdToClientIdKeyName = "ConsumerIdToClientIdKey"
 
 	DeprecatedInitTimeoutTimestampKeyName = "DeprecatedInitTimeoutTimestampKey"
 
@@ -175,14 +175,14 @@ func getKeyPrefixes() map[string]byte {
 
 		// ConsumerIdToChannelIdKey is the key for storing mapping
 		// from chainID to the channel ID that is used to send over validator set changes.
-		ChainToChannelKeyName: 5,
+		ConsumerIdToChannelIdKeyName: 5,
 
 		// ChannelToConsumerIdKey is the key for storing mapping
 		// from the CCV channel ID to the consumer chain ID.
-		ChannelToChainKeyName: 6,
+		ChannelIdToConsumerIdKeyName: 6,
 
 		// ConsumerIdToClientIdKey is the key for storing the client ID for a given consumer chainID.
-		ChainToClientKeyName: 7,
+		ConsumerIdToClientIdKeyName: 7,
 
 		// InitTimeoutTimestampKey is the key for storing
 		// the init timeout timestamp for a given consumer chainID.
@@ -435,12 +435,12 @@ func SlashMeterReplenishTimeCandidateKey() []byte {
 
 // ConsumerIdToChannelIdKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
 func ConsumerIdToChannelIdKey(consumerId string) []byte {
-	return append([]byte{mustGetKeyPrefix(ChainToChannelKeyName)}, []byte(consumerId)...)
+	return append([]byte{mustGetKeyPrefix(ConsumerIdToChannelIdKeyName)}, []byte(consumerId)...)
 }
 
 // ChannelIdToConsumerIdKeyPrefix returns the key prefix for storing the consumer chain ids.
 func ChannelIdToConsumerIdKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(ChannelToChainKeyName)}
+	return []byte{mustGetKeyPrefix(ChannelIdToConsumerIdKeyName)}
 }
 
 // ChannelToConsumerIdKey returns the key under which the consumer chain id will be stored for the given channelId.
@@ -450,7 +450,7 @@ func ChannelToConsumerIdKey(channelId string) []byte {
 
 // ConsumerIdToClientIdKeyPrefix returns the key prefix for storing the clientId for the given consumerId.
 func ConsumerIdToClientIdKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(ChainToClientKeyName)}
+	return []byte{mustGetKeyPrefix(ConsumerIdToClientIdKeyName)}
 }
 
 // ConsumerIdToClientIdKey returns the key under which the clientId for the given consumerId is stored.
