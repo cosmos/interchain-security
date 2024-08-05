@@ -566,8 +566,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		},
 		{
 			"IBC Transfer coin denom isn't registered",
-			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-			},
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {},
 			false,
 			false,
 		},
