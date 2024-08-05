@@ -84,7 +84,7 @@ func TestFullAppSimulation(t *testing.T) {
 		simtestutil.AppStateFn(encoding.Codec, app.SimulationManager(), genesisState),
 		simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
 		simtestutil.SimulationOperations(app, app.AppCodec(), config),
-		providerapp.BankBlockedAddrs(app),
+		providerapp.ComputeBankBlockedAddrs(app),
 		config,
 		app.AppCodec(),
 	)
