@@ -15,7 +15,7 @@ import (
 // - start a consumer chain
 // - check that non-consensus validators do not get slashed for downtime on the provider; and that they don't get rewards
 // - check that active validators *do* get slashed for downtime on the provider, and don't get rewards while they are down
-// - check that non-consensus validators *do* get jailed for downtime on consumer chains
+// - check that non-consensus validators *do* get jailed for consumer downtime on the provider
 // - check that non-consensus validators *become* consensus validators when they have enough power
 func stepsInactiveProviderValidators() []Step {
 	s := concatSteps(
