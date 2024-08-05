@@ -350,10 +350,7 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// Remove the ConsumerRewardsPool from the group of blocked recipient addresses in bank
-	// this is required for the provider chain to be able to receive tokens from
-	// the consumer chain
-	bankBlockedAddrs := BankBlockedAddrs(app)
+	bankBlockedAddrs := ComputeBankBlockedAddrs(app)
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
@@ -802,7 +799,11 @@ func New(
 	return app
 }
 
-func BankBlockedAddrs(app *App) map[string]bool {
+// Computes the addresses that should be blocked by the Bank module.
+// We remove the ConsumerRewardsPool from the group of blocked recipient addresses in bank.
+// This is required for the provider chain to be able to receive tokens from
+// the consumer chain
+func ComputeBankBlockedAddrs(app *App) map[string]bool {
 	bankBlockedAddrs := app.ModuleAccountAddrs()
 	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
 		providertypes.ConsumerRewardsPool).String())

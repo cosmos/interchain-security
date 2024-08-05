@@ -58,7 +58,7 @@ achieved without further changes to staking or reward distributions, because sim
 
 The following changes to the state are required:
 
-* Introduce the `MaxProviderConsensusValidators` parameter to the provider module, which is the number of validators that the provider module will send to consumer chains.
+* Introduce the `MaxProviderConsensusValidators` parameter to the provider module, which is the number of validators that the provider module will send to the consensus engine.
 * Store the provider consensus validator set in the provider module state under the `LastProviderConsensusValsPrefix` key. This is the last set of validators that the provider sent to the consensus engine. This is needed to compute the ValUpdates to send to the consensus engine (by diffing the current set with this last sent set).
 * Increase the `MaxValidators` parameter of the staking module to the desired size of the potential validator
 set of consumer chains.

@@ -60,9 +60,6 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 // the Validator Set Update sub-protocol
 func (k Keeper) EndBlockVSU(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
 	// logic to update the provider consensus validator set.
-	// Important: must be called before the rest of EndBlockVSU, because
-	// we need to know the updated provider validator set
-	// to compute the minimum power in the top N
 	valUpdates := k.ProviderValidatorUpdates(ctx)
 
 	if k.BlocksUntilNextEpoch(ctx) == 0 {
@@ -205,7 +202,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		if topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			// of the active validators
-			activeValidators, err := k.GetLastActiveBondedValidators(ctx)
+			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
 				panic(fmt.Errorf("failed to get active validators: %w", err))

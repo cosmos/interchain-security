@@ -125,7 +125,7 @@ func (k Keeper) HandleLegacyConsumerModificationProposal(ctx sdk.Context, p *typ
 	if p.Top_N != oldTopN {
 		if p.Top_N > 0 {
 			// if the chain receives a non-zero top N value, store the minimum power in the top N
-			activeValidators, err := k.GetLastActiveBondedValidators(ctx)
+			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				return err
 			}

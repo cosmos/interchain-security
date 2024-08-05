@@ -203,7 +203,9 @@ func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validat
 	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx), maxVals)
 }
 
-func (k Keeper) GetLastActiveBondedValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
+// GetLastProviderConsensusActiveValidators returns the `MaxProviderConsensusValidators` many validators with the largest powers
+// from the last bonded validators in the staking module.
+func (k Keeper) GetLastProviderConsensusActiveValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 	maxVals := k.GetMaxProviderConsensusValidators(ctx)
 	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx), uint32(maxVals))
 }

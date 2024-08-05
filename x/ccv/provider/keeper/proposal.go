@@ -271,7 +271,7 @@ func (k Keeper) MakeConsumerGenesis(
 		// we do not want to base the power calculation for the top N
 		// on inactive validators, too, since the top N will be a percentage of the active set power
 		// otherwise, it could be that inactive validators are forced to validate
-		activeValidators, err := k.GetLastActiveBondedValidators(ctx)
+		activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 		if err != nil {
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
 		}
