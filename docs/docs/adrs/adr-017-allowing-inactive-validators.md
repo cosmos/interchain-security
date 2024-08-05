@@ -115,7 +115,7 @@ The validator should be neither slashed nor jailed for downtime.
 
 Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
 
-### Scenario 5: Inactive validators *should* get jailed for downtime on the provider chain
+### Scenario 5: Inactive validators *should* get jailed for consumer downtime on the provider chain
 
 This can be tested by having an inactive validator go offline on a consumer chain for long enough to accrue downtime.
 The consumer chain should send a SlashPacket to the provider chain, which should jail the validator.
