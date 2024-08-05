@@ -318,6 +318,7 @@ func (k Keeper) FulfillsMinStake(ctx sdk.Context, chainID string, providerAddr t
 
 	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.Address)
 	if err != nil {
+		k.Logger(ctx).Error("could not retrieve validator by consensus address", "consensus address", providerAddr, "error", err)
 		return false
 	}
 
