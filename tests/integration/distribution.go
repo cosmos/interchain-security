@@ -528,15 +528,18 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		getIBCDenom func(string, string) string
 	)
 
+	// set up an arbitrary address that is not the consumer rewards pool address
+	notConsumerRewardsPoolAddr := s.providerChain.SenderAccount.GetAddress().String()
+
 	testCases := []struct {
 		name             string
-		setup            func(*CCVTestSuite, sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper)
+		setup            func(sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper)
 		rewardsAllocated bool
 		expErr           bool
 	}{
 		{
 			"invalid IBC packet",
-			func(*CCVTestSuite, sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper) {
+			func(sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper) {
 				packet = channeltypes.Packet{}
 			},
 			false,
@@ -544,7 +547,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		},
 		{
 			"IBC packet sender isn't a consumer chain",
-			func(s *CCVTestSuite, ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
 				// make the sender consumer chain impossible to identify
 				packet.DestinationChannel = "CorruptedChannelId"
 			},
@@ -553,8 +556,8 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		},
 		{
 			"IBC Transfer recipient is not the consumer rewards pool address",
-			func(s *CCVTestSuite, ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				data.Receiver = s.providerChain.SenderAccount.GetAddress().String() // random acct address
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				data.Receiver = notConsumerRewardsPoolAddr
 				packet.Data = data.GetBytes()
 			},
 			false,
@@ -562,14 +565,14 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		},
 		{
 			"IBC Transfer coin denom isn't registered",
-			func(s *CCVTestSuite, ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
 			},
 			false,
 			false,
 		},
 		{
 			"successful token transfer to empty pool",
-			func(s *CCVTestSuite, ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
 				keeper.SetConsumerRewardDenom(
 					s.providerCtx(),
 					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
@@ -580,7 +583,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		},
 		{
 			"successful token transfer to filled pool",
-			func(s *CCVTestSuite, ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
 				keeper.SetConsumerRewardDenom(
 					ctx,
 					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
@@ -654,7 +657,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 				).IBCDenom()
 			}
 
-			tc.setup(s, s.providerCtx(), &providerKeeper, bankKeeper)
+			tc.setup(s.providerCtx(), &providerKeeper, bankKeeper)
 
 			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(transfertypes.ModuleName)
 			s.Require().True(ok)
