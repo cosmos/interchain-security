@@ -7,6 +7,7 @@ import (
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"time"
 )
 
 // ConsumerPhase captures the phases of a consumer chain according to `docs/docs/adrs/adr-018-permissionless-ics.md`
@@ -198,7 +199,7 @@ func (k Keeper) GetConsumerIdToPhase(ctx sdk.Context, consumerId string) (Consum
 }
 
 // SetConsumerIdToPhase sets the phase associated with this consumer id
-// TODO (PERMISSIONLESS): use this method when launching and when stopping a chian
+// TODO (PERMISSIONLESS): use this method when launching and when stopping a chain
 func (k Keeper) SetConsumerIdToPhase(ctx sdk.Context, consumerId string, phase ConsumerPhase) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ConsumerIdToPhaseKey(consumerId), []byte{byte(phase)})
@@ -208,6 +209,36 @@ func (k Keeper) SetConsumerIdToPhase(ctx sdk.Context, consumerId string, phase C
 func (k Keeper) DeleteConsumerIdToPhase(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerIdToPhaseKey(consumerId))
+}
+
+// GetConsumerIdToStopTime returns the stop time associated with the to-be-stopped chain with consumer id
+func (k Keeper) GetConsumerIdToStopTime(ctx sdk.Context, consumerId string) (time.Time, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.ConsumerIdToStopTimeKey(consumerId))
+	if buf == nil {
+		return time.Time{}, false
+	}
+	var time time.Time
+	if err := time.UnmarshalBinary(buf); err != nil {
+		panic(fmt.Errorf("failed to unmarshal time: %w", err))
+	}
+	return time, true
+}
+
+// SetConsumerIdToStopTime sets the stop time associated with this consumer id
+func (k Keeper) SetConsumerIdToStopTime(ctx sdk.Context, consumerId string, stopTime time.Time) {
+	store := ctx.KVStore(k.storeKey)
+	buf, err := stopTime.MarshalBinary()
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal time: %w", err))
+	}
+	store.Set(types.ConsumerIdToStopTimeKey(consumerId), buf)
+}
+
+// DeleteConsumerIdToStopTime deletes the stop time associated with this consumer id
+func (k Keeper) DeleteConsumerIdToStopTime(ctx sdk.Context, consumerId string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerIdToStopTimeKey(consumerId))
 }
 
 // GetClientIdToConsumerId returns the consumer id associated with this client id
@@ -242,16 +273,20 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context) []string {
 	var consumerIds []string
 
 	for ; iterator.Valid(); iterator.Next() {
+		// the `consumerId` resides in the whole key, but we skip the first byte (because it's the `ConsumerIdKey`)
+		// plus 8 more bytes for the `uint64` in the key that contains the length of the `consumerId`
+		consumerId := string(iterator.Key()[1+8:])
+
 		var record types.ConsumerInitializationRecord
 		err := record.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(fmt.Errorf("failed to unmarshal consumer record: %w for consumer id: %s", err, string(iterator.Value())))
+			panic(fmt.Errorf("failed to unmarshal consumer record: %w for consumer id: %s", err, consumerId))
 		}
 
-		if !ctx.BlockTime().Before(record.SpawnTime) {
-			// the `consumerId` resides in the whole key, but we skip the first byte (because it's the `ConsumerIdKey`)
-			// plus 8 more bytes for the `uint64` in the key that contains the length of the `consumerId`
-			consumerIds = append(consumerIds, string(iterator.Key()[1+8:]))
+		// if current block time is equal to or after spawnTime, and the chain is initialized, we can launch the chain
+		phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
+		if !ctx.BlockTime().Before(record.SpawnTime) && (found && phase == Initialized) {
+			consumerIds = append(consumerIds, consumerId)
 		}
 	}
 
@@ -343,4 +378,34 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 	}
 
 	return nil
+}
+
+// GetLaunchedConsumersReadyToStop returns the consumer ids of the pending launched consumer chains
+// that are ready to stop
+func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context) []string {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToStopTimeKeyNamePrefix())
+	defer iterator.Close()
+
+	var consumerIds []string
+
+	for ; iterator.Valid(); iterator.Next() {
+		// the `consumerId` resides in the whole key, but we skip the first byte (because it's the `ConsumerIdKey`)
+		// plus 8 more bytes for the `uint64` in the key that contains the length of the `consumerId`
+		consumerId := string(iterator.Key()[1+8:])
+
+		var stopTime time.Time
+		err := stopTime.UnmarshalBinary(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal stop stopTime: %w for consumer id: %s", err, consumerId))
+		}
+
+		// if current block time is equal to or after stop stopTime, and the chain is launched we can stop the chain
+		phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
+		if !ctx.BlockTime().Before(stopTime) && (found && phase == Launched) {
+			consumerIds = append(consumerIds, string(iterator.Key()[1+8:]))
+		}
+	}
+
+	return consumerIds
 }

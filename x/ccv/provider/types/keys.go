@@ -141,6 +141,8 @@ const (
 
 	ConsumerIdToPhaseKeyName = "ConsumerIdToPhaseKey"
 
+	ConsumerIdToStopTimeKeyName = "ConsumerIdToStopTimeKey"
+
 	ClientIdToConsumerIdKeyName = "ClientIdToConsumerIdKey"
 )
 
@@ -353,8 +355,11 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerIdToPhaseKeyName is the key for storing the phase of a consumer chain with the given consumer id
 		ConsumerIdToPhaseKeyName: 50,
 
+		// ConsumerIdToStopTimeKeyName is the key for storing the stop time of a consumer chain that is to be removed
+		ConsumerIdToStopTimeKeyName: 51,
+
 		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
-		ClientIdToConsumerIdKeyName: 51,
+		ClientIdToConsumerIdKeyName: 52,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -773,6 +778,17 @@ func ConsumerIdToOwnerAddressKey(consumerId string) []byte {
 // ConsumerIdToPhaseKey returns the key used to store the phase that corresponds to this consumer id
 func ConsumerIdToPhaseKey(consumerId string) []byte {
 	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPhaseKeyName), consumerId)
+}
+
+// ConsumerIdToStopTimeKey returns the key used to store the stop time that corresponds to a to-be-stopped chain with consumer id
+func ConsumerIdToStopTimeKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToStopTimeKeyName), consumerId)
+}
+
+// ConsumerIdToStopTimeKeyNamePrefix returns the key prefix for storing the stop times of consumer chains
+// that are about to be stopped
+func ConsumerIdToStopTimeKeyNamePrefix() []byte {
+	return []byte{mustGetKeyPrefix(ConsumerIdToStopTimeKeyName)}
 }
 
 // ClientIdToConsumerIdKey returns the consumer id that corresponds to this client id
