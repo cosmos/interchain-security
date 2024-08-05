@@ -51,6 +51,7 @@ var (
 	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerDoubleVoting)(nil)
+	// TODO (PERMISSIONLESS) add extensive checks, etc.
 	_ sdk.HasValidateBasic = (*MsgRegisterConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgInitializeConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgUpdateConsumer)(nil)

@@ -187,6 +187,25 @@ func TestConsumerIdToPhase(t *testing.T) {
 	require.Equal(t, keeper.Launched, phase)
 }
 
+// TestConsumerIdToStopTime tests the getter, setter, and deletion methods of the consumer id to stop times
+func TestConsumerIdToStopTime(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	_, found := providerKeeper.GetConsumerIdToStopTime(ctx, "consumerId")
+	require.False(t, found)
+
+	expectedStopTime := time.Unix(1234, 56789)
+	providerKeeper.SetConsumerIdToStopTime(ctx, "consumerId", expectedStopTime)
+	actualStopTime, found := providerKeeper.GetConsumerIdToStopTime(ctx, "consumerId")
+	require.True(t, found)
+	require.Equal(t, actualStopTime, expectedStopTime)
+
+	providerKeeper.DeleteConsumerIdToStopTime(ctx, "consumerId")
+	_, found = providerKeeper.GetConsumerIdToStopTime(ctx, "consumerId")
+	require.False(t, found)
+}
+
 // TestGetInitializedConsumersReadyToLaunch tests that the ready to-be-launched consumer chains are returned
 func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -196,10 +215,13 @@ func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
 
 	// set 3 initialization records with different spawn times
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId1", keeper.Initialized)
 	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId1",
 		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(10, 0)})
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId2", keeper.Initialized)
 	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId2",
 		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(20, 0)})
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId3", keeper.Initialized)
 	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId3",
 		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(30, 0)})
 
@@ -218,4 +240,36 @@ func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 	// time has reached the spawn time of all chains
 	ctx = ctx.WithBlockTime(time.Unix(30, 0))
 	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+}
+
+func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// no chains to-be-stopped exist
+	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+
+	// set 3 initialization records with different spawn times
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId1", keeper.Launched)
+	providerKeeper.SetConsumerIdToStopTime(ctx, "consumerId1", time.Unix(10, 0))
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId2", keeper.Launched)
+	providerKeeper.SetConsumerIdToStopTime(ctx, "consumerId2", time.Unix(20, 0))
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId3", keeper.Launched)
+	providerKeeper.SetConsumerIdToStopTime(ctx, "consumerId3", time.Unix(30, 0))
+
+	// time has not yet reached the stop time of "consumerId1"
+	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
+	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+
+	// time has reached the stop time of "consumerId1"
+	ctx = ctx.WithBlockTime(time.Unix(10, 0))
+	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+
+	// time has reached the stop time of "consumerId1" and "consumerId2"
+	ctx = ctx.WithBlockTime(time.Unix(20, 0))
+	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+
+	// time has reached the stop time of all chains
+	ctx = ctx.WithBlockTime(time.Unix(30, 0))
+	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
 }

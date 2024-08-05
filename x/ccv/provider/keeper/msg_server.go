@@ -97,10 +97,8 @@ func (k msgServer) RemoveConsumer(
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerRemovalProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
-	}
+
+	k.Keeper.SetConsumerIdToStopTime(ctx, msg.ConsumerId, msg.StopTime)
 
 	return &types.MsgRemoveConsumerResponse{}, nil
 }
