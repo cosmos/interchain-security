@@ -23,17 +23,6 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// Wrapper for the new proposal message MsgConsumerRemoval
-// Will replace legacy handler HandleLegacyConsumerRemovalProposal
-func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgRemoveConsumer) error {
-	p := types.ConsumerRemovalProposal{
-		ConsumerId: proposal.ConsumerId,
-		StopTime:   proposal.StopTime,
-	}
-
-	return k.HandleLegacyConsumerRemovalProposal(ctx, &p)
-}
-
 // Wrapper for the new proposal message MsgChangeRewardDenoms
 // Will replace legacy handler HandleLegacyConsumerRewardDenomProposal
 func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *types.MsgChangeRewardDenoms) error {
@@ -457,73 +446,72 @@ func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...
 	}
 }
 
-// BeginBlockCCR iterates over the pending consumer removal proposals
-// in order and stop/removes the chain if the stop time has passed,
-// otherwise it will break out of loop and return. Executed proposals are deleted.
-//
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-ccr1
-// Spec tag: [CCV-PCF-BBLOCK-CCR.1]
+// BeginBlockCCR iterates over the pending consumer proposals and stop/removes the chain if the stop time has passed
 func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
-	propsToExecute := k.GetConsumerRemovalPropsToExecute(ctx)
-
-	for _, prop := range propsToExecute {
+	for _, consumerId := range k.GetLaunchedConsumersReadyToStop(ctx) {
 		// stop consumer chain in a cached context to handle errors
-		cachedCtx, writeFn, err := k.StopConsumerChainInCachedCtx(ctx, prop)
+		cachedCtx, writeFn := ctx.CacheContext()
+
+		stopTime, found := k.GetConsumerIdToStopTime(ctx, consumerId)
+		if !found {
+			ctx.Logger().Info("this chain (%s) is not meant to be stopped", consumerId)
+			continue
+		}
+
+		err := k.StopConsumerChain(cachedCtx, consumerId, true)
 		if err != nil {
-			// drop the proposal
 			ctx.Logger().Info("consumer chain could not be stopped: %w", err)
 			continue
 		}
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
+		// TODO (PERMISSIONLESS): verify this here and in the initialized chains to launch
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
-		// write cache
+
+		k.SetConsumerIdToPhase(cachedCtx, consumerId, Stopped)
 		writeFn()
 
-		k.Logger(ctx).Info("executed consumer removal proposal",
-			"consumer id", prop.ConsumerId,
-			"title", prop.Title,
-			"stop time", prop.StopTime.UTC(),
+		k.Logger(ctx).Info("executed consumer removal",
+			"consumer id", consumerId,
+			"stop time", stopTime,
 		)
 	}
-	// delete the executed proposals
-	k.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 }
 
-// GetConsumerRemovalPropsToExecute iterates over the pending consumer removal proposals
-// and returns an ordered list of consumer removal proposals to be executed,
-// ie. consumer chains to be stopped and removed from the provider chain.
-// A prop is included in the returned list if its proposed stop time has passed.
+//// GetConsumerRemovalPropsToExecute iterates over the pending consumer removal proposals
+//// and returns an ordered list of consumer removal proposals to be executed,
+//// ie. consumer chains to be stopped and removed from the provider chain.
+//// A prop is included in the returned list if its proposed stop time has passed.
+////
+//// Note: this method is split out from BeginBlockCCR to be easily unit tested.
+//func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
+//	// store the (to be) executed consumer removal proposals in order
+//	propsToExecute := []types.ConsumerRemovalProposal{}
 //
-// Note: this method is split out from BeginBlockCCR to be easily unit tested.
-func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
-	// store the (to be) executed consumer removal proposals in order
-	propsToExecute := []types.ConsumerRemovalProposal{}
-
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.PendingCRPKeyPrefix())
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var prop types.ConsumerRemovalProposal
-		err := prop.Unmarshal(iterator.Value())
-		if err != nil {
-			// An error here would indicate something is very wrong,
-			// the ConsumerRemovalProposal is assumed to be correctly serialized in SetPendingConsumerRemovalProp.
-			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
-		}
-
-		// If current block time is equal to or after stop time, proposal is ready to be executed
-		if !ctx.BlockTime().Before(prop.StopTime) {
-			propsToExecute = append(propsToExecute, prop)
-		} else {
-			// No more proposals to check, since they're stored/ordered by timestamp.
-			break
-		}
-	}
-
-	return propsToExecute
-}
+//	store := ctx.KVStore(k.storeKey)
+//	iterator := storetypes.KVStorePrefixIterator(store, types.PendingCRPKeyPrefix())
+//	defer iterator.Close()
+//
+//	for ; iterator.Valid(); iterator.Next() {
+//		var prop types.ConsumerRemovalProposal
+//		err := prop.Unmarshal(iterator.Value())
+//		if err != nil {
+//			// An error here would indicate something is very wrong,
+//			// the ConsumerRemovalProposal is assumed to be correctly serialized in SetPendingConsumerRemovalProp.
+//			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
+//		}
+//
+//		// If current block time is equal to or after stop time, proposal is ready to be executed
+//		if !ctx.BlockTime().Before(prop.StopTime) {
+//			propsToExecute = append(propsToExecute, prop)
+//		} else {
+//			// No more proposals to check, since they're stored/ordered by timestamp.
+//			break
+//		}
+//	}
+//
+//	return propsToExecute
+//}
 
 // GetAllPendingConsumerRemovalProps iterates through the pending consumer removal proposals.
 //
