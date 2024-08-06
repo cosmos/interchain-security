@@ -377,6 +377,9 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 		}
 	}
 
+	k.SetMinStake(ctx, consumerId, updateRecord.MinStake)
+	k.SetInactiveValidatorsAllowed(ctx, consumerId, updateRecord.AllowInactiveVals)
+
 	return nil
 }
 
