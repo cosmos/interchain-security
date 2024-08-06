@@ -182,6 +182,8 @@ func TestUpdateConsumer(t *testing.T) {
 		ValidatorSetCap:    expectedValidatorSetCap,
 		Allowlist:          []string{expectedAllowlistedValidator},
 		Denylist:           []string{expectedDenylistedValidator},
+		MinStake:           expectedMinStake,
+		AllowInactiveVals:  expectedAllowInactiveValidators,
 	}
 
 	providerKeeper.SetConsumerIdToPhase(ctx, consumerId, providerkeeper.Initialized)

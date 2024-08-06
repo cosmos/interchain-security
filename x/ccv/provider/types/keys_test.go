@@ -124,17 +124,19 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, uint8(45), providertypes.ConsumerIdKey()[0])
 	i++
-	require.Equal(t, uint8(47), providertypes.ConsumerIdToRegistrationRecordKey("consumerId")[0])
+	require.Equal(t, uint8(46), providertypes.ConsumerIdToRegistrationRecordKey("consumerId")[0])
 	i++
-	require.Equal(t, uint8(48), providertypes.ConsumerIdToInitializationRecordKey("consumerId")[0])
+	require.Equal(t, uint8(47), providertypes.ConsumerIdToInitializationRecordKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(48), providertypes.ConsumerIdToUpdateRecordKey("consumerId")[0])
 	i++
 	require.Equal(t, uint8(49), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
 	i++
 	require.Equal(t, uint8(50), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
 	i++
-	require.Equal(t, uint8(52), providertypes.ConsumerIdToStopTimeKey("consumerId")[0])
+	require.Equal(t, uint8(51), providertypes.ConsumerIdToStopTimeKey("consumerId")[0])
 	i++
-	require.Equal(t, uint8(53), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	require.Equal(t, uint8(52), providertypes.ClientIdToConsumerIdKey("clientId")[0])
 	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()
