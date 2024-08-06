@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
@@ -30,6 +31,9 @@ func TestInitAndExportGenesis(t *testing.T) {
 	// create validator keys and addresses for key assignment
 	providerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7896)
 	provAddr := providerCryptoId.ProviderConsAddress()
+	provVal := providerCryptoId.SDKStakingValidator()
+	provPubKey, err := provVal.TmConsPublicKey()
+	require.NoError(t, err)
 
 	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
@@ -102,6 +106,16 @@ func TestInitAndExportGenesis(t *testing.T) {
 			ctx).Return(math.NewInt(100), nil).Times(1), // Return total voting power as 100
 	)
 
+	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(
+		[]stakingtypes.Validator{
+			provVal,
+		}, nil).AnyTimes()
+
+	valAddr, err := sdk.ValAddressFromBech32(provVal.GetOperator())
+	require.NoError(t, err)
+	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).
+		Return(int64(100), nil).AnyTimes()
+
 	// init provider chain
 	pk.InitGenesis(ctx, provGenesis)
 
@@ -130,6 +144,17 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
 	require.True(t, pk.PendingConsumerRemovalPropExists(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
+
+	providerConsensusValSet, err := pk.GetLastProviderConsensusValSet(ctx)
+	require.NoError(t, err)
+	require.Equal(t,
+		[]providertypes.ConsensusValidator{{
+			ProviderConsAddr: provAddr.Address,
+			Power:            100,
+			PublicKey:        &provPubKey,
+		}},
+		providerConsensusValSet,
+	)
 
 	gotConsTmPubKey, found := pk.GetValidatorConsumerPubKey(ctx, cChainIDs[0], provAddr)
 	require.True(t, found)

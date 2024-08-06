@@ -66,6 +66,13 @@ func (k Keeper) GetNumberOfEpochsToStartReceivingRewards(ctx sdk.Context) int64 
 	return params.NumberOfEpochsToStartReceivingRewards
 }
 
+// GetMaxProviderConsensusValidators returns the number of validators that will be passed on from the staking module
+// to the consensus engine on the provider
+func (k Keeper) GetMaxProviderConsensusValidators(ctx sdk.Context) int64 {
+	params := k.GetParams(ctx)
+	return params.MaxProviderConsensusValidators
+}
+
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	store := ctx.KVStore(k.storeKey)

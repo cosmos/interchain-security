@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -488,38 +489,6 @@ func TestConsumerCommissionRate(t *testing.T) {
 	require.False(t, found)
 }
 
-// TestValidatorsPowerCap tests the `SetValidatorsPowerCap`, `GetValidatorsPowerCap`, and `DeleteValidatorsPowerCap` methods
-func TestValidatorsPowerCap(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	expectedPowerCap := uint32(10)
-	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", expectedPowerCap)
-	powerCap, found := providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
-	require.Equal(t, expectedPowerCap, powerCap)
-	require.True(t, found)
-
-	providerKeeper.DeleteValidatorsPowerCap(ctx, "chainID")
-	_, found = providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
-	require.False(t, found)
-}
-
-// TestValidatorSetCap tests the `SetValidatorSetCap`, `GetValidatorSetCap`, and `DeleteValidatorSetCap` methods
-func TestValidatorSetCap(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	expectedPowerCap := uint32(10)
-	providerKeeper.SetValidatorSetCap(ctx, "chainID", expectedPowerCap)
-	powerCap, found := providerKeeper.GetValidatorSetCap(ctx, "chainID")
-	require.Equal(t, expectedPowerCap, powerCap)
-	require.True(t, found)
-
-	providerKeeper.DeleteValidatorSetCap(ctx, "chainID")
-	_, found = providerKeeper.GetValidatorSetCap(ctx, "chainID")
-	require.False(t, found)
-}
-
 // TestAllowlist tests the `SetAllowlist`, `IsAllowlisted`, `DeleteAllowlist`, and `IsAllowlistEmpty` methods
 func TestAllowlist(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -576,32 +545,124 @@ func TestDenylist(t *testing.T) {
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 }
 
-func TestMinimumPowerInTopN(t *testing.T) {
+// TestAllowInactiveValidators tests the `SetAllowInactiveValidators` and `AllowsInactiveValidators` methods
+func TestAllowInactiveValidators(t *testing.T) {
 	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-	chainID := "testChain"
-	minPower := int64(1000)
+	chainID := "chainID"
 
-	// Set the minimum power in top N
-	k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+	// check that by default, AllowsInactiveValidators returns false
+	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
 
-	// Retrieve the minimum power in top N
-	actualMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
-	require.True(t, found)
-	require.Equal(t, minPower, actualMinPower)
+	// set the chain to allow inactive validators
+	k.SetInactiveValidatorsAllowed(ctx, chainID, true)
 
-	// Update the minimum power
-	newMinPower := int64(2000)
-	k.SetMinimumPowerInTopN(ctx, chainID, newMinPower)
+	// check that AllowsInactiveValidators returns true
+	require.True(t, k.AllowsInactiveValidators(ctx, chainID))
 
-	// Retrieve the updated minimum power in top N
-	newActualMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
-	require.True(t, found)
-	require.Equal(t, newMinPower, newActualMinPower)
+	// set the chain to not allow inactive validators
+	k.SetInactiveValidatorsAllowed(ctx, chainID, false)
 
-	// Test when the chain ID does not exist
-	nonExistentChainID := "nonExistentChain"
-	nonExistentMinPower, found := k.GetMinimumPowerInTopN(ctx, nonExistentChainID)
-	require.False(t, found)
-	require.Equal(t, int64(0), nonExistentMinPower)
+	// check that AllowsInactiveValidators returns false
+	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
+}
+
+// Tests setting, getting and deleting parameters that are stored per-consumer chain.
+// The tests cover the following parameters:
+// - MinimumPowerInTopN
+// - MinStake
+// - ValidatorSetCap
+// - ValidatorPowersCap
+func TestKeeperConsumerParams(t *testing.T) {
+	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	tests := []struct {
+		name         string
+		settingFunc  func(sdk.Context, string, int64)
+		getFunc      func(sdk.Context, string) (int64, bool)
+		deleteFunc   func(sdk.Context, string)
+		initialValue int64
+		updatedValue int64
+	}{
+		{
+			name:         "Minimum Power In Top N",
+			settingFunc:  func(ctx sdk.Context, id string, val int64) { k.SetMinimumPowerInTopN(ctx, id, val) },
+			getFunc:      func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinimumPowerInTopN(ctx, id) },
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinimumPowerInTopN(ctx, id) },
+			initialValue: 1000,
+			updatedValue: 2000,
+		},
+		{
+			name:        "Minimum Stake",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinStake(ctx, id, uint64(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetMinStake(ctx, id)
+				return int64(val), found
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinStake(ctx, id) },
+			initialValue: 1000,
+			updatedValue: 2000,
+		},
+		{
+			name:        "Validator Set Cap",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetValidatorSetCap(ctx, id, uint32(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetValidatorSetCap(ctx, id)
+				return int64(val), found
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorSetCap(ctx, id) },
+			initialValue: 10,
+			updatedValue: 200,
+		},
+		{
+			name:        "Validator Powers Cap",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetValidatorsPowerCap(ctx, id, uint32(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetValidatorsPowerCap(ctx, id)
+				return int64(val), found
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorsPowerCap(ctx, id) },
+			initialValue: 10,
+			updatedValue: 11,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chainID := "chainID"
+			// Set initial value
+			tt.settingFunc(ctx, chainID, int64(tt.initialValue))
+
+			// Retrieve and check initial value
+			actualValue, found := tt.getFunc(ctx, chainID)
+			require.True(t, found)
+			require.EqualValues(t, tt.initialValue, actualValue)
+
+			// Update value
+			tt.settingFunc(ctx, chainID, int64(tt.updatedValue))
+
+			// Retrieve and check updated value
+			newActualValue, found := tt.getFunc(ctx, chainID)
+			require.True(t, found)
+			require.EqualValues(t, tt.updatedValue, newActualValue)
+
+			// Check non-existent chain ID
+			_, found = tt.getFunc(ctx, "not the chainID")
+			require.False(t, found)
+
+			// Delete value
+			tt.deleteFunc(ctx, chainID)
+
+			// Check that value was deleted
+			_, found = tt.getFunc(ctx, chainID)
+			require.False(t, found)
+
+			// Try deleting again
+			tt.deleteFunc(ctx, chainID)
+
+			// Check that the value is still deleted
+			_, found = tt.getFunc(ctx, chainID)
+			require.False(t, found)
+		})
+	}
 }

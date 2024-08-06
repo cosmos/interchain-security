@@ -22,6 +22,11 @@ To run integration tests against your own consumer/provider implementations, use
 
 [E2E tests](tests/e2e/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. E2E tests use queries/transactions invoked from CLI to drive and validate the code.
 
+## Simulation Tests
+
+[Simulation tests](app/provider/sim_test.go) are used to test the full application via the SDK's simulation framework. This framework generates random inputs and checks that certain user-defined invariants hold.
+Notably, as-of-now simulation tests do not include any multi-chain testing, so can only test the provider chain on its own, without consumer chains. 
+
 ## Compatibility Tests
 
 To test compatibility between different provider and consumer versions the [E2E tests](tests/e2e/) were extended by compatibility tests. The test cases perform basic sanity tests against the selected provider and consumer versions. A selected combination of provider and consumer versions are tested on a nightly bases and can be run locally with the
@@ -57,6 +62,12 @@ make test-no-cache
 
 # run E2E compatibility tests for selected provider and consumer versions
 make test-e2e-compatibility-tests-latest
+
+# run full simulation tests
+make sim-full
+
+#run simulation tests where providerModule.max_provider_consensus_validators=stakingModule.max_validators=100
+make sim-full-no-inactive-vals
 ```
 
 Alternatively you can run tests using `go test`:
@@ -83,6 +94,8 @@ go run ./tests/e2e/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/"
 go test -fuzz=<regex-to-match-test-name>
 # run verbose E2E tests
 go run ./tests/e2e/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/" --verbose
+# run simulation tests; should be run from the 0app/provider directory
+go test -mod=readonly . -run=^TestFullAppSimulation$  -Enabled=true -NumBlocks=500 -BlockSize=200 -Commit=true -timeout 24h -v
 ```
 
 ### Testing with Gaia as the provider

@@ -116,6 +116,29 @@ func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
 		chainState.HasToValidate = &hasToValidate
 	}
 
+	if modelState.InflationRateChange != nil {
+		// get the inflation rate now
+		inflationRateNow := tr.target.GetInflationRate(chain)
+
+		// wait a block
+		tr.waitBlocks(chain, 1, 10*time.Second)
+
+		// get the new inflation rate
+		inflationRateAfter := tr.target.GetInflationRate(chain)
+
+		// calculate the change
+		inflationRateChange := inflationRateAfter - inflationRateNow
+		var inflationRateChangeDirection int
+		if inflationRateChange > 0 {
+			inflationRateChangeDirection = 1
+		} else if inflationRateChange < 0 {
+			inflationRateChangeDirection = -1
+		} else {
+			inflationRateChangeDirection = 0
+		}
+		chainState.InflationRateChange = &inflationRateChangeDirection
+	}
+
 	if modelState.ConsumerCommissionRates != nil {
 		consumerCommissionRates := tr.GetConsumerCommissionRates(chain, *modelState.ConsumerCommissionRates)
 		chainState.ConsumerCommissionRates = &consumerCommissionRates
@@ -307,6 +330,10 @@ func uintPtr(i uint) *uint {
 	return &i
 }
 
+func intPtr(i int) *int {
+	return &i
+}
+
 type Commands struct {
 	containerConfig  ContainerConfig // FIXME only needed for 'Now' time tracking
 	validatorConfigs map[ValidatorID]ValidatorConfig
@@ -369,8 +396,12 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 		`-o`, `json`,
 	)
 
-	bz, err := cmd.CombinedOutput()
+	if *verbose {
+		log.Println("getting rewards for chain: ", chain, " validator: ", validator, " blockHeight: ", blockHeight)
+		log.Println(cmd)
+	}
 
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println("running cmd: ", cmd)
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
@@ -386,7 +417,7 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 
 // interchain-securityd query gov proposals
 func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
-	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
+	noProposalRegex := regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
@@ -871,6 +902,23 @@ func (tr Commands) GetHasToValidate(
 	}
 
 	return chains
+}
+
+func (tr Commands) GetInflationRate(
+	chain ChainID,
+) float64 {
+	binaryName := tr.chainConfigs[chain].BinaryName
+	bz, err := tr.target.ExecCommand(binaryName,
+		"query", "mint", "inflation",
+		`--node`, tr.GetQueryNode(chain),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	inflationRate := gjson.Get(string(bz), "inflation").Float()
+	return inflationRate
 }
 
 func (tr Commands) GetTrustedHeight(

@@ -121,6 +121,12 @@ const (
 
 	MinimumPowerInTopNKeyName = "MinimumPowerInTopNKey"
 
+	LastProviderConsensusValsKeyName = "LastProviderConsensusValsKey"
+
+	MinStakeKeyName = "MinStakeKey"
+
+	AllowInactiveValidatorsKeyName = "AllowInactiveValidatorsKey"
+
 	ConsumerAddrsToPruneV2KeyName = "ConsumerAddrsToPruneV2Key"
 )
 
@@ -300,6 +306,19 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerAddrsToPruneV2Key is the key for storing
 		// consumer validators addresses that need to be pruned.
 		ConsumerAddrsToPruneV2KeyName: 41,
+
+		// LastProviderConsensusValsKey is the byte prefix for storing the last validator set
+		// sent to the consensus engine of the provider chain
+		LastProviderConsensusValsKeyName: 42,
+
+		// MinStakeKey is the byte prefix for storing the mapping from consumer chains to the minimum stake required to be a validator on the consumer chain
+		// The minimum stake must be stored on the provider chain, not on the consumer chain itself, since it filters out
+		// validators from the VSCPackets that we send to the consumer chain.
+		MinStakeKeyName: 43,
+
+		// AllowInactiveValidatorsKey is the byte prefix for storing the mapping from consumer chains to the boolean value
+		// that determines whether inactive validators can validate on that chain
+		AllowInactiveValidatorsKeyName: 44,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -713,6 +732,20 @@ func ConsumerAddrsToPruneV2KeyPrefix() byte {
 // addresses that need to be pruned.
 func ConsumerAddrsToPruneV2Key(chainID string, pruneTs time.Time) []byte {
 	return ChainIdAndTsKey(ConsumerAddrsToPruneV2KeyPrefix(), chainID, pruneTs)
+}
+
+// LastProviderConsensusValsPrefix returns the key prefix for storing the last validator set sent to the consensus engine of the provider chain
+func LastProviderConsensusValsPrefix() []byte {
+	return []byte{mustGetKeyPrefix(LastProviderConsensusValsKeyName)}
+}
+
+// MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain `chainID`
+func MinStakeKey(chainID string) []byte {
+	return ChainIdWithLenKey(mustGetKeyPrefix(MinStakeKeyName), chainID)
+}
+
+func AllowInactiveValidatorsKey(chainID string) []byte {
+	return ChainIdWithLenKey(mustGetKeyPrefix(AllowInactiveValidatorsKeyName), chainID)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

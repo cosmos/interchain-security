@@ -47,6 +47,10 @@ const (
 	// Current default values for blocks per epoch corresponds to about 1 hour, so with 24 being the
 	// minimum amount of epochs, this would imply that a validator has to validate at least for 1 day to receive rewards.
 	DefaultNumberOfEpochsToStartReceivingRewards = int64(24)
+
+	// DefaultMaxProviderConsensusValidators is the default maximum number of validators that will
+	// be passed on from the staking module to the consensus engine on the provider.
+	DefaultMaxProviderConsensusValidators = 180
 )
 
 // Reflection based keys for params subspace
@@ -61,6 +65,7 @@ var (
 	KeyConsumerRewardDenomRegistrationFee    = []byte("ConsumerRewardDenomRegistrationFee")
 	KeyBlocksPerEpoch                        = []byte("BlocksPerEpoch")
 	KeyNumberOfEpochsToStartReceivingRewards = []byte("NumberOfEpochsToStartReceivingRewards")
+	KeyMaxProviderConsensusValidators        = []byte("MaxProviderConsensusValidators")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -78,6 +83,7 @@ func NewParams(
 	consumerRewardDenomRegistrationFee sdk.Coin,
 	blocksPerEpoch int64,
 	numberOfEpochsToStartReceivingRewards int64,
+	maxProviderConsensusValidators int64,
 ) Params {
 	return Params{
 		TemplateClient:                        cs,
@@ -88,6 +94,7 @@ func NewParams(
 		ConsumerRewardDenomRegistrationFee:    consumerRewardDenomRegistrationFee,
 		BlocksPerEpoch:                        blocksPerEpoch,
 		NumberOfEpochsToStartReceivingRewards: numberOfEpochsToStartReceivingRewards,
+		MaxProviderConsensusValidators:        maxProviderConsensusValidators,
 	}
 }
 
@@ -118,6 +125,7 @@ func DefaultParams() Params {
 		},
 		DefaultBlocksPerEpoch,
 		DefaultNumberOfEpochsToStartReceivingRewards,
+		DefaultMaxProviderConsensusValidators,
 	)
 }
 
@@ -150,6 +158,10 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.NumberOfEpochsToStartReceivingRewards); err != nil {
 		return fmt.Errorf("number of epochs to start receiving rewards is invalid: %s", err)
 	}
+
+	if err := ccvtypes.ValidatePositiveInt64(p.MaxProviderConsensusValidators); err != nil {
+		return fmt.Errorf("max provider consensus validators is invalid: %s", err)
+	}
 	return nil
 }
 
@@ -164,6 +176,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
 		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyNumberOfEpochsToStartReceivingRewards, p.NumberOfEpochsToStartReceivingRewards, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyMaxProviderConsensusValidators, p.MaxProviderConsensusValidators, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

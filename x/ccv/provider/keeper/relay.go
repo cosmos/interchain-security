@@ -13,6 +13,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -55,7 +58,10 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 
 // EndBlockVSU contains the EndBlock logic needed for
 // the Validator Set Update sub-protocol
-func (k Keeper) EndBlockVSU(ctx sdk.Context) {
+func (k Keeper) EndBlockVSU(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
+	// logic to update the provider consensus validator set.
+	valUpdates := k.ProviderValidatorUpdates(ctx)
+
 	if k.BlocksUntilNextEpoch(ctx) == 0 {
 		// only queue and send VSCPackets at the boundaries of an epoch
 
@@ -67,6 +73,49 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 		// the updates will remain queued until the channel is established
 		k.SendVSCPackets(ctx)
 	}
+
+	return valUpdates, nil
+}
+
+// ProviderValidatorUpdates returns changes in the provider consensus validator set
+// from the last block to the current one.
+// It retrieves the bonded validators from the staking module and creates a `ConsumerValidator` object for each validator.
+// The maximum number of validators is determined by the `maxValidators` parameter.
+// The function returns the difference between the current validator set and the next validator set as a list of `abci.ValidatorUpdate` objects.
+func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
+	// get the bonded validators from the staking module
+	bondedValidators, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to get bonded validators: %w", err))
+	}
+
+	// get the last validator set sent to consensus
+	currentValidators, err := k.GetLastProviderConsensusValSet(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to get last provider consensus validator set: %w", err))
+	}
+
+	nextValidators := []types.ConsensusValidator{}
+	maxValidators := k.GetMaxProviderConsensusValidators(ctx)
+	// avoid out of range errors by bounding the max validators to the number of bonded validators
+	if maxValidators > int64(len(bondedValidators)) {
+		maxValidators = int64(len(bondedValidators))
+	}
+	for _, val := range bondedValidators[:maxValidators] {
+		nextValidator, err := k.CreateProviderConsensusValidator(ctx, val)
+		if err != nil {
+			k.Logger(ctx).Error("error when creating provider consensus validator", "error", err, "validator", val)
+			continue
+		}
+		nextValidators = append(nextValidators, nextValidator)
+	}
+
+	// store the validator set we will send to consensus
+	k.SetLastProviderConsensusValSet(ctx, nextValidators)
+
+	valUpdates := DiffValidators(currentValidators, nextValidators)
+
+	return valUpdates
 }
 
 // BlocksUntilNextEpoch returns the number of blocks until the next epoch starts
@@ -144,21 +193,31 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	}
 
 	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
-		currentValidators := k.GetConsumerValSet(ctx, chainID)
+		currentValidators, err := k.GetConsumerValSet(ctx, chainID)
+		if err != nil {
+			panic(fmt.Errorf("failed to get consumer validators: %w", err))
+		}
 		topN, _ := k.GetTopN(ctx, chainID)
 
 		if topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, topN)
-			if err == nil {
-				// set the minimal power of validators in the top N in the store
-				k.SetMinimumPowerInTopN(ctx, chainID, minPower)
-
-				k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
-			} else {
-				// we just log here and do not panic because panic-ing would halt the provider chain
-				k.Logger(ctx).Error("failed to compute min power to opt in for chain", "chain", chainID, "error", err)
+			// of the active validators
+			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
+			if err != nil {
+				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
+				panic(fmt.Errorf("failed to get active validators: %w", err))
 			}
+
+			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			if err != nil {
+				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
+				panic(fmt.Errorf("failed to compute min power to opt in for chain %v: %w", chainID, err))
+			}
+
+			// set the minimal power of validators in the top N in the store
+			k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+
+			k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
 		}
 
 		nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)

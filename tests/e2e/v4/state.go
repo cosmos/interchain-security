@@ -236,7 +236,7 @@ func (tr Commands) GetBalance(chain ChainID, validator ValidatorID) uint {
 
 // interchain-securityd query gov proposals
 func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
-	var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
+	noProposalRegex := regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
@@ -411,6 +411,7 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 
 	return chains
 }
+
 func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
@@ -659,4 +660,10 @@ func (tr Commands) GetConsumerCommissionRate(chain ChainID, validator ValidatorI
 
 func uintPtr(i uint) *uint {
 	return &i
+}
+
+func (tr Commands) GetInflationRate(
+	chain ChainID,
+) float64 {
+	panic("'GetInflationRate' is not implemented in this version")
 }

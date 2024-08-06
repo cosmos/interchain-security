@@ -49,6 +49,7 @@ func TestParams(t *testing.T) {
 		},
 		600,
 		24,
+		10,
 	)
 	providerKeeper.SetParams(ctx, newParams)
 	params = providerKeeper.GetParams(ctx)

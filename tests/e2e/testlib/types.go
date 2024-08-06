@@ -37,6 +37,7 @@ type ChainCommands interface {
 	GetValPower(chain ChainID, validator ValidatorID) uint
 	GetValStakedTokens(chain ChainID, validatorAddress string) uint
 	GetQueryNodeIP(chain ChainID) string
+	GetInflationRate(chain ChainID) float64
 	GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64
 }
 
@@ -154,7 +155,6 @@ type ProposalAndType struct {
 	RawProposal json.RawMessage
 	Type        string
 }
-
 type ChainState struct {
 	ValBalances                    *map[ValidatorID]uint
 	Proposals                      *map[uint]Proposal
@@ -171,6 +171,7 @@ type ChainState struct {
 	RegisteredConsumerRewardDenoms *[]string
 	ClientsFrozenHeights           *map[string]clienttypes.Height
 	HasToValidate                  *map[ValidatorID][]ChainID // only relevant to provider chain
+	InflationRateChange            *int                       // whether the inflation rate between two blocks changes negatively (any negative number), is equal (0), or changes positively (any positive number)
 	ConsumerCommissionRates        *map[ValidatorID]float64
 }
 

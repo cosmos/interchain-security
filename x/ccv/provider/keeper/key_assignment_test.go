@@ -797,7 +797,9 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				func(providerAddr types.ProviderConsAddress) bool {
 					return true
 				})
-			updates = providerkeeper.DiffValidators(k.GetConsumerValSet(ctx, CHAINID), nextValidators)
+			valSet, error := k.GetConsumerValSet(ctx, CHAINID)
+			require.NoError(t, error)
+			updates = providerkeeper.DiffValidators(valSet, nextValidators)
 			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
 
 			consumerValset.apply(updates)

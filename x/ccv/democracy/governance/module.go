@@ -74,7 +74,6 @@ func (am AppModule) EndBlock(c context.Context) error {
 		deleteForbiddenProposal(ctx, am, proposal)
 		return false, nil
 	})
-
 	if err != nil {
 		return err
 	}

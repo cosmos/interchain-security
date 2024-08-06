@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"testing"
 
-	"cosmossdk.io/math"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
@@ -109,11 +112,11 @@ func TestQueryConsumerValidators(t *testing.T) {
 
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	consumerKey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	consumerValidator1 := types.ConsumerValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, ConsumerPublicKey: &consumerKey1}
+	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &consumerKey1}
 
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
 	consumerKey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	consumerValidator2 := types.ConsumerValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, ConsumerPublicKey: &consumerKey2}
+	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &consumerKey2}
 
 	expectedResponse := types.QueryConsumerValidatorsResponse{
 		Validators: []*types.QueryConsumerValidatorsValidator{
@@ -124,7 +127,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 
 	// set up the client id so the chain looks like it "started"
 	pk.SetConsumerClientId(ctx, chainID, "clientID")
-	pk.SetConsumerValSet(ctx, chainID, []types.ConsumerValidator{consumerValidator1, consumerValidator2})
+	pk.SetConsumerValSet(ctx, chainID, []types.ConsensusValidator{consumerValidator1, consumerValidator2})
 
 	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
@@ -152,10 +155,10 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	}
 
 	// set `providerAddr` as a consumer validator on "chain1"
-	pk.SetConsumerValidator(ctx, "chain1", types.ConsumerValidator{
+	pk.SetConsumerValidator(ctx, "chain1", types.ConsensusValidator{
 		ProviderConsAddr: providerAddr.ToSdkConsAddr(),
 		Power:            1,
-		ConsumerPublicKey: &crypto.PublicKey{
+		PublicKey: &crypto.PublicKey{
 			Sum: &crypto.PublicKey_Ed25519{
 				Ed25519: []byte{1},
 			},
@@ -164,6 +167,11 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 
 	// set `providerAddr` as an opted-in validator on "chain3"
 	pk.SetOptedIn(ctx, "chain3", providerAddr)
+
+	// set max provider consensus vals to include all validators
+	params := pk.GetParams(ctx)
+	params.MaxProviderConsensusValidators = 3
+	pk.SetParams(ctx, params)
 
 	// `providerAddr` has to validate "chain1" because it is a consumer validator in this chain, as well as "chain3"
 	// because it opted in, in "chain3" and `providerAddr` belongs to the bonded validators

@@ -143,6 +143,10 @@ func (k Keeper) mustValidateFields() {
 	// ccv.PanicIfZeroOrNil(k.govKeeper, "govKeeper")                         // 17
 }
 
+func (k *Keeper) SetGovKeeper(govKeeper govkeeper.Keeper) {
+	k.govKeeper = govKeeper
+}
+
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx context.Context) log.Logger {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -1156,6 +1160,89 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MinimumPowerInTopNKey(chainID))
+}
+
+// SetMinStake sets the minimum stake required for a validator to validate
+// a given consumer chain.
+func (k Keeper) SetMinStake(
+	ctx sdk.Context,
+	chainID string,
+	minStake uint64,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, minStake)
+
+	store.Set(types.MinStakeKey(chainID), buf)
+}
+
+// GetMinStake returns the minimum stake required for a validator to validate
+// a given consumer chain.
+func (k Keeper) GetMinStake(
+	ctx sdk.Context,
+	chainID string,
+) (uint64, bool) {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.MinStakeKey(chainID))
+	if buf == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint64(buf), true
+}
+
+// DeleteMinStake removes the minimum stake required for a validator to validate
+// a given consumer chain.
+func (k Keeper) DeleteMinStake(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.MinStakeKey(chainID))
+}
+
+// SetInactiveValidatorsAllowed sets whether inactive validators are allowed to validate
+// a given consumer chain.
+func (k Keeper) SetInactiveValidatorsAllowed(
+	ctx sdk.Context,
+	chainID string,
+	allowed bool,
+) {
+	if allowed {
+		k.EnableInactiveValidators(ctx, chainID)
+	} else {
+		k.DisableInactiveValidators(ctx, chainID)
+	}
+}
+
+// EnableInactiveValidators sets the flag to signal that inactive validators are allowed to validate
+// a given consumer chain.
+func (k Keeper) EnableInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.AllowInactiveValidatorsKey(chainID), []byte{})
+}
+
+// AllowsInactiveValidators returns whether inactive validators are allowed to validate
+// a given consumer chain.
+func (k Keeper) AllowsInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Has(types.AllowInactiveValidatorsKey(chainID))
+}
+
+// DisableInactiveValidators removes the flag of whether inactive validators are allowed to validate
+// a given consumer chain.
+func (k Keeper) DisableInactiveValidators(
+	ctx sdk.Context,
+	chainID string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.AllowInactiveValidatorsKey(chainID))
 }
 
 func (k Keeper) UnbondingCanComplete(ctx sdk.Context, id uint64) error {

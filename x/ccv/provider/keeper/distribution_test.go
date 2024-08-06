@@ -53,7 +53,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		keeper.SetConsumerValidator(
 			ctx,
 			chainID,
-			providertypes.ConsumerValidator{
+			providertypes.ConsensusValidator{
 				ProviderConsAddr: val.Address,
 				Power:            val.VotingPower,
 			},

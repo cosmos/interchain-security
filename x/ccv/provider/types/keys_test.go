@@ -10,6 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cryptoutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
@@ -113,6 +115,13 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(41), providertypes.ConsumerAddrsToPruneV2KeyPrefix())
 	i++
+	require.Equal(t, byte(42), providertypes.LastProviderConsensusValsPrefix()[0])
+	i++
+	require.Equal(t, byte(43), providertypes.MinStakeKey("chainID")[0])
+	i++
+	require.Equal(t, byte(44), providertypes.AllowInactiveValidatorsKey("chainID")[0])
+	i++
+
 	prefixes := providertypes.GetAllKeyPrefixes()
 	require.Equal(t, len(prefixes), i)
 }
@@ -177,6 +186,9 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerCommissionRateKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.MinimumPowerInTopNKey("chainID"),
 		providertypes.ConsumerAddrsToPruneV2Key("chainID", time.Time{}),
+		providertypes.MinStakeKey("chainID"),
+		providertypes.AllowInactiveValidatorsKey("chainID"),
+		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
 	}
 }
 

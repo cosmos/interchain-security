@@ -263,6 +263,8 @@ type SubmitConsumerAdditionProposalAction struct {
 	ValidatorSetCap     uint32
 	Allowlist           []string
 	Denylist            []string
+	MinStake            uint64
+	AllowInactiveVals   bool
 }
 
 func (tr Chain) submitConsumerAdditionProposal(
@@ -292,6 +294,8 @@ func (tr Chain) submitConsumerAdditionProposal(
 		ValidatorSetCap:                   action.ValidatorSetCap,
 		Allowlist:                         action.Allowlist,
 		Denylist:                          action.Denylist,
+		MinStake:                          action.MinStake,
+		AllowInactiveVals:                 action.AllowInactiveVals,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -334,7 +338,6 @@ func (tr Chain) submitConsumerAdditionProposal(
 		fmt.Println("submitConsumerAdditionProposal json:", jsonStr)
 	}
 	bz, err = cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1010,7 +1013,6 @@ func (tr Chain) addChainToHermes(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
-
 	bz, err := tr.target.ExecCommand("bash", "-c", "hermes", "version").CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n error getting hermes version", string(bz))
@@ -1916,7 +1918,7 @@ func (tr Chain) registerRepresentative(
 				panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 			}
 			defer file.Close()
-			err = os.WriteFile(file.Name(), []byte(fileContent), 0600)
+			err = os.WriteFile(file.Name(), []byte(fileContent), 0o600)
 			if err != nil {
 				log.Fatalf("Failed writing consumer genesis to file: %v", err)
 			}

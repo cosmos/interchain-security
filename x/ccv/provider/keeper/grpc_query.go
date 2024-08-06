@@ -325,10 +325,15 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	}
 
 	var validators []*types.QueryConsumerValidatorsValidator
-	for _, v := range k.GetConsumerValSet(ctx, consumerChainID) {
+
+	consumerValSet, err := k.GetConsumerValSet(ctx, consumerChainID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	for _, v := range consumerValSet {
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
 			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
-			ConsumerKey:     v.ConsumerPublicKey,
+			ConsumerKey:     v.PublicKey,
 			Power:           v.Power,
 		})
 	}
@@ -384,7 +389,7 @@ func (k Keeper) hasToValidate(
 	}
 
 	// if the validator was not part of the last epoch, check if the validator is going to be part of te next epoch
-	bondedValidators, err := k.GetLastBondedValidators(ctx)
+	activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 	if err != nil {
 		return false, nil
 	}
@@ -392,7 +397,7 @@ func (k Keeper) hasToValidate(
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
 		if found {
-			k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+			k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
 		} else {
 			k.Logger(ctx).Error("did not find min power in top N for chain", "chain", chainID)
 		}

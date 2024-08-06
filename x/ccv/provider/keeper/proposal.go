@@ -82,6 +82,8 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *ty
 		ValidatorSetCap:    proposal.ValidatorSetCap,
 		Allowlist:          proposal.Allowlist,
 		Denylist:           proposal.Denylist,
+		MinStake:           proposal.MinStake,
+		AllowInactiveVals:  proposal.AllowInactiveVals,
 	}
 
 	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
@@ -217,6 +219,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteValidatorSetCap(ctx, chainID)
 	k.DeleteAllowlist(ctx, chainID)
 	k.DeleteDenylist(ctx, chainID)
+	k.DeleteMinStake(ctx, chainID)
+	k.DisableInactiveValidators(ctx, chainID)
 
 	k.DeleteAllOptedIn(ctx, chainID)
 	k.DeleteConsumerValSet(ctx, chainID)
@@ -263,20 +267,29 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 
 	if prop.Top_N > 0 {
+		// get the consensus active validators
+		// we do not want to base the power calculation for the top N
+		// on inactive validators, too, since the top N will be a percentage of the active set power
+		// otherwise, it could be that inactive validators are forced to validate
+		activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
+		if err != nil {
+			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
+		}
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, prop.Top_N)
+		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, prop.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
-		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
 		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 	}
+	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
 	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
-	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
+	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsensusValidator{}, nextValidators)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
@@ -362,6 +375,8 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
 		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
+		k.SetMinStake(cachedCtx, prop.ChainId, prop.MinStake)
+		k.SetInactiveValidatorsAllowed(cachedCtx, prop.ChainId, prop.AllowInactiveVals)
 
 		for _, address := range prop.Allowlist {
 			consAddr, err := sdk.ConsAddressFromBech32(address)

@@ -413,7 +413,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().NoError(err, "no error expected")
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 
-	providerKeeper.SetConsumerValidator(ctx, firstBundle.Chain.ChainID, providertypes.ConsumerValidator{
+	providerKeeper.SetConsumerValidator(ctx, firstBundle.Chain.ChainID, providertypes.ConsensusValidator{
 		ProviderConsAddr: validAddress,
 	})
 

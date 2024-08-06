@@ -106,6 +106,10 @@ message ConsumerAdditionProposal {
   repeated string allowlist = 18;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 19;
+  // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+  uint64 min_stake = 20;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 21;
 }
 
 // ConsumerRemovalProposal is a governance proposal on the provider chain to
@@ -156,6 +160,10 @@ message ConsumerModificationProposal {
   repeated string allowlist = 7;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
+  // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+  uint64 min_stake = 9;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 10;
 }
 
 
@@ -250,6 +258,10 @@ message Params {
 
   // The number of epochs a validator has to validate a consumer chain in order to start receiving rewards from that chain.
   int64 number_of_epochs_to_start_receiving_rewards = 11;
+  
+  // The maximal number of validators that will be passed
+  // to the consensus engine on the provider.
+  int64 max_provider_consensus_validators = 12;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators
@@ -322,15 +334,18 @@ message ConsumerAddrsToPruneV2 {
   AddressList consumer_addrs = 3;
 }
 
-// ConsumerValidator is used to facilitate epoch-based transitions. It contains relevant info for
-// a validator that is expected to validate on a consumer chain during an epoch.
-message ConsumerValidator {
+// ConsensusValidator is used to express a validator that
+// should be validating on a chain. 
+// It contains relevant info for
+// a validator that is expected to validate on 
+// either the provider or a consumer chain.
+message ConsensusValidator {
   // validator's consensus address on the provider chain
   bytes provider_cons_addr = 1;
   // voting power the validator has during this epoch
   int64 power = 2;
   // public key the validator uses on the consumer chain during this epoch
-  tendermint.crypto.PublicKey consumer_public_key = 3;
+  tendermint.crypto.PublicKey public_key = 3;
   // height the validator had when it FIRST became a consumer validator
   // If a validator becomes a consumer validator at height `H` and is continuously a consumer validator for all the upcoming
   // epochs, then the height of the validator SHOULD remain `H`. This height only resets to a different height if a validator

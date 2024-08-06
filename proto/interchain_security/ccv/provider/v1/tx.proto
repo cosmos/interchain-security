@@ -183,6 +183,10 @@ message MsgConsumerAddition {
   repeated string denylist = 17;
   // signer address
   string authority = 18 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+  uint64 min_stake = 19;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 20;
 }
 
 // MsgConsumerAdditionResponse defines response type for MsgConsumerAddition messages
@@ -325,6 +329,10 @@ message MsgConsumerModification {
   repeated string denylist = 8;
   // signer address
   string authority = 9 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+  uint64 min_stake = 10;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 11;
 }
 
 message MsgConsumerModificationResponse {}
