@@ -492,3 +492,15 @@ func (k Keeper) QueryBlocksUntilNextEpoch(goCtx context.Context, req *types.Quer
 
 	return &types.QueryBlocksUntilNextEpochResponse{BlocksUntilNextEpoch: uint64(blocksUntilNextEpoch)}, nil
 }
+
+// QueryConsumerIdFromClientId returns the consumer id of the chain associated with this client id
+func (k Keeper) QueryConsumerIdFromClientId(goCtx context.Context, req *types.QueryConsumerIdFromClientIdRequest) (*types.QueryConsumerIdFromClientIdResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	consumerId, found := k.GetClientIdToConsumerId(ctx, req.ClientId)
+	if !found {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("no known consumer chain for this client id: %s", req.ClientId))
+	}
+
+	return &types.QueryConsumerIdFromClientIdResponse{ConsumerId: consumerId}, nil
+}
