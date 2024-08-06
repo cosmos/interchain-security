@@ -273,3 +273,22 @@ func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
 	ctx = ctx.WithBlockTime(time.Unix(30, 0))
 	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
 }
+
+func TestIsValidatorOptedInToChain(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainId := "chainId"
+	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
+	_, found := providerKeeper.IsValidatorOptedInToChain(ctx, providerAddr, chainId)
+	require.False(t, found)
+
+	expectedConsumerId := "consumerId"
+	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, expectedConsumerId, providertypes.ConsumerRegistrationRecord{
+		ChainId: chainId,
+	})
+	providerKeeper.SetOptedIn(ctx, expectedConsumerId, providerAddr)
+	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChain(ctx, providerAddr, chainId)
+	require.True(t, found)
+	require.Equal(t, expectedConsumerId, actualConsumerId)
+}

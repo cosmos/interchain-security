@@ -95,8 +95,7 @@ consumer chains with the exact same `chainId`, and it is the responsibility of t
 to interact with by providing the right `consumerId`.
 
 Note that with Permissionless ICS, all interactions on a consumer chain have to use the `consumerId` instead of the `chainId`.
-For example, if a validator opts in on a chain using `MsgOptIn`, the validator has to provide the `consumerId`. To also
-provide the `consumerId` for Top N consumers chains, we store a mapping between `proposalID` to `consumerId`. This storing
+For example, if a validator opts in on a chain using `MsgOptIn`, the validator has to provide the `consumerId`. To also provide the `consumerId` for Top N consumers chains, we store a mapping between `proposalID` to `consumerId`. This storing
 takes place in the [`AfterProposalSubmission`](https://github.com/cosmos/cosmos-sdk/blob/v0.50.8/x/gov/types/hooks.go#L19) hook.
 Specifically, for the equivocation evidence, we update the `MsgSubmitConsumerMisbehaviour` and `MsgSubmitConsumerDoubleVoting` messages to include the `consumerId`,
 and change [Hermes](https://github.com/informalsystems/hermes) to include `consumerId` in those constructed messages as well.
@@ -331,6 +330,9 @@ We need to perform multiple migrations. All state needs to be reindex based on a
 Because we only have two consumer chains at the moment, this is not going to be an expensive migration even if we have some live
 consumer chains that are being voted upon. Similarly, all the messages, queries, etc. would need to be changed to operate on a `consumerId`
 instead of a `chainId`.
+
+To prevent a validator from accidentally opting in to a wrong chain, we disallow a validator from opting in to two or more
+different chains (different `consumerId`) with the same `chainId`.
 
 It is **important** to migrate any ongoing `ConsumerAdditionProposal`s when we upgrade before we actually deprecate `ConsumerAdditionProposal`s.
 

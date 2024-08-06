@@ -38,4 +38,5 @@ var (
 	ErrNoConsumerGenesis                = errorsmod.Register(ModuleName, 30, "missing consumer genesis")
 	ErrInvalidConsumerGenesis           = errorsmod.Register(ModuleName, 31, "invalid consumer genesis")
 	ErrNoConsumerId                     = errorsmod.Register(ModuleName, 32, "missing consumer id")
+	ErrAlreadyOptedIn                   = errorsmod.Register(ModuleName, 33, "already opted in to a chain with the same chain id")
 )

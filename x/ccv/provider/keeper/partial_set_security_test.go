@@ -32,13 +32,30 @@ func TestHandleOptIn(t *testing.T) {
 
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
-	// trying to opt in to a non-proposed and non-registered chain returns an error
-	require.Error(t, providerKeeper.HandleOptIn(ctx, "unknownChainID", providerAddr, ""))
+	// trying to opt in to an unknown chain
+	require.Error(t, providerKeeper.HandleOptIn(ctx, "unknownConsumerId", providerAddr, ""))
 
-	providerKeeper.SetProposedConsumerChain(ctx, "chainID", 1)
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", providerAddr))
-	providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, "")
-	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", providerAddr))
+	// trying to opt in to a stopped consumer chain
+	providerKeeper.SetConsumerIdToPhase(ctx, "stoppedConsumerId", keeper.Stopped)
+	require.Error(t, providerKeeper.HandleOptIn(ctx, "stoppedConsumerId", providerAddr, ""))
+
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId", keeper.Registered)
+	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "consumerId", types.ConsumerRegistrationRecord{
+		ChainId: "chainId",
+	})
+	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", providerAddr))
+	err := providerKeeper.HandleOptIn(ctx, "consumerId", providerAddr, "")
+	require.NoError(t, err)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "consumerId", providerAddr))
+
+	// validator tries to opt in to another chain with chain id ("chainId") while it is already opted in to
+	// a different chain with the same chain id
+	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId2", keeper.Registered)
+	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "consumerId2", types.ConsumerRegistrationRecord{
+		ChainId: "chainId",
+	})
+	err = providerKeeper.HandleOptIn(ctx, "consumerId2", providerAddr, "")
+	require.ErrorContains(t, err, "validator has already opted in to a chain")
 }
 
 func TestHandleOptInWithConsumerKey(t *testing.T) {
@@ -75,6 +92,10 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	expectedConsumerPubKey, err := providerKeeper.ParseConsumerKey(consumerKey)
 	require.NoError(t, err)
 
+	providerKeeper.SetConsumerIdToPhase(ctx, "chainID", keeper.Registered)
+	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "chainID", types.ConsumerRegistrationRecord{
+		ChainId: "chainID",
+	})
 	err = providerKeeper.HandleOptIn(ctx, "chainID", providerAddr, consumerKey)
 	require.NoError(t, err)
 
