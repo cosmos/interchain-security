@@ -310,3 +310,19 @@ func TestGetConsumerChain(t *testing.T) {
 		require.Equal(t, expectedGetAllOrder[i], c)
 	}
 }
+
+func TestQueryConsumerIdFromClientId(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	_, err := providerKeeper.QueryConsumerIdFromClientId(ctx, &types.QueryConsumerIdFromClientIdRequest{ClientId: "clientId"})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "no known consumer chain")
+
+	expectedConsumerId := "consumerId"
+	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", expectedConsumerId)
+
+	res, err := providerKeeper.QueryConsumerIdFromClientId(ctx, &types.QueryConsumerIdFromClientIdRequest{ClientId: "clientId"})
+	require.NoError(t, err)
+	require.Equal(t, expectedConsumerId, res.ConsumerId)
+}

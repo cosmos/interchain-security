@@ -64,9 +64,11 @@ message MsgSubmitConsumerMisbehaviour {
   option (gogoproto.goproto_getters) = false;
 
   string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the consumer id of the consumer chain where the misbehaviour occurred
+  string consumer_id = 2;
   // The Misbehaviour of the consumer chain wrapping
   // two conflicting IBC headers
-  ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 2;
+  ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 3;
 }
 
 message MsgSubmitConsumerMisbehaviourResponse {}
@@ -80,11 +82,13 @@ message MsgSubmitConsumerDoubleVoting {
   option (gogoproto.goproto_getters) = false;
 
   string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the consumer id of the consumer chain where the double-voting took place
+  string consumer_id = 2;
   // The equivocation of the consumer chain wrapping
   // an evidence of a validator that signed two conflicting votes
-  tendermint.types.DuplicateVoteEvidence duplicate_vote_evidence = 2;
+  tendermint.types.DuplicateVoteEvidence duplicate_vote_evidence = 3;
   // The light client header of the infraction block
-  ibc.lightclients.tendermint.v1.Header infraction_block_header = 3;
+  ibc.lightclients.tendermint.v1.Header infraction_block_header = 4;
 }
 
 message MsgSubmitConsumerDoubleVotingResponse {}

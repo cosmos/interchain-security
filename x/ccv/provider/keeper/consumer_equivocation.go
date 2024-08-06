@@ -32,8 +32,8 @@ import (
 // and a public key and, if successful, executes the slashing, jailing, and tombstoning of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(
 	ctx sdk.Context,
-	evidence *tmtypes.DuplicateVoteEvidence,
 	consumerId string,
+	evidence *tmtypes.DuplicateVoteEvidence,
 	pubkey cryptotypes.PubKey,
 ) error {
 	// check that the evidence is for an ICS consumer chain
@@ -57,8 +57,18 @@ func (k Keeper) HandleConsumerDoubleVoting(
 		)
 	}
 
+	// get the chainId of this consumer chain to verify the double-voting evidence
+	chainId, found := k.GetConsumerIdToRegistrationRecord(ctx, consumerId)
+	if !found {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"could not find the chain id of the consumer chain with consuemr id: %s",
+			consumerId,
+		)
+	}
+
 	// verifies the double voting evidence using the consumer chain public key
-	if err := k.VerifyDoubleVotingEvidence(*evidence, consumerId, pubkey); err != nil {
+	if err := k.VerifyDoubleVotingEvidence(*evidence, chainId.ChainId, pubkey); err != nil {
 		return err
 	}
 
@@ -85,10 +95,10 @@ func (k Keeper) HandleConsumerDoubleVoting(
 }
 
 // VerifyDoubleVotingEvidence verifies a double voting evidence
-// for a given consumer id and a validator public key
+// for a given chain id and a validator public key
 func (k Keeper) VerifyDoubleVotingEvidence(
 	evidence tmtypes.DuplicateVoteEvidence,
-	consumerId string,
+	chainId string,
 	pubkey cryptotypes.PubKey,
 ) error {
 	if pubkey == nil {
@@ -140,10 +150,10 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	vb := evidence.VoteB.ToProto()
 
 	// signatures must be valid
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(consumerId, va), evidence.VoteA.Signature) {
+	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainId, va), evidence.VoteA.Signature) {
 		return fmt.Errorf("verifying VoteA: %w", tmtypes.ErrVoteInvalidSignature)
 	}
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(consumerId, vb), evidence.VoteB.Signature) {
+	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainId, vb), evidence.VoteB.Signature) {
 		return fmt.Errorf("verifying VoteB: %w", tmtypes.ErrVoteInvalidSignature)
 	}
 
@@ -156,11 +166,11 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 
 // HandleConsumerMisbehaviour checks if the given IBC misbehaviour corresponds to an equivocation light client attack,
 // and in this case, slashes, jails, and tombstones
-func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, consumerId string, misbehaviour ibctmtypes.Misbehaviour) error {
 	logger := k.Logger(ctx)
 
 	// Check that the misbehaviour is valid and that the client consensus states at trusted heights are within trusting period
-	if err := k.CheckMisbehaviour(ctx, misbehaviour); err != nil {
+	if err := k.CheckMisbehaviour(ctx, consumerId, misbehaviour); err != nil {
 		logger.Info("Misbehaviour rejected", err.Error())
 
 		return err
@@ -182,7 +192,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
 			ctx,
-			misbehaviour.Header1.Header.ChainID,
+			consumerId,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
 		err := k.SlashValidator(ctx, providerAddr)
@@ -292,16 +302,26 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
 // a valid light client attack from an ICS consumer chain and that the light client isn't expired
-func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-	consumerChainID := misbehaviour.Header1.Header.ChainID
+func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehaviour ibctmtypes.Misbehaviour) error {
+	chainId := misbehaviour.Header1.Header.ChainID
+
+	registrationRecord, found := k.GetConsumerIdToRegistrationRecord(ctx, consumerId)
+	if !found {
+		return fmt.Errorf("cannot find registration record of consumer chain (consumerId): %s", consumerId)
+	} else if registrationRecord.ChainId != chainId {
+		return fmt.Errorf("incorrect misbheaviour for a different chain id (%s) than that of the consumer chain %s (consumerId): %s",
+			chainId,
+			registrationRecord.ChainId,
+			consumerId)
+	}
 
 	// check that the misbehaviour is for an ICS consumer chain
-	clientId, found := k.GetConsumerClientId(ctx, consumerChainID)
+	clientId, found := k.GetConsumerClientId(ctx, consumerId)
 	if !found {
-		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", consumerChainID)
+		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain (consumerId): %s", consumerId)
 	} else if misbehaviour.ClientId != clientId {
-		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain %s is %s got %s",
-			consumerChainID,
+		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain with id %s is %s got %s",
+			consumerId,
 			clientId,
 			misbehaviour.ClientId,
 		)
@@ -315,7 +335,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	}
 
 	// Check that the evidence is not too old
-	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerChainID)
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerId)
 	evidenceHeight := misbehaviour.Header1.GetHeight().GetRevisionHeight()
 	// Note that the revision number is not relevant for checking the age of evidence
 	// as it's already part of the chain ID and the minimum height is mapped to chain IDs
@@ -323,7 +343,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
-			consumerChainID,
+			consumerId,
 			evidenceHeight,
 			minHeight,
 		)

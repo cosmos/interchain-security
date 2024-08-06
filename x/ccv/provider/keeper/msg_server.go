@@ -120,7 +120,7 @@ func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChang
 
 func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
+	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, msg.ConsumerId, *msg.Misbehaviour); err != nil {
 		return nil, err
 	}
 
@@ -169,9 +169,9 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		return nil, err
 	}
 
-	// handle the double voting evidence using the chain ID of the infraction block header
-	// and the malicious validator's public key
-	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader.Header.ChainID, pubkey); err != nil {
+	// handle the double voting evidence using the malicious validator's public key
+	consumerId := msg.ConsumerId
+	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, consumerId, evidence, pubkey); err != nil {
 		return nil, err
 	}
 
