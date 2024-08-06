@@ -267,7 +267,7 @@ func (k Keeper) DeleteClientIdToConsumerId(ctx sdk.Context, clientId string) {
 // that are ready to launch,  i.e., consumer clients to be created.
 func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context) []string {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToInitializationRecordKeyNameKeyPrefix())
+	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToInitializationRecordKeyPrefix())
 	defer iterator.Close()
 
 	var consumerIds []string
@@ -411,4 +411,30 @@ func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context) []string {
 	}
 
 	return consumerIds
+}
+
+// IsValidatorOptedInToChain checks if the validator with `providerAddr` is opted into the chain with the specified `chainId`.
+// It returns `found == true` and the corresponding chain's `consumerId` if the validator is opted in. Otherwise, it returns an empty string
+// for `consumerId` and `found == false`.
+func (k Keeper) IsValidatorOptedInToChain(ctx sdk.Context, providerAddr types.ProviderConsAddress, chainId string) (consumerId string, found bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToRegistrationRecordKeyPrefix())
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		// the `currentConsumerId` resides in the whole key, but we skip the first byte (because it's the `ConsumerIdKey`)
+		// plus 8 more bytes for the `uint64` in the key that contains the length of the `currentConsumerId`
+		currentConsumerId := string(iterator.Key()[1+8:])
+
+		var record types.ConsumerRegistrationRecord
+		err := record.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal registration record: %w for consumer id: %s", err, currentConsumerId))
+		}
+
+		if record.ChainId == chainId && k.IsOptedIn(ctx, currentConsumerId, providerAddr) {
+			return currentConsumerId, true
+		}
+	}
+	return "", false
 }
