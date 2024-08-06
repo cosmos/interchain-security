@@ -12,53 +12,53 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// GetConsumerChainConsensusValidatorsKey returns the store key for consumer validators of the consumer chain with `chainID`
-func (k Keeper) GetConsumerChainConsensusValidatorsKey(ctx sdk.Context, chainID string) []byte {
-	return types.ConsumerIdWithLenKey(types.ConsumerValidatorKeyPrefix(), chainID)
+// GetConsumerChainConsensusValidatorsKey returns the store key for consumer validators of the consumer chain with `consumerId`
+func (k Keeper) GetConsumerChainConsensusValidatorsKey(ctx sdk.Context, consumerId string) []byte {
+	return types.ConsumerIdWithLenKey(types.ConsumerValidatorKeyPrefix(), consumerId)
 }
 
-// SetConsumerValidator sets provided consumer `validator` on the consumer chain with `chainID`
+// SetConsumerValidator sets provided consumer `validator` on the consumer chain with `consumerId`
 func (k Keeper) SetConsumerValidator(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	validator types.ConsensusValidator,
 ) {
-	k.setValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), validator)
+	k.setValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId), validator)
 }
 
 // SetConsumerValSet resets the current consumer validators with the `nextValidators` computed by
 // `FilterValidators` and hence this method should only be called after `FilterValidators` has completed.
-func (k Keeper) SetConsumerValSet(ctx sdk.Context, chainID string, nextValidators []types.ConsensusValidator) {
-	k.setValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), nextValidators)
+func (k Keeper) SetConsumerValSet(ctx sdk.Context, consumerId string, nextValidators []types.ConsensusValidator) {
+	k.setValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId), nextValidators)
 }
 
 // DeleteConsumerValidator removes consumer validator with `providerAddr` address
 func (k Keeper) DeleteConsumerValidator(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	providerConsAddr types.ProviderConsAddress,
 ) {
-	k.deleteValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), providerConsAddr)
+	k.deleteValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId), providerConsAddr)
 }
 
-// DeleteConsumerValSet deletes all the stored consumer validators for chain `chainID`
+// DeleteConsumerValSet deletes all the stored consumer validators for chain with `consumerId`
 func (k Keeper) DeleteConsumerValSet(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 ) {
-	k.deleteValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID))
+	k.deleteValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId))
 }
 
-// IsConsumerValidator returns `true` if the consumer validator with `providerAddr` exists for chain `chainID`
+// IsConsumerValidator returns `true` if the consumer validator with `providerAddr` exists for chain with `consumerId`
 // and `false` otherwise
-func (k Keeper) IsConsumerValidator(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) bool {
-	return k.isValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID), providerAddr)
+func (k Keeper) IsConsumerValidator(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) bool {
+	return k.isValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId), providerAddr)
 }
 
-// GetConsumerValidator returns the consumer validator with `providerAddr` if it exists for chain `chainID`
-func (k Keeper) GetConsumerValidator(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) (types.ConsensusValidator, bool) {
+// GetConsumerValidator returns the consumer validator with `providerAddr` if it exists for chain with `consumerId`
+func (k Keeper) GetConsumerValidator(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) (types.ConsensusValidator, bool) {
 	store := ctx.KVStore(k.storeKey)
-	marshalledConsumerValidator := store.Get(types.ConsumerValidatorKey(chainID, providerAddr.ToSdkConsAddr()))
+	marshalledConsumerValidator := store.Get(types.ConsumerValidatorKey(consumerId, providerAddr.ToSdkConsAddr()))
 
 	if marshalledConsumerValidator == nil {
 		return types.ConsensusValidator{}, false
@@ -72,12 +72,12 @@ func (k Keeper) GetConsumerValidator(ctx sdk.Context, chainID string, providerAd
 	return validator, true
 }
 
-// GetConsumerValSet returns all the consumer validators for chain `chainID`
+// GetConsumerValSet returns all the consumer validators for chain with `consumerId`
 func (k Keeper) GetConsumerValSet(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 ) ([]types.ConsensusValidator, error) {
-	return k.getValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, chainID))
+	return k.getValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId))
 }
 
 // DiffValidators compares the current and the next epoch's consumer validators and returns the `ValidatorUpdate` diff
@@ -121,8 +121,8 @@ func DiffValidators(
 	return updates
 }
 
-// CreateConsumerValidator creates a consumer validator for `chainID` from the given staking `validator`
-func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validator stakingtypes.Validator) (types.ConsensusValidator, error) {
+// CreateConsumerValidator creates a consumer validator for `consumerId` from the given staking `validator`
+func (k Keeper) CreateConsumerValidator(ctx sdk.Context, consumerId string, validator stakingtypes.Validator) (types.ConsensusValidator, error) {
 	valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
 	if err != nil {
 		return types.ConsensusValidator{}, err
@@ -138,7 +138,7 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validat
 			validator, err)
 	}
 
-	consumerPublicKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, types.NewProviderConsAddress(consAddr))
+	consumerPublicKey, found := k.GetValidatorConsumerPubKey(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 	if !found {
 		consumerPublicKey, err = validator.TmConsPublicKey()
 		if err != nil {
@@ -147,7 +147,7 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validat
 	}
 
 	height := ctx.BlockHeight()
-	if v, found := k.GetConsumerValidator(ctx, chainID, types.ProviderConsAddress{Address: consAddr}); found {
+	if v, found := k.GetConsumerValidator(ctx, consumerId, types.ProviderConsAddress{Address: consAddr}); found {
 		// if validator was already a consumer validator, then do not update the height set the first time
 		// the validator became a consumer validator
 		height = v.JoinHeight
@@ -165,7 +165,7 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, chainID string, validat
 // the filtered set.
 func (k Keeper) FilterValidators(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	bondedValidators []stakingtypes.Validator,
 	predicate func(providerAddr types.ProviderConsAddress) bool,
 ) []types.ConsensusValidator {
@@ -177,7 +177,7 @@ func (k Keeper) FilterValidators(
 		}
 
 		if predicate(types.NewProviderConsAddress(consAddr)) {
-			nextValidator, err := k.CreateConsumerValidator(ctx, chainID, val)
+			nextValidator, err := k.CreateConsumerValidator(ctx, consumerId, val)
 			if err != nil {
 				// this should never happen but is recoverable if we exclude this validator from the next validator set
 				k.Logger(ctx).Error("could not create consumer validator",
