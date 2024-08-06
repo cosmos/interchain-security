@@ -144,7 +144,6 @@ var (
 		gov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
 				paramsclient.ProposalHandler,
-				ibcproviderclient.ConsumerRemovalProposalHandler,
 				ibcproviderclient.ConsumerModificationProposalHandler,
 				ibcproviderclient.ChangeRewardDenomsProposalHandler,
 			},
@@ -578,7 +577,6 @@ func New(
 			govtypes.ModuleName: gov.NewAppModuleBasic(
 				[]govclient.ProposalHandler{
 					paramsclient.ProposalHandler,
-					ibcproviderclient.ConsumerRemovalProposalHandler,
 					ibcproviderclient.ConsumerModificationProposalHandler,
 					ibcproviderclient.ChangeRewardDenomsProposalHandler,
 				},

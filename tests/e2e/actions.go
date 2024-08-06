@@ -380,45 +380,65 @@ func (tr Chain) submitConsumerRemovalProposal(
 	action SubmitConsumerRemovalProposalAction,
 	verbose bool,
 ) {
+	template := `
+	{
+		"messages": [
+		 {
+		  "@type": "/interchain_security.ccv.provider.v1.MsgConsumerRemoval",
+		  "chain_id": "%s",
+		  "stop_time": "%s",
+		  "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+		 }
+		],
+		"metadata": "ipfs://CID",
+		"deposit": "100000stake",
+		"title": "%s",
+		"summary": "It was a great chain",
+		"expedited": false
+	   }
+`
+	title := fmt.Sprintf("Stop the %v chain", action.ConsumerChain)
 	stopTime := tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset)
-	prop := client.ConsumerRemovalProposalJSON{
-		Title:    fmt.Sprintf("Stop the %v chain", action.ConsumerChain),
-		Summary:  "It was a great chain",
-		ChainId:  string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
-		StopTime: stopTime,
-		Deposit:  fmt.Sprint(action.Deposit) + `stake`,
-	}
 
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
+	jsonStr := fmt.Sprintf(template,
+		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		stopTime,
+		action.Deposit,
+		title)
 
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
-
-	bz, err = tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	bz, err = tr.target.ExecCommand(
-		tr.testConfig.chainConfigs[action.Chain].BinaryName,
-		"tx", "gov", "submit-legacy-proposal", "consumer-removal",
-		"/temp-proposal.json",
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--gas`, "900000",
-		`--keyring-backend`, `test`,
-		`-y`,
+	// #nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-removal.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
 	).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER REMOVAL PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerRemovalProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerRemovalProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit consumer removal proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerRemovalProposal output:", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated

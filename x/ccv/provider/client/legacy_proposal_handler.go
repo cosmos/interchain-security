@@ -15,66 +15,9 @@ import (
 )
 
 var (
-	ConsumerRemovalProposalHandler      = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd)
 	ChangeRewardDenomsProposalHandler   = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd)
 	ConsumerModificationProposalHandler = govclient.NewProposalHandler(SubmitConsumerModificationProposalTxCmd)
 )
-
-// SubmitConsumerRemovalPropTxCmd returns a CLI command handler for submitting
-// a consumer addition proposal via a transaction.
-func SubmitConsumerRemovalProposalTxCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "consumer-removal [proposal-file]",
-		Args:  cobra.ExactArgs(1),
-		Short: "Submit a consumer chain removal proposal",
-		Long: `
-Submit a consumer chain removal proposal along with an initial deposit.
-The proposal details must be supplied via a JSON file.
-
-Example:
-$ <appd> tx gov submit-legacy-proposal consumer-removal <path/to/proposal.json> --from=<key_or_address>
-
-Where proposal.json contains:
-{
-	 "title": "Stop the FooChain",
-	 "summary": "It was a great chain",
-	 "chain_id": "foochain",
-	 "stop_time": "2022-01-27T15:59:50.121607-08:00",
-	 "deposit": "10000stake"
-}
-			`, RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			proposal, err := ParseConsumerRemovalProposalJSON(args[0])
-			if err != nil {
-				return err
-			}
-
-			content := types.NewConsumerRemovalProposal(proposal.Title, proposal.Summary, proposal.ChainId, proposal.StopTime)
-			from := clientCtx.GetFromAddress()
-
-			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-			if err != nil {
-				return err
-			}
-
-			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
-			if err != nil {
-				return err
-			}
-
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary, false)
-			if err != nil {
-				return err
-			}
-
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
-		},
-	}
-}
 
 // SubmitChangeRewardDenomsProposalTxCmd returns a CLI command handler for submitting
 // a change reward denoms proposal via a transaction.
