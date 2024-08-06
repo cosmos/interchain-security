@@ -519,9 +519,9 @@ func SlashAcksKey(consumerId string) []byte {
 	return append([]byte{mustGetKeyPrefix(SlashAcksKeyName)}, []byte(consumerId)...)
 }
 
-// InitChainHeightKey returns the key under which the block height for a given chain ID is stored
-func InitChainHeightKey(chainID string) []byte {
-	return append([]byte{mustGetKeyPrefix(InitChainHeightKeyName)}, []byte(chainID)...)
+// InitChainHeightKey returns the key under which the block height for a given consumer id is stored
+func InitChainHeightKey(consumerId string) []byte {
+	return append([]byte{mustGetKeyPrefix(InitChainHeightKeyName)}, []byte(consumerId)...)
 }
 
 // PendingVSCsKey returns the key under which
@@ -727,8 +727,8 @@ func ConsumerAddrsToPruneV2KeyPrefix() byte {
 
 // ConsumerAddrsToPruneV2Key returns the key for storing the consumer validators
 // addresses that need to be pruned.
-func ConsumerAddrsToPruneV2Key(chainID string, pruneTs time.Time) []byte {
-	return ChainIdAndTsKey(ConsumerAddrsToPruneV2KeyPrefix(), chainID, pruneTs)
+func ConsumerAddrsToPruneV2Key(consumerId string, pruneTs time.Time) []byte {
+	return ConsumerIdAndTsKey(ConsumerAddrsToPruneV2KeyPrefix(), consumerId, pruneTs)
 }
 
 // LastProviderConsensusValsPrefix returns the key prefix for storing the last validator set sent to the consensus engine of the provider chain
@@ -736,7 +736,7 @@ func LastProviderConsensusValsPrefix() []byte {
 	return []byte{mustGetKeyPrefix(LastProviderConsensusValsKeyName)}
 }
 
-// MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain `chainID`
+// MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain with `consumerId`
 func MinStakeKey(consumerId string) []byte {
 	return ConsumerIdWithLenKey(mustGetKeyPrefix(MinStakeKeyName), consumerId)
 }
@@ -802,9 +802,9 @@ func ClientIdToConsumerIdKey(clientId string) []byte {
 	return ccvtypes.AppendMany(
 		// Append the prefix
 		[]byte{mustGetKeyPrefix(ClientIdToConsumerIdKeyName)},
-		// Append the chainID length
+		// Append the client id length
 		sdk.Uint64ToBigEndian(uint64(clientIdLength)),
-		// Append the chainID
+		// Append the client id
 		[]byte(clientId),
 	)
 }
@@ -819,10 +819,10 @@ func ClientIdToConsumerIdKey(clientId string) []byte {
 // Generic helpers section
 //
 
-// ChainIdAndTsKey returns the key with the following format:
-// bytePrefix | len(chainID) | chainID | timestamp
-func ChainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
-	partialKey := ConsumerIdWithLenKey(prefix, chainID)
+// ConsumerIdAndTsKey returns the key with the following format:
+// bytePrefix | len(consumerId) | consumerId | timestamp
+func ConsumerIdAndTsKey(prefix byte, consumerId string, timestamp time.Time) []byte {
+	partialKey := ConsumerIdWithLenKey(prefix, consumerId)
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	return ccvtypes.AppendMany(
 		// Append the partialKey
@@ -838,27 +838,27 @@ func ConsumerIdWithLenKey(prefix byte, consumerId string) []byte {
 	return ccvtypes.AppendMany(
 		// Append the prefix
 		[]byte{prefix},
-		// Append the chainID length
+		// Append the consumer id length
 		sdk.Uint64ToBigEndian(uint64(len(consumerId))),
-		// Append the chainID
+		// Append the consumer id
 		[]byte(consumerId),
 	)
 }
 
-// ParseChainIdAndTsKey returns the chain ID and time for a ChainIdAndTs key
-func ParseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
+// ParseConsumerIdAndTsKey returns the consumer id and time for a ConsumerIdIdAndTs key
+func ParseConsumerIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return "", time.Time{}, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
 	}
-	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8+int(chainIdL):])
+	consumerIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	consumerId := string(bz[prefixL+8 : prefixL+8+int(consumerIdL)])
+	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8+int(consumerIdL):])
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	return chainID, timestamp, nil
+	return consumerId, timestamp, nil
 }
 
 // ChainIdAndUintIdKey returns the key with the following format:
