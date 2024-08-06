@@ -391,14 +391,14 @@ func (tr Chain) submitConsumerRemovalProposal(
 		 }
 		],
 		"metadata": "ipfs://CID",
-		"deposit": "%sstake",
+		"deposit": "%dstake",
 		"title": "%s",
 		"summary": "It was a great chain",
 		"expedited": false
 	   }
 `
 	title := fmt.Sprintf("Stop the %v chain", action.ConsumerChain)
-	stopTime := tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset)
+	stopTime := tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset).Format(time.RFC3339Nano)
 
 	jsonStr := fmt.Sprintf(template,
 		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
