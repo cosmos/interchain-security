@@ -391,7 +391,7 @@ func (tr Chain) submitConsumerRemovalProposal(
 		 }
 		],
 		"metadata": "ipfs://CID",
-		"deposit": "100000stake",
+		"deposit": "%sstake",
 		"title": "%s",
 		"summary": "It was a great chain",
 		"expedited": false
@@ -461,31 +461,48 @@ func (tr Chain) submitConsumerModificationProposal(
 	action SubmitConsumerModificationProposalAction,
 	verbose bool,
 ) {
-	prop := client.ConsumerModificationProposalJSON{
-		Title:              "Propose the modification of the PSS parameters of a chain",
-		Summary:            "summary of a modification proposal",
-		ChainId:            string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
-		Deposit:            fmt.Sprint(action.Deposit) + `stake`,
-		TopN:               action.TopN,
-		ValidatorsPowerCap: action.ValidatorsPowerCap,
-		ValidatorSetCap:    action.ValidatorSetCap,
-		Allowlist:          action.Allowlist,
-		Denylist:           action.Denylist,
-	}
 
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
+	template := `
 
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
+{
+"messages": [
+  {
+    "@type": "/interchain_security.ccv.provider.v1.MsgConsumerModification",
+	"title": "Propose the modification of the PSS parameters of a chain",
+	"description": "description of the consumer modification proposal",
+	"chain_id": "%s",
+	"top_N": %d,
+	"validators_power_cap": %d,
+	"validator_set_cap": %d,
+	"allowlist": %s,
+	"denylist": %s,
+    "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+    "min_stake": "0",
+    "allow_inactive_vals": false
+  }
+ ],
+"metadata": "ipfs://CID",
+"deposit": "%sstake",
+"title": "Propose the modification of the PSS parameters of a chain",
+"summary": "summary of a modification proposal",
+"expedited": false
+ }
+`
 
-	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	bz, err = tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
+	jsonStr := fmt.Sprintf(template,
+		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		action.TopN,
+		action.ValidatorsPowerCap,
+		action.ValidatorSetCap,
+		action.Allowlist,
+		action.Denylist,
+		action.Deposit,
+	)
+
+	// #nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-mod.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
 	).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
@@ -494,7 +511,7 @@ func (tr Chain) submitConsumerModificationProposal(
 	// CONSUMER MODIFICATION PROPOSAL
 	cmd := tr.target.ExecCommand(
 		tr.testConfig.chainConfigs[action.Chain].BinaryName,
-		"tx", "gov", "submit-legacy-proposal", "consumer-modification", "/temp-proposal.json",
+		"tx", "gov", "submit-proposal", proposalFile,
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
@@ -503,18 +520,18 @@ func (tr Chain) submitConsumerModificationProposal(
 		`--keyring-backend`, `test`,
 		`-y`,
 	)
-	if verbose {
-		log.Println("submitConsumerModificationProposal cmd: ", cmd.String())
-		log.Println("submitConsumerModificationProposal json: ", jsonStr)
-	}
 
+	if verbose {
+		fmt.Println("submitConsumerModificationProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerModificationProposal json:", jsonStr)
+	}
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal("submit consumer modification proposal failed:", err, "\n", string(bz))
 	}
 
 	if verbose {
-		log.Println("submitConsumerModificationProposal output: ", string(bz))
+		fmt.Println("submitConsumerModificationProposal output:", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
