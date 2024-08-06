@@ -13,16 +13,31 @@ import (
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
-// HandleOptIn prepares validator `providerAddr` to opt in to `chainID` with an optional `consumerKey` consumer public key.
+// HandleOptIn prepares validator `providerAddr` to opt in to `consumerId` with an optional `consumerKey` consumer public key.
 // Note that the validator only opts in at the end of an epoch.
-func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, consumerKey string) error {
-	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
+func (k Keeper) HandleOptIn(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, consumerKey string) error {
+	phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
+	if !found || phase == Stopped {
 		return errorsmod.Wrapf(
-			types.ErrUnknownConsumerId,
-			"opting in to an unknown consumer chain, with id: %s", chainID)
+			types.ErrInvalidPhase,
+			"opting in to an unknown (or stopped) consumer chain, with id: %s", consumerId)
 	}
 
-	k.SetOptedIn(ctx, chainID, providerAddr)
+	registrationRecord, found := k.GetConsumerIdToRegistrationRecord(ctx, consumerId)
+	if !found {
+		return errorsmod.Wrapf(
+			types.ErrUnknownConsumerId,
+			"opting in to an unknown consumer chain, with id: %s", consumerId)
+	}
+
+	optedInToConsumerId, found := k.IsValidatorOptedInToChain(ctx, providerAddr, registrationRecord.ChainId)
+	if found && consumerId != optedInToConsumerId {
+		return errorsmod.Wrapf(types.ErrAlreadyOptedIn,
+			"validator has already opted in to a chain (%s) with the same chain id (%s)",
+			optedInToConsumerId, registrationRecord.ChainId)
+	}
+
+	k.SetOptedIn(ctx, consumerId, providerAddr)
 
 	if consumerKey != "" {
 		consumerTMPublicKey, err := k.ParseConsumerKey(consumerKey)
@@ -35,7 +50,7 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, chainID string, providerAddr types.
 			return err
 		}
 
-		err = k.AssignConsumerKey(ctx, chainID, validator, consumerTMPublicKey)
+		err = k.AssignConsumerKey(ctx, consumerId, validator, consumerTMPublicKey)
 		if err != nil {
 			return err
 		}
