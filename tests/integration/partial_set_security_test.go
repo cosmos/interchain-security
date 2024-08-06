@@ -120,7 +120,7 @@ func TestMinStake(t *testing.T) {
 			s.Require().NoError(err)
 
 			for i, val := range lastVals {
-				// check that the intiial state was set correctly
+				// check that the initial state was set correctly
 				require.Equal(s.T(), math.NewInt(tc.stakedTokens[i]), val.Tokens)
 			}
 
