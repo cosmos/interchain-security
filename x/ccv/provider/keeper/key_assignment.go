@@ -245,12 +245,12 @@ func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, consumerId string
 //   - or there exists a timestamp in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(timestamp)
 func (k Keeper) AppendConsumerAddrsToPrune(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	pruneTs time.Time,
 	consumerAddr types.ConsumerConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	storeKey := types.ConsumerAddrsToPruneV2Key(chainID, pruneTs)
+	storeKey := types.ConsumerAddrsToPruneV2Key(consumerId, pruneTs)
 	bz := store.Get(storeKey)
 	var consumerAddrsToPrune types.AddressList
 	if bz != nil {
@@ -275,12 +275,12 @@ func (k Keeper) AppendConsumerAddrsToPrune(
 // Note that this method is only used in testing.
 func (k Keeper) GetConsumerAddrsToPrune(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	ts time.Time,
 ) (consumerAddrsToPrune types.AddressList) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.ConsumerAddrsToPruneV2Key(chainID, ts))
+	bz := store.Get(types.ConsumerAddrsToPruneV2Key(consumerId, ts))
 	if bz == nil {
 		return
 	}
@@ -297,28 +297,28 @@ func (k Keeper) GetConsumerAddrsToPrune(
 // The returned addresses are removed from the store.
 //
 // Note that the list of all consumer addresses is stored under keys with the following format:
-// ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | timestamp
+// ConsumerAddrsToPruneV2BytePrefix | len(consumerId) | consumerId | timestamp
 // Thus, this method returns all the consumer addresses stored under keys in the following range:
-// (ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | ts') where ts' <= ts
+// (ConsumerAddrsToPruneV2BytePrefix | len(consumerId) | consumerId | ts') where ts' <= ts
 func (k Keeper) ConsumeConsumerAddrsToPrune(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	ts time.Time,
 ) (consumerAddrsToPrune types.AddressList) {
 	store := ctx.KVStore(k.storeKey)
 	consumerAddrsToPruneKeyPrefix := types.ConsumerAddrsToPruneV2KeyPrefix()
-	startPrefix := types.ConsumerIdWithLenKey(consumerAddrsToPruneKeyPrefix, chainID)
+	startPrefix := types.ConsumerIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
 	iterator := store.Iterator(startPrefix,
-		storetypes.InclusiveEndBytes(types.ConsumerAddrsToPruneV2Key(chainID, ts)))
+		storetypes.InclusiveEndBytes(types.ConsumerAddrsToPruneV2Key(consumerId, ts)))
 	defer iterator.Close()
 
 	var keysToDel [][]byte
 	for ; iterator.Valid(); iterator.Next() {
 		// Sanity check
-		if _, pruneTs, err := types.ParseChainIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key()); err != nil {
+		if _, pruneTs, err := types.ParseConsumerIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key()); err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
-			k.Logger(ctx).Error("ParseChainIdAndTsKey failed",
+			k.Logger(ctx).Error("ParseConsumerIdAndTsKey failed",
 				"key", string(iterator.Key()),
 				"error", err.Error(),
 			)
@@ -364,7 +364,7 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, consumerId string) (
 	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		_, ts, err := types.ParseChainIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key())
+		_, ts, err := types.ParseConsumerIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
