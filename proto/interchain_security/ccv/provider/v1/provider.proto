@@ -124,8 +124,8 @@ message ConsumerRemovalProposal {
   string title = 1;
   // the description of the proposal
   string description = 2;
-  // the chain-id of the consumer chain to be stopped
-  string chain_id = 3;
+  // the consumer id of the consumer chain to be stopped
+  string consumer_id = 3;
   // the time on the provider chain at which all validators are responsible to
   // stop their consumer chain validator node
   google.protobuf.Timestamp stop_time = 4
@@ -139,8 +139,8 @@ message ConsumerModificationProposal {
   string title = 1;
   // the description of the proposal
   string description = 2;
-  // the chain-id of the consumer chain to be modified
-  string chain_id = 3;
+  // the consumer id of the consumer chain to be modified
+  string consumer_id = 3;
   // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
   // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
   // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].

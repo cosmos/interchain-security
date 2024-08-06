@@ -53,8 +53,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 		}
 		// check if the CCV channel was established
 		if cs.ChannelId != "" {
-			k.SetChannelToChain(ctx, cs.ChannelId, chainID)
-			k.SetChainToChannel(ctx, chainID, cs.ChannelId)
+			k.SetChannelToConsumerId(ctx, cs.ChannelId, chainID)
+			k.SetConsumerIdToChannelId(ctx, chainID, cs.ChannelId)
 			k.SetInitChainHeight(ctx, chainID, cs.InitialHeight)
 			k.SetSlashAcks(ctx, cs.ChainId, cs.SlashDowntimeAck)
 		} else {
@@ -151,7 +151,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		}
 
 		// try to find channel id for the current consumer chain
-		channelId, found := k.GetChainToChannel(ctx, chainID)
+		channelId, found := k.GetConsumerIdToChannelId(ctx, chainID)
 		if found {
 			cs.ChannelId = channelId
 			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chainID)

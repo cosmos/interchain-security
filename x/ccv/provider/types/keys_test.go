@@ -41,11 +41,11 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(4), providertypes.SlashMeterReplenishTimeCandidateKey()[0])
 	i++
-	require.Equal(t, byte(5), providertypes.ChainToChannelKey("chainID")[0])
+	require.Equal(t, uint8(5), providertypes.ConsumerIdToChannelIdKey("chainID")[0])
 	i++
-	require.Equal(t, byte(6), providertypes.ChannelToChainKeyPrefix()[0])
+	require.Equal(t, uint8(6), providertypes.ChannelIdToConsumerIdKeyPrefix()[0])
 	i++
-	require.Equal(t, byte(7), providertypes.ChainToClientKeyPrefix()[0])
+	require.Equal(t, uint8(7), providertypes.ConsumerIdToClientIdKeyPrefix()[0])
 	i++
 	// reserve 8 as deprecated
 	i++
@@ -73,7 +73,8 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(20), providertypes.ThrottledPacketDataKeyPrefix())
 	i++
-	require.Equal(t, byte(21), providertypes.GlobalSlashEntryKeyPrefix()[0])
+	// DEPRECATED
+	// require.Equal(t, uint8(21), providertypes.GlobalSlashEntryKeyPrefix()[0])
 	i++
 	require.Equal(t, byte(22), providertypes.ConsumerValidatorsKeyPrefix())
 	i++
@@ -121,6 +122,22 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(44), providertypes.AllowInactiveValidatorsKey("chainID")[0])
 	i++
+	require.Equal(t, uint8(45), providertypes.ConsumerIdKey()[0])
+	i++
+	require.Equal(t, uint8(46), providertypes.ConsumerIdToRegistrationRecordKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(47), providertypes.ConsumerIdToInitializationRecordKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(48), providertypes.ConsumerIdToUpdateRecordKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(49), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(50), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(51), providertypes.ConsumerIdToStopTimeKey("consumerId")[0])
+	i++
+	require.Equal(t, uint8(52), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()
 	require.Equal(t, len(prefixes), i)
@@ -156,9 +173,9 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ValidatorSetUpdateIdKey(),
 		providertypes.SlashMeterKey(),
 		providertypes.SlashMeterReplenishTimeCandidateKey(),
-		providertypes.ChainToChannelKey("chainID"),
-		providertypes.ChannelToChainKey("channelID"),
-		providertypes.ChainToClientKey("chainID"),
+		providertypes.ConsumerIdToChannelIdKey("chainID"),
+		providertypes.ChannelToConsumerIdKey("channelID"),
+		providertypes.ConsumerIdToClientIdKey("chainID"),
 		providertypes.PendingCAPKey(time.Time{}, "chainID"),
 		providertypes.PendingCRPKey(time.Time{}, "chainID"),
 		providertypes.ValsetUpdateBlockHeightKey(7),
@@ -168,7 +185,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.PendingVSCsKey("chainID"),
 		providertypes.ThrottledPacketDataSizeKey("chainID"),
 		providertypes.ThrottledPacketDataKey("chainID", 88),
-		providertypes.GlobalSlashEntryKey(providertypes.GlobalSlashEntry{}),
 		providertypes.ConsumerValidatorsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
@@ -189,6 +205,14 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.MinStakeKey("chainID"),
 		providertypes.AllowInactiveValidatorsKey("chainID"),
 		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ConsumerIdKey(),
+		providertypes.ConsumerIdToRegistrationRecordKey("consumerId"),
+		providertypes.ConsumerIdToInitializationRecordKey("consumerId"),
+		providertypes.ConsumerIdToUpdateRecordKey("consumerId"),
+		providertypes.ConsumerIdToOwnerAddressKey("consumerId"),
+		providertypes.ConsumerIdToPhaseKey("consumerId"),
+		providertypes.ConsumerIdToStopTimeKey("consumerId"),
+		providertypes.ClientIdToConsumerIdKey("clientId"),
 	}
 }
 
@@ -206,12 +230,12 @@ func TestChainIdAndTsKeyAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := providertypes.ChainIdAndTsKey(test.prefix, test.chainID, test.timestamp)
+		key := providertypes.ConsumerIdAndTsKey(test.prefix, test.chainID, test.timestamp)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + time bytes
 		expectedLen := 1 + 8 + len(test.chainID) + len(sdk.FormatTimeBytes(time.Time{}))
 		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedTime, err := providertypes.ParseChainIdAndTsKey(test.prefix, key)
+		parsedID, parsedTime, err := providertypes.ParseConsumerIdAndTsKey(test.prefix, key)
 		require.Equal(t, test.chainID, parsedID)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
 		require.NoError(t, err)
@@ -270,33 +294,6 @@ func TestThrottledPacketDataKeyAndParse(t *testing.T) {
 	require.NotEqual(t, key1, key2)
 }
 
-// Tests the construction and parsing of keys for global slash entries
-func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
-	now := time.Now()
-
-	providerConsAddrs := []providertypes.ProviderConsAddress{
-		cryptoutil.NewCryptoIdentityFromIntSeed(0).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
-	}
-
-	entries := []providertypes.GlobalSlashEntry{}
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, providerConsAddrs[0]))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, providerConsAddrs[1]))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, providerConsAddrs[2]))
-
-	for _, entry := range entries {
-		key := providertypes.GlobalSlashEntryKey(entry)
-		require.NotEmpty(t, key)
-		// This key should be of set length: prefix + 8 + 8 + chainID
-		require.Equal(t, 1+8+8+len(entry.ConsumerChainID), len(key))
-		parsedRecvTime, parsedChainID, parsedIBCSeqNum := providertypes.MustParseGlobalSlashEntryKey(key)
-		require.Equal(t, entry.RecvTime, parsedRecvTime)
-		require.Equal(t, entry.ConsumerChainID, parsedChainID)
-		require.Equal(t, entry.IbcSeqNum, parsedIBCSeqNum)
-	}
-}
-
 // Tests the construction and parsing of ChainIdAndConsAddr keys
 func TestChainIdAndConsAddrAndParse(t *testing.T) {
 	cIds := []*cryptoutil.CryptoIdentity{
@@ -319,7 +316,7 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := providertypes.ChainIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
+		key := providertypes.ConsumerIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + consAddr bytes
 		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
@@ -334,9 +331,9 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 // Test key packing functions with the format <prefix><stringID>
 func TestKeysWithPrefixAndId(t *testing.T) {
 	funcs := []func(string) []byte{
-		providertypes.ChainToChannelKey,
-		providertypes.ChannelToChainKey,
-		providertypes.ChainToClientKey,
+		providertypes.ConsumerIdToChannelIdKey,
+		providertypes.ChannelToConsumerIdKey,
+		providertypes.ConsumerIdToClientIdKey,
 		providertypes.ConsumerGenesisKey,
 		providertypes.SlashAcksKey,
 		providertypes.InitChainHeightKey,

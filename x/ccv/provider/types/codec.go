@@ -25,14 +25,12 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&ConsumerRemovalProposal{},
 	)
 	registry.RegisterImplementations(
-		(*govv1beta1.Content)(nil),
-		&ConsumerModificationProposal{},
-	)
-	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgAssignConsumerKey{},
-		&MsgConsumerAddition{},
-		&MsgConsumerRemoval{},
+		&MsgRegisterConsumer{},
+		&MsgInitializeConsumer{},
+		&MsgUpdateConsumer{},
+		&MsgRemoveConsumer{},
 		&MsgChangeRewardDenoms{},
 		&MsgUpdateParams{},
 	)

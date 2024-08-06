@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"strconv"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -67,11 +68,11 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, err
 	}
 
-	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
+	if err := k.Keeper.AssignConsumerKey(ctx, msg.ConsumerId, validator, consumerTMPublicKey); err != nil {
 		return nil, err
 	}
 	k.Logger(ctx).Info("assigned consumer key",
-		"consumer chainID", msg.ChainId,
+		"consumer id", msg.ConsumerId,
 		"validator operator addr", msg.ProviderAddr,
 		"consumer public key", msg.ConsumerKey,
 	)
@@ -87,36 +88,19 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
 
-// ConsumerAddition defines an RPC handler method for MsgConsumerAddition
-func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {
-	if k.GetAuthority() != msg.Authority {
-		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerAdditionProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
-	}
-	return &types.MsgConsumerAdditionResponse{}, nil
-}
-
-// ConsumerRemoval defines an RPC handler method for MsgConsumerRemoval
-func (k msgServer) ConsumerRemoval(
+// RemoveConsumer defines an RPC handler method for MsgRemoveConsumer
+func (k msgServer) RemoveConsumer(
 	goCtx context.Context,
-	msg *types.MsgConsumerRemoval,
-) (*types.MsgConsumerRemovalResponse, error) {
+	msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerRemovalProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
-	}
 
-	return &types.MsgConsumerRemovalResponse{}, nil
+	k.Keeper.SetConsumerIdToStopTime(ctx, msg.ConsumerId, msg.StopTime)
+
+	return &types.MsgRemoveConsumerResponse{}, nil
 }
 
 // ChangeRewardDenoms defines a rpc handler method for MsgChangeRewardDenoms
@@ -136,7 +120,7 @@ func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChang
 
 func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
+	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, msg.ConsumerId, *msg.Misbehaviour); err != nil {
 		return nil, err
 	}
 
@@ -185,9 +169,9 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		return nil, err
 	}
 
-	// handle the double voting evidence using the chain ID of the infraction block header
-	// and the malicious validator's public key
-	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader.Header.ChainID, pubkey); err != nil {
+	// handle the double voting evidence using the malicious validator's public key
+	consumerId := msg.ConsumerId
+	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, consumerId, evidence, pubkey); err != nil {
 		return nil, err
 	}
 
@@ -223,7 +207,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 	}
 	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, msg.ConsumerKey)
+	err = k.Keeper.HandleOptIn(ctx, msg.ConsumerId, providerConsAddr, msg.ConsumerKey)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +243,7 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 	}
 	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	err = k.Keeper.HandleOptOut(ctx, msg.ChainId, providerConsAddr)
+	err = k.Keeper.HandleOptOut(ctx, msg.ConsumerId, providerConsAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -293,14 +277,14 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 		return nil, err
 	}
 
-	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ChainId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
+	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ConsumerId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
 		return nil, err
 	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeSetConsumerCommissionRate,
-			sdk.NewAttribute(types.AttributeConsumerChainID, msg.ChainId),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
 		),
@@ -309,16 +293,55 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 	return &types.MsgSetConsumerCommissionRateResponse{}, nil
 }
 
-func (k msgServer) ConsumerModification(goCtx context.Context, msg *types.MsgConsumerModification) (*types.MsgConsumerModificationResponse, error) {
-	if k.GetAuthority() != msg.Authority {
+// RegisterConsumer registers a consumer chain
+func (k msgServer) RegisterConsumer(goCtx context.Context, msg *types.MsgRegisterConsumer) (*types.MsgRegisterConsumerResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	consumerId := strconv.FormatUint(k.Keeper.FetchAndIncrementConsumerId(ctx), 10)
+
+	k.Keeper.SetConsumerIdToRegistrationRecord(ctx, consumerId, *msg.RegistrationRecord)
+	k.Keeper.SetConsumerIdToOwnerAddress(ctx, consumerId, msg.Signer)
+	k.Keeper.SetConsumerIdToPhase(ctx, consumerId, Registered)
+
+	return &types.MsgRegisterConsumerResponse{ConsumerId: consumerId}, nil
+}
+
+// InitializeConsumer initializes a consumer chain
+func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgInitializeConsumer) (*types.MsgInitializeConsumerResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	consumerId := msg.ConsumerId
+
+	phase, found := k.Keeper.GetConsumerIdToPhase(ctx, consumerId)
+	if !found || (phase != Registered && phase != Initialized) {
+		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
+			"chain with consumer id: %s has to be in its registered or initialized phase", consumerId)
+	}
+
+	ownerAddress, _ := k.Keeper.GetConsumerIdToOwnerAddress(ctx, consumerId)
+	if k.GetAuthority() == msg.Authority {
+		// message is executed as part of governance proposal and hence we change the owner address
+		// to be the one of the module account address
+		k.Keeper.SetConsumerIdToOwnerAddress(ctx, consumerId, k.GetAuthority())
+	} else if msg.Authority != ownerAddress {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Authority)
+	}
+
+	k.Keeper.SetConsumerIdToInitializationRecord(ctx, consumerId, *msg.InitializationRecord)
+	k.Keeper.SetConsumerIdToPhase(ctx, consumerId, Initialized)
+
+	return &types.MsgInitializeConsumerResponse{}, nil
+}
+
+// UpdateConsumer updates the record of a consumer chain
+func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateConsumer) (*types.MsgUpdateConsumerResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	ownerAddress, _ := k.Keeper.GetConsumerIdToOwnerAddress(ctx, msg.ConsumerId)
+
+	if k.GetAuthority() != msg.Authority && msg.Authority != ownerAddress {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerModificationProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerModification proposal")
-	}
-
-	return &types.MsgConsumerModificationResponse{}, nil
+	k.Keeper.SetConsumerIdToUpdateRecord(ctx, msg.ConsumerId, *msg.UpdateRecord)
+	return &types.MsgUpdateConsumerResponse{}, nil
 }

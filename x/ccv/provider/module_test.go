@@ -174,11 +174,11 @@ func TestInitGenesis(t *testing.T) {
 		numStatesCounted := 0
 		for _, state := range tc.consumerStates {
 			numStatesCounted += 1
-			channelID, found := providerKeeper.GetChainToChannel(ctx, state.ChainId)
+			channelID, found := providerKeeper.GetConsumerIdToChannelId(ctx, state.ChainId)
 			require.True(t, found)
 			require.Equal(t, state.ChannelId, channelID)
 
-			chainID, found := providerKeeper.GetChannelToChain(ctx, state.ChannelId)
+			chainID, found := providerKeeper.GetChannelIdToConsumerId(ctx, state.ChannelId)
 			require.True(t, found)
 			require.Equal(t, state.ChainId, chainID)
 		}

@@ -251,7 +251,7 @@ func TestGetAllChannelToChains(t *testing.T) {
 	expectedGetAllOrder := []types.ChannelToChain{}
 	for i, chainID := range chainIDs {
 		channelID := fmt.Sprintf("client-%d", len(chainIDs)-i)
-		pk.SetChannelToChain(ctx, channelID, chainID)
+		pk.SetChannelToConsumerId(ctx, channelID, chainID)
 		expectedGetAllOrder = append(expectedGetAllOrder, types.ChannelToChain{ChainId: chainID, ChannelId: channelID})
 	}
 	// sorting by channelID
