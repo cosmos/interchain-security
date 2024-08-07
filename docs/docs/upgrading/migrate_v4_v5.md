@@ -159,35 +159,27 @@ interchain-security-pd q provider params -o json
 
 ### Governance proposals
 
+Submitting the following legacy proposals is still supported:
+
 # Consumer addition proposal
 
 ```shell
-interchain-security-pd tx gov submit-proposal <proposal_file.json>
+interchain-security-pd tx gov submit-legacy-proposal consumer-addition <proposal_file.json>
 ```
 
 # Consumer removal proposal
 
 ```shell
-interchain-security-pd tx gov submit-proposal <proposal_file.json>
+interchain-security-pd tx gov submit-legacy-proposal consumer-removal <proposal_file.json>
 ```
 
-# Consumer modification proposal
-```shell
-interchain-security-pd tx gov submit-proposal <proposal_file.json>
-```
-
-Run `interchain-security-pd tx gov draft-proposal` command and select in `other` one of the following
-message types to generate a draft example:
-- `/interchain_security.ccv.provider.v1.MsgConsumerAddition`
-- `/interchain_security.ccv.provider.v1.MsgConsumerModification`
-- `/interchain_security.ccv.provider.v1.MsgConsumerRemoval`
-
-
-# Change reward denoms
-
+# Consumer addition proposal
 ```shell
 interchain-security-pd tx gov submit-legacy-proposal change-reward-denoms <proposal_file.json>
 ```
+
+You may also submit proposal messages above using `submit-proposal`.
+
 
 ## Consumer
 
@@ -234,8 +226,8 @@ app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
     // for x/ccv/democracy using the x/gov module address is correct
     // if you don't have a way of updating consumer params you may still use the line below as it will have no affect
 +   authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-
-    // add address codecs
+    
+    // add address codecs  
 +   authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 +   authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 )
@@ -243,13 +235,13 @@ app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
 
 
 * `authority` was added - requirement for executing `MsgUpdateParams`
-    * make sure the authority address makes sense for your chain
+    * make sure the authority address makes sense for your chain   
     * the exact module account may differ depending on your setup (`x/gov`, `x/admin` or custom module)
     * for `x/ccv/democracy` using the `x/gov` module address is correct
     * if you don't have a way of updating consumer params you may use `authtypes.NewModuleAddress(govtypes.ModuleName).String()` (has no effect on functionality)
 
 * `validatorAddressCodec` & `consensusAddressCodec` were added - they must match the bech32 address codec used by `x/auth`, `x/bank`, `x/staking`
-
+ 
 
 ### Additions
 
@@ -258,7 +250,7 @@ app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
 **This functionality is not supported on `x/ccv/consumer` without additional configuration.**
 * if you are using `x/ccv/democracy` the feature is supported out of the box
 * if you are using custom logic for changing consumer params, please update your code by providing the appropriate `authority` module account during `ConsumerKeeper` initialization in `app.go`.
-
+    
 **You must add `"/interchain_security.ccv.consumer.v1.MsgUpdateParams"` to your parameters whitelist to be able to change `ccvconsumer` parameters via governance.**
 
 It is available when using `gov` CLI commands:
@@ -384,7 +376,7 @@ The consumer implements the `StakingKeeper` interface shown above.
 
 ## Democracy
 
-Changes in `Consumer` also apply to `Democracy`.
+Changes in `Consumer` also apply to `Democracy`. 
 
 Democracy `x/staking`, `x/distribution` and `x/gov` were updated to reflect changes in `cosmos-sdk v0.50.x`.
 

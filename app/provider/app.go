@@ -114,7 +114,6 @@ import (
 	no_valupdates_genutil "github.com/cosmos/interchain-security/v5/x/ccv/no_valupdates_genutil"
 	no_valupdates_staking "github.com/cosmos/interchain-security/v5/x/ccv/no_valupdates_staking"
 	ibcprovider "github.com/cosmos/interchain-security/v5/x/ccv/provider"
-	ibcproviderclient "github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
 	ibcproviderkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
@@ -144,7 +143,6 @@ var (
 		gov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
 				paramsclient.ProposalHandler,
-				ibcproviderclient.ChangeRewardDenomsProposalHandler,
 			},
 		),
 		mint.AppModuleBasic{},
@@ -576,7 +574,6 @@ func New(
 			govtypes.ModuleName: gov.NewAppModuleBasic(
 				[]govclient.ProposalHandler{
 					paramsclient.ProposalHandler,
-					ibcproviderclient.ChangeRewardDenomsProposalHandler,
 				},
 			),
 		})

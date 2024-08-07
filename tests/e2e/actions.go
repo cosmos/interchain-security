@@ -21,8 +21,6 @@ import (
 	"golang.org/x/mod/semver"
 
 	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
@@ -2019,54 +2017,70 @@ func (tr Chain) registerRepresentative(
 }
 
 type SubmitChangeRewardDenomsProposalAction struct {
+	Chain   ChainID
 	Denom   string
 	Deposit uint
 	From    ValidatorID
 }
 
 func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
-	providerChain := tr.testConfig.chainConfigs[ChainID("provi")]
+	template := `
+{
+ "messages": [
+  {
+   "@type": "/interchain_security.ccv.provider.v1.MsgChangeRewardDenoms",
+   "denoms_to_add": %s,
+   "denoms_to_remove": %s,
+   "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+  }
+ ],
+ "metadata": "ipfs://CID",
+ "deposit": "%dstake",
+ "title": "change reward denoms",
+ "summary": "Proposal to change reward denoms",
+ "expedited": false
+}`
 
-	prop := client.ChangeRewardDenomsProposalJSON{
-		Summary: "Change reward denoms",
-		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
-			Title:          "Change reward denoms",
-			Description:    "Change reward denoms",
-			DenomsToAdd:    []string{action.Denom},
-			DenomsToRemove: []string{"stake"},
-		},
-		Deposit: fmt.Sprint(action.Deposit) + `stake`,
-	}
+	denomsToAdd := []string{action.Denom}
+	denomsToRemove := []string{"stake"}
+	jsonStr := fmt.Sprintf(template,
+		denomsToAdd,
+		denomsToRemove,
+		action.Deposit)
 
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
-
-	bz, err = tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/change-reward-denoms-proposal.json")).CombinedOutput()
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-addition.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	// CHANGE REWARDS DENOM PROPOSAL
-	bz, err = tr.target.ExecCommand(providerChain.BinaryName,
-		"tx", "gov", "submit-legacy-proposal", "change-reward-denoms", "/change-reward-denoms-proposal.json",
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
 		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(providerChain.ChainId),
-		`--home`, tr.getValidatorHome(providerChain.ChainId, action.From),
-		`--node`, tr.getValidatorNode(providerChain.ChainId, action.From),
-		`--gas`, "9000000",
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
 		`-y`,
-	).CombinedOutput()
+	)
+
+	if verbose {
+		fmt.Println("change rewards denom props cmd:", cmd.String())
+		fmt.Println("change rewards denom props json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal("submit-proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("change rewards denom props output:", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated

@@ -31,9 +31,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgAssignConsumerKey{},
-		&MsgConsumerAddition{}, //TOOD @permissionless: replace with below
-		//&MsgInitializeConsumer{}, //TOOD @permissionless: uncomment once implemented
-		//&MsgUpdateConsumer{}, //TOOD @permissionless: uncomment once implemented
+		&MsgConsumerAddition{},
 		&MsgConsumerRemoval{},
 		&MsgChangeRewardDenoms{},
 		&MsgUpdateParams{},

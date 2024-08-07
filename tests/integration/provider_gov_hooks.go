@@ -61,7 +61,7 @@ func (s *CCVTestSuite) TestGetConsumerAdditionFromProp() {
 	s.Require().NoError(err)
 
 	// create a valid consumer addition proposal
-	addConsumerProp := testkeeper.GetTestMsgConsumerAddition()
+	msgConsumerAddition := testkeeper.GetTestMsgConsumerAddition()
 
 	// create a legacy consumer addition proposal content
 	// (not supported anymore)
@@ -107,8 +107,8 @@ func (s *CCVTestSuite) TestGetConsumerAdditionFromProp() {
 			expPanic:                false,
 		},
 		{
-			name:                    "msg contains a prop of legacy ConsumerAdditionProposal type - hook should create a new proposed chain",
-			propMsg:                 &addConsumerProp,
+			name:                    "msg contains a prop of MsgConsumerAddition type - hook should create a new proposed chain",
+			propMsg:                 &msgConsumerAddition,
 			expectConsumerPropFound: true,
 			expPanic:                false,
 		},
