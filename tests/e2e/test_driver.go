@@ -83,7 +83,7 @@ func (td *DefaultDriver) getTargetDriver(chainID ChainID) Chain {
 	}
 	icsVersion := td.getIcsVersion(chainID)
 	switch icsVersion {
-	case "v4":
+	case "v3", "v4":
 		if td.verbose {
 			fmt.Println("Using 'v4' driver for chain ", chainID)
 		}
@@ -101,7 +101,7 @@ func (td *DefaultDriver) getTargetDriver(chainID ChainID) Chain {
 			target:           td.target,
 		}
 		if td.verbose {
-			fmt.Println("Using default driver ", icsVersion, " for chain ", chainID)
+			fmt.Println("Using default driver for version", icsVersion, " for chain ", chainID)
 		}
 	}
 
@@ -140,13 +140,28 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case SubmitTextProposalAction:
 		target.submitTextProposal(action, td.verbose)
 	case SubmitConsumerAdditionProposalAction:
-		target.submitConsumerAdditionProposal(action, td.verbose)
+		target = td.getTargetDriver(action.Chain)
+		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+			target.submitConsumerAdditionLegacyProposal(action, td.verbose)
+		} else {
+			target.submitConsumerAdditionProposal(action, td.verbose)
+		}
 	case SubmitConsumerRemovalProposalAction:
-		target.submitConsumerRemovalProposal(action, td.verbose)
+		target = td.getTargetDriver(action.Chain)
+		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+			target.submitConsumerRemovalLegacyProposal(action, td.verbose)
+		} else {
+			target.submitConsumerRemovalProposal(action, td.verbose)
+		}
 	case SubmitEnableTransfersProposalAction:
 		target.submitEnableTransfersProposalAction(action, td.verbose)
 	case SubmitConsumerModificationProposalAction:
-		target.submitConsumerModificationProposal(action, td.verbose)
+		target = td.getTargetDriver(action.Chain)
+		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+			target.submitConsumerModificationLegacyProposal(action, td.verbose)
+		} else {
+			target.submitConsumerModificationProposal(action, td.verbose)
+		}
 	case VoteGovProposalAction:
 		target.voteGovProposal(action, td.verbose)
 	case StartConsumerChainAction:
@@ -202,7 +217,12 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case StartConsumerEvidenceDetectorAction:
 		target.startConsumerEvidenceDetector(action, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
-		target.submitChangeRewardDenomsProposal(action, td.verbose)
+		target = td.getTargetDriver(action.Chain)
+		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+			target.submitChangeRewardDenomsLegacyProposal(action, td.verbose)
+		} else {
+			target.submitChangeRewardDenomsProposal(action, td.verbose)
+		}
 	case OptInAction:
 		target.optIn(action, td.target, td.verbose)
 	case OptOutAction:
