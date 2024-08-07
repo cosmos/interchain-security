@@ -99,6 +99,7 @@ func GetActionGen() *rapid.Generator[any] {
 func CreateSubmitChangeRewardDenomsProposalActionGen() *rapid.Generator[SubmitChangeRewardDenomsProposalAction] {
 	return rapid.Custom(func(t *rapid.T) SubmitChangeRewardDenomsProposalAction {
 		return SubmitChangeRewardDenomsProposalAction{
+			Chain:   GetChainIDGen().Draw(t, "Chain"),
 			From:    GetValidatorIDGen().Draw(t, "From"),
 			Deposit: rapid.Uint().Draw(t, "Deposit"),
 			Denom:   rapid.String().Draw(t, "Denom"),

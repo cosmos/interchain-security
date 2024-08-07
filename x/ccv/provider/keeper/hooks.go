@@ -2,12 +2,10 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
-	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -112,8 +110,7 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 // that maps the proposal ID to the consumer chain ID.
 func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	if p, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
+	if p, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
 		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
 	}
 	return nil
@@ -126,7 +123,7 @@ func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64)
 func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalID uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
+	if _, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
 		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
 	}
 	return nil
@@ -144,9 +141,9 @@ func (h Hooks) AfterProposalFailedMinDeposit(ctx context.Context, proposalID uin
 	return nil
 }
 
-// GetConsumerAdditionLegacyPropFromProp extracts a consumer addition legacy proposal from
+// GetConsumerAdditionFromProp extracts a consumer addition legacy proposal from
 // the proposal with the given ID
-func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
+func (h Hooks) GetConsumerAdditionFromProp(
 	ctx sdk.Context,
 	proposalID uint64,
 ) (providertypes.ConsumerAdditionProposal, bool) {
@@ -158,21 +155,33 @@ func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 	// Iterate over the messages in the proposal
 	// Note that it's assumed that at most ONE message can contain a consumer addition proposal
 	for _, msg := range p.GetMessages() {
-		sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent)
-		if !isLegacyProposal {
+		sdkMsg, isConsumerAddition := msg.GetCachedValue().(*providertypes.MsgConsumerAddition)
+		if !isConsumerAddition {
 			continue
 		}
 
-		content, err := v1.LegacyContentFromMessage(sdkMsg)
-		if err != nil {
-			panic(fmt.Errorf("failed to get legacy proposal %d from prop message", proposalID))
+		proposal := providertypes.ConsumerAdditionProposal{
+			Title:                             p.Title,
+			Description:                       p.Summary,
+			ChainId:                           sdkMsg.ChainId,
+			InitialHeight:                     sdkMsg.InitialHeight,
+			GenesisHash:                       sdkMsg.GenesisHash,
+			BinaryHash:                        sdkMsg.BinaryHash,
+			SpawnTime:                         sdkMsg.SpawnTime,
+			UnbondingPeriod:                   sdkMsg.UnbondingPeriod,
+			CcvTimeoutPeriod:                  sdkMsg.CcvTimeoutPeriod,
+			TransferTimeoutPeriod:             sdkMsg.TransferTimeoutPeriod,
+			ConsumerRedistributionFraction:    sdkMsg.ConsumerRedistributionFraction,
+			BlocksPerDistributionTransmission: sdkMsg.BlocksPerDistributionTransmission,
+			HistoricalEntries:                 sdkMsg.HistoricalEntries,
+			DistributionTransmissionChannel:   sdkMsg.DistributionTransmissionChannel,
+			Top_N:                             sdkMsg.Top_N,
+			ValidatorsPowerCap:                sdkMsg.ValidatorsPowerCap,
+			ValidatorSetCap:                   sdkMsg.ValidatorSetCap,
+			Allowlist:                         sdkMsg.Allowlist,
+			Denylist:                          sdkMsg.Denylist,
 		}
-
-		// returns if legacy prop is of ConsumerAddition proposal type
-		prop, ok := content.(*providertypes.ConsumerAdditionProposal)
-		if ok {
-			return *prop, true
-		}
+		return proposal, true
 	}
 	return providertypes.ConsumerAdditionProposal{}, false
 }

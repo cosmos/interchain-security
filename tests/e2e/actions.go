@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -273,6 +274,106 @@ func (tr Chain) submitConsumerAdditionProposal(
 ) {
 	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	params := ccvtypes.DefaultParams()
+	template := `
+	{
+ "messages": [
+  {
+   "@type": "/interchain_security.ccv.provider.v1.MsgConsumerAddition",
+   "chain_id": "%s",
+   "initial_height": {
+    "revision_number": "%d",
+    "revision_height": "%d"
+   },
+   "genesis_hash": "%s",
+   "binary_hash": "%s",
+   "spawn_time": "%s",
+   "unbonding_period": "%s",
+   "ccv_timeout_period": "%s",
+   "transfer_timeout_period": "%s",
+   "consumer_redistribution_fraction": "%s",
+   "blocks_per_distribution_transmission": "%d",
+   "historical_entries": "%d",
+   "distribution_transmission_channel": "%s",
+   "top_N": %d,
+   "validators_power_cap": %d,
+   "validator_set_cap": %d,
+   "allowlist": %s,
+   "denylist": %s,
+   "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+  }
+ ],
+"metadata": "ipfs://CID",
+"deposit": "%dstake",
+"title": "Propose the addition of a new chain",
+"summary": "Gonna be a great chain",
+"expedited": false
+}`
+	jsonStr := fmt.Sprintf(template,
+		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		action.InitialHeight.RevisionNumber,
+		action.InitialHeight.RevisionHeight,
+		base64.StdEncoding.EncodeToString([]byte("gen_hash")),
+		base64.StdEncoding.EncodeToString([]byte("bin_hash")),
+		spawnTime.Local().Format(time.RFC3339Nano),
+		params.UnbondingPeriod,
+		params.CcvTimeoutPeriod,
+		params.TransferTimeoutPeriod,
+		params.ConsumerRedistributionFraction,
+		params.BlocksPerDistributionTransmission,
+		params.HistoricalEntries,
+		action.DistributionChannel,
+		action.TopN,
+		action.ValidatorsPowerCap,
+		action.ValidatorSetCap,
+		action.Allowlist,
+		action.Denylist,
+		action.Deposit)
+
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-addition.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER ADDITION PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerAdditionProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit-proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.Chain, 2, 10*time.Second)
+}
+
+func (tr Chain) submitConsumerAdditionLegacyProposal(
+	action SubmitConsumerAdditionProposalAction,
+	verbose bool,
+) {
+	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
+	params := ccvtypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Summary:                           "Gonna be a great chain",
@@ -362,6 +463,75 @@ func (tr Chain) submitConsumerRemovalProposal(
 	action SubmitConsumerRemovalProposalAction,
 	verbose bool,
 ) {
+	template := `
+	{
+		"messages": [
+		 {
+		  "@type": "/interchain_security.ccv.provider.v1.MsgConsumerRemoval",
+		  "chain_id": "%s",
+		  "stop_time": "%s",
+		  "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+		 }
+		],
+		"metadata": "ipfs://CID",
+		"deposit": "%dstake",
+		"title": "%s",
+		"summary": "It was a great chain",
+		"expedited": false
+	   }
+`
+	title := fmt.Sprintf("Stop the %v chain", action.ConsumerChain)
+	stopTime := tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset).Format(time.RFC3339Nano)
+
+	jsonStr := fmt.Sprintf(template,
+		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		stopTime,
+		action.Deposit,
+		title)
+
+	// #nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-removal.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER REMOVAL PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerRemovalProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerRemovalProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit consumer removal proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerRemovalProposal output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
+}
+
+func (tr Chain) submitConsumerRemovalLegacyProposal(
+	action SubmitConsumerRemovalProposalAction,
+	verbose bool,
+) {
 	stopTime := tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset)
 	prop := client.ConsumerRemovalProposalJSON{
 		Title:    fmt.Sprintf("Stop the %v chain", action.ConsumerChain),
@@ -420,6 +590,87 @@ type SubmitConsumerModificationProposalAction struct {
 }
 
 func (tr Chain) submitConsumerModificationProposal(
+	action SubmitConsumerModificationProposalAction,
+	verbose bool,
+) {
+
+	template := `
+
+{
+"messages": [
+  {
+    "@type": "/interchain_security.ccv.provider.v1.MsgConsumerModification",
+	"title": "Propose the modification of the PSS parameters of a chain",
+	"description": "description of the consumer modification proposal",
+	"chain_id": "%s",
+	"top_N": %d,
+	"validators_power_cap": %d,
+	"validator_set_cap": %d,
+	"allowlist": %s,
+	"denylist": %s,
+    "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+    "min_stake": "0",
+    "allow_inactive_vals": false
+  }
+ ],
+"metadata": "ipfs://CID",
+"deposit": "%sstake",
+"title": "Propose the modification of the PSS parameters of a chain",
+"summary": "summary of a modification proposal",
+"expedited": false
+ }
+`
+
+	jsonStr := fmt.Sprintf(template,
+		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		action.TopN,
+		action.ValidatorsPowerCap,
+		action.ValidatorSetCap,
+		action.Allowlist,
+		action.Denylist,
+		action.Deposit,
+	)
+
+	// #nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-mod.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER MODIFICATION PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerModificationProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerModificationProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit consumer modification proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerModificationProposal output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 10*time.Second)
+}
+
+func (tr Chain) submitConsumerModificationLegacyProposal(
 	action SubmitConsumerModificationProposalAction,
 	verbose bool,
 ) {
@@ -1964,13 +2215,78 @@ func (tr Chain) registerRepresentative(
 }
 
 type SubmitChangeRewardDenomsProposalAction struct {
+	Chain   ChainID
 	Denom   string
 	Deposit uint
 	From    ValidatorID
 }
 
 func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
-	providerChain := tr.testConfig.chainConfigs[ChainID("provi")]
+	template := `
+{
+ "messages": [
+  {
+   "@type": "/interchain_security.ccv.provider.v1.MsgChangeRewardDenoms",
+   "denoms_to_add": %s,
+   "denoms_to_remove": %s,
+   "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+  }
+ ],
+ "metadata": "ipfs://CID",
+ "deposit": "%dstake",
+ "title": "change reward denoms",
+ "summary": "Proposal to change reward denoms",
+ "expedited": false
+}`
+
+	denomsToAdd := []string{action.Denom}
+	denomsToRemove := []string{"stake"}
+	jsonStr := fmt.Sprintf(template,
+		denomsToAdd,
+		denomsToRemove,
+		action.Deposit)
+
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-addition.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CHANGE REWARDS DENOM PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("change rewards denom props cmd:", cmd.String())
+		fmt.Println("change rewards denom props json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit-proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("change rewards denom props output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
+}
+
+func (tr Chain) submitChangeRewardDenomsLegacyProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
+	providerChain := tr.testConfig.chainConfigs[action.Chain]
 
 	prop := client.ChangeRewardDenomsProposalJSON{
 		Summary: "Change reward denoms",

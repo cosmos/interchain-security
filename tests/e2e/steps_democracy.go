@@ -152,6 +152,7 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 		},
 		{
 			Action: SubmitChangeRewardDenomsProposalAction{
+				Chain:   ChainID("provi"),
 				Denom:   consumerRewardDenom,
 				Deposit: 10000001,
 				From:    ValidatorID("bob"),

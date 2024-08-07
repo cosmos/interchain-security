@@ -265,8 +265,8 @@ func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
 	runCCVTestByName(t, "TestAfterPropSubmissionAndVotingPeriodEnded")
 }
 
-func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
-	runCCVTestByName(t, "TestGetConsumerAdditionLegacyPropFromProp")
+func TestGetConsumerAdditionFromProp(t *testing.T) {
+	runCCVTestByName(t, "TestGetConsumerAdditionFromProp")
 }
 
 func TestIBCTransferMiddleware(t *testing.T) {
@@ -275,14 +275,6 @@ func TestIBCTransferMiddleware(t *testing.T) {
 
 func TestAllocateTokens(t *testing.T) {
 	runCCVTestByName(t, "TestAllocateTokens")
-}
-
-func TestTransferConsumerRewardsToDistributionModule(t *testing.T) {
-	runCCVTestByName(t, "TransferConsumerRewardsToDistributionModule")
-}
-
-func TestAllocateTokensToValidator(t *testing.T) {
-	runCCVTestByName(t, "TestAllocateTokensToValidator")
 }
 
 func TestMultiConsumerRewardsDistribution(t *testing.T) {
