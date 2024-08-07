@@ -17,7 +17,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.
+// TestVSCPacketSendExpiredClient tests queueing of VSCPackets when the consumer client is expired.
 // While the consumer client is expired (or inactive for some reason) all packets will be queued and
 // and cleared once the consumer client is established.
 func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
@@ -203,7 +203,7 @@ func expireClient(s *CCVTestSuite, clientTo ChainType) {
 	checkClientExpired(s, clientTo, true)
 }
 
-// checkClientIsExpired checks whether the client to `clientTo` is expired
+// checkClientExpired checks whether the client to `clientTo` is expired
 func checkClientExpired(s *CCVTestSuite, clientTo ChainType, expectedExpired bool) {
 	var hostEndpoint *ibctesting.Endpoint
 	var hostChain *ibctesting.TestChain
