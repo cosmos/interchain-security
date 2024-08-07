@@ -531,6 +531,9 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		getIBCDenom func(string, string) string
 	)
 
+	// set up an arbitrary address that is not the consumer rewards pool address
+	notConsumerRewardsPoolAddr := s.providerChain.SenderAccount.GetAddress().String()
+
 	testCases := []struct {
 		name             string
 		setup            func(sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper)
@@ -557,7 +560,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		{
 			"IBC Transfer recipient is not the consumer rewards pool address",
 			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				data.Receiver = "cosmos149lw9fktlqfed3zt8ah48r5czmsug5s7kw77u9" // random acct address
+				data.Receiver = notConsumerRewardsPoolAddr
 				packet.Data = data.GetBytes()
 			},
 			false,
