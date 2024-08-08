@@ -22,6 +22,6 @@ The following queries will change after this upgrade:
 
 The `bonded_tokens` will include the stake of all *bonded* validators. As the number of bonded validators will be increased as part of the upgrade, the number of `bonded_tokens` is expected to have a sudden increase after the upgrade is applied.
 
-### All queries in the staking module that return a `Validator`
+* All queries in the staking module that return a `Validator`
 
 All *bonded* validators will show with `Status=Bonded` . To identify *active* validators, query the validator set from Tendermint (https://docs.cometbft.com/v0.37/rpc/#/Info/validators or `query comet-validator-set [height]`), which will return the set of all *active* validators.
