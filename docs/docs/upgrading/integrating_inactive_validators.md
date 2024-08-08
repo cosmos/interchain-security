@@ -18,10 +18,10 @@ Importantly, only *active* validators receive inflation rewards from ATOM; only 
 
 The following queries will change after this upgrade:
 
-### `/cosmos/staking/v1beta1/pool`
+* `/cosmos/staking/v1beta1/pool` / `gaiad query staking pool`
 
-The *bonded_tokens* will include the stake of all *bonded* validators. As the number of bonded validators will be increased as part of the upgrade, the number of bonded_tokens is expected to have a sudden increase after the upgrade is applied.
+The `bonded_tokens` will include the stake of all *bonded* validators. As the number of bonded validators will be increased as part of the upgrade, the number of `bonded_tokens` is expected to have a sudden increase after the upgrade is applied.
 
 ### All queries in the staking module that return a `Validator`
 
-All *bonded* validators will show with `Status=Bonded` . To identify *active* validators, query the validator set from Tendermint (https://docs.cometbft.com/v0.37/rpc/#/Info/validators), which will return the set of all *active* validators.
+All *bonded* validators will show with `Status=Bonded` . To identify *active* validators, query the validator set from Tendermint (https://docs.cometbft.com/v0.37/rpc/#/Info/validators or `query comet-validator-set [height]`), which will return the set of all *active* validators.
