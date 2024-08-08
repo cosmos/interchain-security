@@ -9,6 +9,7 @@ reviews:
     path_filters:
         - "!api/"
         - "!docs/"
+        - "!*.md"
     path_instructions:
         - path: "**/*.go"
           instructions: "Review the Golang code for conformity with the Uber Golang style guide, highlighting any deviations. Only report issues that you have a high degree of confidence in."
@@ -21,9 +22,6 @@ reviews:
         - path: "**/*_test.go"
           instructions: |
               "Assess the unit test code assessing sufficient code coverage for the changes associated in the pull request. Only report issues that you have a high degree of confidence in."
-        - path: ".changelog/*"
-          instructions: |
-              "Assess the changes in the changelog for correctness and completeness, particularly flagging missing changes. Only report issues that you have a high degree of confidence in."
     auto_review:
         enabled: true
         ignore_title_keywords:
