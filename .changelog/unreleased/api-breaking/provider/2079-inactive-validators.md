@@ -7,7 +7,7 @@
     the maximum number of validators that will be passed to the provider consensus engine.
   - Add `no_valupdates_genutil` and `no_valupdates_staking`, "wrapper" modules around 
     the Cosmos SDK's native genutil and staking modules. Both modules provide the exact 
-    same functionality as the native modules, except returning validator set updates 
+    same functionality as the native modules, except for *not* returning validator set updates 
     to the provider consensus engine.
   - Return the first `max_provider_consensus_validators` validators (sorted by largest amount of stake first)
     to the provider consensus engine. 
