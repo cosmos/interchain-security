@@ -18,25 +18,14 @@ ConensusVersion was bumped to `6`.
 
 ### Governance proposals
 
-#### Consumer addition proposal
-
-```shell
-interchain-security-pd tx gov submit-proposal <proposal_file.json>
-```
-
-####  Consumer removal proposal
-
-```shell
-interchain-security-pd tx gov submit-proposal <proposal_file.json>
-```
-
-####  Consumer modification proposal
+To submit a proposal to add/modify/remove a consumer use the following command
 ```shell
 interchain-security-pd tx gov submit-proposal <proposal_file.json>
 ```
 
 Run `interchain-security-pd tx gov draft-proposal` command and select in `other` one of the following
-message types to generate a draft example:
+message types to generate a draft proposal json file:
 - `/interchain_security.ccv.provider.v1.MsgConsumerAddition`
 - `/interchain_security.ccv.provider.v1.MsgConsumerModification`
 - `/interchain_security.ccv.provider.v1.MsgConsumerRemoval`
+- `/interchain_security.ccv.provider.v1.MsgChangeRewardDenoms`

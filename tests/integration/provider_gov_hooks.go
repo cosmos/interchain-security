@@ -60,7 +60,7 @@ func (s *CCVTestSuite) TestGetConsumerAdditionFromProp() {
 	)
 	s.Require().NoError(err)
 
-	// create a valid consumer addition proposal
+	// create a valid consumer addition message
 	msgConsumerAddition := testkeeper.GetTestMsgConsumerAddition()
 
 	// create a legacy consumer addition proposal content
