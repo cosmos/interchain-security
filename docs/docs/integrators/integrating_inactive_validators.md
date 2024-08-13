@@ -24,4 +24,4 @@ The `bonded_tokens` will include the stake of all *bonded* validators. As the nu
 
 * All queries in the staking module that return a `Validator`
 
-All *bonded* validators will show with `Status=Bonded` . To identify *active* validators, query the validator set from Tendermint (https://docs.cometbft.com/v0.37/rpc/#/Info/validators or `query comet-validator-set [height]`), which will return the set of all *active* validators.
+All *bonded* validators will show with `Status=Bonded`. To identify *active* validators, query the validator set from Tendermint (https://docs.cometbft.com/v0.37/rpc/#/Info/validators or `query comet-validator-set [height]`), which will return the set of all *active* validators.
