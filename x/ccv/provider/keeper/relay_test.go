@@ -104,31 +104,31 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{valA, valB}, []int64{1, 2}, -1)
 
 	// set a consumer client, so we have a consumer chain (i.e., `k.GetAllConsumerChains(ctx)` is non empty)
-	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
 
 	// opt in validator A and set as a consumer validator
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
+	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valAConsAddr))
 	consumerValidatorA := providertypes.ConsensusValidator{
 		ProviderConsAddr: valAConsAddr,
 		Power:            1,
 		PublicKey:        &valAPubKey,
 		JoinHeight:       123456789,
 	}
-	providerKeeper.SetConsumerValidator(ctx, "chainID", consumerValidatorA)
+	providerKeeper.SetConsumerValidator(ctx, "consumerId", consumerValidatorA)
 
 	// Opt in validator B. Note that validator B is not a consumer validator and hence would become a consumer
 	// validator for the first time after the `QueueVSCPackets` call.
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
+	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valBConsAddr))
 
 	providerKeeper.QueueVSCPackets(ctx)
 
 	// the height of consumer validator A should not be modified because A was already a consumer validator
-	cv, _ := providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
+	cv, _ := providerKeeper.GetConsumerValidator(ctx, "consumerId", providertypes.NewProviderConsAddress(valAConsAddr))
 	require.Equal(t, consumerValidatorA.JoinHeight, cv.JoinHeight, "the consumer validator's height was erroneously modified")
 
 	// the height of consumer validator B is set to be the same as the one of the current chain height because this
 	// consumer validator becomes a consumer validator for the first time (i.e., was not a consumer validator in the previous epoch)
-	cv, _ = providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
+	cv, _ = providerKeeper.GetConsumerValidator(ctx, "consumerId", providertypes.NewProviderConsAddress(valBConsAddr))
 	require.Equal(t, chainHeight, cv.JoinHeight, "the consumer validator's height was not correctly set")
 }
 
@@ -538,7 +538,7 @@ func TestOnTimeoutPacketStopsChain(t *testing.T) {
 	}
 	err := providerKeeper.OnTimeoutPacket(ctx, packet)
 
-	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "consumerId", "channelID")
 	require.NoError(t, err)
 }
 
@@ -574,7 +574,7 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 
 	err = providerKeeper.OnAcknowledgementPacket(ctx, packet, ackError)
 
-	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "consumerId", "channelID")
 	require.NoError(t, err)
 }
 
@@ -583,9 +583,11 @@ func TestEndBlockVSU(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	chainID := "consumerId"
 
-	providerKeeper.SetTopN(ctx, chainID, 100)
+	providerKeeper.SetConsumerUpdateRecord(ctx, "consumerId", providertypes.ConsumerUpdateRecord{
+		Top_N: 100,
+	})
 
 	// 10 blocks constitute an epoch
 	params := providertypes.DefaultParams()
@@ -736,21 +738,21 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, []stakingtypes.Validator{valA, valB, valC, valD, valE}, []int64{1, 3, 4, 8, 16}, -1)
 
 	// add a consumer chain
-	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
 
-	providerKeeper.SetTopN(ctx, "chainID", 50) // would opt in E
+	providerKeeper.SetConsumerUpdateRecord(ctx, "consumerId", providertypes.ConsumerUpdateRecord{
+		Top_N:              50, // would opt in E
+		ValidatorsPowerCap: 40, // set a power-capping of 40%
+	})
 
 	// opt in all validators
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valCConsAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valDConsAddr))
+	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valAConsAddr))
+	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valBConsAddr))
+	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valCConsAddr))
+	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valDConsAddr))
 
 	// denylist validator D
-	providerKeeper.SetDenylist(ctx, "chainID", providertypes.NewProviderConsAddress(valDConsAddr))
-
-	// set a power-capping of 40%
-	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", 40)
+	providerKeeper.SetDenylist(ctx, "consumerId", providertypes.NewProviderConsAddress(valDConsAddr))
 
 	// set max provider consensus vals to include all validators
 	params := providerKeeper.GetParams(ctx)
@@ -759,7 +761,7 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 
 	providerKeeper.QueueVSCPackets(ctx)
 
-	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, "chainID")
+	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, "consumerId")
 	expectedQueuedVSCPackets := []ccv.ValidatorSetChangePacketData{
 		ccv.NewValidatorSetChangePacketData(
 			[]abci.ValidatorUpdate{

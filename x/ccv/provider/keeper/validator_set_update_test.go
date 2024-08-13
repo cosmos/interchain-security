@@ -32,11 +32,11 @@ func TestConsumerValidator(t *testing.T) {
 		PublicKey:        &crypto.PublicKey{},
 	}
 
-	require.False(t, providerKeeper.IsConsumerValidator(ctx, "chainID", types.NewProviderConsAddress(validator.ProviderConsAddr)))
-	providerKeeper.SetConsumerValidator(ctx, "chainID", validator)
-	require.True(t, providerKeeper.IsConsumerValidator(ctx, "chainID", types.NewProviderConsAddress(validator.ProviderConsAddr)))
-	providerKeeper.DeleteConsumerValidator(ctx, "chainID", types.NewProviderConsAddress(validator.ProviderConsAddr))
-	require.False(t, providerKeeper.IsConsumerValidator(ctx, "chainID", types.NewProviderConsAddress(validator.ProviderConsAddr)))
+	require.False(t, providerKeeper.IsConsumerValidator(ctx, "consumerId", types.NewProviderConsAddress(validator.ProviderConsAddr)))
+	providerKeeper.SetConsumerValidator(ctx, "consumerId", validator)
+	require.True(t, providerKeeper.IsConsumerValidator(ctx, "consumerId", types.NewProviderConsAddress(validator.ProviderConsAddr)))
+	providerKeeper.DeleteConsumerValidator(ctx, "consumerId", types.NewProviderConsAddress(validator.ProviderConsAddr))
+	require.False(t, providerKeeper.IsConsumerValidator(ctx, "consumerId", types.NewProviderConsAddress(validator.ProviderConsAddr)))
 }
 
 func TestGetConsumerValSet(t *testing.T) {
@@ -75,7 +75,7 @@ func TestGetConsumerValSet(t *testing.T) {
 	}
 
 	for _, expectedValidator := range expectedValidators {
-		providerKeeper.SetConsumerValidator(ctx, "chainID",
+		providerKeeper.SetConsumerValidator(ctx, "consumerId",
 			types.ConsensusValidator{
 				ProviderConsAddr: expectedValidator.ProviderConsAddr,
 				Power:            expectedValidator.Power,
@@ -83,7 +83,7 @@ func TestGetConsumerValSet(t *testing.T) {
 			})
 	}
 
-	actualValidators, err := providerKeeper.GetConsumerValSet(ctx, "chainID")
+	actualValidators, err := providerKeeper.GetConsumerValSet(ctx, "consumerId")
 	require.NoError(t, err)
 
 	// sort validators first to be able to compare
@@ -253,7 +253,7 @@ func TestSetConsumerValSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	chainID := "consumerId"
 
 	currentValidators := []types.ConsensusValidator{
 		{
@@ -306,7 +306,7 @@ func TestSetConsumerValSet(t *testing.T) {
 		},
 	}
 
-	// set the `currentValidators` for chain `chainID`
+	// set the `currentValidators` for chain `consumerId`
 	valSet, err := providerKeeper.GetConsumerValSet(ctx, chainID)
 	require.NoError(t, err)
 	require.Empty(t, valSet)
@@ -338,7 +338,7 @@ func TestFilterValidatorsConsiderAll(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	chainID := "consumerId"
 
 	// no consumer validators returned if we have no bonded validators
 	considerAll := func(providerAddr types.ProviderConsAddress) bool { return true }
@@ -378,7 +378,7 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	chainID := "consumerId"
 
 	// no consumer validators returned if we have no opted-in validators
 	require.Empty(t, providerKeeper.FilterValidators(ctx, chainID, []stakingtypes.Validator{},
@@ -419,7 +419,7 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 
 	// the expected actual validators are the opted-in validators but with the correct power and consumer public keys set
 	bondedValidators := []stakingtypes.Validator{valA, valB}
-	actualValidators := providerKeeper.FilterValidators(ctx, "chainID", bondedValidators,
+	actualValidators := providerKeeper.FilterValidators(ctx, "consumerId", bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
 			return providerKeeper.IsOptedIn(ctx, chainID, providerAddr)
 		})
@@ -438,7 +438,7 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	// create a staking validator C that is not opted in, hence `expectedValidators` remains the same
 	valC := createStakingValidator(ctx, mocks, 3, 3, 3)
 	bondedValidators = []stakingtypes.Validator{valA, valB, valC}
-	actualValidators = providerKeeper.FilterValidators(ctx, "chainID", bondedValidators,
+	actualValidators = providerKeeper.FilterValidators(ctx, "consumerId", bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
 			return providerKeeper.IsOptedIn(ctx, chainID, providerAddr)
 		})
@@ -452,7 +452,7 @@ func TestCreateConsumerValidator(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	chainID := "consumerId"
 
 	// create a validator which has set a consumer public key
 	valA := createStakingValidator(ctx, mocks, 0, 1, 1)

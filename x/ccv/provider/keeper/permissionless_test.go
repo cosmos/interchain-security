@@ -10,27 +10,18 @@ import (
 	"time"
 )
 
-// TestConsumerId tests methods for retrieving and incrementing consumer id
-func TestConsumerId(t *testing.T) {
+func TestFetchAndIncrementConsumerId(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	consumerId, found := providerKeeper.GetConsumerId(ctx)
-	require.False(t, found)
+	consumerId := providerKeeper.FetchAndIncrementConsumerId(ctx)
+	require.Equal(t, "0", consumerId)
 
 	consumerId = providerKeeper.FetchAndIncrementConsumerId(ctx)
-	require.Equal(t, uint64(0), consumerId)
-
-	consumerId, found = providerKeeper.GetConsumerId(ctx)
-	require.True(t, found)
-	require.Equal(t, uint64(1), consumerId)
+	require.Equal(t, "1", consumerId)
 
 	consumerId = providerKeeper.FetchAndIncrementConsumerId(ctx)
-	require.Equal(t, uint64(1), consumerId)
-
-	consumerId, found = providerKeeper.GetConsumerId(ctx)
-	require.True(t, found)
-	require.Equal(t, uint64(2), consumerId)
+	require.Equal(t, "2", consumerId)
 }
 
 // TestClientIdToConsumerId tests the getter, setter, and deletion methods of the client id to consumer id methods
@@ -63,17 +54,17 @@ func TestConsumerIdToRegistrationRecord(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, found := providerKeeper.GetConsumerIdToRegistrationRecord(ctx, "consumerId")
-	require.False(t, found)
+	_, err := providerKeeper.GetConsumerRegistrationRecord(ctx, "consumerId")
+	require.Error(t, err)
 
 	expectedRecord := providertypes.ConsumerRegistrationRecord{
 		Title:       "title",
 		Description: "description",
 		ChainId:     "chain_id",
 	}
-	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "consumerId", expectedRecord)
-	actualRecord, found := providerKeeper.GetConsumerIdToRegistrationRecord(ctx, "consumerId")
-	require.True(t, found)
+	providerKeeper.SetConsumerRegistrationRecord(ctx, "consumerId", expectedRecord)
+	actualRecord, err := providerKeeper.GetConsumerRegistrationRecord(ctx, "consumerId")
+	require.NoError(t, err)
 	require.Equal(t, expectedRecord, actualRecord)
 
 	// assert that overwriting the current registration record works
@@ -82,14 +73,14 @@ func TestConsumerIdToRegistrationRecord(t *testing.T) {
 		Description: "description 2",
 		ChainId:     "chain_id2",
 	}
-	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "consumerId", expectedRecord)
-	actualRecord, found = providerKeeper.GetConsumerIdToRegistrationRecord(ctx, "consumerId")
-	require.True(t, found)
+	providerKeeper.SetConsumerRegistrationRecord(ctx, "consumerId", expectedRecord)
+	actualRecord, err = providerKeeper.GetConsumerRegistrationRecord(ctx, "consumerId")
+	require.NoError(t, err)
 	require.Equal(t, expectedRecord, actualRecord)
 
-	providerKeeper.DeleteConsumerIdToRegistrationRecord(ctx, "consumerId")
-	actualRecord, found = providerKeeper.GetConsumerIdToRegistrationRecord(ctx, "consumerId")
-	require.False(t, found)
+	providerKeeper.DeleteConsumerRegistrationRecord(ctx, "consumerId")
+	actualRecord, err = providerKeeper.GetConsumerRegistrationRecord(ctx, "consumerId")
+	require.Error(t, err)
 	require.Equal(t, providertypes.ConsumerRegistrationRecord{}, actualRecord)
 }
 
@@ -98,8 +89,8 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, found := providerKeeper.GetConsumerIdToInitializationRecord(ctx, "consumerId")
-	require.False(t, found)
+	_, err := providerKeeper.GetConsumerInitializationRecord(ctx, "consumerId")
+	require.Error(t, err)
 
 	expectedRecord := providertypes.ConsumerInitializationRecord{
 		InitialHeight:                     types.Height{RevisionNumber: 1, RevisionHeight: 2},
@@ -114,9 +105,9 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 		HistoricalEntries:                 456,
 		DistributionTransmissionChannel:   "distribution_transmission_channel",
 	}
-	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId", expectedRecord)
-	actualRecord, found := providerKeeper.GetConsumerIdToInitializationRecord(ctx, "consumerId")
-	require.True(t, found)
+	providerKeeper.SetConsumerInitializationRecord(ctx, "consumerId", expectedRecord)
+	actualRecord, err := providerKeeper.GetConsumerInitializationRecord(ctx, "consumerId")
+	require.NoError(t, err)
 	require.Equal(t, expectedRecord, actualRecord)
 
 	// assert that overwriting the current initialization record works
@@ -133,14 +124,14 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 		HistoricalEntries:                 789,
 		DistributionTransmissionChannel:   "distribution_transmission_channel2",
 	}
-	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId", expectedRecord)
-	actualRecord, found = providerKeeper.GetConsumerIdToInitializationRecord(ctx, "consumerId")
-	require.True(t, found)
+	providerKeeper.SetConsumerInitializationRecord(ctx, "consumerId", expectedRecord)
+	actualRecord, err = providerKeeper.GetConsumerInitializationRecord(ctx, "consumerId")
+	require.NoError(t, err)
 	require.Equal(t, expectedRecord, actualRecord)
 
-	providerKeeper.DeleteConsumerIdToInitializationRecord(ctx, "consumerId")
-	actualRecord, found = providerKeeper.GetConsumerIdToInitializationRecord(ctx, "consumerId")
-	require.False(t, found)
+	providerKeeper.DeleteConsumerInitializationRecord(ctx, "consumerId")
+	actualRecord, err = providerKeeper.GetConsumerInitializationRecord(ctx, "consumerId")
+	require.Error(t, err)
 	require.Equal(t, providertypes.ConsumerInitializationRecord{}, actualRecord)
 }
 
@@ -149,23 +140,14 @@ func TestConsumerIdToOwnerAddress(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, found := providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
-	require.False(t, found)
-
-	providerKeeper.SetConsumerIdToOwnerAddress(ctx, "consumerId", "owner_address")
-	address, found := providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
-	require.True(t, found)
+	providerKeeper.SetConsumerOwnerAddress(ctx, "consumerId", "owner_address")
+	address := providerKeeper.GetConsumerOwnerAddress(ctx, "consumerId")
 	require.Equal(t, "owner_address", address)
 
 	// assert that overwriting the current owner address works
-	providerKeeper.SetConsumerIdToOwnerAddress(ctx, "consumerId", "owner_address2")
-	address, found = providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
-	require.True(t, found)
+	providerKeeper.SetConsumerOwnerAddress(ctx, "consumerId", "owner_address2")
+	address = providerKeeper.GetConsumerOwnerAddress(ctx, "consumerId")
 	require.Equal(t, "owner_address2", address)
-
-	providerKeeper.DeleteConsumerIdToOwnerAddress(ctx, "consumerId")
-	_, found = providerKeeper.GetConsumerIdToOwnerAddress(ctx, "consumerId")
-	require.False(t, found)
 }
 
 // TestConsumerIdToPhase tests the getter, setter, and deletion methods of the consumer id to phase methods
@@ -173,16 +155,16 @@ func TestConsumerIdToPhase(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, found := providerKeeper.GetConsumerIdToPhase(ctx, "consumerId")
+	_, found := providerKeeper.GetConsumerPhase(ctx, "consumerId")
 	require.False(t, found)
 
-	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId", keeper.Registered)
-	phase, found := providerKeeper.GetConsumerIdToPhase(ctx, "consumerId")
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Registered)
+	phase, found := providerKeeper.GetConsumerPhase(ctx, "consumerId")
 	require.True(t, found)
 	require.Equal(t, keeper.Registered, phase)
 
-	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId", keeper.Launched)
-	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, "consumerId")
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Launched)
+	phase, found = providerKeeper.GetConsumerPhase(ctx, "consumerId")
 	require.True(t, found)
 	require.Equal(t, keeper.Launched, phase)
 }
@@ -192,18 +174,18 @@ func TestConsumerIdToStopTime(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, found := providerKeeper.GetConsumerIdToStopTime(ctx, "consumerId")
-	require.False(t, found)
+	_, err := providerKeeper.GetConsumerStopTime(ctx, "consumerId")
+	require.Error(t, err)
 
 	expectedStopTime := time.Unix(1234, 56789)
-	providerKeeper.SetConsumerIdToStopTime(ctx, "consumerId", expectedStopTime)
-	actualStopTime, found := providerKeeper.GetConsumerIdToStopTime(ctx, "consumerId")
-	require.True(t, found)
+	providerKeeper.SetConsumerStopTime(ctx, "consumerId", expectedStopTime)
+	actualStopTime, err := providerKeeper.GetConsumerStopTime(ctx, "consumerId")
+	require.NoError(t, err)
 	require.Equal(t, actualStopTime, expectedStopTime)
 
-	providerKeeper.DeleteConsumerIdToStopTime(ctx, "consumerId")
-	_, found = providerKeeper.GetConsumerIdToStopTime(ctx, "consumerId")
-	require.False(t, found)
+	providerKeeper.DeleteConsumerStopTime(ctx, "consumerId")
+	_, err = providerKeeper.GetConsumerStopTime(ctx, "consumerId")
+	require.Error(t, err)
 }
 
 // TestGetInitializedConsumersReadyToLaunch tests that the ready to-be-launched consumer chains are returned
@@ -212,34 +194,32 @@ func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 	defer ctrl.Finish()
 
 	// no chains to-be-launched exist
-	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 5))
 
-	// set 3 initialization records with different spawn times
-	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId1", keeper.Initialized)
-	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId1",
-		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(10, 0)})
-	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId2", keeper.Initialized)
-	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId2",
-		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(20, 0)})
-	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId3", keeper.Initialized)
-	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "consumerId3",
-		providertypes.ConsumerInitializationRecord{SpawnTime: time.Unix(30, 0)})
+	providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(ctx, "consumerId1", time.Unix(10, 0))
+	providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(ctx, "consumerId2", time.Unix(20, 0))
+	providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(ctx, "consumerId3", time.Unix(30, 0))
 
 	// time has not yet reached the spawn time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
-	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 3))
 
 	// time has reached the spawn time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(10, 0))
-	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 3))
 
 	// time has reached the spawn time of "consumerId1" and "consumerId2"
 	ctx = ctx.WithBlockTime(time.Unix(20, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 3))
 
 	// time has reached the spawn time of all chains
 	ctx = ctx.WithBlockTime(time.Unix(30, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx))
+	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 3))
+
+	// limit the number of returned consumer chains
+	require.Equal(t, []string{}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 0))
+	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 1))
+	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 2))
 }
 
 func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
@@ -247,31 +227,27 @@ func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
 	defer ctrl.Finish()
 
 	// no chains to-be-stopped exist
-	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
 
-	// set 3 initialization records with different spawn times
-	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId1", keeper.Launched)
-	providerKeeper.SetConsumerIdToStopTime(ctx, "consumerId1", time.Unix(10, 0))
-	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId2", keeper.Launched)
-	providerKeeper.SetConsumerIdToStopTime(ctx, "consumerId2", time.Unix(20, 0))
-	providerKeeper.SetConsumerIdToPhase(ctx, "consumerId3", keeper.Launched)
-	providerKeeper.SetConsumerIdToStopTime(ctx, "consumerId3", time.Unix(30, 0))
+	providerKeeper.AppendStopTimeForConsumerToBeStopped(ctx, "consumerId1", time.Unix(10, 0))
+	providerKeeper.AppendStopTimeForConsumerToBeStopped(ctx, "consumerId2", time.Unix(20, 0))
+	providerKeeper.AppendStopTimeForConsumerToBeStopped(ctx, "consumerId3", time.Unix(30, 0))
 
 	// time has not yet reached the stop time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
-	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
 
 	// time has reached the stop time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(10, 0))
-	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
 
 	// time has reached the stop time of "consumerId1" and "consumerId2"
 	ctx = ctx.WithBlockTime(time.Unix(20, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
 
 	// time has reached the stop time of all chains
 	ctx = ctx.WithBlockTime(time.Unix(30, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx))
+	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
 }
 
 func TestIsValidatorOptedInToChain(t *testing.T) {
@@ -280,15 +256,16 @@ func TestIsValidatorOptedInToChain(t *testing.T) {
 
 	chainId := "chainId"
 	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
-	_, found := providerKeeper.IsValidatorOptedInToChain(ctx, providerAddr, chainId)
+	_, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
 	require.False(t, found)
 
 	expectedConsumerId := "consumerId"
-	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, expectedConsumerId, providertypes.ConsumerRegistrationRecord{
+	providerKeeper.SetConsumerRegistrationRecord(ctx, expectedConsumerId, providertypes.ConsumerRegistrationRecord{
 		ChainId: chainId,
 	})
 	providerKeeper.SetOptedIn(ctx, expectedConsumerId, providerAddr)
-	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChain(ctx, providerAddr, chainId)
+	providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, expectedConsumerId)
+	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
 	require.True(t, found)
 	require.Equal(t, expectedConsumerId, actualConsumerId)
 }

@@ -45,7 +45,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "No state mutation, new client should be created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-				providerKeeper.SetConsumerIdToPhase(ctx, "0", providerkeeper.Initialized)
+				providerKeeper.SetConsumerPhase(ctx, "0", providerkeeper.Initialized)
 
 				// Valid client creation is asserted with mock expectations here
 				testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1) // returns empty validator set
@@ -58,7 +58,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "chain for this consumer id has already launched, and hence client was created, NO new one is created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-				providerKeeper.SetConsumerIdToPhase(ctx, "0", providerkeeper.Launched)
+				providerKeeper.SetConsumerPhase(ctx, "0", providerkeeper.Launched)
 
 				// Expect none of the client creation related calls to happen
 				mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
@@ -80,9 +80,9 @@ func TestCreateConsumerClient(t *testing.T) {
 		tc.setup(&providerKeeper, ctx, &mocks)
 
 		// Call method with same arbitrary values as defined above in mock expectations.
-		providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "0", testkeeper.GetTestRegistrationRecord())
-		providerKeeper.SetConsumerIdToInitializationRecord(ctx, "0", testkeeper.GetTestInitializationRecord())
-		providerKeeper.SetConsumerIdToUpdateRecord(ctx, "0", testkeeper.GetTestUpdateRecord())
+		providerKeeper.SetConsumerRegistrationRecord(ctx, "0", testkeeper.GetTestRegistrationRecord())
+		providerKeeper.SetConsumerInitializationRecord(ctx, "0", testkeeper.GetTestInitializationRecord())
+		providerKeeper.SetConsumerUpdateRecord(ctx, "0", testkeeper.GetTestUpdateRecord())
 		err := providerKeeper.CreateConsumerClient(ctx, "0")
 
 		if tc.expClientCreated {
@@ -322,7 +322,7 @@ func TestStopConsumerChain(t *testing.T) {
 		err := providerKeeper.StopConsumerChain(ctx, consumerId, true)
 
 		if tc.expErr {
-			require.Error(t, err)
+			require.Error(t, err, t)
 		} else {
 			require.NoError(t, err)
 		}
@@ -515,7 +515,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	//
 	// Other setup not covered by custom template client state
 	//
-	ctx = ctx.WithChainID("testchain1") // chainID is obtained from ctx
+	ctx = ctx.WithChainID("testchain1") // consumerId is obtained from ctx
 	ctx = ctx.WithBlockHeight(5)        // RevisionHeight obtained from ctx
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1)
 	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
@@ -535,8 +535,8 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		HistoricalEntries:                 10000,
 		UnbondingPeriod:                   1728000000000000,
 	}
-	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, "0", registrationRecord)
-	providerKeeper.SetConsumerIdToInitializationRecord(ctx, "0", initializationRecord)
+	providerKeeper.SetConsumerRegistrationRecord(ctx, "0", registrationRecord)
+	providerKeeper.SetConsumerInitializationRecord(ctx, "0", initializationRecord)
 
 	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, "0")
 	require.NoError(t, err)
@@ -794,15 +794,16 @@ func TestBeginBlockInit(t *testing.T) {
 
 	// set up all the records
 	for i, r := range registrationRecords {
-		providerKeeper.SetConsumerIdToRegistrationRecord(ctx, fmt.Sprintf("%d", i), r)
+		providerKeeper.SetConsumerRegistrationRecord(ctx, fmt.Sprintf("%d", i), r)
 	}
 	for i, r := range initializationRecords {
-		providerKeeper.SetConsumerIdToInitializationRecord(ctx, fmt.Sprintf("%d", i), r)
+		providerKeeper.SetConsumerInitializationRecord(ctx, fmt.Sprintf("%d", i), r)
 		// set up the chains in their initialized phase, hence they could launch
-		providerKeeper.SetConsumerIdToPhase(ctx, fmt.Sprintf("%d", i), providerkeeper.Initialized)
+		providerKeeper.SetConsumerPhase(ctx, fmt.Sprintf("%d", i), providerkeeper.Initialized)
+		providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(ctx, fmt.Sprintf("%d", i), r.SpawnTime)
 	}
 	for i, r := range updateRecords {
-		providerKeeper.SetConsumerIdToUpdateRecord(ctx, fmt.Sprintf("%d", i), r)
+		providerKeeper.SetConsumerUpdateRecord(ctx, fmt.Sprintf("%d", i), r)
 	}
 
 	// opt in a sample validator so the chain's proposal can successfully execute
@@ -820,21 +821,21 @@ func TestBeginBlockInit(t *testing.T) {
 	providerKeeper.BeginBlockInit(ctx)
 
 	// first chain was successfully launched
-	phase, found := providerKeeper.GetConsumerIdToPhase(ctx, "0")
+	phase, found := providerKeeper.GetConsumerPhase(ctx, "0")
 	require.True(t, found)
 	require.Equal(t, providerkeeper.Launched, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "0")
 	require.True(t, found)
 
 	// second chain was successfully launched
-	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, "1")
+	phase, found = providerKeeper.GetConsumerPhase(ctx, "1")
 	require.True(t, found)
 	require.Equal(t, providerkeeper.Launched, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "1")
 	require.True(t, found)
 
 	// third chain was not launched because its spawn time has not passed
-	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, "2")
+	phase, found = providerKeeper.GetConsumerPhase(ctx, "2")
 	require.True(t, found)
 	require.Equal(t, providerkeeper.Initialized, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "2")
@@ -842,7 +843,7 @@ func TestBeginBlockInit(t *testing.T) {
 
 	// fourth chain corresponds to an Opt-In chain with one opted-in validator and hence the chain gets
 	// successfully executed
-	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, "3")
+	phase, found = providerKeeper.GetConsumerPhase(ctx, "3")
 	require.True(t, found)
 	require.Equal(t, providerkeeper.Launched, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "3")
@@ -850,7 +851,7 @@ func TestBeginBlockInit(t *testing.T) {
 
 	// fifth chain corresponds to an Opt-In chain with no opted-in validators and hence the
 	// chain launch is NOT successful
-	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, "4")
+	phase, found = providerKeeper.GetConsumerPhase(ctx, "4")
 	require.True(t, found)
 	require.Equal(t, providerkeeper.Initialized, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "4")
@@ -868,9 +869,12 @@ func TestBeginBlockCCR(t *testing.T) {
 
 	chainIds := []string{"chain1", "chain2", "chain3"}
 	consumerIds := []string{"consumerId1", "consumerId2", "consumerId3"}
-	providerKeeper.SetConsumerIdToStopTime(ctx, consumerIds[0], now.Add(-time.Hour))
-	providerKeeper.SetConsumerIdToStopTime(ctx, consumerIds[1], now)
-	providerKeeper.SetConsumerIdToStopTime(ctx, consumerIds[2], now.Add(time.Hour))
+	providerKeeper.SetConsumerStopTime(ctx, consumerIds[0], now.Add(-time.Hour))
+	providerKeeper.AppendStopTimeForConsumerToBeStopped(ctx, consumerIds[0], now.Add(-time.Hour))
+	providerKeeper.SetConsumerStopTime(ctx, consumerIds[1], now)
+	providerKeeper.AppendStopTimeForConsumerToBeStopped(ctx, consumerIds[1], now)
+	providerKeeper.SetConsumerStopTime(ctx, consumerIds[2], now.Add(time.Hour))
+	providerKeeper.AppendStopTimeForConsumerToBeStopped(ctx, consumerIds[2], now.Add(time.Hour))
 
 	//
 	// Mock expectations
@@ -900,10 +904,10 @@ func TestBeginBlockCCR(t *testing.T) {
 		registrationRecord := testkeeper.GetTestRegistrationRecord()
 		registrationRecord.ChainId = chainIds[i]
 
-		providerKeeper.SetConsumerIdToRegistrationRecord(ctx, consumerId, registrationRecord)
-		providerKeeper.SetConsumerIdToInitializationRecord(ctx, consumerId, initializationRecord)
-		providerKeeper.SetConsumerIdToUpdateRecord(ctx, consumerId, testkeeper.GetTestUpdateRecord())
-		providerKeeper.SetConsumerIdToPhase(ctx, consumerId, providerkeeper.Initialized)
+		providerKeeper.SetConsumerRegistrationRecord(ctx, consumerId, registrationRecord)
+		providerKeeper.SetConsumerInitializationRecord(ctx, consumerId, initializationRecord)
+		providerKeeper.SetConsumerUpdateRecord(ctx, consumerId, testkeeper.GetTestUpdateRecord())
+		providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
 		providerKeeper.SetClientIdToConsumerId(ctx, "clientID", consumerId)
 
 		err := providerKeeper.CreateConsumerClient(ctx, consumerId)
@@ -912,7 +916,7 @@ func TestBeginBlockCCR(t *testing.T) {
 		require.NoError(t, err)
 
 		// after we have created the consumer client, the chain is considered launched and hence we could later stop the chain
-		providerKeeper.SetConsumerIdToPhase(ctx, consumerId, providerkeeper.Launched)
+		providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Launched)
 	}
 
 	//
@@ -922,14 +926,14 @@ func TestBeginBlockCCR(t *testing.T) {
 	providerKeeper.BeginBlockCCR(ctx)
 
 	// Only the 3rd (final) proposal is still stored as pending
-	phase, found := providerKeeper.GetConsumerIdToPhase(ctx, consumerIds[0])
+	phase, found := providerKeeper.GetConsumerPhase(ctx, consumerIds[0])
 	require.True(t, found)
 	require.Equal(t, providerkeeper.Stopped, phase)
-	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, consumerIds[1])
+	phase, found = providerKeeper.GetConsumerPhase(ctx, consumerIds[1])
 	require.True(t, found)
 	require.Equal(t, providerkeeper.Stopped, phase)
 	// third chain had a stopTime in the future and hence did not stop
-	phase, found = providerKeeper.GetConsumerIdToPhase(ctx, consumerIds[2])
+	phase, found = providerKeeper.GetConsumerPhase(ctx, consumerIds[2])
 	require.True(t, found)
 	require.Equal(t, providerkeeper.Launched, phase)
 }

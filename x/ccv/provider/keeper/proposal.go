@@ -37,23 +37,21 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
-	initializationRecord, found := k.GetConsumerIdToInitializationRecord(ctx, consumerId)
-	if !found {
-		return errorsmod.Wrapf(types.ErrNoInitializationRecord,
-			"initialization record for consumer chain: %s is missing", consumerId)
+	initializationRecord, err := k.GetConsumerInitializationRecord(ctx, consumerId)
+	if err != nil {
+		return err
 	}
 
-	phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
+	phase, found := k.GetConsumerPhase(ctx, consumerId)
 	if !found || phase != Initialized {
 		return errorsmod.Wrapf(types.ErrInvalidPhase,
 			"cannot create client for consumer chain that is neither in the initialized phase: %s", consumerId)
 	}
 
 	// TODO (PERMISSIONLESS): make this a function ... GetChainId(consumerId) ...
-	registrationRecord, found := k.GetConsumerIdToRegistrationRecord(ctx, consumerId)
-	if !found {
-		return errorsmod.Wrapf(types.ErrNoChainId,
-			"the chain id for this consumer chain: %s is missing", consumerId)
+	registrationRecord, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+	if err != nil {
+		return err
 	}
 	chainId := registrationRecord.ChainId
 
@@ -165,14 +163,11 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, consumerId string, closeChan 
 	k.DeleteSlashAcks(ctx, consumerId)
 	k.DeletePendingVSCPackets(ctx, consumerId)
 
-	k.DeleteTopN(ctx, consumerId)
-	k.DeleteValidatorsPowerCap(ctx, consumerId)
-	k.DeleteValidatorSetCap(ctx, consumerId)
+	k.DeleteConsumerRegistrationRecord(ctx, consumerId)
+	k.DeleteConsumerUpdateRecord(ctx, consumerId)
+	k.DeleteConsumerUpdateRecord(ctx, consumerId)
 	k.DeleteAllowlist(ctx, consumerId)
 	k.DeleteDenylist(ctx, consumerId)
-	k.DeleteMinStake(ctx, consumerId)
-	k.DisableInactiveValidators(ctx, consumerId)
-
 	k.DeleteAllOptedIn(ctx, consumerId)
 	k.DeleteConsumerValSet(ctx, consumerId)
 
@@ -189,13 +184,25 @@ func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
 	consumerId string,
 ) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
-	initializationRecord, found := k.GetConsumerIdToInitializationRecord(ctx, consumerId)
-	if !found {
+	initializationRecord, err := k.GetConsumerInitializationRecord(ctx, consumerId)
+	if err != nil {
 		return gen, nil, errorsmod.Wrapf(types.ErrNoInitializationRecord,
 			"initialization record for consumer chain: %s is missing", consumerId)
 
 	}
-	updateRecord := k.GetConsumerIdToUpdateRecordOrDefault(ctx, consumerId, DefaultUpdateRecord)
+	updateRecord, err := k.GetConsumerUpdateRecord(ctx, consumerId)
+	if err != nil {
+		updateRecord = types.ConsumerUpdateRecord{
+			OwnerAddress:       "",
+			Top_N:              0,
+			ValidatorsPowerCap: 0,
+			ValidatorSetCap:    0,
+			Allowlist:          []string{},
+			Denylist:           []string{},
+			MinStake:           0,
+			AllowInactiveVals:  false,
+		}
+	}
 
 	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
 	if err != nil {
@@ -285,7 +292,7 @@ func (k Keeper) MakeConsumerGenesis(
 // SetPendingConsumerAdditionProp stores a pending consumer addition proposal.
 //
 // Note that the pending consumer addition proposals are stored under keys with
-// the following format: PendingCAPKeyPrefix | spawnTime | chainID
+// the following format: PendingCAPKeyPrefix | spawnTime | consumerId
 // Thus, if multiple consumer addition proposal for the same chain will pass at
 // the same time, then only the last one will be stored.
 func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.ConsumerAdditionProposal) {
@@ -323,16 +330,29 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 // BeginBlockInit iterates over the initialized consumers chains and creates clients for chains
 // in which the spawn time has passed
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
-	for _, consumerId := range k.GetInitializedConsumersReadyToLaunch(ctx) {
+	// TODO (PERMISSIONLESS): we can parameterize the limit to 200 at a later stage
+	for _, consumerId := range k.GetInitializedConsumersReadyToLaunch(ctx, 200) {
+		record, err := k.GetConsumerInitializationRecord(ctx, consumerId)
+		if err != nil {
+			ctx.Logger().Error("could not retrieve initialization record",
+				"consumerId", consumerId,
+				"error", err)
+			continue
+		}
+		// Remove consumer to prevent re-trying launching this chain.
+		// We would only tru to re-launch this chain if a new `MsgInitializeConsumer` message is sent.
+		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, record.SpawnTime)
+
 		cachedCtx, writeFn := ctx.CacheContext()
-		err := k.LaunchConsumer(cachedCtx, consumerId)
+		err = k.LaunchConsumer(cachedCtx, consumerId)
 		if err != nil {
 			ctx.Logger().Error("could not launch chain",
 				"consumerId", consumerId,
 				"error", err)
 			continue
 		}
-		k.SetConsumerIdToPhase(cachedCtx, consumerId, Launched)
+		k.SetConsumerPhase(cachedCtx, consumerId, Launched)
+
 		writeFn()
 	}
 }
@@ -370,9 +390,9 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecu
 // GetAllPendingConsumerAdditionProps gets all pending consumer addition proposals.
 //
 // Note that the pending consumer addition proposals are stored under keys with the following format:
-// PendingCAPKeyPrefix | spawnTime.UnixNano() | chainID
+// PendingCAPKeyPrefix | spawnTime.UnixNano() | consumerId
 // Thus, the returned array is in spawnTime order. If two proposals have the same spawnTime,
-// then they are ordered by chainID.
+// then they are ordered by consumerId.
 func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.PendingCAPKeyPrefix())
@@ -406,7 +426,7 @@ func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ..
 // SetPendingConsumerRemovalProp stores a pending consumer removal proposal.
 //
 // Note that the pending removal addition proposals are stored under keys with
-// the following format: PendingCRPKeyPrefix | stopTime | chainID
+// the following format: PendingCRPKeyPrefix | stopTime | consumerId
 // Thus, if multiple removal addition proposal for the same chain will pass at
 // the same time, then only the last one will be stored.
 func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.ConsumerRemovalProposal) {
@@ -442,19 +462,24 @@ func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...
 
 // BeginBlockCCR iterates over the pending consumer proposals and stop/removes the chain if the stop time has passed
 func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
-	for _, consumerId := range k.GetLaunchedConsumersReadyToStop(ctx) {
+	// TODO (PERMISSIONLESS): parameterize the limit
+	for _, consumerId := range k.GetLaunchedConsumersReadyToStop(ctx, 200) {
 		// stop consumer chain in a cached context to handle errors
 		cachedCtx, writeFn := ctx.CacheContext()
 
-		stopTime, found := k.GetConsumerIdToStopTime(ctx, consumerId)
-		if !found {
-			ctx.Logger().Info("this chain (%s) is not meant to be stopped", consumerId)
+		stopTime, err := k.GetConsumerStopTime(ctx, consumerId)
+		if err != nil {
+			k.Logger(ctx).Info("chain could not be stopped",
+				"consumerId", consumerId,
+				"err", err.Error())
 			continue
 		}
 
-		err := k.StopConsumerChain(cachedCtx, consumerId, true)
+		err = k.StopConsumerChain(cachedCtx, consumerId, true)
 		if err != nil {
-			ctx.Logger().Info("consumer chain could not be stopped: %w", err)
+			k.Logger(ctx).Info("consumer chain could not be stopped",
+				"consumerId", consumerId,
+				"err", err.Error())
 			continue
 		}
 		// The cached context is created with a new EventManager so we merge the event
@@ -462,7 +487,8 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 		// TODO (PERMISSIONLESS): verify this here and in the initialized chains to launch
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 
-		k.SetConsumerIdToPhase(cachedCtx, consumerId, Stopped)
+		k.SetConsumerPhase(cachedCtx, consumerId, Stopped)
+		k.RemoveConsumerFromToBeStoppedConsumers(ctx, consumerId, stopTime)
 		writeFn()
 
 		k.Logger(ctx).Info("executed consumer removal",
@@ -510,7 +536,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 // GetAllPendingConsumerRemovalProps iterates through the pending consumer removal proposals.
 //
 // Note that the pending consumer removal proposals are stored under keys with the following format:
-// PendingCRPKeyPrefix | stopTime.UnixNano() | chainID
+// PendingCRPKeyPrefix | stopTime.UnixNano() | consumerId
 // Thus, the returned array is in stopTime order.
 func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)

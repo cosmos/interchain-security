@@ -117,8 +117,8 @@ func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64)
 }
 
 // AfterProposalVotingPeriodEnded - call hook if registered
-// After proposal voting ends, the consumer chainID in store is deleted.
-// When a consumerAddition proposal passes, the consumer chainID is available in providerKeeper.GetAllPendingConsumerAdditionProps
+// After proposal voting ends, the consumer consumerId in store is deleted.
+// When a consumerAddition proposal passes, the consumer consumerId is available in providerKeeper.GetAllPendingConsumerAdditionProps
 // or providerKeeper.GetAllConsumerChains(ctx).
 func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalID uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)

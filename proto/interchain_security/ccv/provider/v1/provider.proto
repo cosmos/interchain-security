@@ -285,12 +285,6 @@ message ConsumerRemovalProposals {
 // AddressList contains a list of consensus addresses
 message AddressList { repeated bytes addresses = 1; }
 
-// ChannelToChain is used to map a CCV channel ID to the consumer chainID
-message ChannelToChain {
-  string channel_id = 1;
-  string chain_id = 2;
-}
-
 // ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
 message ValidatorSetChangePackets {
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData list = 1

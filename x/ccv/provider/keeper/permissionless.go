@@ -1,12 +1,16 @@
 package keeper
 
 import (
+	"bytes"
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	"encoding/binary"
+	"encoding/gob"
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"sort"
+	"strconv"
 	"time"
 )
 
@@ -14,20 +18,23 @@ import (
 type ConsumerPhase byte
 
 const (
+	// Registered phase indicates the phase in which a consumer chain has been assigned a unique consumer id. This consumer
+	// id can be used to interact with the consumer chain (e.g., when a validator opts in to a chain). A chain in this
+	// phase cannot yet launch. It has to be initialized first.
 	Registered ConsumerPhase = iota
+	// Initialized phase indicates the phase in which a consumer chain has set all the needed parameters to launch but
+	// has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
 	Initialized
+	// TODO (PERMISSIONLESS) add this if the chain fails to launch
+	// Useful so we do not keep trying to launch failed chains
+	// FailedToLaunch phase indicates that the chain attempted but failed to launch (e.g., due to no validator opting in)
+	FailedToLaunch
+	// Launched phase corresponds to the phase in which a consumer chain is running and consuming a subset of the validator
+	// set of the provider.
 	Launched
+	// Stopped phase corresponds to the phase in which a previously-launched chain has stopped.
 	Stopped
 )
-
-var DefaultUpdateRecord = types.ConsumerUpdateRecord{
-	OwnerAddress:       "",
-	Top_N:              0,
-	ValidatorsPowerCap: 0,
-	ValidatorSetCap:    0,
-	Allowlist:          []string{},
-	Denylist:           []string{},
-}
 
 // setConsumerId sets the provided consumerId
 func (k Keeper) setConsumerId(ctx sdk.Context, consumerId uint64) {
@@ -39,8 +46,8 @@ func (k Keeper) setConsumerId(ctx sdk.Context, consumerId uint64) {
 	store.Set(types.ConsumerIdKey(), buf)
 }
 
-// GetConsumerId returns the last registered consumer id
-func (k Keeper) GetConsumerId(ctx sdk.Context) (uint64, bool) {
+// getConsumerId returns the last registered consumer id
+func (k Keeper) getConsumerId(ctx sdk.Context) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.ConsumerIdKey())
 	if buf == nil {
@@ -51,145 +58,120 @@ func (k Keeper) GetConsumerId(ctx sdk.Context) (uint64, bool) {
 
 // FetchAndIncrementConsumerId fetches the first consumer id that can be used and increments the
 // underlying consumer id
-func (k Keeper) FetchAndIncrementConsumerId(ctx sdk.Context) uint64 {
-	consumerId, found := k.GetConsumerId(ctx)
-	if !found {
-		consumerId = 0
-	}
-
+func (k Keeper) FetchAndIncrementConsumerId(ctx sdk.Context) string {
+	consumerId, _ := k.getConsumerId(ctx)
 	k.setConsumerId(ctx, consumerId+1)
-	return consumerId
+	return strconv.FormatUint(consumerId, 10)
 }
 
-// GetConsumerIdToRegistrationRecord returns the registration record associated with this consumer id
-func (k Keeper) GetConsumerIdToRegistrationRecord(ctx sdk.Context, consumerId string) (types.ConsumerRegistrationRecord, bool) {
+// GetConsumerRegistrationRecord returns the registration record associated with this consumer id
+func (k Keeper) GetConsumerRegistrationRecord(ctx sdk.Context, consumerId string) (types.ConsumerRegistrationRecord, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerIdToRegistrationRecordKey(consumerId))
 	if bz == nil {
-		return types.ConsumerRegistrationRecord{}, false
+		return types.ConsumerRegistrationRecord{}, fmt.Errorf("failed to retrieve registration record for consumer id (%s)", consumerId)
 	}
 	var record types.ConsumerRegistrationRecord
 	if err := record.Unmarshal(bz); err != nil {
-		panic(fmt.Errorf("failed to unmarshal record: %w", err))
+		return types.ConsumerRegistrationRecord{}, fmt.Errorf("failed to unmarshal registration record for consumer id (%s): %w", consumerId, err)
 	}
-	return record, true
+	return record, nil
 }
 
-// SetConsumerIdToRegistrationRecord sets the registration record associated with this consumer id
-func (k Keeper) SetConsumerIdToRegistrationRecord(ctx sdk.Context, consumerId string, record types.ConsumerRegistrationRecord) {
+// SetConsumerRegistrationRecord sets the registration record associated with this consumer id
+func (k Keeper) SetConsumerRegistrationRecord(ctx sdk.Context, consumerId string, record types.ConsumerRegistrationRecord) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := record.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("failed to marshal record (%+v): %w", record, err))
+		return fmt.Errorf("failed to marshal registration record (%+v) for consumer id (%s): %w", record, consumerId, err)
 	}
 	store.Set(types.ConsumerIdToRegistrationRecordKey(consumerId), bz)
+	return nil
 }
 
-// DeleteConsumerIdToRegistrationRecord deletes the registration record associated with this consumer id
-func (k Keeper) DeleteConsumerIdToRegistrationRecord(ctx sdk.Context, consumerId string) {
+// DeleteConsumerRegistrationRecord deletes the registration record associated with this consumer id
+func (k Keeper) DeleteConsumerRegistrationRecord(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerIdToRegistrationRecordKey(consumerId))
 }
 
-// GetConsumerIdToInitializationRecord returns the initialization record associated with this consumer id
-func (k Keeper) GetConsumerIdToInitializationRecord(ctx sdk.Context, consumerId string) (types.ConsumerInitializationRecord, bool) {
+// GetConsumerInitializationRecord returns the initialization record associated with this consumer id
+func (k Keeper) GetConsumerInitializationRecord(ctx sdk.Context, consumerId string) (types.ConsumerInitializationRecord, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerIdToInitializationRecordKey(consumerId))
 	if bz == nil {
-		return types.ConsumerInitializationRecord{}, false
+		return types.ConsumerInitializationRecord{}, fmt.Errorf("failed to retrieve initialization record for consumer id (%s)", consumerId)
 	}
 	var record types.ConsumerInitializationRecord
 	if err := record.Unmarshal(bz); err != nil {
-		panic(fmt.Errorf("failed to unmarshal record: %w", err))
+		return types.ConsumerInitializationRecord{}, fmt.Errorf("failed to unmarshal stop time for consumer id (%s): %w", consumerId, err)
 	}
-	return record, true
+	return record, nil
 }
 
-// SetConsumerIdToInitializationRecord sets the initialization record associated with this consumer id
-func (k Keeper) SetConsumerIdToInitializationRecord(ctx sdk.Context, consumerId string, record types.ConsumerInitializationRecord) {
+// SetConsumerInitializationRecord sets the initialization record associated with this consumer id
+func (k Keeper) SetConsumerInitializationRecord(ctx sdk.Context, consumerId string, record types.ConsumerInitializationRecord) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := record.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("failed to marshal record (%+v): %w", record, err))
+		return fmt.Errorf("failed to marshal initialization record (%+v) for consumer id (%s): %w", record, consumerId, err)
 	}
 	store.Set(types.ConsumerIdToInitializationRecordKey(consumerId), bz)
+	return nil
 }
 
-// DeleteConsumerIdToInitializationRecord deletes the initialization record associated with this consumer id
-func (k Keeper) DeleteConsumerIdToInitializationRecord(ctx sdk.Context, consumerId string) {
+// DeleteConsumerInitializationRecord deletes the initialization record associated with this consumer id
+func (k Keeper) DeleteConsumerInitializationRecord(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerIdToInitializationRecordKey(consumerId))
 }
 
-// GetConsumerIdToUpdateRecord returns the update record associated with this consumer id
-func (k Keeper) GetConsumerIdToUpdateRecord(ctx sdk.Context, consumerId string) (types.ConsumerUpdateRecord, bool) {
+// GetConsumerUpdateRecord returns the update record associated with this consumer id
+func (k Keeper) GetConsumerUpdateRecord(ctx sdk.Context, consumerId string) (types.ConsumerUpdateRecord, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerIdToUpdateRecordKey(consumerId))
 	if bz == nil {
-		return types.ConsumerUpdateRecord{}, false
+		return types.ConsumerUpdateRecord{}, fmt.Errorf("failed to retrieve update record for consumer id (%s)", consumerId)
 	}
 	var record types.ConsumerUpdateRecord
 	if err := record.Unmarshal(bz); err != nil {
-		panic(fmt.Errorf("failed to unmarshal record: %w", err))
+		return types.ConsumerUpdateRecord{}, fmt.Errorf("failed to unmarshal update record for consumer id (%s): %w", consumerId, err)
 	}
-	return record, true
+	return record, nil
 }
 
-// GetConsumerIdToUpdateRecordOrDefault returns the update record associated with this consumer id or the default record
-// if there is no update record associated with this consumer id
-func (k Keeper) GetConsumerIdToUpdateRecordOrDefault(ctx sdk.Context, consumerId string, defaultRecord types.ConsumerUpdateRecord) types.ConsumerUpdateRecord {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerIdToUpdateRecordKey(consumerId))
-	if bz == nil {
-		return defaultRecord
-	}
-	var record types.ConsumerUpdateRecord
-	if err := record.Unmarshal(bz); err != nil {
-		panic(fmt.Errorf("failed to unmarshal record: %w", err))
-	}
-	return record
-}
-
-// SetConsumerIdToUpdateRecord sets the update record associated with this consumer id
-func (k Keeper) SetConsumerIdToUpdateRecord(ctx sdk.Context, consumerId string, record types.ConsumerUpdateRecord) {
+// SetConsumerUpdateRecord sets the update record associated with this consumer id
+func (k Keeper) SetConsumerUpdateRecord(ctx sdk.Context, consumerId string, record types.ConsumerUpdateRecord) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := record.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("failed to marshal record (%+v): %w", record, err))
+		return fmt.Errorf("failed to marshal update record (%+v) for consumer id (%s): %w", record, consumerId, err)
 	}
 	store.Set(types.ConsumerIdToUpdateRecordKey(consumerId), bz)
+	return nil
 }
 
-// DeleteConsumerIdToUpdateRecord deletes the update record associated with this consumer id
-func (k Keeper) DeleteConsumerIdToUpdateRecord(ctx sdk.Context, consumerId string) {
+// DeleteConsumerUpdateRecord deletes the update record associated with this consumer id
+func (k Keeper) DeleteConsumerUpdateRecord(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerIdToUpdateRecordKey(consumerId))
 }
 
-// GetConsumerIdToOwnerAddress returns the owner address associated with this consumer id
-func (k Keeper) GetConsumerIdToOwnerAddress(ctx sdk.Context, consumerId string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.ConsumerIdToOwnerAddressKey(consumerId))
-	if buf == nil {
-		return "", false
-	}
-	return string(buf), true
+// GetConsumerOwnerAddress returns the owner address associated with this consumer id
+func (k Keeper) GetConsumerOwnerAddress(ctx sdk.Context, consumerId string) string {
+	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	return updateRecord.OwnerAddress
 }
 
-// SetConsumerIdToOwnerAddress sets the owner address associated with this consumer id
-func (k Keeper) SetConsumerIdToOwnerAddress(ctx sdk.Context, consumerId string, ownerAddress string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(ownerAddress))
+// SetConsumerOwnerAddress sets the owner address associated with this consumer id
+func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId string, ownerAddress string) {
+	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	updateRecord.OwnerAddress = ownerAddress
+	k.SetConsumerUpdateRecord(ctx, consumerId, updateRecord)
 }
 
-// DeleteConsumerIdToOwnerAddress deletes the owner address associated with this consumer id
-func (k Keeper) DeleteConsumerIdToOwnerAddress(ctx sdk.Context, consumerId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToOwnerAddressKey(consumerId))
-}
-
-// GetConsumerIdToPhase returns the phase associated with this consumer id
-func (k Keeper) GetConsumerIdToPhase(ctx sdk.Context, consumerId string) (ConsumerPhase, bool) {
+// GetConsumerPhase returns the phase associated with this consumer id
+func (k Keeper) GetConsumerPhase(ctx sdk.Context, consumerId string) (ConsumerPhase, bool) {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.ConsumerIdToPhaseKey(consumerId))
 	if buf == nil {
@@ -198,47 +180,294 @@ func (k Keeper) GetConsumerIdToPhase(ctx sdk.Context, consumerId string) (Consum
 	return ConsumerPhase(buf[0]), true
 }
 
-// SetConsumerIdToPhase sets the phase associated with this consumer id
+// SetConsumerPhase sets the phase associated with this consumer id
 // TODO (PERMISSIONLESS): use this method when launching and when stopping a chain
-func (k Keeper) SetConsumerIdToPhase(ctx sdk.Context, consumerId string, phase ConsumerPhase) {
+func (k Keeper) SetConsumerPhase(ctx sdk.Context, consumerId string, phase ConsumerPhase) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ConsumerIdToPhaseKey(consumerId), []byte{byte(phase)})
 }
 
-// DeleteConsumerIdToPhase deletes the phase associated with this consumer id
-func (k Keeper) DeleteConsumerIdToPhase(ctx sdk.Context, consumerId string) {
+// DeleteConsumerPhase deletes the phase associated with this consumer id
+func (k Keeper) DeleteConsumerPhase(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerIdToPhaseKey(consumerId))
 }
 
-// GetConsumerIdToStopTime returns the stop time associated with the to-be-stopped chain with consumer id
-func (k Keeper) GetConsumerIdToStopTime(ctx sdk.Context, consumerId string) (time.Time, bool) {
+// GetConsumerStopTime returns the stop time associated with the to-be-stopped chain with consumer id
+func (k Keeper) GetConsumerStopTime(ctx sdk.Context, consumerId string) (time.Time, error) {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.ConsumerIdToStopTimeKey(consumerId))
 	if buf == nil {
-		return time.Time{}, false
+		return time.Time{}, fmt.Errorf("failed to retrieve stop time for consumer id (%s)", consumerId)
 	}
 	var time time.Time
 	if err := time.UnmarshalBinary(buf); err != nil {
-		panic(fmt.Errorf("failed to unmarshal time: %w", err))
+		return time, fmt.Errorf("failed to unmarshal stop time for consumer id (%s): %w", consumerId, err)
 	}
-	return time, true
+	return time, nil
 }
 
-// SetConsumerIdToStopTime sets the stop time associated with this consumer id
-func (k Keeper) SetConsumerIdToStopTime(ctx sdk.Context, consumerId string, stopTime time.Time) {
+// SetConsumerStopTime sets the stop time associated with this consumer id
+func (k Keeper) SetConsumerStopTime(ctx sdk.Context, consumerId string, stopTime time.Time) error {
 	store := ctx.KVStore(k.storeKey)
 	buf, err := stopTime.MarshalBinary()
 	if err != nil {
-		panic(fmt.Errorf("failed to marshal time: %w", err))
+		return fmt.Errorf("failed to marshal stop time (%+v) for consumer id (%s): %w", stopTime, consumerId, err)
 	}
 	store.Set(types.ConsumerIdToStopTimeKey(consumerId), buf)
+	return nil
 }
 
-// DeleteConsumerIdToStopTime deletes the stop time associated with this consumer id
-func (k Keeper) DeleteConsumerIdToStopTime(ctx sdk.Context, consumerId string) {
+// DeleteConsumerStopTime deletes the stop time associated with this consumer id
+func (k Keeper) DeleteConsumerStopTime(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerIdToStopTimeKey(consumerId))
+}
+
+// GetConsumersToBeLaunched
+func (k Keeper) GetConsumersToBeLaunched(ctx sdk.Context, spawnTime time.Time) ([]string, error) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.SpawnTimeToConsumerIdsKey(spawnTime))
+	if bz == nil {
+		return []string{}, nil
+	}
+
+	var consumerIds []string
+	buf := bytes.NewBuffer(bz)
+	dec := gob.NewDecoder(buf)
+	err := dec.Decode(&consumerIds)
+	return consumerIds, err
+}
+
+// AppendSpawnTimeForConsumerToBeLaunched
+func (k Keeper) AppendSpawnTimeForConsumerToBeLaunched(ctx sdk.Context, consumerId string, spawnTime time.Time) error {
+	store := ctx.KVStore(k.storeKey)
+
+	consumerIds, err := k.GetConsumersToBeLaunched(ctx, spawnTime)
+	if err != nil {
+		return err
+	}
+	consumerIds = append(consumerIds, consumerId)
+
+	// sort so that we avoid getting a consumer id in front of everyone else and delaying the appending of a chain
+	sort.Slice(consumerIds, func(i, j int) bool {
+		return consumerIds[i] < consumerIds[j]
+	})
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(consumerIds)
+	if err != nil {
+		return err
+	}
+
+	store.Set(types.SpawnTimeToConsumerIdsKey(spawnTime), buf.Bytes())
+	return nil
+}
+
+// RemoveConsumerFromToBeLaunchedConsumers
+func (k Keeper) RemoveConsumerFromToBeLaunchedConsumers(ctx sdk.Context, consumerId string, spawnTime time.Time) error {
+	store := ctx.KVStore(k.storeKey)
+
+	consumerIds, err := k.GetConsumersToBeLaunched(ctx, spawnTime)
+	if err != nil {
+		return err
+	}
+
+	if len(consumerIds) == 0 {
+		return fmt.Errorf("no consumer ids for spawn time: %s", spawnTime.String())
+	}
+
+	// find the index of the consumer we want to remove
+	index := 0
+	for i := 0; i < len(consumerIds); i = i + 1 {
+		if consumerIds[i] == consumerId {
+			index = i
+			break
+		}
+	}
+	if consumerIds[index] != consumerId {
+		return fmt.Errorf("failed to find consumer id (%s) in the chains to be launched", consumerId)
+	}
+
+	if len(consumerIds) == 1 {
+		store.Delete(types.SpawnTimeToConsumerIdsKey(spawnTime))
+		return nil
+	}
+
+	updatedConsumerIds := append(consumerIds[:index], consumerIds[index+1:]...)
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(updatedConsumerIds)
+	if err != nil {
+		return err
+	}
+
+	store.Set(types.SpawnTimeToConsumerIdsKey(spawnTime), buf.Bytes())
+	return nil
+}
+
+// TODO (PERMISSIONLESS) merge the functions, they practicall do the same
+
+// GetConsumersToBeStopped
+func (k Keeper) GetConsumersToBeStopped(ctx sdk.Context, stopTime time.Time) ([]string, error) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.StopTimeToConsumerIdsKey(stopTime))
+	if bz == nil {
+		return []string{}, nil
+	}
+
+	var consumerIds []string
+	buf := bytes.NewBuffer(bz)
+	dec := gob.NewDecoder(buf)
+	err := dec.Decode(&consumerIds)
+	return consumerIds, err
+}
+
+// AppendSpawnTimeForConsumerToBeStopped
+func (k Keeper) AppendStopTimeForConsumerToBeStopped(ctx sdk.Context, consumerId string, stopTime time.Time) error {
+	store := ctx.KVStore(k.storeKey)
+
+	consumerIds, err := k.GetConsumersToBeStopped(ctx, stopTime)
+	if err != nil {
+		return err
+	}
+	consumerIds = append(consumerIds, consumerId)
+
+	// sort so that we avoid getting a consumer id in front of everyone else and delying the removal of a chain
+	sort.Slice(consumerIds, func(i, j int) bool {
+		return consumerIds[i] < consumerIds[j]
+	})
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(consumerIds)
+	if err != nil {
+		return err
+	}
+
+	store.Set(types.StopTimeToConsumerIdsKey(stopTime), buf.Bytes())
+	return nil
+}
+
+// RemoveConsumerFromToBeStoppedConsumers
+func (k Keeper) RemoveConsumerFromToBeStoppedConsumers(ctx sdk.Context, consumerId string, stopTime time.Time) error {
+	store := ctx.KVStore(k.storeKey)
+
+	consumerIds, err := k.GetConsumersToBeStopped(ctx, stopTime)
+	if err != nil {
+		return err
+	}
+
+	if len(consumerIds) == 0 {
+		return fmt.Errorf("no consumer ids for stop time: %s", stopTime.String())
+	}
+
+	// find the index of the consumer we want to remove
+	index := 0
+	for i := 0; i < len(consumerIds); i = i + 1 {
+		if consumerIds[i] == consumerId {
+			index = i
+			break
+		}
+	}
+	if consumerIds[index] != consumerId {
+		return fmt.Errorf("failed to find consumer id (%s) in the chains to be stopped", consumerId)
+	}
+
+	if len(consumerIds) == 1 {
+		store.Delete(types.StopTimeToConsumerIdsKey(stopTime))
+		return nil
+	}
+
+	updatedConsumerIds := append(consumerIds[:index], consumerIds[index+1:]...)
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(updatedConsumerIds)
+	if err != nil {
+		return err
+	}
+
+	store.Set(types.StopTimeToConsumerIdsKey(stopTime), buf.Bytes())
+	return nil
+}
+
+// GetOptedInConsumerIds
+func (k Keeper) GetOptedInConsumerIds(ctx sdk.Context, providerAddr types.ProviderConsAddress) ([]string, error) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ProviderConsAddrToOptedInConsumerIdsKey(providerAddr))
+	if bz == nil {
+		return []string{}, nil
+	}
+
+	var consumerIds []string
+	buf := bytes.NewBuffer(bz)
+	dec := gob.NewDecoder(buf)
+	err := dec.Decode(&consumerIds)
+	return consumerIds, err
+}
+
+// AppendOptedInConsumerId
+func (k Keeper) AppendOptedInConsumerId(ctx sdk.Context, providerAddr types.ProviderConsAddress, consumerId string) error {
+	store := ctx.KVStore(k.storeKey)
+
+	consumerIds, err := k.GetOptedInConsumerIds(ctx, providerAddr)
+	if err != nil {
+		return err
+	}
+	consumerIds = append(consumerIds, consumerId)
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(consumerIds)
+	if err != nil {
+		return err
+	}
+
+	store.Set(types.ProviderConsAddrToOptedInConsumerIdsKey(providerAddr), buf.Bytes())
+	return nil
+}
+
+// RemoveOptedInConsumerId
+func (k Keeper) RemoveOptedInConsumerId(ctx sdk.Context, providerAddr types.ProviderConsAddress, consumerId string) error {
+	store := ctx.KVStore(k.storeKey)
+
+	consumerIds, err := k.GetOptedInConsumerIds(ctx, providerAddr)
+	if err != nil {
+		return err
+	}
+
+	if len(consumerIds) == 0 {
+		return fmt.Errorf("no consumer ids for provider consensus address: %s", providerAddr.String())
+	}
+
+	// find the index of the consumer we want to remove
+	index := 0
+	for i := 0; i < len(consumerIds); i = i + 1 {
+		if consumerIds[i] == consumerId {
+			index = i
+			break
+		}
+	}
+	if consumerIds[index] != consumerId {
+		return fmt.Errorf("failed to find consumer id (%s) from the opted-in chains", consumerId)
+	}
+
+	if len(consumerIds) == 1 {
+		store.Delete(types.ProviderConsAddrToOptedInConsumerIdsKey(providerAddr))
+		return nil
+	}
+
+	updatedConsumerIds := append(consumerIds[:index], consumerIds[index+1:]...)
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(updatedConsumerIds)
+	if err != nil {
+		return err
+	}
+
+	store.Set(types.ProviderConsAddrToOptedInConsumerIdsKey(providerAddr), buf.Bytes())
+	return nil
 }
 
 // GetClientIdToConsumerId returns the consumer id associated with this client id
@@ -265,34 +494,49 @@ func (k Keeper) DeleteClientIdToConsumerId(ctx sdk.Context, clientId string) {
 
 // GetInitializedConsumersReadyToLaunch returns the consumer ids of the pending initialized consumer chains
 // that are ready to launch,  i.e., consumer clients to be created.
-func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context) []string {
+func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint32) []string {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToInitializationRecordKeyPrefix())
+
+	spawnTimeToConsumerIdsKeyPrefix := types.SpawnTimeToConsumerIdsKeyPrefix()
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{spawnTimeToConsumerIdsKeyPrefix})
 	defer iterator.Close()
 
-	var consumerIds []string
-
+	result := []string{}
 	for ; iterator.Valid(); iterator.Next() {
-		// the `consumerId` resides in the whole key, but we skip the first byte (because it's the `ConsumerIdKey`)
-		// plus 8 more bytes for the `uint64` in the key that contains the length of the `consumerId`
-		consumerId := string(iterator.Key()[1+8:])
-
-		var record types.ConsumerInitializationRecord
-		err := record.Unmarshal(iterator.Value())
+		spawnTime, err := types.ParseTime(types.SpawnTimeToConsumerIdsKeyPrefix(), iterator.Key())
 		if err != nil {
-			panic(fmt.Errorf("failed to unmarshal consumer record: %w for consumer id: %s", err, consumerId))
+			k.Logger(ctx).Error("failed to parse spawn time",
+				"error", err)
+			continue
+		}
+		if spawnTime.After(ctx.BlockTime()) {
+			return result
 		}
 
 		// if current block time is equal to or after spawnTime, and the chain is initialized, we can launch the chain
-		phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
-		if !ctx.BlockTime().Before(record.SpawnTime) && (found && phase == Initialized) {
-			consumerIds = append(consumerIds, consumerId)
+		consumerIds, err := k.GetConsumersToBeLaunched(ctx, spawnTime)
+		if err != nil {
+			k.Logger(ctx).Error("failed to retrieve consumers to launch",
+				"spawn time", spawnTime,
+				"error", err)
+			continue
+		}
+		if len(result)+len(consumerIds) >= int(limit) {
+			remainingConsumerIds := len(result) + len(consumerIds) - int(limit)
+			if len(consumerIds[:len(consumerIds)-remainingConsumerIds]) == 0 {
+				return result
+			}
+			return append(result, consumerIds[:len(consumerIds)-remainingConsumerIds]...)
+		} else {
+			result = append(result, consumerIds...)
 		}
 	}
 
-	return consumerIds
+	return result
 }
 
+// LaunchConsumer launches the chain with the provided consumer id by creating the consumer client and the respective
+// consumer genesis file
 func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
 	err := k.CreateConsumerClient(ctx, consumerId)
 	if err != nil {
@@ -314,23 +558,20 @@ func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
 	return nil
 }
 
+// UpdateConsumer updates the chain with the provided consumer id
 func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
-	phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
+	phase, found := k.GetConsumerPhase(ctx, consumerId)
 	if !found || phase == Stopped {
 		return errorsmod.Wrapf(types.ErrInvalidPhase,
 			"cannot update stopped or not existing chain: %s", consumerId)
 	}
 
-	updateRecord, found := k.GetConsumerIdToUpdateRecord(ctx, consumerId)
-	if !found {
+	updateRecord, err := k.GetConsumerUpdateRecord(ctx, consumerId)
+	if err != nil {
 		// TODO (permissionless) -- not really an invalid update record
 		return errorsmod.Wrapf(types.ErrInvalidUpdateRecord,
 			"did not find update record for chain: %s", consumerId)
 	}
-
-	k.SetTopN(ctx, consumerId, updateRecord.Top_N)
-	k.SetValidatorsPowerCap(ctx, consumerId, updateRecord.ValidatorsPowerCap)
-	k.SetValidatorSetCap(ctx, consumerId, updateRecord.ValidatorSetCap)
 
 	k.DeleteAllowlist(ctx, consumerId)
 	for _, address := range updateRecord.Allowlist {
@@ -352,7 +593,7 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 		k.SetDenylist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 	}
 
-	oldTopN, found := k.GetTopN(ctx, consumerId)
+	oldTopN := k.GetTopN(ctx, consumerId)
 	if !found {
 		oldTopN = 0
 		k.Logger(ctx).Info("consumer chain top N not found, treating as 0", "consumerId", consumerId)
@@ -377,64 +618,78 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 		}
 	}
 
-	k.SetMinStake(ctx, consumerId, updateRecord.MinStake)
-	k.SetInactiveValidatorsAllowed(ctx, consumerId, updateRecord.AllowInactiveVals)
-
 	return nil
 }
 
 // GetLaunchedConsumersReadyToStop returns the consumer ids of the pending launched consumer chains
 // that are ready to stop
-func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context) []string {
+func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context, limit uint32) []string {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToStopTimeKeyNamePrefix())
+
+	stopTimeToConsumerIdsKeyPrefix := types.StopTimeToConsumerIdsKeyPrefix()
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{stopTimeToConsumerIdsKeyPrefix})
 	defer iterator.Close()
 
-	var consumerIds []string
-
+	result := []string{}
 	for ; iterator.Valid(); iterator.Next() {
-		// the `consumerId` resides in the whole key, but we skip the first byte (because it's the `ConsumerIdKey`)
-		// plus 8 more bytes for the `uint64` in the key that contains the length of the `consumerId`
-		consumerId := string(iterator.Key()[1+8:])
-
-		var stopTime time.Time
-		err := stopTime.UnmarshalBinary(iterator.Value())
+		stopTime, err := types.ParseTime(types.StopTimeToConsumerIdsKeyPrefix(), iterator.Key())
 		if err != nil {
-			panic(fmt.Errorf("failed to unmarshal stop stopTime: %w for consumer id: %s", err, consumerId))
+			k.Logger(ctx).Error("failed to parse stop time",
+				"error", err)
+			continue
+		}
+		if stopTime.After(ctx.BlockTime()) {
+			return result
 		}
 
-		// if current block time is equal to or after stop stopTime, and the chain is launched we can stop the chain
-		phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
-		if !ctx.BlockTime().Before(stopTime) && (found && phase == Launched) {
-			consumerIds = append(consumerIds, string(iterator.Key()[1+8:]))
+		consumerIds, err := k.GetConsumersToBeStopped(ctx, stopTime)
+		if err != nil {
+			k.Logger(ctx).Error("failed to retrieve consumers to stop",
+				"stop time", stopTime,
+				"error", err)
+			continue
 		}
+		if len(result)+len(consumerIds) >= int(limit) {
+			remainingConsumerIds := len(result) + len(consumerIds) - int(limit)
+			if len(consumerIds[:len(consumerIds)-remainingConsumerIds]) == 0 {
+				return result
+			}
+			return append(result, consumerIds[:len(consumerIds)-remainingConsumerIds]...)
+		} else {
+			result = append(result, consumerIds...)
+		}
+
+		consumerIds = append(consumerIds, string(iterator.Key()[1+8:]))
 	}
 
-	return consumerIds
+	return result
 }
 
-// IsValidatorOptedInToChain checks if the validator with `providerAddr` is opted into the chain with the specified `chainId`.
+// IsValidatorOptedInToChainId checks if the validator with `providerAddr` is opted into the chain with the specified `chainId`.
 // It returns `found == true` and the corresponding chain's `consumerId` if the validator is opted in. Otherwise, it returns an empty string
 // for `consumerId` and `found == false`.
-func (k Keeper) IsValidatorOptedInToChain(ctx sdk.Context, providerAddr types.ProviderConsAddress, chainId string) (consumerId string, found bool) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToRegistrationRecordKeyPrefix())
-	defer iterator.Close()
+func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.ProviderConsAddress, chainId string) (string, bool) {
+	consumerIds, err := k.GetOptedInConsumerIds(ctx, providerAddr)
+	if err != nil {
+		k.Logger(ctx).Error("failed to retrieve the consumer ids this validator is opted in to",
+			"providerAddr", providerAddr,
+			"error", err)
+		return "", false
+	}
 
-	for ; iterator.Valid(); iterator.Next() {
-		// the `currentConsumerId` resides in the whole key, but we skip the first byte (because it's the `ConsumerIdKey`)
-		// plus 8 more bytes for the `uint64` in the key that contains the length of the `currentConsumerId`
-		currentConsumerId := string(iterator.Key()[1+8:])
-
-		var record types.ConsumerRegistrationRecord
-		err := record.Unmarshal(iterator.Value())
+	for _, consumerId := range consumerIds {
+		record, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
 		if err != nil {
-			panic(fmt.Errorf("failed to unmarshal registration record: %w for consumer id: %s", err, currentConsumerId))
+			k.Logger(ctx).Error("cannot find registration record",
+				"consumerId", consumerId,
+				"error", err)
+			continue
 		}
 
-		if record.ChainId == chainId && k.IsOptedIn(ctx, currentConsumerId, providerAddr) {
-			return currentConsumerId, true
+		if record.ChainId == chainId {
+			return consumerId, true
 		}
+
 	}
 	return "", false
 }

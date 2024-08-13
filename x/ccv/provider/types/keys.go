@@ -105,11 +105,11 @@ const (
 
 	OptedInKeyName = "OptedInKey"
 
-	TopNKeyName = "TopNKey"
+	DeprecatedTopNKeyName = "DeprecatedTopNKey"
 
-	ValidatorsPowerCapKeyName = "ValidatorsPowerCapKey"
+	DeprecatedValidatorsPowerCapKeyName = "DeprecatedValidatorsPowerCapKey"
 
-	ValidatorSetCapKeyName = "ValidatorSetCapKey"
+	DeprecatedValidatorSetCapKeyName = "DeprecatedValidatorSetCapKey"
 
 	AllowlistKeyName = "AllowlistKey"
 
@@ -123,9 +123,9 @@ const (
 
 	LastProviderConsensusValsKeyName = "LastProviderConsensusValsKey"
 
-	MinStakeKeyName = "MinStakeKey"
+	DeprecatedMinStakeKeyName = "DeprecatedMinStakeKey"
 
-	AllowInactiveValidatorsKeyName = "AllowInactiveValidatorsKey"
+	DeprecatedAllowInactiveValidatorsKeyName = "DeprecatedAllowInactiveValidatorsKey"
 
 	ConsumerAddrsToPruneV2KeyName = "ConsumerAddrsToPruneV2Key"
 
@@ -137,11 +137,15 @@ const (
 
 	ConsumerIdToUpdateRecordKeyName = "ConsumerIdToUpdateRecordKey"
 
-	ConsumerIdToOwnerAddressKeyName = "ConsumerIdToOwnerAddressKey"
-
 	ConsumerIdToPhaseKeyName = "ConsumerIdToPhaseKey"
 
 	ConsumerIdToStopTimeKeyName = "ConsumerIdToStopTimeKey"
+
+	SpawnTimeToConsumerIdsKeyName = "SpawnTimeToConsumerIdsKeyName"
+
+	StopTimeToConsumerIdsKeyName = "StopTimeToConsumerIdsKeyName"
+
+	ProviderConsAddrToOptedInConsumerIdsKeyName = "ProviderConsAddrToOptedInConsumerIdsKeyName"
 
 	ClientIdToConsumerIdKeyName = "ClientIdToConsumerIdKey"
 )
@@ -287,18 +291,24 @@ func getKeyPrefixes() map[string]byte {
 		// OptedInKey is the key for storing whether a validator is opted in to validate on a consumer chain
 		OptedInKeyName: 32,
 
-		// TopNKey is the key for storing the mapping from a consumer chain to the N value of this chain,
+		// DeprecatedTopNKey is the key for storing the mapping from a consumer chain to the N value of this chain,
 		// that corresponds to the N% of the top validators that have to validate this consumer chain
-		TopNKeyName: 33,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedTopNKeyName: 33,
 
-		// ValidatorsPowerCapKey is the key for  storing the mapping from a consumer chain to the power-cap value of this chain,
+		// DeprecatedValidatorsPowerCapKey is the key for  storing the mapping from a consumer chain to the power-cap value of this chain,
 		// that corresponds to p% such that no validator can have more than p% of the voting power on the consumer chain.
 		// Operates on a best-effort basis.
-		ValidatorsPowerCapKeyName: 34,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedValidatorsPowerCapKeyName: 34,
 
-		// ValidatorSetCapKey is the key for storing the mapping from a consumer chain to the validator-set cap value
+		// DeprecatedValidatorSetCapKey is the key for storing the mapping from a consumer chain to the validator-set cap value
 		// of this chain.
-		ValidatorSetCapKeyName: 35,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedValidatorSetCapKeyName: 35,
 
 		// AllowlistKey is the key for storing the mapping from a consumer chain to the set of validators that are
 		// allowlisted.
@@ -328,14 +338,18 @@ func getKeyPrefixes() map[string]byte {
 		// sent to the consensus engine of the provider chain
 		LastProviderConsensusValsKeyName: 42,
 
-		// MinStakeKey is the byte prefix for storing the mapping from consumer chains to the minimum stake required to be a validator on the consumer chain
+		// DeprecatedMinStakeKey is the byte prefix for storing the mapping from consumer chains to the minimum stake required to be a validator on the consumer chain
 		// The minimum stake must be stored on the provider chain, not on the consumer chain itself, since it filters out
 		// validators from the VSCPackets that we send to the consumer chain.
-		MinStakeKeyName: 43,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedMinStakeKeyName: 43,
 
-		// AllowInactiveValidatorsKey is the byte prefix for storing the mapping from consumer chains to the boolean value
+		// DeprecatedAllowInactiveValidatorsKey is the byte prefix for storing the mapping from consumer chains to the boolean value
 		// that determines whether inactive validators can validate on that chain
-		AllowInactiveValidatorsKeyName: 44,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedAllowInactiveValidatorsKeyName: 44,
 
 		// ConsumerIdKeyName is the key for storing the consumer id for the next registered consumer chain
 		ConsumerIdKeyName: 45,
@@ -349,17 +363,26 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerIdToUpdateRecordKeyName is the key for storing the update record for the given consumer id
 		ConsumerIdToUpdateRecordKeyName: 48,
 
-		// ConsumerIdToOwnerAddressKeyName is the key for storing the owner address for the given consumer id
-		ConsumerIdToOwnerAddressKeyName: 49,
-
 		// ConsumerIdToPhaseKeyName is the key for storing the phase of a consumer chain with the given consumer id
-		ConsumerIdToPhaseKeyName: 50,
+		ConsumerIdToPhaseKeyName: 49,
 
 		// ConsumerIdToStopTimeKeyName is the key for storing the stop time of a consumer chain that is to be removed
-		ConsumerIdToStopTimeKeyName: 51,
+		ConsumerIdToStopTimeKeyName: 50,
+
+		// SpawnTimeToConsumerIdKeyName is the key for storing pending initialized consumers that are to be launched.
+		// For a specific spawn time, it might store multiple consumer chain ids for chains that are to be launched.
+		SpawnTimeToConsumerIdsKeyName: 51,
+
+		// StopTimeToConsumerIdKeyName is the key for storing pending launched consumers that are to be stopped.
+		// For a specific stop time, it might store multiple consumer chain ids for chains that are to be stopped.
+		StopTimeToConsumerIdsKeyName: 52,
+
+		// ProviderConsAddrToOptedInConsumerIdsKeyName is the key for storing all the consumer ids that a validator
+		// is currently opted in to.
+		ProviderConsAddrToOptedInConsumerIdsKeyName: 53,
 
 		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
-		ClientIdToConsumerIdKeyName: 52,
+		ClientIdToConsumerIdKeyName: 54,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -641,22 +664,6 @@ func ConsumerValidatorKey(consumerId string, providerAddr []byte) []byte {
 	return append(prefix, providerAddr...)
 }
 
-// TopNKey returns the key used to store the Top N value per consumer chain.
-// This value corresponds to the N% of the top validators that have to validate the consumer chain.
-func TopNKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(TopNKeyName), consumerId)
-}
-
-// ValidatorSetPowerKey returns the key of consumer `consumerId`
-func ValidatorsPowerCapKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(ValidatorsPowerCapKeyName), consumerId)
-}
-
-// ValidatorSetCapKey returns the key of consumer chain `chainID`
-func ValidatorSetCapKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(ValidatorSetCapKeyName), consumerId)
-}
-
 // AllowlistKeyPrefix returns the key prefix for storing consumer chains allowlists
 func AllowlistKeyPrefix() byte {
 	return mustGetKeyPrefix(AllowlistKeyName)
@@ -736,48 +743,34 @@ func LastProviderConsensusValsPrefix() []byte {
 	return []byte{mustGetKeyPrefix(LastProviderConsensusValsKeyName)}
 }
 
-// MinStakeKey returns the key used to store the minimum stake required to validate on consumer chain with `consumerId`
-func MinStakeKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(MinStakeKeyName), consumerId)
-}
-
-func AllowInactiveValidatorsKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(AllowInactiveValidatorsKeyName), consumerId)
-}
-
 // ConsumerIdKey returns the key used to store the consumerId of the next registered chain
 func ConsumerIdKey() []byte {
 	return []byte{mustGetKeyPrefix(ConsumerIdKeyName)}
 }
 
 // ConsumerIdToRegistrationRecordKeyPrefix returns the key prefix for storing consumer registration records
-func ConsumerIdToRegistrationRecordKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(ConsumerIdToRegistrationRecordKeyName)}
+func ConsumerIdToRegistrationRecordKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToRegistrationRecordKeyName)
 }
 
 // ConsumerIdToRegistrationRecordKey returns the key used to store the registration record that corresponds to this consumer id
 func ConsumerIdToRegistrationRecordKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToRegistrationRecordKeyName), consumerId)
+	return ConsumerIdWithLenKey(ConsumerIdToRegistrationRecordKeyPrefix(), consumerId)
 }
 
 // ConsumerIdToInitializationRecordKeyPrefix returns the key prefix for storing consumer initialization records
-func ConsumerIdToInitializationRecordKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName)}
+func ConsumerIdToInitializationRecordKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName)
 }
 
 // ConsumerIdToInitializationRecordKey returns the key used to store the initialization record that corresponds to this consumer id
 func ConsumerIdToInitializationRecordKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName), consumerId)
+	return ConsumerIdWithLenKey(ConsumerIdToInitializationRecordKeyPrefix(), consumerId)
 }
 
 // ConsumerIdToUpdateRecordKey returns the key used to store the update record that corresponds to this consumer id
 func ConsumerIdToUpdateRecordKey(consumerId string) []byte {
 	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToUpdateRecordKeyName), consumerId)
-}
-
-// ConsumerIdToOwnerAddressKey returns the key used to store the owner address that corresponds to this consumer id
-func ConsumerIdToOwnerAddressKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToOwnerAddressKeyName), consumerId)
 }
 
 // ConsumerIdToPhaseKey returns the key used to store the phase that corresponds to this consumer id
@@ -790,10 +783,62 @@ func ConsumerIdToStopTimeKey(consumerId string) []byte {
 	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToStopTimeKeyName), consumerId)
 }
 
-// ConsumerIdToStopTimeKeyNamePrefix returns the key prefix for storing the stop times of consumer chains
+// ConsumerIdToStopTimeKeyPrefix returns the key prefix for storing the stop times of consumer chains
 // that are about to be stopped
-func ConsumerIdToStopTimeKeyNamePrefix() []byte {
-	return []byte{mustGetKeyPrefix(ConsumerIdToStopTimeKeyName)}
+func ConsumerIdToStopTimeKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToStopTimeKeyName)
+}
+
+// SpawnTimeToConsumerIdsKeyPrefix returns the key prefix for storing pending chains that are to be launched
+func SpawnTimeToConsumerIdsKeyPrefix() byte {
+	return mustGetKeyPrefix(SpawnTimeToConsumerIdsKeyName)
+}
+
+// SpawnTimeToConsumerIdsKey returns the key prefix for storing the spawn times of consumer chains
+// that are about to be launched
+func SpawnTimeToConsumerIdsKey(spawnTime time.Time) []byte {
+	return ccvtypes.AppendMany(
+		// append the prefix
+		[]byte{SpawnTimeToConsumerIdsKeyPrefix()},
+		// append the time
+		sdk.FormatTimeBytes(spawnTime),
+	)
+}
+
+// StopTimeToConsumerIdsKeyPrefix returns the key prefix for storing pending chains that are to be stopped
+func StopTimeToConsumerIdsKeyPrefix() byte {
+	return mustGetKeyPrefix(StopTimeToConsumerIdsKeyName)
+}
+
+// StopTimeToConsumerIdsKey returns the key prefix for storing the stop times of consumer chains
+// that are about to be stopped
+func StopTimeToConsumerIdsKey(spawnTime time.Time) []byte {
+	return ccvtypes.AppendMany(
+		// append the prefix
+		[]byte{StopTimeToConsumerIdsKeyPrefix()},
+		// append the time
+		sdk.FormatTimeBytes(spawnTime),
+	)
+}
+
+// ParseTime returns the marshalled time
+func ParseTime(prefix byte, bz []byte) (time.Time, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return time.Time{}, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+	timestamp, err := sdk.ParseTimeBytes(bz[prefixL:])
+	if err != nil {
+		return time.Time{}, err
+	}
+	return timestamp, nil
+}
+
+// ProviderConsAddrToOptedInConsumerIdsKey returns the key for storing all the consumer ids that `providerAddr`
+// has opted-in to
+func ProviderConsAddrToOptedInConsumerIdsKey(providerAddr ProviderConsAddress) []byte {
+	return append([]byte{mustGetKeyPrefix(ProviderConsAddrToOptedInConsumerIdsKeyName)}, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // ClientIdToConsumerIdKey returns the consumer id that corresponds to this client id
@@ -832,19 +877,6 @@ func ConsumerIdAndTsKey(prefix byte, consumerId string, timestamp time.Time) []b
 	)
 }
 
-// ConsumerIdWithLenKey returns the key with the following format:
-// bytePrefix | len(consumerId) | consumerId
-func ConsumerIdWithLenKey(prefix byte, consumerId string) []byte {
-	return ccvtypes.AppendMany(
-		// Append the prefix
-		[]byte{prefix},
-		// Append the consumer id length
-		sdk.Uint64ToBigEndian(uint64(len(consumerId))),
-		// Append the consumer id
-		[]byte(consumerId),
-	)
-}
-
 // ParseConsumerIdAndTsKey returns the consumer id and time for a ConsumerIdIdAndTs key
 func ParseConsumerIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 	expectedPrefix := []byte{prefix}
@@ -859,6 +891,31 @@ func ParseConsumerIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) 
 		return "", time.Time{}, err
 	}
 	return consumerId, timestamp, nil
+}
+
+// ConsumerIdWithLenKey returns the key with the following format:
+// bytePrefix | len(consumerId) | consumerId
+func ConsumerIdWithLenKey(prefix byte, consumerId string) []byte {
+	return ccvtypes.AppendMany(
+		// Append the prefix
+		[]byte{prefix},
+		// Append the consumer id length
+		sdk.Uint64ToBigEndian(uint64(len(consumerId))),
+		// Append the consumer id
+		[]byte(consumerId),
+	)
+}
+
+// ParseConsumerIdWithLenKey returns the consumer id ConsumerIdWithLen key
+func ParseConsumerIdWithLenKey(prefix byte, bz []byte) (string, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+	consumerIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	consumerId := string(bz[prefixL+8 : prefixL+8+int(consumerIdL)])
+	return consumerId, nil
 }
 
 // ChainIdAndUintIdKey returns the key with the following format:

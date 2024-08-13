@@ -40,6 +40,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	cmd.AddCommand(CmdBlocksUntilNextEpoch())
+	cmd.AddCommand(CmdConsumerIdFromClientId())
 	return cmd
 }
 
@@ -584,6 +585,33 @@ func CmdBlocksUntilNextEpoch() *cobra.Command {
 
 			req := &types.QueryBlocksUntilNextEpochRequest{}
 			res, err := queryClient.QueryBlocksUntilNextEpoch(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdConsumerIdFromClientId() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "consumer-id-from-client-id [client-id]",
+		Short: "Query the the consumer id of the chain associated with the provided client id",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryConsumerIdFromClientIdRequest{ClientId: args[0]}
+			res, err := queryClient.QueryConsumerIdFromClientId(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

@@ -41,11 +41,11 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(4), providertypes.SlashMeterReplenishTimeCandidateKey()[0])
 	i++
-	require.Equal(t, uint8(5), providertypes.ConsumerIdToChannelIdKey("chainID")[0])
+	require.Equal(t, byte(5), providertypes.ConsumerIdToChannelIdKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(6), providertypes.ChannelIdToConsumerIdKeyPrefix()[0])
+	require.Equal(t, byte(6), providertypes.ChannelIdToConsumerIdKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(7), providertypes.ConsumerIdToClientIdKeyPrefix()[0])
+	require.Equal(t, byte(7), providertypes.ConsumerIdToClientIdKeyPrefix()[0])
 	i++
 	// reserve 8 as deprecated
 	i++
@@ -98,11 +98,14 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(32), providertypes.OptedInKeyPrefix())
 	i++
-	require.Equal(t, byte(33), providertypes.TopNKey("chainID")[0])
+	// DEPRECATED
+	//require.Equal(t, byte(33), providertypes.TopNKey("chainID")[0])
 	i++
-	require.Equal(t, byte(34), providertypes.ValidatorsPowerCapKey("chainID")[0])
+	// DEPRECATED
+	//require.Equal(t, byte(34), providertypes.ValidatorsPowerCapKey("chainID")[0])
 	i++
-	require.Equal(t, byte(35), providertypes.ValidatorSetCapKey("chainID")[0])
+	// DEPRECATED
+	//require.Equal(t, byte(35), providertypes.ValidatorSetCapKey("chainID")[0])
 	i++
 	require.Equal(t, byte(36), providertypes.AllowlistKeyPrefix())
 	i++
@@ -118,25 +121,31 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(42), providertypes.LastProviderConsensusValsPrefix()[0])
 	i++
-	require.Equal(t, byte(43), providertypes.MinStakeKey("chainID")[0])
+	// DEPRECATED
+	//require.Equal(t, byte(43), providertypes.MinStakeKey("chainID")[0])
 	i++
-	require.Equal(t, byte(44), providertypes.AllowInactiveValidatorsKey("chainID")[0])
+	// DEPRECATED
+	//require.Equal(t, byte(44), providertypes.AllowInactiveValidatorsKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(45), providertypes.ConsumerIdKey()[0])
+	require.Equal(t, byte(45), providertypes.ConsumerIdKey()[0])
 	i++
-	require.Equal(t, uint8(46), providertypes.ConsumerIdToRegistrationRecordKey("consumerId")[0])
+	require.Equal(t, byte(46), providertypes.ConsumerIdToRegistrationRecordKeyPrefix())
 	i++
-	require.Equal(t, uint8(47), providertypes.ConsumerIdToInitializationRecordKey("consumerId")[0])
+	require.Equal(t, byte(47), providertypes.ConsumerIdToInitializationRecordKeyPrefix())
 	i++
-	require.Equal(t, uint8(48), providertypes.ConsumerIdToUpdateRecordKey("consumerId")[0])
+	require.Equal(t, byte(48), providertypes.ConsumerIdToUpdateRecordKey("consumerId")[0])
 	i++
-	require.Equal(t, uint8(49), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
+	require.Equal(t, byte(49), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
 	i++
-	require.Equal(t, uint8(50), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
+	require.Equal(t, byte(50), providertypes.ConsumerIdToStopTimeKeyPrefix())
 	i++
-	require.Equal(t, uint8(51), providertypes.ConsumerIdToStopTimeKey("consumerId")[0])
+	require.Equal(t, byte(51), providertypes.SpawnTimeToConsumerIdsKeyPrefix())
 	i++
-	require.Equal(t, uint8(52), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	require.Equal(t, byte(52), providertypes.StopTimeToConsumerIdsKeyPrefix())
+	i++
+	require.Equal(t, byte(53), providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05}))[0])
+	i++
+	require.Equal(t, byte(54), providertypes.ClientIdToConsumerIdKey("clientId")[0])
 	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()
@@ -192,9 +201,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.EquivocationEvidenceMinHeightKey("chainID"),
 		providertypes.ProposedConsumerChainKey(1),
 		providertypes.ConsumerValidatorKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05}).Address.Bytes()),
-		providertypes.TopNKey("chainID"),
-		providertypes.ValidatorsPowerCapKey("chainID"),
-		providertypes.ValidatorSetCapKey("chainID"),
 		providertypes.AllowlistKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.DenylistKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.OptedInKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
@@ -202,16 +208,16 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerCommissionRateKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.MinimumPowerInTopNKey("chainID"),
 		providertypes.ConsumerAddrsToPruneV2Key("chainID", time.Time{}),
-		providertypes.MinStakeKey("chainID"),
-		providertypes.AllowInactiveValidatorsKey("chainID"),
 		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerIdKey(),
 		providertypes.ConsumerIdToRegistrationRecordKey("consumerId"),
 		providertypes.ConsumerIdToInitializationRecordKey("consumerId"),
 		providertypes.ConsumerIdToUpdateRecordKey("consumerId"),
-		providertypes.ConsumerIdToOwnerAddressKey("consumerId"),
 		providertypes.ConsumerIdToPhaseKey("consumerId"),
 		providertypes.ConsumerIdToStopTimeKey("consumerId"),
+		providertypes.SpawnTimeToConsumerIdsKey(time.Time{}),
+		providertypes.StopTimeToConsumerIdsKey(time.Time{}),
+		providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ClientIdToConsumerIdKey("clientId"),
 	}
 }

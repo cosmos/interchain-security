@@ -231,10 +231,10 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 
 	gomock.InOrder(expectations...)
 
-	providerKeeper.SetConsumerIdToRegistrationRecord(ctx, consumerId, GetTestRegistrationRecord())
-	providerKeeper.SetConsumerIdToInitializationRecord(ctx, consumerId, GetTestInitializationRecord())
-	providerKeeper.SetConsumerIdToUpdateRecord(ctx, consumerId, GetTestUpdateRecord())
-	providerKeeper.SetConsumerIdToPhase(ctx, consumerId, providerkeeper.Initialized)
+	providerKeeper.SetConsumerRegistrationRecord(ctx, consumerId, GetTestRegistrationRecord())
+	providerKeeper.SetConsumerInitializationRecord(ctx, consumerId, GetTestInitializationRecord())
+	providerKeeper.SetConsumerUpdateRecord(ctx, consumerId, GetTestUpdateRecord())
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
 
 	err := providerKeeper.CreateConsumerClient(ctx, consumerId)
 	require.NoError(t, err)
@@ -261,8 +261,8 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.Empty(t, acks)
 
 	// in case the chain was successfully stopped, it should not contain a Top N associated to it
-	_, found = providerKeeper.GetTopN(ctx, consumerId)
-	require.False(t, found)
+	topN := providerKeeper.GetTopN(ctx, consumerId)
+	require.Zero(t, topN)
 
 	// test key assignment state is cleaned
 	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &consumerId))

@@ -2,10 +2,7 @@ package keeper
 
 import (
 	"context"
-	"strconv"
-
 	errorsmod "cosmossdk.io/errors"
-
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -98,7 +95,21 @@ func (k msgServer) RemoveConsumer(
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	k.Keeper.SetConsumerIdToStopTime(ctx, msg.ConsumerId, msg.StopTime)
+	consumerId := msg.ConsumerId
+
+	phase, found := k.Keeper.GetConsumerPhase(ctx, consumerId)
+	if !found || phase != Launched {
+		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
+			"chain with consumer id: %s has to be in its launched phase", consumerId)
+	}
+
+	previousStopTime, err := k.Keeper.GetConsumerStopTime(ctx, consumerId)
+	if err == nil {
+		k.Keeper.RemoveConsumerFromToBeStoppedConsumers(ctx, consumerId, previousStopTime)
+	}
+
+	k.Keeper.SetConsumerStopTime(ctx, consumerId, msg.StopTime)
+	k.Keeper.AppendStopTimeForConsumerToBeStopped(ctx, consumerId, msg.StopTime)
 
 	return &types.MsgRemoveConsumerResponse{}, nil
 }
@@ -297,11 +308,14 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 func (k msgServer) RegisterConsumer(goCtx context.Context, msg *types.MsgRegisterConsumer) (*types.MsgRegisterConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	consumerId := strconv.FormatUint(k.Keeper.FetchAndIncrementConsumerId(ctx), 10)
+	consumerId := k.Keeper.FetchAndIncrementConsumerId(ctx)
 
-	k.Keeper.SetConsumerIdToRegistrationRecord(ctx, consumerId, *msg.RegistrationRecord)
-	k.Keeper.SetConsumerIdToOwnerAddress(ctx, consumerId, msg.Signer)
-	k.Keeper.SetConsumerIdToPhase(ctx, consumerId, Registered)
+	err := k.Keeper.SetConsumerRegistrationRecord(ctx, consumerId, *msg.RegistrationRecord)
+	if err != nil {
+		return &types.MsgRegisterConsumerResponse{}, err
+	}
+	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
+	k.Keeper.SetConsumerPhase(ctx, consumerId, Registered)
 
 	return &types.MsgRegisterConsumerResponse{ConsumerId: consumerId}, nil
 }
@@ -310,25 +324,40 @@ func (k msgServer) RegisterConsumer(goCtx context.Context, msg *types.MsgRegiste
 func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgInitializeConsumer) (*types.MsgInitializeConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	initGas := ctx.GasMeter().GasConsumed()
+
 	consumerId := msg.ConsumerId
 
-	phase, found := k.Keeper.GetConsumerIdToPhase(ctx, consumerId)
+	phase, found := k.Keeper.GetConsumerPhase(ctx, consumerId)
 	if !found || (phase != Registered && phase != Initialized) {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
 			"chain with consumer id: %s has to be in its registered or initialized phase", consumerId)
 	}
 
-	ownerAddress, _ := k.Keeper.GetConsumerIdToOwnerAddress(ctx, consumerId)
+	ownerAddress := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
 	if k.GetAuthority() == msg.Authority {
 		// message is executed as part of governance proposal and hence we change the owner address
 		// to be the one of the module account address
-		k.Keeper.SetConsumerIdToOwnerAddress(ctx, consumerId, k.GetAuthority())
+		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, k.GetAuthority())
 	} else if msg.Authority != ownerAddress {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Authority)
 	}
 
-	k.Keeper.SetConsumerIdToInitializationRecord(ctx, consumerId, *msg.InitializationRecord)
-	k.Keeper.SetConsumerIdToPhase(ctx, consumerId, Initialized)
+	// if this is not the first initialization, remove the consumer id from the old spawn time
+	record, err := k.Keeper.GetConsumerInitializationRecord(ctx, consumerId)
+	if err == nil {
+		previousSpawnTime := record.SpawnTime
+		k.Keeper.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousSpawnTime)
+	}
+
+	k.Keeper.SetConsumerInitializationRecord(ctx, consumerId, *msg.InitializationRecord)
+	k.Keeper.SetConsumerPhase(ctx, consumerId, Initialized)
+
+	k.Keeper.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerId, msg.InitializationRecord.SpawnTime)
+
+	gasAfter := ctx.GasMeter().GasConsumed()
+	ctx.GasMeter().ConsumeGas(gasAfter-initGas, "initializing a chain has an additional cost during spawn time, "+
+		"so charging double the gas here")
 
 	return &types.MsgInitializeConsumerResponse{}, nil
 }
@@ -336,12 +365,18 @@ func (k msgServer) InitializeConsumer(goCtx context.Context, msg *types.MsgIniti
 // UpdateConsumer updates the record of a consumer chain
 func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateConsumer) (*types.MsgUpdateConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	ownerAddress, _ := k.Keeper.GetConsumerIdToOwnerAddress(ctx, msg.ConsumerId)
+	consumerId := msg.ConsumerId
 
-	if k.GetAuthority() != msg.Authority && msg.Authority != ownerAddress {
-		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
+	ownerAddress := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
+	if k.GetAuthority() == msg.Authority {
+		// message is executed as part of governance proposal and hence we change the owner address
+		// to be the one of the module account address (e.g., a gov proposal with a single `MsgUpdateConsumer` might have
+		// led to this)
+		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, k.GetAuthority())
+	} else if msg.Authority != ownerAddress {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Authority)
 	}
 
-	k.Keeper.SetConsumerIdToUpdateRecord(ctx, msg.ConsumerId, *msg.UpdateRecord)
+	k.Keeper.SetConsumerUpdateRecord(ctx, msg.ConsumerId, *msg.UpdateRecord)
 	return &types.MsgUpdateConsumerResponse{}, nil
 }

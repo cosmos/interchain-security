@@ -103,14 +103,8 @@ func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgAssignConsumerKey) ValidateBasic() error {
-	if strings.TrimSpace(msg.ConsumerId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumerId cannot be blank")
-	}
-	// It is possible to assign keys for consumer chains that are not yet approved.
-	// This can only be done by a signing validator, but it is still sensible
-	// to limit the chainID size to prevent abuse.
-	if 128 < len(msg.ConsumerId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot exceed 128 length")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -156,6 +150,9 @@ func (msg MsgSubmitConsumerMisbehaviour) Type() string {
 func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 	if msg.Submitter == "" {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+	}
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 
 	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
@@ -215,6 +212,10 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 
 	if msg.InfractionBlockHeader.ValidatorSet == nil {
 		return fmt.Errorf("invalid infraction block header, validator set is nil")
+	}
+
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 
 	return nil
@@ -295,8 +296,12 @@ func (msg MsgInitializeConsumer) Route() string { return RouterKey }
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgInitializeConsumer) ValidateBasic() error {
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
+	}
+
 	// add checks
-	// TODO (PERMISSIONLESS)
+	// TODO (PERMISSIONLESS) spawnTime has to be in the future
 	return nil
 }
 
@@ -340,6 +345,7 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 		return err
 	}
 
+	// TODO (PERMISSIONLESS): validate update record
 	err := ValidatePSSFeatures(msg.UpdateRecord.Top_N, msg.UpdateRecord.ValidatorsPowerCap)
 	if err != nil {
 		return errorsmod.Wrapf(ErrInvalidUpdateRecord, "invalid PSS features: %s", err.Error())
@@ -387,12 +393,7 @@ func (msg MsgRemoveConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
 		return err
 	}
-
-	if msg.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "spawn time cannot be zero")
-	}
 	return nil
-
 }
 
 // Type implements the sdk.Msg interface.
@@ -443,14 +444,8 @@ func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgOptIn) ValidateBasic() error {
-	if strings.TrimSpace(msg.ConsumerId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot be blank")
-	}
-	// It is possible to opt in to validate on consumer chains that are not yet approved.
-	// This can only be done by a signing validator, but it is still sensible
-	// to limit the consumerId size to prevent abuse.
-	if 128 < len(msg.ConsumerId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot exceed 128 length")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -501,14 +496,8 @@ func (msg MsgOptOut) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgOptOut) ValidateBasic() error {
-	if strings.TrimSpace(msg.ConsumerId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot be blank")
-	}
-	// It is possible to assign keys for consumer chains that are not yet approved.
-	// This can only be done by a signing validator, but it is still sensible
-	// to limit the chainID size to prevent abuse.
-	if 128 < len(msg.ConsumerId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot exceed 128 length")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -536,12 +525,8 @@ func (msg MsgSetConsumerCommissionRate) Type() string {
 }
 
 func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
-	if strings.TrimSpace(msg.ConsumerId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot be blank")
-	}
-
-	if 128 < len(msg.ConsumerId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "chainId cannot exceed 128 length")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {

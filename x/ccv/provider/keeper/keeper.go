@@ -218,7 +218,7 @@ func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, consumerId string, pro
 	store.Set(types.ProposedConsumerChainKey(proposalID), []byte(consumerId))
 }
 
-// GetProposedConsumerChain returns the proposed chainID for the given consumerAddition proposal ID.
+// GetProposedConsumerChain returns the proposed consumerId for the given consumerAddition proposal ID.
 // This method is only used for testing.
 func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
@@ -229,14 +229,14 @@ func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) (st
 	return "", false
 }
 
-// DeleteProposedConsumerChainInStore deletes the consumer chainID from store
+// DeleteProposedConsumerChainInStore deletes the consumer consumerId from store
 // which is in gov consumerAddition proposal
 func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ProposedConsumerChainKey(proposalID))
 }
 
-// GetAllProposedConsumerChainIDs returns the proposed chainID of all gov consumerAddition proposals that are still in the voting period.
+// GetAllProposedConsumerChainIDs returns the proposed consumerId of all gov consumerAddition proposals that are still in the voting period.
 func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ProposedConsumerChainKeyPrefix())
@@ -274,7 +274,7 @@ func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
 // Note that the registered consumer chains are stored under keys with the following format:
-// ConsumerIdToClientIdKeyPrefix | chainID
+// ConsumerIdToClientIdKeyPrefix | consumerId
 // Thus, the returned array is in ascending order of chainIDs.
 func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
 	chainIDs := []string{}
@@ -284,7 +284,7 @@ func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		// remove 1 byte prefix from key to retrieve chainID
+		// remove 1 byte prefix from key to retrieve consumerId
 		chainID := string(iterator.Key()[1:])
 		chainIDs = append(chainIDs, chainID)
 	}
@@ -314,14 +314,17 @@ func (k Keeper) DeleteChannelIdToConsumerId(ctx sdk.Context, channelId string) {
 	store.Delete(types.ChannelToConsumerIdKey(channelId))
 }
 
-// GetAllChannelToChains gets all channel to chain mappings. If a mapping exists,
+// GetAllChannelToConsumers gets all channel to chain mappings. If a mapping exists,
 // then the CCV channel to that consumer chain is established.
 //
-// Note that mapping from CCV channel IDs to consumer chainIDs
+// Note that mapping from CCV channel IDs to consumer IDs
 // is stored under keys with the following format:
 // ChannelIdToConsumerIdKeyPrefix | channelID
 // Thus, the returned array is in ascending order of channelIDs.
-func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.ChannelToChain) {
+func (k Keeper) GetAllChannelToConsumers(ctx sdk.Context) (channelsToConsumers []struct {
+	ChannelId  string
+	ConsumerId string
+}) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ChannelIdToConsumerIdKeyPrefix())
 	defer iterator.Close()
@@ -329,15 +332,18 @@ func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.Channel
 	for ; iterator.Valid(); iterator.Next() {
 		// remove prefix from key to retrieve channelID
 		channelID := string(iterator.Key()[1:])
-		chainID := string(iterator.Value())
+		consumerId := string(iterator.Value())
 
-		channels = append(channels, types.ChannelToChain{
-			ChannelId: channelID,
-			ChainId:   chainID,
+		channelsToConsumers = append(channelsToConsumers, struct {
+			ChannelId  string
+			ConsumerId string
+		}{
+			ChannelId:  channelID,
+			ConsumerId: consumerId,
 		})
 	}
 
-	return channels
+	return channelsToConsumers
 }
 
 func (k Keeper) SetConsumerGenesis(ctx sdk.Context, consumerId string, gen ccv.ConsumerGenesisState) error {
@@ -745,52 +751,23 @@ func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 	return allConsumerChains
 }
 
-// SetTopN stores the N value associated to chain with `chainID`
-func (k Keeper) SetTopN(
-	ctx sdk.Context,
-	consumerId string,
-	N uint32,
-) {
-	store := ctx.KVStore(k.storeKey)
-
-	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, N)
-
-	store.Set(types.TopNKey(consumerId), buf)
-}
-
-// DeleteTopN removes the N value associated to chain with `chainID`
-func (k Keeper) DeleteTopN(
-	ctx sdk.Context,
-	consumerId string,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.TopNKey(consumerId))
-}
-
-// GetTopN returns (N, true) if chain `chainID` has a top N associated, and (0, false) otherwise.
+// GetTopN returns N if chain `consumerId` has a top N associated, and 0 otherwise.
 func (k Keeper) GetTopN(
 	ctx sdk.Context,
 	consumerId string,
-) (uint32, bool) {
-	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.TopNKey(consumerId))
-	if buf == nil {
-		return 0, false
-	}
-	return binary.BigEndian.Uint32(buf), true
+) uint32 {
+	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	return updateRecord.Top_N
 }
 
-// IsTopN returns true if chain with `chainID` is a Top-N chain (i.e., enforces at least one validator to validate chain `chainID`)
+// IsTopN returns true if chain with `consumerId` is a Top-N chain (i.e., enforces at least one validator to validate chain `consumerId`)
 func (k Keeper) IsTopN(ctx sdk.Context, consumerId string) bool {
-	topN, found := k.GetTopN(ctx, consumerId)
-	return found && topN > 0
+	return k.GetTopN(ctx, consumerId) > 0
 }
 
-// IsOptIn returns true if chain with `consumerId` is an Opt-In chain (i.e., no validator is forced to validate chain `chainID`)
+// IsOptIn returns true if chain with `consumerId` is an Opt-In chain (i.e., no validator is forced to validate chain `consumerId`)
 func (k Keeper) IsOptIn(ctx sdk.Context, consumerId string) bool {
-	topN, found := k.GetTopN(ctx, consumerId)
-	return !found || topN == 0
+	return k.GetTopN(ctx, consumerId) == 0
 }
 
 func (k Keeper) SetOptedIn(
@@ -820,7 +797,7 @@ func (k Keeper) IsOptedIn(
 	return store.Get(types.OptedInKey(consumerId, providerAddr)) != nil
 }
 
-// GetAllOptedIn returns all the opted-in validators on chain `chainID`
+// GetAllOptedIn returns all the opted-in validators on chain `consumerId`
 func (k Keeper) GetAllOptedIn(
 	ctx sdk.Context,
 	consumerId string,
@@ -837,7 +814,7 @@ func (k Keeper) GetAllOptedIn(
 	return providerConsAddresses
 }
 
-// DeleteAllOptedIn deletes all the opted-in validators for chain with `chainID`
+// DeleteAllOptedIn deletes all the opted-in validators for chain with `consumerId`
 func (k Keeper) DeleteAllOptedIn(
 	ctx sdk.Context,
 	consumerId string,
@@ -929,76 +906,22 @@ func (k Keeper) DeleteConsumerCommissionRate(
 	store.Delete(types.ConsumerCommissionRateKey(consumerId, providerAddr))
 }
 
-// SetValidatorsPowerCap sets the power-cap value `p` associated to chain with `consumerId`
-func (k Keeper) SetValidatorsPowerCap(
-	ctx sdk.Context,
-	consumerId string,
-	p uint32,
-) {
-	store := ctx.KVStore(k.storeKey)
-
-	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, p)
-
-	store.Set(types.ValidatorsPowerCapKey(consumerId), buf)
-}
-
-// DeleteValidatorsPowerCap removes the power-cap value associated to chain with `consumerId`
-func (k Keeper) DeleteValidatorsPowerCap(
-	ctx sdk.Context,
-	consumerId string,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ValidatorsPowerCapKey(consumerId))
-}
-
 // GetValidatorsPowerCap returns `(p, true)` if chain `consumerId` has power cap `p` associated with it, and (0, false) otherwise
 func (k Keeper) GetValidatorsPowerCap(
 	ctx sdk.Context,
 	consumerId string,
-) (uint32, bool) {
-	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.ValidatorsPowerCapKey(consumerId))
-	if buf == nil {
-		return 0, false
-	}
-	return binary.BigEndian.Uint32(buf), true
-}
-
-// SetValidatorSetCap stores the validator-set cap value `c` associated to chain with `consumerId`
-func (k Keeper) SetValidatorSetCap(
-	ctx sdk.Context,
-	consumerId string,
-	c uint32,
-) {
-	store := ctx.KVStore(k.storeKey)
-
-	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, c)
-
-	store.Set(types.ValidatorSetCapKey(consumerId), buf)
-}
-
-// DeleteValidatorSetCap removes the validator-set cap value associated to chain with `consumerId`
-func (k Keeper) DeleteValidatorSetCap(
-	ctx sdk.Context,
-	consumerId string,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ValidatorSetCapKey(consumerId))
+) uint32 {
+	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	return updateRecord.ValidatorsPowerCap
 }
 
 // GetValidatorSetCap returns `(c, true)` if chain `consumerId` has validator-set cap `c` associated with it, and (0, false) otherwise
 func (k Keeper) GetValidatorSetCap(
 	ctx sdk.Context,
 	consumerId string,
-) (uint32, bool) {
-	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.ValidatorSetCapKey(consumerId))
-	if buf == nil {
-		return 0, false
-	}
-	return binary.BigEndian.Uint32(buf), true
+) uint32 {
+	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	return updateRecord.ValidatorSetCap
 }
 
 // SetAllowlist allowlists validator with `providerAddr` address on chain `consumerId`
@@ -1028,7 +951,7 @@ func (k Keeper) GetAllowList(
 	return providerConsAddresses
 }
 
-// IsAllowlisted returns `true` if validator with `providerAddr` has been allowlisted on chain `chainID`
+// IsAllowlisted returns `true` if validator with `providerAddr` has been allowlisted on chain `consumerId`
 func (k Keeper) IsAllowlisted(
 	ctx sdk.Context,
 	consumerId string,
@@ -1055,7 +978,7 @@ func (k Keeper) DeleteAllowlist(ctx sdk.Context, consumerId string) {
 	}
 }
 
-// IsAllowlistEmpty returns `true` if no validator is allowlisted on chain `chainID`
+// IsAllowlistEmpty returns `true` if no validator is allowlisted on chain `consumerId`
 func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, consumerId string) bool {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdWithLenKey(types.AllowlistKeyPrefix(), consumerId))
@@ -1166,67 +1089,14 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 	store.Delete(types.MinimumPowerInTopNKey(consumerId))
 }
 
-// SetMinStake sets the minimum stake required for a validator to validate
-// a given consumer chain.
-func (k Keeper) SetMinStake(
-	ctx sdk.Context,
-	consumerId string,
-	minStake uint64,
-) {
-	store := ctx.KVStore(k.storeKey)
-
-	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, minStake)
-
-	store.Set(types.MinStakeKey(consumerId), buf)
-}
-
 // GetMinStake returns the minimum stake required for a validator to validate
 // a given consumer chain.
 func (k Keeper) GetMinStake(
 	ctx sdk.Context,
 	consumerId string,
-) (uint64, bool) {
-	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.MinStakeKey(consumerId))
-	if buf == nil {
-		return 0, false
-	}
-	return binary.BigEndian.Uint64(buf), true
-}
-
-// DeleteMinStake removes the minimum stake required for a validator to validate
-// a given consumer chain.
-func (k Keeper) DeleteMinStake(
-	ctx sdk.Context,
-	consumerId string,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.MinStakeKey(consumerId))
-}
-
-// SetInactiveValidatorsAllowed sets whether inactive validators are allowed to validate
-// a given consumer chain.
-func (k Keeper) SetInactiveValidatorsAllowed(
-	ctx sdk.Context,
-	consumerId string,
-	allowed bool,
-) {
-	if allowed {
-		k.EnableInactiveValidators(ctx, consumerId)
-	} else {
-		k.DisableInactiveValidators(ctx, consumerId)
-	}
-}
-
-// EnableInactiveValidators sets the flag to signal that inactive validators are allowed to validate
-// a given consumer chain.
-func (k Keeper) EnableInactiveValidators(
-	ctx sdk.Context,
-	consumerId string,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.AllowInactiveValidatorsKey(consumerId), []byte{})
+) uint64 {
+	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	return updateRecord.MinStake
 }
 
 // AllowsInactiveValidators returns whether inactive validators are allowed to validate
@@ -1235,18 +1105,8 @@ func (k Keeper) AllowsInactiveValidators(
 	ctx sdk.Context,
 	consumerId string,
 ) bool {
-	store := ctx.KVStore(k.storeKey)
-	return store.Has(types.AllowInactiveValidatorsKey(consumerId))
-}
-
-// DisableInactiveValidators removes the flag of whether inactive validators are allowed to validate
-// a given consumer chain.
-func (k Keeper) DisableInactiveValidators(
-	ctx sdk.Context,
-	consumerId string,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.AllowInactiveValidatorsKey(consumerId))
+	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	return updateRecord.AllowInactiveVals
 }
 
 func (k Keeper) UnbondingCanComplete(ctx sdk.Context, id uint64) error {

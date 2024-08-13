@@ -24,7 +24,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-const ChainID = "chainID"
+const ChainID = "consumerId"
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	chainID := consumer
@@ -69,7 +69,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 			},
 		)
 	}
-	// select a chainID with more than two assignments
+	// select a consumerId with more than two assignments
 	var chainID string
 	for i := range chainIDs {
 		chainID = chainIDs[i]
@@ -149,7 +149,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 			},
 		)
 	}
-	// select a chainID with more than two assignments
+	// select a consumerId with more than two assignments
 	var chainID string
 	for i := range chainIDs {
 		chainID = chainIDs[i]
@@ -261,7 +261,7 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 			},
 		)
 	}
-	// select a chainID with more than two assignments
+	// select a consumerId with more than two assignments
 	var chainID string
 	for i := range chainIDs {
 		chainID = chainIDs[i]

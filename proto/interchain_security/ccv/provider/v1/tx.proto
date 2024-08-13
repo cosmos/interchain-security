@@ -261,12 +261,14 @@ message MsgRegisterConsumer {
 
 // ConsumerRegistrationRecord is the record that contains information for the registered chain
 message ConsumerRegistrationRecord {
-  // the title of the chain to-be-registered
+  // the title of the chain that is to be registered
   string title = 1;
-  // the description of the chain to-be-registered
+  // the description of the chain that is to be registered
   string description = 2;
+  // the metadata (e.g., GitHub repository URL) of the chain that is to be registered
+  string metadata = 3;
   // the chain id of the new consumer chain
-  string chain_id = 3;
+  string chain_id = 4;
 }
 
 // MsgRegisterConsumerResponse defines response type for MsgRegisterConsumer
