@@ -34,7 +34,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 		// and appended to the pending proposals
 		expAppendProp bool
 
-		// chainID of the consumer chain
+		// consumerId of the consumer chain
 		// tests need to check that the CCV channel is not closed prematurely
 		chainId string
 	}
@@ -53,12 +53,12 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
-				"chainID",
+				"consumerId",
 				now,
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainId:       "consumerId",
 		},
 		{
 			description: "valid proposal - stop_time in the past",
@@ -68,12 +68,12 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
-				"chainID",
+				"consumerId",
 				hourBeforeNow,
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainId:       "consumerId",
 		},
 		{
 			description: "valid proposal - before stop_time in the future",
@@ -83,12 +83,12 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
-				"chainID",
+				"consumerId",
 				hourAfterNow,
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     now,
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainId:       "consumerId",
 		},
 		{
 			description: "rejected valid proposal - consumer chain does not exist",
@@ -96,12 +96,12 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
-				"chainID-2",
+				"consumerId-2",
 				hourAfterNow,
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: false,
-			chainId:       "chainID-2",
+			chainId:       "consumerId-2",
 		},
 	}
 
@@ -159,14 +159,16 @@ func TestUpdateConsumer(t *testing.T) {
 	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
 
 	// set PSS-related fields to update them later on
-	providerKeeper.SetTopN(ctx, consumerId, 50)
-	providerKeeper.SetValidatorSetCap(ctx, consumerId, 10)
-	providerKeeper.SetValidatorsPowerCap(ctx, consumerId, 34)
+	providerKeeper.SetConsumerUpdateRecord(ctx, consumer, providertypes.ConsumerUpdateRecord{
+		Top_N:              50,
+		ValidatorSetCap:    10,
+		ValidatorsPowerCap: 34,
+		MinStake:           100,
+		AllowInactiveVals:  true,
+	})
 	providerKeeper.SetAllowlist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
 	providerKeeper.SetAllowlist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
 	providerKeeper.SetDenylist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
-	providerKeeper.SetMinStake(ctx, consumerId, 1000)
-	providerKeeper.SetInactiveValidatorsAllowed(ctx, consumerId, true)
 
 	expectedTopN := uint32(75)
 	expectedValidatorsPowerCap := uint32(67)
@@ -186,16 +188,16 @@ func TestUpdateConsumer(t *testing.T) {
 		AllowInactiveVals:  expectedAllowInactiveValidators,
 	}
 
-	providerKeeper.SetConsumerIdToPhase(ctx, consumerId, providerkeeper.Initialized)
-	providerKeeper.SetConsumerIdToUpdateRecord(ctx, consumerId, updateRecord)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
+	providerKeeper.SetConsumerUpdateRecord(ctx, consumerId, updateRecord)
 	err := providerKeeper.UpdateConsumer(ctx, consumerId)
 	require.NoError(t, err)
 
-	actualTopN, _ := providerKeeper.GetTopN(ctx, consumerId)
+	actualTopN := providerKeeper.GetTopN(ctx, consumerId)
 	require.Equal(t, expectedTopN, actualTopN)
-	actualValidatorsPowerCap, _ := providerKeeper.GetValidatorsPowerCap(ctx, consumerId)
+	actualValidatorsPowerCap := providerKeeper.GetValidatorsPowerCap(ctx, consumerId)
 	require.Equal(t, expectedValidatorsPowerCap, actualValidatorsPowerCap)
-	actualValidatorSetCap, _ := providerKeeper.GetValidatorSetCap(ctx, consumerId)
+	actualValidatorSetCap := providerKeeper.GetValidatorSetCap(ctx, consumerId)
 	require.Equal(t, expectedValidatorSetCap, actualValidatorSetCap)
 
 	allowlistedValidator, err := sdk.ConsAddressFromBech32(expectedAllowlistedValidator)
@@ -208,7 +210,7 @@ func TestUpdateConsumer(t *testing.T) {
 	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, consumerId)))
 	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, consumerId)[0])
 
-	actualMinStake, _ := providerKeeper.GetMinStake(ctx, consumerId)
+	actualMinStake := providerKeeper.GetMinStake(ctx, consumerId)
 	require.Equal(t, expectedMinStake, actualMinStake)
 
 	actualAllowInactiveValidators := providerKeeper.AllowsInactiveValidators(ctx, consumerId)

@@ -25,15 +25,16 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if req.ConsumerId == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid request: consumer id cannot be empty")
+	consumerId := req.ConsumerId
+	if err := types.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
 	}
 
-	gen, ok := k.GetConsumerGenesis(ctx, req.ConsumerId)
+	gen, ok := k.GetConsumerGenesis(ctx, consumerId)
 	if !ok {
 		return nil, status.Error(
 			codes.NotFound,
-			errorsmod.Wrap(types.ErrUnknownConsumerId, req.ConsumerId).Error(),
+			errorsmod.Wrap(types.ErrUnknownConsumerId, consumerId).Error(),
 		)
 	}
 
@@ -66,11 +67,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", consumerId)
 	}
 
-	topN, found := k.GetTopN(ctx, consumerId)
-	if !found {
-		k.Logger(ctx).Error("failed to get top N, treating as 0", "chain", consumerId)
-		topN = 0
-	}
+	topN := k.GetTopN(ctx, consumerId)
 
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
@@ -79,9 +76,9 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		minPowerInTopN = -1
 	}
 
-	validatorSetCap, _ := k.GetValidatorSetCap(ctx, consumerId)
+	validatorSetCap := k.GetValidatorSetCap(ctx, consumerId)
 
-	validatorsPowerCap, _ := k.GetValidatorsPowerCap(ctx, consumerId)
+	validatorsPowerCap := k.GetValidatorsPowerCap(ctx, consumerId)
 
 	allowlist := k.GetAllowList(ctx, consumerId)
 	strAllowlist := make([]string, len(allowlist))
@@ -147,13 +144,18 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	consumerId := req.ConsumerId
+	if err := types.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	}
+
 	providerAddrTmp, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
 	if err != nil {
 		return nil, err
 	}
 	providerAddr := types.NewProviderConsAddress(providerAddrTmp)
 
-	consumerKey, found := k.GetValidatorConsumerPubKey(ctx, req.ConsumerId, providerAddr)
+	consumerKey, found := k.GetValidatorConsumerPubKey(ctx, consumerId, providerAddr)
 	if !found {
 		return &types.QueryValidatorConsumerAddrResponse{}, nil
 	}
@@ -242,15 +244,16 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if req.ConsumerId == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid request: consumer id cannot be empty")
+	consumerId := req.ConsumerId
+	if err := types.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
 	}
 
 	// list of pairs valconsensus addr <providerValConAddrs : consumerValConAddrs>
 	pairValConAddrs := []*types.PairValConAddrProviderAndConsumer{}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	validatorConsumerPubKeys := k.GetAllValidatorConsumerPubKeys(ctx, &req.ConsumerId)
+	validatorConsumerPubKeys := k.GetAllValidatorConsumerPubKeys(ctx, &consumerId)
 	for _, data := range validatorConsumerPubKeys {
 		consumerAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(*data.ConsumerKey)
 		if err != nil {
@@ -287,8 +290,8 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	}
 
 	consumerId := req.ConsumerId
-	if consumerId == "" {
-		return nil, status.Error(codes.InvalidArgument, "empty consumer id")
+	if err := types.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
 	}
 
 	optedInVals := []string{}
@@ -314,8 +317,8 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	}
 
 	consumerId := req.ConsumerId
-	if consumerId == "" {
-		return nil, status.Error(codes.InvalidArgument, "empty consumer id")
+	if err := types.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -413,7 +416,7 @@ func (k Keeper) hasToValidate(
 	if err != nil {
 		return false, nil
 	}
-	if topN, found := k.GetTopN(ctx, consumerId); found && topN > 0 {
+	if topN := k.GetTopN(ctx, consumerId); topN > 0 {
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower, found := k.GetMinimumPowerInTopN(ctx, consumerId)
 		if found {
@@ -450,8 +453,8 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 	}
 
 	consumerId := req.ConsumerId
-	if consumerId == "" {
-		return nil, status.Error(codes.InvalidArgument, "empty chainId")
+	if err := types.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
 	}
 
 	consAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)

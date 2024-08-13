@@ -2,6 +2,7 @@ package v5
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 )
@@ -12,7 +13,11 @@ import (
 func MigrateTopNForRegisteredChains(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
 	// Set the topN of each chain to 95
 	for _, chainID := range providerKeeper.GetAllRegisteredConsumerChainIDs(ctx) {
-		providerKeeper.SetTopN(ctx, chainID, 95)
+		// TODO (PERMISSIONLESS): this migration already took place and does not make much sense in the Permissionless world
+		// living here for now and we should totally remove
+		providerKeeper.SetConsumerUpdateRecord(ctx, chainID, types.ConsumerUpdateRecord{
+			Top_N: 95,
+		})
 	}
 }
 

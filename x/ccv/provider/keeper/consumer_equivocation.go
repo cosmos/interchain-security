@@ -58,17 +58,13 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	}
 
 	// get the chainId of this consumer chain to verify the double-voting evidence
-	chainId, found := k.GetConsumerIdToRegistrationRecord(ctx, consumerId)
-	if !found {
-		return errorsmod.Wrapf(
-			ccvtypes.ErrInvalidDoubleVotingEvidence,
-			"could not find the chain id of the consumer chain with consuemr id: %s",
-			consumerId,
-		)
+	chainId, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+	if err != nil {
+		return err
 	}
 
 	// verifies the double voting evidence using the consumer chain public key
-	if err := k.VerifyDoubleVotingEvidence(*evidence, chainId.ChainId, pubkey); err != nil {
+	if err = k.VerifyDoubleVotingEvidence(*evidence, chainId.ChainId, pubkey); err != nil {
 		return err
 	}
 
@@ -79,10 +75,10 @@ func (k Keeper) HandleConsumerDoubleVoting(
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	if err := k.SlashValidator(ctx, providerAddr); err != nil {
+	if err = k.SlashValidator(ctx, providerAddr); err != nil {
 		return err
 	}
-	if err := k.JailAndTombstoneValidator(ctx, providerAddr); err != nil {
+	if err = k.JailAndTombstoneValidator(ctx, providerAddr); err != nil {
 		return err
 	}
 
@@ -305,9 +301,9 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehaviour ibctmtypes.Misbehaviour) error {
 	chainId := misbehaviour.Header1.Header.ChainID
 
-	registrationRecord, found := k.GetConsumerIdToRegistrationRecord(ctx, consumerId)
-	if !found {
-		return fmt.Errorf("cannot find registration record of consumer chain (consumerId): %s", consumerId)
+	registrationRecord, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+	if err != nil {
+		return err
 	} else if registrationRecord.ChainId != chainId {
 		return fmt.Errorf("incorrect misbheaviour for a different chain id (%s) than that of the consumer chain %s (consumerId): %s",
 			chainId,

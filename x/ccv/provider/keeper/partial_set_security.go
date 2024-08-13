@@ -16,28 +16,32 @@ import (
 // HandleOptIn prepares validator `providerAddr` to opt in to `consumerId` with an optional `consumerKey` consumer public key.
 // Note that the validator only opts in at the end of an epoch.
 func (k Keeper) HandleOptIn(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, consumerKey string) error {
-	phase, found := k.GetConsumerIdToPhase(ctx, consumerId)
+	phase, found := k.GetConsumerPhase(ctx, consumerId)
 	if !found || phase == Stopped {
 		return errorsmod.Wrapf(
 			types.ErrInvalidPhase,
 			"opting in to an unknown (or stopped) consumer chain, with id: %s", consumerId)
 	}
 
-	registrationRecord, found := k.GetConsumerIdToRegistrationRecord(ctx, consumerId)
-	if !found {
+	registrationRecord, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+	if err != nil {
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerId,
-			"opting in to an unknown consumer chain, with id: %s", consumerId)
+			"opting in to an unknown consumer chain, with id (%s): %s", consumerId, err.Error())
 	}
 
-	optedInToConsumerId, found := k.IsValidatorOptedInToChain(ctx, providerAddr, registrationRecord.ChainId)
-	if found && consumerId != optedInToConsumerId {
+	optedInToConsumerId, found := k.IsValidatorOptedInToChainId(ctx, providerAddr, registrationRecord.ChainId)
+	if found {
 		return errorsmod.Wrapf(types.ErrAlreadyOptedIn,
-			"validator has already opted in to a chain (%s) with the same chain id (%s)",
+			"validator is already opted in to a chain (%s) with this chain id (%s)",
 			optedInToConsumerId, registrationRecord.ChainId)
 	}
 
 	k.SetOptedIn(ctx, consumerId, providerAddr)
+	err = k.AppendOptedInConsumerId(ctx, providerAddr, consumerId)
+	if err != nil {
+		return err
+	}
 
 	if consumerKey != "" {
 		consumerTMPublicKey, err := k.ParseConsumerKey(consumerKey)
@@ -70,7 +74,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, consumerId string, providerAddr ty
 			"opting out of an unknown or not running consumer chain, with id: %s", consumerId)
 	}
 
-	if topN, found := k.GetTopN(ctx, consumerId); found && topN > 0 {
+	if topN := k.GetTopN(ctx, consumerId); topN > 0 {
 		// a validator cannot opt out from a Top N chain if the validator is in the Top N validators
 		validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 		if err != nil {
@@ -100,7 +104,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, consumerId string, providerAddr ty
 	}
 
 	k.DeleteOptedIn(ctx, consumerId, providerAddr)
-	return nil
+	return k.RemoveOptedInConsumerId(ctx, providerAddr, consumerId)
 }
 
 // OptInTopNValidators opts in to `consumerId` all the `bondedValidators` that have at least `minPowerToOptIn` power
@@ -187,12 +191,12 @@ func (k Keeper) ComputeMinPowerInTopN(ctx sdk.Context, bondedValidators []stakin
 // CapValidatorSet caps the provided `validators` if chain with `consumerId` is an Opt In chain with a validator-set cap.
 // If cap is `k`, `CapValidatorSet` returns the first `k` validators from `validators` with the highest power.
 func (k Keeper) CapValidatorSet(ctx sdk.Context, consumerId string, validators []types.ConsensusValidator) []types.ConsensusValidator {
-	if topN, found := k.GetTopN(ctx, consumerId); found && topN > 0 {
+	if k.GetTopN(ctx, consumerId) > 0 {
 		// is a no-op if the chain is a Top N chain
 		return validators
 	}
 
-	if validatorSetCap, found := k.GetValidatorSetCap(ctx, consumerId); found && validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
+	if validatorSetCap := k.GetValidatorSetCap(ctx, consumerId); validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
 		sort.Slice(validators, func(i, j int) bool {
 			return validators[i].Power > validators[j].Power
 		})
@@ -208,7 +212,7 @@ func (k Keeper) CapValidatorSet(ctx sdk.Context, consumerId string, validators [
 // on the consumer chain have less power than the set validators-power cap. For example, if we have 10 validators and
 // the power cap is set to 5%, we need at least one validator to have more than 10% of the voting power on the consumer chain.
 func (k Keeper) CapValidatorsPower(ctx sdk.Context, consumerId string, validators []types.ConsensusValidator) []types.ConsensusValidator {
-	if p, found := k.GetValidatorsPowerCap(ctx, consumerId); found && p > 0 {
+	if p := k.GetValidatorsPowerCap(ctx, consumerId); p > 0 {
 		return NoMoreThanPercentOfTheSum(validators, p)
 	} else {
 		// is a no-op if power cap is not set for `consumerId`
@@ -332,8 +336,8 @@ func (k Keeper) CanValidateChain(ctx sdk.Context, consumerId string, providerAdd
 // FulfillsMinStake returns true if the validator `providerAddr` has enough stake to validate chain with `consumerId`
 // by checking its staked tokens against the minimum stake required to validate the chain.
 func (k Keeper) FulfillsMinStake(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) bool {
-	minStake, found := k.GetMinStake(ctx, consumerId)
-	if !found {
+	minStake := k.GetMinStake(ctx, consumerId)
+	if minStake == 0 {
 		return true
 	}
 

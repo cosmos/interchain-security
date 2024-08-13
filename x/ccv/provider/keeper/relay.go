@@ -51,7 +51,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 			packet.SourceChannel,
 		)
 	}
-	k.Logger(ctx).Info("packet timeout, removing the consumer:", "chainID", chainID)
+	k.Logger(ctx).Info("packet timeout, removing the consumer:", "consumerId", chainID)
 	// stop consumer chain and release unbondings
 	return k.StopConsumerChain(ctx, chainID, false)
 }
@@ -163,11 +163,11 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				// the client cannot expire during iteration (in the middle of a block)
-				k.Logger(ctx).Info("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
+				k.Logger(ctx).Info("IBC client is expired, cannot send VSC, leaving packet data stored:", "consumerId", chainID, "vscid", data.ValsetUpdateId)
 				return
 			}
 			// Not able to send packet over IBC!
-			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "chainID", chainID, "vscid", data.ValsetUpdateId, "err", err.Error())
+			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "consumerId", chainID, "vscid", data.ValsetUpdateId, "err", err.Error())
 			// If this happens, most likely the consumer is malicious; remove it
 			err := k.StopConsumerChain(ctx, chainID, true)
 			if err != nil {
@@ -197,7 +197,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		if err != nil {
 			panic(fmt.Errorf("failed to get consumer validators: %w", err))
 		}
-		topN, _ := k.GetTopN(ctx, chainID)
+		topN := k.GetTopN(ctx, chainID)
 
 		if topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
@@ -231,7 +231,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 			k.AppendPendingVSCPackets(ctx, chainID, packet)
 			k.Logger(ctx).Info("VSCPacket enqueued:",
-				"chainID", chainID,
+				"consumerId", chainID,
 				"vscID", valUpdateID,
 				"len updates", len(valUpdates),
 			)
@@ -297,7 +297,7 @@ func (k Keeper) OnRecvSlashPacket(
 	if err := k.ValidateSlashPacket(ctx, chainID, packet, data); err != nil {
 		k.Logger(ctx).Error("invalid slash packet",
 			"error", err.Error(),
-			"chainID", chainID,
+			"consumerId", chainID,
 			"consumer cons addr", sdk.ConsAddress(data.Validator.Address).String(),
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
@@ -316,7 +316,7 @@ func (k Keeper) OnRecvSlashPacket(
 
 		k.SetSlashLog(ctx, providerConsAddr)
 		k.Logger(ctx).Info("SlashPacket received for double-signing",
-			"chainID", chainID,
+			"consumerId", chainID,
 			"consumer cons addr", consumerConsAddr.String(),
 			"provider cons addr", providerConsAddr.String(),
 			"vscID", data.ValsetUpdateId,
@@ -342,7 +342,7 @@ func (k Keeper) OnRecvSlashPacket(
 	// Return bounce ack if meter is negative in value
 	if meter.IsNegative() {
 		k.Logger(ctx).Info("SlashPacket received, but meter is negative. Packet will be bounced",
-			"chainID", chainID,
+			"consumerId", chainID,
 			"consumer cons addr", consumerConsAddr.String(),
 			"provider cons addr", providerConsAddr.String(),
 			"vscID", data.ValsetUpdateId,
@@ -359,7 +359,7 @@ func (k Keeper) OnRecvSlashPacket(
 	k.HandleSlashPacket(ctx, chainID, data)
 
 	k.Logger(ctx).Info("slash packet received and handled",
-		"chainID", chainID,
+		"consumerId", chainID,
 		"consumer cons addr", consumerConsAddr.String(),
 		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,
@@ -394,7 +394,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
 	k.Logger(ctx).Debug("HandleSlashPacket",
-		"chainID", chainID,
+		"consumerId", chainID,
 		"consumer cons addr", consumerConsAddr.String(),
 		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,

@@ -16,15 +16,13 @@ func TestMigrateParams(t *testing.T) {
 	provKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 
 	// initially top N should not exist
-	topN, found := provKeeper.GetTopN(ctx, "chainID")
-	require.False(t, found)
+	topN := provKeeper.GetTopN(ctx, "chainID")
 	require.Zero(t, topN)
 
 	// migrate
 	MigrateTopNForRegisteredChains(ctx, provKeeper)
 
 	// after migration, top N should be 95
-	topN, found = provKeeper.GetTopN(ctx, "chainID")
-	require.True(t, found)
+	topN = provKeeper.GetTopN(ctx, "chainID")
 	require.Equal(t, uint32(95), topN)
 }

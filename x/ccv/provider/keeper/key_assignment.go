@@ -105,7 +105,7 @@ func (k Keeper) SetValidatorConsumerPubKey(
 // If consumerId is nil, it returns all the validators public keys assigned for all consumer chains
 //
 // Note that the validators public keys assigned for a consumer chain are stored under keys
-// with the following format: ConsumerValidatorsBytePrefix | len(chainID) | chainID | providerAddress
+// with the following format: ConsumerValidatorsBytePrefix | len(consumerId) | consumerId | providerAddress
 // Thus, the returned array is
 //   - in ascending order of providerAddresses, if consumerId is not nil;
 //   - in undetermined order, if consumerId is nil.
@@ -352,7 +352,7 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 	return
 }
 
-// GetAllConsumerAddrsToPrune gets all consumer addresses that can be eventually pruned for a given chainID.
+// GetAllConsumerAddrsToPrune gets all consumer addresses that can be eventually pruned for a given consumerId.
 //
 // Note that the list of all consumer addresses is stored under keys with the following format:
 // ConsumerAddrsToPruneV2BytePrefix | len(consumerId) | consumerId | timestamp

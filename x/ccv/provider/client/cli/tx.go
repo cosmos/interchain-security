@@ -224,9 +224,9 @@ Note that the one that signs this message is the owner of this consumer chain. T
 changed by updating the consumer chain.
 
 Example:
-%s tx provider register-cosumer [path/to/registration-record.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider register-consumer [path/to/registration-record.json] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
-		Args: cobra.ExactArgs(3),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -277,9 +277,9 @@ func NewInitializeConsumerCmd() *cobra.Command {
 Note that only the owner of the chain can initialize it.
 
 Example:
-%s tx provider initialize-cosumer [consumer-id] [path/to/initialization-record.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider initialize-consumer [consumer-id] [path/to/initialization-record.json] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
-		Args: cobra.ExactArgs(3),
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -331,9 +331,9 @@ func NewUpdateConsumerCmd() *cobra.Command {
 Note that only the owner of the chain can initialize it.
 
 Example:
-%s tx provider update-cosumer [consumer-id] [path/to/update-record.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider update-consumer [consumer-id] [path/to/update-record.json] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
-		Args: cobra.ExactArgs(3),
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -385,7 +385,7 @@ func NewRemoveConsumerCmd() *cobra.Command {
 Stop time is parsed by using the layout and the value (see https://pkg.go.dev/time#Parse).
 
 Example:
-%s tx provider remove-cosumer [consumer-id] [stop-time-layout] [stop-time-value] --from node0 --home ../node0 --chain-id $CID
+%s tx provider remove-consumer [consumer-id] [stop-time-layout] [stop-time-value] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
 		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
