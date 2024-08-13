@@ -27,6 +27,74 @@ func InitializeMaxProviderConsensusParam(ctx sdk.Context, providerKeeper provide
 }
 ```
 
+### Governance Proposals
+
+Legacy proposals are not supported anymore by the current version of the provider. Legacy proposals which are still active (voting period or deposit period) and contains one of the following messages need to be migrated as described below:
+- `ConsumerAdditionProposal` needs to be converted to `MsgConsumerAddition`
+- `ConsumerModificationProposal` needs to be converted to `MsgConsumerModification`
+- `ConsumerRemovalProposal` needs to be converted to `MsgConsumerRemoval`
+- `ChangeRewardDenomsProposal` needs to be converted to `MsgChangeRewardDenoms`
+
+The following shows an example how to migrate a proposal containing a legacy consumer addition proposal message.
+Migration for the other messages aobve follows the same pattern. The resulting migration code has to be added to the upgrade handler of the provider chain.
+
+#### Migrate Legacy Proposal Content
+
+```go
+
+// MigrateLegacyConsumerAddition converts a ConsumerAdditionProposal to a MsgConsumerAdditionProposal
+// and returns it as `Any` suitable to replace the legacy message.
+// `authority` contains the signer address
+func MigrateLegacyConsumerAddition(msg providertypes.ConsumerAdditionProposal, authority string) (*codec.Any, error) {
+  sdkMsg := providertypes.MsgConsumerAddition{
+		ChainId:                           msg.ChainId,
+		InitialHeight:                     msg.InitialHeight,
+		GenesisHash:                       msg.GenesisHash,
+		BinaryHash:                        msg.BinaryHash,
+		SpawnTime:                         msg.SpawnTime,
+		UnbondingPeriod:                   msg.UnbondingPeriod,
+		CcvTimeoutPeriod:                  msg.CcvTimeoutPeriod,
+		TransferTimeoutPeriod:             msg.TransferTimeoutPeriod,
+		ConsumerRedistributionFraction:    msg.ConsumerRedistributionFraction,
+		BlocksPerDistributionTransmission: msg.BlocksPerDistributionTransmission,
+		HistoricalEntries:                 msg.HistoricalEntries,
+		DistributionTransmissionChannel:   msg.DistributionTransmissionChannel,
+		Top_N:                             msg.Top_N,
+		ValidatorsPowerCap:                msg.ValidatorsPowerCap,
+		ValidatorSetCap:                   msg.ValidatorSetCap,
+		Allowlist:                         msg.Allowlist,
+		Denylist:                          msg.Denylist,
+		Authority:                         authority,
+		MinStake:                          msg.MinStake,
+		AllowInactiveVals:                 msg.AllowInactiveVals,
+	}
+	return codec.NewAnyWithValue(&sdkMsg)
+}
+
+func MigrateProposal(proposal proposal govtypes.Proposal) err {
+	for idx, msg := range proposal.GetMessages() {
+		sdkLegacyMsg, isLegacyProposal := msg.GetCachedValue().(*govtypes.MsgExecLegacyContent)
+		if !isLegacyProposal {
+			continue
+		}
+		content, err := govtypes.LegacyContentFromMessage(sdkLegacyMsg)
+		if err != nil {
+			continue
+		}
+
+		msgAdd, ok := content.(*providertypes.ConsumerAdditionProposal)
+		if ok {
+			anyMsg, err := migrateLegacyConsumerAddition(*msgAdd, govKeeper.GetAuthority())
+			if err != nil {
+				return err
+			}
+			proposal.Messages[idx] = anyMsg
+		}
+	}
+	return govKeeper.SetProposal(ctx, proposal)
+}
+```
+
 ## [v5.1.x](https://github.com/cosmos/interchain-security/releases/tag/v5.1.0)
 
 ### Provider
@@ -41,7 +109,7 @@ Upgrade code will be executed automatically during the upgrade procedure.
 
 ### Consumer
 
-Upgrading the consumer from `v5.0.0` to `v5.1.0` will not require state migration. 
+Upgrading the consumer from `v5.0.0` to `v5.1.0` will not require state migration.
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
@@ -55,7 +123,7 @@ v5.0.0 was a **consumer only release**.
 
 ### Consumer
 
-Upgrading the consumer from `v4.x` to `v5.0.0` will require state migrations. 
+Upgrading the consumer from `v4.x` to `v5.0.0` will require state migrations.
 
 Consumer versions `v4.0.x`, `v4.1.x`, `v4.2.x`, `v4.3.x` and `v4.4.x` can cleanly be upgraded to `v5.0.0`.
 
@@ -69,7 +137,7 @@ Upgrade code will be executed automatically during the upgrade procedure.
 
 ### Consumer
 
-Upgrading the consumer from `v4.0.0` to `v4.4.0` will not require state migration. 
+Upgrading the consumer from `v4.0.0` to `v4.4.0` will not require state migration.
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
@@ -77,7 +145,7 @@ This guide provides instructions for upgrading to specific versions of Replicate
 
 ### Provider
 
-Upgrading a provider from `v4.2.0` to `v4.3.0` requires state migrations that will be done automatically via the upgrade module. 
+Upgrading a provider from `v4.2.0` to `v4.3.0` requires state migrations that will be done automatically via the upgrade module.
 
 ### Consumer
 
@@ -132,17 +200,17 @@ func InitICSEpochs(ctx sdk.Context, pk providerkeeper.Keeper, sk stakingkeeper.K
 
 ## [v4.0.x](https://github.com/cosmos/interchain-security/tree/release/v4.0.x)
 
-`v4.0.x` sets the minimum required version of Go to `1.21`, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/go.mod#L3. 
+`v4.0.x` sets the minimum required version of Go to `1.21`, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/go.mod#L3.
 
-### Provider 
+### Provider
 
-Upgrading a provider from `v3.3.0` to `v4.0.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/x/ccv/provider/migrations/migrator.go#L31. 
+Upgrading a provider from `v3.3.0` to `v4.0.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/x/ccv/provider/migrations/migrator.go#L31.
 
-### Consumer 
+### Consumer
 
-***Note that consumer chains can upgrade directly from `v3.1.0` to `v4.0.0`.*** 
+***Note that consumer chains can upgrade directly from `v3.1.0` to `v4.0.0`.***
 
-Upgrading a consumer from `v3.2.0` to `v4.0.0` will not require state migration, however, upgrading directly from `v3.1.0` to `v4.0.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/x/ccv/consumer/keeper/migrations.go#L22. 
+Upgrading a consumer from `v3.2.0` to `v4.0.0` will not require state migration, however, upgrading directly from `v3.1.0` to `v4.0.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v4.0.x/x/ccv/consumer/keeper/migrations.go#L22.
 
 In addition, the following migration needs to be added to the upgrade handler of the consumer chain:
 ```golang
@@ -166,15 +234,15 @@ func migrateICSOutstandingDowntime(ctx sdk.Context, keepers *upgrades.UpgradeKee
 
 ## [v3.3.x](https://github.com/cosmos/interchain-security/tree/release/v3.2.x)
 
-### Provider 
+### Provider
 
-Upgrading the provider from `v2.x.y` to `v3.3.0` will not require state migration. 
+Upgrading the provider from `v2.x.y` to `v3.3.0` will not require state migration.
 
 ## [v3.2.x](https://github.com/cosmos/interchain-security/tree/release/v3.2.x)
 
 `v3.2.0` bumps IBC to `v7.3`. As a result, `legacy_ibc_testing` is not longer required and was removed, see https://github.com/cosmos/interchain-security/pull/1185. This means that when upgrading to `v3.2.0`, any customized tests relying on `legacy_ibc_testing` need to be updated.
 
-### Consumer 
+### Consumer
 
 Upgrading the consumer from either `v3.0.0` or `v3.1.0` to `v3.2.0` will require state migrations, see https://github.com/cosmos/interchain-security/blob/release/v3.2.x/x/ccv/consumer/keeper/migration.go#L25.
 
@@ -184,13 +252,13 @@ Upgrading the consumer from either `v3.0.0` or `v3.1.0` to `v3.2.0` will require
 
 The following should be considered as complementary to [Cosmos SDK v0.47 UPGRADING.md](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc2/UPGRADING.md).
 
-#### Protobuf 
+#### Protobuf
 
 Protobuf code generation, linting and formatting have been updated to leverage the `ghcr.io/cosmos/proto-builder:0.11.5` docker container. Replicated Security protobuf definitions are now packaged and published to [buf.build/cosmos/interchain-security](https://buf.build/cosmos/interchain-security) via CI workflows. The `third_party/proto` directory has been removed in favour of dependency management using [buf.build](https://docs.buf.build/introduction).
 
 #### App modules
 
-Legacy APIs of the `AppModule` interface have been removed from ccv modules. For example, for 
+Legacy APIs of the `AppModule` interface have been removed from ccv modules. For example, for
 
 ```diff
 - // Route implements the AppModule interface
@@ -240,10 +308,10 @@ import (
 
 ## [v2.0.x](https://github.com/cosmos/interchain-security/releases/tag/v2.0.0)
 
-### Provider 
+### Provider
 
 Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](https://github.com/cosmos/interchain-security/blob/v2.0.0/x/ccv/provider/keeper/migration.go).
 
 ### Consumer
 
-Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. 
+Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations.
