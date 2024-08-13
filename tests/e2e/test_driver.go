@@ -141,14 +141,16 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.submitTextProposal(action, td.verbose)
 	case SubmitConsumerAdditionProposalAction:
 		target = td.getTargetDriver(action.Chain)
-		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+		version := target.testConfig.providerVersion
+		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
 			target.submitConsumerAdditionLegacyProposal(action, td.verbose)
 		} else {
 			target.submitConsumerAdditionProposal(action, td.verbose)
 		}
 	case SubmitConsumerRemovalProposalAction:
+		version := target.testConfig.providerVersion
 		target = td.getTargetDriver(action.Chain)
-		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
 			target.submitConsumerRemovalLegacyProposal(action, td.verbose)
 		} else {
 			target.submitConsumerRemovalProposal(action, td.verbose)
@@ -157,7 +159,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.submitEnableTransfersProposalAction(action, td.verbose)
 	case SubmitConsumerModificationProposalAction:
 		target = td.getTargetDriver(action.Chain)
-		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+		version := target.testConfig.providerVersion
+		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
 			target.submitConsumerModificationLegacyProposal(action, td.verbose)
 		} else {
 			target.submitConsumerModificationProposal(action, td.verbose)
