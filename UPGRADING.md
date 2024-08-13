@@ -29,13 +29,13 @@ func InitializeMaxProviderConsensusParam(ctx sdk.Context, providerKeeper provide
 
 ### Governance Proposals
 
-Legacy proposals are not supported anymore by the current version of the provider. Legacy proposals which are still active (voting period or deposit period) and contains one of the following messages need to be migrated as described below:
+Legacy proposals are not supported anymore by the current version of the provider. Legacy proposals which are still active (voting period or deposit period) and contain one of the following messages that need to be migrated as described below:
 - `ConsumerAdditionProposal` needs to be converted to `MsgConsumerAddition`
 - `ConsumerModificationProposal` needs to be converted to `MsgConsumerModification`
 - `ConsumerRemovalProposal` needs to be converted to `MsgConsumerRemoval`
 - `ChangeRewardDenomsProposal` needs to be converted to `MsgChangeRewardDenoms`
 
-The following shows an example how to migrate a proposal containing a legacy consumer addition proposal message.
+The following shows an example on how to migrate a proposal containing a legacy consumer addition proposal message.
 Migration for the other messages aobve follows the same pattern. The resulting migration code has to be added to the upgrade handler of the provider chain.
 
 #### Migrate Legacy Proposal Content
