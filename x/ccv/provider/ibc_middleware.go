@@ -122,7 +122,7 @@ func (im IBCMiddleware) OnRecvPacket(
 	// deserialized without checking errors.
 	if ack.Success() {
 		// execute the middleware logic only if the sender is a consumer chain
-		consumerID, err := im.keeper.IdentifyConsumerChainIDFromIBCPacket(ctx, packet)
+		consumerId, err := im.keeper.IdentifyConsumerIdFromIBCPacket(ctx, packet)
 		if err != nil {
 			return ack
 		}
@@ -144,13 +144,13 @@ func (im IBCMiddleware) OnRecvPacket(
 		// and if so, adds it to the consumer chain rewards allocation,
 		// otherwise the prohibited coin just stays in the pool forever.
 		if im.keeper.ConsumerRewardDenomExists(ctx, coinDenom) {
-			alloc := im.keeper.GetConsumerRewardsAllocation(ctx, consumerID)
+			alloc := im.keeper.GetConsumerRewardsAllocation(ctx, consumerId)
 			alloc.Rewards = alloc.Rewards.Add(
 				sdk.NewDecCoinsFromCoins(sdk.Coin{
 					Denom:  coinDenom,
 					Amount: coinAmt,
 				})...)
-			im.keeper.SetConsumerRewardsAllocation(ctx, consumerID, alloc)
+			im.keeper.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
 		}
 	}
 

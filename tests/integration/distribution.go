@@ -125,7 +125,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// Save the consumer validators total outstanding rewards on the provider
 	consumerValsOutstandingRewardsFunc := func(ctx sdk.Context) sdk.DecCoins {
 		totalRewards := sdk.DecCoins{}
-		vals, err := providerKeeper.GetConsumerValSet(ctx, s.consumerChain.ChainID)
+		vals, err := providerKeeper.GetConsumerValSet(ctx, s.getFirstBundle().ConsumerId)
 		s.Require().NoError(err)
 
 		for _, v := range vals {
@@ -160,7 +160,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	// Consumer allocations are distributed between the validators and the community pool.
 	// The decimals resulting from the distribution are expected to remain in the consumer allocations.
-	rewardsAlloc := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
+	rewardsAlloc := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	remainingAlloc := rewardsAlloc.Rewards.AmountOf(rewardsIBCdenom)
 	s.Require().True(remainingAlloc.LTE(math.LegacyOneDec()))
 
@@ -601,7 +601,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 				// update consumer allocation
 				keeper.SetConsumerRewardsAllocation(
 					ctx,
-					s.consumerChain.ChainID,
+					s.getFirstBundle().ConsumerId,
 					providertypes.ConsumerRewardsAllocation{
 						Rewards: sdk.NewDecCoins(sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(100_000))),
 					},
@@ -668,7 +668,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			rewardsPoolBalance := bankKeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver))
 
 			// save the consumer's rewards allocated
-			consumerRewardsAllocations := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID)
+			consumerRewardsAllocations := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.getFirstBundle().ConsumerId)
 
 			// execute middleware OnRecvPacket logic
 			ack := cbs.OnRecvPacket(s.providerCtx(), packet, sdk.AccAddress{})
@@ -682,7 +682,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			// compute the balance and allocation difference
 			rewardsTransferred := bankKeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver)).
 				Sub(rewardsPoolBalance...)
-			rewardsAllocated := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.consumerChain.ChainID).
+			rewardsAllocated := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.getFirstBundle().ConsumerId).
 				Rewards.Sub(consumerRewardsAllocations.Rewards)
 
 			if !tc.expErr {
@@ -739,11 +739,11 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 
 	// Allocate rewards evenly between consumers
 	rewardsPerChain := totalRewards.QuoInt(math.NewInt(int64(len(s.consumerBundles))))
-	for chainID := range s.consumerBundles {
+	for consumerId := range s.consumerBundles {
 		// update consumer allocation
 		providerKeeper.SetConsumerRewardsAllocation(
 			providerCtx,
-			chainID,
+			consumerId,
 			providertypes.ConsumerRewardsAllocation{
 				Rewards: sdk.NewDecCoinsFromCoins(rewardsPerChain...),
 			},
@@ -797,7 +797,7 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	// check that the total expected rewards are transferred to the distribution module account
 
 	// store the decimal remainders in the consumer reward allocations
-	allocRemainderPerChain := providerKeeper.GetConsumerRewardsAllocation(providerCtx, s.consumerChain.ChainID).Rewards
+	allocRemainderPerChain := providerKeeper.GetConsumerRewardsAllocation(providerCtx, s.getFirstBundle().ConsumerId).Rewards
 
 	// compute the total rewards distributed to the distribution module balance (validator outstanding rewards + community pool tax),
 	totalRewardsDistributed := sdk.NewDecCoinsFromCoins(totalRewards...).Sub(allocRemainderPerChain.MulDec(math.LegacyNewDec(int64(consNum))))
@@ -843,7 +843,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
 	bankKeeper := s.providerApp.GetTestBankKeeper()
 
-	chainID := s.consumerChain.ChainID
+	consumerId := s.getFirstBundle().ConsumerId
 
 	testCases := []struct {
 		name         string
@@ -859,7 +859,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 			expAllocated: nil,
 		},
 		{
-			name:         "consumer valset is empty - total voting power is zero",
+			name:         "consumerId valset is empty - total voting power is zero",
 			tokens:       sdk.DecCoins{sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(100_000))},
 			rate:         math.LegacyZeroDec(),
 			expAllocated: nil,
@@ -884,24 +884,24 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 		s.Run(tc.name, func() {
 			ctx, _ := s.providerCtx().CacheContext()
 
-			// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
+			// increase the block height so validators are eligible for consumerId rewards (see `IsEligibleForConsumerRewards`)
 			ctx = ctx.WithBlockHeight(providerKeeper.GetNumberOfEpochsToStartReceivingRewards(ctx)*providerKeeper.GetBlocksPerEpoch(ctx) +
 				ctx.BlockHeight())
 
-			// change the consumer valset
-			consuVals, err := providerKeeper.GetConsumerValSet(ctx, chainID)
+			// change the consumerId valset
+			consuVals, err := providerKeeper.GetConsumerValSet(ctx, consumerId)
 			s.Require().NoError(err)
-			providerKeeper.DeleteConsumerValSet(ctx, chainID)
-			providerKeeper.SetConsumerValSet(ctx, chainID, consuVals[0:tc.consuValLen])
-			consuVals, err = providerKeeper.GetConsumerValSet(ctx, chainID)
+			providerKeeper.DeleteConsumerValSet(ctx, consumerId)
+			providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals[0:tc.consuValLen])
+			consuVals, err = providerKeeper.GetConsumerValSet(ctx, consumerId)
 			s.Require().NoError(err)
 
-			// set the same consumer commission rate for all consumer validators
+			// set the same consumerId commission rate for all consumerId validators
 			for _, v := range consuVals {
 				provAddr := providertypes.NewProviderConsAddress(sdk.ConsAddress(v.ProviderConsAddr))
 				err := providerKeeper.SetConsumerCommissionRate(
 					ctx,
-					chainID,
+					consumerId,
 					provAddr,
 					tc.rate,
 				)
@@ -911,7 +911,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 			// allocate tokens
 			res := providerKeeper.AllocateTokensToConsumerValidators(
 				ctx,
-				chainID,
+				consumerId,
 				tc.tokens,
 			)
 
@@ -949,7 +949,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 					s.Require().NoError(err)
 
 					// check that the withdrawn coins is equal to the entire reward amount
-					// times the set consumer commission rate
+					// times the set consumerId commission rate
 					commission := rewards.Rewards.MulDec(tc.rate)
 					c, _ := commission.TruncateDecimal()
 					s.Require().Equal(withdrawnCoins, c)
@@ -981,7 +981,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
 	bankKeeper := s.providerApp.GetTestBankKeeper()
 
-	chainID := s.consumerChain.ChainID
+	consumerId := s.getFirstBundle().ConsumerId
 
 	tokens := sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, math.LegacyNewDecFromIntWithPrec(math.NewInt(999), 2))}
 	rate := math.LegacyOneDec()
@@ -994,7 +994,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	ctx = ctx.WithBlockHeight(providerKeeper.GetNumberOfEpochsToStartReceivingRewards(ctx)*providerKeeper.GetBlocksPerEpoch(ctx) + 1)
 
 	// update the consumer validators
-	consuVals, err := providerKeeper.GetConsumerValSet(ctx, chainID)
+	consuVals, err := providerKeeper.GetConsumerValSet(ctx, consumerId)
 	s.Require().NoError(err)
 	// first 2 validators were consumer validators since block height 1 and hence get rewards
 	consuVals[0].JoinHeight = 1
@@ -1003,11 +1003,11 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	// have not been consumer validators for `GetNumberOfEpochsToStartReceivingRewards * GetBlocksPerEpoch` blocks
 	consuVals[2].JoinHeight = 2
 	consuVals[3].JoinHeight = 2
-	providerKeeper.SetConsumerValSet(ctx, chainID, consuVals)
+	providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals)
 
-	providerKeeper.DeleteConsumerValSet(ctx, chainID)
-	providerKeeper.SetConsumerValSet(ctx, chainID, consuVals)
-	consuVals, err = providerKeeper.GetConsumerValSet(ctx, chainID)
+	providerKeeper.DeleteConsumerValSet(ctx, consumerId)
+	providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals)
+	consuVals, err = providerKeeper.GetConsumerValSet(ctx, consumerId)
 	s.Require().NoError(err)
 
 	// set the same consumer commission rate for all consumer validators
@@ -1015,7 +1015,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 		provAddr := providertypes.NewProviderConsAddress(sdk.ConsAddress(v.ProviderConsAddr))
 		err := providerKeeper.SetConsumerCommissionRate(
 			ctx,
-			chainID,
+			consumerId,
 			provAddr,
 			rate,
 		)
@@ -1025,7 +1025,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	// allocate tokens
 	res := providerKeeper.AllocateTokensToConsumerValidators(
 		ctx,
-		chainID,
+		consumerId,
 		tokens,
 	)
 
@@ -1101,8 +1101,8 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 
 	// Iterate over the consumers and perform the reward distribution
 	// to the provider
-	for chainID := range s.consumerBundles {
-		bundle := s.consumerBundles[chainID]
+	for consumerId := range s.consumerBundles {
+		bundle := s.consumerBundles[consumerId]
 		consumerKeeper := bundle.App.GetConsumerKeeper()
 		bankKeeper := bundle.App.GetTestBankKeeper()
 		accountKeeper := bundle.App.GetTestAccountKeeper()

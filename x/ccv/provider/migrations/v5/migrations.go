@@ -12,10 +12,10 @@ import (
 // and a migration to rewrite the proposal is needed.
 func MigrateTopNForRegisteredChains(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
 	// Set the topN of each chain to 95
-	for _, chainID := range providerKeeper.GetAllRegisteredConsumerChainIDs(ctx) {
+	for _, consumerId := range providerKeeper.GetAllRegisteredConsumerIds(ctx) {
 		// TODO (PERMISSIONLESS): this migration already took place and does not make much sense in the Permissionless world
 		// living here for now and we should totally remove
-		providerKeeper.SetConsumerUpdateRecord(ctx, chainID, types.ConsumerUpdateRecord{
+		providerKeeper.SetConsumerUpdateRecord(ctx, consumerId, types.ConsumerUpdateRecord{
 			Top_N: 95,
 		})
 	}

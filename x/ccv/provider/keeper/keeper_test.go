@@ -229,7 +229,7 @@ func TestGetAllRegisteredConsumerChainIDs(t *testing.T) {
 	defer ctrl.Finish()
 
 	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
-	// GetAllRegisteredConsumerChainIDs iterates over consumerId in lexicographical order
+	// GetAllRegisteredConsumerIds iterates over consumerId in lexicographical order
 	expectedChainIDs := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
 
 	for i, chainID := range chainIDs {
@@ -237,7 +237,7 @@ func TestGetAllRegisteredConsumerChainIDs(t *testing.T) {
 		pk.SetConsumerClientId(ctx, chainID, clientID)
 	}
 
-	result := pk.GetAllRegisteredConsumerChainIDs(ctx)
+	result := pk.GetAllRegisteredConsumerIds(ctx)
 	require.Len(t, result, len(chainIDs))
 	require.Equal(t, expectedChainIDs, result)
 }

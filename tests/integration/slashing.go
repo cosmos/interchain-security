@@ -57,7 +57,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// map consumer consensus address to provider consensus address
 	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
-		s.consumerChain.ChainID,
+		s.getFirstBundle().ConsumerId,
 		consumerConsAddr,
 	)
 	s.Require().True(found)
@@ -188,7 +188,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	// map consumer consensus address to provider consensus address
 	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
-		s.consumerChain.ChainID,
+		s.getFirstBundle().ConsumerId,
 		consumerConsAddr)
 	s.Require().True(found)
 
@@ -307,7 +307,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	suite.Require().Equal(stakingtypes.Bonded, validator.GetStatus())
 
 	// set init VSC id for chain0
-	providerKeeper.SetInitChainHeight(suite.providerCtx(), suite.consumerChain.ChainID, uint64(suite.providerCtx().BlockHeight()))
+	providerKeeper.SetInitChainHeight(suite.providerCtx(), suite.getFirstBundle().ConsumerId, uint64(suite.providerCtx().BlockHeight()))
 
 	// set validator signing-info
 	providerSlashingKeeper.SetValidatorSigningInfo(
@@ -316,7 +316,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 		slashingtypes.ValidatorSigningInfo{Address: consAddr.String()},
 	)
 
-	providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
+	providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.getFirstBundle().ConsumerId,
 		*ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
@@ -413,7 +413,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().NoError(err, "no error expected")
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 
-	providerKeeper.SetConsumerValidator(ctx, firstBundle.Chain.ChainID, providertypes.ConsensusValidator{
+	providerKeeper.SetConsumerValidator(ctx, firstBundle.ConsumerId, providertypes.ConsensusValidator{
 		ProviderConsAddr: validAddress,
 	})
 

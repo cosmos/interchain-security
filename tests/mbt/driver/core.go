@@ -220,7 +220,7 @@ func (s *Driver) getStateString() string {
 	state.WriteString("\n")
 
 	state.WriteString("Consumers Chains:\n")
-	chainIds := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
+	chainIds := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
 	state.WriteString(strings.Join(chainIds, ", "))
 	state.WriteString("\n\n")
 
@@ -258,7 +258,7 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 	if !s.isProviderChain(chain) {
 		// Check whether the chain is in the consumer chains on the provider
 
-		consumerChainIDs := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
+		consumerChainIDs := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
 
 		found := false
 		for _, consumerChainID := range consumerChainIDs {
@@ -366,7 +366,7 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 }
 
 func (s *Driver) runningConsumerChainIDs() []ChainId {
-	consumerIDsOnProvider := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
+	consumerIDsOnProvider := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
 
 	consumersWithIntactChannel := make([]ChainId, 0)
 	for _, consumerChainID := range consumerIDsOnProvider {
