@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 21
 title: Proof of Reputation Consumer Chains
 ---
 # ADR 020: Proof of Reputation Consumer Chains 
