@@ -51,6 +51,8 @@ func TestProviderProposalHandler(t *testing.T) {
 				0,
 				nil,
 				nil,
+				0,
+				false,
 			),
 			blockTime:                hourFromNow, // ctx blocktime is after proposal's spawn time
 			expValidConsumerAddition: true,

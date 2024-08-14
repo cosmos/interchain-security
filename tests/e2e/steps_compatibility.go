@@ -8,6 +8,7 @@ import (
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 func compstepStartProviderChain() []Step {
@@ -98,7 +99,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
 				ReconfigureNode: false,
 				ExpectError:     true,
-				ExpectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
+				ExpectedError:   providertypes.ErrConsumerKeyInUse.Error(),
 			},
 			State: State{
 				ChainID(consumerName): ChainState{

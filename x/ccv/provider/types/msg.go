@@ -293,7 +293,6 @@ func (msg *MsgConsumerAddition) ValidateBasic() error {
 }
 
 func (msg *MsgConsumerRemoval) ValidateBasic() error {
-
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
 	}
@@ -424,11 +423,12 @@ func (msg MsgOptOut) ValidateBasic() error {
 }
 
 // NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
-func NewMsgSetConsumerCommissionRate(chainID string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress) *MsgSetConsumerCommissionRate {
+func NewMsgSetConsumerCommissionRate(chainID string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
 	return &MsgSetConsumerCommissionRate{
 		ChainId:      chainID,
 		Rate:         commission,
 		ProviderAddr: providerValidatorAddress.String(),
+		Signer:       signer,
 	}
 }
 

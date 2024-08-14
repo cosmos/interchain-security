@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"sort"
 	"testing"
-	"time"
 
 	"cosmossdk.io/math"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -224,175 +224,6 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
-// TestGetAllUnbondingOpIndexes tests GetAllUnbondingOpIndexes behavior correctness
-func TestGetAllUnbondingOpIndexes(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	ops := []types.VscUnbondingOps{
-		{
-			VscId:          2,
-			UnbondingOpIds: []uint64{4, 5, 6, 7},
-		},
-		{
-			VscId:          1,
-			UnbondingOpIds: []uint64{1, 2, 3},
-		},
-		{
-			VscId:          4,
-			UnbondingOpIds: []uint64{10},
-		},
-		{
-			VscId:          3,
-			UnbondingOpIds: []uint64{8, 9},
-		},
-	}
-	// sorting by CrossChainValidator.Address
-	expectedGetAllOrder := ops
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
-	})
-
-	pk.SetUnbondingOpIndex(ctx, "chain-2", 1, []uint64{1, 2, 3})
-	for _, op := range ops {
-		pk.SetUnbondingOpIndex(ctx, "chain-1", op.VscId, op.UnbondingOpIds)
-	}
-
-	// iterate and check all results are returned in the expected order
-	result := pk.GetAllUnbondingOpIndexes(ctx, "chain-1")
-	require.Len(t, result, len(ops))
-	require.Equal(t, result, expectedGetAllOrder)
-}
-
-func TestMaturedUnbondingOps(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	ids := providerKeeper.GetMaturedUnbondingOps(ctx)
-	require.Nil(t, ids)
-
-	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
-	providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
-
-	ids = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
-	require.Equal(t, len(unbondingOpIds), len(ids))
-	for i := 0; i < len(unbondingOpIds); i++ {
-		require.Equal(t, unbondingOpIds[i], ids[i])
-	}
-}
-
-func TestInitTimeoutTimestamp(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now().UTC()
-	nsNow := uint64(now.UnixNano())
-	timeoutTimestamps := []types.InitTimeoutTimestamp{
-		{
-			ChainId:   "chain-2",
-			Timestamp: nsNow,
-		},
-		{
-			ChainId:   "chain-1",
-			Timestamp: nsNow + 10,
-		},
-		{
-			ChainId:   "chain-4",
-			Timestamp: nsNow - 10,
-		},
-		{
-			ChainId:   "chain-3",
-			Timestamp: nsNow,
-		},
-	}
-
-	expectedGetAllOrder := timeoutTimestamps
-	// sorting by ChainId
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
-	})
-
-	_, found := pk.GetInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
-	require.False(t, found)
-
-	for _, tt := range timeoutTimestamps {
-		pk.SetInitTimeoutTimestamp(ctx, tt.ChainId, tt.Timestamp)
-	}
-
-	for _, tt := range timeoutTimestamps {
-		_, found := pk.GetInitTimeoutTimestamp(ctx, tt.ChainId)
-		require.True(t, found)
-	}
-
-	// iterate and check all results are returned in the expected order
-	result := pk.GetAllInitTimeoutTimestamps(ctx)
-	require.Len(t, result, len(timeoutTimestamps))
-	require.Equal(t, result, expectedGetAllOrder)
-
-	pk.DeleteInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
-	_, found = pk.GetInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
-	require.False(t, found)
-}
-
-// TestVscSendTimestamp tests the set, deletion, and iteration methods for VSC timeout timestamps
-func TestVscSendTimestamp(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now().UTC()
-
-	testCases := []struct {
-		chainID string
-		ts      time.Time
-		vscID   uint64
-	}{
-		{chainID: "chain", ts: now.Add(2 * time.Hour), vscID: 2},
-		{chainID: "chain", ts: now.Add(time.Hour), vscID: 1},
-		{chainID: "chain", ts: now.Add(time.Hour), vscID: 3},
-		// this is not possible since the ts is the timestamp of sending,
-		// which means it must be in the same order as vscIDs,
-		// but it still worth testing
-		{chainID: "chain", ts: now.Add(-time.Hour), vscID: 4},
-		{chainID: "chain1", ts: now.Add(time.Hour), vscID: 1},
-		{chainID: "chain2", ts: now.Add(time.Hour), vscID: 1},
-	}
-	chainID := testCases[0].chainID
-	expectedGetAllOrder := []types.VscSendTimestamp{}
-	for _, tc := range testCases {
-		if tc.chainID == chainID {
-			expectedGetAllOrder = append(expectedGetAllOrder, types.VscSendTimestamp{VscId: tc.vscID, Timestamp: tc.ts})
-		}
-	}
-	// sorting by vscID
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
-	})
-
-	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
-
-	for _, tc := range testCases {
-		providerKeeper.SetVscSendTimestamp(ctx, tc.chainID, tc.vscID, tc.ts)
-	}
-
-	// iterate and check all results are returned in the expected order
-	vscSendTimestamps := providerKeeper.GetAllVscSendTimestamps(ctx, chainID)
-	require.Equal(t, expectedGetAllOrder, vscSendTimestamps)
-
-	vscSendTimestamp, found := providerKeeper.GetFirstVscSendTimestamp(ctx, chainID)
-	require.True(t, found)
-	require.Equal(t, vscSendTimestamp, expectedGetAllOrder[0])
-
-	// delete first VSC send timestamp
-	providerKeeper.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
-	for _, vst := range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
-		require.NotEqual(t, vscSendTimestamp, vst)
-	}
-
-	// delete all VSC send timestamps
-	providerKeeper.DeleteVscSendTimestampsForConsumer(ctx, chainID)
-	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
-}
-
 func TestGetAllRegisteredConsumerChainIDs(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -431,92 +262,6 @@ func TestGetAllChannelToChains(t *testing.T) {
 	result := pk.GetAllChannelToChains(ctx)
 	require.Len(t, result, len(chainIDs))
 	require.Equal(t, expectedGetAllOrder, result)
-}
-
-// TestGetAllUnbondingOps tests GetAllUnbondingOps behaviour correctness
-func TestGetAllUnbondingOps(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	ops := []types.UnbondingOp{
-		{
-			Id:                      2,
-			UnbondingConsumerChains: []string{"chain-2", "chain-1"},
-		},
-		{
-			Id:                      1,
-			UnbondingConsumerChains: []string{"chain-1", "chain-2"},
-		},
-		{
-			Id:                      4,
-			UnbondingConsumerChains: []string{"chain-2"},
-		},
-		{
-			Id:                      3,
-			UnbondingConsumerChains: []string{"chain-3", "chain-1", "chain-2"},
-		},
-	}
-	expectedGetAllOrder := ops
-	// sorting by Id
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].Id < expectedGetAllOrder[j].Id
-	})
-
-	for _, op := range ops {
-		pk.SetUnbondingOp(ctx, op)
-	}
-
-	// iterate and check all results are returned
-	result := pk.GetAllUnbondingOps(ctx)
-	require.Len(t, result, len(ops))
-	require.Equal(t, expectedGetAllOrder, result)
-}
-
-// TestRemoveConsumerFromUnbondingOp tests RemoveConsumerFromUnbondingOp behaviour correctness
-func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	var expectedID uint64 = 1
-	expectedUnbondingOp := types.UnbondingOp{
-		Id:                      expectedID,
-		UnbondingConsumerChains: []string{"chain-3", "chain-1", "chain-2"},
-	}
-
-	pk.SetUnbondingOp(ctx, expectedUnbondingOp)
-
-	canComplete := pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-1")
-	require.False(t, canComplete)
-	unbondingOp, found := pk.GetUnbondingOp(ctx, expectedID)
-	require.True(t, found)
-	expectedChainIDs := []string{"chain-3", "chain-2"}
-	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
-
-	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-2")
-	require.False(t, canComplete)
-	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
-	require.True(t, found)
-	expectedChainIDs = []string{"chain-3"}
-	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
-
-	// check that it doesn't panic when calling with same chain ID
-	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-2")
-	require.False(t, canComplete)
-	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
-	require.True(t, found)
-	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
-
-	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-3")
-	require.True(t, canComplete)
-	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
-	require.False(t, found)
-	require.Empty(t, unbondingOp.UnbondingConsumerChains)
-
-	// check that it panics when calling with wrong chain IDs
-	require.Panics(t, func() {
-		canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "some_chain")
-		require.False(t, canComplete)
-	})
 }
 
 // TestSetSlashLog tests slash log getter and setter methods
@@ -744,38 +489,6 @@ func TestConsumerCommissionRate(t *testing.T) {
 	require.False(t, found)
 }
 
-// TestValidatorsPowerCap tests the `SetValidatorsPowerCap`, `GetValidatorsPowerCap`, and `DeleteValidatorsPowerCap` methods
-func TestValidatorsPowerCap(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	expectedPowerCap := uint32(10)
-	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", expectedPowerCap)
-	powerCap, found := providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
-	require.Equal(t, expectedPowerCap, powerCap)
-	require.True(t, found)
-
-	providerKeeper.DeleteValidatorsPowerCap(ctx, "chainID")
-	_, found = providerKeeper.GetValidatorsPowerCap(ctx, "chainID")
-	require.False(t, found)
-}
-
-// TestValidatorSetCap tests the `SetValidatorSetCap`, `GetValidatorSetCap`, and `DeleteValidatorSetCap` methods
-func TestValidatorSetCap(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	expectedPowerCap := uint32(10)
-	providerKeeper.SetValidatorSetCap(ctx, "chainID", expectedPowerCap)
-	powerCap, found := providerKeeper.GetValidatorSetCap(ctx, "chainID")
-	require.Equal(t, expectedPowerCap, powerCap)
-	require.True(t, found)
-
-	providerKeeper.DeleteValidatorSetCap(ctx, "chainID")
-	_, found = providerKeeper.GetValidatorSetCap(ctx, "chainID")
-	require.False(t, found)
-}
-
 // TestAllowlist tests the `SetAllowlist`, `IsAllowlisted`, `DeleteAllowlist`, and `IsAllowlistEmpty` methods
 func TestAllowlist(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -832,32 +545,124 @@ func TestDenylist(t *testing.T) {
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 }
 
-func TestMinimumPowerInTopN(t *testing.T) {
+// TestAllowInactiveValidators tests the `SetAllowInactiveValidators` and `AllowsInactiveValidators` methods
+func TestAllowInactiveValidators(t *testing.T) {
 	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-	chainID := "testChain"
-	minPower := int64(1000)
+	chainID := "chainID"
 
-	// Set the minimum power in top N
-	k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+	// check that by default, AllowsInactiveValidators returns false
+	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
 
-	// Retrieve the minimum power in top N
-	actualMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
-	require.True(t, found)
-	require.Equal(t, minPower, actualMinPower)
+	// set the chain to allow inactive validators
+	k.SetInactiveValidatorsAllowed(ctx, chainID, true)
 
-	// Update the minimum power
-	newMinPower := int64(2000)
-	k.SetMinimumPowerInTopN(ctx, chainID, newMinPower)
+	// check that AllowsInactiveValidators returns true
+	require.True(t, k.AllowsInactiveValidators(ctx, chainID))
 
-	// Retrieve the updated minimum power in top N
-	newActualMinPower, found := k.GetMinimumPowerInTopN(ctx, chainID)
-	require.True(t, found)
-	require.Equal(t, newMinPower, newActualMinPower)
+	// set the chain to not allow inactive validators
+	k.SetInactiveValidatorsAllowed(ctx, chainID, false)
 
-	// Test when the chain ID does not exist
-	nonExistentChainID := "nonExistentChain"
-	nonExistentMinPower, found := k.GetMinimumPowerInTopN(ctx, nonExistentChainID)
-	require.False(t, found)
-	require.Equal(t, int64(0), nonExistentMinPower)
+	// check that AllowsInactiveValidators returns false
+	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
+}
+
+// Tests setting, getting and deleting parameters that are stored per-consumer chain.
+// The tests cover the following parameters:
+// - MinimumPowerInTopN
+// - MinStake
+// - ValidatorSetCap
+// - ValidatorPowersCap
+func TestKeeperConsumerParams(t *testing.T) {
+	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	tests := []struct {
+		name         string
+		settingFunc  func(sdk.Context, string, int64)
+		getFunc      func(sdk.Context, string) (int64, bool)
+		deleteFunc   func(sdk.Context, string)
+		initialValue int64
+		updatedValue int64
+	}{
+		{
+			name:         "Minimum Power In Top N",
+			settingFunc:  func(ctx sdk.Context, id string, val int64) { k.SetMinimumPowerInTopN(ctx, id, val) },
+			getFunc:      func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinimumPowerInTopN(ctx, id) },
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinimumPowerInTopN(ctx, id) },
+			initialValue: 1000,
+			updatedValue: 2000,
+		},
+		{
+			name:        "Minimum Stake",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinStake(ctx, id, uint64(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetMinStake(ctx, id)
+				return int64(val), found
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinStake(ctx, id) },
+			initialValue: 1000,
+			updatedValue: 2000,
+		},
+		{
+			name:        "Validator Set Cap",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetValidatorSetCap(ctx, id, uint32(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetValidatorSetCap(ctx, id)
+				return int64(val), found
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorSetCap(ctx, id) },
+			initialValue: 10,
+			updatedValue: 200,
+		},
+		{
+			name:        "Validator Powers Cap",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetValidatorsPowerCap(ctx, id, uint32(val)) },
+			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
+				val, found := k.GetValidatorsPowerCap(ctx, id)
+				return int64(val), found
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorsPowerCap(ctx, id) },
+			initialValue: 10,
+			updatedValue: 11,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chainID := "chainID"
+			// Set initial value
+			tt.settingFunc(ctx, chainID, int64(tt.initialValue))
+
+			// Retrieve and check initial value
+			actualValue, found := tt.getFunc(ctx, chainID)
+			require.True(t, found)
+			require.EqualValues(t, tt.initialValue, actualValue)
+
+			// Update value
+			tt.settingFunc(ctx, chainID, int64(tt.updatedValue))
+
+			// Retrieve and check updated value
+			newActualValue, found := tt.getFunc(ctx, chainID)
+			require.True(t, found)
+			require.EqualValues(t, tt.updatedValue, newActualValue)
+
+			// Check non-existent chain ID
+			_, found = tt.getFunc(ctx, "not the chainID")
+			require.False(t, found)
+
+			// Delete value
+			tt.deleteFunc(ctx, chainID)
+
+			// Check that value was deleted
+			_, found = tt.getFunc(ctx, chainID)
+			require.False(t, found)
+
+			// Try deleting again
+			tt.deleteFunc(ctx, chainID)
+
+			// Check that the value is still deleted
+			_, found = tt.getFunc(ctx, chainID)
+			require.False(t, found)
+		})
+	}
 }

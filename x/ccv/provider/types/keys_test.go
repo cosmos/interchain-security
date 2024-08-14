@@ -10,6 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cryptoutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
+	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
@@ -27,90 +29,99 @@ func TestNoDuplicates(t *testing.T) {
 // Test that the value of all byte prefixes is preserved
 func TestPreserveBytePrefix(t *testing.T) {
 	i := 0
-	require.Equal(t, uint8(0xFF), providertypes.ParametersKey()[0])
+	require.Equal(t, byte(0xFF), providertypes.ParametersKey()[0])
 	i++
-	require.Equal(t, uint8(0), providertypes.PortKey()[0])
+	require.Equal(t, byte(0), providertypes.PortKey()[0])
 	i++
-	require.Equal(t, uint8(1), providertypes.MaturedUnbondingOpsKey()[0])
+	// reserve 1 as deprecated
 	i++
-	require.Equal(t, uint8(2), providertypes.ValidatorSetUpdateIdKey()[0])
+	require.Equal(t, byte(2), providertypes.ValidatorSetUpdateIdKey()[0])
 	i++
-	require.Equal(t, uint8(3), providertypes.SlashMeterKey()[0])
+	require.Equal(t, byte(3), providertypes.SlashMeterKey()[0])
 	i++
-	require.Equal(t, uint8(4), providertypes.SlashMeterReplenishTimeCandidateKey()[0])
+	require.Equal(t, byte(4), providertypes.SlashMeterReplenishTimeCandidateKey()[0])
 	i++
-	require.Equal(t, uint8(5), providertypes.ChainToChannelKey("chainID")[0])
+	require.Equal(t, byte(5), providertypes.ChainToChannelKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(6), providertypes.ChannelToChainKeyPrefix()[0])
+	require.Equal(t, byte(6), providertypes.ChannelToChainKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(7), providertypes.ChainToClientKeyPrefix()[0])
+	require.Equal(t, byte(7), providertypes.ChainToClientKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(8), providertypes.InitTimeoutTimestampKeyPrefix()[0])
+	// reserve 8 as deprecated
 	i++
-	require.Equal(t, uint8(9), providertypes.PendingCAPKeyPrefix()[0])
+	require.Equal(t, byte(9), providertypes.PendingCAPKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(10), providertypes.PendingCRPKeyPrefix()[0])
+	require.Equal(t, byte(10), providertypes.PendingCRPKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(11), providertypes.UnbondingOpKeyPrefix()[0])
+	// reserve 11 as deprecated
 	i++
-	require.Equal(t, uint8(12), providertypes.UnbondingOpIndexKeyPrefix())
+	// reserve 12 as deprecated
 	i++
-	require.Equal(t, uint8(13), providertypes.ValsetUpdateBlockHeightKeyPrefix()[0])
+	require.Equal(t, byte(13), providertypes.ValsetUpdateBlockHeightKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(14), providertypes.ConsumerGenesisKey("chainID")[0])
+	require.Equal(t, byte(14), providertypes.ConsumerGenesisKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(15), providertypes.SlashAcksKey("chainID")[0])
+	require.Equal(t, byte(15), providertypes.SlashAcksKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(16), providertypes.InitChainHeightKey("chainID")[0])
+	require.Equal(t, byte(16), providertypes.InitChainHeightKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(17), providertypes.PendingVSCsKey("chainID")[0])
+	require.Equal(t, byte(17), providertypes.PendingVSCsKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(18), providertypes.VscSendingTimestampKeyPrefix())
+	// reserve 18 as deprecated
 	i++
-	require.Equal(t, uint8(19), providertypes.ThrottledPacketDataSizeKey("chainID")[0])
+	require.Equal(t, byte(19), providertypes.ThrottledPacketDataSizeKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(20), providertypes.ThrottledPacketDataKeyPrefix())
+	require.Equal(t, byte(20), providertypes.ThrottledPacketDataKeyPrefix())
 	i++
-	require.Equal(t, uint8(21), providertypes.GlobalSlashEntryKeyPrefix()[0])
+	require.Equal(t, byte(21), providertypes.GlobalSlashEntryKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(22), providertypes.ConsumerValidatorsKeyPrefix())
+	require.Equal(t, byte(22), providertypes.ConsumerValidatorsKeyPrefix())
 	i++
-	require.Equal(t, uint8(23), providertypes.ValidatorsByConsumerAddrKeyPrefix())
+	require.Equal(t, byte(23), providertypes.ValidatorsByConsumerAddrKeyPrefix())
 	i++
 	// reserve 24 as deprecated
 	i++
-	require.Equal(t, uint8(25), providertypes.ConsumerAddrsToPruneKeyPrefix())
+	// reserve 25 as deprecated
 	i++
-	require.Equal(t, uint8(26), providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05}))[0])
+	require.Equal(t, byte(26), providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05}))[0])
 	i++
-	require.Equal(t, uint8(27), providertypes.ConsumerRewardDenomsKeyPrefix()[0])
+	require.Equal(t, byte(27), providertypes.ConsumerRewardDenomsKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(28), providertypes.VSCMaturedHandledThisBlockKey()[0])
+	// reserve 28 as deprecated
 	i++
-	require.Equal(t, uint8(29), providertypes.EquivocationEvidenceMinHeightKey("chainID")[0])
+	require.Equal(t, byte(29), providertypes.EquivocationEvidenceMinHeightKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(30), providertypes.ProposedConsumerChainKeyPrefix()[0])
+	require.Equal(t, byte(30), providertypes.ProposedConsumerChainKeyPrefix()[0])
 	i++
-	require.Equal(t, uint8(31), providertypes.ConsumerValidatorKeyPrefix())
+	require.Equal(t, byte(31), providertypes.ConsumerValidatorKeyPrefix())
 	i++
-	require.Equal(t, uint8(32), providertypes.OptedInKeyPrefix())
+	require.Equal(t, byte(32), providertypes.OptedInKeyPrefix())
 	i++
-	require.Equal(t, uint8(33), providertypes.TopNKey("chainID")[0])
+	require.Equal(t, byte(33), providertypes.TopNKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(34), providertypes.ValidatorsPowerCapKey("chainID")[0])
+	require.Equal(t, byte(34), providertypes.ValidatorsPowerCapKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(35), providertypes.ValidatorSetCapKey("chainID")[0])
+	require.Equal(t, byte(35), providertypes.ValidatorSetCapKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(36), providertypes.AllowlistKeyPrefix())
+	require.Equal(t, byte(36), providertypes.AllowlistKeyPrefix())
 	i++
-	require.Equal(t, uint8(37), providertypes.DenylistKeyPrefix())
+	require.Equal(t, byte(37), providertypes.DenylistKeyPrefix())
 	i++
-	require.Equal(t, uint8(38), providertypes.ConsumerRewardsAllocationKey("chainID")[0])
+	require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("chainID")[0])
 	i++
-	require.Equal(t, uint8(39), providertypes.ConsumerCommissionRateKeyPrefix())
+	require.Equal(t, byte(39), providertypes.ConsumerCommissionRateKeyPrefix())
 	i++
-	require.Equal(t, uint8(40), providertypes.MinimumPowerInTopNKey("chainID")[0])
+	require.Equal(t, byte(40), providertypes.MinimumPowerInTopNKey("chainID")[0])
 	i++
+	require.Equal(t, byte(41), providertypes.ConsumerAddrsToPruneV2KeyPrefix())
+	i++
+	require.Equal(t, byte(42), providertypes.LastProviderConsensusValsPrefix()[0])
+	i++
+	require.Equal(t, byte(43), providertypes.MinStakeKey("chainID")[0])
+	i++
+	require.Equal(t, byte(44), providertypes.AllowInactiveValidatorsKey("chainID")[0])
+	i++
+
 	prefixes := providertypes.GetAllKeyPrefixes()
 	require.Equal(t, len(prefixes), i)
 }
@@ -142,32 +153,25 @@ func getAllFullyDefinedKeys() [][]byte {
 	return [][]byte{
 		providertypes.ParametersKey(),
 		providertypes.PortKey(),
-		providertypes.MaturedUnbondingOpsKey(),
 		providertypes.ValidatorSetUpdateIdKey(),
 		providertypes.SlashMeterKey(),
 		providertypes.SlashMeterReplenishTimeCandidateKey(),
 		providertypes.ChainToChannelKey("chainID"),
 		providertypes.ChannelToChainKey("channelID"),
 		providertypes.ChainToClientKey("chainID"),
-		providertypes.InitTimeoutTimestampKey("chainID"),
 		providertypes.PendingCAPKey(time.Time{}, "chainID"),
 		providertypes.PendingCRPKey(time.Time{}, "chainID"),
-		providertypes.UnbondingOpKey(7),
-		providertypes.UnbondingOpIndexKey("chainID", 7),
 		providertypes.ValsetUpdateBlockHeightKey(7),
 		providertypes.ConsumerGenesisKey("chainID"),
 		providertypes.SlashAcksKey("chainID"),
 		providertypes.InitChainHeightKey("chainID"),
 		providertypes.PendingVSCsKey("chainID"),
-		providertypes.VscSendingTimestampKey("chainID", 8),
 		providertypes.ThrottledPacketDataSizeKey("chainID"),
 		providertypes.ThrottledPacketDataKey("chainID", 88),
 		providertypes.GlobalSlashEntryKey(providertypes.GlobalSlashEntry{}),
 		providertypes.ConsumerValidatorsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
-		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.VSCMaturedHandledThisBlockKey(),
 		providertypes.ConsumerRewardDenomsKey("uatom"),
 		providertypes.EquivocationEvidenceMinHeightKey("chainID"),
 		providertypes.ProposedConsumerChainKey(1),
@@ -181,6 +185,10 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerRewardsAllocationKey("chainID"),
 		providertypes.ConsumerCommissionRateKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.MinimumPowerInTopNKey("chainID"),
+		providertypes.ConsumerAddrsToPruneV2Key("chainID", time.Time{}),
+		providertypes.MinStakeKey("chainID"),
+		providertypes.AllowInactiveValidatorsKey("chainID"),
+		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
 	}
 }
 
@@ -329,7 +337,6 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		providertypes.ChainToChannelKey,
 		providertypes.ChannelToChainKey,
 		providertypes.ChainToClientKey,
-		providertypes.InitTimeoutTimestampKey,
 		providertypes.ConsumerGenesisKey,
 		providertypes.SlashAcksKey,
 		providertypes.InitChainHeightKey,
@@ -354,7 +361,6 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 
 func TestKeysWithUint64Payload(t *testing.T) {
 	funcs := []func(uint64) []byte{
-		providertypes.UnbondingOpKey,
 		providertypes.ValsetUpdateBlockHeightKey,
 	}
 

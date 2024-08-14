@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
 	"testing"
 	"time"
@@ -211,13 +212,6 @@ func GetNewSlashPacketData() types.SlashPacketData {
 	}
 }
 
-// Obtains vsc matured packet data with a newly generated key
-func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return types.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
-}
-
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
 // which assert that a consumer chain was properly setup to be later stopped from `StopConsumerChain`.
 // Note: This function only setups and tests that we correctly setup a consumer chain that we could later stop when
@@ -259,10 +253,6 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.False(t, found)
 	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
 	require.Empty(t, acks)
-	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
-	require.False(t, found)
-
-	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID))
 
 	// in case the chain was successfully stopped, it should not contain a Top N associated to it
 	_, found = providerKeeper.GetTopN(ctx, expectedChainID)
@@ -297,9 +287,34 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		0,
 		nil,
 		nil,
+		0,
+		false,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop
+}
+
+func GetTestMsgConsumerAddition() providertypes.MsgConsumerAddition {
+	return providertypes.MsgConsumerAddition{
+		ChainId:                           "a ChainID",
+		InitialHeight:                     clienttypes.NewHeight(4, 5),
+		GenesisHash:                       []byte(base64.StdEncoding.EncodeToString([]byte("gen_hash"))),
+		BinaryHash:                        []byte(base64.StdEncoding.EncodeToString([]byte("bin_hash"))),
+		SpawnTime:                         time.Now(),
+		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
+		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
+		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
+		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
+		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
+		HistoricalEntries:                 types.DefaultHistoricalEntries,
+		DistributionTransmissionChannel:   "",
+		Top_N:                             10,
+		ValidatorsPowerCap:                0,
+		ValidatorSetCap:                   0,
+		Allowlist:                         nil,
+		Denylist:                          nil,
+		Authority:                         authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	}
 }
 
 // Obtains a CrossChainValidator with a newly generated key, and randomized field values
@@ -312,4 +327,14 @@ func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
 	validator, err := consumertypes.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
 	require.NoError(t, err)
 	return validator
+}
+
+// Must panics if err is not nil, otherwise returns v.
+// This is useful to get a value from a function that returns a value and an error
+// in a single line.
+func Must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

@@ -39,7 +39,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerValidators())
 	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
-	cmd.AddCommand(CmdOldestUnconfirmedVsc())
+	cmd.AddCommand(CmdBlocksUntilNextEpoch())
 	return cmd
 }
 
@@ -570,11 +570,11 @@ $ %s validator-consumer-commission-rate foochain %s1gghjut3ccd8ay0zduzj64hwre2fx
 	return cmd
 }
 
-func CmdOldestUnconfirmedVsc() *cobra.Command {
+func CmdBlocksUntilNextEpoch() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "oldest_unconfirmed_vsc [chainid]",
-		Short: "Query the send timestamp of the oldest unconfirmed VSCPacket by chain id",
-		Args:  cobra.ExactArgs(1),
+		Use:   "blocks-until-next-epoch",
+		Short: "Query the number of blocks until the next epoch begins and validator updates are sent to consumer chains",
+		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -582,13 +582,13 @@ func CmdOldestUnconfirmedVsc() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := types.QueryOldestUnconfirmedVscRequest{ChainId: args[0]}
-			res, err := queryClient.QueryOldestUnconfirmedVsc(cmd.Context(), &req)
+			req := &types.QueryBlocksUntilNextEpochRequest{}
+			res, err := queryClient.QueryBlocksUntilNextEpoch(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
 
-			return clientCtx.PrintProto(&res.VscSendTimestamp)
+			return clientCtx.PrintProto(res)
 		},
 	}
 

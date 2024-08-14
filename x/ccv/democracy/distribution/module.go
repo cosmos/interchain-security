@@ -127,12 +127,12 @@ func (am AppModule) AllocateTokens(
 	representativesFraction := math.LegacyOneDec().Sub(communityTax)
 
 	// allocate tokens proportionally to representatives voting power
-	vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
+	_ = vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
 		// we get this validator's percentage of the total power by dividing their tokens by the total bonded tokens
 		powerFraction := math.LegacyNewDecFromInt(validator.GetTokens()).QuoTruncate(math.LegacyNewDecFromInt(totalBondedTokens))
 		// we truncate here again, which means that the reward will be slightly lower than it should be
 		reward := feesCollected.MulDecTruncate(representativesFraction).MulDecTruncate(powerFraction)
-		am.keeper.AllocateTokensToValidator(ctx, validator, reward)
+		_ = am.keeper.AllocateTokensToValidator(ctx, validator, reward)
 		remaining = remaining.Sub(reward)
 
 		return false

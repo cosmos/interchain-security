@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -83,6 +82,8 @@ func (k Keeper) HandleConsumerModificationProposal(ctx sdk.Context, proposal *ty
 		ValidatorSetCap:    proposal.ValidatorSetCap,
 		Allowlist:          proposal.Allowlist,
 		Denylist:           proposal.Denylist,
+		MinStake:           proposal.MinStake,
+		AllowInactiveVals:  proposal.AllowInactiveVals,
 	}
 
 	return k.HandleLegacyConsumerModificationProposal(ctx, &p)
@@ -141,10 +142,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	}
 	k.SetConsumerClientId(ctx, chainID, clientID)
 
-	// add the init timeout timestamp for this consumer chain
-	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
-	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
-
 	k.Logger(ctx).Info("consumer chain registered (client created)",
 		"chainID", chainID,
 		"clientID", clientID,
@@ -157,7 +154,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 			sdk.NewAttribute(ccv.AttributeChainID, chainID),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
 			sdk.NewAttribute(types.AttributeInitialHeight, prop.InitialHeight.String()),
-			sdk.NewAttribute(types.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
 			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
 			sdk.NewAttribute(types.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
 		),
@@ -182,7 +178,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
-	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
 	k.DeleteMinimumPowerInTopN(ctx, chainID)
@@ -207,9 +202,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		}
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
-
-		// delete VSC send timestamps
-		k.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	}
 
 	// delete consumer commission rate
@@ -222,31 +214,13 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteSlashAcks(ctx, chainID)
 	k.DeletePendingVSCPackets(ctx, chainID)
 
-	// release unbonding operations
-	for _, unbondingOpsIndex := range k.GetAllUnbondingOpIndexes(ctx, chainID) {
-		// iterate over the unbonding operations for the current VSC ID
-		var maturedIds []uint64
-		for _, id := range unbondingOpsIndex.UnbondingOpIds {
-			// Remove consumer chain ID from unbonding op record.
-			// Note that RemoveConsumerFromUnbondingOp cannot panic here
-			// as it is expected that for all UnbondingOpIds in every
-			// VscUnbondingOps returned by GetAllUnbondingOpIndexes
-			// there is an unbonding op in store that can be retrieved
-			// via via GetUnbondingOp.
-			if k.RemoveConsumerFromUnbondingOp(ctx, id, chainID) {
-				// Store id of matured unbonding op for later completion of unbonding in staking module
-				maturedIds = append(maturedIds, id)
-			}
-		}
-		k.AppendMaturedUnbondingOps(ctx, maturedIds)
-		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
-	}
-
 	k.DeleteTopN(ctx, chainID)
 	k.DeleteValidatorsPowerCap(ctx, chainID)
 	k.DeleteValidatorSetCap(ctx, chainID)
 	k.DeleteAllowlist(ctx, chainID)
 	k.DeleteDenylist(ctx, chainID)
+	k.DeleteMinStake(ctx, chainID)
+	k.DisableInactiveValidators(ctx, chainID)
 
 	k.DeleteAllOptedIn(ctx, chainID)
 	k.DeleteConsumerValSet(ctx, chainID)
@@ -293,20 +267,29 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 
 	if prop.Top_N > 0 {
+		// get the consensus active validators
+		// we do not want to base the power calculation for the top N
+		// on inactive validators, too, since the top N will be a percentage of the active set power
+		// otherwise, it could be that inactive validators are forced to validate
+		activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
+		if err != nil {
+			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
+		}
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, prop.Top_N)
+		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, prop.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
-		k.OptInTopNValidators(ctx, chainID, bondedValidators, minPower)
+		k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
 		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
 	}
+	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
 	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
 
 	k.SetConsumerValSet(ctx, chainID, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
-	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsumerValidator{}, nextValidators)
+	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsensusValidator{}, nextValidators)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
@@ -392,6 +375,8 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		k.SetTopN(cachedCtx, prop.ChainId, prop.Top_N)
 		k.SetValidatorSetCap(cachedCtx, prop.ChainId, prop.ValidatorSetCap)
 		k.SetValidatorsPowerCap(cachedCtx, prop.ChainId, prop.ValidatorsPowerCap)
+		k.SetMinStake(cachedCtx, prop.ChainId, prop.MinStake)
+		k.SetInactiveValidatorsAllowed(cachedCtx, prop.ChainId, prop.AllowInactiveVals)
 
 		for _, address := range prop.Allowlist {
 			consAddr, err := sdk.ConsAddressFromBech32(address)

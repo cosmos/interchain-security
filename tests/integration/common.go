@@ -301,6 +301,7 @@ func relayAllCommittedPackets(
 //
 // Note that it is expected for the provider unbonding period
 // to be one day larger than the consumer unbonding period.
+// TODO (mpoke) get rid of consumer unbonding period
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding periods
 	providerUnbondingPeriod, err := s.providerApp.GetTestStakingKeeper().UnbondingTime(s.providerCtx())
@@ -315,7 +316,7 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	incrementTime(s, jumpPeriod)
 }
 
-func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, msgAndArgs ...interface{}) {
+func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, msgAndArgs ...interface{}) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetTestStakingKeeper(), id)
 	s.Require().Equal(
 		found,
@@ -323,51 +324,13 @@ func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, ms
 		fmt.Sprintf("checkStakingUnbondingOps failed - getStakingUnbondingDelegationEntry; %s", msgAndArgs...),
 	)
 	if wasFound {
-		s.Require().True(
-			onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount),
-			fmt.Sprintf("checkStakingUnbondingOps failed - onHold; %s", msgAndArgs...),
-		)
-	}
-}
-
-func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool, msgAndArgs ...interface{}) {
-	entries := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
-	if found {
-		s.Require().NotEmpty(entries, fmt.Sprintf("checkCCVUnbondingOp failed - should not be empty; %s", msgAndArgs...))
-		s.Require().Greater(
-			len(entries),
-			0,
-			fmt.Sprintf("checkCCVUnbondingOp failed - no unbonding ops found; %s", msgAndArgs...),
-		)
-		s.Require().Greater(
-			len(entries[0].UnbondingConsumerChains),
-			0,
-			fmt.Sprintf("checkCCVUnbondingOp failed - unbonding op with no consumer chains; %s", msgAndArgs...),
-		)
+		// make sure UnbondingOnHoldRefCount remains zero
 		s.Require().Equal(
-			"testchain2",
-			entries[0].UnbondingConsumerChains[0],
-			fmt.Sprintf("checkCCVUnbondingOp failed - unbonding op with unexpected consumer chain; %s", msgAndArgs...),
+			int64(0),
+			stakingUnbondingOp.UnbondingOnHoldRefCount,
+			fmt.Sprintf("checkStakingUnbondingOps failed - UnbondingOnHoldRefCount; %s", msgAndArgs...),
 		)
 	}
-}
-
-// Checks that an expected amount of redelegations exist for a delegator
-// via the staking keeper, then returns those redelegations.
-func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
-	expect uint16,
-) []stakingtypes.Redelegation {
-	redelegations, err := s.providerApp.GetTestStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, 2)
-	s.Require().NoError(err)
-	s.Require().Len(redelegations, int(expect))
-	return redelegations
-}
-
-// Checks that a redelegation entry has a completion time equal to an expected time
-func checkRedelegationEntryCompletionTime(
-	s *CCVTestSuite, entry stakingtypes.RedelegationEntry, expectedCompletion time.Time,
-) {
-	s.Require().Equal(expectedCompletion, entry.CompletionTime)
 }
 
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k testutil.TestStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {

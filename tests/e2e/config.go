@@ -93,6 +93,11 @@ const (
 	ConsumerMisbehaviourTestCfg TestConfigType = "consumer-misbehaviour"
 	CompatibilityTestCfg        TestConfigType = "compatibility"
 	SmallMaxValidatorsTestCfg   TestConfigType = "small-max-validators"
+	InactiveProviderValsTestCfg TestConfigType = "inactive-provider-vals"
+	GovTestCfg                  TestConfigType = "gov"
+	InactiveValsGovTestCfg      TestConfigType = "inactive-vals-gov"
+	InactiveValsMintTestCfg     TestConfigType = "inactive-vals-mint"
+	MintTestCfg                 TestConfigType = "mint"
 )
 
 type TestConfig struct {
@@ -128,15 +133,24 @@ func (tr *TestConfig) Initialize() {
 // Note: if no matching version is found an empty string is returned
 func getIcsVersion(reference string) string {
 	icsVersion := ""
-	if reference == "" {
+
+	if reference == "" || reference == VLatest {
 		return icsVersion
 	}
+
 	if semver.IsValid(reference) {
 		// remove build suffix
 		return semver.Canonical(reference)
 	}
 
-	for _, tag := range []string{"v2.0.0", "v2.4.0", "v2.4.0-lsm", "v3.1.0", "v3.2.0", "v3.3.0", "v4.0.0", "v4.1.1", "v4.1.1-lsm"} {
+	// List of all tags matching vX.Y.Z or vX.Y.Z-lsm in ascending order
+	cmd := exec.Command("git", "tag", "-l", "--sort", "v:refname", "v*.?", "v*.?-lsm", "v*.??", "v*.??-lsm")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		panic(fmt.Sprintf("Error getting sorted tag list from git: %s", err.Error()))
+	}
+	icsVersions := strings.Split(string(out), "\n")
+	for _, tag := range icsVersions {
 		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
 		cmd := exec.Command("git", "merge-base", "--is-ancestor", reference, tag)
 		out, err := cmd.CombinedOutput()
@@ -181,6 +195,16 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = CompatibilityTestConfig(pv, cv)
 	case SmallMaxValidatorsTestCfg:
 		testCfg = SmallMaxValidatorsTestConfig()
+	case InactiveProviderValsTestCfg:
+		testCfg = InactiveProviderValsTestConfig()
+	case GovTestCfg:
+		testCfg = GovTestConfig()
+	case InactiveValsGovTestCfg:
+		testCfg = InactiveValsGovTestConfig()
+	case InactiveValsMintTestCfg:
+		testCfg = InactiveValsMintTestConfig()
+	case MintTestCfg:
+		testCfg = MintTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -565,6 +589,27 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 	return tr
 }
 
+func InactiveProviderValsTestConfig() TestConfig {
+	tr := DefaultTestConfig()
+	tr.name = "InactiveValsConfig"
+	// set the MaxProviderConsensusValidators param to 2
+	proviConfig := tr.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += " | .app_state.provider.params.max_provider_consensus_validators = \"2\""
+
+	consuConfig := tr.chainConfigs[ChainID("consu")]
+	// set the soft_opt_out threshold to 0% to make sure all validators are slashed for downtime
+	consuConfig.GenesisChanges += " | .app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.0\""
+	tr.chainConfigs[ChainID("provi")] = proviConfig
+	tr.chainConfigs[ChainID("consu")] = consuConfig
+
+	// make it so that carol does not use a consumer key
+	carolConfig := tr.validatorConfigs[ValidatorID("carol")]
+	carolConfig.UseConsumerKey = false
+	tr.validatorConfigs[ValidatorID("carol")] = carolConfig
+
+	return tr
+}
+
 func SmallMaxValidatorsTestConfig() TestConfig {
 	cfg := DefaultTestConfig()
 
@@ -579,6 +624,60 @@ func SmallMaxValidatorsTestConfig() TestConfig {
 	cfg.validatorConfigs["carol"] = carolConfig
 
 	return cfg
+}
+
+func GovTestConfig() TestConfig {
+	cfg := DefaultTestConfig()
+
+	// set the quorum to 50%
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += "| .app_state.gov.params.quorum = \"0.5\""
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
+
+	carolConfig := cfg.validatorConfigs["carol"]
+	// make carol use her own key
+	carolConfig.UseConsumerKey = false
+	cfg.validatorConfigs["carol"] = carolConfig
+
+	return cfg
+}
+
+func InactiveValsGovTestConfig() TestConfig {
+	cfg := GovTestConfig()
+
+	// set the MaxValidators to 1
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += "| .app_state.staking.params.max_validators = 1"
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
+
+	return cfg
+}
+
+func MintTestConfig() TestConfig {
+	cfg := GovTestConfig()
+	AdjustMint(cfg)
+
+	return cfg
+}
+
+func InactiveValsMintTestConfig() TestConfig {
+	cfg := InactiveValsGovTestConfig()
+	AdjustMint(cfg)
+
+	return cfg
+}
+
+// AdjustMint adjusts the mint parameters to have a very low goal bonded amount
+// and a high inflation rate change
+func AdjustMint(cfg TestConfig) {
+	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	// total supply is 30000000000stake; we want to set the mint bonded goal to
+	// a small fraction of that
+	proviConfig.GenesisChanges += "| .app_state.mint.params.goal_bonded = \"0.001\"" +
+		"| .app_state.mint.params.inflation_rate_change = \"1\"" +
+		"| .app_state.mint.params.inflation_max = \"0.5\"" +
+		"| .app_state.mint.params.inflation_min = \"0.1\""
+	cfg.chainConfigs[ChainID("provi")] = proviConfig
 }
 
 func MultiConsumerTestConfig() TestConfig {

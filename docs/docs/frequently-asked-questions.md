@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: "Frequently Asked Questions"
 slug: /faq
 ---
@@ -135,3 +135,14 @@ Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consu
 
 ## Can a Top N consumer chain become Opt-In or vice versa? 
 Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
+
+## How do I know when the next validator update will be sent to the consumer chain?
+Validator updates are sent to the consumer chain every `BlocksPerEpoch` blocks.
+Keep in mind that depending on the status of relayers between the Hub and the consumer chain,
+it might take a while for the validator update to be processed and applied on the consumer chain.
+
+To query how many blocks are left until the next epoch starts,
+run the following command:
+```bash
+interchain-security-pd query provider blocks-until-next-epoch
+```

@@ -204,6 +204,48 @@ var stepChoices = map[string]StepChoice{
 		description: "This is a regression test related to the issue discussed here: https://forum.cosmos.network/t/cosmos-hub-v17-1-chain-halt-post-mortem/13899. The test ensures that the protocol works as expected when MaxValidators is smaller than the number of potential validators.",
 		testConfig:  SmallMaxValidatorsTestCfg,
 	},
+	"inactive-provider-validators-on-consumer": {
+		name:        "inactive-provider-validators-on-consumer",
+		steps:       stepsInactiveProviderValidators(),
+		description: "test inactive validators on consumer",
+		testConfig:  InactiveProviderValsTestCfg,
+	},
+	"inactive-vals-topN": {
+		name:        "inactive-vals-topN",
+		steps:       stepsInactiveValsWithTopN(),
+		description: "test inactive validators on topN chain",
+		testConfig:  InactiveProviderValsTestCfg,
+	},
+	"inactive-provider-validators-governance": {
+		name:        "inactive-provider-validators-governance",
+		steps:       stepsInactiveProviderValidatorsGovernance(),
+		description: "test governance with inactive validators",
+		testConfig:  InactiveValsGovTestCfg,
+	},
+	"inactive-provider-validators-governance-basecase": {
+		name:        "inactive-provider-validators-governance-basecase",
+		steps:       stepsInactiveProviderValidatorsGovernanceBasecase(),
+		description: "comparison for governance when there are *no* inactive validators, to verify the difference to the governance test *with* inactive validators",
+		testConfig:  GovTestCfg,
+	},
+	"min-stake": {
+		name:        "min-stake",
+		steps:       stepsMinStake(),
+		description: "checks that the min stake parameter for consumer chains is respected",
+		testConfig:  GovTestCfg, // see above: we reuse the GovTestCfg for convenience
+	},
+	"inactive-vals-mint": {
+		name:        "inactive-vals-mint",
+		steps:       stepsInactiveValsMint(),
+		description: "test minting with inactive validators",
+		testConfig:  InactiveValsMintTestCfg,
+	},
+	"mint-basecase": {
+		name:        "mint-basecase",
+		steps:       stepsMintBasecase(),
+		description: "test minting without inactive validators as a sanity check",
+		testConfig:  MintTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
@@ -286,14 +328,27 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
-			"changeover", "happy-path",
-			"democracy-reward", "democracy",
-			"slash-throttle", "consumer-double-sign", "consumer-misbehaviour",
-			"consumer-double-downtime", "partial-set-security-opt-in", "partial-set-security-top-n",
-			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
-			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
+			"changeover",
+			"happy-path",
+			"democracy-reward",
+			"democracy",
+			"slash-throttle",
+			"consumer-double-sign",
+			"consumer-misbehaviour",
+			"consumer-double-downtime",
+			"partial-set-security-opt-in",
+			"partial-set-security-top-n",
+			"partial-set-security-validator-set-cap",
+			"partial-set-security-validators-power-cap",
+			"partial-set-security-validators-allowlisted",
+			"partial-set-security-validators-denylisted",
 			"partial-set-security-modification-proposal",
 			"active-set-changes",
+			"inactive-provider-validators-on-consumer",
+			"inactive-vals-topN",
+			"inactive-provider-validators-governance",
+			"min-stake",
+			"inactive-vals-mint",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

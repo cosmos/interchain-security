@@ -61,21 +61,6 @@ CCVTimeoutPeriod may have different values on the provider and consumer chains.
 - `CCVTimeoutPeriod` on the provider **must** be larger than `ConsumerUnbondingPeriod`
 - `CCVTimeoutPeriod` on the consumer is initial set via the `ConsumerAdditionProposal`
 
-### InitTimeoutPeriod
-`InitTimeoutPeriod` is the maximum allowed duration for CCV channel initialization to execute.
-
-For any consumer chain, if the CCV channel is not established within `InitTimeoutPeriod` then the consumer chain will be removed and therefore will not be secured by the provider chain.
-
-The countdown starts when the `spawn_time` specified in the `ConsumerAdditionProposal` is reached.
-
-### VscTimeoutPeriod
-`VscTimeoutPeriod` is the provider-side param that enables the provider to timeout VSC packets even when a consumer chain is not live.
-If the `VscTimeoutPeriod` is ever reached for a consumer chain that chain will be considered not live and removed from interchain security.
-
-:::tip
-`VscTimeoutPeriod` MUST be larger than the `ConsumerUnbondingPeriod`.
-:::
-
 ### BlocksPerDistributionTransmission
 `BlocksPerDistributionTransmission` is the number of blocks between rewards transfers from the consumer to the provider.
 
