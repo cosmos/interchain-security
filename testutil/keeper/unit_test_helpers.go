@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
 	"testing"
 	"time"
@@ -291,6 +292,29 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop
+}
+
+func GetTestMsgConsumerAddition() providertypes.MsgConsumerAddition {
+	return providertypes.MsgConsumerAddition{
+		ChainId:                           "a ChainID",
+		InitialHeight:                     clienttypes.NewHeight(4, 5),
+		GenesisHash:                       []byte(base64.StdEncoding.EncodeToString([]byte("gen_hash"))),
+		BinaryHash:                        []byte(base64.StdEncoding.EncodeToString([]byte("bin_hash"))),
+		SpawnTime:                         time.Now(),
+		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
+		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
+		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
+		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
+		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
+		HistoricalEntries:                 types.DefaultHistoricalEntries,
+		DistributionTransmissionChannel:   "",
+		Top_N:                             10,
+		ValidatorsPowerCap:                0,
+		ValidatorSetCap:                   0,
+		Allowlist:                         nil,
+		Denylist:                          nil,
+		Authority:                         authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	}
 }
 
 // Obtains a CrossChainValidator with a newly generated key, and randomized field values

@@ -465,7 +465,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Title:       title,
 			Description: description,
 		}
-	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
+	case "/interchain_security.ccv.provider.v1.MsgConsumerAddition":
 		chainId := rawContent.Get("chain_id").String()
 		spawnTime := rawContent.Get("spawn_time").Time().Sub(tr.containerConfig.Now)
 
@@ -498,7 +498,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Title:         title,
 			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 		}
-	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
+	case "/interchain_security.ccv.provider.v1.MsgConsumerRemoval":
 		chainId := rawContent.Get("chain_id").String()
 		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.Now)
 
@@ -529,7 +529,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Params:  params,
 		}
 
-	case "/interchain_security.ccv.provider.v1.ConsumerModificationProposal":
+	case "/interchain_security.ccv.provider.v1.MsgConsumerModification":
 		chainId := rawContent.Get("chain_id").String()
 
 		var chain ChainID
@@ -555,7 +555,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		}
 	}
 
-	log.Fatal("received unknown proposal type: ", propType, "proposal JSON:", propRaw)
+	log.Fatal("received unknown proposal type: '", propType, "', proposal JSON:", propRaw)
 
 	return nil
 }
