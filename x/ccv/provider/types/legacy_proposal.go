@@ -58,6 +58,8 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 	validatorSetCap uint32,
 	allowlist []string,
 	denylist []string,
+	minStake uint64,
+	allowInactiveVals bool,
 ) govv1beta1.Content {
 	return &ConsumerAdditionProposal{
 		Title:                             title,
@@ -79,6 +81,8 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 		ValidatorSetCap:                   validatorSetCap,
 		Allowlist:                         allowlist,
 		Denylist:                          denylist,
+		MinStake:                          minStake,
+		AllowInactiveVals:                 allowInactiveVals,
 	}
 }
 
@@ -97,7 +101,7 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 }
 
 // ValidatePSSFeatures returns an error if the `topN` and `validatorsPowerCap` parameters are no in the correct ranges
-func ValidatePSSFeatures(topN uint32, validatorsPowerCap uint32) error {
+func ValidatePSSFeatures(topN, validatorsPowerCap uint32) error {
 	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
 	// Opt In chain) or in the range [50, 100] (for a Top N chain).
 	if topN != 0 && (topN < 50 || topN > 100) {
@@ -243,6 +247,8 @@ func NewConsumerModificationProposal(title, description, chainID string,
 	validatorSetCap uint32,
 	allowlist []string,
 	denylist []string,
+	minStake uint64,
+	allowInactiveVals bool,
 ) govv1beta1.Content {
 	return &ConsumerModificationProposal{
 		Title:              title,
@@ -253,6 +259,8 @@ func NewConsumerModificationProposal(title, description, chainID string,
 		ValidatorSetCap:    validatorSetCap,
 		Allowlist:          allowlist,
 		Denylist:           denylist,
+		MinStake:           minStake,
+		AllowInactiveVals:  allowInactiveVals,
 	}
 }
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -263,9 +264,111 @@ type SubmitConsumerAdditionProposalAction struct {
 	ValidatorSetCap     uint32
 	Allowlist           []string
 	Denylist            []string
+	MinStake            uint64
+	AllowInactiveVals   bool
 }
 
 func (tr Chain) submitConsumerAdditionProposal(
+	action SubmitConsumerAdditionProposalAction,
+	verbose bool,
+) {
+	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
+	params := ccvtypes.DefaultParams()
+	template := `
+	{
+ "messages": [
+  {
+   "@type": "/interchain_security.ccv.provider.v1.MsgConsumerAddition",
+   "chain_id": "%s",
+   "initial_height": {
+    "revision_number": "%d",
+    "revision_height": "%d"
+   },
+   "genesis_hash": "%s",
+   "binary_hash": "%s",
+   "spawn_time": "%s",
+   "unbonding_period": "%s",
+   "ccv_timeout_period": "%s",
+   "transfer_timeout_period": "%s",
+   "consumer_redistribution_fraction": "%s",
+   "blocks_per_distribution_transmission": "%d",
+   "historical_entries": "%d",
+   "distribution_transmission_channel": "%s",
+   "top_N": %d,
+   "validators_power_cap": %d,
+   "validator_set_cap": %d,
+   "allowlist": %s,
+   "denylist": %s,
+   "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+  }
+ ],
+"metadata": "ipfs://CID",
+"deposit": "%dstake",
+"title": "Propose the addition of a new chain",
+"summary": "Gonna be a great chain",
+"expedited": false
+}`
+	jsonStr := fmt.Sprintf(template,
+		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		action.InitialHeight.RevisionNumber,
+		action.InitialHeight.RevisionHeight,
+		base64.StdEncoding.EncodeToString([]byte("gen_hash")),
+		base64.StdEncoding.EncodeToString([]byte("bin_hash")),
+		spawnTime.Local().Format(time.RFC3339Nano),
+		params.UnbondingPeriod,
+		params.CcvTimeoutPeriod,
+		params.TransferTimeoutPeriod,
+		params.ConsumerRedistributionFraction,
+		params.BlocksPerDistributionTransmission,
+		params.HistoricalEntries,
+		action.DistributionChannel,
+		action.TopN,
+		action.ValidatorsPowerCap,
+		action.ValidatorSetCap,
+		action.Allowlist,
+		action.Denylist,
+		action.Deposit)
+
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-addition.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER ADDITION PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerAdditionProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit-proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.Chain, 2, 10*time.Second)
+}
+
+func (tr Chain) submitConsumerAdditionLegacyProposal(
 	action SubmitConsumerAdditionProposalAction,
 	verbose bool,
 ) {
@@ -292,6 +395,8 @@ func (tr Chain) submitConsumerAdditionProposal(
 		ValidatorSetCap:                   action.ValidatorSetCap,
 		Allowlist:                         action.Allowlist,
 		Denylist:                          action.Denylist,
+		MinStake:                          action.MinStake,
+		AllowInactiveVals:                 action.AllowInactiveVals,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -334,7 +439,6 @@ func (tr Chain) submitConsumerAdditionProposal(
 		fmt.Println("submitConsumerAdditionProposal json:", jsonStr)
 	}
 	bz, err = cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -356,6 +460,75 @@ type SubmitConsumerRemovalProposalAction struct {
 }
 
 func (tr Chain) submitConsumerRemovalProposal(
+	action SubmitConsumerRemovalProposalAction,
+	verbose bool,
+) {
+	template := `
+	{
+		"messages": [
+		 {
+		  "@type": "/interchain_security.ccv.provider.v1.MsgConsumerRemoval",
+		  "chain_id": "%s",
+		  "stop_time": "%s",
+		  "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+		 }
+		],
+		"metadata": "ipfs://CID",
+		"deposit": "%dstake",
+		"title": "%s",
+		"summary": "It was a great chain",
+		"expedited": false
+	   }
+`
+	title := fmt.Sprintf("Stop the %v chain", action.ConsumerChain)
+	stopTime := tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset).Format(time.RFC3339Nano)
+
+	jsonStr := fmt.Sprintf(template,
+		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		stopTime,
+		action.Deposit,
+		title)
+
+	// #nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-removal.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER REMOVAL PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerRemovalProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerRemovalProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit consumer removal proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerRemovalProposal output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
+}
+
+func (tr Chain) submitConsumerRemovalLegacyProposal(
 	action SubmitConsumerRemovalProposalAction,
 	verbose bool,
 ) {
@@ -420,6 +593,87 @@ func (tr Chain) submitConsumerModificationProposal(
 	action SubmitConsumerModificationProposalAction,
 	verbose bool,
 ) {
+
+	template := `
+
+{
+"messages": [
+  {
+    "@type": "/interchain_security.ccv.provider.v1.MsgConsumerModification",
+	"title": "Propose the modification of the PSS parameters of a chain",
+	"description": "description of the consumer modification proposal",
+	"chain_id": "%s",
+	"top_N": %d,
+	"validators_power_cap": %d,
+	"validator_set_cap": %d,
+	"allowlist": %s,
+	"denylist": %s,
+    "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+    "min_stake": "0",
+    "allow_inactive_vals": false
+  }
+ ],
+"metadata": "ipfs://CID",
+"deposit": "%sstake",
+"title": "Propose the modification of the PSS parameters of a chain",
+"summary": "summary of a modification proposal",
+"expedited": false
+ }
+`
+
+	jsonStr := fmt.Sprintf(template,
+		string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		action.TopN,
+		action.ValidatorsPowerCap,
+		action.ValidatorSetCap,
+		action.Allowlist,
+		action.Denylist,
+		action.Deposit,
+	)
+
+	// #nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-mod.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER MODIFICATION PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerModificationProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerModificationProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit consumer modification proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerModificationProposal output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 10*time.Second)
+}
+
+func (tr Chain) submitConsumerModificationLegacyProposal(
+	action SubmitConsumerModificationProposalAction,
+	verbose bool,
+) {
 	prop := client.ConsumerModificationProposalJSON{
 		Title:              "Propose the modification of the PSS parameters of a chain",
 		Summary:            "summary of a modification proposal",
@@ -468,7 +722,6 @@ func (tr Chain) submitConsumerModificationProposal(
 	}
 
 	bz, err = cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1001,17 +1254,16 @@ func (tr Chain) addChainToGorelayer(
 	}
 
 	addChainCommand := tr.target.ExecCommand("rly", "chains", "add", "--file", chainConfigFileName, string(ChainId))
-	e2e.ExecuteCommand(addChainCommand, "add chain")
+	e2e.ExecuteCommand(addChainCommand, "add chain", verbose)
 
 	keyRestoreCommand := tr.target.ExecCommand("rly", "keys", "restore", string(ChainId), "default", tr.testConfig.validatorConfigs[action.Validator].Mnemonic)
-	e2e.ExecuteCommand(keyRestoreCommand, "restore keys")
+	e2e.ExecuteCommand(keyRestoreCommand, "restore keys", verbose)
 }
 
 func (tr Chain) addChainToHermes(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
-
 	bz, err := tr.target.ExecCommand("bash", "-c", "hermes", "version").CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n error getting hermes version", string(bz))
@@ -1110,7 +1362,7 @@ func (tr Chain) addIbcConnectionGorelayer(
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	pathConfigCommand := tr.target.ExecCommand("bash", "-c", bashCommand)
-	e2e.ExecuteCommand(pathConfigCommand, "add path config")
+	e2e.ExecuteCommand(pathConfigCommand, "add path config", verbose)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newPathCommand := tr.target.ExecCommand("rly",
@@ -1121,12 +1373,12 @@ func (tr Chain) addIbcConnectionGorelayer(
 		"--file", pathConfigFileName,
 	)
 
-	e2e.ExecuteCommand(newPathCommand, "new path")
+	e2e.ExecuteCommand(newPathCommand, "new path", verbose)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newClientsCommand := tr.target.ExecCommand("rly", "transact", "clients", pathName)
 
-	e2e.ExecuteCommand(newClientsCommand, "new clients")
+	e2e.ExecuteCommand(newClientsCommand, "new clients", verbose)
 
 	tr.waitBlocks(action.ChainA, 1, 10*time.Second)
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
@@ -1134,7 +1386,7 @@ func (tr Chain) addIbcConnectionGorelayer(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newConnectionCommand := tr.target.ExecCommand("rly", "transact", "connection", pathName)
 
-	e2e.ExecuteCommand(newConnectionCommand, "new connection")
+	e2e.ExecuteCommand(newConnectionCommand, "new connection", verbose)
 
 	tr.waitBlocks(action.ChainA, 1, 10*time.Second)
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
@@ -1301,7 +1553,7 @@ func (tr Chain) addIbcChannelGorelayer(
 		"--order", action.Order,
 		"--debug",
 	)
-	e2e.ExecuteCommand(cmd, "addChannel")
+	e2e.ExecuteCommand(cmd, "addChannel", verbose)
 }
 
 func (tr Chain) addIbcChannelHermes(
@@ -1374,8 +1626,7 @@ func (tr Chain) transferChannelComplete(
 		log.Fatal("transferChannelComplete is not implemented for rly")
 	}
 
-	chanOpenTryCmd := tr.target.ExecCommand("hermes",
-		"tx", "chan-open-try",
+	chanOpenTryCmd := tr.target.ExecCommand("hermes", "tx", "chan-open-try",
 		"--dst-chain", string(tr.testConfig.chainConfigs[action.ChainB].ChainId),
 		"--src-chain", string(tr.testConfig.chainConfigs[action.ChainA].ChainId),
 		"--dst-connection", "connection-"+fmt.Sprint(action.ConnectionA),
@@ -1383,7 +1634,8 @@ func (tr Chain) transferChannelComplete(
 		"--src-port", action.PortA,
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelA),
 	)
-	e2e.ExecuteCommand(chanOpenTryCmd, "transferChanOpenTry")
+
+	e2e.ExecuteCommand(chanOpenTryCmd, "transferChanOpenTry", verbose)
 
 	chanOpenAckCmd := tr.target.ExecCommand("hermes",
 		"tx", "chan-open-ack",
@@ -1396,7 +1648,7 @@ func (tr Chain) transferChannelComplete(
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelB),
 	)
 
-	e2e.ExecuteCommand(chanOpenAckCmd, "transferChanOpenAck")
+	e2e.ExecuteCommand(chanOpenAckCmd, "transferChanOpenAck", verbose)
 
 	chanOpenConfirmCmd := tr.target.ExecCommand("hermes",
 		"tx", "chan-open-confirm",
@@ -1408,7 +1660,7 @@ func (tr Chain) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.ChannelB),
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelA),
 	)
-	e2e.ExecuteCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
+	e2e.ExecuteCommand(chanOpenConfirmCmd, "transferChanOpenConfirm", verbose)
 }
 
 type RelayPacketsAction struct {
@@ -1917,7 +2169,7 @@ func (tr Chain) registerRepresentative(
 				panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 			}
 			defer file.Close()
-			err = os.WriteFile(file.Name(), []byte(fileContent), 0600)
+			err = os.WriteFile(file.Name(), []byte(fileContent), 0o600)
 			if err != nil {
 				log.Fatalf("Failed writing consumer genesis to file: %v", err)
 			}
@@ -1963,13 +2215,78 @@ func (tr Chain) registerRepresentative(
 }
 
 type SubmitChangeRewardDenomsProposalAction struct {
+	Chain   ChainID
 	Denom   string
 	Deposit uint
 	From    ValidatorID
 }
 
 func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
-	providerChain := tr.testConfig.chainConfigs[ChainID("provi")]
+	template := `
+{
+ "messages": [
+  {
+   "@type": "/interchain_security.ccv.provider.v1.MsgChangeRewardDenoms",
+   "denoms_to_add": %s,
+   "denoms_to_remove": %s,
+   "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+  }
+ ],
+ "metadata": "ipfs://CID",
+ "deposit": "%dstake",
+ "title": "change reward denoms",
+ "summary": "Proposal to change reward denoms",
+ "expedited": false
+}`
+
+	denomsToAdd := []string{action.Denom}
+	denomsToRemove := []string{"stake"}
+	jsonStr := fmt.Sprintf(template,
+		denomsToAdd,
+		denomsToRemove,
+		action.Deposit)
+
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	proposalFile := "/consumer-addition.proposal"
+	bz, err := tr.target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CHANGE REWARDS DENOM PROPOSAL
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-proposal", proposalFile,
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("change rewards denom props cmd:", cmd.String())
+		fmt.Println("change rewards denom props json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("submit-proposal failed:", err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("change rewards denom props output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
+}
+
+func (tr Chain) submitChangeRewardDenomsLegacyProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
+	providerChain := tr.testConfig.chainConfigs[action.Chain]
 
 	prop := client.ChangeRewardDenomsProposalJSON{
 		Summary: "Change reward denoms",
@@ -2394,7 +2711,7 @@ func (tr Chain) optOut(action OptOutAction, target ExecutionTarget, verbose bool
 	}
 
 	// Use: "opt-out [consumer-chain-id]",
-	optIn := fmt.Sprintf(
+	optOut := fmt.Sprintf(
 		`%s tx provider opt-out %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
 		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
 		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
@@ -2407,7 +2724,7 @@ func (tr Chain) optOut(action OptOutAction, target ExecutionTarget, verbose bool
 
 	cmd := target.ExecCommand(
 		"/bin/bash", "-c",
-		optIn,
+		optOut,
 	)
 
 	if verbose {
@@ -2426,6 +2743,71 @@ func (tr Chain) optOut(action OptOutAction, target ExecutionTarget, verbose bool
 	} else {
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
+		}
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
+}
+
+type SetConsumerCommissionRateAction struct {
+	Chain          ChainID
+	Validator      ValidatorID
+	CommissionRate float64
+
+	// depending on the execution, this action might throw an error (e.g., when no consumer chain exists)
+	ExpectError   bool
+	ExpectedError string
+}
+
+func (tr Chain) setConsumerCommissionRate(action SetConsumerCommissionRateAction, target ExecutionTarget, verbose bool) {
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
+	gas := "auto"
+	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
+	if tr.testConfig.useCometmock {
+		gas = "9000000"
+	}
+
+	// Use: "set-consumer-commission-rate [consumer-chain-id] [commission-rate]"
+	setCommissionRate := fmt.Sprintf(
+		`%s tx provider set-consumer-commission-rate %s %f --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
+		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		action.CommissionRate,
+		action.Validator,
+		tr.testConfig.chainConfigs[ChainID("provi")].ChainId,
+		tr.getValidatorHome(ChainID("provi"), action.Validator),
+		tr.getValidatorNode(ChainID("provi"), action.Validator),
+		gas,
+	)
+
+	cmd := target.ExecCommand(
+		"/bin/bash", "-c",
+		setCommissionRate,
+	)
+
+	if verbose {
+		fmt.Println("setConsumerCommissionRate cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil && !action.ExpectError {
+		log.Fatalf("unexpected error during commssion rate set - output: %s, err: %s", string(bz), err)
+	}
+
+	if action.ExpectError && !tr.testConfig.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+		if err == nil || !strings.Contains(string(bz), action.ExpectedError) {
+			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.ExpectedError, (bz))
+		}
+
+		if verbose {
+			fmt.Printf("got expected error during commssion rate set | err: %s | output: %s \n", err, string(bz))
+		}
+	}
+
+	if !tr.testConfig.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+		if err != nil && verbose {
+			fmt.Printf("got error during commssion rate set | err: %s | output: %s \n", err, string(bz))
 		}
 	}
 

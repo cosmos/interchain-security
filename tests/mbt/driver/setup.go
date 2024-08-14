@@ -438,8 +438,6 @@ func (s *Driver) setupProvider(
 	providerChain := newChain(s.t, params, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes, valNames)
 	s.coordinator.Chains["provider"] = providerChain
 
-	// set the VscTimeout
-	s.providerKeeper().SetVscTimeoutPeriod(s.ctx("provider"), params.VscTimeout)
 	// set the CcvTimeoutPeriod
 	providerParams := s.providerKeeper().GetParams(s.ctx("provider"))
 	providerParams.CcvTimeoutPeriod = params.CcvTimeout[ChainId(providerChain.ChainID)]
@@ -499,7 +497,6 @@ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.Te
 		ccvtypes.DefaultConsumerRedistributeFrac,
 		ccvtypes.DefaultHistoricalEntries,
 		modelParams.UnbondingPeriodPerChain[ChainId(consumerClientState.ChainId)],
-		ccvtypes.DefaultSoftOptOutThreshold,
 		[]string{},
 		[]string{},
 		ccvtypes.DefaultRetryDelayPeriod,

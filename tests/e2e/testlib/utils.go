@@ -7,9 +7,7 @@ import (
 	"os/exec"
 )
 
-var verbose *bool //TODO: remove hack
-
-func ExecuteCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose bool) {
+func ExecuteCommand(cmd *exec.Cmd, cmdName string, verbose bool) {
 	if verbose {
 		fmt.Println(cmdName+" cmd:", cmd.String())
 	}
@@ -35,9 +33,4 @@ func ExecuteCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose bool) {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-// Executes a command with verbosity specified by CLI flag
-func ExecuteCommand(cmd *exec.Cmd, cmdName string) {
-	ExecuteCommandWithVerbosity(cmd, cmdName, *verbose)
 }

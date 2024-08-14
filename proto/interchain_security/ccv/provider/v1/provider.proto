@@ -106,6 +106,10 @@ message ConsumerAdditionProposal {
   repeated string allowlist = 18;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 19;
+  // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+  uint64 min_stake = 20;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 21;
 }
 
 // ConsumerRemovalProposal is a governance proposal on the provider chain to
@@ -156,6 +160,10 @@ message ConsumerModificationProposal {
   repeated string allowlist = 7;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
+  // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+  uint64 min_stake = 9;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 10;
 }
 
 
@@ -215,6 +223,12 @@ message GlobalSlashEntry {
 // Params defines the parameters for CCV Provider module
 message Params {
 
+  // Reserve 4th slot for removed init_timeout_period param
+  reserved 4;
+
+  // Reserve 5th slot for removed vsc_timeout_period param
+  reserved 5;
+
   // Reserve 8th slot for removed max throttled packet param
   reserved 8;
 
@@ -224,16 +238,6 @@ message Params {
   string trusting_period_fraction = 2;
   // Sent IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 3
-      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
-  // The channel initialization (IBC channel opening handshake) will timeout
-  // after this duration
-  google.protobuf.Duration init_timeout_period = 4
-      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
-  // The VSC packets sent by the provider will timeout after this duration.
-  // Note that unlike ccv_timeout_period which is an IBC param,
-  // the vsc_timeout_period is a provider-side param that enables the provider
-  // to timeout VSC packets even when a consumer chain is not live.
-  google.protobuf.Duration vsc_timeout_period = 5
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // The period for which the slash meter is replenished
@@ -254,6 +258,10 @@ message Params {
 
   // The number of epochs a validator has to validate a consumer chain in order to start receiving rewards from that chain.
   int64 number_of_epochs_to_start_receiving_rewards = 11;
+  
+  // The maximal number of validators that will be passed
+  // to the consensus engine on the provider.
+  int64 max_provider_consensus_validators = 12;
 }
 
 // SlashAcks contains cons addresses of consumer chain validators
@@ -283,47 +291,10 @@ message ChannelToChain {
   string chain_id = 2;
 }
 
-// VscUnbondingOps contains the IDs of unbonding operations that are waiting for
-// at least one VSCMaturedPacket with vscID from a consumer chain
-message VscUnbondingOps {
-  uint64 vsc_id = 1;
-  repeated uint64 unbonding_op_ids = 2;
-}
-
-// UnbondingOp contains the ids of consumer chains that need to unbond before
-// the unbonding operation with the given ID can unbond
-message UnbondingOp {
-  uint64 id = 1;
-  // consumer chains that are still unbonding
-  repeated string unbonding_consumer_chains = 2;
-}
-
-message InitTimeoutTimestamp {
-  string chain_id = 1;
-  uint64 timestamp = 2;
-}
-
-message VscSendTimestamp {
-  uint64 vsc_id = 1;
-  google.protobuf.Timestamp timestamp = 2
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
-}
-
 // ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
 message ValidatorSetChangePackets {
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData list = 1
       [ (gogoproto.nullable) = false ];
-}
-
-// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
-// unbonding operations.
-message MaturedUnbondingOps { repeated uint64 ids = 1; }
-
-// ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
-message ExportedVscSendTimestamp {
-  string chain_id = 1;
-  repeated VscSendTimestamp vsc_send_timestamps = 2
-    [ (gogoproto.nullable) = false ];
 }
 
 //
@@ -354,23 +325,27 @@ message ValidatorByConsumerAddr {
   bytes provider_addr = 3;
 }
 
-// Used to serialize the ConsumerAddrsToPrune index from key assignment
-// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
-message ConsumerAddrsToPrune {
+// Used to serialize the ConsumerAddrsToPruneV2 index from key assignment
+// ConsumerAddrsToPruneV2: (chainID, pruneTs time.Time) -> consumerAddrs AddressList
+message ConsumerAddrsToPruneV2 {
   string chain_id = 1;
-  uint64 vsc_id = 2;
+  google.protobuf.Timestamp prune_ts = 2
+    [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
   AddressList consumer_addrs = 3;
 }
 
-// ConsumerValidator is used to facilitate epoch-based transitions. It contains relevant info for
-// a validator that is expected to validate on a consumer chain during an epoch.
-message ConsumerValidator {
+// ConsensusValidator is used to express a validator that
+// should be validating on a chain. 
+// It contains relevant info for
+// a validator that is expected to validate on 
+// either the provider or a consumer chain.
+message ConsensusValidator {
   // validator's consensus address on the provider chain
   bytes provider_cons_addr = 1;
   // voting power the validator has during this epoch
   int64 power = 2;
   // public key the validator uses on the consumer chain during this epoch
-  tendermint.crypto.PublicKey consumer_public_key = 3;
+  tendermint.crypto.PublicKey public_key = 3;
   // height the validator had when it FIRST became a consumer validator
   // If a validator becomes a consumer validator at height `H` and is continuously a consumer validator for all the upcoming
   // epochs, then the height of the validator SHOULD remain `H`. This height only resets to a different height if a validator

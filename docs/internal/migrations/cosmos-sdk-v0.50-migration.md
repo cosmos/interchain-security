@@ -80,7 +80,7 @@ go get github.com/cosmos/ibc-go/modules/capability@v1.0.0-rc5
 	* `sdk.NewDecFromInt` -> `math.LegacyNewDecFromInt`
 	* `sdk.OneDec` -> `math.LegacyOneDec`
 	* `sdk.NewDecWithPrec` -> `math.LegacyNewDecWithPrec`
-	* also update all function defintions that are using them
+	* also update all function definitions that are using them
 
 * use `math.NewInt` instead of `sdk.NewInt`
 	* `sdktypes.NewInt`,

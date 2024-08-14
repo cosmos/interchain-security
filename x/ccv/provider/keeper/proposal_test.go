@@ -16,9 +16,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	abci "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
@@ -73,6 +72,8 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				0,
 				nil,
 				nil,
+				0,
+				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -103,6 +104,8 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				0,
 				nil,
 				nil,
+				0,
+				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -395,6 +398,8 @@ func TestStopConsumerChain(t *testing.T) {
 		expErr bool
 	}
 
+	consumerCID := "chainID"
+
 	tests := []testCase{
 		{
 			description: "proposal dropped, client doesn't exist",
@@ -407,6 +412,9 @@ func TestStopConsumerChain(t *testing.T) {
 			description: "valid stop of consumer chain, all mock calls hit",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
+
+				// set consumer minimum equivocation height
+				providerKeeper.SetEquivocationEvidenceMinHeight(ctx, consumerCID, 1)
 
 				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
 				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
@@ -425,7 +433,7 @@ func TestStopConsumerChain(t *testing.T) {
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
 
-		err := providerKeeper.StopConsumerChain(ctx, "chainID", true)
+		err := providerKeeper.StopConsumerChain(ctx, consumerCID, true)
 
 		if tc.expErr {
 			require.Error(t, err)
@@ -433,7 +441,7 @@ func TestStopConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
+		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, consumerCID, "channelID")
 
 		ctrl.Finish()
 	}
@@ -646,8 +654,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		// They must be populated with reasonable values to satisfy SetParams though.
 		TrustingPeriodFraction:      providertypes.DefaultTrustingPeriodFraction,
 		CcvTimeoutPeriod:            ccvtypes.DefaultCCVTimeoutPeriod,
-		InitTimeoutPeriod:           providertypes.DefaultInitTimeoutPeriod,
-		VscTimeoutPeriod:            providertypes.DefaultVscTimeoutPeriod,
 		SlashMeterReplenishPeriod:   providertypes.DefaultSlashMeterReplenishPeriod,
 		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee: sdk.Coin{
@@ -693,7 +699,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			"consumer_redistribution_fraction": "0.75",
 			"historical_entries": 10000,
 			"unbonding_period": 1728000000000000,
-			"soft_opt_out_threshold": "0.05",
+			"soft_opt_out_threshold": "0",
 			"reward_denoms": [],
 			"provider_reward_denoms": [],
 			"retry_delay_period": 3600000000000
@@ -810,6 +816,8 @@ func TestBeginBlockInit(t *testing.T) {
 			0,
 			nil,
 			nil,
+			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -826,6 +834,8 @@ func TestBeginBlockInit(t *testing.T) {
 			0,
 			nil,
 			nil,
+			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "spawn time not passed", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -842,6 +852,8 @@ func TestBeginBlockInit(t *testing.T) {
 			0,
 			nil,
 			nil,
+			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "invalid proposal: chain id already exists", "chain2", clienttypes.NewHeight(4, 5), []byte{}, []byte{},
@@ -858,6 +870,8 @@ func TestBeginBlockInit(t *testing.T) {
 			0,
 			nil,
 			nil,
+			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "opt-in chain with at least one validator opted in", "chain5", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -874,6 +888,8 @@ func TestBeginBlockInit(t *testing.T) {
 			0,
 			nil,
 			nil,
+			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "opt-in chain with no validator opted in", "chain6", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
@@ -890,6 +906,8 @@ func TestBeginBlockInit(t *testing.T) {
 			0,
 			nil,
 			nil,
+			0,
+			false,
 		).(*providertypes.ConsumerAdditionProposal),
 	}
 
@@ -915,6 +933,10 @@ func TestBeginBlockInit(t *testing.T) {
 
 	valAddr, _ := sdk.ValAddressFromBech32(validator.GetOperator())
 	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).Return(int64(1), nil).AnyTimes()
+
+	// for the validator, expect a call to GetValidatorByConsAddr with its consensus address
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).Return(validator, nil).AnyTimes()
+
 	providerKeeper.SetOptedIn(ctx, pendingProps[4].ChainId, providertypes.NewProviderConsAddress(consAddr))
 
 	providerKeeper.BeginBlockInit(ctx)

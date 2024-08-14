@@ -10,7 +10,7 @@ title: ICS with Inactive Provider Validators
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -38,7 +38,7 @@ a) increase the `MaxValidators` parameter of the staking module
 
 b) do *not* take the updates for CometBFT directly from the bonded validators in the staking module, by wrapping the staking modules `EndBlocker` with a dummy EndBlocker that doesn't return any validator updates. Instead, we adjust the provider module to return validator updates on its EndBlocker. These validator updates are obtained by *filtering* the bonded validators to send only the first `MaxProviderConsensusValidators` (sorted by largest amount of stake first) many validators to CometBFT
 
-c) use the enlarged list of bonded validators from the staking module as basis for the validator set that the provider module sends to consumer chains (again after applying power shaping and filtering out validatiors that are not opted in).
+c) use the enlarged list of bonded validators from the staking module as basis for the validator set that the provider module sends to consumer chains (again after applying power shaping and filtering out validators that are not opted in).
 
 In consequence, the provider chain can keep a reasonably-sized consensus validator set, while giving consumer chains a much larger pool of potential validators.
 
@@ -58,18 +58,108 @@ achieved without further changes to staking or reward distributions, because sim
 
 The following changes to the state are required:
 
-* Introduce the `MaxProviderConsensusValidators` parameter to the provider module, which is the number of validators that the provider module will send to consumer chains.
+* Introduce the `MaxProviderConsensusValidators` parameter to the provider module, which is the number of validators that the provider module will send to the consensus engine.
 * Store the provider consensus validator set in the provider module state under the `LastProviderConsensusValsPrefix` key. This is the last set of validators that the provider sent to the consensus engine. This is needed to compute the ValUpdates to send to the consensus engine (by diffing the current set with this last sent set).
 * Increase the `MaxValidators` parameter of the staking module to the desired size of the potential validator
 set of consumer chains.
+* Introduce extra per-consumer-chain parameters: 
+  * `MinStake`: is the minimum amount of stake a validator must have to be considered for validation on the consumer chain. 
+  * `AllowInactiveVals`: is a boolean that determines whether validators that are not part of the active set on the provider chain can validate on the consumer chain. If this is set to `true`, validators outside the active set on the provider chain can validate on the consumer chain. If this is set to `true`, validators outside the active set on the provider chain cannot validate on the consumer chain.
 
 ## Risk Mitigations
 
 To mitigate risks from validators with little stake, we introduce a minimum stake requirement for validators to be able to validate on consumer chains, which can be set by each consumer chain independently, with a default value set by the provider chain.
 
-Additionally, we independently allow individual consumer chains to disable this feature, which will disallow validators from outside the provider active set from validating on the consumer chain and revert them to the previous behaviour of only considering validators of the provider that are part of the active consensus validator set.
-
 Additional risk mitigations are to increase the active set size slowly, and to monitor the effects on the network closely. For the first iteration, we propose to increase the active set size to 200 validators (while keeping the consensus validators to 180), thus letting the 20 validators with the most stake outside of the active set validate on consumer chains.
+
+## Testing Scenarios
+
+In the following, 
+- bonded validators refers to all validators that have bonded stake, 
+- active validators refers to the validators that take part in consensus,
+- inactive validators refers to bonded validators that are not active validators.
+
+### Scenario 1: Inactive validators should not be considered by governance
+
+Inactive validators should not be considered for the purpose of governance.
+In particular, the quorum should depend only on active validators.
+
+We test this by:
+* creating a provider chain (either with 3 active validators, or with only 1 active validator), a quorum of 50%, and 3 validators with alice=300, bob=299, charlie=299 stake
+* we create a governance proposal
+* alice votes for the proposal
+* we check that the proposal has the right status:
+  * in the scenario where we have 3 active validators, the proposal *should not* have passed, because alice alone is not enough to fulfill the quorum
+  * in the scenario where we have 1 active validator, the proposal *should* have passed, because alice is the only active validator, and thus fulfills the quorum
+
+Tested by the e2e tests `inactive-provider-validators-governance` (scenario with 1 active val) and `inactive-provider-validators-governance-basecase` (scenario with 3 active vals).
+
+### Scenario 2: Inactive validators should not get rewards from the provider chain
+
+Inactive validators should not get rewards from the provider chain.
+
+This can be tested by starting a provider chain with inactive validators and checking the rewards of inactive validators.
+
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
+
+### Scenario 3: Inactive validators should get rewards from consumer chains
+
+An inactive validator that is validating on a consumer chain should receive rewards in the consumer chain token.
+
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
+
+### Scenario 4: Inactive validators should not get slashed/jailed for downtime on the provider chain
+
+This can be tested by having an inactive validator go offline on the provider chain for long enough to accrue downtime.
+The validator should be neither slashed nor jailed for downtime.
+
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
+
+### Scenario 5: Inactive validators *should* get jailed for consumer downtime on the provider chain
+
+This can be tested by having an inactive validator go offline on a consumer chain for long enough to accrue downtime.
+The consumer chain should send a SlashPacket to the provider chain, which should jail the validator.
+
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
+
+### Scenario 6: Inactive validators should not be counted when computing the minimum power in the top N
+
+This can be tested like this:
+* Start a provider chain with validator powers alice=300, bob=200, charlie=100 and 2 max provider consensus validators
+  * So alice and bob will validate on the provider
+* Start a consumer chain with top N = 51%. 
+  * Without inactive validators, this means both alice and bob have to validate. But since charlie is inactive, this means bob is *not* in the top N
+* Verify that alice is in the top N, but bob is not
+
+Checked as part of the e2e test `inactive-vals-topN`.
+
+### Scenario 7: Mint does not consider inactive validators
+
+To compute the inflation rate, only the active validators should be considered.
+
+We can check this by querying the inflation rate change over subsequent blocks.
+
+We start a provider chain with these arguments
+* 3 validators with powers alice=290, bob=280, charlie=270
+* either 1 or 3 active validators
+* a bonded goal of 300 tokens (this is given in percent, but we simplify here)
+
+If we have 3 validators active, then the inflation rate should *decrease* between blocks, because the bonded goal is exceeded as all validators are bonded.
+If we have only 1 validator active, then the inflation rate should *increase* between blocks, because the bonded goal is not met.
+
+Checked as part of the e2e tests `inactive-vals-mint` (scenario with 1 active val) and `mint-basecase` (scenario with 3 active vals).
+
+### Scenarios 8: Inactive validators can validate on consumer chains
+
+An inactive validator can opt in and validate on consumer chains (if min stake allows it)
+
+Checked as part of the e2e test `inactive-provider-validators-on-consumer`.
+
+### Scenario 9: MinStake parameters is respected
+
+Validators that don't meet the criteria for a consumer chain cannot validate on it.
+
+Checked in the e2e tests `min-stake`.
 
 ## Consequences
 

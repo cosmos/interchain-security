@@ -5,12 +5,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.
-func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
+func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abci.ValidatorUpdate {
 	k.SetPort(ctx, ccv.ProviderPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -39,15 +41,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		p := prop
 		k.SetPendingConsumerRemovalProp(ctx, &p)
 	}
-	for _, ubdOp := range genState.UnbondingOps {
-		k.SetUnbondingOp(ctx, ubdOp)
-	}
-
-	// Note that MatureUnbondingOps aren't stored across blocks, but it
-	// might be used after implementing standalone to consumer transition
-	if genState.MatureUnbondingOps != nil {
-		k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids)
-	}
 
 	// Set initial state for each consumer chain
 	for _, cs := range genState.ConsumerStates {
@@ -57,9 +50,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 			// An error here would indicate something is very wrong,
 			// the ConsumerGenesis validated in ConsumerState.Validate().
 			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
-		}
-		for _, ubdOpIndex := range cs.UnbondingOpsIndex {
-			k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.GetVscId(), ubdOpIndex.GetUnbondingOpIds())
 		}
 		// check if the CCV channel was established
 		if cs.ChannelId != "" {
@@ -84,25 +74,56 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetValidatorByConsumerAddr(ctx, item.ChainId, consumerAddr, providerAddr)
 	}
 
-	for _, item := range genState.ConsumerAddrsToPrune {
+	for _, item := range genState.ConsumerAddrsToPruneV2 {
 		for _, addr := range item.ConsumerAddrs.Addresses {
 			consumerAddr := types.NewConsumerConsAddress(addr)
-			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, consumerAddr)
-		}
-	}
-
-	for _, item := range genState.InitTimeoutTimestamps {
-		k.SetInitTimeoutTimestamp(ctx, item.ChainId, item.Timestamp)
-	}
-
-	for _, item := range genState.ExportedVscSendTimestamps {
-		for _, vscSendTimestamp := range item.VscSendTimestamps {
-			k.SetVscSendTimestamp(ctx, item.ChainId, vscSendTimestamp.VscId, vscSendTimestamp.Timestamp)
+			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.PruneTs, consumerAddr)
 		}
 	}
 
 	k.SetParams(ctx, genState.Params)
 	k.InitializeSlashMeter(ctx)
+
+	return k.InitGenesisValUpdates(ctx)
+}
+
+// InitGenesisValUpdates returns the genesis validator set updates
+// for the provider module by selecting the first MaxProviderConsensusValidators
+// from the staking module's validator set.
+func (k Keeper) InitGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
+	// get the staking validator set
+	valSet, err := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		panic(fmt.Errorf("retrieving validator set: %w", err))
+	}
+
+	// restrict the set to the first MaxProviderConsensusValidators
+	maxVals := k.GetMaxProviderConsensusValidators(ctx)
+	if int64(len(valSet)) > maxVals {
+		k.Logger(ctx).Info(fmt.Sprintf("reducing validator set from %d to %d", len(valSet), maxVals))
+		valSet = valSet[:maxVals]
+	}
+
+	reducedValSet := make([]types.ConsensusValidator, len(valSet))
+	for i, val := range valSet {
+		consensusVal, err := k.CreateProviderConsensusValidator(ctx, val)
+		if err != nil {
+			k.Logger(ctx).Error(fmt.Sprintf("failed to create provider consensus validator: %v", err))
+			continue
+		}
+		reducedValSet[i] = consensusVal
+	}
+
+	k.SetLastProviderConsensusValSet(ctx, reducedValSet)
+
+	valUpdates := make([]abci.ValidatorUpdate, len(reducedValSet))
+	for i, val := range reducedValSet {
+		valUpdates[i] = abci.ValidatorUpdate{
+			PubKey: *val.PublicKey,
+			Power:  val.Power,
+		}
+	}
+	return valUpdates
 }
 
 // ExportGenesis returns the CCV provider module's exported genesis
@@ -110,7 +131,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// get a list of all registered consumer chains
 	registeredChainIDs := k.GetAllRegisteredConsumerChainIDs(ctx)
 
-	var exportedVscSendTimestamps []types.ExportedVscSendTimestamp
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
 	for _, chainID := range registeredChainIDs {
@@ -125,10 +145,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:           chainID,
-			ClientId:          clientID,
-			ConsumerGenesis:   gen,
-			UnbondingOpsIndex: k.GetAllUnbondingOpIndexes(ctx, chainID),
+			ChainId:         chainID,
+			ClientId:        clientID,
+			ConsumerGenesis: gen,
 		}
 
 		// try to find channel id for the current consumer chain
@@ -144,13 +163,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chainID)
 		consumerStates = append(consumerStates, cs)
-
-		vscSendTimestamps := k.GetAllVscSendTimestamps(ctx, chainID)
-		exportedVscSendTimestamps = append(exportedVscSendTimestamps, types.ExportedVscSendTimestamp{ChainId: chainID, VscSendTimestamps: vscSendTimestamps})
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
-	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
+	consumerAddrsToPrune := []types.ConsumerAddrsToPruneV2{}
 	for _, chainID := range registeredChainIDs {
 		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chainID)...)
 	}
@@ -161,15 +177,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
-		k.GetAllUnbondingOps(ctx),
-		&types.MaturedUnbondingOps{Ids: k.GetMaturedUnbondingOps(ctx)},
 		k.GetAllPendingConsumerAdditionProps(ctx),
 		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,
 		k.GetAllValidatorConsumerPubKeys(ctx, nil),
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),
 		consumerAddrsToPrune,
-		k.GetAllInitTimeoutTimestamps(ctx),
-		exportedVscSendTimestamps,
 	)
 }

@@ -158,9 +158,6 @@ func (AppModule) ConsensusVersion() uint64 {
 func (am AppModule) BeginBlock(goCtx context.Context) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Execute BeginBlock logic for the Soft Opt-Out sub-protocol
-	am.keeper.BeginBlockSoftOptOut(ctx)
-
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
 		// The CCV channel was established, but it was then closed;
@@ -175,7 +172,10 @@ func (am AppModule) BeginBlock(goCtx context.Context) error {
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
 	am.keeper.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
-	am.keeper.TrackHistoricalInfo(ctx)
+	err := am.keeper.TrackHistoricalInfo(ctx)
+	if err != nil {
+		am.keeper.Logger(ctx).Warn("failed to track historical info", "error", err)
+	}
 	return nil
 }
 

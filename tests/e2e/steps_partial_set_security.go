@@ -30,6 +30,16 @@ func stepsOptInChain() []Step {
 			},
 		},
 		{
+			Action: SetConsumerCommissionRateAction{
+				Chain:          ChainID("consu"),
+				Validator:      ValidatorID("bob"),
+				CommissionRate: 0.123,
+				ExpectError:    true,
+				ExpectedError:  "unknown consumer chain",
+			},
+			State: State{},
+		},
+		{
 			Action: SubmitConsumerAdditionProposalAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
@@ -89,6 +99,31 @@ func stepsOptInChain() []Step {
 						ValidatorID("carol"): {},
 					},
 				},
+				ChainID("consu"): ChainState{
+					// no consumer commission rates were set and hence we get
+					// the default (i.e., 0.1) commission rate the validators have on the provider
+					ConsumerCommissionRates: &map[ValidatorID]float64{
+						ValidatorID("alice"): 0.1,
+						ValidatorID("bob"):   0.1,
+						ValidatorID("carol"): 0.1,
+					},
+				},
+			},
+		},
+		{
+			Action: SetConsumerCommissionRateAction{
+				Chain:          ChainID("consu"),
+				Validator:      ValidatorID("bob"),
+				CommissionRate: 0.123,
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ConsumerCommissionRates: &map[ValidatorID]float64{
+						ValidatorID("alice"): 0.1,
+						ValidatorID("bob"):   0.123,
+						ValidatorID("carol"): 0.1,
+					},
+				},
 			},
 		},
 		{
@@ -123,12 +158,6 @@ func stepsOptInChain() []Step {
 					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
 				},
-				// For consumers that're launching with the provider being on an earlier version
-				// of ICS before the soft opt-out threshold was introduced, we need to set the
-				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-				// consumer binary doesn't panic. Sdk requires that all params are set to valid
-				// values from the genesis file.
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("consu"): ChainState{
@@ -618,12 +647,6 @@ func stepsTopNChain() []Step {
 					{Id: ValidatorID("bob"), Stake: 300000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 500000000, Allocation: 10000000000},
 				},
-				// For consumers that're launching with the provider being on an earlier version
-				// of ICS before the soft opt-out threshold was introduced, we need to set the
-				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-				// consumer binary doesn't panic. Sdk requires that all params are set to valid
-				// values from the genesis file.
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("consu"): ChainState{
@@ -1149,12 +1172,6 @@ func stepsValidatorSetCappedChain() []Step {
 					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
 				},
-				// For consumers that're launching with the provider being on an earlier version
-				// of ICS before the soft opt-out threshold was introduced, we need to set the
-				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-				// consumer binary doesn't panic. Sdk requires that all params are set to valid
-				// values from the genesis file.
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("consu"): ChainState{
@@ -1385,12 +1402,6 @@ func stepsValidatorsPowerCappedChain() []Step {
 					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
 				},
-				// For consumers that're launching with the provider being on an earlier version
-				// of ICS before the soft opt-out threshold was introduced, we need to set the
-				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-				// consumer binary doesn't panic. Sdk requires that all params are set to valid
-				// values from the genesis file.
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("consu"): ChainState{
@@ -1511,8 +1522,10 @@ func stepsValidatorsAllowlistedChain() []Step {
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 				TopN:          0,
 				// only "alice" and "bob" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
-				Allowlist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-					"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"},
+				Allowlist: []string{
+					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+					"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+				},
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -1622,12 +1635,6 @@ func stepsValidatorsAllowlistedChain() []Step {
 					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
 				},
-				// For consumers that're launching with the provider being on an earlier version
-				// of ICS before the soft opt-out threshold was introduced, we need to set the
-				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-				// consumer binary doesn't panic. Sdk requires that all params are set to valid
-				// values from the genesis file.
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("consu"): ChainState{
@@ -1831,12 +1838,6 @@ func stepsValidatorsDenylistedChain() []Step {
 					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
 				},
-				// For consumers that're launching with the provider being on an earlier version
-				// of ICS before the soft opt-out threshold was introduced, we need to set the
-				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-				// consumer binary doesn't panic. Sdk requires that all params are set to valid
-				// values from the genesis file.
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("consu"): ChainState{
@@ -2039,12 +2040,6 @@ func stepsModifyChain() []Step {
 					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
 				},
-				// For consumers that're launching with the provider being on an earlier version
-				// of ICS before the soft opt-out threshold was introduced, we need to set the
-				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
-				// consumer binary doesn't panic. Sdk requires that all params are set to valid
-				// values from the genesis file.
-				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("consu"): ChainState{
@@ -2249,8 +2244,10 @@ func stepsModifyChain() []Step {
 				Deposit:       10000001,
 				ConsumerChain: ChainID("consu"),
 				// only "alice" and "carol" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
-				Allowlist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-					"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"},
+				Allowlist: []string{
+					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+					"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+				},
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -2437,7 +2434,8 @@ func stepsModifyChain() []Step {
 				ExpectError: true, // because this chain is now Top 100%, no validator can opt out
 			},
 			State: State{},
-		}}
+		},
+	}
 
 	return s
 }

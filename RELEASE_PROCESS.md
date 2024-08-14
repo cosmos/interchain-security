@@ -109,18 +109,9 @@ Once the **final release** is cut, the new changelog section must be added to ma
 
 ## Updating published docs
 
-### Before tagging a new release
-
-On your release branch, clear the `docs/versions.json` file so it looks like this:
-```json
-[]
-```
-
-If this file is populated on a release branch it will cause the tag to have extra files that the docs deploy process does not expect. This could cause the deploy process to fail in some situations.
-
 ### After tagging a new release
 
-Go to `main` branch and update the `docs/versions.json` to include all the versions you want to publish on the docs page:
+Go to `main` branch and update the `docs/supported_versions.json` to include all the versions you want to publish on the docs page:
 ```json
 [
     "v4.3.0",
@@ -129,51 +120,6 @@ Go to `main` branch and update the `docs/versions.json` to include all the versi
 ```
 
 This will cause the docs to be built with `main`, `v4.3.0` and `v5.0.0`.
-
-In `docs/docusaurus.config.js` change the `preset` section to display the versions you chose in `docs/versions.json`.
-
-For example, here we remove v4.2.0 and replace it with v4.3.0.
-
-```diff
-  presets: [
-    [
-      "classic",
-      /** @type {import('@docusaurus/preset-classic').Options} */
-      ({
-        docs: {
-          sidebarPath: require.resolve("./sidebars.js"),
-          routeBasePath: "/",
-          versions: {
-            current: {
-              path: "/",
-              label: "main",
-              banner: "unreleased",
-            },
-            // v4.2.0-docs was a special tags for docs
-            // this is not usually necessary
--            "v4.2.0-docs": {
--              path: "/v4.2.0/",
--              label: "v4.2.0",
--              banner: "none",
--            },
-+            "v4.3.0": {
-+              banner: "none",
-+            },
-            "v5.0.0": {
-              banner: "unreleased",
-            },
-          },
-          remarkPlugins: [remarkMath],
-          rehypePlugins: [rehypeKatex],
-        },
-
-        theme: {
-          customCss: require.resolve("./src/css/custom.css"),
-        },
-      }),
-    ],
-  ],
-```
 
 The documentation is updated automatically whenever `main` is changed.
 

@@ -125,7 +125,10 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// Save the consumer validators total outstanding rewards on the provider
 	consumerValsOutstandingRewardsFunc := func(ctx sdk.Context) sdk.DecCoins {
 		totalRewards := sdk.DecCoins{}
-		for _, v := range providerKeeper.GetConsumerValSet(ctx, s.consumerChain.ChainID) {
+		vals, err := providerKeeper.GetConsumerValSet(ctx, s.consumerChain.ChainID)
+		s.Require().NoError(err)
+
+		for _, v := range vals {
 			val, err := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(ctx, sdk.ConsAddress(v.ProviderConsAddr))
 			s.Require().NoError(err)
 			valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
@@ -138,8 +141,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	consuValsRewards := consumerValsOutstandingRewardsFunc(s.providerCtx())
 
 	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
-	numberOfBlocksToStartReceivingRewards :=
-		providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
+	numberOfBlocksToStartReceivingRewards := providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
 
 	for s.providerCtx().BlockHeight() <= numberOfBlocksToStartReceivingRewards {
 		s.providerChain.NextBlock()
@@ -529,6 +531,9 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		getIBCDenom func(string, string) string
 	)
 
+	// set up an arbitrary address that is not the consumer rewards pool address
+	notConsumerRewardsPoolAddr := s.providerChain.SenderAccount.GetAddress().String()
+
 	testCases := []struct {
 		name             string
 		setup            func(sdk.Context, *providerkeeper.Keeper, icstestingutils.TestBankKeeper)
@@ -555,7 +560,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		{
 			"IBC Transfer recipient is not the consumer rewards pool address",
 			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				data.Receiver = "cosmos149lw9fktlqfed3zt8ah48r5czmsug5s7kw77u9" // random acct address
+				data.Receiver = notConsumerRewardsPoolAddr
 				packet.Data = data.GetBytes()
 			},
 			false,
@@ -884,10 +889,12 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 				ctx.BlockHeight())
 
 			// change the consumer valset
-			consuVals := providerKeeper.GetConsumerValSet(ctx, chainID)
+			consuVals, err := providerKeeper.GetConsumerValSet(ctx, chainID)
+			s.Require().NoError(err)
 			providerKeeper.DeleteConsumerValSet(ctx, chainID)
 			providerKeeper.SetConsumerValSet(ctx, chainID, consuVals[0:tc.consuValLen])
-			consuVals = providerKeeper.GetConsumerValSet(ctx, chainID)
+			consuVals, err = providerKeeper.GetConsumerValSet(ctx, chainID)
+			s.Require().NoError(err)
 
 			// set the same consumer commission rate for all consumer validators
 			for _, v := range consuVals {
@@ -987,7 +994,8 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	ctx = ctx.WithBlockHeight(providerKeeper.GetNumberOfEpochsToStartReceivingRewards(ctx)*providerKeeper.GetBlocksPerEpoch(ctx) + 1)
 
 	// update the consumer validators
-	consuVals := providerKeeper.GetConsumerValSet(ctx, chainID)
+	consuVals, err := providerKeeper.GetConsumerValSet(ctx, chainID)
+	s.Require().NoError(err)
 	// first 2 validators were consumer validators since block height 1 and hence get rewards
 	consuVals[0].JoinHeight = 1
 	consuVals[1].JoinHeight = 1
@@ -999,7 +1007,8 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 
 	providerKeeper.DeleteConsumerValSet(ctx, chainID)
 	providerKeeper.SetConsumerValSet(ctx, chainID, consuVals)
-	consuVals = providerKeeper.GetConsumerValSet(ctx, chainID)
+	consuVals, err = providerKeeper.GetConsumerValSet(ctx, chainID)
+	s.Require().NoError(err)
 
 	// set the same consumer commission rate for all consumer validators
 	for _, v := range consuVals {

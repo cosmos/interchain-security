@@ -42,7 +42,7 @@ Some layers include extra logic, need other invariants, ...
 
 #### ccv_model.qnt
 This is the most general state machine layer. It allows the most behaviour,
-in particular it allows abitrary clock drift between chains, it allows starting and
+in particular it allows arbitrary clock drift between chains, it allows starting and
 stopping consumer chains during runtime, etc.
 This layer is most useful for model checking, because it encompasses the most behaviour.
 As an optional module, it can also include KeyAssignment.
