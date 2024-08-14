@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: Proof of Reputation Consumer Chains
 ---
-# ADR 0XX: Proof of Reputation Consumer Chains 
+# ADR 020: Proof of Reputation Consumer Chains 
 
 ## Changelog
 * 2024-07-19: Initial draft of ADR
