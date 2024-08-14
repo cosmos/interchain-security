@@ -270,14 +270,14 @@ func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
 	return chainIDs
 }
 
-// GetAllRegisteredConsumerChainIDs gets all of the consumer chain IDs, for which the provider module
+// GetAllRegisteredConsumerIds gets all of the consumer chain IDs, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
 // Note that the registered consumer chains are stored under keys with the following format:
 // ConsumerIdToClientIdKeyPrefix | consumerId
 // Thus, the returned array is in ascending order of chainIDs.
-func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
-	chainIDs := []string{}
+func (k Keeper) GetAllRegisteredConsumerIds(ctx sdk.Context) []string {
+	consumerIds := []string{}
 
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToClientIdKeyPrefix())
@@ -285,11 +285,11 @@ func (k Keeper) GetAllRegisteredConsumerChainIDs(ctx sdk.Context) []string {
 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove 1 byte prefix from key to retrieve consumerId
-		chainID := string(iterator.Key()[1:])
-		chainIDs = append(chainIDs, chainID)
+		consumerId := string(iterator.Key()[1:])
+		consumerIds = append(consumerIds, consumerId)
 	}
 
-	return chainIDs
+	return consumerIds
 }
 
 // SetChannelToConsumerId sets the mapping from the CCV channel id to the consumer id.
@@ -385,21 +385,26 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
 	connectionID := connectionHops[0]
-	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	clientId, _, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return err
 	}
-	ccvClientId, found := k.GetConsumerClientId(ctx, tmClient.ChainId)
+
+	consumerId, found := k.GetClientIdToConsumerId(ctx, clientId)
 	if !found {
-		return errorsmod.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
+		return errorsmod.Wrapf(ccv.ErrConsumerChainNotFound, "cannot find consumer id associated with client id: %s", clientId)
 	}
-	if ccvClientId != clientID {
-		return errorsmod.Wrapf(types.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+	ccvClientId, found := k.GetConsumerClientId(ctx, consumerId)
+	if !found {
+		return errorsmod.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", consumerId)
+	}
+	if ccvClientId != clientId {
+		return errorsmod.Wrapf(types.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientId)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
-	if prevChannel, ok := k.GetConsumerIdToChannelId(ctx, tmClient.ChainId); ok {
-		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, tmClient.ChainId)
+	if prevChannel, ok := k.GetConsumerIdToChannelId(ctx, consumerId); ok {
+		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, consumerId)
 	}
 	return nil
 }
@@ -740,7 +745,7 @@ func (k Keeper) BondDenom(ctx sdk.Context) (string, error) {
 
 func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
 	allConsumerChains := []string{}
-	allConsumerChains = append(allConsumerChains, k.GetAllRegisteredConsumerChainIDs(ctx)...)
+	allConsumerChains = append(allConsumerChains, k.GetAllRegisteredConsumerIds(ctx)...)
 	proposedChains := k.GetAllProposedConsumerChainIDs(ctx)
 	for _, proposedChain := range proposedChains {
 		allConsumerChains = append(allConsumerChains, proposedChain.ChainID)

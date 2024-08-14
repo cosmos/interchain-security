@@ -136,7 +136,7 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 // If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
 func (k Keeper) SendVSCPackets(ctx sdk.Context) {
-	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+	for _, chainID := range k.GetAllRegisteredConsumerIds(ctx) {
 		// check if CCV channel is established and send
 		if channelID, found := k.GetConsumerIdToChannelId(ctx, chainID); found {
 			k.SendVSCPacketsToChain(ctx, chainID, channelID)
@@ -192,7 +192,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		panic(fmt.Errorf("failed to get last validators: %w", err))
 	}
 
-	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+	for _, chainID := range k.GetAllRegisteredConsumerIds(ctx) {
 		currentValidators, err := k.GetConsumerValSet(ctx, chainID)
 		if err != nil {
 			panic(fmt.Errorf("failed to get consumer validators: %w", err))
@@ -266,7 +266,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
 
 	// prune previous consumer validator addresses that are no longer needed
-	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+	for _, chainID := range k.GetAllRegisteredConsumerIds(ctx) {
 		k.PruneKeyAssignments(ctx, chainID)
 	}
 }

@@ -49,7 +49,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	chains := []*types.Chain{}
-	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+	for _, chainID := range k.GetAllRegisteredConsumerIds(ctx) {
 		c, err := k.GetConsumerChain(ctx, chainID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -389,7 +389,7 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	// get all the consumer chains for which the validator is either already
 	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
 	consumersToValidate := []string{}
-	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+	for _, consumerChainID := range k.GetAllRegisteredConsumerIds(ctx) {
 		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerChainID); err == nil && hasToValidate {
 			consumersToValidate = append(consumersToValidate, consumerChainID)
 		}

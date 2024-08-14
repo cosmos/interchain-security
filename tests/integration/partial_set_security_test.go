@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"slices"
 	"sort"
 	"testing"
@@ -151,7 +152,9 @@ func TestMinStake(t *testing.T) {
 			// adjust parameters
 
 			// set the minStake according to the test case
-			providerKeeper.SetMinStake(s.providerChain.GetContext(), s.consumerChain.ChainID, tc.minStake)
+			providerKeeper.SetConsumerUpdateRecord(s.providerChain.GetContext(), s.getFirstBundle().ConsumerId, types.ConsumerUpdateRecord{
+				MinStake: tc.minStake,
+			})
 
 			// delegate and undelegate to trigger a vscupdate
 

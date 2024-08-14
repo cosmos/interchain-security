@@ -3,6 +3,7 @@ package ibc_testing
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -37,7 +38,7 @@ const (
 )
 
 var (
-	FirstConsumerChainID string
+	FirstConsumerId      string
 	provChainID          string
 	democConsumerChainID string
 	consumerTopNParams   [NumConsumers]uint32
@@ -46,7 +47,7 @@ var (
 func init() {
 	// Disable revision format
 	ibctesting.ChainIDSuffix = ""
-	FirstConsumerChainID = ibctesting.GetChainID(2)
+	FirstConsumerId = "2"
 	provChainID = ibctesting.GetChainID(1)
 	democConsumerChainID = ibctesting.GetChainID(5000)
 	// TopN parameter values per consumer chain initiated
@@ -57,6 +58,7 @@ func init() {
 // ConsumerBundle serves as a way to store useful in-mem consumer app chain state
 // and relevant IBC paths in the context of CCV integration testing.
 type ConsumerBundle struct {
+	ConsumerId   string
 	Chain        *ibctesting.TestChain
 	App          testutil.ConsumerApp
 	Path         *ibctesting.Path
@@ -138,20 +140,26 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
 
-	prop := testkeeper.GetTestConsumerAdditionProp()
-	prop.ChainId = chainID
-	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
+	registrationRecord := testkeeper.GetTestRegistrationRecord()
+	registrationRecord.ChainId = chainID
 
+	initializationRecord := testkeeper.GetTestInitializationRecord()
 	// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
 	// using time.Now() could set the spawn time to be too far in the past or too far in the future
-	prop.SpawnTime = coordinator.CurrentTime
+	initializationRecord.SpawnTime = coordinator.CurrentTime
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
-	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
+	initializationRecord.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
 
-	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), prop)
-	props := providerKeeper.GetAllPendingConsumerAdditionProps(providerChain.GetContext())
-	s.Require().Len(props, 1, "unexpected len consumer addition proposals in AddConsumer")
+	updateRecord := testkeeper.GetTestUpdateRecord()
+	updateRecord.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
+
+	consumerId := fmt.Sprintf("%d", index+2)
+	providerKeeper.SetConsumerRegistrationRecord(providerChain.GetContext(), consumerId, registrationRecord)
+	providerKeeper.SetConsumerInitializationRecord(providerChain.GetContext(), consumerId, initializationRecord)
+	providerKeeper.SetConsumerUpdateRecord(providerChain.GetContext(), consumerId, updateRecord)
+	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, keeper.Initialized)
+	providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
 
 	// opt-in all validators
 	lastVals, err := providerApp.GetProviderKeeper().GetLastBondedValidators(providerChain.GetContext())
@@ -159,7 +167,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 
 	for _, v := range lastVals {
 		consAddr, _ := v.GetConsAddr()
-		providerKeeper.SetOptedIn(providerChain.GetContext(), chainID, providertypes.NewProviderConsAddress(consAddr))
+		providerKeeper.SetOptedIn(providerChain.GetContext(), consumerId, providertypes.NewProviderConsAddress(consAddr))
+		providerKeeper.AppendOptedInConsumerId(providerChain.GetContext(), providertypes.NewProviderConsAddress(consAddr), consumerId)
 	}
 
 	// commit the state on the provider chain
@@ -169,8 +178,14 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	// get genesis state created by the provider
 	consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
 		providerChain.GetContext(),
-		chainID,
+		consumerId,
 	)
+
+	foo, found := providerKeeper.GetConsumerClientId(
+		providerChain.GetContext(),
+		consumerId,
+	)
+	_ = foo
 
 	s.Require().True(found, "consumer genesis not found in AddConsumer")
 
@@ -201,8 +216,9 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	}
 
 	return &ConsumerBundle{
-		Chain: testChain,
-		App:   consumerToReturn,
-		TopN:  prop.Top_N,
+		ConsumerId: consumerId,
+		Chain:      testChain,
+		App:        consumerToReturn,
+		TopN:       updateRecord.Top_N,
 	}
 }

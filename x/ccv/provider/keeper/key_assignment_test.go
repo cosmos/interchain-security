@@ -342,7 +342,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
-	chainID := ChainID
+	consumerId := "0"
 	providerIdentities := []*cryptotestutil.CryptoIdentity{
 		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
 		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
@@ -359,26 +359,26 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		doActions func(sdk.Context, providerkeeper.Keeper)
 	}{
 		/*
-			0. Consumer not registered: Assign PK0->CK0 and error
-			1. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
-			2. Consumer     registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
-			3. Consumer     registered: Assign PK0->CK0, PK1->CK0 and error
-			4. Consumer     registered: Assign PK1->PK0 and error
-			5. Consumer proposed: Assign Assign PK0->CK0 and retrieve PK0->CK0
-			6. Consumer proposed: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
-			7. Consumer proposed: Assign PK0->CK0, PK1->CK0 and error
-			8. Consumer proposed: Assign PK1->PK0 and error
+			0. Consumer not in the right phase: Assign PK0->CK0 and error
+			1. Consumer      launched: Assign PK0->CK0 and retrieve PK0->CK0
+			2. Consumer      launched: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
+			3. Consumer      launched: Assign PK0->CK0, PK1->CK0 and error
+			4. Consumer      launched: Assign PK1->PK0 and error
+			5. Consumer    registered: Assign PK0->CK0 and retrieve PK0->CK0
+			6. Consumer    registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
+			7. Consumer    registered: Assign PK0->CK0, PK1->CK0 and error
+			8. Consumer    registered: Assign PK1->PK0 and error
 		*/
 		{
 			name:      "0",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				err := k.AssignConsumerKey(ctx, chainID,
+				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.Error(t, err)
-				_, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+				_, found := k.GetValidatorByConsumerAddr(ctx, consumerId,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.False(t, found)
 			},
@@ -393,13 +393,13 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
-				err := k.AssignConsumerKey(ctx, chainID,
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Launched)
+				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, consumerId,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
 				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
@@ -420,18 +420,18 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(sdkCtx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(sdkCtx, chainID, "")
-				err := k.AssignConsumerKey(sdkCtx, chainID,
+				k.SetConsumerPhase(sdkCtx, consumerId, providerkeeper.Launched)
+				err := k.AssignConsumerKey(sdkCtx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				err = k.AssignConsumerKey(sdkCtx, chainID,
+				err = k.AssignConsumerKey(sdkCtx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[1].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(sdkCtx, chainID,
+				providerAddr, found := k.GetValidatorByConsumerAddr(sdkCtx, consumerId,
 					consumerIdentities[1].ConsumerConsAddress())
 				require.True(t, found)
 				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
@@ -450,18 +450,18 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
-				err := k.AssignConsumerKey(ctx, chainID,
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Launched)
+				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				err = k.AssignConsumerKey(ctx, chainID,
+				err = k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[1].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.Error(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, consumerId,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
 				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
@@ -477,8 +477,8 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
-				err := k.AssignConsumerKey(ctx, chainID,
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Launched)
+				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[1].SDKStakingValidator(),
 					providerIdentities[0].TMProtoCryptoPublicKey(),
 				)
@@ -495,13 +495,13 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetProposedConsumerChain(ctx, chainID, 0)
-				err := k.AssignConsumerKey(ctx, chainID,
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Registered)
+				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, consumerId,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
 				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
@@ -520,18 +520,18 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetProposedConsumerChain(ctx, chainID, 0)
-				err := k.AssignConsumerKey(ctx, chainID,
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Registered)
+				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				err = k.AssignConsumerKey(ctx, chainID,
+				err = k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[1].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, consumerId,
 					consumerIdentities[1].ConsumerConsAddress())
 				require.True(t, found)
 				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
@@ -550,18 +550,18 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetProposedConsumerChain(ctx, chainID, 0)
-				err := k.AssignConsumerKey(ctx, chainID,
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Registered)
+				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				err = k.AssignConsumerKey(ctx, chainID,
+				err = k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[1].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.Error(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, consumerId,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
 				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
@@ -577,8 +577,8 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetProposedConsumerChain(ctx, chainID, 0)
-				err := k.AssignConsumerKey(ctx, chainID,
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Registered)
+				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[1].SDKStakingValidator(),
 					providerIdentities[0].TMProtoCryptoPublicKey(),
 				)
@@ -593,7 +593,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 			tc.mockSetup(ctx, k, mocks)
 			tc.doActions(ctx, k)
-			require.True(t, checkCorrectPruningProperty(ctx, k, chainID))
+			require.True(t, checkCorrectPruningProperty(ctx, k, consumerId))
 
 			ctrl.Finish()
 		})
@@ -613,9 +613,7 @@ func TestCannotReassignDefaultKeyAssignment(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{
-		ChainId: "chain",
-	})
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providerkeeper.Registered)
 
 	// Mock that the validator is validating with the single key, as confirmed by provider's staking keeper
 	gomock.InOrder(
@@ -625,7 +623,7 @@ func TestCannotReassignDefaultKeyAssignment(t *testing.T) {
 	)
 
 	// AssignConsumerKey should return an error if we try to re-assign the already existing default key assignment
-	err := providerKeeper.AssignConsumerKey(ctx, "chain", cId.SDKStakingValidator(), cId.TMProtoCryptoPublicKey())
+	err := providerKeeper.AssignConsumerKey(ctx, "consumerId", cId.SDKStakingValidator(), cId.TMProtoCryptoPublicKey())
 	require.Error(t, err)
 
 	// Confirm we're not returning an error for some other reason

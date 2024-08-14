@@ -75,7 +75,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	}
 
 	// Iterate over all registered consumer chains
-	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+	for _, consumerChainID := range k.GetAllRegisteredConsumerIds(ctx) {
 
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
@@ -304,9 +304,9 @@ func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, consumerId stri
 	return
 }
 
-// IdentifyConsumerChainIDFromIBCPacket checks if the packet destination matches a registered consumer chain.
+// IdentifyConsumerIdFromIBCPacket checks if the packet destination matches a registered consumer chain.
 // If so, it returns the consumer chain ID, otherwise an error.
-func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet channeltypes.Packet) (string, error) {
+func (k Keeper) IdentifyConsumerIdFromIBCPacket(ctx sdk.Context, packet channeltypes.Packet) (string, error) {
 	channel, ok := k.channelKeeper.GetChannel(ctx, packet.DestinationPort, packet.DestinationChannel)
 	if !ok {
 		return "", errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", packet.DestinationChannel)
@@ -315,17 +315,21 @@ func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet cha
 		return "", errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
 	}
 	connectionID := channel.ConnectionHops[0]
-	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	clientId, _, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return "", err
 	}
 
-	chainID := tmClient.ChainId
-	if _, ok := k.GetConsumerIdToChannelId(ctx, chainID); !ok {
-		return "", errorsmod.Wrapf(types.ErrUnknownConsumerChannelId, "no CCV channel found for chain with ID: %s", chainID)
+	consumerId, found := k.GetClientIdToConsumerId(ctx, clientId)
+	if !found {
+		return "", errorsmod.Wrapf(types.ErrUnknownConsumerId, "no consumer id for client with id: %s", clientId)
 	}
 
-	return chainID, nil
+	if _, ok := k.GetConsumerIdToChannelId(ctx, consumerId); !ok {
+		return "", errorsmod.Wrapf(types.ErrUnknownConsumerChannelId, "no CCV channel found for chain with ID: %s", consumerId)
+	}
+
+	return consumerId, nil
 }
 
 // HandleSetConsumerCommissionRate sets a per-consumer chain commission rate for the given provider address

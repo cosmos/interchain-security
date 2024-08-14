@@ -46,18 +46,16 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 	testCases := []struct {
 		name string
 		// State-mutating setup specific to this test case
-		setup    func(sdk.Context, keeper.Keeper, testkeeper.MockedKeepers)
-		expError bool
-		chainID  string
+		setup      func(sdk.Context, keeper.Keeper, testkeeper.MockedKeepers)
+		expError   bool
+		consumerId string
 	}{
 		{
 			name: "success",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
-					ChainId: "chainid",
-				})
+				k.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
@@ -67,11 +65,11 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
-			expError: false,
-			chainID:  "chainid",
+			expError:   false,
+			consumerId: "consumerId",
 		},
 		{
-			name: "fail: chain ID not registered",
+			name: "fail: consumer id does not correspond to a registered chain",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
@@ -82,36 +80,33 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 				)
 			},
-			expError: true,
-			chainID:  "chainid",
+			expError:   true,
+			consumerId: "consumerId",
 		},
 		{
 			name: "fail: missing validator",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
-					ChainId: "chainid",
-				})
+				k.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
 					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound).Times(1),
 				)
 			},
-			expError: true,
-			chainID:  "chainid",
+			expError:   true,
+			consumerId: "consumerId",
 		},
 		{
 			name: "fail: consumer key in use by other validator",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
-					ChainId: "chainid",
-				})
+				k.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
+
 				// Use the consumer key already used by some other validator
-				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr2)
+				k.SetValidatorByConsumerAddr(ctx, "consumerId", consumerConsAddr, providerConsAddr2)
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
@@ -124,19 +119,18 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 					).Return(stakingtypes.Validator{}, nil),
 				)
 			},
-			expError: true,
-			chainID:  "chainid",
+			expError:   true,
+			consumerId: "consumerId",
 		},
 		{
 			name: "fail: consumer key in use by the same validator",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
-					ChainId: "chainid",
-				})
+				k.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
+
 				// Use the consumer key already
-				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr)
+				k.SetValidatorByConsumerAddr(ctx, "consumerId", consumerConsAddr, providerConsAddr)
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
@@ -147,20 +141,18 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
-			expError: true,
-			chainID:  "chainid",
+			expError:   true,
+			consumerId: "consumerId",
 		},
 		{
 			name: "fail: consumer key in use by other validator",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
-					ChainId: "chainid",
-				})
+				k.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
 
 				// Use the consumer key already used by some other validator
-				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr2)
+				k.SetValidatorByConsumerAddr(ctx, "consumerId", consumerConsAddr, providerConsAddr2)
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
@@ -173,8 +165,8 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound),
 				)
 			},
-			expError: true,
-			chainID:  "chainid",
+			expError:   true,
+			consumerId: "consumerId",
 		},
 	}
 
@@ -184,7 +176,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 
 			tc.setup(ctx, k, mocks)
 
-			msg, err := providertypes.NewMsgAssignConsumerKey(tc.chainID,
+			msg, err := providertypes.NewMsgAssignConsumerKey(tc.consumerId,
 				providerCryptoId.SDKValOpAddress(), consumerKey,
 				providerCryptoId.SDKStakingValidator().OperatorAddress,
 			)

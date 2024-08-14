@@ -225,7 +225,7 @@ func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
 			defer ctrl.Finish()
 
 			tc.expectedCalls(ctx, mocks, tc.packet)
-			_, err := keeper.IdentifyConsumerChainIDFromIBCPacket(
+			_, err := keeper.IdentifyConsumerIdFromIBCPacket(
 				ctx,
 				tc.packet,
 			)
