@@ -351,6 +351,12 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 		}
 	}
 
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(ccvtypes.EventTypeConsumerRegistration,
+			sdk.NewAttribute(ccvtypes.AttributeConsumerID, consumerId),
+		),
+	})
+
 	return &types.MsgCreateConsumerResponse{ConsumerId: consumerId}, nil
 }
 

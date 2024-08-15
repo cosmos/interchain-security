@@ -15,6 +15,7 @@ const (
 	EventTypeExecuteConsumerChainSlash  = "execute_consumer_chain_slash"
 	EventTypeFeeDistribution            = "fee_distribution"
 	EventTypeConsumerSlashRequest       = "consumer_slash_request"
+	EventTypeConsumerRegistration       = "consumer_registration"
 
 	AttributeKeyAckSuccess            = "success"
 	AttributeKeyAck                   = "acknowledgement"
@@ -34,6 +35,7 @@ const (
 	AttributeMisbehaviourHeight1      = "misbehaviour_height_1"
 	AttributeMisbehaviourHeight2      = "misbehaviour_height_2"
 	AttributeConsumerDoubleVoting     = "consumer_double_voting"
+	AttributeConsumerID               = "consumer_id"
 	AttributeChainID                  = "chain_id"
 	AttributeValidatorAddress         = "validator_address"
 	AttributeInfractionType           = "infraction_type"
