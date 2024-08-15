@@ -32,10 +32,10 @@ func (s *CCVTestSuite) TestAfterPropSubmissionAndVotingPeriodEnded() {
 	providerKeeper.Hooks().AfterProposalSubmission(ctx, proposal.Id)
 
 	// verify that the proposal ID is created
-	proposalIdOnProvider, ok := providerKeeper.GetProposedConsumerChain(ctx, proposal.Id)
+	consumerIdOnProvider, ok := providerKeeper.GetProposedConsumerChain(ctx, proposal.Id)
 	s.Require().True(ok)
-	s.Require().NotEmpty(proposalIdOnProvider)
-	s.Require().Equal(addConsumerProp.ChainId, proposalIdOnProvider)
+	s.Require().NotEmpty(consumerIdOnProvider)
+	s.Require().Equal("0", consumerIdOnProvider)
 
 	providerKeeper.Hooks().AfterProposalVotingPeriodEnded(ctx, proposal.Id)
 	// verify that the proposal ID is deleted

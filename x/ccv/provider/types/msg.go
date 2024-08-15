@@ -43,6 +43,9 @@ var (
 	_ sdk.Msg = (*MsgInitializeConsumer)(nil)
 	_ sdk.Msg = (*MsgUpdateConsumer)(nil)
 	_ sdk.Msg = (*MsgRemoveConsumer)(nil)
+	_ sdk.Msg = (*MsgConsumerAddition)(nil)
+	_ sdk.Msg = (*MsgConsumerModification)(nil)
+	_ sdk.Msg = (*MsgConsumerRemoval)(nil)
 	_ sdk.Msg = (*MsgOptIn)(nil)
 	_ sdk.Msg = (*MsgOptOut)(nil)
 	_ sdk.Msg = (*MsgSetConsumerCommissionRate)(nil)
@@ -51,11 +54,13 @@ var (
 	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerDoubleVoting)(nil)
-	// TODO (PERMISSIONLESS) add extensive checks, etc.
 	_ sdk.HasValidateBasic = (*MsgRegisterConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgInitializeConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgUpdateConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgRemoveConsumer)(nil)
+	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
+	_ sdk.HasValidateBasic = (*MsgConsumerModification)(nil)
+	_ sdk.HasValidateBasic = (*MsgConsumerRemoval)(nil)
 	_ sdk.HasValidateBasic = (*MsgOptIn)(nil)
 	_ sdk.HasValidateBasic = (*MsgOptOut)(nil)
 	_ sdk.HasValidateBasic = (*MsgSetConsumerCommissionRate)(nil)
@@ -405,6 +410,144 @@ func (msg MsgRemoveConsumer) GetSignBytes() []byte {
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
 func (msg MsgRemoveConsumer) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgConsumerAddition) Route() string { return RouterKey }
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgConsumerAddition) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return ErrBlankConsumerChainID
+	}
+
+	if msg.InitialHeight.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
+	}
+
+	if len(msg.GenesisHash) == 0 {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "genesis hash cannot be empty")
+	}
+	if len(msg.BinaryHash) == 0 {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "binary hash cannot be empty")
+	}
+
+	if msg.SpawnTime.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateStringFraction(msg.ConsumerRedistributionFraction); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
+	}
+
+	if err := ccvtypes.ValidatePositiveInt64(msg.BlocksPerDistributionTransmission); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
+	}
+
+	if err := ccvtypes.ValidateDistributionTransmissionChannel(msg.DistributionTransmissionChannel); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "distribution transmission channel")
+	}
+
+	if err := ccvtypes.ValidatePositiveInt64(msg.HistoricalEntries); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
+	}
+
+	if err := ccvtypes.ValidateDuration(msg.CcvTimeoutPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateDuration(msg.TransferTimeoutPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateDuration(msg.UnbondingPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
+	}
+
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgConsumerAddition) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgConsumerAddition) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgConsumerModification) Route() string { return RouterKey }
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgConsumerModification) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return ErrBlankConsumerChainID
+	}
+
+	err := ValidatePSSFeatures(msg.Top_N, msg.ValidatorsPowerCap)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
+	}
+
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgConsumerModification) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgConsumerModification) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgConsumerRemoval) Route() string { return RouterKey }
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgConsumerRemoval) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "consumer chain id must not be blank")
+	}
+
+	if msg.StopTime.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "spawn time cannot be zero")
+	}
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgConsumerRemoval) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgConsumerRemoval) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
 	if err != nil {
 		// same behavior as in cosmos-sdk
