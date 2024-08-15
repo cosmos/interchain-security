@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -110,8 +109,9 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 // that maps the proposal ID to the consumer chain ID.
 func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if p, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
-		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
+	if _, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
+		consumerId := h.k.FetchAndIncrementConsumerId(ctx)
+		h.k.SetProposedConsumerChain(ctx, consumerId, proposalID)
 	}
 	return nil
 }
