@@ -65,7 +65,7 @@ const (
 
 	OutstandingDowntimeKeyName = "OutstandingDowntimeKey"
 
-	PendingDataPacketsKeyName = "PendingDataPacketsKey"
+	PendingDataPacketsV1KeyName = "PendingDataPacketsV1Key"
 
 	CrossChainValidatorKeyName = "CrossChainValidatorKey"
 
@@ -135,10 +135,10 @@ func getKeyPrefixes() map[string]byte {
 		// OutstandingDowntimeKey is the key for storing the validators outstanding downtime by consensus address
 		OutstandingDowntimeKeyName: 14,
 
-		// PendingDataPacketsKey is the key for storing a list of data packets
+		// PendingDataPacketsV1Key is the key for storing a list of data packets
 		// that cannot be sent yet to the provider chain either because the
 		// CCV channel is not established or because the client is expired
-		PendingDataPacketsKeyName: 15,
+		PendingDataPacketsV1KeyName: 15,
 
 		// CrossChainValidatorKey is the key for storing cross-chain validators by consensus address
 		CrossChainValidatorKeyName: 16,
@@ -302,9 +302,9 @@ func OutstandingDowntimeKey(address sdk.ConsAddress) []byte {
 	return append(OutstandingDowntimeKeyPrefix(), address.Bytes()...)
 }
 
-// PendingDataPacketsKeyPrefix returns the key prefix for storing a queue of data packets to be sent to the provider.
-func PendingDataPacketsKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(PendingDataPacketsKeyName)}
+// PendingDataPacketsV1KeyPrefix returns the key prefix for storing a queue of data packets to be sent to the provider.
+func PendingDataPacketsV1KeyPrefix() []byte {
+	return []byte{mustGetKeyPrefix(PendingDataPacketsV1KeyName)}
 }
 
 // PendingDataPacketsKey returns the key for storing a queue of data packets to be sent to the provider.
@@ -312,8 +312,8 @@ func PendingDataPacketsKeyPrefix() []byte {
 // - the CCV channel is not yet established
 // - the client is expired
 // - A slash packet is being bounced between consumer and provider (not yet implemented)
-func PendingDataPacketsKey(idx uint64) []byte {
-	return append(PendingDataPacketsKeyPrefix(), sdk.Uint64ToBigEndian(idx)...)
+func PendingDataPacketsV1Key(idx uint64) []byte {
+	return append(PendingDataPacketsV1KeyPrefix(), sdk.Uint64ToBigEndian(idx)...)
 }
 
 // CrossChainValidatorKeyPrefix returns the key prefix for storing a cross chain validator by consensus address

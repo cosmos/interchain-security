@@ -612,7 +612,7 @@ func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint
 // DeleteHeadOfPendingPackets deletes the head of the pending packets queue.
 func (k Keeper) DeleteHeadOfPendingPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsKeyPrefix())
+	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsV1KeyPrefix())
 	defer iterator.Close()
 	if !iterator.Valid() {
 		return
@@ -644,9 +644,7 @@ type ConsumerPacketDataWithIdx struct {
 func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDataWithIdx {
 	packets := []ConsumerPacketDataWithIdx{}
 	store := ctx.KVStore(k.storeKey)
-	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
-	// See consistency with PendingDataPacketsKey().
-	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsKeyPrefix())
+	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsV1KeyPrefix())
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		var packet ccv.ConsumerPacketData
@@ -658,7 +656,7 @@ func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDat
 		}
 		packetWithIdx := ConsumerPacketDataWithIdx{
 			ConsumerPacketData: packet,
-			// index stored in key after prefix, see PendingDataPacketsKey()
+			// index stored in key after prefix, see PendingDataPacketsV1Key()
 			Idx: sdk.BigEndianToUint64(iterator.Key()[1:]),
 		}
 		packets = append(packets, packetWithIdx)
@@ -670,15 +668,15 @@ func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDat
 func (k Keeper) DeletePendingDataPackets(ctx sdk.Context, idxs ...uint64) {
 	store := ctx.KVStore(k.storeKey)
 	for _, idx := range idxs {
-		store.Delete(types.PendingDataPacketsKey(idx))
+		store.Delete(types.PendingDataPacketsV1Key(idx))
 	}
 }
 
 func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
-	// See consistency with PendingDataPacketsKey().
-	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsKeyPrefix())
+	// See consistency with PendingDataPacketsV1Key().
+	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsV1KeyPrefix())
 	keysToDel := [][]byte{}
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -692,7 +690,7 @@ func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 // AppendPendingPacket enqueues the given data packet to the end of the pending data packets queue
 func (k Keeper) AppendPendingPacket(ctx sdk.Context, packetType ccv.ConsumerPacketDataType, data ccv.ExportedIsConsumerPacketData_Data) {
 	idx := k.getAndIncrementPendingPacketsIdx(ctx) // for FIFO queue
-	key := types.PendingDataPacketsKey(idx)
+	key := types.PendingDataPacketsV1Key(idx)
 	store := ctx.KVStore(k.storeKey)
 	cpd := ccv.NewConsumerPacketData(packetType, data)
 	bz, err := cpd.Marshal()

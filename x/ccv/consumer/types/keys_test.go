@@ -55,7 +55,7 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(14), consumertypes.OutstandingDowntimeKeyPrefix()[0])
 	i++
-	require.Equal(t, byte(15), consumertypes.PendingDataPacketsKeyPrefix()[0])
+	require.Equal(t, byte(15), consumertypes.PendingDataPacketsV1KeyPrefix()[0])
 	i++
 	require.Equal(t, byte(16), consumertypes.CrossChainValidatorKeyPrefix()[0])
 	i++
@@ -112,7 +112,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		consumertypes.HeightValsetUpdateIDKey(0),
 		consumertypes.OutstandingDowntimeKey(sdk.ConsAddress([]byte{0x05})),
 		consumertypes.CrossChainValidatorKey([]byte{0x05}),
-		consumertypes.PendingDataPacketsKey(0),
+		consumertypes.PendingDataPacketsV1Key(0),
 		consumertypes.PreCCVKey(),
 		consumertypes.InitialValSetKey(),
 		consumertypes.InitGenesisHeightKey(),

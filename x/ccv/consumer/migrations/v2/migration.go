@@ -17,7 +17,7 @@ import (
 func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error {
 	// retrieve old data an deserialize
 	var oldData consumertypes.ConsumerPacketDataList
-	bz := store.Get(consumertypes.PendingDataPacketsKeyPrefix())
+	bz := store.Get(consumertypes.PendingDataPacketsV1KeyPrefix())
 	if bz == nil {
 		ctx.Logger().Info("no pending data packets to migrate")
 		return nil
@@ -32,7 +32,7 @@ func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error 
 	// the loop operations are equivalent to consumerkeeper.AppendPendingPacket()
 	for _, data := range oldData.List {
 		idx := getAndIncrementPendingPacketsIdx(store)
-		key := consumertypes.PendingDataPacketsKey(idx)
+		key := consumertypes.PendingDataPacketsV1Key(idx)
 		cpd := ccvtypes.NewConsumerPacketData(data.Type, data.Data)
 		bz, err := cpd.Marshal()
 		if err != nil {
@@ -42,7 +42,7 @@ func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error 
 		store.Set(key, bz)
 	}
 
-	store.Delete(consumertypes.PendingDataPacketsKeyPrefix())
+	store.Delete(consumertypes.PendingDataPacketsV1KeyPrefix())
 	return nil
 }
 
