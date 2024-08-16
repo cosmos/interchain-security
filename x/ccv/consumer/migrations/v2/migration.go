@@ -17,7 +17,7 @@ import (
 func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error {
 	// retrieve old data an deserialize
 	var oldData consumertypes.ConsumerPacketDataList
-	bz := store.Get([]byte{consumertypes.PendingDataPacketsBytePrefix})
+	bz := store.Get(consumertypes.PendingDataPacketsKeyPrefix())
 	if bz == nil {
 		ctx.Logger().Info("no pending data packets to migrate")
 		return nil
@@ -31,7 +31,7 @@ func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error 
 	// index incrementation happens in getAndIncrementPendingPacketsIdx
 	// the loop operations are equivalent to consumerkeeper.AppendPendingPacket()
 	for _, data := range oldData.List {
-		idx := getAndIncrementPendingPacketsIdx(ctx, store)
+		idx := getAndIncrementPendingPacketsIdx(store)
 		key := consumertypes.PendingDataPacketsKey(idx)
 		cpd := ccvtypes.NewConsumerPacketData(data.Type, data.Data)
 		bz, err := cpd.Marshal()
@@ -42,12 +42,12 @@ func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error 
 		store.Set(key, bz)
 	}
 
-	store.Delete([]byte{consumertypes.PendingDataPacketsBytePrefix})
+	store.Delete(consumertypes.PendingDataPacketsKeyPrefix())
 	return nil
 }
 
 // getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.
-func getAndIncrementPendingPacketsIdx(ctx sdk.Context, store storetypes.KVStore) (toReturn uint64) {
+func getAndIncrementPendingPacketsIdx(store storetypes.KVStore) (toReturn uint64) {
 	bz := store.Get(consumertypes.PendingPacketsIndexKey())
 	if bz != nil {
 		toReturn = sdk.BigEndianToUint64(bz)
