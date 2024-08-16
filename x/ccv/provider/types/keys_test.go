@@ -11,7 +11,6 @@ import (
 
 	cryptoutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
@@ -188,7 +187,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerAddrsToPruneV2Key("chainID", time.Time{}),
 		providertypes.MinStakeKey("chainID"),
 		providertypes.AllowInactiveValidatorsKey("chainID"),
-		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
+		providerkeeper.GetValidatorKey(providertypes.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
 	}
 }
 
