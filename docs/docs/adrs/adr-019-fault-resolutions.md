@@ -83,7 +83,9 @@ Additional states are added to the `provider` modules:
 
 ```protobuf
     messsage {
+        // timestamp recording the last time a validator opted in to the consumer chain
         google.protobuf.Timestamp join_time = 1;
+        // timestamp recording the last time a validator opted out of the consumer chain
         google.protobuf.Timestamp leave_time = 2;
     }
 ```
