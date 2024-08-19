@@ -249,6 +249,16 @@ message ConsumerUpdateRecord {
 // MsgUpdateConsumerResponse defines response type for MsgUpdateConsumer messages
 message MsgUpdateConsumerResponse {}
 
+// MsgCreateConsumer defines the message that creates a consumer chain in one step
+message MsgCreateConsumer {
+  MsgRegisterConsumer msg_register_consumer = 1;
+  MsgInitializeConsumer msg_initialize_consumer = 2;
+  MsgUpdateConsumer msg_update_consumer = 3;
+}
+
+// MsgCreateConsumerResponse defines response type for MsgCreateConsumer
+message MsgCreateConsumerResponse {}
+
 // MsgRegisterConsumer defines the message that registers a consumer chain
 message MsgRegisterConsumer {
   option (cosmos.msg.v1.signer) = "signer";

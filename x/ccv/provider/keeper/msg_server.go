@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+
 	errorsmod "cosmossdk.io/errors"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -302,6 +303,37 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 	})
 
 	return &types.MsgSetConsumerCommissionRateResponse{}, nil
+}
+
+func (k msgServer) CreateOptInConsumer(goCtx context.Context, msg *types.MsgCreateConsumer) (*types.MsgCreateConsumerResponse, error) {
+	res, err := k.RegisterConsumer(goCtx, msg.MsgRegisterConsumer)
+	if err != nil {
+		return &types.MsgCreateConsumerResponse{}, err
+	}
+
+	// Overwrite with correct ConsumerId
+	msgInitialize := &types.MsgInitializeConsumer{
+		ConsumerId:           res.ConsumerId,
+		Authority:            msg.MsgInitializeConsumer.Authority,
+		InitializationRecord: msg.MsgInitializeConsumer.InitializationRecord,
+	}
+	_, err = k.InitializeConsumer(goCtx, msgInitialize)
+	if err != nil {
+		return &types.MsgCreateConsumerResponse{}, err
+	}
+
+	// Overwrite with correct ConsumerId
+	msgUpdate := &types.MsgUpdateConsumer{
+		ConsumerId:   res.ConsumerId,
+		Authority:    msg.MsgUpdateConsumer.Authority,
+		UpdateRecord: msg.MsgUpdateConsumer.UpdateRecord,
+	}
+	_, err = k.UpdateConsumer(goCtx, msgUpdate)
+	if err != nil {
+		return &types.MsgCreateConsumerResponse{}, err
+	}
+
+	return &types.MsgCreateConsumerResponse{}, nil
 }
 
 // RegisterConsumer registers a consumer chain
