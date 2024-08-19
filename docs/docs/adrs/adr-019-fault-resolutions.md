@@ -77,11 +77,21 @@ Additional states are added to the `provider` modules:
 * The timestamps that record when validators opts in or opts out of a Opt-in consumer chain. Note that these timestamps can be pruned after an unbonding period elapses.
 
 ```golang
-ConsumerValidatorSubscriptionTimestampPrefix | len(consumerID) | consumerID | valAddr -> struct{JoinTime, LeaveTime uint64}
+    ConsumerValidatorSubscriptionTimestampPrefix | len(consumerID) | consumerID | valAddr | ProtocolBuffer(ConsumerValSubscriptionTimestamp)
 ```
 
-* Pre-defined slashing factor per-consumer chain for each defined fault (optional)
+```protobuf
+    messsage {
+        google.protobuf.Timestamp join_time = 1;
+        google.protobuf.Timestamp leave_time = 2;
+    }
+```
 
+* Pre-defined slashing factor per-consumer chain for each defined fault (optional).
+
+```golang
+    ConsumerFaultSlashFactorPrefix | len(consumerID) | consumerID | faultType -> SlashFactor
+```
 
 ### Additional considerations
 
