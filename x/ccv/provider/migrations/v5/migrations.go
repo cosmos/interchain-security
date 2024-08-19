@@ -15,7 +15,7 @@ func MigrateTopNForRegisteredChains(ctx sdk.Context, providerKeeper providerkeep
 	for _, consumerId := range providerKeeper.GetAllRegisteredConsumerIds(ctx) {
 		// TODO (PERMISSIONLESS): this migration already took place and does not make much sense in the Permissionless world
 		// living here for now and we should totally remove
-		providerKeeper.SetConsumerUpdateRecord(ctx, consumerId, types.ConsumerUpdateRecord{
+		providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
 			Top_N: 95,
 		})
 	}

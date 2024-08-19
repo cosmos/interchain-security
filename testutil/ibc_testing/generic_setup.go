@@ -140,24 +140,24 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
 
-	registrationRecord := testkeeper.GetTestRegistrationRecord()
-	registrationRecord.ChainId = chainID
+	consumerMetadata := testkeeper.GetTestConsumerMetadata()
 
-	initializationRecord := testkeeper.GetTestInitializationRecord()
+	initializationParameters := testkeeper.GetTestInitializationParameters()
 	// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
 	// using time.Now() could set the spawn time to be too far in the past or too far in the future
-	initializationRecord.SpawnTime = coordinator.CurrentTime
+	initializationParameters.SpawnTime = coordinator.CurrentTime
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
-	initializationRecord.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
+	initializationParameters.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
 
-	updateRecord := testkeeper.GetTestUpdateRecord()
-	updateRecord.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
+	powerShapingParameters := testkeeper.GetTestPowerShapingParameters()
+	powerShapingParameters.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
 
 	consumerId := fmt.Sprintf("%d", index+2)
-	providerKeeper.SetConsumerRegistrationRecord(providerChain.GetContext(), consumerId, registrationRecord)
-	providerKeeper.SetConsumerInitializationRecord(providerChain.GetContext(), consumerId, initializationRecord)
-	providerKeeper.SetConsumerUpdateRecord(providerChain.GetContext(), consumerId, updateRecord)
+	providerKeeper.SetConsumerChainId(providerChain.GetContext(), consumerId, chainID)
+	providerKeeper.SetConsumerMetadata(providerChain.GetContext(), consumerId, consumerMetadata)
+	providerKeeper.SetConsumerInitializationParameters(providerChain.GetContext(), consumerId, initializationParameters)
+	providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
 	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, keeper.Initialized)
 	providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
 
@@ -219,6 +219,6 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		ConsumerId: consumerId,
 		Chain:      testChain,
 		App:        consumerToReturn,
-		TopN:       updateRecord.Top_N,
+		TopN:       powerShapingParameters.Top_N,
 	}
 }

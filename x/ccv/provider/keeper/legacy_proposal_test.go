@@ -117,12 +117,12 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 		// Note: when expAppendProp is false, no mocks are setup,
 		// meaning no external keeper methods are allowed to be called.
 		if tc.expAppendProp {
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks, tc.prop.ConsumerId)
+			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks, tc.prop.ChainId)
 			// Valid client creation is asserted with mock expectations here
 			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		}
 
-		tc.setupMocks(ctx, providerKeeper, tc.prop.ConsumerId)
+		tc.setupMocks(ctx, providerKeeper, tc.prop.ChainId)
 
 		err := providerKeeper.HandleLegacyConsumerRemovalProposal(ctx, tc.prop)
 
@@ -130,7 +130,7 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			require.NoError(t, err)
 
 			// Proposal should be stored as pending
-			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ConsumerId, tc.prop.StopTime)
+			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.True(t, found)
 
 			// confirm that the channel was not closed
@@ -140,79 +140,11 @@ func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 			require.Error(t, err)
 
 			// Expect no pending proposal to exist
-			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ConsumerId, tc.prop.StopTime)
+			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.False(t, found)
 		}
 
 		// Assert mock calls from setup function
 		ctrl.Finish()
 	}
-}
-
-func TestUpdateConsumer(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	consumerId := "0"
-
-	// set up a consumer client, so it seems that chain is running
-	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
-
-	// set PSS-related fields to update them later on
-	providerKeeper.SetConsumerUpdateRecord(ctx, consumer, providertypes.ConsumerUpdateRecord{
-		Top_N:              50,
-		ValidatorSetCap:    10,
-		ValidatorsPowerCap: 34,
-		MinStake:           100,
-		AllowInactiveVals:  true,
-	})
-	providerKeeper.SetAllowlist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
-	providerKeeper.SetAllowlist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
-	providerKeeper.SetDenylist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
-
-	expectedTopN := uint32(75)
-	expectedValidatorsPowerCap := uint32(67)
-	expectedValidatorSetCap := uint32(20)
-	expectedAllowlistedValidator := "cosmosvalcons1wpex7anfv3jhystyv3eq20r35a"
-	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
-	expectedMinStake := uint64(0)
-	expectedAllowInactiveValidators := false
-
-	updateRecord := providertypes.ConsumerUpdateRecord{
-		Top_N:              expectedTopN,
-		ValidatorsPowerCap: expectedValidatorsPowerCap,
-		ValidatorSetCap:    expectedValidatorSetCap,
-		Allowlist:          []string{expectedAllowlistedValidator},
-		Denylist:           []string{expectedDenylistedValidator},
-		MinStake:           expectedMinStake,
-		AllowInactiveVals:  expectedAllowInactiveValidators,
-	}
-
-	providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
-	providerKeeper.SetConsumerUpdateRecord(ctx, consumerId, updateRecord)
-	err := providerKeeper.UpdateConsumer(ctx, consumerId)
-	require.NoError(t, err)
-
-	actualTopN := providerKeeper.GetTopN(ctx, consumerId)
-	require.Equal(t, expectedTopN, actualTopN)
-	actualValidatorsPowerCap := providerKeeper.GetValidatorsPowerCap(ctx, consumerId)
-	require.Equal(t, expectedValidatorsPowerCap, actualValidatorsPowerCap)
-	actualValidatorSetCap := providerKeeper.GetValidatorSetCap(ctx, consumerId)
-	require.Equal(t, expectedValidatorSetCap, actualValidatorSetCap)
-
-	allowlistedValidator, err := sdk.ConsAddressFromBech32(expectedAllowlistedValidator)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(providerKeeper.GetAllowList(ctx, consumerId)))
-	require.Equal(t, providertypes.NewProviderConsAddress(allowlistedValidator), providerKeeper.GetAllowList(ctx, consumerId)[0])
-
-	denylistedValidator, err := sdk.ConsAddressFromBech32(expectedDenylistedValidator)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, consumerId)))
-	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, consumerId)[0])
-
-	actualMinStake := providerKeeper.GetMinStake(ctx, consumerId)
-	require.Equal(t, expectedMinStake, actualMinStake)
-
-	actualAllowInactiveValidators := providerKeeper.AllowsInactiveValidators(ctx, consumerId)
-	require.Equal(t, expectedAllowInactiveValidators, actualAllowInactiveValidators)
 }

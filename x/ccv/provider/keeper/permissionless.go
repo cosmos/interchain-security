@@ -21,10 +21,9 @@ const (
 	// Registered phase indicates the phase in which a consumer chain has been assigned a unique consumer id. This consumer
 	// id can be used to interact with the consumer chain (e.g., when a validator opts in to a chain). A chain in this
 	// phase cannot yet launch. It has to be initialized first.
-	Registered ConsumerPhase = iota
 	// Initialized phase indicates the phase in which a consumer chain has set all the needed parameters to launch but
 	// has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
-	Initialized
+	Initialized ConsumerPhase = iota
 	// TODO (PERMISSIONLESS) add this if the chain fails to launch
 	// Useful so we do not keep trying to launch failed chains
 	// FailedToLaunch phase indicates that the chain attempted but failed to launch (e.g., due to no validator opting in)
@@ -64,110 +63,141 @@ func (k Keeper) FetchAndIncrementConsumerId(ctx sdk.Context) string {
 	return strconv.FormatUint(consumerId, 10)
 }
 
-// GetConsumerRegistrationRecord returns the registration record associated with this consumer id
-func (k Keeper) GetConsumerRegistrationRecord(ctx sdk.Context, consumerId string) (types.ConsumerRegistrationRecord, error) {
+// GetConsumerChainId returns the chain id associated with this consumer id
+func (k Keeper) GetConsumerChainId(ctx sdk.Context, consumerId string) (string, error) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerIdToRegistrationRecordKey(consumerId))
+	bz := store.Get(types.ConsumerIdToChainIdKey(consumerId))
 	if bz == nil {
-		return types.ConsumerRegistrationRecord{}, fmt.Errorf("failed to retrieve registration record for consumer id (%s)", consumerId)
+		return "", fmt.Errorf("failed to retrieve chain id for consumer id (%s)", consumerId)
 	}
-	var record types.ConsumerRegistrationRecord
-	if err := record.Unmarshal(bz); err != nil {
-		return types.ConsumerRegistrationRecord{}, fmt.Errorf("failed to unmarshal registration record for consumer id (%s): %w", consumerId, err)
-	}
-	return record, nil
+	return string(bz), nil
 }
 
-// SetConsumerRegistrationRecord sets the registration record associated with this consumer id
-func (k Keeper) SetConsumerRegistrationRecord(ctx sdk.Context, consumerId string, record types.ConsumerRegistrationRecord) error {
+// SetConsumerChainId sets the chain id associated with this consumer id
+func (k Keeper) SetConsumerChainId(ctx sdk.Context, consumerId string, chainId string) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := record.Marshal()
-	if err != nil {
-		return fmt.Errorf("failed to marshal registration record (%+v) for consumer id (%s): %w", record, consumerId, err)
+	store.Set(types.ConsumerIdToChainIdKey(consumerId), []byte(chainId))
+}
+
+// DeleteConsumerChainId deletes the chain id associated with this consumer id
+func (k Keeper) DeleteConsumerChainId(ctx sdk.Context, consumerId string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerIdToChainIdKey(consumerId))
+}
+
+// GetConsumerOwnerAddress returns the owner address associated with this consumer id
+func (k Keeper) GetConsumerOwnerAddress(ctx sdk.Context, consumerId string) (string, error) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerIdToOwnerAddressKey(consumerId))
+	if bz == nil {
+		return "", fmt.Errorf("failed to retrieve owner address for consumer id (%s)", consumerId)
 	}
-	store.Set(types.ConsumerIdToRegistrationRecordKey(consumerId), bz)
+	return string(bz), nil
+}
+
+// SetConsumerOwnerAddress sets the chain id associated with this consumer id
+func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId string, chainId string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(chainId))
+}
+
+// DeleteConsumerOwnerAddress deletes the owner address associated with this consumer id
+func (k Keeper) DeleteConsumerOwnerAddress(ctx sdk.Context, consumerId string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerIdToOwnerAddressKey(consumerId))
+}
+
+// GetConsumerMetadata returns the registration record associated with this consumer id
+func (k Keeper) GetConsumerMetadata(ctx sdk.Context, consumerId string) (types.ConsumerMetadata, error) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerIdToMetadataKey(consumerId))
+	if bz == nil {
+		return types.ConsumerMetadata{}, fmt.Errorf("failed to retrieve metadata for consumer id (%s)", consumerId)
+	}
+	var metadata types.ConsumerMetadata
+	if err := metadata.Unmarshal(bz); err != nil {
+		return types.ConsumerMetadata{}, fmt.Errorf("failed to unmarshal metadata for consumer id (%s): %w", consumerId, err)
+	}
+	return metadata, nil
+}
+
+// SetConsumerMetadata sets the registration record associated with this consumer id
+func (k Keeper) SetConsumerMetadata(ctx sdk.Context, consumerId string, metadata types.ConsumerMetadata) error {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := metadata.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to marshal registration metadata (%+v) for consumer id (%s): %w", metadata, consumerId, err)
+	}
+	store.Set(types.ConsumerIdToMetadataKey(consumerId), bz)
 	return nil
 }
 
-// DeleteConsumerRegistrationRecord deletes the registration record associated with this consumer id
-func (k Keeper) DeleteConsumerRegistrationRecord(ctx sdk.Context, consumerId string) {
+// DeleteConsumerMetadata deletes the metadata associated with this consumer id
+func (k Keeper) DeleteConsumerMetadata(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToRegistrationRecordKey(consumerId))
+	store.Delete(types.ConsumerIdToMetadataKey(consumerId))
 }
 
-// GetConsumerInitializationRecord returns the initialization record associated with this consumer id
-func (k Keeper) GetConsumerInitializationRecord(ctx sdk.Context, consumerId string) (types.ConsumerInitializationRecord, error) {
+// GetConsumerInitializationParameters returns the initialization parameters associated with this consumer id
+func (k Keeper) GetConsumerInitializationParameters(ctx sdk.Context, consumerId string) (types.ConsumerInitializationParameters, error) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerIdToInitializationRecordKey(consumerId))
+	bz := store.Get(types.ConsumerIdToInitializationParametersKey(consumerId))
 	if bz == nil {
-		return types.ConsumerInitializationRecord{}, fmt.Errorf("failed to retrieve initialization record for consumer id (%s)", consumerId)
+		return types.ConsumerInitializationParameters{}, fmt.Errorf("failed to retrieve initialization parameters for consumer id (%s)", consumerId)
 	}
-	var record types.ConsumerInitializationRecord
+	var record types.ConsumerInitializationParameters
 	if err := record.Unmarshal(bz); err != nil {
-		return types.ConsumerInitializationRecord{}, fmt.Errorf("failed to unmarshal stop time for consumer id (%s): %w", consumerId, err)
+		return types.ConsumerInitializationParameters{}, fmt.Errorf("failed to unmarshal stop time for consumer id (%s): %w", consumerId, err)
 	}
 	return record, nil
 }
 
-// SetConsumerInitializationRecord sets the initialization record associated with this consumer id
-func (k Keeper) SetConsumerInitializationRecord(ctx sdk.Context, consumerId string, record types.ConsumerInitializationRecord) error {
+// SetConsumerInitializationParameters sets the initialization parameters associated with this consumer id
+func (k Keeper) SetConsumerInitializationParameters(ctx sdk.Context, consumerId string, record types.ConsumerInitializationParameters) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := record.Marshal()
 	if err != nil {
 		return fmt.Errorf("failed to marshal initialization record (%+v) for consumer id (%s): %w", record, consumerId, err)
 	}
-	store.Set(types.ConsumerIdToInitializationRecordKey(consumerId), bz)
+	store.Set(types.ConsumerIdToInitializationParametersKey(consumerId), bz)
 	return nil
 }
 
-// DeleteConsumerInitializationRecord deletes the initialization record associated with this consumer id
-func (k Keeper) DeleteConsumerInitializationRecord(ctx sdk.Context, consumerId string) {
+// DeleteConsumerInitializationParameters deletes the initialization parameters associated with this consumer id
+func (k Keeper) DeleteConsumerInitializationParameters(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToInitializationRecordKey(consumerId))
+	store.Delete(types.ConsumerIdToInitializationParametersKey(consumerId))
 }
 
-// GetConsumerUpdateRecord returns the update record associated with this consumer id
-func (k Keeper) GetConsumerUpdateRecord(ctx sdk.Context, consumerId string) (types.ConsumerUpdateRecord, error) {
+// GetConsumerPowerShapingParameters returns the power-shaping parameters associated with this consumer id
+func (k Keeper) GetConsumerPowerShapingParameters(ctx sdk.Context, consumerId string) (types.PowerShapingParameters, error) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerIdToUpdateRecordKey(consumerId))
+	bz := store.Get(types.ConsumerIdToPowerShapingParametersKey(consumerId))
 	if bz == nil {
-		return types.ConsumerUpdateRecord{}, fmt.Errorf("failed to retrieve update record for consumer id (%s)", consumerId)
+		return types.PowerShapingParameters{}, fmt.Errorf("failed to retrieve power-shaping parameters for consumer id (%s)", consumerId)
 	}
-	var record types.ConsumerUpdateRecord
+	var record types.PowerShapingParameters
 	if err := record.Unmarshal(bz); err != nil {
-		return types.ConsumerUpdateRecord{}, fmt.Errorf("failed to unmarshal update record for consumer id (%s): %w", consumerId, err)
+		return types.PowerShapingParameters{}, fmt.Errorf("failed to unmarshal power-shaping parameters for consumer id (%s): %w", consumerId, err)
 	}
 	return record, nil
 }
 
-// SetConsumerUpdateRecord sets the update record associated with this consumer id
-func (k Keeper) SetConsumerUpdateRecord(ctx sdk.Context, consumerId string, record types.ConsumerUpdateRecord) error {
+// SetConsumerPowerShapingParameters sets the power-shaping parameters associated with this consumer id
+func (k Keeper) SetConsumerPowerShapingParameters(ctx sdk.Context, consumerId string, parameters types.PowerShapingParameters) error {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := record.Marshal()
+	bz, err := parameters.Marshal()
 	if err != nil {
-		return fmt.Errorf("failed to marshal update record (%+v) for consumer id (%s): %w", record, consumerId, err)
+		return fmt.Errorf("failed to marshal power-shaping parameters (%+v) for consumer id (%s): %w", parameters, consumerId, err)
 	}
-	store.Set(types.ConsumerIdToUpdateRecordKey(consumerId), bz)
+	store.Set(types.ConsumerIdToPowerShapingParametersKey(consumerId), bz)
 	return nil
 }
 
-// DeleteConsumerUpdateRecord deletes the update record associated with this consumer id
-func (k Keeper) DeleteConsumerUpdateRecord(ctx sdk.Context, consumerId string) {
+// DeleteConsumerPowerShapingParameters deletes the power-shaping parameters associated with this consumer id
+func (k Keeper) DeleteConsumerPowerShapingParameters(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToUpdateRecordKey(consumerId))
-}
-
-// GetConsumerOwnerAddress returns the owner address associated with this consumer id
-func (k Keeper) GetConsumerOwnerAddress(ctx sdk.Context, consumerId string) string {
-	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
-	return updateRecord.OwnerAddress
-}
-
-// SetConsumerOwnerAddress sets the owner address associated with this consumer id
-func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId string, ownerAddress string) {
-	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
-	updateRecord.OwnerAddress = ownerAddress
-	k.SetConsumerUpdateRecord(ctx, consumerId, updateRecord)
+	store.Delete(types.ConsumerIdToPowerShapingParametersKey(consumerId))
 }
 
 // GetConsumerPhase returns the phase associated with this consumer id
@@ -566,7 +596,7 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 			"cannot update stopped or not existing chain: %s", consumerId)
 	}
 
-	updateRecord, err := k.GetConsumerUpdateRecord(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
 		// TODO (permissionless) -- not really an invalid update record
 		return errorsmod.Wrapf(types.ErrInvalidUpdateRecord,
@@ -574,7 +604,7 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 	}
 
 	k.DeleteAllowlist(ctx, consumerId)
-	for _, address := range updateRecord.Allowlist {
+	for _, address := range powerShapingParameters.Allowlist {
 		consAddr, err := sdk.ConsAddressFromBech32(address)
 		if err != nil {
 			continue
@@ -584,7 +614,7 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 	}
 
 	k.DeleteDenylist(ctx, consumerId)
-	for _, address := range updateRecord.Denylist {
+	for _, address := range powerShapingParameters.Denylist {
 		consAddr, err := sdk.ConsAddressFromBech32(address)
 		if err != nil {
 			continue
@@ -600,14 +630,14 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 	}
 
 	// if the top N changes, we need to update the new minimum power in top N
-	if updateRecord.Top_N != oldTopN {
-		if updateRecord.Top_N > 0 {
+	if powerShapingParameters.Top_N != oldTopN {
+		if powerShapingParameters.Top_N > 0 {
 			// if the chain receives a non-zero top N value, store the minimum power in the top N
 			bondedValidators, err := k.GetLastBondedValidators(ctx)
 			if err != nil {
 				return err
 			}
-			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, updateRecord.Top_N)
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, powerShapingParameters.Top_N)
 			if err != nil {
 				return err
 			}
@@ -678,15 +708,15 @@ func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.
 	}
 
 	for _, consumerId := range consumerIds {
-		record, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+		consumerChainId, err := k.GetConsumerChainId(ctx, consumerId)
 		if err != nil {
-			k.Logger(ctx).Error("cannot find registration record",
+			k.Logger(ctx).Error("cannot find chain id",
 				"consumerId", consumerId,
 				"error", err)
 			continue
 		}
 
-		if record.ChainId == chainId {
+		if consumerChainId == chainId {
 			return consumerId, true
 		}
 

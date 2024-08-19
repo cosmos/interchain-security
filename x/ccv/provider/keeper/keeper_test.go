@@ -395,7 +395,7 @@ func TestTopN(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		providerKeeper.SetConsumerUpdateRecord(ctx, test.consumerId, types.ConsumerUpdateRecord{
+		providerKeeper.SetConsumerPowerShapingParameters(ctx, test.consumerId, types.PowerShapingParameters{
 			Top_N: test.N,
 		})
 		topN := providerKeeper.GetTopN(ctx, test.consumerId)
@@ -563,14 +563,14 @@ func TestAllowInactiveValidators(t *testing.T) {
 	require.False(t, k.AllowsInactiveValidators(ctx, consumerId))
 
 	// set the chain to allow inactive validators
-	k.SetConsumerUpdateRecord(ctx, consumerId, types.ConsumerUpdateRecord{
+	k.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
 		AllowInactiveVals: true,
 	})
 	// check that AllowsInactiveValidators returns true
 	require.True(t, k.AllowsInactiveValidators(ctx, consumerId))
 
 	// set the chain to not allow inactive validators
-	k.SetConsumerUpdateRecord(ctx, consumerId, types.ConsumerUpdateRecord{
+	k.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
 		AllowInactiveVals: false,
 	})
 
@@ -609,38 +609,38 @@ func TestKeeperConsumerParams(t *testing.T) {
 		{
 			name: "Minimum Stake",
 			settingFunc: func(ctx sdk.Context, id string, val int64) {
-				k.SetConsumerUpdateRecord(ctx, id,
-					types.ConsumerUpdateRecord{
+				k.SetConsumerPowerShapingParameters(ctx, id,
+					types.PowerShapingParameters{
 						MinStake: uint64(val),
 					})
 			},
 			getFunc: func(ctx sdk.Context, id string) int64 {
 				return int64(k.GetMinStake(ctx, id))
 			},
-			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerUpdateRecord(ctx, id) },
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerPowerShapingParameters(ctx, id) },
 			initialValue: 1000,
 			updatedValue: 2000,
 		},
 		{
 			name: "Validator Set Cap",
 			settingFunc: func(ctx sdk.Context, id string, val int64) {
-				k.SetConsumerUpdateRecord(ctx, id,
-					types.ConsumerUpdateRecord{
+				k.SetConsumerPowerShapingParameters(ctx, id,
+					types.PowerShapingParameters{
 						ValidatorSetCap: uint32(val),
 					})
 			},
 			getFunc: func(ctx sdk.Context, id string) int64 {
 				return int64(k.GetValidatorSetCap(ctx, id))
 			},
-			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerUpdateRecord(ctx, id) },
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerPowerShapingParameters(ctx, id) },
 			initialValue: 10,
 			updatedValue: 200,
 		},
 		{
 			name: "Validator Powers Cap",
 			settingFunc: func(ctx sdk.Context, id string, val int64) {
-				k.SetConsumerUpdateRecord(ctx, id,
-					types.ConsumerUpdateRecord{
+				k.SetConsumerPowerShapingParameters(ctx, id,
+					types.PowerShapingParameters{
 						ValidatorsPowerCap: uint32(val),
 					})
 			},
@@ -648,7 +648,7 @@ func TestKeeperConsumerParams(t *testing.T) {
 				val := k.GetValidatorsPowerCap(ctx, id)
 				return int64(val)
 			},
-			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerUpdateRecord(ctx, id) },
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerPowerShapingParameters(ctx, id) },
 			initialValue: 10,
 			updatedValue: 11,
 		},

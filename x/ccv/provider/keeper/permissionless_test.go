@@ -54,34 +54,36 @@ func TestConsumerIdToRegistrationRecord(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, err := providerKeeper.GetConsumerRegistrationRecord(ctx, "consumerId")
+	_, err := providerKeeper.GetConsumerMetadata(ctx, "consumerId")
 	require.Error(t, err)
 
-	expectedRecord := providertypes.ConsumerRegistrationRecord{
-		Title:       "title",
+	expectedRecord := providertypes.ConsumerMetadata{
+		Name:        "name",
 		Description: "description",
-		ChainId:     "chain_id",
+		Metadata:    "metadata",
+		//ChainId:     "chain_id",
 	}
-	providerKeeper.SetConsumerRegistrationRecord(ctx, "consumerId", expectedRecord)
-	actualRecord, err := providerKeeper.GetConsumerRegistrationRecord(ctx, "consumerId")
+	providerKeeper.SetConsumerMetadata(ctx, "consumerId", expectedRecord)
+	actualRecord, err := providerKeeper.GetConsumerMetadata(ctx, "consumerId")
 	require.NoError(t, err)
 	require.Equal(t, expectedRecord, actualRecord)
 
 	// assert that overwriting the current registration record works
-	expectedRecord = providertypes.ConsumerRegistrationRecord{
-		Title:       "title 2",
+	expectedRecord = providertypes.ConsumerMetadata{
+		Name:        "name 2",
 		Description: "description 2",
-		ChainId:     "chain_id2",
+		Metadata:    "metadata 2",
+		//ChainId:     "chain_id2",
 	}
-	providerKeeper.SetConsumerRegistrationRecord(ctx, "consumerId", expectedRecord)
-	actualRecord, err = providerKeeper.GetConsumerRegistrationRecord(ctx, "consumerId")
+	providerKeeper.SetConsumerMetadata(ctx, "consumerId", expectedRecord)
+	actualRecord, err = providerKeeper.GetConsumerMetadata(ctx, "consumerId")
 	require.NoError(t, err)
 	require.Equal(t, expectedRecord, actualRecord)
 
-	providerKeeper.DeleteConsumerRegistrationRecord(ctx, "consumerId")
-	actualRecord, err = providerKeeper.GetConsumerRegistrationRecord(ctx, "consumerId")
+	providerKeeper.DeleteConsumerMetadata(ctx, "consumerId")
+	actualRecord, err = providerKeeper.GetConsumerMetadata(ctx, "consumerId")
 	require.Error(t, err)
-	require.Equal(t, providertypes.ConsumerRegistrationRecord{}, actualRecord)
+	require.Equal(t, providertypes.ConsumerMetadata{}, actualRecord)
 }
 
 // TestConsumerIdToInitializationRecord tests the getter, setter, and deletion methods of the consumer id to initialization record methods
@@ -89,10 +91,10 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, err := providerKeeper.GetConsumerInitializationRecord(ctx, "consumerId")
+	_, err := providerKeeper.GetConsumerInitializationParameters(ctx, "consumerId")
 	require.Error(t, err)
 
-	expectedRecord := providertypes.ConsumerInitializationRecord{
+	expectedRecord := providertypes.ConsumerInitializationParameters{
 		InitialHeight:                     types.Height{RevisionNumber: 1, RevisionHeight: 2},
 		GenesisHash:                       []byte{0, 1},
 		BinaryHash:                        []byte{2, 3},
@@ -105,13 +107,13 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 		HistoricalEntries:                 456,
 		DistributionTransmissionChannel:   "distribution_transmission_channel",
 	}
-	providerKeeper.SetConsumerInitializationRecord(ctx, "consumerId", expectedRecord)
-	actualRecord, err := providerKeeper.GetConsumerInitializationRecord(ctx, "consumerId")
+	providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", expectedRecord)
+	actualRecord, err := providerKeeper.GetConsumerInitializationParameters(ctx, "consumerId")
 	require.NoError(t, err)
 	require.Equal(t, expectedRecord, actualRecord)
 
 	// assert that overwriting the current initialization record works
-	expectedRecord = providertypes.ConsumerInitializationRecord{
+	expectedRecord = providertypes.ConsumerInitializationParameters{
 		InitialHeight:                     types.Height{RevisionNumber: 2, RevisionHeight: 3},
 		GenesisHash:                       []byte{2, 3},
 		BinaryHash:                        []byte{4, 5},
@@ -124,15 +126,15 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 		HistoricalEntries:                 789,
 		DistributionTransmissionChannel:   "distribution_transmission_channel2",
 	}
-	providerKeeper.SetConsumerInitializationRecord(ctx, "consumerId", expectedRecord)
-	actualRecord, err = providerKeeper.GetConsumerInitializationRecord(ctx, "consumerId")
+	providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", expectedRecord)
+	actualRecord, err = providerKeeper.GetConsumerInitializationParameters(ctx, "consumerId")
 	require.NoError(t, err)
 	require.Equal(t, expectedRecord, actualRecord)
 
-	providerKeeper.DeleteConsumerInitializationRecord(ctx, "consumerId")
-	actualRecord, err = providerKeeper.GetConsumerInitializationRecord(ctx, "consumerId")
+	providerKeeper.DeleteConsumerInitializationParameters(ctx, "consumerId")
+	actualRecord, err = providerKeeper.GetConsumerInitializationParameters(ctx, "consumerId")
 	require.Error(t, err)
-	require.Equal(t, providertypes.ConsumerInitializationRecord{}, actualRecord)
+	require.Equal(t, providertypes.ConsumerInitializationParameters{}, actualRecord)
 }
 
 // TestConsumerIdToOwnerAddress tests the getter, setter, and deletion methods of the owner address to registration record methods
@@ -141,12 +143,14 @@ func TestConsumerIdToOwnerAddress(t *testing.T) {
 	defer ctrl.Finish()
 
 	providerKeeper.SetConsumerOwnerAddress(ctx, "consumerId", "owner_address")
-	address := providerKeeper.GetConsumerOwnerAddress(ctx, "consumerId")
+	address, err := providerKeeper.GetConsumerOwnerAddress(ctx, "consumerId")
+	require.NoError(t, err)
 	require.Equal(t, "owner_address", address)
 
 	// assert that overwriting the current owner address works
 	providerKeeper.SetConsumerOwnerAddress(ctx, "consumerId", "owner_address2")
-	address = providerKeeper.GetConsumerOwnerAddress(ctx, "consumerId")
+	address, err = providerKeeper.GetConsumerOwnerAddress(ctx, "consumerId")
+	require.NoError(t, err)
 	require.Equal(t, "owner_address2", address)
 }
 
@@ -158,10 +162,10 @@ func TestConsumerIdToPhase(t *testing.T) {
 	_, found := providerKeeper.GetConsumerPhase(ctx, "consumerId")
 	require.False(t, found)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Registered)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
 	phase, found := providerKeeper.GetConsumerPhase(ctx, "consumerId")
 	require.True(t, found)
-	require.Equal(t, keeper.Registered, phase)
+	require.Equal(t, keeper.Initialized, phase)
 
 	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Launched)
 	phase, found = providerKeeper.GetConsumerPhase(ctx, "consumerId")
@@ -260,9 +264,7 @@ func TestIsValidatorOptedInToChain(t *testing.T) {
 	require.False(t, found)
 
 	expectedConsumerId := "consumerId"
-	providerKeeper.SetConsumerRegistrationRecord(ctx, expectedConsumerId, providertypes.ConsumerRegistrationRecord{
-		ChainId: chainId,
-	})
+	providerKeeper.SetConsumerChainId(ctx, expectedConsumerId, chainId)
 	providerKeeper.SetOptedIn(ctx, expectedConsumerId, providerAddr)
 	providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, expectedConsumerId)
 	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)

@@ -129,23 +129,27 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(45), providertypes.ConsumerIdKey()[0])
 	i++
-	require.Equal(t, byte(46), providertypes.ConsumerIdToRegistrationRecordKeyPrefix())
+	require.Equal(t, byte(46), providertypes.ConsumerIdToChainIdKey("consumerId")[0])
 	i++
-	require.Equal(t, byte(47), providertypes.ConsumerIdToInitializationRecordKeyPrefix())
+	require.Equal(t, byte(47), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
 	i++
-	require.Equal(t, byte(48), providertypes.ConsumerIdToUpdateRecordKey("consumerId")[0])
+	require.Equal(t, byte(48), providertypes.ConsumerIdToMetadataKeyPrefix())
 	i++
-	require.Equal(t, byte(49), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
+	require.Equal(t, byte(49), providertypes.ConsumerIdToInitializationParametersKeyPrefix())
 	i++
-	require.Equal(t, byte(50), providertypes.ConsumerIdToStopTimeKeyPrefix())
+	require.Equal(t, byte(50), providertypes.ConsumerIdToPowerShapingParametersKey("consumerId")[0])
 	i++
-	require.Equal(t, byte(51), providertypes.SpawnTimeToConsumerIdsKeyPrefix())
+	require.Equal(t, byte(51), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
 	i++
-	require.Equal(t, byte(52), providertypes.StopTimeToConsumerIdsKeyPrefix())
+	require.Equal(t, byte(52), providertypes.ConsumerIdToStopTimeKeyPrefix())
 	i++
-	require.Equal(t, byte(53), providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05}))[0])
+	require.Equal(t, byte(53), providertypes.SpawnTimeToConsumerIdsKeyPrefix())
 	i++
-	require.Equal(t, byte(54), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	require.Equal(t, byte(54), providertypes.StopTimeToConsumerIdsKeyPrefix())
+	i++
+	require.Equal(t, byte(55), providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05}))[0])
+	i++
+	require.Equal(t, byte(56), providertypes.ClientIdToConsumerIdKey("clientId")[0])
 	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()
@@ -210,9 +214,11 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerAddrsToPruneV2Key("chainID", time.Time{}),
 		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerIdKey(),
-		providertypes.ConsumerIdToRegistrationRecordKey("consumerId"),
-		providertypes.ConsumerIdToInitializationRecordKey("consumerId"),
-		providertypes.ConsumerIdToUpdateRecordKey("consumerId"),
+		providertypes.ConsumerIdToChainIdKey("consumerId"),
+		providertypes.ConsumerIdToOwnerAddressKey("consumerId"),
+		providertypes.ConsumerIdToMetadataKey("consumerId"),
+		providertypes.ConsumerIdToInitializationParametersKey("consumerId"),
+		providertypes.ConsumerIdToPowerShapingParametersKey("consumerId"),
 		providertypes.ConsumerIdToPhaseKey("consumerId"),
 		providertypes.ConsumerIdToStopTimeKey("consumerId"),
 		providertypes.SpawnTimeToConsumerIdsKey(time.Time{}),

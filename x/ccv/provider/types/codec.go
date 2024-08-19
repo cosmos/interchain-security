@@ -27,8 +27,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgAssignConsumerKey{},
-		&MsgRegisterConsumer{},
-		&MsgInitializeConsumer{},
+		&MsgCreateConsumer{},
 		&MsgUpdateConsumer{},
 		&MsgRemoveConsumer{},
 		// keeping old messages (for now) so that existing proposals can be correctly deserialized

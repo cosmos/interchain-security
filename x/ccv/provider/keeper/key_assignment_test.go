@@ -495,7 +495,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Registered)
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
 				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -520,7 +520,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Registered)
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
 				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -550,7 +550,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Registered)
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
 				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -577,7 +577,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Registered)
+				k.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
 				err := k.AssignConsumerKey(ctx, consumerId,
 					providerIdentities[1].SDKStakingValidator(),
 					providerIdentities[0].TMProtoCryptoPublicKey(),
@@ -613,7 +613,7 @@ func TestCannotReassignDefaultKeyAssignment(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providerkeeper.Registered)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providerkeeper.Initialized)
 
 	// Mock that the validator is validating with the single key, as confirmed by provider's staking keeper
 	gomock.InOrder(

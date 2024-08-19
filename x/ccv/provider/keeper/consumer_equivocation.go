@@ -58,13 +58,13 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	}
 
 	// get the chainId of this consumer chain to verify the double-voting evidence
-	chainId, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+	chainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
 		return err
 	}
 
 	// verifies the double voting evidence using the consumer chain public key
-	if err = k.VerifyDoubleVotingEvidence(*evidence, chainId.ChainId, pubkey); err != nil {
+	if err = k.VerifyDoubleVotingEvidence(*evidence, chainId, pubkey); err != nil {
 		return err
 	}
 
@@ -301,13 +301,13 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehaviour ibctmtypes.Misbehaviour) error {
 	chainId := misbehaviour.Header1.Header.ChainID
 
-	registrationRecord, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+	consumerChainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
 		return err
-	} else if registrationRecord.ChainId != chainId {
-		return fmt.Errorf("incorrect misbheaviour for a different chain id (%s) than that of the consumer chain %s (consumerId): %s",
+	} else if consumerChainId != chainId {
+		return fmt.Errorf("incorrect misbehaviour for a different chain id (%s) than that of the consumer chain %s (consumerId): %s",
 			chainId,
-			registrationRecord.ChainId,
+			consumerChainId,
 			consumerId)
 	}
 

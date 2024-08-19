@@ -404,7 +404,7 @@ func (k Keeper) AssignConsumerKey(
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
 	phase, found := k.GetConsumerPhase(ctx, consumerId)
-	if !found || (phase != Registered && phase != Initialized && phase != Launched) {
+	if !found || phase == Stopped {
 		//check that the consumer chain is either registered, initialized, or launched
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerId, consumerId,

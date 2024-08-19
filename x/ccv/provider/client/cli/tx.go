@@ -37,8 +37,7 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
 	cmd.AddCommand(NewSubmitConsumerMisbehaviourCmd())
 	cmd.AddCommand(NewSubmitConsumerDoubleVotingCmd())
-	cmd.AddCommand(NewRegisterConsumerCmd())
-	cmd.AddCommand(NewInitializeConsumerCmd())
+	cmd.AddCommand(NewCreateConsumerCmd())
 	cmd.AddCommand(NewUpdateConsumerCmd())
 	cmd.AddCommand(NewRemoveConsumerCmd())
 	cmd.AddCommand(NewOptInCmd())
@@ -214,19 +213,19 @@ Example:
 	return cmd
 }
 
-func NewRegisterConsumerCmd() *cobra.Command {
+func NewCreateConsumerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "register-consumer [path/to/registration-record.json]",
-		Short: "register a consumer chain",
+		Use:   "create-consumer [chain-id] [path/to/metadata.json] [path/to/initialization-parameters.json] [path/to/power-shaping-parameters.json]",
+		Short: "create a consumer chain",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Register a consumer chain to get back the assigned consumer id of this chain.
+			fmt.Sprintf(`Create a consumer chain and get the assigned consumer id of this chain.
 Note that the one that signs this message is the owner of this consumer chain. The owner can be later
 changed by updating the consumer chain.
 
 Example:
-%s tx provider register-consumer [path/to/registration-record.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider create-consumer [chain-id] [path/to/metadata.json] [path/to/initialization-parameters.json] [path/to/power-shaping-parameters.json] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
-		Args: cobra.ExactArgs(1),
+		Args: cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -240,74 +239,41 @@ Example:
 			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			signer := clientCtx.GetFromAddress().String()
-			registrationRecord := types.ConsumerRegistrationRecord{}
-			registrationRecordJson, err := os.ReadFile(args[0])
+
+			chainId := args[0]
+
+			metadata := types.ConsumerMetadata{}
+			metadataJson, err := os.ReadFile(args[1])
 			if err != nil {
 				return err
 			}
-			if err := json.Unmarshal(registrationRecordJson, &registrationRecord); err != nil {
-				return fmt.Errorf("registration record unmarshalling failed: %w", err)
+			if err = json.Unmarshal(metadataJson, &metadata); err != nil {
+				return fmt.Errorf("metadata unmarshalling failed: %w", err)
 			}
 
-			msg, err := types.NewMsgRegisterConsumer(signer, registrationRecord)
+			initializationParameters := types.ConsumerInitializationParameters{}
+			initializationParametersJson, err := os.ReadFile(args[2])
 			if err != nil {
 				return err
 			}
-			if err := msg.ValidateBasic(); err != nil {
-				return err
+			if err = json.Unmarshal(initializationParametersJson, &initializationParameters); err != nil {
+				return fmt.Errorf("initialization parameters unmarshalling failed: %w", err)
 			}
 
-			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
-		},
-	}
-
-	flags.AddTxFlagsToCmd(cmd)
-
-	_ = cmd.MarkFlagRequired(flags.FlagFrom)
-
-	return cmd
-}
-
-func NewInitializeConsumerCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "initialize-consumer [consumer-id] [path/to/initialization-record.json]",
-		Short: "initialize a consumer chain",
-		Long: strings.TrimSpace(
-			fmt.Sprintf(`Initialize a consumer chain to get it ready to launch
-Note that only the owner of the chain can initialize it.
-
-Example:
-%s tx provider initialize-consumer [consumer-id] [path/to/initialization-record.json] --from node0 --home ../node0 --chain-id $CID
-`, version.AppName)),
-		Args: cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
+			powerShapingParameters := types.PowerShapingParameters{}
+			powerShapingParametersJson, err := os.ReadFile(args[3])
 			if err != nil {
 				return err
 			}
+			if err = json.Unmarshal(powerShapingParametersJson, &powerShapingParameters); err != nil {
+				return fmt.Errorf("power-shaping parameters unmarshalling failed: %w", err)
+			}
 
-			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			msg, err := types.NewMsgCreateConsumer(signer, chainId, metadata, initializationParameters, powerShapingParameters)
 			if err != nil {
 				return err
 			}
-			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
-
-			signer := clientCtx.GetFromAddress().String()
-			consumerId := args[0]
-			initializationRecord := types.ConsumerInitializationRecord{}
-			initializationRecordJson, err := os.ReadFile(args[1])
-			if err != nil {
-				return err
-			}
-			if err := json.Unmarshal(initializationRecordJson, &initializationRecord); err != nil {
-				return fmt.Errorf("initialization record unmarshalling failed: %w", err)
-			}
-
-			msg, err := types.NewMsgInitializeConsumer(signer, consumerId, initializationRecord)
-			if err != nil {
-				return err
-			}
-			if err := msg.ValidateBasic(); err != nil {
+			if err = msg.ValidateBasic(); err != nil {
 				return err
 			}
 
@@ -324,16 +290,16 @@ Example:
 
 func NewUpdateConsumerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "update-consumer [consumer-id] [path/to/update-record.json]",
+		Use:   "update-consumer [consumer-id] [owner-address] [path/to/metadata.json] [path/to/initialization-parameters.json] [path/to/power-shaping-parameters.json]",
 		Short: "update a consumer chain",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Update a consumer chain to change its running parameters (e.g., the allow list).
+			fmt.Sprintf(`Update a consumer chain to change its parameters (e.g., spawn time, allow list, etc.).
 Note that only the owner of the chain can initialize it.
 
 Example:
-%s tx provider update-consumer [consumer-id] [path/to/update-record.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider update-consumer [consumer-id] [owner-address] [path/to/metadata.json] [path/to/initialization-parameters.json] [path/to/power-shaping-parameters.json] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
-		Args: cobra.ExactArgs(2),
+		Args: cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -348,16 +314,36 @@ Example:
 
 			signer := clientCtx.GetFromAddress().String()
 			consumerId := args[0]
-			updateRecord := types.ConsumerUpdateRecord{}
-			updateRecordJson, err := os.ReadFile(args[1])
+			ownerAddress := args[1]
+
+			metadata := types.ConsumerMetadata{}
+			metadataJson, err := os.ReadFile(args[2])
 			if err != nil {
 				return err
 			}
-			if err := json.Unmarshal(updateRecordJson, &updateRecord); err != nil {
-				return fmt.Errorf("update record unmarshalling failed: %w", err)
+			if err = json.Unmarshal(metadataJson, &metadata); err != nil {
+				return fmt.Errorf("metadata unmarshalling failed: %w", err)
 			}
 
-			msg, err := types.NewMsgUpdateConsumer(signer, consumerId, updateRecord)
+			initializationParameters := types.ConsumerInitializationParameters{}
+			initializationParametersJson, err := os.ReadFile(args[3])
+			if err != nil {
+				return err
+			}
+			if err = json.Unmarshal(initializationParametersJson, &initializationParameters); err != nil {
+				return fmt.Errorf("initialization parameters unmarshalling failed: %w", err)
+			}
+
+			powerShapingParameters := types.PowerShapingParameters{}
+			powerShapingParametersJson, err := os.ReadFile(args[4])
+			if err != nil {
+				return err
+			}
+			if err = json.Unmarshal(powerShapingParametersJson, &powerShapingParameters); err != nil {
+				return fmt.Errorf("power-shaping parameters unmarshalling failed: %w", err)
+			}
+
+			msg, err := types.NewMsgUpdateConsumer(signer, consumerId, ownerAddress, metadata, initializationParameters, powerShapingParameters)
 			if err != nil {
 				return err
 			}

@@ -231,9 +231,10 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 
 	gomock.InOrder(expectations...)
 
-	providerKeeper.SetConsumerRegistrationRecord(ctx, consumerId, GetTestRegistrationRecord())
-	providerKeeper.SetConsumerInitializationRecord(ctx, consumerId, GetTestInitializationRecord())
-	providerKeeper.SetConsumerUpdateRecord(ctx, consumerId, GetTestUpdateRecord())
+	providerKeeper.SetConsumerChainId(ctx, consumerId, "chainID")
+	providerKeeper.SetConsumerMetadata(ctx, consumerId, GetTestConsumerMetadata())
+	providerKeeper.SetConsumerInitializationParameters(ctx, consumerId, GetTestInitializationParameters())
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, GetTestPowerShapingParameters())
 	providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
 
 	err := providerKeeper.CreateConsumerClient(ctx, consumerId)
@@ -272,16 +273,16 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.Zero(t, providerKeeper.GetEquivocationEvidenceMinHeight(ctx, consumerId))
 }
 
-func GetTestRegistrationRecord() providertypes.ConsumerRegistrationRecord {
-	return providertypes.ConsumerRegistrationRecord{
-		Title:       "title",
+func GetTestConsumerMetadata() providertypes.ConsumerMetadata {
+	return providertypes.ConsumerMetadata{
+		Name:        "chain name",
 		Description: "description",
-		ChainId:     "chainID",
+		Metadata:    "metadata",
 	}
 }
 
-func GetTestInitializationRecord() providertypes.ConsumerInitializationRecord {
-	return providertypes.ConsumerInitializationRecord{
+func GetTestInitializationParameters() providertypes.ConsumerInitializationParameters {
+	return providertypes.ConsumerInitializationParameters{
 		InitialHeight:                     clienttypes.NewHeight(4, 5),
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
@@ -296,8 +297,8 @@ func GetTestInitializationRecord() providertypes.ConsumerInitializationRecord {
 	}
 }
 
-func GetTestUpdateRecord() providertypes.ConsumerUpdateRecord {
-	return providertypes.ConsumerUpdateRecord{
+func GetTestPowerShapingParameters() providertypes.PowerShapingParameters {
+	return providertypes.PowerShapingParameters{
 		Top_N:              0,
 		ValidatorsPowerCap: 0,
 		ValidatorSetCap:    0,
