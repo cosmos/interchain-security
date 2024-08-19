@@ -74,7 +74,8 @@ The submission of a fault resolution succeeds only if all of the following condi
 
 Additional states are added to the `provider` modules:
 
-* The timestamps that record when validators opts in or opts out of a Opt-in consumer chain. Note that these timestamps can be pruned after an unbonding period elapses.
+* The timestamps that record when validators opts in or opts out of a Opt-in consumer chain. 
+ Note that these timestamps can be pruned after an unbonding period elapses following a validator's opts-out.
 
 ```golang
     ConsumerValidatorSubscriptionTimestampPrefix | len(consumerID) | consumerID | valAddr | ProtocolBuffer(ConsumerValSubscriptionTimestamp)
