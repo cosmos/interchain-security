@@ -37,7 +37,7 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *typ
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
-	initializationRecord, err := k.GetConsumerInitializationRecord(ctx, consumerId)
+	initializationRecord, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
 		return err
 	}
@@ -49,11 +49,10 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	}
 
 	// TODO (PERMISSIONLESS): make this a function ... GetChainId(consumerId) ...
-	registrationRecord, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+	chainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
 		return err
 	}
-	chainId := registrationRecord.ChainId
 
 	// Set minimum height for equivocation evidence from this consumer chain
 	k.SetEquivocationEvidenceMinHeight(ctx, consumerId, initializationRecord.InitialHeight.RevisionHeight)
@@ -164,9 +163,9 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, consumerId string, closeChan 
 	k.DeleteSlashAcks(ctx, consumerId)
 	k.DeletePendingVSCPackets(ctx, consumerId)
 
-	k.DeleteConsumerRegistrationRecord(ctx, consumerId)
-	k.DeleteConsumerUpdateRecord(ctx, consumerId)
-	k.DeleteConsumerUpdateRecord(ctx, consumerId)
+	k.DeleteConsumerMetadata(ctx, consumerId)
+	k.DeleteConsumerPowerShapingParameters(ctx, consumerId)
+	k.DeleteConsumerPowerShapingParameters(ctx, consumerId)
 	k.DeleteAllowlist(ctx, consumerId)
 	k.DeleteDenylist(ctx, consumerId)
 	k.DeleteAllOptedIn(ctx, consumerId)
@@ -185,16 +184,15 @@ func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
 	consumerId string,
 ) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
-	initializationRecord, err := k.GetConsumerInitializationRecord(ctx, consumerId)
+	initializationRecord, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
 		return gen, nil, errorsmod.Wrapf(types.ErrNoInitializationRecord,
 			"initialization record for consumer chain: %s is missing", consumerId)
 
 	}
-	updateRecord, err := k.GetConsumerUpdateRecord(ctx, consumerId)
+	updateRecord, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
-		updateRecord = types.ConsumerUpdateRecord{
-			OwnerAddress:       "",
+		updateRecord = types.PowerShapingParameters{
 			Top_N:              0,
 			ValidatorsPowerCap: 0,
 			ValidatorSetCap:    0,
@@ -339,7 +337,7 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	// TODO (PERMISSIONLESS): we can parameterize the limit to 200 at a later stage
 	for _, consumerId := range k.GetInitializedConsumersReadyToLaunch(ctx, 200) {
-		record, err := k.GetConsumerInitializationRecord(ctx, consumerId)
+		record, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 		if err != nil {
 			ctx.Logger().Error("could not retrieve initialization record",
 				"consumerId", consumerId,
@@ -347,7 +345,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 			continue
 		}
 		// Remove consumer to prevent re-trying launching this chain.
-		// We would only tru to re-launch this chain if a new `MsgInitializeConsumer` message is sent.
+		// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
 		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, record.SpawnTime)
 
 		cachedCtx, writeFn := ctx.CacheContext()
@@ -443,7 +441,7 @@ func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.Consu
 		// An error here would indicate something is very wrong
 		panic(fmt.Errorf("failed to marshal consumer removal proposal: %w", err))
 	}
-	store.Set(types.PendingCRPKey(prop.StopTime, prop.ConsumerId), bz)
+	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
 }
 
 // PendingConsumerRemovalPropExists checks whether a pending consumer removal proposal
@@ -463,7 +461,7 @@ func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
-		store.Delete(types.PendingCRPKey(p.StopTime, p.ConsumerId))
+		store.Delete(types.PendingCRPKey(p.StopTime, p.ChainId))
 	}
 }
 
@@ -569,6 +567,6 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 // from a given consumer removal proposal in a cached context
 func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
-	err = k.StopConsumerChain(cc, p.ConsumerId, true)
+	err = k.StopConsumerChain(cc, p.ChainId, true)
 	return
 }

@@ -761,7 +761,7 @@ func (k Keeper) GetTopN(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	return updateRecord.Top_N
 }
 
@@ -916,7 +916,7 @@ func (k Keeper) GetValidatorsPowerCap(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	return updateRecord.ValidatorsPowerCap
 }
 
@@ -925,7 +925,7 @@ func (k Keeper) GetValidatorSetCap(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	return updateRecord.ValidatorSetCap
 }
 
@@ -1100,7 +1100,7 @@ func (k Keeper) GetMinStake(
 	ctx sdk.Context,
 	consumerId string,
 ) uint64 {
-	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	return updateRecord.MinStake
 }
 
@@ -1110,7 +1110,7 @@ func (k Keeper) AllowsInactiveValidators(
 	ctx sdk.Context,
 	consumerId string,
 ) bool {
-	updateRecord, _ := k.GetConsumerUpdateRecord(ctx, consumerId)
+	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	return updateRecord.AllowInactiveVals
 }
 

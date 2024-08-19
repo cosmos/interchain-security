@@ -17,8 +17,13 @@ service Query {
   // whose proposal has been accepted
   rpc QueryConsumerGenesis(QueryConsumerGenesisRequest)
       returns (QueryConsumerGenesisResponse) {
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumer_genesis/{consumer_id}";
+    option (google.api.http) = {
+      // [DEPRECATED] use the {consumer_id} endpoint instead.
+      get: "/interchain_security/ccv/provider/consumer_genesis/{chain_id}";
+        additional_bindings {
+          get: "/interchain_security/ccv/provider/consumer_genesis/{consumer_id}";
+        }
+    };
   }
 
   // ConsumerChains queries active consumer chains supported by the provider
@@ -90,8 +95,13 @@ service Query {
   rpc QueryAllPairsValConAddrByConsumerChainID (
     QueryAllPairsValConAddrByConsumerChainIDRequest)
     returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
-      option (google.api.http).get =
-    "/interchain_security/ccv/provider/{consumer_id}";
+    option (google.api.http) = {
+      // [DEPRECATED] use the {consumer_id} endpoint instead.
+      get: "/interchain_security/ccv/provider/{chain_id}";
+      additional_bindings {
+        get: "/interchain_security/ccv/provider/{consumer_id}";
+      }
+    };
     }
 
   // QueryParams returns all current values of provider parameters
@@ -106,8 +116,13 @@ service Query {
   rpc QueryConsumerChainOptedInValidators(
     QueryConsumerChainOptedInValidatorsRequest)
     returns (QueryConsumerChainOptedInValidatorsResponse) {
-      option (google.api.http).get =
-    "/interchain_security/ccv/provider/opted_in_validators/{consumer_id}";
+      option (google.api.http) = {
+        // [DEPRECATED] use the {consumer_id} endpoint instead.
+        get: "/interchain_security/ccv/provider/opted_in_validators/{chain_id}";
+        additional_bindings {
+          get: "/interchain_security/ccv/provider/opted_in_validators/{consumer_id}";
+        }
+      };
     }
 
   // QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
@@ -124,8 +139,13 @@ service Query {
   rpc QueryValidatorConsumerCommissionRate(
     QueryValidatorConsumerCommissionRateRequest)
     returns (QueryValidatorConsumerCommissionRateResponse) {
-      option (google.api.http).get =
-    "/interchain_security/ccv/provider/consumer_commission_rate/{consumer_id}/{provider_address}";
+      option (google.api.http) = {
+        // [DEPRECATED] use the {consumer_id} endpoint instead.
+        get: "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}";
+        additional_bindings {
+          get: "/interchain_security/ccv/provider/consumer_commission_rate/{consumer_id}/{provider_address}";
+        }
+      };
     }
 
   // QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
@@ -133,8 +153,13 @@ service Query {
   // because a VSCPacket could be delayed to be delivered on the consumer chain.
   rpc QueryConsumerValidators(QueryConsumerValidatorsRequest)
       returns (QueryConsumerValidatorsResponse) {
-        option (google.api.http).get =
-            "/interchain_security/ccv/provider/consumer_validators/{consumer_id}";
+    option (google.api.http) = {
+      // [DEPRECATED] use the {consumer_id} endpoint instead.
+      get: "/interchain_security/ccv/provider/consumer_validators/{chain_id}";
+      additional_bindings {
+        get: "/interchain_security/ccv/provider/consumer_validators/{consumer_id}";
+      }
+    };
   }
 
   // QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
@@ -154,7 +179,11 @@ service Query {
   }
 }
 
-message QueryConsumerGenesisRequest { string consumer_id = 1; }
+message QueryConsumerGenesisRequest {
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
+  string consumer_id = 2;
+}
 
 message QueryConsumerGenesisResponse {
   interchain_security.ccv.v1.ConsumerGenesisState genesis_state = 1
@@ -200,10 +229,12 @@ message Chain {
 message QueryValidatorConsumerAddrRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  // The id of the consumer chain
-  string consumer_id = 1;
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
   // The consensus address of the validator on the provider chain
   string provider_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The id of the consumer chain
+  string consumer_id = 3;
 }
 
 message QueryValidatorConsumerAddrResponse {
@@ -214,10 +245,12 @@ message QueryValidatorConsumerAddrResponse {
 message QueryValidatorProviderAddrRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  // The id of the provider chain
-  string chain_id = 1;
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
   // The consensus address of the validator on the consumer chain
   string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The id of the consumer chain
+  string consumer_id = 3;
 }
 
 message QueryValidatorProviderAddrResponse {
@@ -258,8 +291,10 @@ message ProposedChain {
 }
 
 message QueryAllPairsValConAddrByConsumerChainIDRequest {
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
   // The id of the consumer chain
-  string consumer_id = 1;
+  string consumer_id = 2;
 }
 
 message QueryAllPairsValConAddrByConsumerChainIDResponse {
@@ -281,7 +316,9 @@ message QueryParamsResponse {
 }
 
 message QueryConsumerChainOptedInValidatorsRequest {
-  string consumer_id = 1;
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
+  string consumer_id = 2;
 }
 
 message QueryConsumerChainOptedInValidatorsResponse {
@@ -290,7 +327,9 @@ message QueryConsumerChainOptedInValidatorsResponse {
 }
 
 message QueryConsumerValidatorsRequest {
-  string consumer_id = 1;
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
+  string consumer_id = 2;
 }
 
 message QueryConsumerValidatorsValidator {
@@ -321,9 +360,11 @@ message QueryConsumerChainsValidatorHasToValidateResponse {
 }
 
 message QueryValidatorConsumerCommissionRateRequest {
-  string consumer_id = 1;
-    // The consensus address of the validator on the provider chain
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
+  // The consensus address of the validator on the provider chain
   string provider_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  string consumer_id = 3;
 }
 
 message QueryValidatorConsumerCommissionRateResponse {

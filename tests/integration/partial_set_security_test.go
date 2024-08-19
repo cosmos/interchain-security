@@ -152,7 +152,7 @@ func TestMinStake(t *testing.T) {
 			// adjust parameters
 
 			// set the minStake according to the test case
-			providerKeeper.SetConsumerUpdateRecord(s.providerChain.GetContext(), s.getFirstBundle().ConsumerId, types.ConsumerUpdateRecord{
+			providerKeeper.SetConsumerPowerShapingParameters(s.providerChain.GetContext(), s.getFirstBundle().ConsumerId, types.PowerShapingParameters{
 				MinStake: tc.minStake,
 			})
 

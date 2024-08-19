@@ -284,7 +284,7 @@ func TestGetConsumerChain(t *testing.T) {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
 		topN := topNs[i]
 		pk.SetConsumerClientId(ctx, chainID, clientID)
-		pk.SetConsumerUpdateRecord(ctx, chainID, types.ConsumerUpdateRecord{
+		pk.SetConsumerPowerShapingParameters(ctx, chainID, types.PowerShapingParameters{
 			Top_N:              topN,
 			ValidatorSetCap:    validatorSetCaps[i],
 			ValidatorsPowerCap: validatorPowerCaps[i],

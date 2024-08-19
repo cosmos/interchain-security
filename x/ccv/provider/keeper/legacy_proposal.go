@@ -50,7 +50,7 @@ func (k Keeper) HandleLegacyConsumerRemovalProposal(ctx sdk.Context, p *types.Co
 	k.SetPendingConsumerRemovalProp(ctx, p)
 
 	k.Logger(ctx).Info("consumer removal proposal enqueued",
-		"consumer id", p.ConsumerId,
+		"chain id", p.ChainId,
 		"title", p.Title,
 		"stop time", p.StopTime.UTC(),
 	)

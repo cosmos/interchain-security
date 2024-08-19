@@ -212,7 +212,7 @@ func NewConsumerRemovalProposal(title, description, chainID string, stopTime tim
 	return &ConsumerRemovalProposal{
 		Title:       title,
 		Description: description,
-		ConsumerId:  chainID,
+		ChainId:     chainID,
 		StopTime:    stopTime,
 	}
 }
@@ -229,7 +229,7 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 		return err
 	}
 
-	if strings.TrimSpace(sccp.ConsumerId) == "" {
+	if strings.TrimSpace(sccp.ChainId) == "" {
 		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "consumer chain id must not be blank")
 	}
 

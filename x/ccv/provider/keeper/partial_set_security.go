@@ -23,18 +23,18 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, consumerId string, providerAddr typ
 			"opting in to an unknown (or stopped) consumer chain, with id: %s", consumerId)
 	}
 
-	registrationRecord, err := k.GetConsumerRegistrationRecord(ctx, consumerId)
+	chainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
+		// TODO (PERMISSIONLESS): fix error types
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerId,
 			"opting in to an unknown consumer chain, with id (%s): %s", consumerId, err.Error())
 	}
-
-	optedInToConsumerId, found := k.IsValidatorOptedInToChainId(ctx, providerAddr, registrationRecord.ChainId)
+	optedInToConsumerId, found := k.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
 	if found {
 		return errorsmod.Wrapf(types.ErrAlreadyOptedIn,
 			"validator is already opted in to a chain (%s) with this chain id (%s)",
-			optedInToConsumerId, registrationRecord.ChainId)
+			optedInToConsumerId, chainId)
 	}
 
 	k.SetOptedIn(ctx, consumerId, providerAddr)

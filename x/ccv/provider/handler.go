@@ -36,11 +36,8 @@ func NewHandler(k *keeper.Keeper) baseapp.MsgServiceHandler {
 		case *types.MsgSetConsumerCommissionRate:
 			res, err := msgServer.SetConsumerCommissionRate(ctx, msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgRegisterConsumer:
-			res, err := msgServer.RegisterConsumer(ctx, msg)
-			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgInitializeConsumer:
-			res, err := msgServer.InitializeConsumer(ctx, msg)
+		case *types.MsgCreateConsumer:
+			res, err := msgServer.CreateConsumer(ctx, msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgUpdateConsumer:
 			res, err := msgServer.UpdateConsumer(ctx, msg)

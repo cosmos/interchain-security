@@ -67,8 +67,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 			SpawnTime: oneHourFromNow,
 		}},
 		[]providertypes.ConsumerRemovalProposal{{
-			ConsumerId: cChainIDs[0],
-			StopTime:   oneHourFromNow,
+			ChainId:  cChainIDs[0],
+			StopTime: oneHourFromNow,
 		}},
 		params,
 		[]providertypes.ValidatorConsumerPubKey{

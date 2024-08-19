@@ -1,192 +1,124 @@
 package keeper_test
 
 import (
-	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 	"testing"
-	"time"
 )
 
-func TestRegisterConsumer(t *testing.T) {
+func TestCreateConsumer(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	msgServer := providerkeeper.NewMsgServerImpl(&providerKeeper)
 
-	expectedRecord := providertypes.ConsumerRegistrationRecord{
-		Title:       "title",
+	consumerMetadata := providertypes.ConsumerMetadata{
+		Name:        "chain name",
 		Description: "description",
-		ChainId:     "chain_id",
 	}
-	response, err := msgServer.RegisterConsumer(ctx,
-		&providertypes.MsgRegisterConsumer{Signer: "signer", RegistrationRecord: &expectedRecord})
+	response, err := msgServer.CreateConsumer(ctx,
+		&providertypes.MsgCreateConsumer{Signer: "signer", ChainId: "chainId", Metadata: &consumerMetadata,
+			InitializationParameters: &providertypes.ConsumerInitializationParameters{},
+			PowerShapingParameters:   &providertypes.PowerShapingParameters{}})
 	require.NoError(t, err)
 	require.Equal(t, "0", response.ConsumerId)
-	actualRecord, err := providerKeeper.GetConsumerRegistrationRecord(ctx, "0")
+	actualMetadata, err := providerKeeper.GetConsumerMetadata(ctx, "0")
 	require.NoError(t, err)
-	require.Equal(t, expectedRecord, actualRecord)
-	ownerAddress := providerKeeper.GetConsumerOwnerAddress(ctx, "0")
+	require.Equal(t, consumerMetadata, actualMetadata)
+	ownerAddress, err := providerKeeper.GetConsumerOwnerAddress(ctx, "0")
 	require.Equal(t, "signer", ownerAddress)
 	phase, found := providerKeeper.GetConsumerPhase(ctx, "0")
 	require.True(t, found)
-	require.Equal(t, providerkeeper.Registered, phase)
+	require.Equal(t, providerkeeper.Initialized, phase)
 
-	expectedRecord = providertypes.ConsumerRegistrationRecord{
-		Title:       "title2",
+	consumerMetadata = providertypes.ConsumerMetadata{
+		Name:        "chain name",
 		Description: "description2",
-		ChainId:     "chain_id2",
 	}
-	response, err = msgServer.RegisterConsumer(ctx,
-		&providertypes.MsgRegisterConsumer{Signer: "signer2", RegistrationRecord: &expectedRecord})
+	response, err = msgServer.CreateConsumer(ctx,
+		&providertypes.MsgCreateConsumer{Signer: "signer2", ChainId: "chainId", Metadata: &consumerMetadata,
+			InitializationParameters: &providertypes.ConsumerInitializationParameters{},
+			PowerShapingParameters:   &providertypes.PowerShapingParameters{}})
 	require.NoError(t, err)
 	// assert that the consumer id is different from the previously registered chain
 	require.Equal(t, "1", response.ConsumerId)
-	actualRecord, err = providerKeeper.GetConsumerRegistrationRecord(ctx, "1")
+	actualMetadata, err = providerKeeper.GetConsumerMetadata(ctx, "1")
 	require.NoError(t, err)
-	require.Equal(t, expectedRecord, actualRecord)
-	ownerAddress = providerKeeper.GetConsumerOwnerAddress(ctx, "1")
+	require.Equal(t, consumerMetadata, actualMetadata)
+	ownerAddress, err = providerKeeper.GetConsumerOwnerAddress(ctx, "1")
 	require.Equal(t, "signer2", ownerAddress)
 	phase, found = providerKeeper.GetConsumerPhase(ctx, "1")
 	require.True(t, found)
-	require.Equal(t, providerkeeper.Registered, phase)
-
+	require.Equal(t, providerkeeper.Initialized, phase)
 }
 
-func TestInitializeConsumer(t *testing.T) {
+func TestUpdateConsumer(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	msgServer := providerkeeper.NewMsgServerImpl(&providerKeeper)
+	consumerId := "0"
 
-	// initializing a chain with no phase, or a chain that is launched or stopped should give an error
-	_, err := msgServer.InitializeConsumer(ctx,
-		&providertypes.MsgInitializeConsumer{
-			Authority:            "signer",
-			ConsumerId:           "0",
-			InitializationRecord: &providertypes.ConsumerInitializationRecord{}})
-	require.ErrorContains(t, err, "its registered or initialized phase")
+	// set up a consumer client, so it seems that chain is running
+	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
 
-	providerKeeper.SetConsumerPhase(ctx, "0", providerkeeper.Launched)
-	_, err = msgServer.InitializeConsumer(ctx,
-		&providertypes.MsgInitializeConsumer{
-			Authority:            "signer",
-			ConsumerId:           "0",
-			InitializationRecord: &providertypes.ConsumerInitializationRecord{}})
-	require.ErrorContains(t, err, "its registered or initialized phase")
+	// set PSS-related fields to update them later on
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumer, providertypes.PowerShapingParameters{
+		Top_N:              50,
+		ValidatorSetCap:    10,
+		ValidatorsPowerCap: 34,
+		MinStake:           100,
+		AllowInactiveVals:  true,
+	})
+	providerKeeper.SetAllowlist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
+	providerKeeper.SetAllowlist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
+	providerKeeper.SetDenylist(ctx, consumerId, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
 
-	providerKeeper.SetConsumerPhase(ctx, "0", providerkeeper.Stopped)
-	_, err = msgServer.InitializeConsumer(ctx,
-		&providertypes.MsgInitializeConsumer{
-			Authority:            "signer",
-			ConsumerId:           "0",
-			InitializationRecord: &providertypes.ConsumerInitializationRecord{}})
-	require.ErrorContains(t, err, "its registered or initialized phase")
+	expectedTopN := uint32(75)
+	expectedValidatorsPowerCap := uint32(67)
+	expectedValidatorSetCap := uint32(20)
+	expectedAllowlistedValidator := "cosmosvalcons1wpex7anfv3jhystyv3eq20r35a"
+	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	expectedMinStake := uint64(0)
+	expectedAllowInactiveValidators := false
 
-	// register chains with consumers ids "0" and "1"
-	_, _ = msgServer.RegisterConsumer(ctx,
-		&providertypes.MsgRegisterConsumer{
-			Signer:             "signer",
-			RegistrationRecord: &providertypes.ConsumerRegistrationRecord{}})
-
-	_, _ = msgServer.RegisterConsumer(ctx,
-		&providertypes.MsgRegisterConsumer{
-			Signer:             "signer2",
-			RegistrationRecord: &providertypes.ConsumerRegistrationRecord{}})
-
-	// assert that you CANNOT initialize a consumer chain that you do NOT own
-	_, err = msgServer.InitializeConsumer(ctx,
-		&providertypes.MsgInitializeConsumer{
-			Authority:            "signer2",
-			ConsumerId:           "0",
-			InitializationRecord: &providertypes.ConsumerInitializationRecord{}})
-	require.ErrorContains(t, err, "expected owner")
-
-	// initialize chain with consumer id "0"
-	expectedRecord := providertypes.ConsumerInitializationRecord{
-		InitialHeight:                     types.Height{RevisionNumber: 1, RevisionHeight: 2},
-		GenesisHash:                       []byte{0, 1},
-		BinaryHash:                        []byte{2, 3},
-		SpawnTime:                         time.Unix(1, 2).UTC(),
-		UnbondingPeriod:                   3456,
-		CcvTimeoutPeriod:                  789,
-		TransferTimeoutPeriod:             101112,
-		ConsumerRedistributionFraction:    "consumer_redistribution_fraction",
-		BlocksPerDistributionTransmission: 123,
-		HistoricalEntries:                 456,
-		DistributionTransmissionChannel:   "distribution_transmission_channel",
+	updateRecord := providertypes.PowerShapingParameters{
+		Top_N:              expectedTopN,
+		ValidatorsPowerCap: expectedValidatorsPowerCap,
+		ValidatorSetCap:    expectedValidatorSetCap,
+		Allowlist:          []string{expectedAllowlistedValidator},
+		Denylist:           []string{expectedDenylistedValidator},
+		MinStake:           expectedMinStake,
+		AllowInactiveVals:  expectedAllowInactiveValidators,
 	}
 
-	_, err = msgServer.InitializeConsumer(ctx,
-		&providertypes.MsgInitializeConsumer{
-			Authority:            "signer",
-			ConsumerId:           "0",
-			InitializationRecord: &expectedRecord})
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, updateRecord)
+	err := providerKeeper.UpdateConsumer(ctx, consumerId)
 	require.NoError(t, err)
-	actualRecord, err := providerKeeper.GetConsumerInitializationRecord(ctx, "0")
-	require.NoError(t, err)
-	require.Equal(t, expectedRecord, actualRecord)
-	// verify that the owner of the consumer chain did NOT change
-	ownerAddress := providerKeeper.GetConsumerOwnerAddress(ctx, "0")
-	require.Equal(t, "signer", ownerAddress)
 
-	// assert that we can re-initialize chain with consumer id "0"
-	expectedRecord = providertypes.ConsumerInitializationRecord{
-		InitialHeight:                     types.Height{RevisionNumber: 2, RevisionHeight: 3},
-		GenesisHash:                       []byte{2, 3},
-		BinaryHash:                        []byte{4, 5},
-		SpawnTime:                         time.Unix(2, 3).UTC(),
-		UnbondingPeriod:                   789,
-		CcvTimeoutPeriod:                  101112,
-		TransferTimeoutPeriod:             131415,
-		ConsumerRedistributionFraction:    "consumer_redistribution_fraction2",
-		BlocksPerDistributionTransmission: 456,
-		HistoricalEntries:                 789,
-		DistributionTransmissionChannel:   "distribution_transmission_channel2",
-	}
+	actualTopN := providerKeeper.GetTopN(ctx, consumerId)
+	require.Equal(t, expectedTopN, actualTopN)
+	actualValidatorsPowerCap := providerKeeper.GetValidatorsPowerCap(ctx, consumerId)
+	require.Equal(t, expectedValidatorsPowerCap, actualValidatorsPowerCap)
+	actualValidatorSetCap := providerKeeper.GetValidatorSetCap(ctx, consumerId)
+	require.Equal(t, expectedValidatorSetCap, actualValidatorSetCap)
 
-	_, err = msgServer.InitializeConsumer(ctx,
-		&providertypes.MsgInitializeConsumer{
-			Authority:            "signer",
-			ConsumerId:           "0",
-			InitializationRecord: &expectedRecord})
+	allowlistedValidator, err := sdk.ConsAddressFromBech32(expectedAllowlistedValidator)
 	require.NoError(t, err)
-	actualRecord, err = providerKeeper.GetConsumerInitializationRecord(ctx, "0")
-	require.NoError(t, err)
-	require.Equal(t, expectedRecord, actualRecord)
-	// verify that the owner of the consumer chain did NOT change
-	ownerAddress = providerKeeper.GetConsumerOwnerAddress(ctx, "0")
-	require.Equal(t, "signer", ownerAddress)
+	require.Equal(t, 1, len(providerKeeper.GetAllowList(ctx, consumerId)))
+	require.Equal(t, providertypes.NewProviderConsAddress(allowlistedValidator), providerKeeper.GetAllowList(ctx, consumerId)[0])
 
-	// initialize chain with consumer id "1" but with a different owner (as part of a governance proposal)
+	denylistedValidator, err := sdk.ConsAddressFromBech32(expectedDenylistedValidator)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, consumerId)))
+	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, consumerId)[0])
 
-	// first verify that the current owner can initialize the chain
-	_, err = msgServer.InitializeConsumer(ctx,
-		&providertypes.MsgInitializeConsumer{
-			Authority:            "signer2",
-			ConsumerId:           "1",
-			InitializationRecord: &expectedRecord})
-	require.NoError(t, err)
-	actualRecord, err = providerKeeper.GetConsumerInitializationRecord(ctx, "1")
-	require.NoError(t, err)
-	require.Equal(t, expectedRecord, actualRecord)
-	// verify that the owner of the consumer chain did NOT change
-	ownerAddress = providerKeeper.GetConsumerOwnerAddress(ctx, "1")
-	require.Equal(t, "signer2", ownerAddress)
+	actualMinStake := providerKeeper.GetMinStake(ctx, consumerId)
+	require.Equal(t, expectedMinStake, actualMinStake)
 
-	// second, reinitialize by with a gov proposal owner
-	_, err = msgServer.InitializeConsumer(ctx,
-		&providertypes.MsgInitializeConsumer{
-			Authority:            providerKeeper.GetAuthority(),
-			ConsumerId:           "1",
-			InitializationRecord: &expectedRecord})
-	require.NoError(t, err)
-	actualRecord, err = providerKeeper.GetConsumerInitializationRecord(ctx, "1")
-	require.NoError(t, err)
-	require.Equal(t, expectedRecord, actualRecord)
-	// verify that the owner of the consumer chain did change
-	ownerAddress = providerKeeper.GetConsumerOwnerAddress(ctx, "1")
-	require.Equal(t, providerKeeper.GetAuthority(), ownerAddress)
+	actualAllowInactiveValidators := providerKeeper.AllowsInactiveValidators(ctx, consumerId)
+	require.Equal(t, expectedAllowInactiveValidators, actualAllowInactiveValidators)
 }

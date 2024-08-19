@@ -80,9 +80,10 @@ func TestCreateConsumerClient(t *testing.T) {
 		tc.setup(&providerKeeper, ctx, &mocks)
 
 		// Call method with same arbitrary values as defined above in mock expectations.
-		providerKeeper.SetConsumerRegistrationRecord(ctx, "0", testkeeper.GetTestRegistrationRecord())
-		providerKeeper.SetConsumerInitializationRecord(ctx, "0", testkeeper.GetTestInitializationRecord())
-		providerKeeper.SetConsumerUpdateRecord(ctx, "0", testkeeper.GetTestUpdateRecord())
+		providerKeeper.SetConsumerChainId(ctx, "0", "chainID")
+		providerKeeper.SetConsumerMetadata(ctx, "0", testkeeper.GetTestConsumerMetadata())
+		providerKeeper.SetConsumerInitializationParameters(ctx, "0", testkeeper.GetTestInitializationParameters())
+		providerKeeper.SetConsumerPowerShapingParameters(ctx, "0", testkeeper.GetTestPowerShapingParameters())
 		err := providerKeeper.CreateConsumerClient(ctx, "0")
 
 		if tc.expClientCreated {
@@ -415,11 +416,11 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 
 	now := time.Now().UTC()
 	props := []providertypes.ConsumerRemovalProposal{
-		{ConsumerId: "chain-2", StopTime: now},
-		{ConsumerId: "chain-1", StopTime: now.Add(2 * time.Hour)},
-		{ConsumerId: "chain-4", StopTime: now.Add(-time.Hour)},
-		{ConsumerId: "chain-3", StopTime: now.Add(4 * time.Hour)},
-		{ConsumerId: "chain-1", StopTime: now},
+		{ChainId: "chain-2", StopTime: now},
+		{ChainId: "chain-1", StopTime: now.Add(2 * time.Hour)},
+		{ChainId: "chain-4", StopTime: now.Add(-time.Hour)},
+		{ChainId: "chain-3", StopTime: now.Add(4 * time.Hour)},
+		{ChainId: "chain-1", StopTime: now},
 	}
 	expectedGetAllOrder := props
 	// sorting by StopTime.UnixNano()
@@ -429,7 +430,7 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 		cmpTimestamps := bytes.Compare(sdk.Uint64ToBigEndian(tsi), sdk.Uint64ToBigEndian(tsj))
 		if cmpTimestamps == 0 {
 			// proposals with same StopTime
-			return expectedGetAllOrder[i].ConsumerId < expectedGetAllOrder[j].ConsumerId
+			return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
 		}
 		return cmpTimestamps == -1
 	})
@@ -521,13 +522,12 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
 
 	// matches params from jsonString
-	registrationRecord := providertypes.ConsumerRegistrationRecord{
-		Title:       "title",
-		Description: "desc",
-		ChainId:     "testchain1",
+	consumerMetadata := providertypes.ConsumerMetadata{
+		Name:        "name",
+		Description: "description",
 	}
 
-	initializationRecord := providertypes.ConsumerInitializationRecord{
+	initializationParameters := providertypes.ConsumerInitializationParameters{
 		BlocksPerDistributionTransmission: 1000,
 		CcvTimeoutPeriod:                  2419200000000000,
 		TransferTimeoutPeriod:             3600000000000,
@@ -535,8 +535,9 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		HistoricalEntries:                 10000,
 		UnbondingPeriod:                   1728000000000000,
 	}
-	providerKeeper.SetConsumerRegistrationRecord(ctx, "0", registrationRecord)
-	providerKeeper.SetConsumerInitializationRecord(ctx, "0", initializationRecord)
+	providerKeeper.SetConsumerChainId(ctx, "0", "testchain1")
+	providerKeeper.SetConsumerMetadata(ctx, "0", consumerMetadata)
+	providerKeeper.SetConsumerInitializationParameters(ctx, "0", initializationParameters)
 
 	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, "0")
 	require.NoError(t, err)
@@ -650,34 +651,31 @@ func TestBeginBlockInit(t *testing.T) {
 	ctx = ctx.WithBlockTime(now)
 
 	// initialize registration, initialization, and update records
-	registrationRecords := []providertypes.ConsumerRegistrationRecord{
+	consumerMetadata := []providertypes.ConsumerMetadata{
 		{
-			Title:       "title",
+			Name:        "name",
 			Description: "spawn time passed",
-			ChainId:     "chain0",
 		},
 		{
-			Title:       "title",
+			Name:        "title",
 			Description: "spawn time passed",
-			ChainId:     "chain1",
 		},
 		{
-			Title:       "title",
+			Name:        "title",
 			Description: "spawn time not passed",
-			ChainId:     "chain2",
 		},
 		{
-			Title:       "title",
+			Name:        "title",
 			Description: "opt-in chain with at least one validator opted in",
-			ChainId:     "chain3",
 		},
 		{
-			Title:       "title",
+			Name:        "title",
 			Description: "opt-in chain with no validator opted in",
-			ChainId:     "chain4",
 		},
 	}
-	initializationRecords := []providertypes.ConsumerInitializationRecord{
+	chainIds := []string{"chain0", "chain1", "chain2", "chain3", "chain4"}
+
+	initializationParameters := []providertypes.ConsumerInitializationParameters{
 		{
 			InitialHeight:                     clienttypes.NewHeight(3, 4),
 			GenesisHash:                       []byte{},
@@ -744,7 +742,7 @@ func TestBeginBlockInit(t *testing.T) {
 			DistributionTransmissionChannel:   "",
 		},
 	}
-	updateRecords := []providertypes.ConsumerUpdateRecord{
+	powerShapingParameters := []providertypes.PowerShapingParameters{
 		{
 			Top_N:              50,
 			ValidatorsPowerCap: 0,
@@ -793,17 +791,21 @@ func TestBeginBlockInit(t *testing.T) {
 	gomock.InOrder(expectedCalls...)
 
 	// set up all the records
-	for i, r := range registrationRecords {
-		providerKeeper.SetConsumerRegistrationRecord(ctx, fmt.Sprintf("%d", i), r)
+	for i, chainId := range chainIds {
+		providerKeeper.SetConsumerChainId(ctx, fmt.Sprintf("%d", i), chainId)
 	}
-	for i, r := range initializationRecords {
-		providerKeeper.SetConsumerInitializationRecord(ctx, fmt.Sprintf("%d", i), r)
+
+	for i, r := range consumerMetadata {
+		providerKeeper.SetConsumerMetadata(ctx, fmt.Sprintf("%d", i), r)
+	}
+	for i, r := range initializationParameters {
+		providerKeeper.SetConsumerInitializationParameters(ctx, fmt.Sprintf("%d", i), r)
 		// set up the chains in their initialized phase, hence they could launch
 		providerKeeper.SetConsumerPhase(ctx, fmt.Sprintf("%d", i), providerkeeper.Initialized)
 		providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(ctx, fmt.Sprintf("%d", i), r.SpawnTime)
 	}
-	for i, r := range updateRecords {
-		providerKeeper.SetConsumerUpdateRecord(ctx, fmt.Sprintf("%d", i), r)
+	for i, r := range powerShapingParameters {
+		providerKeeper.SetConsumerPowerShapingParameters(ctx, fmt.Sprintf("%d", i), r)
 	}
 
 	// opt in a sample validator so the chain's proposal can successfully execute
@@ -899,14 +901,14 @@ func TestBeginBlockCCR(t *testing.T) {
 	//
 	for i, consumerId := range consumerIds {
 		// Setup a valid consumer chain for each consumerId
-		initializationRecord := testkeeper.GetTestInitializationRecord()
+		initializationRecord := testkeeper.GetTestInitializationParameters()
 		initializationRecord.InitialHeight = clienttypes.NewHeight(2, 3)
-		registrationRecord := testkeeper.GetTestRegistrationRecord()
-		registrationRecord.ChainId = chainIds[i]
+		registrationRecord := testkeeper.GetTestConsumerMetadata()
 
-		providerKeeper.SetConsumerRegistrationRecord(ctx, consumerId, registrationRecord)
-		providerKeeper.SetConsumerInitializationRecord(ctx, consumerId, initializationRecord)
-		providerKeeper.SetConsumerUpdateRecord(ctx, consumerId, testkeeper.GetTestUpdateRecord())
+		providerKeeper.SetConsumerChainId(ctx, consumerId, chainIds[i])
+		providerKeeper.SetConsumerMetadata(ctx, consumerId, registrationRecord)
+		providerKeeper.SetConsumerInitializationParameters(ctx, consumerId, initializationRecord)
+		providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, testkeeper.GetTestPowerShapingParameters())
 		providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
 		providerKeeper.SetClientIdToConsumerId(ctx, "clientID", consumerId)
 

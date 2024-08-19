@@ -585,7 +585,7 @@ func TestEndBlockVSU(t *testing.T) {
 
 	chainID := "consumerId"
 
-	providerKeeper.SetConsumerUpdateRecord(ctx, "consumerId", providertypes.ConsumerUpdateRecord{
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{
 		Top_N: 100,
 	})
 
@@ -740,7 +740,7 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	// add a consumer chain
 	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
 
-	providerKeeper.SetConsumerUpdateRecord(ctx, "consumerId", providertypes.ConsumerUpdateRecord{
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{
 		Top_N:              50, // would opt in E
 		ValidatorsPowerCap: 40, // set a power-capping of 40%
 	})

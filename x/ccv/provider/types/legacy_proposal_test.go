@@ -544,13 +544,13 @@ func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 
 func TestConsumerModificationProposalValidateBasic(t *testing.T) {
 	testCases := []struct {
-		name         string
-		updateRecord types.ConsumerUpdateRecord
-		expPass      bool
+		name                   string
+		powerShapingParameters types.PowerShapingParameters
+		expPass                bool
 	}{
 		{
 			"success",
-			types.ConsumerUpdateRecord{
+			types.PowerShapingParameters{
 				Top_N:              50,
 				ValidatorsPowerCap: 100,
 				ValidatorSetCap:    34,
@@ -563,7 +563,7 @@ func TestConsumerModificationProposalValidateBasic(t *testing.T) {
 		},
 		{
 			"top N is invalid",
-			types.ConsumerUpdateRecord{
+			types.PowerShapingParameters{
 				Top_N:              10,
 				ValidatorsPowerCap: 0,
 				ValidatorSetCap:    0,
@@ -574,7 +574,7 @@ func TestConsumerModificationProposalValidateBasic(t *testing.T) {
 		},
 		{
 			"validators power cap is invalid",
-			types.ConsumerUpdateRecord{
+			types.PowerShapingParameters{
 				Top_N:              50,
 				ValidatorsPowerCap: 101,
 				ValidatorSetCap:    0,
@@ -587,7 +587,7 @@ func TestConsumerModificationProposalValidateBasic(t *testing.T) {
 		},
 		{
 			"valid proposal",
-			types.ConsumerUpdateRecord{
+			types.PowerShapingParameters{
 				Top_N:              54,
 				ValidatorsPowerCap: 92,
 				ValidatorSetCap:    0,
@@ -601,7 +601,8 @@ func TestConsumerModificationProposalValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		msg, _ := types.NewMsgUpdateConsumer("", "0", tc.updateRecord)
+		// TODO (PERMISSIONLESS) add more tests
+		msg, _ := types.NewMsgUpdateConsumer("", "0", "new owner", types.ConsumerMetadata{}, types.ConsumerInitializationParameters{}, tc.powerShapingParameters)
 		err := msg.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)

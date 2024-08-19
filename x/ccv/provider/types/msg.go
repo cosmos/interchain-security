@@ -25,8 +25,7 @@ const (
 	TypeMsgAssignConsumerKey          = "assign_consumer_key"
 	TypeMsgSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
 	TypeMsgSubmitConsumerDoubleVoting = "submit_consumer_double_vote"
-	TypeMsgRegisterConsumer           = "register_consumer"
-	TypeMsgInitializeConsumer         = "initialize_consumer"
+	TypeMsgCreateConsumer             = "create_consumer"
 	TypeMsgUpdateConsumer             = "update_consumer"
 	TypeMsgRemoveConsumer             = "remove_consumer"
 	TypeMsgOptIn                      = "opt_in"
@@ -39,8 +38,7 @@ var (
 	_ sdk.Msg = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.Msg = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.Msg = (*MsgSubmitConsumerDoubleVoting)(nil)
-	_ sdk.Msg = (*MsgRegisterConsumer)(nil)
-	_ sdk.Msg = (*MsgInitializeConsumer)(nil)
+	_ sdk.Msg = (*MsgCreateConsumer)(nil)
 	_ sdk.Msg = (*MsgUpdateConsumer)(nil)
 	_ sdk.Msg = (*MsgRemoveConsumer)(nil)
 	_ sdk.Msg = (*MsgConsumerAddition)(nil)
@@ -54,8 +52,7 @@ var (
 	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerDoubleVoting)(nil)
-	_ sdk.HasValidateBasic = (*MsgRegisterConsumer)(nil)
-	_ sdk.HasValidateBasic = (*MsgInitializeConsumer)(nil)
+	_ sdk.HasValidateBasic = (*MsgCreateConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgUpdateConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgRemoveConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
@@ -242,38 +239,42 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{addr}
 }
 
-// NewMsgRegisterConsumer creates a new MsgRegisterConsumer instance
-func NewMsgRegisterConsumer(signer string, registrationRecord ConsumerRegistrationRecord) (*MsgRegisterConsumer, error) {
-	return &MsgRegisterConsumer{
-		Signer:             signer,
-		RegistrationRecord: &registrationRecord,
+// NewMsgCreateConsumer creates a new MsgCreateConsumer instance
+func NewMsgCreateConsumer(signer string, chainId string, metadata ConsumerMetadata,
+	initializationParameters ConsumerInitializationParameters, powerShapingParameters PowerShapingParameters) (*MsgCreateConsumer, error) {
+	return &MsgCreateConsumer{
+		Signer:                   signer,
+		ChainId:                  chainId,
+		Metadata:                 &metadata,
+		InitializationParameters: &initializationParameters,
+		PowerShapingParameters:   &powerShapingParameters,
 	}, nil
 }
 
 // Type implements the sdk.Msg interface.
-func (msg MsgRegisterConsumer) Type() string {
-	return TypeMsgRegisterConsumer
+func (msg MsgCreateConsumer) Type() string {
+	return TypeMsgCreateConsumer
 }
 
 // Route implements the sdk.Msg interface.
-func (msg MsgRegisterConsumer) Route() string { return RouterKey }
+func (msg MsgCreateConsumer) Route() string { return RouterKey }
 
 // ValidateBasic implements the sdk.Msg interface.
-func (msg MsgRegisterConsumer) ValidateBasic() error {
+func (msg MsgCreateConsumer) ValidateBasic() error {
 	// add checks
 	// TODO (PERMISSIONLESS)
 	return nil
 }
 
 // Type implements the sdk.Msg interface.
-func (msg MsgRegisterConsumer) GetSignBytes() []byte {
+func (msg MsgCreateConsumer) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
 }
 
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
-func (msg MsgRegisterConsumer) GetSigners() []sdk.AccAddress {
+func (msg MsgCreateConsumer) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
 	if err != nil {
 		// same behavior as in cosmos-sdk
@@ -282,57 +283,16 @@ func (msg MsgRegisterConsumer) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{valAddr.Bytes()}
 }
 
-// NewMsgInitializeConsumer creates a new MsgInitializeConsumer instance
-func NewMsgInitializeConsumer(signer string, consumerId string, initializationRecord ConsumerInitializationRecord) (*MsgInitializeConsumer, error) {
-	return &MsgInitializeConsumer{
-		Authority:            signer,
-		ConsumerId:           consumerId,
-		InitializationRecord: &initializationRecord,
-	}, nil
-}
-
-// Type implements the sdk.Msg interface.
-func (msg MsgInitializeConsumer) Type() string {
-	return TypeMsgInitializeConsumer
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgInitializeConsumer) Route() string { return RouterKey }
-
-// ValidateBasic implements the sdk.Msg interface.
-func (msg MsgInitializeConsumer) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
-	}
-
-	// add checks
-	// TODO (PERMISSIONLESS) spawnTime has to be in the future
-	return nil
-}
-
-// Type implements the sdk.Msg interface.
-func (msg MsgInitializeConsumer) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgInitializeConsumer) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
-func NewMsgUpdateConsumer(signer string, consumerId string, updateRecord ConsumerUpdateRecord) (*MsgUpdateConsumer, error) {
+func NewMsgUpdateConsumer(signer string, consumerId string, ownerAddress string, metadata ConsumerMetadata,
+	initializationParameters ConsumerInitializationParameters, powerShapingParameters PowerShapingParameters) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
-		Authority:    signer,
-		ConsumerId:   consumerId,
-		UpdateRecord: &updateRecord,
+		Signer:                   signer,
+		ConsumerId:               consumerId,
+		OwnerAddress:             ownerAddress,
+		Metadata:                 &metadata,
+		InitializationParameters: &initializationParameters,
+		PowerShapingParameters:   &powerShapingParameters,
 	}, nil
 }
 
@@ -351,7 +311,7 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 	}
 
 	// TODO (PERMISSIONLESS): validate update record
-	err := ValidatePSSFeatures(msg.UpdateRecord.Top_N, msg.UpdateRecord.ValidatorsPowerCap)
+	err := ValidatePSSFeatures(msg.PowerShapingParameters.Top_N, msg.PowerShapingParameters.ValidatorsPowerCap)
 	if err != nil {
 		return errorsmod.Wrapf(ErrInvalidUpdateRecord, "invalid PSS features: %s", err.Error())
 	}
@@ -368,7 +328,7 @@ func (msg MsgUpdateConsumer) GetSignBytes() []byte {
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
 func (msg MsgUpdateConsumer) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
+	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
 	if err != nil {
 		// same behavior as in cosmos-sdk
 		panic(err)

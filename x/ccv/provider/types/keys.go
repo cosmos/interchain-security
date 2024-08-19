@@ -131,11 +131,15 @@ const (
 
 	ConsumerIdKeyName = "ConsumerIdKey"
 
-	ConsumerIdToRegistrationRecordKeyName = "ConsumerIdToRegistrationRecordKey"
+	ConsumerIdToChainIdKeyName = "ConsumerIdToChainIdKey"
 
-	ConsumerIdToInitializationRecordKeyName = "ConsumerIdToInitializationRecordKey"
+	ConsumerIdToOwnerAddressKeyName = "ConsumerIdToOwnerAddress"
 
-	ConsumerIdToUpdateRecordKeyName = "ConsumerIdToUpdateRecordKey"
+	ConsumerIdToConsumerMetadataKeyName = "ConsumerIdToMetadataKey"
+
+	ConsumerIdToInitializationParametersKeyName = "ConsumerIdToInitializationParametersKey"
+
+	ConsumerIdToPowerShapingParameters = "ConsumerIdToPowerShapingParametersKey"
 
 	ConsumerIdToPhaseKeyName = "ConsumerIdToPhaseKey"
 
@@ -354,35 +358,41 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerIdKeyName is the key for storing the consumer id for the next registered consumer chain
 		ConsumerIdKeyName: 45,
 
-		// ConsumerIdToRegistrationRecordKeyName is the key for storing the registration record for the given consumer id
-		ConsumerIdToRegistrationRecordKeyName: 46,
+		// ConsumerIdToChainIdKeyName is the key for storing the chain id for the given consumer id
+		ConsumerIdToChainIdKeyName: 46,
 
-		// ConsumerIdToInitializationRecordKeyName is the key for storing the initialization record for the given consumer id
-		ConsumerIdToInitializationRecordKeyName: 47,
+		// ConsumerIdToOwnerAddressKeyName is the key for storing the owner address for the given consumer id
+		ConsumerIdToOwnerAddressKeyName: 47,
 
-		// ConsumerIdToUpdateRecordKeyName is the key for storing the update record for the given consumer id
-		ConsumerIdToUpdateRecordKeyName: 48,
+		// ConsumerIdToConsumerMetadataKeyName is the key for storing the metadata for the given consumer id
+		ConsumerIdToConsumerMetadataKeyName: 48,
+
+		// ConsumerIdToInitializationParametersKeyName is the key for storing the initialization parameters for the given consumer id
+		ConsumerIdToInitializationParametersKeyName: 49,
+
+		// ConsumerIdToPowerShapingParameters is the key for storing the power-shaping parameters for the given consumer id
+		ConsumerIdToPowerShapingParameters: 50,
 
 		// ConsumerIdToPhaseKeyName is the key for storing the phase of a consumer chain with the given consumer id
-		ConsumerIdToPhaseKeyName: 49,
+		ConsumerIdToPhaseKeyName: 51,
 
 		// ConsumerIdToStopTimeKeyName is the key for storing the stop time of a consumer chain that is to be removed
-		ConsumerIdToStopTimeKeyName: 50,
+		ConsumerIdToStopTimeKeyName: 52,
 
 		// SpawnTimeToConsumerIdKeyName is the key for storing pending initialized consumers that are to be launched.
 		// For a specific spawn time, it might store multiple consumer chain ids for chains that are to be launched.
-		SpawnTimeToConsumerIdsKeyName: 51,
+		SpawnTimeToConsumerIdsKeyName: 53,
 
 		// StopTimeToConsumerIdKeyName is the key for storing pending launched consumers that are to be stopped.
 		// For a specific stop time, it might store multiple consumer chain ids for chains that are to be stopped.
-		StopTimeToConsumerIdsKeyName: 52,
+		StopTimeToConsumerIdsKeyName: 54,
 
 		// ProviderConsAddrToOptedInConsumerIdsKeyName is the key for storing all the consumer ids that a validator
 		// is currently opted in to.
-		ProviderConsAddrToOptedInConsumerIdsKeyName: 53,
+		ProviderConsAddrToOptedInConsumerIdsKeyName: 55,
 
 		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
-		ClientIdToConsumerIdKeyName: 54,
+		ClientIdToConsumerIdKeyName: 56,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -748,29 +758,39 @@ func ConsumerIdKey() []byte {
 	return []byte{mustGetKeyPrefix(ConsumerIdKeyName)}
 }
 
-// ConsumerIdToRegistrationRecordKeyPrefix returns the key prefix for storing consumer registration records
-func ConsumerIdToRegistrationRecordKeyPrefix() byte {
-	return mustGetKeyPrefix(ConsumerIdToRegistrationRecordKeyName)
+// ConsumerIdToChainIdKey returns the key used to store the chain id of this consumer id
+func ConsumerIdToChainIdKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToChainIdKeyName), consumerId)
 }
 
-// ConsumerIdToRegistrationRecordKey returns the key used to store the registration record that corresponds to this consumer id
-func ConsumerIdToRegistrationRecordKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(ConsumerIdToRegistrationRecordKeyPrefix(), consumerId)
+// ConsumerIdToOwnerAddressKey returns the owner address of this consumer id
+func ConsumerIdToOwnerAddressKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToOwnerAddressKeyName), consumerId)
 }
 
-// ConsumerIdToInitializationRecordKeyPrefix returns the key prefix for storing consumer initialization records
-func ConsumerIdToInitializationRecordKeyPrefix() byte {
-	return mustGetKeyPrefix(ConsumerIdToInitializationRecordKeyName)
+// ConsumerIdToMetadataKeyPrefix returns the key prefix for storing consumer metadata
+func ConsumerIdToMetadataKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToConsumerMetadataKeyName)
 }
 
-// ConsumerIdToInitializationRecordKey returns the key used to store the initialization record that corresponds to this consumer id
-func ConsumerIdToInitializationRecordKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(ConsumerIdToInitializationRecordKeyPrefix(), consumerId)
+// ConsumerIdToMetadataKey returns the key used to store the metadata that corresponds to this consumer id
+func ConsumerIdToMetadataKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(ConsumerIdToMetadataKeyPrefix(), consumerId)
 }
 
-// ConsumerIdToUpdateRecordKey returns the key used to store the update record that corresponds to this consumer id
-func ConsumerIdToUpdateRecordKey(consumerId string) []byte {
-	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToUpdateRecordKeyName), consumerId)
+// ConsumerIdToInitializationParametersKeyPrefix returns the key prefix for storing consumer initialization records
+func ConsumerIdToInitializationParametersKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToInitializationParametersKeyName)
+}
+
+// ConsumerIdToInitializationParametersKey returns the key used to store the initialization record that corresponds to this consumer id
+func ConsumerIdToInitializationParametersKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(ConsumerIdToInitializationParametersKeyPrefix(), consumerId)
+}
+
+// ConsumerIdToPowerShapingParametersKey returns the key used to store the update record that corresponds to this consumer id
+func ConsumerIdToPowerShapingParametersKey(consumerId string) []byte {
+	return ConsumerIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPowerShapingParameters), consumerId)
 }
 
 // ConsumerIdToPhaseKey returns the key used to store the phase that corresponds to this consumer id
