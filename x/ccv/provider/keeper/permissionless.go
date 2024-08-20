@@ -21,12 +21,11 @@ const (
 	// Registered phase indicates the phase in which a consumer chain has been assigned a unique consumer id. This consumer
 	// id can be used to interact with the consumer chain (e.g., when a validator opts in to a chain). A chain in this
 	// phase cannot yet launch. It has to be initialized first.
+	Registered ConsumerPhase = iota
 	// Initialized phase indicates the phase in which a consumer chain has set all the needed parameters to launch but
 	// has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
-	Initialized ConsumerPhase = iota
-	// TODO (PERMISSIONLESS) add this if the chain fails to launch
-	// Useful so we do not keep trying to launch failed chains
-	// FailedToLaunch phase indicates that the chain attempted but failed to launch (e.g., due to no validator opting in)
+	Initialized
+	// FailedToLaunch phase indicates that the chain attempted but failed to launch (e.g., due to no validator opting in).
 	FailedToLaunch
 	// Launched phase corresponds to the phase in which a consumer chain is running and consuming a subset of the validator
 	// set of the provider.
@@ -599,7 +598,7 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
 		// TODO (permissionless) -- not really an invalid update record
-		return errorsmod.Wrapf(types.ErrInvalidUpdateRecord,
+		return errorsmod.Wrapf(types.ErrInvalidPowerShapingParametersRecord,
 			"did not find update record for chain: %s", consumerId)
 	}
 
@@ -722,4 +721,43 @@ func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.
 
 	}
 	return "", false
+}
+
+func (k Keeper) SetUpConsumer(ctx sdk.Context, signer string, chainId string,
+	metadata types.ConsumerMetadata, initializationParameters types.ConsumerInitializationParameters,
+	powerShapingParameters types.PowerShapingParameters,
+) (string, error) {
+	consumerId := k.FetchAndIncrementConsumerId(ctx)
+
+	k.SetConsumerOwnerAddress(ctx, consumerId, signer)
+	k.SetConsumerChainId(ctx, consumerId, chainId)
+
+	err := k.SetConsumerMetadata(ctx, consumerId, metadata)
+	if err != nil {
+		return "", err
+	}
+
+	err = k.SetConsumerInitializationParameters(ctx, consumerId, initializationParameters)
+	if err != nil {
+		return "", err
+	}
+
+	err = k.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
+	if err != nil {
+		return "", err
+	}
+
+	k.SetConsumerPhase(ctx, consumerId, Initialized)
+	return consumerId, nil
+}
+
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, spawnTime time.Time) {
+	// if this is not the first initialization, remove the consumer id from the old spawn time
+	initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+	if err == nil {
+		previousSpawnTime := initializationParameters.SpawnTime
+		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousSpawnTime)
+	}
+
+	k.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerId, spawnTime)
 }

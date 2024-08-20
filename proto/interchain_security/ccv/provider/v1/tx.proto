@@ -393,7 +393,7 @@ message MsgUpdateConsumer {
   string consumer_id = 2;
 
   // the new owner of the consumer when updated
-  string owner_address = 3;
+  string new_owner_address = 3;
 
   // the metadata of the consumer when updated
   ConsumerMetadata metadata = 4;

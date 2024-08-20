@@ -109,6 +109,7 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 // that maps the proposal ID to the consumer chain ID.
 func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	if _, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
 		consumerId := h.k.FetchAndIncrementConsumerId(ctx)
 		h.k.SetProposedConsumerChain(ctx, consumerId, proposalID)

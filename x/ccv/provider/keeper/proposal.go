@@ -45,10 +45,9 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	phase, found := k.GetConsumerPhase(ctx, consumerId)
 	if !found || phase != Initialized {
 		return errorsmod.Wrapf(types.ErrInvalidPhase,
-			"cannot create client for consumer chain that is neither in the initialized phase: %s", consumerId)
+			"cannot create client for consumer chain that is not in the Created phase: %s", consumerId)
 	}
 
-	// TODO (PERMISSIONLESS): make this a function ... GetChainId(consumerId) ...
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
 		return err
@@ -190,9 +189,9 @@ func (k Keeper) MakeConsumerGenesis(
 			"initialization record for consumer chain: %s is missing", consumerId)
 
 	}
-	updateRecord, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
-		updateRecord = types.PowerShapingParameters{
+		powerShapingParameters = types.PowerShapingParameters{
 			Top_N:              0,
 			ValidatorsPowerCap: 0,
 			ValidatorSetCap:    0,
@@ -233,7 +232,7 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 	}
 
-	if updateRecord.Top_N > 0 {
+	if powerShapingParameters.Top_N > 0 {
 		// get the consensus active validators
 		// we do not want to base the power calculation for the top N
 		// on inactive validators, too, since the top N will be a percentage of the active set power
@@ -243,7 +242,7 @@ func (k Keeper) MakeConsumerGenesis(
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
 		}
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, updateRecord.Top_N)
+		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
@@ -329,7 +328,7 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 // BeginBlockInit iterates over the initialized consumers chains and creates clients for chains
 // in which the spawn time has passed
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
-	// TODO (PERMISSIONLESS): we can parameterize the limit to 200 at a later stage
+	// TODO (PERMISSIONLESS): we can parameterize the limit
 	for _, consumerId := range k.GetInitializedConsumersReadyToLaunch(ctx, 200) {
 		record, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 		if err != nil {
@@ -497,6 +496,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	}
 }
 
+// TODO (PERMISSIONLESS): leaving commented out because it might be used for migration
 //// GetConsumerRemovalPropsToExecute iterates over the pending consumer removal proposals
 //// and returns an ordered list of consumer removal proposals to be executed,
 //// ie. consumer chains to be stopped and removed from the provider chain.

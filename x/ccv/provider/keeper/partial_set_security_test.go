@@ -83,7 +83,7 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	providerKeeper.SetProposedConsumerChain(ctx, "consumerId", 1)
 
 	// create a sample consumer key to assign to the `providerAddr` validator
-	// on the consumer chain with id `consumerId`
+	// on the consumer chain with `consumerId`
 	consumerKey := "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}"
 	expectedConsumerPubKey, err := providerKeeper.ParseConsumerKey(consumerKey)
 	require.NoError(t, err)
@@ -93,7 +93,7 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	err = providerKeeper.HandleOptIn(ctx, "consumerId", providerAddr, consumerKey)
 	require.NoError(t, err)
 
-	// assert that the consumeKey was assigned to `providerAddr` validator on chain with id `consumerId`
+	// assert that the consumeKey was assigned to `providerAddr` validator on chain with `consumerId`
 	actualConsumerPubKey, found := providerKeeper.GetValidatorConsumerPubKey(ctx, "consumerId", providerAddr)
 	require.True(t, found)
 	require.Equal(t, expectedConsumerPubKey, actualConsumerPubKey)

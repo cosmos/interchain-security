@@ -305,7 +305,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehavio
 	if err != nil {
 		return err
 	} else if consumerChainId != chainId {
-		return fmt.Errorf("incorrect misbehaviour for a different chain id (%s) than that of the consumer chain %s (consumerId): %s",
+		return fmt.Errorf("incorrect misbehaviour for a different chain id (%s) than that of the consumer chain %s (consumerId: %s)",
 			chainId,
 			consumerChainId,
 			consumerId)
@@ -314,7 +314,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehavio
 	// check that the misbehaviour is for an ICS consumer chain
 	clientId, found := k.GetConsumerClientId(ctx, consumerId)
 	if !found {
-		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain (consumerId): %s", consumerId)
+		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain (consumerId: %s)", consumerId)
 	} else if misbehaviour.ClientId != clientId {
 		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain with id %s is %s got %s",
 			consumerId,

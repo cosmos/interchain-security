@@ -761,8 +761,8 @@ func (k Keeper) GetTopN(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	return updateRecord.Top_N
+	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	return powerShapingParameters.Top_N
 }
 
 // IsTopN returns true if chain with `consumerId` is a Top-N chain (i.e., enforces at least one validator to validate chain `consumerId`)
@@ -916,8 +916,8 @@ func (k Keeper) GetValidatorsPowerCap(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	return updateRecord.ValidatorsPowerCap
+	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	return powerShapingParameters.ValidatorsPowerCap
 }
 
 // GetValidatorSetCap returns `(c, true)` if chain `consumerId` has validator-set cap `c` associated with it, and (0, false) otherwise
@@ -925,8 +925,8 @@ func (k Keeper) GetValidatorSetCap(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	return updateRecord.ValidatorSetCap
+	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	return powerShapingParameters.ValidatorSetCap
 }
 
 // SetAllowlist allowlists validator with `providerAddr` address on chain `consumerId`
@@ -1100,8 +1100,8 @@ func (k Keeper) GetMinStake(
 	ctx sdk.Context,
 	consumerId string,
 ) uint64 {
-	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	return updateRecord.MinStake
+	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	return powerShapingParameters.MinStake
 }
 
 // AllowsInactiveValidators returns whether inactive validators are allowed to validate
@@ -1110,8 +1110,8 @@ func (k Keeper) AllowsInactiveValidators(
 	ctx sdk.Context,
 	consumerId string,
 ) bool {
-	updateRecord, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	return updateRecord.AllowInactiveVals
+	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	return powerShapingParameters.AllowInactiveVals
 }
 
 func (k Keeper) UnbondingCanComplete(ctx sdk.Context, id uint64) error {

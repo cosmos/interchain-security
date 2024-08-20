@@ -601,7 +601,7 @@ func CmdBlocksUntilNextEpoch() *cobra.Command {
 func CmdConsumerIdFromClientId() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-id-from-client-id [client-id]",
-		Short: "Query the the consumer id of the chain associated with the provided client id",
+		Short: "Query the consumer id of the chain associated with the provided client id",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)

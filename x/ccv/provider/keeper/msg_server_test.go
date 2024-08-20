@@ -84,7 +84,7 @@ func TestUpdateConsumer(t *testing.T) {
 	expectedMinStake := uint64(0)
 	expectedAllowInactiveValidators := false
 
-	updateRecord := providertypes.PowerShapingParameters{
+	powerShapingParameters := providertypes.PowerShapingParameters{
 		Top_N:              expectedTopN,
 		ValidatorsPowerCap: expectedValidatorsPowerCap,
 		ValidatorSetCap:    expectedValidatorSetCap,
@@ -95,7 +95,7 @@ func TestUpdateConsumer(t *testing.T) {
 	}
 
 	providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, updateRecord)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
 	err := providerKeeper.UpdateConsumer(ctx, consumerId)
 	require.NoError(t, err)
 

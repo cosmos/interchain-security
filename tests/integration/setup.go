@@ -284,7 +284,7 @@ func initConsumerChain(
 	err = bundle.Path.EndpointA.UpdateClient()
 	s.Require().NoError(err)
 
-	if consumerId == "2" { //icstestingutils.FirstConsumerId {
+	if consumerId == "2" {
 		// Support tests that were written before multiple consumers were supported.
 		firstBundle := s.getFirstBundle()
 		s.consumerApp = firstBundle.App

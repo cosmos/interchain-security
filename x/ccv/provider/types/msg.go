@@ -289,7 +289,7 @@ func NewMsgUpdateConsumer(signer string, consumerId string, ownerAddress string,
 	return &MsgUpdateConsumer{
 		Signer:                   signer,
 		ConsumerId:               consumerId,
-		OwnerAddress:             ownerAddress,
+		NewOwnerAddress:          ownerAddress,
 		Metadata:                 &metadata,
 		InitializationParameters: &initializationParameters,
 		PowerShapingParameters:   &powerShapingParameters,
@@ -310,10 +310,10 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 		return err
 	}
 
-	// TODO (PERMISSIONLESS): validate update record
+	// TODO (PERMISSIONLESS): validate parameters and everything else
 	err := ValidatePSSFeatures(msg.PowerShapingParameters.Top_N, msg.PowerShapingParameters.ValidatorsPowerCap)
 	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidUpdateRecord, "invalid PSS features: %s", err.Error())
+		return errorsmod.Wrapf(ErrInvalidPowerShapingParametersRecord, "invalid power-shaping parameters: %s", err.Error())
 	}
 
 	return nil
