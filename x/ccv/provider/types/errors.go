@@ -28,7 +28,7 @@ var (
 	ErrCannotOptOutFromTopN                = errorsmod.Register(ModuleName, 20, "cannot opt out from a Top N chain")
 	ErrNoUnconfirmedVSCPacket              = errorsmod.Register(ModuleName, 21, "no unconfirmed vsc packet for this chain id")
 	ErrInvalidConsumerModificationProposal = errorsmod.Register(ModuleName, 22, "invalid consumer modification proposal")
-	ErrInvalidUpdateRecord                 = errorsmod.Register(ModuleName, 23, "invalid consumer update record")
+	ErrInvalidPowerShapingParametersRecord = errorsmod.Register(ModuleName, 23, "invalid consumer update record")
 	ErrBlankConsumerChainID                = errorsmod.Register(ModuleName, 24, "consumer chain id must not be blank")
 	ErrNoUnbondingTime                     = errorsmod.Register(ModuleName, 25, "provider unbonding time not found")
 	ErrInvalidAddress                      = errorsmod.Register(ModuleName, 26, "invalid address")

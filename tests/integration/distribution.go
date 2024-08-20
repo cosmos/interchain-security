@@ -859,7 +859,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 			expAllocated: nil,
 		},
 		{
-			name:         "consumerId valset is empty - total voting power is zero",
+			name:         "consumer valset is empty - total voting power is zero",
 			tokens:       sdk.DecCoins{sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(100_000))},
 			rate:         math.LegacyZeroDec(),
 			expAllocated: nil,
@@ -884,11 +884,11 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 		s.Run(tc.name, func() {
 			ctx, _ := s.providerCtx().CacheContext()
 
-			// increase the block height so validators are eligible for consumerId rewards (see `IsEligibleForConsumerRewards`)
+			// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
 			ctx = ctx.WithBlockHeight(providerKeeper.GetNumberOfEpochsToStartReceivingRewards(ctx)*providerKeeper.GetBlocksPerEpoch(ctx) +
 				ctx.BlockHeight())
 
-			// change the consumerId valset
+			// change the consumer valset
 			consuVals, err := providerKeeper.GetConsumerValSet(ctx, consumerId)
 			s.Require().NoError(err)
 			providerKeeper.DeleteConsumerValSet(ctx, consumerId)
@@ -896,7 +896,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 			consuVals, err = providerKeeper.GetConsumerValSet(ctx, consumerId)
 			s.Require().NoError(err)
 
-			// set the same consumerId commission rate for all consumerId validators
+			// set the same consumer commission rate for all consumer validators
 			for _, v := range consuVals {
 				provAddr := providertypes.NewProviderConsAddress(sdk.ConsAddress(v.ProviderConsAddr))
 				err := providerKeeper.SetConsumerCommissionRate(
@@ -949,7 +949,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 					s.Require().NoError(err)
 
 					// check that the withdrawn coins is equal to the entire reward amount
-					// times the set consumerId commission rate
+					// times the set consumer commission rate
 					commission := rewards.Rewards.MulDec(tc.rate)
 					c, _ := commission.TruncateDecimal()
 					s.Require().Equal(withdrawnCoins, c)

@@ -45,11 +45,11 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, nil)
 	require.Error(t, err)
 
-	// Request with chainId is empty
+	// Request with empty consumer id
 	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{})
 	require.Error(t, err)
 
-	// Request with chainId is invalid
+	// Request with invalid consumer id
 	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: "invalidConsumerId"})
 	require.Error(t, err)
 

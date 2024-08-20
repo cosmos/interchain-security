@@ -23,6 +23,8 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	} else if req.ChainId != "" {
+		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	consumerId := req.ConsumerId
@@ -139,7 +141,9 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 
 func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	} else if req.ChainId != "" {
+		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -172,7 +176,9 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 
 func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.QueryValidatorProviderAddrRequest) (*types.QueryValidatorProviderAddrResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	} else if req.ChainId != "" {
+		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -241,7 +247,9 @@ func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.
 
 func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, req *types.QueryAllPairsValConAddrByConsumerChainIDRequest) (*types.QueryAllPairsValConAddrByConsumerChainIDResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	} else if req.ChainId != "" {
+		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	consumerId := req.ConsumerId
@@ -286,7 +294,9 @@ func (k Keeper) QueryParams(goCtx context.Context, req *types.QueryParamsRequest
 // QueryConsumerChainOptedInValidators returns all validators that opted-in to a given consumer chain
 func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *types.QueryConsumerChainOptedInValidatorsRequest) (*types.QueryConsumerChainOptedInValidatorsResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	} else if req.ChainId != "" {
+		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	consumerId := req.ConsumerId
@@ -313,9 +323,10 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 // QueryConsumerValidators returns all validators that are consumer validators in a given consumer chain
 func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryConsumerValidatorsRequest) (*types.QueryConsumerValidatorsResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	} else if req.ChainId != "" {
+		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
-
 	consumerId := req.ConsumerId
 	if err := types.ValidateConsumerId(consumerId); err != nil {
 		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
@@ -449,7 +460,9 @@ func (k Keeper) hasToValidate(
 // validator charges on a given consumer chain
 func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req *types.QueryValidatorConsumerCommissionRateRequest) (*types.QueryValidatorConsumerCommissionRateResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	} else if req.ChainId != "" {
+		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	consumerId := req.ConsumerId

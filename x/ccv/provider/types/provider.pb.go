@@ -1603,24 +1603,24 @@ type PowerShapingParameters struct {
 	// For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
 	// have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
 	// A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
-	Top_N uint32 `protobuf:"varint,2,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
+	Top_N uint32 `protobuf:"varint,1,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
 	// Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
 	// `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
 	// consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
 	// 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
 	// to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
-	ValidatorsPowerCap uint32 `protobuf:"varint,3,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
+	ValidatorsPowerCap uint32 `protobuf:"varint,2,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
 	// Corresponds to the maximum number of validators that can validate a consumer chain.
 	// Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
-	ValidatorSetCap uint32 `protobuf:"varint,4,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
+	ValidatorSetCap uint32 `protobuf:"varint,3,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
 	// corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate the consumer chain
-	Allowlist []string `protobuf:"bytes,6,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
+	Allowlist []string `protobuf:"bytes,4,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
 	// corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain
-	Denylist []string `protobuf:"bytes,7,rep,name=denylist,proto3" json:"denylist,omitempty"`
+	Denylist []string `protobuf:"bytes,5,rep,name=denylist,proto3" json:"denylist,omitempty"`
 	// Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-	MinStake uint64 `protobuf:"varint,8,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
+	MinStake uint64 `protobuf:"varint,6,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
 	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
-	AllowInactiveVals bool `protobuf:"varint,9,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
+	AllowInactiveVals bool `protobuf:"varint,7,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
 }
 
 func (m *PowerShapingParameters) Reset()         { *m = PowerShapingParameters{} }
@@ -1861,13 +1861,13 @@ var fileDescriptor_f22ec409a72b7b72 = []byte{
 	0xc9, 0x1b, 0x4f, 0xf1, 0xea, 0xde, 0x78, 0x66, 0xae, 0xfc, 0x8d, 0x67, 0xf6, 0x0d, 0xbd, 0xf1,
 	0xcc, 0xfd, 0x4f, 0xde, 0x78, 0x4a, 0x57, 0xfa, 0xc6, 0x53, 0x7e, 0xbd, 0x37, 0x1e, 0xf0, 0x5a,
 	0x6f, 0x3c, 0x95, 0x89, 0xde, 0x78, 0x8c, 0x5f, 0x4f, 0x83, 0x1b, 0xea, 0x06, 0xbd, 0xdf, 0x47,
-	0xa1, 0x3c, 0xdc, 0x51, 0x08, 0x64, 0xd7, 0xf2, 0xe9, 0x09, 0xae, 0xe5, 0x85, 0x57, 0xbb, 0x96,
-	0x17, 0x27, 0xb8, 0x96, 0xcf, 0x5e, 0x76, 0x2d, 0x9f, 0xbb, 0xec, 0x5a, 0x5e, 0x9a, 0xec, 0x5a,
-	0x5e, 0xbe, 0xe0, 0x5a, 0xbe, 0xf5, 0xe9, 0x57, 0xcf, 0x6b, 0xda, 0xd7, 0xcf, 0x6b, 0xda, 0x3f,
+	0xa1, 0x3c, 0xdc, 0x51, 0x08, 0x64, 0xd7, 0x72, 0x6d, 0x82, 0x6b, 0xf9, 0xf4, 0xab, 0x5d, 0xcb,
+	0x0b, 0x13, 0x5c, 0xcb, 0x8b, 0x97, 0x5d, 0xcb, 0x67, 0x2e, 0xbb, 0x96, 0xcf, 0x4e, 0x76, 0x2d,
+	0x9f, 0xbb, 0xe0, 0x5a, 0xbe, 0xf5, 0xe9, 0x57, 0xcf, 0x6b, 0xda, 0xd7, 0xcf, 0x6b, 0xda, 0x3f,
 	0x9e, 0xd7, 0xb4, 0xcf, 0x5f, 0xd4, 0xa6, 0xbe, 0x7e, 0x51, 0x9b, 0xfa, 0xfb, 0x8b, 0xda, 0xd4,
 	0x67, 0x1f, 0x9c, 0x4d, 0x6e, 0xa3, 0xe2, 0x71, 0x2f, 0x7b, 0xe0, 0x8f, 0xbe, 0xd7, 0x7a, 0x36,
 	0xfe, 0xf3, 0x81, 0xca, 0x7b, 0xdd, 0x59, 0xe5, 0xb7, 0xef, 0xff, 0x37, 0x00, 0x00, 0xff, 0xff,
-	0x4a, 0x95, 0x7d, 0x6b, 0x6f, 0x18, 0x00, 0x00,
+	0x17, 0xd9, 0xe3, 0x8b, 0x6f, 0x18, 0x00, 0x00,
 }
 
 func (m *ConsumerAdditionProposal) Marshal() (dAtA []byte, err error) {
@@ -3110,12 +3110,12 @@ func (m *PowerShapingParameters) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x48
+		dAtA[i] = 0x38
 	}
 	if m.MinStake != 0 {
 		i = encodeVarintProvider(dAtA, i, uint64(m.MinStake))
 		i--
-		dAtA[i] = 0x40
+		dAtA[i] = 0x30
 	}
 	if len(m.Denylist) > 0 {
 		for iNdEx := len(m.Denylist) - 1; iNdEx >= 0; iNdEx-- {
@@ -3123,7 +3123,7 @@ func (m *PowerShapingParameters) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 			copy(dAtA[i:], m.Denylist[iNdEx])
 			i = encodeVarintProvider(dAtA, i, uint64(len(m.Denylist[iNdEx])))
 			i--
-			dAtA[i] = 0x3a
+			dAtA[i] = 0x2a
 		}
 	}
 	if len(m.Allowlist) > 0 {
@@ -3132,23 +3132,23 @@ func (m *PowerShapingParameters) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 			copy(dAtA[i:], m.Allowlist[iNdEx])
 			i = encodeVarintProvider(dAtA, i, uint64(len(m.Allowlist[iNdEx])))
 			i--
-			dAtA[i] = 0x32
+			dAtA[i] = 0x22
 		}
 	}
 	if m.ValidatorSetCap != 0 {
 		i = encodeVarintProvider(dAtA, i, uint64(m.ValidatorSetCap))
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x18
 	}
 	if m.ValidatorsPowerCap != 0 {
 		i = encodeVarintProvider(dAtA, i, uint64(m.ValidatorsPowerCap))
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x10
 	}
 	if m.Top_N != 0 {
 		i = encodeVarintProvider(dAtA, i, uint64(m.Top_N))
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -7590,7 +7590,7 @@ func (m *PowerShapingParameters) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: PowerShapingParameters: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 2:
+		case 1:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Top_N", wireType)
 			}
@@ -7609,7 +7609,7 @@ func (m *PowerShapingParameters) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 3:
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorsPowerCap", wireType)
 			}
@@ -7628,7 +7628,7 @@ func (m *PowerShapingParameters) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorSetCap", wireType)
 			}
@@ -7647,7 +7647,7 @@ func (m *PowerShapingParameters) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 6:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Allowlist", wireType)
 			}
@@ -7679,7 +7679,7 @@ func (m *PowerShapingParameters) Unmarshal(dAtA []byte) error {
 			}
 			m.Allowlist = append(m.Allowlist, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 7:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Denylist", wireType)
 			}
@@ -7711,7 +7711,7 @@ func (m *PowerShapingParameters) Unmarshal(dAtA []byte) error {
 			}
 			m.Denylist = append(m.Denylist, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 8:
+		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MinStake", wireType)
 			}
@@ -7730,7 +7730,7 @@ func (m *PowerShapingParameters) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 9:
+		case 7:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field AllowInactiveVals", wireType)
 			}
