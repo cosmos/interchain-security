@@ -145,10 +145,10 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	initializationParameters := testkeeper.GetTestInitializationParameters()
 	// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
 	// using time.Now() could set the spawn time to be too far in the past or too far in the future
-	initializationParameters.SpawnTime = coordinator.CurrentTime
+	initializationParameters.SpawnTime = &coordinator.CurrentTime
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
-	initializationParameters.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
+	initializationParameters.InitialHeight = &clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
 
 	powerShapingParameters := testkeeper.GetTestPowerShapingParameters()
 	powerShapingParameters.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient

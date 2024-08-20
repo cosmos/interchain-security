@@ -723,41 +723,114 @@ func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.
 	return "", false
 }
 
-func (k Keeper) SetUpConsumer(ctx sdk.Context, signer string, chainId string,
-	metadata types.ConsumerMetadata, initializationParameters types.ConsumerInitializationParameters,
-	powerShapingParameters types.PowerShapingParameters,
-) (string, error) {
-	consumerId := k.FetchAndIncrementConsumerId(ctx)
-
-	k.SetConsumerOwnerAddress(ctx, consumerId, signer)
-	k.SetConsumerChainId(ctx, consumerId, chainId)
-
-	err := k.SetConsumerMetadata(ctx, consumerId, metadata)
-	if err != nil {
-		return "", err
-	}
-
-	err = k.SetConsumerInitializationParameters(ctx, consumerId, initializationParameters)
-	if err != nil {
-		return "", err
-	}
-
-	err = k.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
-	if err != nil {
-		return "", err
-	}
-
-	k.SetConsumerPhase(ctx, consumerId, Initialized)
-	return consumerId, nil
-}
-
-func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, spawnTime time.Time) {
-	// if this is not the first initialization, remove the consumer id from the old spawn time
-	initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId)
-	if err == nil {
-		previousSpawnTime := initializationParameters.SpawnTime
-		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousSpawnTime)
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime *time.Time, spawnTime time.Time) {
+	if previousSpawnTime != nil {
+		// if this is not the first initialization, remove the consumer id from the old spawn time
+		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, *previousSpawnTime)
 	}
 
 	k.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerId, spawnTime)
+}
+
+// CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence
+// is ready to launch
+func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) bool {
+	if initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err != nil {
+		initialHeightSet := initializationParameters.InitialHeight != nil
+		genesisHashSet := initializationParameters.GenesisHash != nil
+		binaryHashSet := initializationParameters.BinaryHash != nil
+		spawnTimeSet := initializationParameters.SpawnTime != nil
+		unbondingPeriodSet := initializationParameters.UnbondingPeriod != nil
+
+		ccvTimeoutPeriodSet := initializationParameters.CcvTimeoutPeriod != nil
+		transferTimeoutPeriodSet := initializationParameters.TransferTimeoutPeriod != nil
+
+		// TODO (PERMISSIONLESS): we should verify we can parse this at some point
+		// and that the values below are not negative, etc.
+		consumerRedistributionFractionSet := initializationParameters.ConsumerRedistributionFraction != ""
+		blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
+		historicalEntriesSet := initializationParameters.HistoricalEntries > 0
+		distributionTransmissionChannelSet := initializationParameters.DistributionTransmissionChannel != ""
+		return initialHeightSet && genesisHashSet && binaryHashSet && spawnTimeSet && unbondingPeriodSet &&
+			ccvTimeoutPeriodSet && transferTimeoutPeriodSet && consumerRedistributionFractionSet &&
+			blocksPerDistributionTransmissionSet && historicalEntriesSet && distributionTransmissionChannelSet
+	}
+	return false
+}
+
+// Could be done with reflect but we want to avoid using it ...??
+func MergeConsumerMetadata(oldMetadata types.ConsumerMetadata, newMetadata types.ConsumerMetadata) types.ConsumerMetadata {
+	if newMetadata.Name != "" {
+		oldMetadata.Name = newMetadata.Name
+	}
+	if newMetadata.Metadata != "" {
+		oldMetadata.Metadata = newMetadata.Metadata
+	}
+	if newMetadata.Description != "" {
+		oldMetadata.Description = newMetadata.Description
+	}
+	return oldMetadata
+}
+
+func MergeConsumerInitializationParameters(oldInitializationParameters types.ConsumerInitializationParameters, newInitializationParameters types.ConsumerInitializationParameters) types.ConsumerInitializationParameters {
+	if newInitializationParameters.InitialHeight != nil {
+		oldInitializationParameters.InitialHeight = newInitializationParameters.InitialHeight
+	}
+	if newInitializationParameters.GenesisHash != nil {
+		oldInitializationParameters.GenesisHash = newInitializationParameters.GenesisHash
+	}
+	if newInitializationParameters.BinaryHash != nil {
+		oldInitializationParameters.GenesisHash = newInitializationParameters.GenesisHash
+	}
+	if newInitializationParameters.SpawnTime != nil {
+		oldInitializationParameters.SpawnTime = newInitializationParameters.SpawnTime
+	}
+	if newInitializationParameters.UnbondingPeriod != nil {
+		oldInitializationParameters.UnbondingPeriod = newInitializationParameters.UnbondingPeriod
+	}
+	if newInitializationParameters.CcvTimeoutPeriod != nil {
+		oldInitializationParameters.CcvTimeoutPeriod = newInitializationParameters.CcvTimeoutPeriod
+	}
+	if newInitializationParameters.TransferTimeoutPeriod != nil {
+		oldInitializationParameters.TransferTimeoutPeriod = newInitializationParameters.TransferTimeoutPeriod
+	}
+	if newInitializationParameters.ConsumerRedistributionFraction != "" {
+		oldInitializationParameters.ConsumerRedistributionFraction = newInitializationParameters.ConsumerRedistributionFraction
+	}
+	if newInitializationParameters.BlocksPerDistributionTransmission > 0 {
+		oldInitializationParameters.BlocksPerDistributionTransmission = newInitializationParameters.BlocksPerDistributionTransmission
+	}
+	if newInitializationParameters.HistoricalEntries > 0 {
+		oldInitializationParameters.HistoricalEntries = newInitializationParameters.HistoricalEntries
+	}
+	if newInitializationParameters.DistributionTransmissionChannel != "" {
+		oldInitializationParameters.DistributionTransmissionChannel = newInitializationParameters.DistributionTransmissionChannel
+	}
+	return oldInitializationParameters
+}
+
+func MergePowerShapingParameters(oldPowerShapingParameters types.PowerShapingParameters, newPowerShapingParameters types.PowerShapingParameters) types.PowerShapingParameters {
+	if newPowerShapingParameters.IsTop_NSet {
+		oldPowerShapingParameters.Top_N = newPowerShapingParameters.Top_N
+	}
+	if newPowerShapingParameters.ValidatorsPowerCap > 0 {
+		oldPowerShapingParameters.ValidatorsPowerCap = newPowerShapingParameters.ValidatorsPowerCap
+	}
+	if newPowerShapingParameters.ValidatorSetCap > 0 {
+		oldPowerShapingParameters.ValidatorSetCap = newPowerShapingParameters.ValidatorSetCap
+	}
+	if newPowerShapingParameters.Allowlist != nil {
+		oldPowerShapingParameters.Allowlist = newPowerShapingParameters.Allowlist
+	}
+	if newPowerShapingParameters.Denylist != nil {
+		oldPowerShapingParameters.Denylist = newPowerShapingParameters.Denylist
+	}
+	if newPowerShapingParameters.IsMinStakeSet {
+		oldPowerShapingParameters.MinStake = newPowerShapingParameters.MinStake
+	}
+	if newPowerShapingParameters.IsAllowInactiveValsSet {
+		oldPowerShapingParameters.AllowInactiveVals = newPowerShapingParameters.AllowInactiveVals
+	}
+
+	return oldPowerShapingParameters
 }

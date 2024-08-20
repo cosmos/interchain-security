@@ -282,18 +282,23 @@ func GetTestConsumerMetadata() providertypes.ConsumerMetadata {
 }
 
 func GetTestInitializationParameters() providertypes.ConsumerInitializationParameters {
+	initialHeight := clienttypes.NewHeight(4, 5)
+	spawnTime := time.Now()
+	ccvTimeoutPeriod := types.DefaultCCVTimeoutPeriod
+	transferTimeoutPeriod := types.DefaultTransferTimeoutPeriod
+	unbondingPeriod := types.DefaultConsumerUnbondingPeriod
 	return providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     clienttypes.NewHeight(4, 5),
+		InitialHeight:                     &initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
-		SpawnTime:                         time.Now(),
+		SpawnTime:                         &spawnTime,
 		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
 		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   "",
 		HistoricalEntries:                 types.DefaultHistoricalEntries,
-		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
-		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
-		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
+		CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             &transferTimeoutPeriod,
+		UnbondingPeriod:                   &unbondingPeriod,
 	}
 }
 

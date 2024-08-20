@@ -370,7 +370,7 @@ message MsgCreateConsumer {
   // the chain id of the new consumer chain
   string chain_id = 2;
 
-  ConsumerMetadata metadata = 3;
+  ConsumerMetadata metadata = 3 [ (gogoproto.nullable) = false ];
 
   ConsumerInitializationParameters initialization_parameters = 4;
 

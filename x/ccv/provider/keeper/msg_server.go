@@ -4,12 +4,12 @@ import (
 	"context"
 	errorsmod "cosmossdk.io/errors"
 	"fmt"
+	tmtypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	tmtypes "github.com/cometbft/cometbft/types"
+	"time"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
@@ -310,11 +310,35 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	initGas := ctx.GasMeter().GasConsumed()
 
-	consumerId, err := k.SetUpConsumer(ctx, msg.Signer, msg.ChainId, *msg.Metadata, *msg.InitializationParameters, *msg.PowerShapingParameters)
-	if err != nil {
+	consumerId := k.FetchAndIncrementConsumerId(ctx)
+
+	k.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
+	k.SetConsumerChainId(ctx, consumerId, msg.ChainId)
+
+	if err := k.SetConsumerMetadata(ctx, consumerId, msg.Metadata); err != nil {
 		return &types.MsgCreateConsumerResponse{}, err
 	}
-	k.PrepareConsumerForLaunch(ctx, consumerId, msg.InitializationParameters.SpawnTime)
+
+	// initialization parameters are optional and hence could be nil
+	if msg.InitializationParameters != nil {
+		if err := k.SetConsumerInitializationParameters(ctx, consumerId, *msg.InitializationParameters); err != nil {
+			return &types.MsgCreateConsumerResponse{}, err
+		}
+	}
+
+	// power-shaping parameters are optional and hence could be null
+	if msg.PowerShapingParameters != nil {
+		if err := k.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
+			return &types.MsgCreateConsumerResponse{}, err
+		}
+	}
+
+	if k.CanLaunch(ctx, consumerId) {
+		k.SetConsumerPhase(ctx, consumerId, Initialized)
+		k.PrepareConsumerForLaunch(ctx, consumerId, nil, *msg.InitializationParameters.SpawnTime)
+	} else {
+		k.SetConsumerPhase(ctx, consumerId, Registered)
+	}
 
 	gasAfter := ctx.GasMeter().GasConsumed()
 	ctx.GasMeter().ConsumeGas(gasAfter-initGas, "creating a chain has an additional cost during spawn time, "+
@@ -330,31 +354,66 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
 	if err != nil {
-		// TODO (PERMISSIONLESS): fix the error message
+		// TODO (PERMISSIONLESS): use a better error message
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerId, "cannot retrieve owner address %s", ownerAddress)
 	}
 
-	if msg.PowerShapingParameters.Top_N > 0 && msg.Signer != k.GetAuthority() {
-		// TODO (PERMISSIONLESS): fix the error message
+	if msg.PowerShapingParameters != nil && msg.PowerShapingParameters.IsTop_NSet && msg.PowerShapingParameters.Top_N > 0 && msg.Signer != k.GetAuthority() {
+		// TODO (PERMISSIONLESS): use a better error message
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPhase, "an update to a Top N chain can only be done through a governance proposal")
 	}
 
 	if k.GetAuthority() == msg.Signer {
-		// message is executed as part of governance proposal and hence we change the owner address
-		// to be the one of the gov module account address (e.g., a gov proposal with a single `MsgUpdateConsumer` might have
-		// led to this)
-		if msg.PowerShapingParameters.Top_N == 0 {
+		// message is executed as part of governance proposal
+		if msg.PowerShapingParameters.IsTop_NSet && msg.PowerShapingParameters.Top_N == 0 {
+			// chain becomes an Opt In chain, hence we change the owner address
 			k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
 		} else {
+			// message is executed as part of governance proposal and hence we change the owner address to be the one of
+			// the gov module account address (e.g., a gov proposal with a single `MsgUpdateConsumer` might have led to this)
 			k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, k.GetAuthority())
 		}
+	} else if msg.Signer == ownerAddress {
+		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
 	} else if msg.Signer != ownerAddress {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
 	}
 
-	k.Keeper.SetConsumerMetadata(ctx, msg.ConsumerId, *msg.Metadata)
-	k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters)
-	k.Keeper.SetConsumerPowerShapingParameters(ctx, msg.ConsumerId, *msg.PowerShapingParameters)
+	if msg.Metadata != nil {
+		if oldMetadata, err := k.Keeper.GetConsumerMetadata(ctx, msg.ConsumerId); err == nil {
+			k.Keeper.SetConsumerMetadata(ctx, msg.ConsumerId, MergeConsumerMetadata(oldMetadata, *msg.Metadata))
+		} else {
+			// TODO (PERMISSIONLESS): probably we should return an error
+			k.Keeper.SetConsumerMetadata(ctx, msg.ConsumerId, *msg.Metadata)
+		}
+	}
+
+	var previousSpawnTime *time.Time
+	if previousParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
+		previousSpawnTime = previousParameters.SpawnTime
+	}
+
+	if msg.InitializationParameters != nil {
+		if oldInitializationParameters, err := k.Keeper.GetConsumerInitializationParameters(ctx, msg.ConsumerId); err == nil {
+			k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, MergeConsumerInitializationParameters(oldInitializationParameters, *msg.InitializationParameters))
+		} else {
+			k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters)
+		}
+	}
+
+	if msg.PowerShapingParameters != nil {
+		if oldPowerShapingParameters, err := k.Keeper.GetConsumerPowerShapingParameters(ctx, msg.ConsumerId); err == nil {
+			k.Keeper.SetConsumerPowerShapingParameters(ctx, msg.ConsumerId, MergePowerShapingParameters(oldPowerShapingParameters, *msg.PowerShapingParameters))
+		} else {
+			k.Keeper.SetConsumerPowerShapingParameters(ctx, msg.ConsumerId, *msg.PowerShapingParameters)
+		}
+	}
+
+	if k.CanLaunch(ctx, msg.ConsumerId) {
+		k.SetConsumerPhase(ctx, consumerId, Initialized)
+		k.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, *msg.InitializationParameters.SpawnTime)
+	}
+
 	return &types.MsgUpdateConsumerResponse{}, nil
 }
 
