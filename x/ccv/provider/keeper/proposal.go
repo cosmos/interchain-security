@@ -62,14 +62,14 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = chainId
-	clientState.LatestHeight = initializationRecord.InitialHeight
+	clientState.LatestHeight = *initializationRecord.InitialHeight
 
-	trustPeriod, err := ccv.CalculateTrustPeriod(consumerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
+	trustPeriod, err := ccv.CalculateTrustPeriod(*consumerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
 	if err != nil {
 		return err
 	}
 	clientState.TrustingPeriod = trustPeriod
-	clientState.UnbondingPeriod = consumerUnbondingPeriod
+	clientState.UnbondingPeriod = *consumerUnbondingPeriod
 
 	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, consumerId)
 	if err != nil {
@@ -274,11 +274,11 @@ func (k Keeper) MakeConsumerGenesis(
 		initializationRecord.BlocksPerDistributionTransmission,
 		initializationRecord.DistributionTransmissionChannel,
 		"", // providerFeePoolAddrStr,
-		initializationRecord.CcvTimeoutPeriod,
-		initializationRecord.TransferTimeoutPeriod,
+		*initializationRecord.CcvTimeoutPeriod,
+		*initializationRecord.TransferTimeoutPeriod,
 		initializationRecord.ConsumerRedistributionFraction,
 		initializationRecord.HistoricalEntries,
-		initializationRecord.UnbondingPeriod,
+		*initializationRecord.UnbondingPeriod,
 		[]string{},
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,
@@ -345,7 +345,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		}
 		// Remove consumer to prevent re-trying launching this chain.
 		// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
-		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, record.SpawnTime)
+		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, *record.SpawnTime)
 
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.LaunchConsumer(cachedCtx, consumerId)

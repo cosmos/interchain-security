@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	cmttypes "github.com/cometbft/cometbft/types"
 	"strconv"
 	"strings"
 	"time"
@@ -245,7 +246,7 @@ func NewMsgCreateConsumer(signer string, chainId string, metadata ConsumerMetada
 	return &MsgCreateConsumer{
 		Signer:                   signer,
 		ChainId:                  chainId,
-		Metadata:                 &metadata,
+		Metadata:                 metadata,
 		InitializationParameters: &initializationParameters,
 		PowerShapingParameters:   &powerShapingParameters,
 	}, nil
@@ -259,10 +260,47 @@ func (msg MsgCreateConsumer) Type() string {
 // Route implements the sdk.Msg interface.
 func (msg MsgCreateConsumer) Route() string { return RouterKey }
 
+func verifyField(name string, field string, maxLength int) error {
+	if strings.TrimSpace(field) == "" {
+		return fmt.Errorf("%s cannot be empty", name)
+	} else if len(field) > maxLength {
+		return fmt.Errorf("%s is too long; got: %d, max: %d", name, len(field), maxLength)
+	}
+	return nil
+}
+
+func VerifyConsumerMetadata(metadata ConsumerMetadata) error {
+	// TODO (PERMISSIONLESS): we can extend the lengths at some later stage and make them constant
+	if err := verifyField("name", metadata.Name, 100); err != nil {
+		return err
+	}
+
+	if err := verifyField("description", metadata.Description, 20000); err != nil {
+		return err
+	}
+
+	if err := verifyField("metadata", metadata.Metadata, 1000); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgCreateConsumer) ValidateBasic() error {
-	// add checks
-	// TODO (PERMISSIONLESS)
+	if err := verifyField("chain id", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
+		return err
+	}
+
+	if err := VerifyConsumerMetadata(msg.Metadata); err != nil {
+		return err
+	}
+
+	if msg.PowerShapingParameters != nil && msg.PowerShapingParameters.IsTop_NSet && msg.PowerShapingParameters.Top_N > 0 {
+		return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
+			"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
+	}
+
 	return nil
 }
 

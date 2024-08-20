@@ -20,7 +20,7 @@ func TestCreateConsumer(t *testing.T) {
 		Description: "description",
 	}
 	response, err := msgServer.CreateConsumer(ctx,
-		&providertypes.MsgCreateConsumer{Signer: "signer", ChainId: "chainId", Metadata: &consumerMetadata,
+		&providertypes.MsgCreateConsumer{Signer: "signer", ChainId: "chainId", Metadata: consumerMetadata,
 			InitializationParameters: &providertypes.ConsumerInitializationParameters{},
 			PowerShapingParameters:   &providertypes.PowerShapingParameters{}})
 	require.NoError(t, err)
@@ -32,14 +32,14 @@ func TestCreateConsumer(t *testing.T) {
 	require.Equal(t, "signer", ownerAddress)
 	phase, found := providerKeeper.GetConsumerPhase(ctx, "0")
 	require.True(t, found)
-	require.Equal(t, providerkeeper.Initialized, phase)
+	require.Equal(t, providerkeeper.Registered, phase)
 
 	consumerMetadata = providertypes.ConsumerMetadata{
 		Name:        "chain name",
 		Description: "description2",
 	}
 	response, err = msgServer.CreateConsumer(ctx,
-		&providertypes.MsgCreateConsumer{Signer: "signer2", ChainId: "chainId", Metadata: &consumerMetadata,
+		&providertypes.MsgCreateConsumer{Signer: "signer2", ChainId: "chainId", Metadata: consumerMetadata,
 			InitializationParameters: &providertypes.ConsumerInitializationParameters{},
 			PowerShapingParameters:   &providertypes.PowerShapingParameters{}})
 	require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestCreateConsumer(t *testing.T) {
 	require.Equal(t, "signer2", ownerAddress)
 	phase, found = providerKeeper.GetConsumerPhase(ctx, "1")
 	require.True(t, found)
-	require.Equal(t, providerkeeper.Initialized, phase)
+	require.Equal(t, providerkeeper.Registered, phase)
 }
 
 func TestUpdateConsumer(t *testing.T) {
