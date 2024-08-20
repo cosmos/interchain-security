@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -319,6 +320,10 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if !k.IsConsumerProposedOrRegistered(ctx, consumerChainID) {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerChainID))
+	}
+
 	if _, found := k.GetConsumerClientId(ctx, consumerChainID); !found {
 		// chain has to have started; consumer client id is set for a chain during the chain's spawn time
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("no started consumer chain: %s", consumerChainID))
@@ -330,14 +335,33 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	for _, v := range consumerValSet {
+
+		consAddr, err := sdk.ConsAddressFromBech32(sdk.ConsAddress(v.ProviderConsAddr).String())
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid provider address")
+		}
+
+		var rate math.LegacyDec
+		consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerChainID, types.NewProviderConsAddress(consAddr))
+		if found {
+			rate = consumerRate
+		} else {
+			v, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+			if err != nil {
+				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown validator: %s", consAddr.String()))
+			}
+			rate = v.Commission.Rate
+		}
+
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
 			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
 			ConsumerKey:     v.PublicKey,
 			Power:           v.Power,
+			Rate:            rate,
 		})
 	}
-
 	return &types.QueryConsumerValidatorsResponse{
 		Validators: validators,
 	}, nil
