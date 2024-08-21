@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"fmt"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -80,7 +81,8 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 	_, err := pk.QueryConsumerChainOptedInValidators(ctx, &req)
 	require.Error(t, err)
 
-	pk.SetProposedConsumerChain(ctx, consumerId, 1)
+	pk.FetchAndIncrementConsumerId(ctx)
+	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
 
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
@@ -197,7 +199,9 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 	_, err := pk.QueryValidatorConsumerCommissionRate(ctx, &req)
 	require.Error(t, err)
 
-	pk.SetProposedConsumerChain(ctx, consumerId, 1)
+	pk.FetchAndIncrementConsumerId(ctx)
+	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+
 	// validator with set consumer commission rate
 	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.123")
 	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr, expectedCommissionRate)
@@ -305,7 +309,7 @@ func TestGetConsumerChain(t *testing.T) {
 			})
 	}
 
-	for i, chainID := range pk.GetAllRegisteredAndProposedChainIDs(ctx) {
+	for i, chainID := range pk.GetAllActiveConsumerIds(ctx) {
 		c, err := pk.GetConsumerChain(ctx, chainID)
 		require.NoError(t, err)
 		require.Equal(t, expectedGetAllOrder[i], c)

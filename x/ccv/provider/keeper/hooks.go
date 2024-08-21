@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"cosmossdk.io/math"
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -105,28 +106,49 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 //
 
 // AfterProposalSubmission - call hook if registered
-// After a consumerAddition proposal submission, a record is created
-// that maps the proposal ID to the consumer chain ID.
-func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64) error {
+// If an update consumer message exists in the proposal, a record is created that maps the proposal id to the consumer id
+func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
-		consumerId := h.k.FetchAndIncrementConsumerId(ctx)
-		h.k.SetProposedConsumerChain(ctx, consumerId, proposalID)
+	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalId)
+	if err != nil {
+		return fmt.Errorf("cannot retrieve proposal with id: %d", proposalId)
 	}
+
+	// a proposal can contain at most one `MsgUpdateConsumer` message
+	hasUpdateConsumerMsg := false
+	for _, msg := range p.GetMessages() {
+		sdkMsg, isUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
+		if isUpdateConsumer {
+			if hasUpdateConsumerMsg {
+				return fmt.Errorf("proposal can contain at most one `MsgUpdateConsumer` message")
+			}
+			hasUpdateConsumerMsg = true
+			h.k.SetProposalIdToConsumerId(ctx, proposalId, sdkMsg.ConsumerId)
+		}
+	}
+
 	return nil
 }
 
 // AfterProposalVotingPeriodEnded - call hook if registered
-// After proposal voting ends, the consumer consumerId in store is deleted.
-// When a consumerAddition proposal passes, the consumer consumerId is available in providerKeeper.GetAllPendingConsumerAdditionProps
-// or providerKeeper.GetAllConsumerChains(ctx).
-func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalID uint64) error {
+// After proposal voting ends, the consumer to proposal id record in store is deleted.
+func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalId uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
-		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
+	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalId)
+	if err != nil {
+		return fmt.Errorf("cannot retrieve proposal with id: %d", proposalId)
 	}
+
+	for _, msg := range p.GetMessages() {
+		_, isUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
+		if isUpdateConsumer {
+			h.k.DeleteProposalIdToConsumerId(ctx, proposalId)
+			return nil
+		}
+	}
+
 	return nil
 }
 
