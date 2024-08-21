@@ -223,9 +223,9 @@ Note that the one that signs this message is the owner of this consumer chain. T
 changed by updating the consumer chain.
 
 Example:
-%s tx provider create-consumer [chain-id] [path/to/metadata.json] [path/to/initialization-parameters.json] [path/to/power-shaping-parameters.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider create-consumer [path/to/create_consumer.json] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
-		Args: cobra.ExactArgs(4),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -240,37 +240,16 @@ Example:
 
 			signer := clientCtx.GetFromAddress().String()
 
-			chainId := args[0]
-
-			metadata := types.ConsumerMetadata{}
-			metadataJson, err := os.ReadFile(args[1])
+			consCreateJson, err := os.ReadFile(args[0])
 			if err != nil {
 				return err
 			}
-			if err = json.Unmarshal(metadataJson, &metadata); err != nil {
-				return fmt.Errorf("metadata unmarshalling failed: %w", err)
+			consCreate := types.MsgCreateConsumer{}
+			if err = json.Unmarshal(consCreateJson, &consCreate); err != nil {
+				return fmt.Errorf("consumer data unmarshalling failed: %w", err)
 			}
 
-			initializationParameters := types.ConsumerInitializationParameters{}
-			initializationParametersJson, err := os.ReadFile(args[2])
-			if err != nil {
-				return err
-			}
-			if err = json.Unmarshal(initializationParametersJson, &initializationParameters); err != nil {
-				return fmt.Errorf("initialization parameters unmarshalling failed: %w", err)
-			}
-
-			powerShapingParameters := types.PowerShapingParameters{}
-
-			powerShapingParametersJson, err := os.ReadFile(args[3])
-			if err != nil {
-				return err
-			}
-			if err = json.Unmarshal(powerShapingParametersJson, &powerShapingParameters); err != nil {
-				return fmt.Errorf("power-shaping parameters unmarshalling failed: %w", err)
-			}
-
-			msg, err := types.NewMsgCreateConsumer(signer, chainId, metadata, &initializationParameters, &powerShapingParameters)
+			msg, err := types.NewMsgCreateConsumer(signer, consCreate.ChainId, consCreate.Metadata, consCreate.InitializationParameters, consCreate.PowerShapingParameters)
 			if err != nil {
 				return err
 			}
