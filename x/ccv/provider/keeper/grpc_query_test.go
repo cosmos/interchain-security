@@ -110,8 +110,6 @@ func TestQueryConsumerValidators(t *testing.T) {
 	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
-	pk.SetProposedConsumerChain(ctx, chainID, 1)
-
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	consumerKey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &consumerKey1}
