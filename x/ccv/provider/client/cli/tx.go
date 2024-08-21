@@ -261,6 +261,7 @@ Example:
 			}
 
 			powerShapingParameters := types.PowerShapingParameters{}
+
 			powerShapingParametersJson, err := os.ReadFile(args[3])
 			if err != nil {
 				return err

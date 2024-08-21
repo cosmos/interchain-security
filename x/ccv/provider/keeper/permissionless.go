@@ -735,7 +735,7 @@ func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, pre
 // CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence
 // is ready to launch
 func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) bool {
-	if initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err != nil {
+	if initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
 		initialHeightSet := initializationParameters.InitialHeight != nil
 		genesisHashSet := initializationParameters.GenesisHash != nil
 		binaryHashSet := initializationParameters.BinaryHash != nil
@@ -750,10 +750,9 @@ func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) bool {
 		consumerRedistributionFractionSet := initializationParameters.ConsumerRedistributionFraction != ""
 		blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
 		historicalEntriesSet := initializationParameters.HistoricalEntries > 0
-		distributionTransmissionChannelSet := initializationParameters.DistributionTransmissionChannel != ""
 		return initialHeightSet && genesisHashSet && binaryHashSet && spawnTimeSet && unbondingPeriodSet &&
 			ccvTimeoutPeriodSet && transferTimeoutPeriodSet && consumerRedistributionFractionSet &&
-			blocksPerDistributionTransmissionSet && historicalEntriesSet && distributionTransmissionChannelSet
+			blocksPerDistributionTransmissionSet && historicalEntriesSet
 	}
 	return false
 }
