@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -333,17 +335,59 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, found := k.GetConsumerClientId(ctx, consumerId); !found {
-		// chain has to have started; consumer client id is set for a chain during the chain's spawn time
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("no started consumer chain: %s", consumerId))
+	// check that consumer is initialized
+	initParams, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrUnknownConsumerId, consumerId).Error())
+	}
+
+	// query consumer validator set
+	var consumerValSet []types.ConsensusValidator
+
+	// if the consumer hasn't launched yet, compute the consumer validator set
+	if ctx.BlockTime().Before(initParams.SpawnTime) {
+		var bondedValidators []stakingtypes.Validator
+
+		powerParams, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, types.ErrInvalidConsumerParams.Error())
+		}
+		bondedValidators, err = k.GetLastBondedValidators(ctx)
+		if err != nil {
+			panic(fmt.Errorf("failed to get last validators: %w", err))
+		}
+
+		if topN := powerParams.GetTop_N(); topN > 0 {
+			// in a Top-N chain, we automatically opt in all validators that belong to the top N
+			// of the active validators
+			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
+			if err != nil {
+				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
+				panic(fmt.Errorf("failed to get active validators: %w", err))
+			}
+
+			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			if err != nil {
+				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
+				panic(fmt.Errorf("failed to compute min power to opt in for chain %v: %w", consumerId, err))
+			}
+
+			// set the minimal power of validators in the top N in the store
+			k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
+
+			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
+		}
+
+		consumerValSet = k.ComputeNextValidators(ctx, consumerId, bondedValidators)
+	} else {
+		consumerValSet, err = k.GetConsumerValSet(ctx, consumerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	var validators []*types.QueryConsumerValidatorsValidator
 
-	consumerValSet, err := k.GetConsumerValSet(ctx, consumerId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
 	for _, v := range consumerValSet {
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
 			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),

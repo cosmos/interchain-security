@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -98,7 +99,7 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 }
 
 func TestQueryConsumerValidators(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	consumerId := "0"
@@ -107,32 +108,88 @@ func TestQueryConsumerValidators(t *testing.T) {
 		ConsumerId: consumerId,
 	}
 
-	// error returned from not-started chain
+	// error returned from not-existing chain
 	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
-	consumerKey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &consumerKey1}
+	// set consumer initialization and power shaping params
+	pk.SetConsumerInitializationParameters(ctx, consumerId, types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime().Add(time.Hour)})
+	pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{Top_N: 0})
 
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
-	consumerKey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &consumerKey2}
+	// create bonded validators
+	val1 := createStakingValidator(ctx, mocks, 1, 1, 1)
+	pk1, _ := val1.CmtConsPublicKey()
+	valConsAddr1, _ := val1.GetConsAddr()
+	providerAddr1 := types.NewProviderConsAddress(valConsAddr1)
 
-	expectedResponse := types.QueryConsumerValidatorsResponse{
-		Validators: []*types.QueryConsumerValidatorsValidator{
-			{providerAddr1.String(), &consumerKey1, 1},
-			{providerAddr2.String(), &consumerKey2, 2},
-		},
-	}
+	val2 := createStakingValidator(ctx, mocks, 1, 2, 2)
+	pk2, _ := val2.CmtConsPublicKey()
+	valConsAddr2, _ := val2.GetConsAddr()
+	providerAddr2 := types.NewProviderConsAddress(valConsAddr2)
 
-	// set up the client id so the chain looks like it "started"
-	pk.SetConsumerClientId(ctx, consumerId, "clientID")
-	pk.SetConsumerValSet(ctx, consumerId, []types.ConsensusValidator{consumerValidator1, consumerValidator2})
+	// set expectation to return bonded validators
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{val1, val2}, []int64{1, 2}, -1) // -1 to allow the calls "AnyTimes"
 
+	// set max provider consensus vals to include all validators
+	params := pk.GetParams(ctx)
+	params.MaxProviderConsensusValidators = 2
+	pk.SetParams(ctx, params)
+
+	// expect no validator to be returned since the consumer is Opt-In
 	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, &expectedResponse, res)
+	require.Len(t, res.Validators, 0)
+
+	// opt in one validator
+	pk.SetOptedIn(ctx, consumerId, providerAddr1)
+
+	// expect opted-in validators
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Len(t, res.Validators, 1)
+	require.Equal(t, res.Validators[0].ProviderAddress, providerAddr1.String())
+
+	// update consumer TopN param
+	pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{Top_N: 50})
+
+	// expect both opted-in and topN validator
+	expRes := types.QueryConsumerValidatorsResponse{
+		Validators: []*types.QueryConsumerValidatorsValidator{
+			{ProviderAddress: providerAddr1.String(), ConsumerKey: &pk1, Power: 1},
+			{ProviderAddress: providerAddr2.String(), ConsumerKey: &pk2, Power: 2},
+		},
+	}
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expRes, res)
+
+	// advance time so that the chain looks like it "launched"
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour))
+
+	// expect an empty consumer valset
+	// since neither QueueVSCPackets or MakeConsumerGenesis was called at this point
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Empty(t, res)
+
+	// set consumer valset
+	pk.SetConsumerValSet(ctx, consumerId, []types.ConsensusValidator{
+		{
+			ProviderConsAddr: providerAddr1.Address.Bytes(),
+			Power:            1,
+			PublicKey:        &pk1,
+		},
+		{
+			ProviderConsAddr: providerAddr2.Address.Bytes(),
+			Power:            2,
+			PublicKey:        &pk2,
+		},
+	})
+
+	// expect same response as before
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expRes, res)
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
