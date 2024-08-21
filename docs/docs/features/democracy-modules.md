@@ -6,7 +6,7 @@ sidebar_position: 5
 
 This section is relevant for chains transitioning from a standalone chain and new consumer chains that require some functionality from the `x/staking` module.
 
-The democracy modules comprise `x/staking`, `x/distribution` and `x/governance` with overrides and extensions required for normal operation when participating in interchain security.
+The democracy modules comprise `x/staking`, `x/distribution` and `x/governance` with overrides and extensions required for normal operation when participating in ICS.
 
 The modules are plug-and-play and only require small wiring changes to be enabled.
 
@@ -16,40 +16,30 @@ For a full integration check the `consumer-democracy` [example app](https://gith
 
 The democracy staking module allows the cosmos-sdk `x/staking` module to be used alongside the interchain security `consumer` module.
 
-The module uses overrides that allow the full `x/staking` functionality with one notable difference - the staking module will no longer be used to provide the consensus validator set.
+The module uses overrides that allow the full `x/staking` functionality with one notable difference - the staking module will no longer be used to provide the validator set to the consensus engine.
 
 ### Implications for consumer chains
 
-The `x/ccv/democracy/staking` allows consumer chains to separate governance from block production.
-
-:::info
+The `x/ccv/democracy/staking` allows consumer chains to **_separate governance from block production_**.
 The validator set coming from the provider chain does not need to participate in governance - they only provide infrastructure (create blocks and maintain consensus).
-:::
 
 #### Governators (aka. Governors)
 
-Validators registered with the `x/staking` module become "Governators".
+Validators registered with the `x/staking` module become __Governators__.
+Unlike validators, governators are not required to run any chain infrastructure since they are not signing any blocks.
+However, governators retain a subset of the validator properties:
 
-Unlike Validators, Governators are not required to run any chain infastructure since they are not signing any blocks.
+- new governators can be created (via `MsgCreateValidator`)
+- governators can accept delegations
+- governators can vote on governance proposals (with their self stake and delegations)
+- governators earn block rewards -- the block rewards kept on the consumer (see the [ConsumerRedistributionFraction param](../introduction/params.md#consumerredistributionfraction)) are distributed to all governators and their delegators.
 
-However, Governators retain a subset of the validator properties:
-
-- new Governators can be created (via `MsgCreateValidator`)
-- Governators can accept delegations
-- Governators can vote on governance proposals (with their self stake and delegations)
-- Governators earn token rewards
-
-With these changes, Governators can become community advocates that can specialize in chain governance and they get rewarded for their participation the same way the validators do.
-
-Additionally, Governators can choose to provide additional infrastructure such as RPC/API access points, archive nodes, indexers and similar software.
+With these changes, governators can become community advocates that can specialize in chain governance and they get rewarded for their participation the same way the validators do.
+Additionally, governators can choose to provide additional infrastructure such as RPC/API access points, archive nodes, indexers and similar software.
 
 #### Tokenomics
 
-The consumer chain's token will remain a governance and reward token. The token's parameters (inflation, max supply, burn rate) are not affected.
-
-:::info
-Staking rewards are distributed to all Governators and their delegators after distributing the rewards to the provider chain's validator set.
-:::
+The consumer chain's token will remain a governance token. The token's parameters (inflation, max supply, burn rate) are completely under the control of the consumer chain.
 
 ### Integration
 
@@ -82,7 +72,7 @@ To integrate the `democracy/staking` follow this guide:
 
 #### 1. confirm that no modules are returning validator updates
 
-:::tip
+:::warning
 Only the `x/ccv/consumer` module should be returning validator updates.
 :::
 
@@ -231,12 +221,8 @@ func NewApp(...) {
 ## Governance
 
 The `x/ccv/democracy/governance` module extends the `x/governance` module with the functionality to filter proposals.
-
-:::tip
-Consumer chains can limit in the types of governance proposals that can be executed on chain to avoid inadvertent changes to interchain security protocol that could affect security properties.
-:::
-
 The module uses `AnteHandler` to limit the types of proposals that can be executed.
+As a result, consumer chains can limit the types of governance proposals that can be executed on chain to avoid inadvertent changes to the ICS protocol that could affect security properties.
 
 ### Integration
 
@@ -453,23 +439,14 @@ func NewApp(...) {
 
 ## Distribution
 
-:::tip
-The `democracy/distribution` module allows the consumer chain to send rewards to the provider chain while retaining the `x/distribution` module for internal reward distribution to Governators and stakers.
-:::
+The `democracy/distribution` module allows the consumer chain to send rewards to the provider chain while retaining the logic of the `x/distribution` module for internal reward distribution to governators and their delegators.
 
 ### How it works
 
-First, a % of rewards to be distributed to the provider chain's validator set is calculated and sent to the provider chain. Only opted-in validators from the provider chain will receive the consumer rewards.
-
-Second, the remaining rewards get distributed to the consumer chain's Governators and their delegators.
-
-:::info
-The % that is sent to the provider chain corresponds to `1 - ConsumerRedistributionFraction`.
-
-e.g. `ConsumerRedistributionFraction = "0.75"`
-
-means that the consumer chain retains 75% of the rewards, while 25% gets sent to the provider chain to be distributed as rewards to provider chain validators.
-:::
+First, a percentage of the block rewards is sent to the provider chain, where is distributed to only opted-in validators and their delegators. 
+Second, the remaining rewards get distributed to the consumer chain's governators and their delegators.
+The percentage that is sent to the provider chain corresponds to `1 - ConsumerRedistributionFraction`.
+For example, `ConsumerRedistributionFraction = "0.75"` means that the consumer chain retains 75% of the rewards, while 25% gets sent to the provider chain
 
 ### Integration
 
