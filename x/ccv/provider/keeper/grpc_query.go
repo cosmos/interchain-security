@@ -320,10 +320,6 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if !k.IsConsumerProposedOrRegistered(ctx, consumerChainID) {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerChainID))
-	}
-
 	if _, found := k.GetConsumerClientId(ctx, consumerChainID); !found {
 		// chain has to have started; consumer client id is set for a chain during the chain's spawn time
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("no started consumer chain: %s", consumerChainID))

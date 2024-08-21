@@ -106,7 +106,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 		ChainId: chainID,
 	}
 
-	// error returned from not-started chain or error returned from not yet proposed or not yet registered chain
+	// error returned from not-started chain
 	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
