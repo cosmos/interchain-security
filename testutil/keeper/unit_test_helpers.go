@@ -340,9 +340,17 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 	return prop
 }
 
+func GetTestMsgUpdateConsumer() providertypes.MsgUpdateConsumer {
+	return providertypes.MsgUpdateConsumer{
+		Signer:          "signer",
+		ConsumerId:      "consumerId",
+		NewOwnerAddress: "newOwnerAddress",
+	}
+}
+
 func GetTestMsgConsumerAddition() providertypes.MsgConsumerAddition {
 	return providertypes.MsgConsumerAddition{
-		ChainId:                           "a ChainID",
+		ChainId:                           "a ChainId",
 		InitialHeight:                     clienttypes.NewHeight(4, 5),
 		GenesisHash:                       []byte(base64.StdEncoding.EncodeToString([]byte("gen_hash"))),
 		BinaryHash:                        []byte(base64.StdEncoding.EncodeToString([]byte("bin_hash"))),

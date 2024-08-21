@@ -286,8 +286,10 @@ message QueryProposedChainIDsResponse {
 }
 
 message ProposedChain {
-  string chainID = 1;
+  // [DEPRECATED] use `consumer_id` instead
+  string chainID = 1 [deprecated = true];
   uint64 proposalID = 2;
+  string consumer_id = 3;
 }
 
 message QueryAllPairsValConAddrByConsumerChainIDRequest {

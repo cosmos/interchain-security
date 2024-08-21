@@ -80,7 +80,7 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	}
 
 	gomock.InOrder(calls...)
-	providerKeeper.SetProposedConsumerChain(ctx, "consumerId", 1)
+	providerKeeper.SetProposalIdToConsumerId(ctx, 1, "consumerId")
 
 	// create a sample consumer key to assign to the `providerAddr` validator
 	// on the consumer chain with `consumerId`
@@ -195,18 +195,20 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, "unknownChainID", providerAddr, math.LegacyZeroDec()))
 
 	// setup a pending consumer chain
-	chainID := "pendingChainID"
-	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{ChainId: chainID})
+	consumerId := "0"
+	providerKeeper.FetchAndIncrementConsumerId(ctx)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{ChainId: consumerId})
 
 	// check that there's no commission rate set for the validator yet
-	_, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
+	_, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
 	require.False(t, found)
 
 	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(math.LegacyZeroDec(), nil).Times(1)
-	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, math.LegacyOneDec()))
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, consumerId, providerAddr, math.LegacyOneDec()))
 
 	// check that the commission rate is now set
-	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
+	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
 	require.Equal(t, math.LegacyOneDec(), cr)
 	require.True(t, found)
 
@@ -217,16 +219,16 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	// try to set a rate slightly below the minimum
 	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(
 		ctx,
-		chainID,
+		consumerId,
 		providerAddr,
 		commissionRate.Sub(math.LegacyNewDec(1).Quo(math.LegacyNewDec(100)))), // 0.5 - 0.01
 		"commission rate should be rejected (below min), but is not",
 	)
 
 	// set a valid commission equal to the minimum
-	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, chainID, providerAddr, commissionRate))
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, consumerId, providerAddr, commissionRate))
 	// check that the rate was set
-	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, chainID, providerAddr)
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
 	require.Equal(t, commissionRate, cr)
 	require.True(t, found)
 }

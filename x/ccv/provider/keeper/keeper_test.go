@@ -289,19 +289,19 @@ func TestSetProposedConsumerChains(t *testing.T) {
 	defer ctrl.Finish()
 
 	tests := []struct {
-		chainID    string
-		proposalID uint64
+		consumerId string
+		proposalId uint64
 	}{
-		{chainID: "1", proposalID: 1},
-		{chainID: "some other ID", proposalID: 12},
-		{chainID: "some other other chain ID", proposalID: 123},
-		{chainID: "", proposalID: 1234},
+		{consumerId: "1", proposalId: 1},
+		{consumerId: "some other ID", proposalId: 12},
+		{consumerId: "some other other chain ID", proposalId: 123},
+		{consumerId: "", proposalId: 1234},
 	}
 
 	for _, test := range tests {
-		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
-		cID, _ := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
-		require.Equal(t, cID, test.chainID)
+		providerKeeper.SetProposalIdToConsumerId(ctx, test.proposalId, test.consumerId)
+		cID, _ := providerKeeper.GetProposalIdToConsumerId(ctx, test.proposalId)
+		require.Equal(t, cID, test.consumerId)
 	}
 }
 
@@ -310,23 +310,23 @@ func TestDeleteProposedConsumerChainInStore(t *testing.T) {
 	defer ctrl.Finish()
 
 	tests := []struct {
-		chainID          string
-		proposalID       uint64
-		deleteProposalID uint64
+		chainId          string
+		proposalId       uint64
+		deleteProposalId uint64
 		ok               bool
 	}{
-		{chainID: "1", proposalID: 1, deleteProposalID: 1, ok: true},
-		{chainID: "", proposalID: 12, deleteProposalID: 12, ok: true},
-		{chainID: "1", proposalID: 0, deleteProposalID: 1, ok: false},
+		{chainId: "1", proposalId: 1, deleteProposalId: 1, ok: true},
+		{chainId: "", proposalId: 12, deleteProposalId: 12, ok: true},
+		{chainId: "1", proposalId: 0, deleteProposalId: 1, ok: false},
 	}
 	for _, test := range tests {
-		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
-		providerKeeper.DeleteProposedConsumerChainInStore(ctx, test.deleteProposalID)
-		cID, found := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
+		providerKeeper.SetProposalIdToConsumerId(ctx, test.proposalId, test.chainId)
+		providerKeeper.DeleteProposalIdToConsumerId(ctx, test.deleteProposalId)
+		cID, found := providerKeeper.GetProposalIdToConsumerId(ctx, test.proposalId)
 		if test.ok {
 			require.False(t, found)
 		} else {
-			require.Equal(t, cID, test.chainID)
+			require.Equal(t, cID, test.chainId)
 		}
 	}
 }
@@ -338,21 +338,21 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 		{},
 		{
 			{
-				ChainID:    "1",
+				ConsumerId: "1",
 				ProposalID: 1,
 			},
 		},
 		{
 			{
-				ChainID:    "1",
+				ConsumerId: "1",
 				ProposalID: 1,
 			},
 			{
-				ChainID:    "2",
+				ConsumerId: "2",
 				ProposalID: 2,
 			},
 			{
-				ChainID:    "",
+				ConsumerId: "",
 				ProposalID: 3,
 			},
 		},
@@ -360,7 +360,7 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 
 	for _, test := range tests {
 		for _, tc := range test {
-			providerKeeper.SetProposedConsumerChain(ctx, tc.ChainID, tc.ProposalID)
+			providerKeeper.SetProposalIdToConsumerId(ctx, tc.ProposalID, tc.ConsumerId)
 		}
 
 		chains := providerKeeper.GetAllProposedConsumerChainIDs(ctx)
@@ -374,7 +374,7 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 		require.Equal(t, chains, test)
 
 		for _, tc := range test {
-			providerKeeper.DeleteProposedConsumerChainInStore(ctx, tc.ProposalID)
+			providerKeeper.DeleteProposalIdToConsumerId(ctx, tc.ProposalID)
 		}
 	}
 }

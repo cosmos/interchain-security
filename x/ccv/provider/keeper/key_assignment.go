@@ -548,7 +548,7 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, consumerId string) {
 // IsConsumerProposedOrRegistered checks if a consumer chain is either registered, meaning either already running
 // or will run soon, or proposed its ConsumerAdditionProposal was submitted but the chain was not yet added to ICS yet.
 func (k Keeper) IsConsumerProposedOrRegistered(ctx sdk.Context, consumerId string) bool {
-	allConsumerChains := k.GetAllRegisteredAndProposedChainIDs(ctx)
+	allConsumerChains := k.GetAllActiveConsumerIds(ctx)
 	for _, c := range allConsumerChains {
 		if c == consumerId {
 			return true
@@ -577,8 +577,8 @@ func (k Keeper) ValidatorConsensusKeyInUse(ctx sdk.Context, valAddr sdk.ValAddre
 		panic("could not get validator cons addr ")
 	}
 
-	allConsumerChains := k.GetAllRegisteredAndProposedChainIDs(ctx)
-	for _, c := range allConsumerChains {
+	allConsumerIds := k.GetAllActiveConsumerIds(ctx)
+	for _, c := range allConsumerIds {
 		if _, exist := k.GetValidatorByConsumerAddr(ctx,
 			c,
 			types.NewConsumerConsAddress(consensusAddr),

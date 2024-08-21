@@ -44,8 +44,8 @@ func (k Keeper) setConsumerId(ctx sdk.Context, consumerId uint64) {
 	store.Set(types.ConsumerIdKey(), buf)
 }
 
-// getConsumerId returns the last registered consumer id
-func (k Keeper) getConsumerId(ctx sdk.Context) (uint64, bool) {
+// GetConsumerId returns the last registered consumer id
+func (k Keeper) GetConsumerId(ctx sdk.Context) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.ConsumerIdKey())
 	if buf == nil {
@@ -57,7 +57,7 @@ func (k Keeper) getConsumerId(ctx sdk.Context) (uint64, bool) {
 // FetchAndIncrementConsumerId fetches the first consumer id that can be used and increments the
 // underlying consumer id
 func (k Keeper) FetchAndIncrementConsumerId(ctx sdk.Context) string {
-	consumerId, _ := k.getConsumerId(ctx)
+	consumerId, _ := k.GetConsumerId(ctx)
 	k.setConsumerId(ctx, consumerId+1)
 	return strconv.FormatUint(consumerId, 10)
 }

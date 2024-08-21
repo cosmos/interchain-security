@@ -211,32 +211,31 @@ func (k Keeper) DeleteConsumerIdToChannelId(ctx sdk.Context, consumerId string) 
 	store.Delete(types.ConsumerIdToChannelIdKey(consumerId))
 }
 
-// SetProposedConsumerChain stores a consumer id corresponding to a submitted consumer addition proposal
+// SetProposalIdToConsumerId stores a consumer id corresponding to a proposal that contains a `MsgUpdateConsumer` mesage.
 // This consumer id is deleted once the voting period for the proposal ends.
-func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, consumerId string, proposalID uint64) {
+func (k Keeper) SetProposalIdToConsumerId(ctx sdk.Context, proposalId uint64, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ProposedConsumerChainKey(proposalID), []byte(consumerId))
+	store.Set(types.ProposedConsumerChainKey(proposalId), []byte(consumerId))
 }
 
-// GetProposedConsumerChain returns the proposed consumerId for the given consumerAddition proposal ID.
+// GetProposalIdToConsumerId returns the proposed consumer id for the given proposal id.
 // This method is only used for testing.
-func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) (string, bool) {
+func (k Keeper) GetProposalIdToConsumerId(ctx sdk.Context, proposalId uint64) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	consumerChain := store.Get(types.ProposedConsumerChainKey(proposalID))
+	consumerChain := store.Get(types.ProposedConsumerChainKey(proposalId))
 	if consumerChain != nil {
 		return string(consumerChain), true
 	}
 	return "", false
 }
 
-// DeleteProposedConsumerChainInStore deletes the consumer consumerId from store
-// which is in gov consumerAddition proposal
-func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID uint64) {
+// DeleteProposalIdToConsumerId deletes the proposal to consumer id record from store
+func (k Keeper) DeleteProposalIdToConsumerId(ctx sdk.Context, proposalId uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ProposedConsumerChainKey(proposalID))
+	store.Delete(types.ProposedConsumerChainKey(proposalId))
 }
 
-// GetAllProposedConsumerChainIDs returns the proposed consumerId of all gov consumerAddition proposals that are still in the voting period.
+// GetAllProposedConsumerChainIDs returns the proposed consumer ids of all gov proposals that are still in the voting period
 func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ProposedConsumerChainKeyPrefix())
@@ -250,7 +249,7 @@ func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.Proposed
 		}
 
 		proposedChains = append(proposedChains, types.ProposedChain{
-			ChainID:    string(iterator.Value()),
+			ConsumerId: string(iterator.Value()),
 			ProposalID: proposalID,
 		})
 
@@ -743,17 +742,24 @@ func (k Keeper) BondDenom(ctx sdk.Context) (string, error) {
 	return k.stakingKeeper.BondDenom(ctx)
 }
 
-func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
-	allConsumerChains := []string{}
-	allConsumerChains = append(allConsumerChains, k.GetAllRegisteredConsumerIds(ctx)...)
-	proposedChains := k.GetAllProposedConsumerChainIDs(ctx)
-	for _, proposedChain := range proposedChains {
-		allConsumerChains = append(allConsumerChains, proposedChain.ChainID)
+// GetAllActiveConsumerIds returns all the consumer ids of chains that are registered, initialized, or launched
+func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
+	latestConsumerId, found := k.GetConsumerId(ctx)
+	if !found {
+		return []string{}
 	}
-	pendingChainIDs := k.GetAllPendingConsumerChainIDs(ctx)
-	allConsumerChains = append(allConsumerChains, pendingChainIDs...)
 
-	return allConsumerChains
+	consumerIds := []string{}
+	for i := uint64(0); i <= latestConsumerId; i++ {
+		consumerId := fmt.Sprintf("%d", i)
+		phase, foundPhase := k.GetConsumerPhase(ctx, consumerId)
+		if !foundPhase || (phase != Registered && phase != Initialized && phase != Launched) {
+			continue
+		}
+		consumerIds = append(consumerIds, consumerId)
+	}
+
+	return consumerIds
 }
 
 // GetTopN returns N if chain `consumerId` has a top N associated, and 0 otherwise.
