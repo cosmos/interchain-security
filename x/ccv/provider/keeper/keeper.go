@@ -435,7 +435,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// Verify that there isn't already a CCV channel for the consumer chain
 	chainID := tmClient.ChainId
 	if prevChannelID, ok := k.GetConsumerIdToChannelId(ctx, consumerId); ok {
-		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannelID, chainID)
+		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain with id %s", prevChannelID, consumerId)
 	}
 
 	// the CCV channel is established:

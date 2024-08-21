@@ -45,7 +45,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	phase, found := k.GetConsumerPhase(ctx, consumerId)
 	if !found || phase != Initialized {
 		return errorsmod.Wrapf(types.ErrInvalidPhase,
-			"cannot create client for consumer chain that is not in the Created phase: %s", consumerId)
+			"cannot create client for consumer chain that is not in the Initialized phase: %s", consumerId)
 	}
 
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
