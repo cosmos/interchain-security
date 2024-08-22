@@ -2,8 +2,9 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
+
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -98,7 +99,7 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 }
 
 func TestQueryConsumerValidators(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	consumerId := "0"
@@ -114,15 +115,19 @@ func TestQueryConsumerValidators(t *testing.T) {
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	consumerKey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &consumerKey1}
+	expectedCommissionRate1 := math.LegacyMustNewDecFromStr("0.123")
+	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr1, expectedCommissionRate1)
 
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
 	consumerKey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
 	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &consumerKey2}
+	expectedCommissionRate2 := math.LegacyMustNewDecFromStr("0.123")
+	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr2, expectedCommissionRate2)
 
 	expectedResponse := types.QueryConsumerValidatorsResponse{
 		Validators: []*types.QueryConsumerValidatorsValidator{
-			{providerAddr1.String(), &consumerKey1, 1},
-			{providerAddr2.String(), &consumerKey2, 2},
+			{ProviderAddress: providerAddr1.String(), ConsumerKey: &consumerKey1, Power: 1, Rate: expectedCommissionRate1},
+			{ProviderAddress: providerAddr2.String(), ConsumerKey: &consumerKey2, Power: 2, Rate: expectedCommissionRate2},
 		},
 	}
 
@@ -133,6 +138,17 @@ func TestQueryConsumerValidators(t *testing.T) {
 	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expectedResponse, res)
+
+	// validator with no set consumer commission rate
+	pk.DeleteConsumerCommissionRate(ctx, consumerId, providerAddr1)
+	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.456")
+	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
+	val := stakingtypes.Validator{Commission: stakingtypes.Commission{CommissionRates: stakingtypes.CommissionRates{Rate: expectedCommissionRate}}}
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
+		ctx, providerAddr1.ToSdkConsAddr()).Return(val, nil).Times(1)
+	res, _ = pk.QueryConsumerValidators(ctx, &req)
+	require.Equal(t, expectedCommissionRate, res.Validators[0].Rate)
+
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
