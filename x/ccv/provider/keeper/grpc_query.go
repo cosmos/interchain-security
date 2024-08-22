@@ -344,11 +344,34 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	for _, v := range consumerValSet {
+
+	for _, consVal := range consumerValSet {
+		provAddr := types.ProviderConsAddress{Address: consVal.ProviderConsAddr}
+
+		provVal, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr.ToSdkConsAddr())
+		if err != nil {
+			k.Logger(ctx).Error("cannot find consensus address for provider address:%s", provAddr.String())
+			continue
+		}
+
+		hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerId)
+		if err != nil {
+			k.Logger(ctx).Error("cannot define if validator %s has to validate for consumer %s for current epoch",
+				provAddr.String(), consumerId)
+			continue
+		}
+
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
-			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
-			ConsumerKey:     v.PublicKey,
-			Power:           v.Power,
+			ProviderAddress:       sdk.ConsAddress(consVal.ProviderConsAddr).String(),
+			ConsumerKey:           consVal.PublicKey,
+			Power:                 consVal.Power,
+			Description:           provVal.Description,
+			OperatorAddress:       provVal.OperatorAddress,
+			Jailed:                provVal.Jailed,
+			Status:                provVal.Status,
+			ProviderTokens:        provVal.Tokens,
+			ProviderPower:         provVal.GetConsensusPower(k.stakingKeeper.PowerReduction(ctx)),
+			ValidatesCurrentEpoch: hasToValidate,
 		})
 	}
 

@@ -98,7 +98,7 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 }
 
 func TestQueryConsumerValidators(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	consumerId := "0"
@@ -111,24 +111,60 @@ func TestQueryConsumerValidators(t *testing.T) {
 	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
-	consumerKey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &consumerKey1}
+	val1 := createStakingValidator(ctx, mocks, 1, 1, 1)
+	valConsAddr1, _ := val1.GetConsAddr()
+	providerAddr1 := types.NewProviderConsAddress(valConsAddr1)
+	pk1, _ := val1.CmtConsPublicKey()
+	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &pk1}
+	val1.Tokens = sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction)
+	val1.Description = stakingtypes.Description{Moniker: "ConsumerValidator1"}
 
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
-	consumerKey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &consumerKey2}
+	val2 := createStakingValidator(ctx, mocks, 1, 2, 2)
+	valConsAddr2, _ := val2.GetConsAddr()
+	providerAddr2 := types.NewProviderConsAddress(valConsAddr2)
+	pk2, _ := val2.CmtConsPublicKey()
+	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &pk2}
+	val2.Tokens = sdk.TokensFromConsensusPower(2, sdk.DefaultPowerReduction)
+	val2.Description = stakingtypes.Description{Moniker: "ConsumerValidator2"}
 
 	expectedResponse := types.QueryConsumerValidatorsResponse{
 		Validators: []*types.QueryConsumerValidatorsValidator{
-			{providerAddr1.String(), &consumerKey1, 1},
-			{providerAddr2.String(), &consumerKey2, 2},
+			{
+				ProviderAddress:       providerAddr1.String(),
+				ConsumerKey:           &pk1,
+				Power:                 1,
+				Description:           val1.Description,
+				OperatorAddress:       val1.OperatorAddress,
+				Jailed:                val1.Jailed,
+				Status:                val1.Status,
+				ProviderTokens:        val1.Tokens,
+				ProviderPower:         1,
+				ValidatesCurrentEpoch: true,
+			},
+			{
+				ProviderAddress:       providerAddr2.String(),
+				ConsumerKey:           &pk2,
+				Power:                 2,
+				Description:           val2.Description,
+				OperatorAddress:       val2.OperatorAddress,
+				Jailed:                val2.Jailed,
+				Status:                val2.Status,
+				ProviderTokens:        val2.Tokens,
+				ProviderPower:         2,
+				ValidatesCurrentEpoch: true,
+			},
 		},
 	}
 
 	// set up the client id so the chain looks like it "started"
 	pk.SetConsumerClientId(ctx, consumerId, "clientID")
 	pk.SetConsumerValSet(ctx, consumerId, []types.ConsensusValidator{consumerValidator1, consumerValidator2})
+
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr1).Return(val1, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr2).Return(val2, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().PowerReduction(ctx).Return(sdk.DefaultPowerReduction).AnyTimes()
+
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{val1, val2}, []int64{1, 2}, -1) // -1 to allow the calls "AnyTimes"
 
 	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
