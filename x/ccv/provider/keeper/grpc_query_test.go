@@ -99,7 +99,6 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 }
 
 func TestQueryConsumerValidators(t *testing.T) {
-
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 

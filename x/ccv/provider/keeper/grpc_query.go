@@ -354,7 +354,7 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		}
 
 		var rate math.LegacyDec
-		consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerChainID, types.NewProviderConsAddress(consAddr))
+		consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 		if found {
 			rate = consumerRate
 		} else {
