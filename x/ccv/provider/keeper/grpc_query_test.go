@@ -2,8 +2,9 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
+
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
