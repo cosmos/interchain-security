@@ -345,11 +345,11 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	for _, consVal := range consumerValSet {
-		provAddr := types.ProviderConsAddress{Address: consVal.ProviderConsAddr}
+	for _, consumerVal := range consumerValSet {
+		provAddr := types.ProviderConsAddress{Address: consumerVal.ProviderConsAddr}
 		consAddr := provAddr.ToSdkConsAddr()
 
-		provVal, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+		providerVal, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 		if err != nil {
 			k.Logger(ctx).Error("cannot find consensus address for provider address:%s", provAddr.String())
 			continue
@@ -364,22 +364,22 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 		consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 		if !found {
-			consumerRate = provVal.Commission.Rate
+			consumerRate = providerVal.Commission.Rate
 		}
 
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
-			ProviderAddress:        sdk.ConsAddress(consVal.ProviderConsAddr).String(),
-			ConsumerKey:            consVal.PublicKey,
-			Power:                  consVal.Power,
-			ConsumerCommissionRate: consumerRate,
-			Description:            provVal.Description,
-			OperatorAddress:        provVal.OperatorAddress,
-			Jailed:                 provVal.Jailed,
-			Status:                 provVal.Status,
-			ProviderTokens:         provVal.Tokens,
-			ProviderCommissionRate: provVal.Commission.Rate,
-			ProviderPower:          provVal.GetConsensusPower(k.stakingKeeper.PowerReduction(ctx)),
-			ValidatesCurrentEpoch:  hasToValidate,
+			ProviderAddress:         sdk.ConsAddress(consumerVal.ProviderConsAddr).String(),
+			ConsumerKey:             consumerVal.PublicKey,
+			Power:                   consumerVal.Power,
+			ConsumerCommissionRate:  consumerRate,
+			Description:             providerVal.Description,
+			ProviderOperatorAddress: providerVal.OperatorAddress,
+			Jailed:                  providerVal.Jailed,
+			Status:                  providerVal.Status,
+			ProviderTokens:          providerVal.Tokens,
+			ProviderCommissionRate:  providerVal.Commission.Rate,
+			ProviderPower:           providerVal.GetConsensusPower(k.stakingKeeper.PowerReduction(ctx)),
+			ValidatesCurrentEpoch:   hasToValidate,
 		})
 	}
 	return &types.QueryConsumerValidatorsResponse{

@@ -347,19 +347,19 @@ message QueryConsumerValidatorsValidator {
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
-  // description defines the description terms for the validator
-  cosmos.staking.v1beta1.Description description = 5 [(gogoproto.nullable) = false];
-  // operator_address defines the address of the validator's operator
-  string operator_address = 6 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  // jailed defined whether the validator has been jailed from bonded status or not.
-  bool jailed = 7;
-  // status is the validator status (bonded/unbonding/unbonded).
-  cosmos.staking.v1beta1.BondStatus status = 8;
   // The rate to charge delegators on the provider chain, as a fraction
   string provider_commission_rate = 9 [
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
+  // description defines the description terms for the validator
+  cosmos.staking.v1beta1.Description description = 5 [(gogoproto.nullable) = false];
+  // provider_operator_address defines the address of the validator's operator
+  string provider_operator_address = 6 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // jailed defined whether the validator has been jailed from bonded status or not.
+  bool jailed = 7;
+  // status is the validator status (bonded/unbonding/unbonded).
+  cosmos.staking.v1beta1.BondStatus status = 8;
   // provider_tokens defines the delegated tokens (incl. self-delegation).
   string provider_tokens = 10 [
     (cosmos_proto.scalar)  = "cosmos.Int",
