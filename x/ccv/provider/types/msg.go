@@ -854,7 +854,7 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 	}
 
 	if err := ccvtypes.ValidateDuration(initializationParameters.UnbondingPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "unbonding period cannot be zero")
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "invalid unbonding period: %s", err.Error())
 	}
 
 	return nil
