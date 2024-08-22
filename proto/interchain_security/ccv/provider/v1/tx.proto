@@ -30,6 +30,7 @@ service Msg {
   rpc OptOut(MsgOptOut) returns (MsgOptOutResponse);
   rpc SetConsumerCommissionRate(MsgSetConsumerCommissionRate) returns (MsgSetConsumerCommissionRateResponse);
   rpc ConsumerModification(MsgConsumerModification) returns (MsgConsumerModificationResponse);
+  rpc ChangeRewardDenoms(MsgChangeRewardDenoms) returns (MsgChangeRewardDenomsResponse);
 }
 
 

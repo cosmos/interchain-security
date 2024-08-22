@@ -2227,8 +2227,8 @@ func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenoms
  "messages": [
   {
    "@type": "/interchain_security.ccv.provider.v1.MsgChangeRewardDenoms",
-   "denoms_to_add": %s,
-   "denoms_to_remove": %s,
+   "denoms_to_add": ["%s"],
+   "denoms_to_remove": ["%s"],
    "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
   }
  ],
@@ -2239,15 +2239,15 @@ func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenoms
  "expedited": false
 }`
 
-	denomsToAdd := []string{action.Denom}
-	denomsToRemove := []string{"stake"}
+	denomsToAdd := action.Denom
+	denomsToRemove := "stake"
 	jsonStr := fmt.Sprintf(template,
 		denomsToAdd,
 		denomsToRemove,
 		action.Deposit)
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/consumer-addition.proposal"
+	proposalFile := "/change-reward.proposal"
 	bz, err := tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
 	).CombinedOutput()
