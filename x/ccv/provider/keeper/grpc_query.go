@@ -354,7 +354,7 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		}
 		bondedValidators, err = k.GetLastBondedValidators(ctx)
 		if err != nil {
-			panic(fmt.Errorf("failed to get last validators: %w", err))
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get last validators: %s", err))
 		}
 
 		if topN := powerParams.GetTop_N(); topN > 0 {
@@ -363,13 +363,13 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
-				panic(fmt.Errorf("failed to get active validators: %w", err))
+				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get active validators: %s", err))
 			}
 
 			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
 			if err != nil {
 				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
-				panic(fmt.Errorf("failed to compute min power to opt in for chain %v: %w", consumerId, err))
+				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute min power to opt in for chain %s: %s", consumerId, err))
 			}
 
 			// set the minimal power of validators in the top N in the store
