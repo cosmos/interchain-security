@@ -13,7 +13,7 @@ If you are preparing a `ConsumerAdditionProposal` you can find more information 
 :::
 
 `ConsumerAdditionProposal` is used to add new consumer chains. 
-When proposals of this type pass governance and the `spawn_time` specified in the proposal is reached, all opted in provider validators are expected to run infrastructure (validator nodes) for the proposed consumer chain.
+When proposals of this type pass governance and the `spawn_time` specified in the proposal is reached, all opted in provider validators are expected to run infrastructure (validator nodes) for the proposed consumer chain. 
 Note that for TopN consumer chains, the validators in the top N% of the voting power are automatically opted in at spawn time. 
 
 Minimal example:

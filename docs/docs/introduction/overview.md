@@ -12,7 +12,7 @@ ICS allows anyone to launch a _consumer_ chain using a subset, or even the entir
 
 - **Tailored security.** 
   Consumer chains can choose the right level of security based on their needs: 
-  Chains can choose to inherit the whole validator set from the provider, or they can launch as an opt in chain with a subset of the provider validators. 
+  Chains can choose to inherit the whole validator set from the provider, or they can launch as an opt-in chain with a subset of the provider validators. 
   Additionally, consumer chains have the power to shape the validator set to their specific requirements by setting allow & deny lists, capping its size, etc. 
   This allows for a wide range of security tradeoffs. 
   For example, it enables emerging projects to deploy on consumer chains that don’t need high level of security.
@@ -42,7 +42,7 @@ The consumer uses these validator set updates to update its own validator set in
 
 **Slashing and jailing.** 
 If the opted-in validators misbehave on the consumer chains, then they will be punished on the provider chain. 
-ICS currently differentiates between two type of infractions -- double signing and downtime. 
+ICS currently differentiates between two types of infractions -- double signing and downtime. 
 Double signing on consumer chains results in the misbehaving validators having their provider stake slashed and being permanently jailed on the provider, 
 while downtime on consumer chains results in the misbehaving validators being temporarily jailed. 
 Note that jailing entails removing the validator from the provider active validator set and, consequently, from any of the consumer validato sets. 

@@ -61,7 +61,7 @@ By default, this parameter is set to `false`, i.e., validators outside of the pr
 ## Setting Power Shaping Parameters
 
 All the power shaping parameters can be set by the consumer chain in the `ConsumerAdditionProposal` (see [Onboarding](../consumer-development/onboarding.md#3-submit-a-governance-proposal)).
-They operate *solely on the provider chain*, meaning the consumer chain simply receives the validator set after these rules have been applied and does not have any knowledge about whether they are applied.
+They operate _solely on the provider chain_, meaning the consumer chain simply receives the validator set after these rules have been applied and does not have any knowledge about whether they are applied.
 
 When setting power shaping parameters, please consider the following guidelines:
 
@@ -73,7 +73,7 @@ When setting power shaping parameters, please consider the following guidelines:
   For example, if there are only 3 validators, and the cap is 20%, this will not be possible (since even splitting the power fairly would mean that each validator has 33% of the power, so is above the cap).
   Also note that the smaller this value is, the more the original voting power gets distorted, which could discourage large validators from deciding to opt in to the chain.
 * **Do not have allowlist contain too few validators.** 
-  If the allowlist is *non empty*, then *only* validators on the allowlist can validate the chain.
+  If the allowlist is _non empty_, then _only_ validators on the allowlist can validate the chain.
   Thus, an allowlist containing too few validators is a security risk, e.g., the validators on the allowlist get jailed on the provider.
 * **Do not have denylist contain too many validators.** 
   If the denylist is *non empty*, then the validators on the denylist cannot validate the chain.
@@ -85,6 +85,7 @@ and that the chain should be secure even if the power distribution changes signi
 The power shaping parameters of a running consumer chain can be changed through a [`ConsumerModificationProposal`](./proposals.md#consumermodificationproposal).
 
 The power shaping parameters can be seen by querying the list of consumer chains:
+
 ```bash
 interchain-security-pd query provider list-consumer-chains
 ```
