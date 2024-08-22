@@ -370,7 +370,6 @@ message QueryConsumerValidatorsValidator {
   int64 provider_power = 11;
   // validates_current_epoch defines whether the validator has to validate for the current epoch or not
   bool validates_current_epoch = 12;
-
 }
 
 message QueryConsumerValidatorsResponse {
