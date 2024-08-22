@@ -767,7 +767,11 @@ func (k Keeper) GetTopN(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
+	}
+
 	return powerShapingParameters.Top_N
 }
 
@@ -917,21 +921,27 @@ func (k Keeper) DeleteConsumerCommissionRate(
 	store.Delete(types.ConsumerCommissionRateKey(consumerId, providerAddr))
 }
 
-// GetValidatorsPowerCap returns `(p, true)` if chain `consumerId` has power cap `p` associated with it, and (0, false) otherwise
+// GetValidatorsPowerCap returns the associated power cap of chain with `consumerId` and 0 if no power cap association is found
 func (k Keeper) GetValidatorsPowerCap(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
+	}
 	return powerShapingParameters.ValidatorsPowerCap
 }
 
-// GetValidatorSetCap returns `(c, true)` if chain `consumerId` has validator-set cap `c` associated with it, and (0, false) otherwise
+// GetValidatorSetCap returns the associated validator set cap of chain with `consumerId` and 0 if no set cap association is found
 func (k Keeper) GetValidatorSetCap(
 	ctx sdk.Context,
 	consumerId string,
 ) uint32 {
-	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
+	}
 	return powerShapingParameters.ValidatorSetCap
 }
 
@@ -1101,22 +1111,28 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 }
 
 // GetMinStake returns the minimum stake required for a validator to validate
-// a given consumer chain.
+// a given consumer chain. Returns 0 if min stake is not found for this consumer id.
 func (k Keeper) GetMinStake(
 	ctx sdk.Context,
 	consumerId string,
 ) uint64 {
-	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
+	}
 	return powerShapingParameters.MinStake
 }
 
 // AllowsInactiveValidators returns whether inactive validators are allowed to validate
-// a given consumer chain.
+// a given consumer chain. Returns false if flag on inactive validators is not found for this consumer id.
 func (k Keeper) AllowsInactiveValidators(
 	ctx sdk.Context,
 	consumerId string,
 ) bool {
-	powerShapingParameters, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
+	}
 	return powerShapingParameters.AllowInactiveVals
 }
 

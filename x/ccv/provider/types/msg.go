@@ -42,9 +42,6 @@ var (
 	_ sdk.Msg = (*MsgCreateConsumer)(nil)
 	_ sdk.Msg = (*MsgUpdateConsumer)(nil)
 	_ sdk.Msg = (*MsgRemoveConsumer)(nil)
-	_ sdk.Msg = (*MsgConsumerAddition)(nil)
-	_ sdk.Msg = (*MsgConsumerModification)(nil)
-	_ sdk.Msg = (*MsgConsumerRemoval)(nil)
 	_ sdk.Msg = (*MsgOptIn)(nil)
 	_ sdk.Msg = (*MsgOptOut)(nil)
 	_ sdk.Msg = (*MsgSetConsumerCommissionRate)(nil)
@@ -56,9 +53,6 @@ var (
 	_ sdk.HasValidateBasic = (*MsgCreateConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgUpdateConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgRemoveConsumer)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerModification)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerRemoval)(nil)
 	_ sdk.HasValidateBasic = (*MsgOptIn)(nil)
 	_ sdk.HasValidateBasic = (*MsgOptOut)(nil)
 	_ sdk.HasValidateBasic = (*MsgSetConsumerCommissionRate)(nil)
@@ -242,13 +236,13 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
 func NewMsgCreateConsumer(signer string, chainId string, metadata ConsumerMetadata,
-	initializationParameters ConsumerInitializationParameters, powerShapingParameters PowerShapingParameters) (*MsgCreateConsumer, error) {
+	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgCreateConsumer, error) {
 	return &MsgCreateConsumer{
 		Signer:                   signer,
 		ChainId:                  chainId,
 		Metadata:                 metadata,
-		InitializationParameters: &initializationParameters,
-		PowerShapingParameters:   &powerShapingParameters,
+		InitializationParameters: initializationParameters,
+		PowerShapingParameters:   powerShapingParameters,
 	}, nil
 }
 
@@ -260,45 +254,30 @@ func (msg MsgCreateConsumer) Type() string {
 // Route implements the sdk.Msg interface.
 func (msg MsgCreateConsumer) Route() string { return RouterKey }
 
-func verifyField(name string, field string, maxLength int) error {
-	if strings.TrimSpace(field) == "" {
-		return fmt.Errorf("%s cannot be empty", name)
-	} else if len(field) > maxLength {
-		return fmt.Errorf("%s is too long; got: %d, max: %d", name, len(field), maxLength)
-	}
-	return nil
-}
-
-func VerifyConsumerMetadata(metadata ConsumerMetadata) error {
-	// TODO (PERMISSIONLESS): we can extend the lengths at some later stage and make them constant
-	if err := verifyField("name", metadata.Name, 100); err != nil {
-		return err
-	}
-
-	if err := verifyField("description", metadata.Description, 20000); err != nil {
-		return err
-	}
-
-	if err := verifyField("metadata", metadata.Metadata, 1000); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgCreateConsumer) ValidateBasic() error {
-	if err := verifyField("chain id", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
+	if err := ValidateField("chain id", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
 		return err
 	}
 
-	if err := VerifyConsumerMetadata(msg.Metadata); err != nil {
+	if err := ValidateConsumerMetadata(msg.Metadata); err != nil {
 		return err
 	}
 
-	if msg.PowerShapingParameters != nil && msg.PowerShapingParameters.IsTop_NSet && msg.PowerShapingParameters.Top_N > 0 {
-		return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
-			"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
+	if msg.InitializationParameters != nil {
+		if err := ValidateInitializationParameters(*msg.InitializationParameters); err != nil {
+			return err
+		}
+	}
+
+	if msg.PowerShapingParameters != nil {
+		if msg.PowerShapingParameters.Top_N > 0 {
+			return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
+				"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
+		}
+		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -322,15 +301,15 @@ func (msg MsgCreateConsumer) GetSigners() []sdk.AccAddress {
 }
 
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
-func NewMsgUpdateConsumer(signer string, consumerId string, ownerAddress string, metadata ConsumerMetadata,
-	initializationParameters ConsumerInitializationParameters, powerShapingParameters PowerShapingParameters) (*MsgUpdateConsumer, error) {
+func NewMsgUpdateConsumer(signer string, consumerId string, ownerAddress string, metadata *ConsumerMetadata,
+	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
 		Signer:                   signer,
 		ConsumerId:               consumerId,
 		NewOwnerAddress:          ownerAddress,
-		Metadata:                 &metadata,
-		InitializationParameters: &initializationParameters,
-		PowerShapingParameters:   &powerShapingParameters,
+		Metadata:                 metadata,
+		InitializationParameters: initializationParameters,
+		PowerShapingParameters:   powerShapingParameters,
 	}, nil
 }
 
@@ -348,10 +327,27 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 		return err
 	}
 
-	// TODO (PERMISSIONLESS): validate parameters and everything else
-	err := ValidatePSSFeatures(msg.PowerShapingParameters.Top_N, msg.PowerShapingParameters.ValidatorsPowerCap)
-	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidPowerShapingParametersRecord, "invalid power-shaping parameters: %s", err.Error())
+	const maxNewOwnerAddress = 500
+	if err := ValidateField("new owner address", msg.NewOwnerAddress, maxNewOwnerAddress); err != nil {
+		return err
+	}
+
+	if msg.Metadata != nil {
+		if err := ValidateConsumerMetadata(*msg.Metadata); err != nil {
+			return err
+		}
+	}
+
+	if msg.InitializationParameters != nil {
+		if err := ValidateInitializationParameters(*msg.InitializationParameters); err != nil {
+			return err
+		}
+	}
+
+	if msg.PowerShapingParameters != nil {
+		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -528,11 +524,11 @@ func (msg MsgConsumerRemoval) Route() string { return RouterKey }
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgConsumerRemoval) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "consumer chain id must not be blank")
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
 	}
 
 	if msg.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "spawn time cannot be zero")
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
 	}
 	return nil
 }
@@ -739,6 +735,126 @@ func ValidateConsumerId(consumerId string) error {
 	_, err := strconv.ParseUint(consumerId, 10, 64)
 	if err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id (%s) cannot be parsed: %s", consumerId, err.Error())
+	}
+
+	return nil
+}
+
+// ValidateField validates that `field` is not empty and has at most `maxLength` characters
+func ValidateField(nameOfTheField string, field string, maxLength int) error {
+	if strings.TrimSpace(field) == "" {
+		return fmt.Errorf("%s cannot be empty", nameOfTheField)
+	} else if len(field) > maxLength {
+		return fmt.Errorf("%s is too long; got: %d, max: %d", nameOfTheField, len(field), maxLength)
+	}
+	return nil
+}
+
+// ValidateConsumerMetadata validates that all the provided metadata are in the expected range
+func ValidateConsumerMetadata(metadata ConsumerMetadata) error {
+	const maxNameLength = 100
+	const maxDescriptionLength = 50000
+	const maxMetadataLength = 1000
+
+	if err := ValidateField("name", metadata.Name, maxNameLength); err != nil {
+		return err
+	}
+
+	if err := ValidateField("description", metadata.Description, maxDescriptionLength); err != nil {
+		return err
+	}
+
+	if err := ValidateField("metadata", metadata.Metadata, maxMetadataLength); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ValidatePowerShapingParameters validates that all the provided power-shaping parameters are in the expected range
+func ValidatePowerShapingParameters(powerShapingParameters PowerShapingParameters) error {
+	const maxAllowlistLength = 500
+	const maxDenylistLength = 500
+
+	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
+	// Opt In chain) or in the range [50, 100] (for a Top N chain).
+	if powerShapingParameters.Top_N != 0 && (powerShapingParameters.Top_N < 50 || powerShapingParameters.Top_N > 100) {
+		return fmt.Errorf("parameter Top N can either be 0 or in the range [50, 100]")
+	}
+
+	if powerShapingParameters.ValidatorsPowerCap != 0 && powerShapingParameters.ValidatorsPowerCap > 100 {
+		return fmt.Errorf("validators' power cap has to be in the range [1, 100]")
+	}
+
+	if len(powerShapingParameters.Allowlist) > maxAllowlistLength {
+		return fmt.Errorf("allowlist cannot exceed length: %d", maxAllowlistLength)
+	}
+
+	if len(powerShapingParameters.Denylist) > maxDenylistLength {
+		return fmt.Errorf("denylist cannot exceed length: %d", maxDenylistLength)
+	}
+
+	return nil
+}
+
+// ValidateInitializationParameters validates that all the provided parameters are in the expected range
+func ValidateInitializationParameters(initializationParameters ConsumerInitializationParameters) error {
+	const maxGenesisHashLength = 1000
+	const maxBinaryHashLength = 1000
+	const maxConsumerRedistributionFractionLength = 50
+	const maxDistributionTransmissionChannelLength = 1000
+
+	if initializationParameters.InitialHeight.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "initial height cannot be zero")
+	}
+
+	if len(initializationParameters.GenesisHash) == 0 {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "genesis hash cannot be empty")
+	} else if len(initializationParameters.GenesisHash) > maxGenesisHashLength {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "genesis hash cannot exceed %d bytes", maxGenesisHashLength)
+	}
+
+	if len(initializationParameters.BinaryHash) == 0 {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "binary hash cannot be empty")
+	} else if len(initializationParameters.BinaryHash) > maxBinaryHashLength {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "binary hash cannot exceed %d bytes", maxBinaryHashLength)
+	}
+
+	if initializationParameters.SpawnTime.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "spawn time cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateStringFraction(initializationParameters.ConsumerRedistributionFraction); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "consumer redistribution fraction is invalid: %s", err.Error())
+	} else if err := ValidateField("consumer redistribution fraction", initializationParameters.ConsumerRedistributionFraction, maxConsumerRedistributionFractionLength); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "consumer redistribution fraction is invalid: %s", err.Error())
+	}
+
+	if err := ccvtypes.ValidatePositiveInt64(initializationParameters.BlocksPerDistributionTransmission); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "blocks per distribution transmission has to be positive")
+	}
+
+	if err := ccvtypes.ValidateDistributionTransmissionChannel(initializationParameters.DistributionTransmissionChannel); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "distribution transmission channel is invalid: %s", err.Error())
+	} else if len(initializationParameters.DistributionTransmissionChannel) > maxDistributionTransmissionChannelLength {
+		// note that the distribution transmission channel can be the empty string (i.e., "") and hence we only check its max length here
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "distribution transmission channel exceeds %d length", maxDistributionTransmissionChannelLength)
+	}
+
+	if err := ccvtypes.ValidatePositiveInt64(initializationParameters.HistoricalEntries); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "historical entries has to be positive")
+	}
+
+	if err := ccvtypes.ValidateDuration(initializationParameters.CcvTimeoutPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "ccv timeout period cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateDuration(initializationParameters.TransferTimeoutPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "transfer timeout period cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateDuration(initializationParameters.UnbondingPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "unbonding period cannot be zero")
 	}
 
 	return nil

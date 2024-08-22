@@ -230,11 +230,11 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 	}
 
 	if strings.TrimSpace(sccp.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "consumer chain id must not be blank")
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
 	}
 
 	if sccp.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemoval, "spawn time cannot be zero")
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
 	}
 	return nil
 }

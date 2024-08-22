@@ -288,17 +288,17 @@ func GetTestInitializationParameters() providertypes.ConsumerInitializationParam
 	transferTimeoutPeriod := types.DefaultTransferTimeoutPeriod
 	unbondingPeriod := types.DefaultConsumerUnbondingPeriod
 	return providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     &initialHeight,
+		InitialHeight:                     initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
-		SpawnTime:                         &spawnTime,
+		SpawnTime:                         spawnTime,
 		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
 		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   "",
 		HistoricalEntries:                 types.DefaultHistoricalEntries,
-		CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-		TransferTimeoutPeriod:             &transferTimeoutPeriod,
-		UnbondingPeriod:                   &unbondingPeriod,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
+		UnbondingPeriod:                   unbondingPeriod,
 	}
 }
 

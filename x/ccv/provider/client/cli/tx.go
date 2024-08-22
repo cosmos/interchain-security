@@ -215,7 +215,7 @@ Example:
 
 func NewCreateConsumerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create-consumer [chain-id] [path/to/metadata.json] [path/to/initialization-parameters.json] [path/to/power-shaping-parameters.json]",
+		Use:   "create-consumer [chain-id] [metadata] [initialization-parameters] [power-shaping-parameters]",
 		Short: "create a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Create a consumer chain and get the assigned consumer id of this chain.
@@ -270,7 +270,7 @@ Example:
 				return fmt.Errorf("power-shaping parameters unmarshalling failed: %w", err)
 			}
 
-			msg, err := types.NewMsgCreateConsumer(signer, chainId, metadata, initializationParameters, powerShapingParameters)
+			msg, err := types.NewMsgCreateConsumer(signer, chainId, metadata, &initializationParameters, &powerShapingParameters)
 			if err != nil {
 				return err
 			}
@@ -291,7 +291,7 @@ Example:
 
 func NewUpdateConsumerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "update-consumer [consumer-id] [owner-address] [path/to/metadata.json] [path/to/initialization-parameters.json] [path/to/power-shaping-parameters.json]",
+		Use:   "update-consumer [consumer-id] [owner-address] [metadata] [initialization-parameters] [power-shaping-parameters]",
 		Short: "update a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Update a consumer chain to change its parameters (e.g., spawn time, allow list, etc.).
@@ -344,7 +344,7 @@ Example:
 				return fmt.Errorf("power-shaping parameters unmarshalling failed: %w", err)
 			}
 
-			msg, err := types.NewMsgUpdateConsumer(signer, consumerId, ownerAddress, metadata, initializationParameters, powerShapingParameters)
+			msg, err := types.NewMsgUpdateConsumer(signer, consumerId, ownerAddress, &metadata, &initializationParameters, &powerShapingParameters)
 			if err != nil {
 				return err
 			}

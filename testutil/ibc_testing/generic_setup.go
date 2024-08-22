@@ -3,10 +3,10 @@ package ibc_testing
 import (
 	"encoding/json"
 	"fmt"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/stretchr/testify/require"
@@ -145,10 +145,10 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	initializationParameters := testkeeper.GetTestInitializationParameters()
 	// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
 	// using time.Now() could set the spawn time to be too far in the past or too far in the future
-	initializationParameters.SpawnTime = &coordinator.CurrentTime
+	initializationParameters.SpawnTime = coordinator.CurrentTime
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
-	initializationParameters.InitialHeight = &clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
+	initializationParameters.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
 
 	powerShapingParameters := testkeeper.GetTestPowerShapingParameters()
 	powerShapingParameters.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient

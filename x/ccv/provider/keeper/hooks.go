@@ -115,16 +115,30 @@ func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64)
 		return fmt.Errorf("cannot retrieve proposal with id: %d", proposalId)
 	}
 
-	// a proposal can contain at most one `MsgUpdateConsumer` message
 	hasUpdateConsumerMsg := false
 	for _, msg := range p.GetMessages() {
-		sdkMsg, isUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
-		if isUpdateConsumer {
+		sdkMsg, isMsgUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
+		if isMsgUpdateConsumer {
 			if hasUpdateConsumerMsg {
 				return fmt.Errorf("proposal can contain at most one `MsgUpdateConsumer` message")
 			}
 			hasUpdateConsumerMsg = true
 			h.k.SetProposalIdToConsumerId(ctx, proposalId, sdkMsg.ConsumerId)
+		}
+
+		// if the proposal contains a deprecated message, cancel the proposal
+		_, isMsgConsumerAddition := msg.GetCachedValue().(*providertypes.MsgConsumerAddition)
+		if isMsgConsumerAddition {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerAddition`; use `MsgCreateConsumer` instead")
+		}
+
+		_, isMsgConsumerModification := msg.GetCachedValue().(*providertypes.MsgConsumerModification)
+		if isMsgConsumerModification {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerModification`; use `MsgUpdateConsumer` instead")
+		}
+		_, isMsgConsumerRemoval := msg.GetCachedValue().(*providertypes.MsgConsumerRemoval)
+		if isMsgConsumerRemoval {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerRemoval`; use `MsgRemoveConsumer` instead")
 		}
 	}
 
