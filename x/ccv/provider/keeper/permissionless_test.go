@@ -99,13 +99,13 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 	ccvTimeoutPeriod := time.Duration(789)
 	transferTimeoutPeriod := time.Duration(101112)
 	expectedRecord := providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     &types.Height{RevisionNumber: 1, RevisionHeight: 2},
+		InitialHeight:                     types.Height{RevisionNumber: 1, RevisionHeight: 2},
 		GenesisHash:                       []byte{0, 1},
 		BinaryHash:                        []byte{2, 3},
-		SpawnTime:                         &spawnTime,
-		UnbondingPeriod:                   &unbondingPeriod,
-		CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-		TransferTimeoutPeriod:             &transferTimeoutPeriod,
+		SpawnTime:                         spawnTime,
+		UnbondingPeriod:                   unbondingPeriod,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		ConsumerRedistributionFraction:    "consumer_redistribution_fraction",
 		BlocksPerDistributionTransmission: 123,
 		HistoricalEntries:                 456,
@@ -122,13 +122,13 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 	ccvTimeoutPeriod = time.Duration(101112)
 	transferTimeoutPeriod = time.Duration(131415)
 	expectedRecord = providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     &types.Height{RevisionNumber: 2, RevisionHeight: 3},
+		InitialHeight:                     types.Height{RevisionNumber: 2, RevisionHeight: 3},
 		GenesisHash:                       []byte{2, 3},
 		BinaryHash:                        []byte{4, 5},
-		SpawnTime:                         &spawnTime,
-		UnbondingPeriod:                   &unbondingPeriod,
-		CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-		TransferTimeoutPeriod:             &transferTimeoutPeriod,
+		SpawnTime:                         spawnTime,
+		UnbondingPeriod:                   unbondingPeriod,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		ConsumerRedistributionFraction:    "consumer_redistribution_fraction2",
 		BlocksPerDistributionTransmission: 456,
 		HistoricalEntries:                 789,

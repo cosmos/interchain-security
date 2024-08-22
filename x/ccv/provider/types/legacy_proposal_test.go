@@ -542,7 +542,7 @@ func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 	}
 }
 
-func TestConsumerModificationProposalValidateBasic(t *testing.T) {
+func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		powerShapingParameters types.PowerShapingParameters
@@ -602,7 +602,7 @@ func TestConsumerModificationProposalValidateBasic(t *testing.T) {
 
 	for _, tc := range testCases {
 		// TODO (PERMISSIONLESS) add more tests
-		msg, _ := types.NewMsgUpdateConsumer("", "0", "new owner", types.ConsumerMetadata{}, types.ConsumerInitializationParameters{}, tc.powerShapingParameters)
+		msg, _ := types.NewMsgUpdateConsumer("", "0", "new owner", nil, nil, &tc.powerShapingParameters)
 		err := msg.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	"sort"
 	"strconv"
 	"time"
 )
@@ -278,11 +277,6 @@ func (k Keeper) AppendSpawnTimeForConsumerToBeLaunched(ctx sdk.Context, consumer
 	}
 	consumerIds = append(consumerIds, consumerId)
 
-	// sort so that we avoid getting a consumer id in front of everyone else and delaying the appending of a chain
-	sort.Slice(consumerIds, func(i, j int) bool {
-		return consumerIds[i] < consumerIds[j]
-	})
-
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	err = enc.Encode(consumerIds)
@@ -336,7 +330,7 @@ func (k Keeper) RemoveConsumerFromToBeLaunchedConsumers(ctx sdk.Context, consume
 	return nil
 }
 
-// TODO (PERMISSIONLESS) merge the functions, they practicall do the same
+// TODO (PERMISSIONLESS) merge the functions, they practically do the same
 
 // GetConsumersToBeStopped
 func (k Keeper) GetConsumersToBeStopped(ctx sdk.Context, stopTime time.Time) ([]string, error) {
@@ -362,11 +356,6 @@ func (k Keeper) AppendStopTimeForConsumerToBeStopped(ctx sdk.Context, consumerId
 		return err
 	}
 	consumerIds = append(consumerIds, consumerId)
-
-	// sort so that we avoid getting a consumer id in front of everyone else and delying the removal of a chain
-	sort.Slice(consumerIds, func(i, j int) bool {
-		return consumerIds[i] < consumerIds[j]
-	})
 
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -598,7 +587,7 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
 		// TODO (permissionless) -- not really an invalid update record
-		return errorsmod.Wrapf(types.ErrInvalidPowerShapingParametersRecord,
+		return errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
 			"did not find update record for chain: %s", consumerId)
 	}
 
@@ -687,8 +676,6 @@ func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context, limit uint32) [
 		} else {
 			result = append(result, consumerIds...)
 		}
-
-		consumerIds = append(consumerIds, string(iterator.Key()[1+8:]))
 	}
 
 	return result
@@ -723,113 +710,26 @@ func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.
 	return "", false
 }
 
-func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime *time.Time, spawnTime time.Time) {
-	if previousSpawnTime != nil {
-		// if this is not the first initialization, remove the consumer id from the old spawn time
-		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, *previousSpawnTime)
-	}
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime time.Time, spawnTime time.Time) {
+	// if this is not the first initialization, remove the consumer id from the old spawn time
+	k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousSpawnTime)
 
 	k.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerId, spawnTime)
 }
 
 // CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence
 // is ready to launch
+// TODO (PERMISSIONLESS): could remove, all fields should be there because we validate the initialization parameters
 func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) bool {
 	if initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
-		initialHeightSet := initializationParameters.InitialHeight != nil
 		genesisHashSet := initializationParameters.GenesisHash != nil
 		binaryHashSet := initializationParameters.BinaryHash != nil
-		spawnTimeSet := initializationParameters.SpawnTime != nil
-		unbondingPeriodSet := initializationParameters.UnbondingPeriod != nil
 
-		ccvTimeoutPeriodSet := initializationParameters.CcvTimeoutPeriod != nil
-		transferTimeoutPeriodSet := initializationParameters.TransferTimeoutPeriod != nil
-
-		// TODO (PERMISSIONLESS): we should verify we can parse this at some point
-		// and that the values below are not negative, etc.
 		consumerRedistributionFractionSet := initializationParameters.ConsumerRedistributionFraction != ""
 		blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
 		historicalEntriesSet := initializationParameters.HistoricalEntries > 0
-		return initialHeightSet && genesisHashSet && binaryHashSet && spawnTimeSet && unbondingPeriodSet &&
-			ccvTimeoutPeriodSet && transferTimeoutPeriodSet && consumerRedistributionFractionSet &&
-			blocksPerDistributionTransmissionSet && historicalEntriesSet
+		return genesisHashSet && binaryHashSet &&
+			consumerRedistributionFractionSet && blocksPerDistributionTransmissionSet && historicalEntriesSet
 	}
 	return false
-}
-
-// Could be done with reflect but we want to avoid using it ...??
-func MergeConsumerMetadata(oldMetadata types.ConsumerMetadata, newMetadata types.ConsumerMetadata) types.ConsumerMetadata {
-	if newMetadata.Name != "" {
-		oldMetadata.Name = newMetadata.Name
-	}
-	if newMetadata.Metadata != "" {
-		oldMetadata.Metadata = newMetadata.Metadata
-	}
-	if newMetadata.Description != "" {
-		oldMetadata.Description = newMetadata.Description
-	}
-	return oldMetadata
-}
-
-func MergeConsumerInitializationParameters(oldInitializationParameters types.ConsumerInitializationParameters, newInitializationParameters types.ConsumerInitializationParameters) types.ConsumerInitializationParameters {
-	if newInitializationParameters.InitialHeight != nil {
-		oldInitializationParameters.InitialHeight = newInitializationParameters.InitialHeight
-	}
-	if newInitializationParameters.GenesisHash != nil {
-		oldInitializationParameters.GenesisHash = newInitializationParameters.GenesisHash
-	}
-	if newInitializationParameters.BinaryHash != nil {
-		oldInitializationParameters.GenesisHash = newInitializationParameters.GenesisHash
-	}
-	if newInitializationParameters.SpawnTime != nil {
-		oldInitializationParameters.SpawnTime = newInitializationParameters.SpawnTime
-	}
-	if newInitializationParameters.UnbondingPeriod != nil {
-		oldInitializationParameters.UnbondingPeriod = newInitializationParameters.UnbondingPeriod
-	}
-	if newInitializationParameters.CcvTimeoutPeriod != nil {
-		oldInitializationParameters.CcvTimeoutPeriod = newInitializationParameters.CcvTimeoutPeriod
-	}
-	if newInitializationParameters.TransferTimeoutPeriod != nil {
-		oldInitializationParameters.TransferTimeoutPeriod = newInitializationParameters.TransferTimeoutPeriod
-	}
-	if newInitializationParameters.ConsumerRedistributionFraction != "" {
-		oldInitializationParameters.ConsumerRedistributionFraction = newInitializationParameters.ConsumerRedistributionFraction
-	}
-	if newInitializationParameters.BlocksPerDistributionTransmission > 0 {
-		oldInitializationParameters.BlocksPerDistributionTransmission = newInitializationParameters.BlocksPerDistributionTransmission
-	}
-	if newInitializationParameters.HistoricalEntries > 0 {
-		oldInitializationParameters.HistoricalEntries = newInitializationParameters.HistoricalEntries
-	}
-	if newInitializationParameters.DistributionTransmissionChannel != "" {
-		oldInitializationParameters.DistributionTransmissionChannel = newInitializationParameters.DistributionTransmissionChannel
-	}
-	return oldInitializationParameters
-}
-
-func MergePowerShapingParameters(oldPowerShapingParameters types.PowerShapingParameters, newPowerShapingParameters types.PowerShapingParameters) types.PowerShapingParameters {
-	if newPowerShapingParameters.IsTop_NSet {
-		oldPowerShapingParameters.Top_N = newPowerShapingParameters.Top_N
-	}
-	if newPowerShapingParameters.ValidatorsPowerCap > 0 {
-		oldPowerShapingParameters.ValidatorsPowerCap = newPowerShapingParameters.ValidatorsPowerCap
-	}
-	if newPowerShapingParameters.ValidatorSetCap > 0 {
-		oldPowerShapingParameters.ValidatorSetCap = newPowerShapingParameters.ValidatorSetCap
-	}
-	if newPowerShapingParameters.Allowlist != nil {
-		oldPowerShapingParameters.Allowlist = newPowerShapingParameters.Allowlist
-	}
-	if newPowerShapingParameters.Denylist != nil {
-		oldPowerShapingParameters.Denylist = newPowerShapingParameters.Denylist
-	}
-	if newPowerShapingParameters.IsMinStakeSet {
-		oldPowerShapingParameters.MinStake = newPowerShapingParameters.MinStake
-	}
-	if newPowerShapingParameters.IsAllowInactiveValsSet {
-		oldPowerShapingParameters.AllowInactiveVals = newPowerShapingParameters.AllowInactiveVals
-	}
-
-	return oldPowerShapingParameters
 }
