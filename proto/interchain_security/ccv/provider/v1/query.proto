@@ -341,6 +341,11 @@ message QueryConsumerValidatorsValidator {
   tendermint.crypto.PublicKey consumer_key = 2;
   // The power of the validator used on the consumer chain
   int64 power = 3;
+  // The rate to charge delegators on the consumer chain, as a fraction
+  string rate = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+    ];
 }
 
 message QueryConsumerValidatorsResponse {
