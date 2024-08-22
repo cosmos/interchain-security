@@ -335,17 +335,17 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// check that consumer is initialized
+	// check that the consumer is initialized
 	initParams, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrUnknownConsumerId, consumerId).Error())
 	}
 
 	// query consumer validator set
-	var consumerValSet []types.ConsensusValidator
 
+	var consumerValSet []types.ConsensusValidator
 	// if the consumer hasn't launched yet, compute the consumer validator set
-	if ctx.BlockTime().Before(initParams.SpawnTime) {
+	if ctx.BlockTime().Before(*initParams.SpawnTime) {
 		var bondedValidators []stakingtypes.Validator
 
 		powerParams, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
