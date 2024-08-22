@@ -347,8 +347,9 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 	for _, consVal := range consumerValSet {
 		provAddr := types.ProviderConsAddress{Address: consVal.ProviderConsAddr}
+		consAddr := provAddr.ToSdkConsAddr()
 
-		provVal, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr.ToSdkConsAddr())
+		provVal, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 		if err != nil {
 			k.Logger(ctx).Error("cannot find consensus address for provider address:%s", provAddr.String())
 			continue
@@ -361,20 +362,26 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 			continue
 		}
 
+		consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerId, types.NewProviderConsAddress(consAddr))
+		if !found {
+			consumerRate = provVal.Commission.Rate
+		}
+
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
-			ProviderAddress:       sdk.ConsAddress(consVal.ProviderConsAddr).String(),
-			ConsumerKey:           consVal.PublicKey,
-			Power:                 consVal.Power,
-			Description:           provVal.Description,
-			OperatorAddress:       provVal.OperatorAddress,
-			Jailed:                provVal.Jailed,
-			Status:                provVal.Status,
-			ProviderTokens:        provVal.Tokens,
-			ProviderPower:         provVal.GetConsensusPower(k.stakingKeeper.PowerReduction(ctx)),
-			ValidatesCurrentEpoch: hasToValidate,
+			ProviderAddress:        sdk.ConsAddress(consVal.ProviderConsAddr).String(),
+			ConsumerKey:            consVal.PublicKey,
+			Power:                  consVal.Power,
+			ConsumerCommissionRate: consumerRate,
+			Description:            provVal.Description,
+			OperatorAddress:        provVal.OperatorAddress,
+			Jailed:                 provVal.Jailed,
+			Status:                 provVal.Status,
+			ProviderTokens:         provVal.Tokens,
+			ProviderCommissionRate: provVal.Commission.Rate,
+			ProviderPower:          provVal.GetConsensusPower(k.stakingKeeper.PowerReduction(ctx)),
+			ValidatesCurrentEpoch:  hasToValidate,
 		})
 	}
-
 	return &types.QueryConsumerValidatorsResponse{
 		Validators: validators,
 	}, nil

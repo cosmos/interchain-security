@@ -2,8 +2,9 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
+
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -118,6 +119,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &pk1}
 	val1.Tokens = sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction)
 	val1.Description = stakingtypes.Description{Moniker: "ConsumerValidator1"}
+	val1.Commission.Rate = math.LegacyMustNewDecFromStr("0.123")
 
 	val2 := createStakingValidator(ctx, mocks, 1, 2, 2)
 	valConsAddr2, _ := val2.GetConsAddr()
@@ -126,39 +128,47 @@ func TestQueryConsumerValidators(t *testing.T) {
 	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &pk2}
 	val2.Tokens = sdk.TokensFromConsensusPower(2, sdk.DefaultPowerReduction)
 	val2.Description = stakingtypes.Description{Moniker: "ConsumerValidator2"}
-
-	expectedResponse := types.QueryConsumerValidatorsResponse{
-		Validators: []*types.QueryConsumerValidatorsValidator{
-			{
-				ProviderAddress:       providerAddr1.String(),
-				ConsumerKey:           &pk1,
-				Power:                 1,
-				Description:           val1.Description,
-				OperatorAddress:       val1.OperatorAddress,
-				Jailed:                val1.Jailed,
-				Status:                val1.Status,
-				ProviderTokens:        val1.Tokens,
-				ProviderPower:         1,
-				ValidatesCurrentEpoch: true,
-			},
-			{
-				ProviderAddress:       providerAddr2.String(),
-				ConsumerKey:           &pk2,
-				Power:                 2,
-				Description:           val2.Description,
-				OperatorAddress:       val2.OperatorAddress,
-				Jailed:                val2.Jailed,
-				Status:                val2.Status,
-				ProviderTokens:        val2.Tokens,
-				ProviderPower:         2,
-				ValidatesCurrentEpoch: true,
-			},
-		},
-	}
+	val2.Commission.Rate = math.LegacyMustNewDecFromStr("0.123")
 
 	// set up the client id so the chain looks like it "started"
 	pk.SetConsumerClientId(ctx, consumerId, "clientID")
 	pk.SetConsumerValSet(ctx, consumerId, []types.ConsensusValidator{consumerValidator1, consumerValidator2})
+	// set a consumer commission rate for val1
+	val1ConsComRate := math.LegacyMustNewDecFromStr("0.456")
+	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr1, val1ConsComRate)
+
+	expectedResponse := types.QueryConsumerValidatorsResponse{
+		Validators: []*types.QueryConsumerValidatorsValidator{
+			{
+				ProviderAddress:        providerAddr1.String(),
+				ConsumerKey:            &pk1,
+				Power:                  1,
+				ConsumerCommissionRate: val1ConsComRate,
+				Description:            val1.Description,
+				OperatorAddress:        val1.OperatorAddress,
+				Jailed:                 val1.Jailed,
+				Status:                 val1.Status,
+				ProviderTokens:         val1.Tokens,
+				ProviderCommissionRate: val1.Commission.Rate,
+				ProviderPower:          1,
+				ValidatesCurrentEpoch:  true,
+			},
+			{
+				ProviderAddress:        providerAddr2.String(),
+				ConsumerKey:            &pk2,
+				Power:                  2,
+				ConsumerCommissionRate: val2.Commission.Rate,
+				Description:            val2.Description,
+				OperatorAddress:        val2.OperatorAddress,
+				Jailed:                 val2.Jailed,
+				Status:                 val2.Status,
+				ProviderTokens:         val2.Tokens,
+				ProviderCommissionRate: val2.Commission.Rate,
+				ProviderPower:          2,
+				ValidatesCurrentEpoch:  true,
+			},
+		},
+	}
 
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr1).Return(val1, nil).AnyTimes()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr2).Return(val2, nil).AnyTimes()
@@ -169,6 +179,13 @@ func TestQueryConsumerValidators(t *testing.T) {
 	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expectedResponse, res)
+
+	// validator with no set consumer commission rate
+	pk.DeleteConsumerCommissionRate(ctx, consumerId, providerAddr1)
+	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, val1.Commission.Rate, res.Validators[0].ConsumerCommissionRate)
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
