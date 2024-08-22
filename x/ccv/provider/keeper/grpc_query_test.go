@@ -2,9 +2,10 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
 	"time"
+
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -113,7 +114,8 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Error(t, err)
 
 	// set consumer initialization and power shaping params
-	pk.SetConsumerInitializationParameters(ctx, consumerId, types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime().Add(time.Hour)})
+	blockTimePlus1Hour := ctx.BlockTime().Add(time.Hour)
+	pk.SetConsumerInitializationParameters(ctx, consumerId, types.ConsumerInitializationParameters{SpawnTime: &blockTimePlus1Hour})
 	pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{Top_N: 0})
 
 	// create bonded validators
