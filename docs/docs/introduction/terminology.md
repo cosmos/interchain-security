@@ -20,7 +20,7 @@ Interchain Security is the Cosmos-specific category of Shared Security that uses
 A particular protocol/implementation of Interchain Security that fully replicates the security and decentralization of a validator set across multiple blockchains. 
 Replicated security has also been referred to as "Interchain Security V1", a legacy term for the same protocol. 
 That is, a "provider chain" such as the Cosmos Hub can share its exact validator set with multiple consumer chains by communicating changes in its validator set over IBC. 
-Note that since the introduction of [Partial Set Security](#partial-set-security), a TopN consumer chain with N 100% fully replicates the security and decentralization of the provider chain.
+Note that since the introduction of [Partial Set Security](#partial-set-security-pss), a TopN consumer chain with N 100% fully replicates the security and decentralization of the provider chain.
 
 ## Partial Set Security (PSS)
 
