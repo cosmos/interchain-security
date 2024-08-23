@@ -125,6 +125,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	pk1, _ := val1.CmtConsPublicKey()
 	valConsAddr1, _ := val1.GetConsAddr()
 	providerAddr1 := types.NewProviderConsAddress(valConsAddr1)
+	val1.Commission.Rate = math.LegacyMustNewDecFromStr("0.123")
 
 	val2 := createStakingValidator(ctx, mocks, 1, 2, 2)
 	pk2, _ := val2.CmtConsPublicKey()
@@ -136,7 +137,9 @@ func TestQueryConsumerValidators(t *testing.T) {
 	valConsAddr3, _ := val3.GetConsAddr()
 	providerAddr3 := types.NewProviderConsAddress(valConsAddr3)
 
-	// set expectation to return bonded validators
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr1).Return(val1, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr2).Return(val2, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr3).Return(val3, nil).AnyTimes()
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{val1, val2}, []int64{1, 2}, -1) // -1 to allow the calls "AnyTimes"
 
 	// set max provider consensus vals to include all validators
@@ -152,6 +155,10 @@ func TestQueryConsumerValidators(t *testing.T) {
 	// opt in one validator
 	pk.SetOptedIn(ctx, consumerId, providerAddr1)
 
+	// set a consumer commission rate for val1
+	val1ConsComRate := math.LegacyMustNewDecFromStr("0.456")
+	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr1, val1ConsComRate)
+
 	// expect opted-in validator
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
@@ -164,8 +171,8 @@ func TestQueryConsumerValidators(t *testing.T) {
 	// expect both opted-in and topN validator
 	expRes := types.QueryConsumerValidatorsResponse{
 		Validators: []*types.QueryConsumerValidatorsValidator{
-			{ProviderAddress: providerAddr1.String(), ConsumerKey: &pk1, Power: 1},
-			{ProviderAddress: providerAddr2.String(), ConsumerKey: &pk2, Power: 2},
+			{ProviderAddress: providerAddr1.String(), ConsumerKey: &pk1, Power: 1, Rate: val1ConsComRate},
+			{ProviderAddress: providerAddr2.String(), ConsumerKey: &pk2, Power: 2, Rate: val2.Commission.Rate},
 		},
 	}
 	res, err = pk.QueryConsumerValidators(ctx, &req)
@@ -209,15 +216,22 @@ func TestQueryConsumerValidators(t *testing.T) {
 	// expect persisted consumer valset
 	expRes = types.QueryConsumerValidatorsResponse{
 		Validators: []*types.QueryConsumerValidatorsValidator{
-			{ProviderAddress: providerAddr1.String(), ConsumerKey: &pk1, Power: 1},
-			{ProviderAddress: providerAddr3.String(), ConsumerKey: &pk3, Power: 3},
-			{ProviderAddress: providerAddr2.String(), ConsumerKey: &pk2, Power: 2},
+			{ProviderAddress: providerAddr1.String(), ConsumerKey: &pk1, Power: 1, Rate: val1ConsComRate},
+			{ProviderAddress: providerAddr3.String(), ConsumerKey: &pk3, Power: 3, Rate: val3.Commission.Rate},
+			{ProviderAddress: providerAddr2.String(), ConsumerKey: &pk2, Power: 2, Rate: val2.Commission.Rate},
 		},
 	}
 
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expRes, res)
+
+	// validator with no set consumer commission rate
+	pk.DeleteConsumerCommissionRate(ctx, consumerId, providerAddr1)
+	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, val1.Commission.Rate, res.Validators[0].Rate)
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {

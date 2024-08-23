@@ -532,11 +532,11 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	unbondingPeriod := time.Duration(1728000000000000)
 	initializationParameters := providertypes.ConsumerInitializationParameters{
 		BlocksPerDistributionTransmission: 1000,
-		CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-		TransferTimeoutPeriod:             &transferTimeoutPeriod,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		ConsumerRedistributionFraction:    "0.75",
 		HistoricalEntries:                 10000,
-		UnbondingPeriod:                   &unbondingPeriod,
+		UnbondingPeriod:                   unbondingPeriod,
 	}
 	providerKeeper.SetConsumerChainId(ctx, "0", "testchain1")
 	providerKeeper.SetConsumerMetadata(ctx, "0", consumerMetadata)
@@ -678,75 +678,67 @@ func TestBeginBlockInit(t *testing.T) {
 	}
 	chainIds := []string{"chain0", "chain1", "chain2", "chain3", "chain4"}
 
-	initialHeight := clienttypes.NewHeight(3, 4)
-	spawnTimeMinus2Hours := now.Add(-time.Hour * 2).UTC()
-	spawnTimeMinus1Hour := now.Add(-time.Hour).UTC()
-	spawnTimeMinus1Minute := now.Add(-time.Minute).UTC()
-	spawnTimePlus1Hour := now.Add(time.Hour).UTC()
-	unbondingPeriod := time.Duration(100000000000)
-	ccvTimeoutPeriod := time.Duration(100000000000)
-	transferTimeoutPeriod := time.Duration(100000000000)
 	initializationParameters := []providertypes.ConsumerInitializationParameters{
 		{
-			InitialHeight:                     &initialHeight,
+			InitialHeight:                     clienttypes.NewHeight(3, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
-			SpawnTime:                         &spawnTimeMinus2Hours,
-			UnbondingPeriod:                   &unbondingPeriod,
-			CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-			TransferTimeoutPeriod:             &transferTimeoutPeriod,
+			SpawnTime:                         now.Add(-time.Hour * 2).UTC(),
+			UnbondingPeriod:                   time.Duration(100000000000),
+			CcvTimeoutPeriod:                  time.Duration(100000000000),
+			TransferTimeoutPeriod:             time.Duration(100000000000),
 			ConsumerRedistributionFraction:    "0.75",
 			BlocksPerDistributionTransmission: 10,
 			HistoricalEntries:                 10000,
 			DistributionTransmissionChannel:   "",
 		},
 		{
-			InitialHeight:                     &initialHeight,
+			InitialHeight:                     clienttypes.NewHeight(3, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
-			SpawnTime:                         &spawnTimeMinus1Hour,
-			UnbondingPeriod:                   &unbondingPeriod,
-			CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-			TransferTimeoutPeriod:             &transferTimeoutPeriod,
+			SpawnTime:                         now.Add(-time.Hour).UTC(),
+			UnbondingPeriod:                   time.Duration(100000000000),
+			CcvTimeoutPeriod:                  time.Duration(100000000000),
+			TransferTimeoutPeriod:             time.Duration(100000000000),
 			ConsumerRedistributionFraction:    "0.75",
 			BlocksPerDistributionTransmission: 10,
 			HistoricalEntries:                 10000,
 			DistributionTransmissionChannel:   "",
 		},
 		{
-			InitialHeight:                     &initialHeight,
+			InitialHeight:                     clienttypes.NewHeight(3, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
-			SpawnTime:                         &spawnTimePlus1Hour,
-			UnbondingPeriod:                   &unbondingPeriod,
-			CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-			TransferTimeoutPeriod:             &transferTimeoutPeriod,
+			SpawnTime:                         now.Add(time.Hour).UTC(),
+			UnbondingPeriod:                   time.Duration(100000000000),
+			CcvTimeoutPeriod:                  time.Duration(100000000000),
+			TransferTimeoutPeriod:             time.Duration(100000000000),
 			ConsumerRedistributionFraction:    "0.75",
 			BlocksPerDistributionTransmission: 10,
 			HistoricalEntries:                 10000,
 			DistributionTransmissionChannel:   "",
 		},
 		{
-			InitialHeight:                     &initialHeight,
+			InitialHeight:                     clienttypes.NewHeight(3, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
-			SpawnTime:                         &spawnTimeMinus1Hour,
-			UnbondingPeriod:                   &unbondingPeriod,
-			CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-			TransferTimeoutPeriod:             &transferTimeoutPeriod,
+			SpawnTime:                         now.Add(-time.Hour).UTC(),
+			UnbondingPeriod:                   time.Duration(100000000000),
+			CcvTimeoutPeriod:                  time.Duration(100000000000),
+			TransferTimeoutPeriod:             time.Duration(100000000000),
 			ConsumerRedistributionFraction:    "0.75",
 			BlocksPerDistributionTransmission: 10,
 			HistoricalEntries:                 10000,
 			DistributionTransmissionChannel:   "",
 		},
 		{
-			InitialHeight:                     &initialHeight,
+			InitialHeight:                     clienttypes.NewHeight(3, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
-			SpawnTime:                         &spawnTimeMinus1Minute,
-			UnbondingPeriod:                   &unbondingPeriod,
-			CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-			TransferTimeoutPeriod:             &transferTimeoutPeriod,
+			SpawnTime:                         now.Add(-time.Minute).UTC(),
+			UnbondingPeriod:                   time.Duration(100000000000),
+			CcvTimeoutPeriod:                  time.Duration(100000000000),
+			TransferTimeoutPeriod:             time.Duration(100000000000),
 			ConsumerRedistributionFraction:    "0.75",
 			BlocksPerDistributionTransmission: 10,
 			HistoricalEntries:                 10000,
@@ -813,7 +805,7 @@ func TestBeginBlockInit(t *testing.T) {
 		providerKeeper.SetConsumerInitializationParameters(ctx, fmt.Sprintf("%d", i), r)
 		// set up the chains in their initialized phase, hence they could launch
 		providerKeeper.SetConsumerPhase(ctx, fmt.Sprintf("%d", i), providerkeeper.Initialized)
-		providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(ctx, fmt.Sprintf("%d", i), *r.SpawnTime)
+		providerKeeper.AppendSpawnTimeForConsumerToBeLaunched(ctx, fmt.Sprintf("%d", i), r.SpawnTime)
 	}
 	for i, r := range powerShapingParameters {
 		providerKeeper.SetConsumerPowerShapingParameters(ctx, fmt.Sprintf("%d", i), r)
@@ -913,8 +905,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	for i, consumerId := range consumerIds {
 		// Setup a valid consumer chain for each consumerId
 		initializationRecord := testkeeper.GetTestInitializationParameters()
-		initialHeight := clienttypes.NewHeight(2, 3)
-		initializationRecord.InitialHeight = &initialHeight
+		initializationRecord.InitialHeight = clienttypes.NewHeight(2, 3)
 		registrationRecord := testkeeper.GetTestConsumerMetadata()
 
 		providerKeeper.SetConsumerChainId(ctx, consumerId, chainIds[i])

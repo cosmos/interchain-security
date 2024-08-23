@@ -342,57 +342,44 @@ func getKeyPrefixes() map[string]byte {
 		// sent to the consensus engine of the provider chain
 		LastProviderConsensusValsKeyName: 42,
 
-		// DeprecatedMinStakeKey is the byte prefix for storing the mapping from consumer chains to the minimum stake required to be a validator on the consumer chain
-		// The minimum stake must be stored on the provider chain, not on the consumer chain itself, since it filters out
-		// validators from the VSCPackets that we send to the consumer chain.
-		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
-		// [DEPRECATED]
-		DeprecatedMinStakeKeyName: 43,
-
-		// DeprecatedAllowInactiveValidatorsKey is the byte prefix for storing the mapping from consumer chains to the boolean value
-		// that determines whether inactive validators can validate on that chain
-		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
-		// [DEPRECATED]
-		DeprecatedAllowInactiveValidatorsKeyName: 44,
-
 		// ConsumerIdKeyName is the key for storing the consumer id for the next registered consumer chain
-		ConsumerIdKeyName: 45,
+		ConsumerIdKeyName: 43,
 
 		// ConsumerIdToChainIdKeyName is the key for storing the chain id for the given consumer id
-		ConsumerIdToChainIdKeyName: 46,
+		ConsumerIdToChainIdKeyName: 44,
 
 		// ConsumerIdToOwnerAddressKeyName is the key for storing the owner address for the given consumer id
-		ConsumerIdToOwnerAddressKeyName: 47,
+		ConsumerIdToOwnerAddressKeyName: 45,
 
 		// ConsumerIdToConsumerMetadataKeyName is the key for storing the metadata for the given consumer id
-		ConsumerIdToConsumerMetadataKeyName: 48,
+		ConsumerIdToConsumerMetadataKeyName: 46,
 
 		// ConsumerIdToInitializationParametersKeyName is the key for storing the initialization parameters for the given consumer id
-		ConsumerIdToInitializationParametersKeyName: 49,
+		ConsumerIdToInitializationParametersKeyName: 47,
 
 		// ConsumerIdToPowerShapingParameters is the key for storing the power-shaping parameters for the given consumer id
-		ConsumerIdToPowerShapingParameters: 50,
+		ConsumerIdToPowerShapingParameters: 48,
 
 		// ConsumerIdToPhaseKeyName is the key for storing the phase of a consumer chain with the given consumer id
-		ConsumerIdToPhaseKeyName: 51,
+		ConsumerIdToPhaseKeyName: 49,
 
 		// ConsumerIdToStopTimeKeyName is the key for storing the stop time of a consumer chain that is to be removed
-		ConsumerIdToStopTimeKeyName: 52,
+		ConsumerIdToStopTimeKeyName: 50,
 
 		// SpawnTimeToConsumerIdKeyName is the key for storing pending initialized consumers that are to be launched.
 		// For a specific spawn time, it might store multiple consumer chain ids for chains that are to be launched.
-		SpawnTimeToConsumerIdsKeyName: 53,
+		SpawnTimeToConsumerIdsKeyName: 51,
 
 		// StopTimeToConsumerIdKeyName is the key for storing pending launched consumers that are to be stopped.
 		// For a specific stop time, it might store multiple consumer chain ids for chains that are to be stopped.
-		StopTimeToConsumerIdsKeyName: 54,
+		StopTimeToConsumerIdsKeyName: 52,
 
 		// ProviderConsAddrToOptedInConsumerIdsKeyName is the key for storing all the consumer ids that a validator
 		// is currently opted in to.
-		ProviderConsAddrToOptedInConsumerIdsKeyName: 55,
+		ProviderConsAddrToOptedInConsumerIdsKeyName: 53,
 
 		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
-		ClientIdToConsumerIdKeyName: 56,
+		ClientIdToConsumerIdKeyName: 54,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}

@@ -115,16 +115,43 @@ func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64)
 		return fmt.Errorf("cannot retrieve proposal with id: %d", proposalId)
 	}
 
-	// a proposal can contain at most one `MsgUpdateConsumer` message
 	hasUpdateConsumerMsg := false
 	for _, msg := range p.GetMessages() {
-		sdkMsg, isUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
-		if isUpdateConsumer {
+		sdkMsg, isMsgUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
+		if isMsgUpdateConsumer {
+			// A `MsgUpdateConsumer` can only succeed if the owner of the consumer chain is the gov module.
+			// If that's not the case, we immediately fail the proposal.
+			// Note that someone could potentially change the owner of a chain to be that of the gov module
+			// while a proposal is active and before the proposal is executed. Even then, we still do not allow
+			// `MsgUpdateConsumer` proposals if the owner of the chain is not the gov module to avoid someone forgetting
+			// to change the owner address while the proposal is active.
+			ownerAddress, err := h.k.GetConsumerOwnerAddress(ctx, sdkMsg.ConsumerId)
+			if err != nil {
+				return fmt.Errorf("cannot find owner address for consumer with consumer id (%s): %s", sdkMsg.ConsumerId, err.Error())
+			} else if ownerAddress != h.k.GetAuthority() {
+				return fmt.Errorf("owner address (%s) is not the gov module (%s)", ownerAddress, h.k.GetAuthority())
+			}
+
 			if hasUpdateConsumerMsg {
 				return fmt.Errorf("proposal can contain at most one `MsgUpdateConsumer` message")
 			}
 			hasUpdateConsumerMsg = true
 			h.k.SetProposalIdToConsumerId(ctx, proposalId, sdkMsg.ConsumerId)
+		}
+
+		// if the proposal contains a deprecated message, cancel the proposal
+		_, isMsgConsumerAddition := msg.GetCachedValue().(*providertypes.MsgConsumerAddition)
+		if isMsgConsumerAddition {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerAddition`; use `MsgCreateConsumer` instead")
+		}
+
+		_, isMsgConsumerModification := msg.GetCachedValue().(*providertypes.MsgConsumerModification)
+		if isMsgConsumerModification {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerModification`; use `MsgUpdateConsumer` instead")
+		}
+		_, isMsgConsumerRemoval := msg.GetCachedValue().(*providertypes.MsgConsumerRemoval)
+		if isMsgConsumerRemoval {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerRemoval`; use `MsgRemoveConsumer` instead")
 		}
 	}
 

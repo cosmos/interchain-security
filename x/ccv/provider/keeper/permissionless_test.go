@@ -1,10 +1,13 @@
 package keeper_test
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -99,13 +102,13 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 	ccvTimeoutPeriod := time.Duration(789)
 	transferTimeoutPeriod := time.Duration(101112)
 	expectedRecord := providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     &types.Height{RevisionNumber: 1, RevisionHeight: 2},
+		InitialHeight:                     types.Height{RevisionNumber: 1, RevisionHeight: 2},
 		GenesisHash:                       []byte{0, 1},
 		BinaryHash:                        []byte{2, 3},
-		SpawnTime:                         &spawnTime,
-		UnbondingPeriod:                   &unbondingPeriod,
-		CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-		TransferTimeoutPeriod:             &transferTimeoutPeriod,
+		SpawnTime:                         spawnTime,
+		UnbondingPeriod:                   unbondingPeriod,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		ConsumerRedistributionFraction:    "consumer_redistribution_fraction",
 		BlocksPerDistributionTransmission: 123,
 		HistoricalEntries:                 456,
@@ -122,13 +125,13 @@ func TestConsumerIdToInitializationRecord(t *testing.T) {
 	ccvTimeoutPeriod = time.Duration(101112)
 	transferTimeoutPeriod = time.Duration(131415)
 	expectedRecord = providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     &types.Height{RevisionNumber: 2, RevisionHeight: 3},
+		InitialHeight:                     types.Height{RevisionNumber: 2, RevisionHeight: 3},
 		GenesisHash:                       []byte{2, 3},
 		BinaryHash:                        []byte{4, 5},
-		SpawnTime:                         &spawnTime,
-		UnbondingPeriod:                   &unbondingPeriod,
-		CcvTimeoutPeriod:                  &ccvTimeoutPeriod,
-		TransferTimeoutPeriod:             &transferTimeoutPeriod,
+		SpawnTime:                         spawnTime,
+		UnbondingPeriod:                   unbondingPeriod,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		ConsumerRedistributionFraction:    "consumer_redistribution_fraction2",
 		BlocksPerDistributionTransmission: 456,
 		HistoricalEntries:                 789,
@@ -278,4 +281,117 @@ func TestIsValidatorOptedInToChain(t *testing.T) {
 	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
 	require.True(t, found)
 	require.Equal(t, expectedConsumerId, actualConsumerId)
+}
+
+func TestUpdateAllowlist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
+	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
+
+	providerKeeper.UpdateAllowlist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
+
+	expectedAllowlist := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress(consAddr1),
+		providertypes.NewProviderConsAddress(consAddr2)}
+	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
+}
+
+func TestPopulateDenylist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
+	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
+
+	providerKeeper.UpdateDenylist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
+
+	expectedDenylist := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress(consAddr1),
+		providertypes.NewProviderConsAddress(consAddr2)}
+	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
+}
+
+func TestPopulateMinimumPowerInTopN(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	// test case where Top N is 0 in which case there's no minimum power in top N
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Top_N: 0,
+	})
+
+	err := providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 0)
+	require.NoError(t, err)
+	_, found := providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
+	require.False(t, found)
+
+	// test cases where Top N > 0 and for this we mock some validators
+	powers := []int64{30, 20, 10}
+	validators := []stakingtypes.Validator{
+		createStakingValidator(ctx, mocks, 3, powers[0], 3), // this validator has 50% of the total voting power
+		createStakingValidator(ctx, mocks, 2, powers[1], 2), // this validator has ~33% of the total voting gpower
+		createStakingValidator(ctx, mocks, 1, powers[2], 1), // this validator has ~16 of the total voting power
+	}
+	mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx sdk.Context, cb func(sdk.ValAddress, int64) bool) error {
+			for i, val := range validators {
+				if stop := cb(sdk.ValAddress(val.OperatorAddress), powers[i]); stop {
+					break
+				}
+			}
+			return nil
+		}).AnyTimes()
+
+	// set up mocks for GetValidator calls
+	for _, val := range validators {
+		mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), sdk.ValAddress(val.OperatorAddress)).Return(val, nil).AnyTimes()
+	}
+
+	maxProviderConsensusValidators := int64(3)
+	params := providerKeeper.GetParams(ctx)
+	params.MaxProviderConsensusValidators = maxProviderConsensusValidators
+	providerKeeper.SetParams(ctx, params)
+
+	// when top N is 50, the minimum power is 30 (because top validator has to validate)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Top_N: 50,
+	})
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 50)
+	require.NoError(t, err)
+	minimumPowerInTopN, found := providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, int64(30), minimumPowerInTopN)
+
+	// when top N is 51, the minimum power is 20 (because top 2 validators have to validate)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Top_N: 51,
+	})
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 50, 51)
+	require.NoError(t, err)
+	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, int64(20), minimumPowerInTopN)
+
+	// when top N is 100, the minimum power is 10 (that of the validator with the lowest power)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Top_N: 100,
+	})
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 51, 100)
+	require.NoError(t, err)
+	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, int64(10), minimumPowerInTopN)
+
 }

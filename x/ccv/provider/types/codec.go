@@ -30,10 +30,6 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&MsgCreateConsumer{},
 		&MsgUpdateConsumer{},
 		&MsgRemoveConsumer{},
-		// keeping old messages (for now) so that existing proposals can be correctly deserialized
-		&MsgConsumerAddition{},
-		&MsgConsumerRemoval{},
-		&MsgConsumerModification{},
 		&MsgChangeRewardDenoms{},
 		&MsgUpdateParams{},
 	)

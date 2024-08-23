@@ -121,35 +121,29 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(42), providertypes.LastProviderConsensusValsPrefix()[0])
 	i++
-	// DEPRECATED
-	//require.Equal(t, byte(43), providertypes.MinStakeKey("chainID")[0])
+	require.Equal(t, byte(43), providertypes.ConsumerIdKey()[0])
 	i++
-	// DEPRECATED
-	//require.Equal(t, byte(44), providertypes.AllowInactiveValidatorsKey("chainID")[0])
+	require.Equal(t, byte(44), providertypes.ConsumerIdToChainIdKey("consumerId")[0])
 	i++
-	require.Equal(t, byte(45), providertypes.ConsumerIdKey()[0])
+	require.Equal(t, byte(45), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
 	i++
-	require.Equal(t, byte(46), providertypes.ConsumerIdToChainIdKey("consumerId")[0])
+	require.Equal(t, byte(46), providertypes.ConsumerIdToMetadataKeyPrefix())
 	i++
-	require.Equal(t, byte(47), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
+	require.Equal(t, byte(47), providertypes.ConsumerIdToInitializationParametersKeyPrefix())
 	i++
-	require.Equal(t, byte(48), providertypes.ConsumerIdToMetadataKeyPrefix())
+	require.Equal(t, byte(48), providertypes.ConsumerIdToPowerShapingParametersKey("consumerId")[0])
 	i++
-	require.Equal(t, byte(49), providertypes.ConsumerIdToInitializationParametersKeyPrefix())
+	require.Equal(t, byte(49), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
 	i++
-	require.Equal(t, byte(50), providertypes.ConsumerIdToPowerShapingParametersKey("consumerId")[0])
+	require.Equal(t, byte(50), providertypes.ConsumerIdToStopTimeKeyPrefix())
 	i++
-	require.Equal(t, byte(51), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
+	require.Equal(t, byte(51), providertypes.SpawnTimeToConsumerIdsKeyPrefix())
 	i++
-	require.Equal(t, byte(52), providertypes.ConsumerIdToStopTimeKeyPrefix())
+	require.Equal(t, byte(52), providertypes.StopTimeToConsumerIdsKeyPrefix())
 	i++
-	require.Equal(t, byte(53), providertypes.SpawnTimeToConsumerIdsKeyPrefix())
+	require.Equal(t, byte(53), providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05}))[0])
 	i++
-	require.Equal(t, byte(54), providertypes.StopTimeToConsumerIdsKeyPrefix())
-	i++
-	require.Equal(t, byte(55), providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05}))[0])
-	i++
-	require.Equal(t, byte(56), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	require.Equal(t, byte(54), providertypes.ClientIdToConsumerIdKey("clientId")[0])
 	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()

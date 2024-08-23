@@ -386,22 +386,22 @@ message ConsumerInitializationParameters {
   // the proposed initial height of new consumer chain.
   // For a completely new chain, this will be {0,1}. However, it may be
   // different if this is a chain that is converting to a consumer chain.
-  ibc.core.client.v1.Height initial_height = 1 [ (gogoproto.nullable) = true ];
+  ibc.core.client.v1.Height initial_height = 1 [ (gogoproto.nullable) = false ];
   // The hash of the consumer chain genesis state without the consumer CCV
   // module genesis params. It is used for off-chain confirmation of
   // genesis.json validity by validators and other parties.
-  bytes genesis_hash = 2 [ (gogoproto.nullable) = true ];
+  bytes genesis_hash = 2;
   // The hash of the consumer chain binary that should be run by validators on
   // chain initialization. It is used for off-chain confirmation of binary
   // validity by validators and other parties.
-  bytes binary_hash = 3 [ (gogoproto.nullable) = true ];
+  bytes binary_hash = 3;
   // spawn time is the time on the provider chain at which the consumer chain
   // genesis is finalized and all validators will be responsible for starting
   // their consumer chain validator node.
-  google.protobuf.Timestamp spawn_time = 4 [ (gogoproto.stdtime) = true, (gogoproto.nullable) = true ];
+  google.protobuf.Timestamp spawn_time = 4 [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
   // Unbonding period for the consumer,
   // which should be smaller than that of the provider in general.
-  google.protobuf.Duration unbonding_period = 5  [ (gogoproto.nullable) = true, (gogoproto.stdduration) = true ];
+  google.protobuf.Duration unbonding_period = 5  [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
 
   // ---------- ---------- ----------
@@ -410,29 +410,29 @@ message ConsumerInitializationParameters {
   // ---------- ---------- ----------
 
   // Sent CCV related IBC packets will timeout after this duration
-  google.protobuf.Duration ccv_timeout_period = 6  [ (gogoproto.nullable) = true, (gogoproto.stdduration) = true ];
+  google.protobuf.Duration ccv_timeout_period = 6  [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   // Sent transfer related IBC packets will timeout after this duration
-  google.protobuf.Duration transfer_timeout_period = 7 [ (gogoproto.nullable) = true, (gogoproto.stdduration) = true ];
+  google.protobuf.Duration transfer_timeout_period = 7 [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   // The fraction of tokens allocated to the consumer redistribution address
   // during distribution events. The fraction is a string representing a
   // decimal number. For example "0.75" would represent 75%.
-  string consumer_redistribution_fraction = 8 [ (gogoproto.nullable) = true ];
+  string consumer_redistribution_fraction = 8;
   // BlocksPerDistributionTransmission is the number of blocks between
   // ibc-token-transfers from the consumer chain to the provider chain. On
   // sending transmission event, `consumer_redistribution_fraction` of the
   // accumulated tokens are sent to the consumer redistribution address.
-  int64 blocks_per_distribution_transmission = 9 [ (gogoproto.nullable) = true ];
+  int64 blocks_per_distribution_transmission = 9;
   // The number of historical info entries to persist in store.
   // This param is a part of the cosmos sdk staking module. In the case of
   // a ccv enabled consumer chain, the ccv module acts as the staking module.
-  int64 historical_entries = 10 [ (gogoproto.nullable) = true ];
+  int64 historical_entries = 10;
   // The ID of a token transfer channel used for the Reward Distribution
   // sub-protocol. If DistributionTransmissionChannel == "", a new transfer
   // channel is created on top of the same connection as the CCV channel.
   // Note that transfer_channel_id is the ID of the channel end on the consumer
   // chain. it is most relevant for chains performing a sovereign to consumer
   // changeover in order to maintain the existing ibc transfer channel
-  string distribution_transmission_channel = 11 [ (gogoproto.nullable) = true ];
+  string distribution_transmission_channel = 11;
 }
 
 // PowerShapingParameters contains parameters that shape the validator set that we send to the consumer chain
@@ -441,31 +441,26 @@ message PowerShapingParameters {
   // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
   // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
   // A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
-  uint32 top_N = 1 [ (gogoproto.nullable) = true ];
-  // We cannot use `optional` for `top_N` due to having plugins `gocosmos` and `grpc-gateway` do not support it.
-  // To distinguish between a set `top_N` to 0 and one that is not, we introduce a new field.
-  bool is_top_N_set = 2 [ (gogoproto.nullable) = true ];
+  uint32 top_N = 1;
   // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
   // `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
   // consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
   // 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
   // to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
-  uint32 validators_power_cap = 3 [ (gogoproto.nullable) = true ];
+  uint32 validators_power_cap = 2;
   // Corresponds to the maximum number of validators that can validate a consumer chain.
   // Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
-  uint32 validator_set_cap = 4 [ (gogoproto.nullable) = true ];
+  uint32 validator_set_cap = 3;
   // corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate the consumer chain
-  repeated string allowlist = 5 [ (gogoproto.nullable) = true ];
+  repeated string allowlist = 4;
   // corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain
-  repeated string denylist = 6 [ (gogoproto.nullable) = true ];
+  repeated string denylist = 5;
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-  uint64 min_stake = 7 [ (gogoproto.nullable) = true ];
-  // We cannot use `optional` for `min_stake` due to having plugins `gocosmos` and `grpc-gateway` do not support it.
-  // To distinguish between a set `min_stake` to 0 and one that is not, we introduce a new field.
-  bool is_min_stake_set = 8 [ (gogoproto.nullable) = true ];
+  uint64 min_stake = 6;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
-  bool allow_inactive_vals = 9 [ (gogoproto.nullable) = true ];
-  // We cannot use `optional` for `allow_inactive_vals` due to having plugins `gocosmos` and `grpc-gateway` do not support it.
-  // To distinguish between a set `allow_inactive_vals` to `false` and one that is not, we introduce a new field.
-  bool is_allow_inactive_vals_set = 10 [ (gogoproto.nullable) = true ];
+  bool allow_inactive_vals = 7;
 }
+
+// ConsumerIds contains consumer ids of chains
+// Used so we can easily (de)serialize slices of strings
+message ConsumerIds { repeated string consumer_ids = 1; }
