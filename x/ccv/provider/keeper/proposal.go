@@ -275,13 +275,33 @@ func (k Keeper) MakeConsumerGenesis(
 		if err != nil {
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
 		}
+
+		// for debugging purposes, log the active validators
+		for _, val := range activeValidators {
+			k.Logger(ctx).Info("active validator",
+				"operator", val.GetOperator(),
+				"power", val.Tokens,
+			)
+		}
+
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, prop.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
+		// log the minimum power in top N
+		k.Logger(ctx).Info("minimum power in top N",
+			"chainID", chainID,
+			"minPower", minPower,
+		)
 		k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
 		k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+
+		// log the minimum power in top N
+		k.Logger(ctx).Info("minimum power in top N",
+			"chainID", chainID,
+			"minPower", minPower,
+		)
 	}
 	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
 	nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)

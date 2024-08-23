@@ -84,20 +84,21 @@ type (
 type TestConfigType string
 
 const (
-	DefaultTestCfg              TestConfigType = "default"
-	ChangeoverTestCfg           TestConfigType = "changeover"
-	DemocracyTestCfg            TestConfigType = "democracy"
-	DemocracyRewardTestCfg      TestConfigType = "democracy-reward"
-	SlashThrottleTestCfg        TestConfigType = "slash-throttling"
-	MulticonsumerTestCfg        TestConfigType = "multi-consumer"
-	ConsumerMisbehaviourTestCfg TestConfigType = "consumer-misbehaviour"
-	CompatibilityTestCfg        TestConfigType = "compatibility"
-	SmallMaxValidatorsTestCfg   TestConfigType = "small-max-validators"
-	InactiveProviderValsTestCfg TestConfigType = "inactive-provider-vals"
-	GovTestCfg                  TestConfigType = "gov"
-	InactiveValsGovTestCfg      TestConfigType = "inactive-vals-gov"
-	InactiveValsMintTestCfg     TestConfigType = "inactive-vals-mint"
-	MintTestCfg                 TestConfigType = "mint"
+	DefaultTestCfg               TestConfigType = "default"
+	ChangeoverTestCfg            TestConfigType = "changeover"
+	DemocracyTestCfg             TestConfigType = "democracy"
+	DemocracyRewardTestCfg       TestConfigType = "democracy-reward"
+	SlashThrottleTestCfg         TestConfigType = "slash-throttling"
+	MulticonsumerTestCfg         TestConfigType = "multi-consumer"
+	ConsumerMisbehaviourTestCfg  TestConfigType = "consumer-misbehaviour"
+	CompatibilityTestCfg         TestConfigType = "compatibility"
+	SmallMaxValidatorsTestCfg    TestConfigType = "small-max-validators"
+	InactiveProviderValsTestCfg  TestConfigType = "inactive-provider-vals"
+	GovTestCfg                   TestConfigType = "gov"
+	InactiveValsGovTestCfg       TestConfigType = "inactive-vals-gov"
+	InactiveValsMintTestCfg      TestConfigType = "inactive-vals-mint"
+	MintTestCfg                  TestConfigType = "mint"
+	InactiveValsExtraValsTestCfg TestConfigType = "inactive-vals-extra-vals"
 )
 
 type TestConfig struct {
@@ -205,6 +206,8 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = InactiveValsMintTestConfig()
 	case MintTestCfg:
 		testCfg = MintTestConfig()
+	case InactiveValsExtraValsTestCfg:
+		testCfg = InactiveValsExtraValsTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -606,6 +609,25 @@ func InactiveProviderValsTestConfig() TestConfig {
 	carolConfig := tr.validatorConfigs[ValidatorID("carol")]
 	carolConfig.UseConsumerKey = false
 	tr.validatorConfigs[ValidatorID("carol")] = carolConfig
+
+	return tr
+}
+
+func InactiveValsExtraValsTestConfig() TestConfig {
+	tr := InactiveProviderValsTestConfig()
+
+	// set the MaxProviderConsensusValidators param to 4
+	proviConfig := tr.chainConfigs[ChainID("provi")]
+	proviConfig.GenesisChanges += " | .app_state.provider.params.max_provider_consensus_validators = \"4\""
+	// set max validators to 5
+	proviConfig.GenesisChanges += " | .app_state.staking.params.max_validators = \"5\""
+	tr.chainConfigs[ChainID("provi")] = proviConfig
+
+	// add the extra validators to the validator config
+	extraVals := GetExtraValidatorConfigs()
+	for valId, val := range extraVals {
+		tr.validatorConfigs[valId] = val
+	}
 
 	return tr
 }
@@ -1273,4 +1295,114 @@ func GetHermesConfig(hermesVersion, queryNodeIP string, chainCfg ChainConfig, is
 			isConsumer)
 	}
 	return hermesConfig
+}
+
+func GetExtraValidatorConfigs() map[ValidatorID]ValidatorConfig {
+	return map[ValidatorID]ValidatorConfig{
+		ValidatorID("david"): {
+			Mnemonic:   "save arm pill nothing riot park analyst fever couple use reform hotel involve captain ride spell cricket spoil admit proud file renew below add",
+			DelAddress: "cosmos1jv9j37zakskecthedez2xuvkd7aj4v96u6wm57",
+			// DelAddressOnConsumer:     "consumer1dkas8mu4kyhl5jrh4nzvm65qz588hy9qahzgv6",
+			ValoperAddress: "cosmosvaloper1jv9j37zakskecthedez2xuvkd7aj4v96ew6wcd",
+			// ValoperAddressOnConsumer: "consumervaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qj0phzw",
+			ValconsAddress:           "cosmosvalcons1vde2tkme0336durkp7qlehyw2v0r2rgm5lfcw5",
+			ValconsAddressOnConsumer: "consumervalcons1vde2tkme0336durkp7qlehyw2v0r2rgmmxnal5",
+			PrivValidatorKey: `{
+				"address": "6372A5DB797C63A6F0760F81FCDC8E531E350D1B",
+				"pub_key": {
+					"type": "tendermint/PubKeyEd25519",
+					"value": "JFt8aKr1AnubC23rVEUza0pl3DQC0VdC6jUlnkjCh5o="
+				},
+				"priv_key": {
+					"type": "tendermint/PrivKeyEd25519",
+					"value": "mBErI1aFTt2VHNiWkb14mEfSIfUU6PHndJCKaJ2XjkwkW3xoqvUCe5sLbetURTNrSmXcNALRV0LqNSWeSMKHmg=="
+				}
+			}`,
+			NodeKey:  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"LJQ/VDAYtEEaJC3NA32fZ2oLLm9akLeLVnBlJ2WOYEMLohbwfac0x42Qh23E/ByEMliSjfGvLFQZIYzRqwJcLA=="}}`,
+			IpSuffix: "7",
+
+			// // consumer chain assigned key
+			// ConsumerMnemonic:                 "grunt list hour endless observe better spoil penalty lab duck only layer vague fantasy satoshi record demise topple space shaft solar practice donor sphere",
+			// ConsumerDelAddress:               "consumer1q90l6j6lzzgt460ehjj56azknlt5yrd44y2uke",
+			// ConsumerDelAddressOnProvider:     "cosmos1q90l6j6lzzgt460ehjj56azknlt5yrd4s38n97",
+			// ConsumerValoperAddress:           "consumervaloper1q90l6j6lzzgt460ehjj56azknlt5yrd46ufrcd",
+			// ConsumerValoperAddressOnProvider: "cosmosvaloper1q90l6j6lzzgt460ehjj56azknlt5yrd449nxfd",
+			// ConsumerValconsAddress:           "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
+			// ConsumerValconsAddressOnProvider: "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
+			// ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
+			// ConsumerPrivValidatorKey:         `{"address":"E73388E246EC9945E5E70A94FE4072BD937415C4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"OFR4w+FC6EMw5fAGTrHVexyPrjzQ7QfqgZOMgVf0izlCUb6Jh7oDJim9jXP1E0koJWUfXhD+pLPgSMZ0YKu7eg=="}}`,
+			// ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uhPCqnL2KE8m/8OFNLQ5bN3CJr6mds+xfBi0E4umT/s2uWiJhet+vbYx88DHSdof3gGFNTIzAIxSppscBKX96w=="}}`,
+			// UseConsumerKey:                   false,
+		},
+		ValidatorID("eve"): {
+			Mnemonic:   "board lava muffin daughter frozen chimney chest whale give subject inquiry forward alter gasp busy flee wire ecology invite code comic cloth shoot pen",
+			DelAddress: "cosmos1p56m290cgys4396e3f8p4kj9lrzwak7zemg45t",
+			// DelAddressOnConsumer:     "consumer1dkas8mu4kyhl5jrh4nzvm65qz588hy9qahzgv6",
+			ValoperAddress: "cosmosvaloper1p56m290cgys4396e3f8p4kj9lrzwak7zu0uqcc",
+			// ValoperAddressOnConsumer: "consumervaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qj0phzw",
+			ValconsAddress:           "cosmosvalcons1dqvy6lz440hj4zxjske5knsyx60ac5estqx6k2",
+			ValconsAddressOnConsumer: "consumervalcons1dqvy6lz440hj4zxjske5knsyx60ac5esyeul82",
+			PrivValidatorKey: `{
+				"address": "68184D7C55ABEF2A88D285B34B4E04369FDC5330",
+				"pub_key": {
+					"type": "tendermint/PubKeyEd25519",
+					"value": "QbLLxm/mNHfS9WWXTxvt30D2xeC7/HRrMrZJIVOtj9s="
+				},
+				"priv_key": {
+					"type": "tendermint/PrivKeyEd25519",
+					"value": "LDPp4B9/Q18yZBJv2zXMnCA+NB9wvaM3XAkWLuCvbaFBssvGb+Y0d9L1ZZdPG+3fQPbF4Lv8dGsytkkhU62P2w=="
+				}
+			}`,
+			NodeKey:  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"eyDlEXWWP5KwD2IKZeJ/bvf8jT+pVsXYVjpV2HfP+GEjngJe2dNbuuNqtC6L7SFcp5/W2aOIKsslASqv+Oai9Q=="}}`,
+			IpSuffix: "8",
+
+			// // consumer chain assigned key
+			// ConsumerMnemonic:                 "grunt list hour endless observe better spoil penalty lab duck only layer vague fantasy satoshi record demise topple space shaft solar practice donor sphere",
+			// ConsumerDelAddress:               "consumer1q90l6j6lzzgt460ehjj56azknlt5yrd44y2uke",
+			// ConsumerDelAddressOnProvider:     "cosmos1q90l6j6lzzgt460ehjj56azknlt5yrd4s38n97",
+			// ConsumerValoperAddress:           "consumervaloper1q90l6j6lzzgt460ehjj56azknlt5yrd46ufrcd",
+			// ConsumerValoperAddressOnProvider: "cosmosvaloper1q90l6j6lzzgt460ehjj56azknlt5yrd449nxfd",
+			// ConsumerValconsAddress:           "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
+			// ConsumerValconsAddressOnProvider: "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
+			// ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
+			// ConsumerPrivValidatorKey:         `{"address":"E73388E246EC9945E5E70A94FE4072BD937415C4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"OFR4w+FC6EMw5fAGTrHVexyPrjzQ7QfqgZOMgVf0izlCUb6Jh7oDJim9jXP1E0koJWUfXhD+pLPgSMZ0YKu7eg=="}}`,
+			// ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uhPCqnL2KE8m/8OFNLQ5bN3CJr6mds+xfBi0E4umT/s2uWiJhet+vbYx88DHSdof3gGFNTIzAIxSppscBKX96w=="}}`,
+			// UseConsumerKey:                   false,
+		},
+		ValidatorID("fred"): {
+			Mnemonic:   "squeeze runway ivory cause throw diagram camp cricket clutch lens venture panel explain transfer dove notice nest twist plate van paddle rude summer give",
+			DelAddress: "cosmos13s90cyesdm2292pn8mnzmjm0ez3nd7jaw32tdq",
+			// // DelAddressOnConsumer:     "consumer1dkas8mu4kyhl5jrh4nzvm65qz588hy9qahzgv6",
+			ValoperAddress: "cosmosvaloper13s90cyesdm2292pn8mnzmjm0ez3nd7jat977pn",
+			// // ValoperAddressOnConsumer: "consumervaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qj0phzw",
+			ValconsAddress:           "cosmosvalcons1xvuktnaz3rvwmldw7ktv7lcn2xf7l252wmsv5e",
+			ValconsAddressOnConsumer: "consumervalcons1xvuktnaz3rvwmldw7ktv7lcn2xf7l252pz2f9e",
+			PrivValidatorKey: `{
+				"address": "333965CFA288D8EDFDAEF596CF7F135193EFAA8A",
+				"pub_key": {
+					"type": "tendermint/PubKeyEd25519",
+					"value": "nC7g+8/y3NNx7D6Ae970H9954JeqX7SyAxNHh5GnJGs="
+				},
+				"priv_key": {
+					"type": "tendermint/PrivKeyEd25519",
+					"value": "otxstGMSCO0T4CU/Ouxxaam+HUFoL9ArKmMqvSaaCaCcLuD7z/Lc03HsPoB73vQf33ngl6pftLIDE0eHkackaw=="
+				}
+			}`,
+			NodeKey:  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"oeJWEaFbLHIgZEbCeVDeYKDqM23fv3j/FobYdhIffQYN2X9MUvBlkhi4Uz6dLQ+vSfZIZb2x2vPcgJsCUpLGnQ=="}}`,
+			IpSuffix: "9",
+
+			// // consumer chain assigned key
+			// ConsumerMnemonic:                 "grunt list hour endless observe better spoil penalty lab duck only layer vague fantasy satoshi record demise topple space shaft solar practice donor sphere",
+			// ConsumerDelAddress:               "consumer1q90l6j6lzzgt460ehjj56azknlt5yrd44y2uke",
+			// ConsumerDelAddressOnProvider:     "cosmos1q90l6j6lzzgt460ehjj56azknlt5yrd4s38n97",
+			// ConsumerValoperAddress:           "consumervaloper1q90l6j6lzzgt460ehjj56azknlt5yrd46ufrcd",
+			// ConsumerValoperAddressOnProvider: "cosmosvaloper1q90l6j6lzzgt460ehjj56azknlt5yrd449nxfd",
+			// ConsumerValconsAddress:           "consumervalcons1uuec3cjxajv5te08p220usrjhkfhg9wyref26m",
+			// ConsumerValconsAddressOnProvider: "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
+			// ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
+			// ConsumerPrivValidatorKey:         `{"address":"E73388E246EC9945E5E70A94FE4072BD937415C4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"OFR4w+FC6EMw5fAGTrHVexyPrjzQ7QfqgZOMgVf0izlCUb6Jh7oDJim9jXP1E0koJWUfXhD+pLPgSMZ0YKu7eg=="}}`,
+			// ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uhPCqnL2KE8m/8OFNLQ5bN3CJr6mds+xfBi0E4umT/s2uWiJhet+vbYx88DHSdof3gGFNTIzAIxSppscBKX96w=="}}`,
+			// UseConsumerKey:                   false,
+		},
+	}
 }
