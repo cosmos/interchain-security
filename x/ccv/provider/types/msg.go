@@ -271,7 +271,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 	}
 
 	if msg.PowerShapingParameters != nil {
-		if msg.PowerShapingParameters.Top_N > 0 {
+		if msg.PowerShapingParameters.Top_N != 0 {
 			return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
 				"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
 		}

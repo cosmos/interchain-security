@@ -283,7 +283,7 @@ func TestIsValidatorOptedInToChain(t *testing.T) {
 	require.Equal(t, expectedConsumerId, actualConsumerId)
 }
 
-func TestPopulateAllowlist(t *testing.T) {
+func TestUpdateAllowlist(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -294,12 +294,7 @@ func TestPopulateAllowlist(t *testing.T) {
 	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
 	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
 
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
-		Allowlist: []string{providerConsAddr1, providerConsAddr2},
-	})
-
-	err := providerKeeper.PopulateAllowlist(ctx, consumerId)
-	require.NoError(t, err)
+	providerKeeper.UpdateAllowlist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
 
 	expectedAllowlist := []providertypes.ProviderConsAddress{
 		providertypes.NewProviderConsAddress(consAddr1),
@@ -318,12 +313,7 @@ func TestPopulateDenylist(t *testing.T) {
 	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
 	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
 
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
-		Denylist: []string{providerConsAddr1, providerConsAddr2},
-	})
-
-	err := providerKeeper.PopulateDenylist(ctx, consumerId)
-	require.NoError(t, err)
+	providerKeeper.UpdateDenylist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
 
 	expectedDenylist := []providertypes.ProviderConsAddress{
 		providertypes.NewProviderConsAddress(consAddr1),
@@ -342,7 +332,7 @@ func TestPopulateMinimumPowerInTopN(t *testing.T) {
 		Top_N: 0,
 	})
 
-	err := providerKeeper.PopulateMinimumPowerInTopN(ctx, consumerId, 0)
+	err := providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 0)
 	require.NoError(t, err)
 	_, found := providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
 	require.False(t, found)
@@ -378,7 +368,7 @@ func TestPopulateMinimumPowerInTopN(t *testing.T) {
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
 		Top_N: 50,
 	})
-	err = providerKeeper.PopulateMinimumPowerInTopN(ctx, consumerId, 0)
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 50)
 	require.NoError(t, err)
 	minimumPowerInTopN, found := providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
 	require.True(t, found)
@@ -388,7 +378,7 @@ func TestPopulateMinimumPowerInTopN(t *testing.T) {
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
 		Top_N: 51,
 	})
-	err = providerKeeper.PopulateMinimumPowerInTopN(ctx, consumerId, 0)
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 50, 51)
 	require.NoError(t, err)
 	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
 	require.True(t, found)
@@ -398,7 +388,7 @@ func TestPopulateMinimumPowerInTopN(t *testing.T) {
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
 		Top_N: 100,
 	})
-	err = providerKeeper.PopulateMinimumPowerInTopN(ctx, consumerId, 0)
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 51, 100)
 	require.NoError(t, err)
 	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
 	require.True(t, found)
