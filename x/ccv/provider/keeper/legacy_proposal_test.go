@@ -111,7 +111,7 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
-			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, []int64{}, 1)
+			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, 1)
 			gomock.InOrder(
 				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
 			)

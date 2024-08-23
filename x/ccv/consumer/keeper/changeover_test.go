@@ -29,8 +29,6 @@ func TestChangeoverToConsumer(t *testing.T) {
 		cIds[4].SDKStakingValidator(),
 	}
 
-	powers := []int64{55, 87324, 2, 42389479, 9089080}
-
 	// Instantiate 5 ics val updates for use in test
 	initialValUpdates := []abci.ValidatorUpdate{
 		{Power: 55, PubKey: cIds[5].TMProtoCryptoPublicKey()},
@@ -106,7 +104,6 @@ func TestChangeoverToConsumer(t *testing.T) {
 			mocks.MockStakingKeeper,
 			180, // max validators
 			tc.lastSovVals,
-			powers,
 			-1) // any times
 
 		// Add ref to standalone staking keeper

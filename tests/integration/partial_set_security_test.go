@@ -2,6 +2,7 @@ package integration
 
 import (
 	"slices"
+	"sort"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -119,9 +120,19 @@ func TestMinStake(t *testing.T) {
 			lastVals, err := providerKeeper.GetLastBondedValidators(s.providerChain.GetContext())
 			s.Require().NoError(err)
 
+			// Assuming tc.stakedTokens is defined somewhere in your test case
+			// Create a copy of the tc.stakedTokens slice
+			sortedTokens := make([]int64, len(tc.stakedTokens))
+			copy(sortedTokens, tc.stakedTokens)
+
+			// Sort the copied slice in descending order
+			sort.Slice(sortedTokens, func(i, j int) bool {
+				return sortedTokens[i] > sortedTokens[j]
+			})
+
 			for i, val := range lastVals {
 				// check that the initial state was set correctly
-				require.Equal(s.T(), math.NewInt(tc.stakedTokens[i]), val.Tokens)
+				require.Equal(s.T(), math.NewInt(sortedTokens[i]), val.Tokens)
 			}
 
 			// check the validator set on the consumer chain is the original one

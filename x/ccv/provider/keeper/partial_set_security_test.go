@@ -134,7 +134,7 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 	valDConsAddr, _ := valD.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, nil).AnyTimes()
 
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 4, []stakingtypes.Validator{valA, valB, valC, valD}, []int64{1, 2, 3, 4}, -1) // -1 to allow mocks AnyTimes
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 4, []stakingtypes.Validator{valA, valB, valC, valD}, -1) // -1 to allow mocks AnyTimes
 
 	// initialize the minPowerInTopN correctly
 	minPowerInTopN, err := providerKeeper.ComputeMinPowerInTopN(ctx, []stakingtypes.Validator{valA, valB, valC, valD}, 50)

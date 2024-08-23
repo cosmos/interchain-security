@@ -128,38 +128,18 @@ func GetConsAddrFromBech32(bech32str string) (sdk.ConsAddress, error) {
 // GetLastBondedValidatorsUtil iterates the last validator powers in the staking module
 // and returns the first maxVals many validators with the largest powers.
 func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, logger log.Logger, maxVals uint32) ([]stakingtypes.Validator, error) {
-	lastPowers := make([]stakingtypes.LastValidatorPower, maxVals)
-
-	i := 0
-	err := stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
-		lastPowers[i] = stakingtypes.LastValidatorPower{Address: addr.String(), Power: power}
-		i++
-		return i >= int(maxVals) // stop iteration if true
-	})
+	// get the bonded validators from the staking module, sorted by power
+	bondedValidators, err := stakingKeeper.GetBondedValidatorsByPower(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// truncate the lastPowers
-	lastPowers = lastPowers[:i]
-
-	bondedValidators := make([]stakingtypes.Validator, len(lastPowers))
-
-	for index, p := range lastPowers {
-		addr, err := sdk.ValAddressFromBech32(p.Address)
-		if err != nil {
-			logger.Error("Invalid validator address", "address", p.Address, "error", err)
-			continue
-		}
-
-		val, err := stakingKeeper.GetValidator(ctx, addr)
-		if err != nil {
-			logger.Error(err.Error(), addr.String())
-			continue
-		}
-
-		// gather all the bonded validators in order to construct the consumer validator set for consumer chain `chainID`
-		bondedValidators[index] = val
+	// get the first maxVals many validators
+	if uint32(len(bondedValidators)) < maxVals {
+		return bondedValidators, nil // no need to truncate
 	}
+
+	bondedValidators = bondedValidators[:maxVals]
+
 	return bondedValidators, nil
 }
