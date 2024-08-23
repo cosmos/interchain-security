@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
@@ -278,4 +279,54 @@ func TestIsValidatorOptedInToChain(t *testing.T) {
 	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
 	require.True(t, found)
 	require.Equal(t, expectedConsumerId, actualConsumerId)
+}
+
+func TestPopulateAllowlist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
+	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
+
+	// set PSS-related fields to update them later on
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Allowlist: []string{providerConsAddr1, providerConsAddr2},
+	})
+
+	err := providerKeeper.PopulateAllowlist(ctx, consumerId)
+	require.NoError(t, err)
+
+	expectedAllowlist := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress(consAddr1),
+		providertypes.NewProviderConsAddress(consAddr2)}
+	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
+}
+
+func TestPopulateDenylist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
+	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
+
+	// set PSS-related fields to update them later on
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Denylist: []string{providerConsAddr1, providerConsAddr2},
+	})
+
+	err := providerKeeper.PopulateDenylist(ctx, consumerId)
+	require.NoError(t, err)
+
+	expectedDenylist := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress(consAddr1),
+		providertypes.NewProviderConsAddress(consAddr2)}
+	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
 }
