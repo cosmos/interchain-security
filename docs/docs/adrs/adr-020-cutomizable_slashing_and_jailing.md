@@ -6,6 +6,7 @@ title: Customizable Slashing and Jailing
 
 ## Changelog
 * 2024-07-19: Initial draft of ADR
+* 2024-08-23: Generalize ADR to make slashing and jailing customizable
 
 ## Status
 
@@ -53,29 +54,111 @@ This enables consumer chains to tradeoff economical security against cost.
 ## Decision
 
 To reduce the cost of ICS, consumer chains will be able to customize the slashing and jailing for every type of infraction. 
+As a result, consumer chains can decide on the amount of economic security they want and validators (and their delegators) can decide on the amount of additional risk they want to incur.  
 
+For every consumer chain, we introduce the following slashing and jailing parameters:
+```proto
+message InfractionParameters {
+  SlashJailParameters double_sign = 1;
+  SlashJailParameters downtime = 2;
+}
 
-deploy as Proof of Reputation (PoR) chains.
-This means that when validators that opt in misbehave on the consumer chains (e.g., they double sign), their stake on the provider is not being slashed, instead they are being tombstoned on the provider.
-As a result, delegators incur (almost) no risk if their validators opt in on multiple PoR consumer chains.
-If their validators are tombstoned, then the delegators can redelegate to other validators. 
-However, delegators cannot redelegate multiple times, which means that if the new validators get also tombstoned, the delegators need to wait for the unbonding period to elapse. 
+message SlashJailParameters {
+  bytes slash_fraction = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+  // use time.Unix(253402300799, 0) for permanent jailing
+  google.protobuf.Duration jail_duration = 2;
+}
+```
+Currently, we consider only two infraction types -- double signing and downtime. 
 
-This means that PoR consumer chains need only to cover the operational costs of the validators that opt in. 
-For example, if we take `$600` as the cost of running a validator node, a budget of `$3000` will be sufficient to cover the cost of four validators running a PoR consumer chain and have `$150` profit per validator as incentive.
+By default, every consumer chain will have the following slashing and jailing parameters:
+```go
+double_sign.slash_fraction: 0.05 // same as on the provider
+double_sign.jail_duration: time.Unix(253402300799, 0) // permanent jailing, same as on the provider
+downtime.slash_fraction: 0 // no slashing for downtime on the consumer
+downtime.jail_duration: 600s // same as on the provider
+``` 
+These parameters can be updated by the consumer chain owner at any given time (via `MsgCreateConsumer` or `MsgUpdateConsumer`). 
+However, the changes will come into effect after a period equal to the staking module's unbonding period elapses.
+This will allow validators that don't agree with the changes to opt out and not be affected by them. 
+Also, to avoid malicious chains attacking the provider validator set, these params will be bounded by the values on the provider chain:
+```go
+double_sign.slash_fraction <= 0.05 // 5%
+downtime.slash_fraction <= 0.0001 // 0.1%
+downtime.jail_duration <= 600s // 10 minutes
+```
+
+Although consumer chains can set any values to these parameters (within the allowed bounds), we recommend the following settings, depending on the type of consumer chain. 
+
+- **Proof-of-Stake (PoS) Consumer Chains.** These are chains that have the full economical security of the provider validators that opted in. This means that all slashing and jailing parameters are the same as on the provider. 
+  ```go
+  double_sign.slash_fraction: 0.05 
+  double_sign.jail_duration: time.Unix(253402300799, 0)
+  downtime.slash_fraction: 0.0001 
+  downtime.jail_duration: 600s
+  ```
+- **Proof-of-Reputation (PoR) Consumer Chains.** 
+  ```go
+  double_sign.slash_fraction: 0 // no slashing
+  double_sign.jail_duration: time.Unix(253402300799, 0)
+  downtime.slash_fraction: 0 // no slashing
+  downtime.jail_duration: 600s
+  ```
+  This means that when validators that opt in misbehave on PoR consumer chains, their stake on the provider is not being slashed, instead they are just jailed on the provider. 
+  As a result, delegators incur (almost) no risk if their validators opt in on multiple PoR consumer chains.
+  If their validators are jailed, then the delegators can redelegate to other validators. 
+  Note though that delegators cannot redelegate multiple times, which means that if the new validators get also tombstoned, the delegators need to wait for the unbonding period to elapse. 
+- **Testnet Consumer Chains.**
+   ```go
+  double_sign.slash_fraction: 0 // no slashing
+  double_sign.jail_duration: 0 // no jailing
+  downtime.slash_fraction: 0 // no slashing
+  downtime.jail_duration: 0 // no jailing
+  ```
+  This means that validators are not punished for infractions on consumer chains. 
+  This setting is ideal for testing consumer chains before going in production as neither validators nor their delegators incur any risk from the validators opting in on this consumer chains. 
+
+This means that both PoR and testnet consumer chains need only to cover the operational costs of the validators that opt in. 
+For example, if we take `$600` as the cost of running a validator node, a budget of `$3000` will be sufficient to cover the cost of four validators running such a consumer chain and have `$150` profit per validator as incentive.
 In practice, this can be implemented via the per-consumer-chain commission rate that allows validators to have different commission rates on different consumer chains. 
 
-### Security Model
+### Implementation
 
-The security model provided to PoR chains is based on the following properties of most Cosmos chains:
+The implementation of this feature involves the following steps:
+
+- Add the `InfractionParameters` to `MsgCreateConsumer`.
+- On slashing events (for either downtime or double signing infractions), use the corresponding `slash_fraction` set by the consumer chain.
+- On jailing events (for either downtime or double signing infractions), use the corresponding `jail_duration` set by the consumer chain.
+- Cryptographic equivocation evidence received for PoR chains results in the misbehaving validators only being tombstoned and not slashed.
+- (Optional) Add the `InfractionParameters` to `MsgUpdateConsumer`, i.e., allow consumer chains to update the slashing and jailing parameters, but the changes will come into effect after a period equal to the staking module's unbonding period elapses to allow for validators to opt out.   
+
+## Consequences
+
+### Positive
+
+- Reduce the cost of ICS by removing the risk of slashing delegators.
+
+### Negative
+
+- Reduce the economical security of consumer chains with weaker slashing conditions.
+
+#### Economic Security Model without Slashing
+
+The economic security model of most Cosmos chains relies on the following properties:
 
 - validators are not anonymous, which means that they could be legally liable if they are malicious;
 - the delegated PoS mechanism creates a reputation-based network of validators;
 - most validators have most of their stake coming from delegations (i.e., nothing at stake, besides reputation);
 - it is relatively difficult to enter the active validator set and even more so to climb the voting power ladder.
 
-The assumption is that being permanently removed from the provider active validator set is strong enough of a deterrent to misbehaving on PoR consumer chains. 
-Note that this assumption holds only if [inactive validators](./adr-017-allowing-inactive-validators.md) are ineligible to opt in on PoR consumer chains. 
+These properties enables us to make the following assumption:
+
+- Being permanently removed from the provider validator set is strong enough of a deterrent to misbehaving on consumer chains.
 
 The additional economical security a consumer gets from slashing is limited. 
 The reason is that slashing punishes delegators as most of the stake is delegated.
@@ -87,28 +170,9 @@ However, by having the right [power shaping](https://cosmos.github.io/interchain
 This means that even if the attacker manages to double sign without getting slashed, as long as they don't have 1/3+ of the voting power, they cannot benefit from the attack. 
 Moreover, the attacker might lose due to other factors, such as [token toxicity](https://forum.cosmos.network/t/enabling-opt-in-and-mesh-security-with-fraud-votes/10901).  
 
-### Implementation
-
-The implementation of this feature involves the following steps:
-
-- Add a field to `ConsumerAdditionProposal` to enable consumer chains to launch as PoR chains.
-- Disable opt in to PoR consumer chains for validators outside of the provider's active set.
-- Cryptographic equivocation evidence received for PoR chains results in the misbehaving validators only being tombstoned and not slashed.
-- (Optional) PoR consumer chains can switch to PoS chains, but the transition takes at least unbonding period to allow for validators to opt out.    
-
-## Consequences
-
-### Positive
-
-- Reduce the cost of ICS be removing the risk of slashing delegators.
-
-### Negative
-
-- Reduce the economical security provided to PoR consumer chains. 
-
 ### Neutral
 
-- [Inactive validators](./adr-017-allowing-inactive-validators.md) are ineligible to opt in on PoR consumer chains
+NA
 
 ## References
 
