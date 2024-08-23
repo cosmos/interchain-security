@@ -2,7 +2,6 @@ package types
 
 import (
 	"errors"
-	fmt "fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -132,7 +131,7 @@ func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, l
 	// get the bonded validators from the staking module, sorted by power
 	bondedValidators, err := stakingKeeper.GetBondedValidatorsByPower(ctx)
 	if err != nil {
-		panic(fmt.Errorf("failed to get bonded validators: %w", err))
+		return nil, err
 	}
 
 	// get the first maxVals many validators
