@@ -443,7 +443,7 @@ The `democracy/distribution` module allows the consumer chain to send rewards to
 
 ### How it works
 
-First, a percentage of the block rewards is sent to the provider chain, where is distributed to only opted-in validators and their delegators. 
+First, a percentage of the block rewards is sent to the provider chain, where is distributed only to opted-in validators and their delegators. 
 Second, the remaining rewards get distributed to the consumer chain's governators and their delegators.
 The percentage that is sent to the provider chain corresponds to `1 - ConsumerRedistributionFraction`.
 For example, `ConsumerRedistributionFraction = "0.75"` means that the consumer chain retains 75% of the rewards, while 25% gets sent to the provider chain
