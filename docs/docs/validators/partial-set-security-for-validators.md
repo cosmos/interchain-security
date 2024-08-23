@@ -98,7 +98,7 @@ set commission rate still applies.
 
 ## Queries
 
-PSS introduces a number of queries to assist validators determine which consumer chains they have to validate, their commission rate per chain, etc.
+PSS introduces a number of queries to assist validators in determining which consumer chains they have to validate, their commission rate per chain, etc.
 
 ### Which chains does a validator have to validate?
 
