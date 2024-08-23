@@ -16,7 +16,7 @@ Note that validators need to run separate infrastructure for the provider and co
 ### What is the difference between ICS and Partial Set Security (PSS)?
 
 [ICS is a protocol](#what-is-interchain-security-ics). 
-PSS is an ICS feature that allows a provider chain to share only a subset of its validator set with a consumer chain.
+PSS is a feature of ICS that allows a provider chain to share only a subset of its validator set with a consumer chain.
 PSS differentiates between TopN and Opt-In consumer chains. 
 For TopN chains, the validator subset is determined by the top N% provider validators by voting power.
 For Opt-In chains, the validator subset is determined by validators opting in to validate the consumer chains. 
