@@ -370,7 +370,7 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
 			ProviderAddress:         sdk.ConsAddress(consumerVal.ProviderConsAddr).String(),
 			ConsumerKey:             consumerVal.PublicKey,
-			Power:                   consumerVal.Power,
+			ConsumerPower:           consumerVal.Power,
 			ConsumerCommissionRate:  consumerRate,
 			Description:             providerVal.Description,
 			ProviderOperatorAddress: providerVal.OperatorAddress,

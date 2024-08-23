@@ -142,7 +142,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 			{
 				ProviderAddress:         providerAddr1.String(),
 				ConsumerKey:             &pk1,
-				Power:                   1,
+				ConsumerPower:           1,
 				ConsumerCommissionRate:  val1ConsComRate,
 				Description:             val1.Description,
 				ProviderOperatorAddress: val1.OperatorAddress,
@@ -156,7 +156,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 			{
 				ProviderAddress:         providerAddr2.String(),
 				ConsumerKey:             &pk2,
-				Power:                   2,
+				ConsumerPower:           2,
 				ConsumerCommissionRate:  val2.Commission.Rate,
 				Description:             val2.Description,
 				ProviderOperatorAddress: val2.OperatorAddress,
