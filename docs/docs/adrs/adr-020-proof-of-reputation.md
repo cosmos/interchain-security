@@ -1,8 +1,8 @@
 ---
 sidebar_position: 21
-title: Proof of Reputation Consumer Chains
+title: Customizable Slashing and Jailing
 ---
-# ADR 020: Proof of Reputation Consumer Chains 
+# ADR 020: Customizable Slashing and Jailing
 
 ## Changelog
 * 2024-07-19: Initial draft of ADR
@@ -15,31 +15,47 @@ Proposed
 
 Interchain Security (ICS) is a cross-chain staking protocol -- it uses the stake on the provider chain as collateral for the Proof of Stake (PoS) on the consumer chains. 
 This means that the voting power of validators validating (aka producing blocks) on the consumer chains is a function of their stake on the provider.
-Moreover, if these validators misbehave on the consumer chains, their stake on the provider is being slashed (see [ADR 005](./adr-005-cryptographic-equivocation-verification.md)). 
-Thus, ICS consumer chains get their economical security from the provider.
+Moreover, if these validators misbehave on the consumer chains, they get punished on the provider chain. 
+ICS is currently differentiating between two types of infractions -- equivocation and downtime. 
+Depending on the infraction type, the misbehaving validators might be jailed (i.e., removed from the provider validator set) and / or slashed (i.e., a portion of their stake on the provider is being burned).
+For example, validators double sining on consumer chains get slashed and are permanently jailed, 
+while validators not validating sufficient blocks are temporarily jailed.
+
+This means that ICS consumer chains get their economical security from the provider.
 However, this might come at a high cost.
 
 ### The Cost of PoS
 
 One of the cost of validating on the consumer chains is operational -- validators need to run and monitor full nodes of every consumer chain they opt in for. 
 Although this cost varies from validator team to validator team (depending on how efficiently they can run their infrastructure), it doesn't depend on the total stake (or voting power) of the validators, so we can think of it as constant. 
-The other cost of validating comes from the risk of getting slashed. 
+The other cost of validating comes from the risk of getting slashed or jailed.
 
 Most chains in Cosmos (including the Cosmos Hub) use delegated PoS -- users delegate their tokens to validators, which stake them in return for voting power. 
 Therefore, validators act as representatives chosen by their delegators to represent their interests. 
-When validators misbehave, their stake is getting slashed, including the tokes delegated by users. 
-As validators don't need to have their own stake, delegators take the risk of validators misbehaving and having their assets slashed.
+However, delegators share the risk of their validators getting slashed or jailed:
+
+- When validators get slashed, a portion of their stake is being burned, including a portion of the tokens delegated by users.
+  As validators don't need to have their own stake, it is possible that delegators take all the risk of validators misbehaving and having their assets slashed.
+- When validators get jailed, they no longer receive block rewards (neither from the provider nor from the consumer chains). 
+  This applies also for their delegators. 
+  As a result, delegators might choose to restake their tokens with another validator.
+  The longer the validators are jailed, the more likely is that delegators will restake.
+  Thus, by getting jailed, validators risk damaging their reputation. 
 
 Misbehavior doesn't need to be malicious, e.g., most cases of double signing infractions are due to misconfiguration. 
-This means that, by opting in on multiple consumer chains, validators increase their chances of getting slashed and, consequently, 
-their delegators incur a higher risk. 
-As a result, delegators want to be compensated for this additional risk, which makes PoS expensive. 
+This means that, by opting in on multiple consumer chains, validators and their delegators incur a higher risk.
+As a result, validators and their delegators want to be compensated for this additional risk, which makes the current design of ICS expensive. 
 
-This ADR addresses the high cost of ICS by proposing the deployment of consumer chains that rely only on Proof of Reputation (PoR) -- when validators misbehave on these PoR consumer chains, their stake is not slashed, but they are tombstoned (permanently removed from the provider), which means their reputation is destroyed (they loose all their delegators). 
+This ADR addresses the high cost of ICS by allowing consumer chains to customize the slashing and jailing conditions. 
+Basically, every consumer chain can decide the punishment for every type of infraction. 
+This enables consumer chains to tradeoff economical security against cost.  
 
 ## Decision
 
-To reduce the cost of ICS, consumer chains will be able to deploy as Proof of Reputation (PoR) chains.
+To reduce the cost of ICS, consumer chains will be able to customize the slashing and jailing for every type of infraction. 
+
+
+deploy as Proof of Reputation (PoR) chains.
 This means that when validators that opt in misbehave on the consumer chains (e.g., they double sign), their stake on the provider is not being slashed, instead they are being tombstoned on the provider.
 As a result, delegators incur (almost) no risk if their validators opt in on multiple PoR consumer chains.
 If their validators are tombstoned, then the delegators can redelegate to other validators. 
