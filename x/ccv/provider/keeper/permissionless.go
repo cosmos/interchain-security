@@ -253,38 +253,41 @@ func (k Keeper) DeleteConsumerStopTime(ctx sdk.Context, consumerId string) {
 }
 
 // GetConsumersToBeLaunched
-func (k Keeper) GetConsumersToBeLaunched(ctx sdk.Context, spawnTime time.Time) ([]string, error) {
+func (k Keeper) GetConsumersToBeLaunched(ctx sdk.Context, spawnTime time.Time) (types.ConsumerIds, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SpawnTimeToConsumerIdsKey(spawnTime))
 	if bz == nil {
-		return []string{}, nil
+		return types.ConsumerIds{}, nil
 	}
 
-	var consumerIds []string
-	buf := bytes.NewBuffer(bz)
-	dec := gob.NewDecoder(buf)
-	err := dec.Decode(&consumerIds)
-	return consumerIds, err
+	var consumerIds types.ConsumerIds
+
+	if err := consumerIds.Unmarshal(bz); err != nil {
+		return types.ConsumerIds{}, fmt.Errorf("failed to unmarshal consumer ids: %w", err)
+	}
+	return consumerIds, nil
 }
 
 // AppendSpawnTimeForConsumerToBeLaunched
 func (k Keeper) AppendSpawnTimeForConsumerToBeLaunched(ctx sdk.Context, consumerId string, spawnTime time.Time) error {
 	store := ctx.KVStore(k.storeKey)
 
-	consumerIds, err := k.GetConsumersToBeLaunched(ctx, spawnTime)
+	consumerIdsSlice, err := k.GetConsumersToBeLaunched(ctx, spawnTime)
 	if err != nil {
 		return err
 	}
-	consumerIds = append(consumerIds, consumerId)
+	consumerIds := append(consumerIdsSlice.ConsumerIds, consumerId)
 
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(consumerIds)
+	appendedConsumerIdsStr := types.ConsumerIds{
+		ConsumerIds: consumerIds,
+	}
+
+	bz, err := appendedConsumerIdsStr.Marshal()
 	if err != nil {
 		return err
 	}
 
-	store.Set(types.SpawnTimeToConsumerIdsKey(spawnTime), buf.Bytes())
+	store.Set(types.SpawnTimeToConsumerIdsKey(spawnTime), bz)
 	return nil
 }
 
@@ -297,74 +300,80 @@ func (k Keeper) RemoveConsumerFromToBeLaunchedConsumers(ctx sdk.Context, consume
 		return err
 	}
 
-	if len(consumerIds) == 0 {
+	if len(consumerIds.ConsumerIds) == 0 {
 		return fmt.Errorf("no consumer ids for spawn time: %s", spawnTime.String())
 	}
 
 	// find the index of the consumer we want to remove
 	index := 0
-	for i := 0; i < len(consumerIds); i = i + 1 {
-		if consumerIds[i] == consumerId {
+	for i := 0; i < len(consumerIds.ConsumerIds); i = i + 1 {
+		if consumerIds.ConsumerIds[i] == consumerId {
 			index = i
 			break
 		}
 	}
-	if consumerIds[index] != consumerId {
+	if consumerIds.ConsumerIds[index] != consumerId {
 		return fmt.Errorf("failed to find consumer id (%s) in the chains to be launched", consumerId)
 	}
 
-	if len(consumerIds) == 1 {
+	if len(consumerIds.ConsumerIds) == 1 {
 		store.Delete(types.SpawnTimeToConsumerIdsKey(spawnTime))
 		return nil
 	}
 
-	updatedConsumerIds := append(consumerIds[:index], consumerIds[index+1:]...)
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(updatedConsumerIds)
+	updatedConsumerIds := append(consumerIds.ConsumerIds[:index], consumerIds.ConsumerIds[index+1:]...)
+
+	updatedConsumerIdsStr := types.ConsumerIds{
+		ConsumerIds: updatedConsumerIds,
+	}
+
+	bz, err := updatedConsumerIdsStr.Marshal()
 	if err != nil {
 		return err
 	}
 
-	store.Set(types.SpawnTimeToConsumerIdsKey(spawnTime), buf.Bytes())
+	store.Set(types.SpawnTimeToConsumerIdsKey(spawnTime), bz)
 	return nil
 }
 
 // TODO (PERMISSIONLESS) merge the functions, they practically do the same
 
 // GetConsumersToBeStopped
-func (k Keeper) GetConsumersToBeStopped(ctx sdk.Context, stopTime time.Time) ([]string, error) {
+func (k Keeper) GetConsumersToBeStopped(ctx sdk.Context, stopTime time.Time) (types.ConsumerIds, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.StopTimeToConsumerIdsKey(stopTime))
 	if bz == nil {
-		return []string{}, nil
+		return types.ConsumerIds{}, nil
 	}
 
-	var consumerIds []string
-	buf := bytes.NewBuffer(bz)
-	dec := gob.NewDecoder(buf)
-	err := dec.Decode(&consumerIds)
-	return consumerIds, err
+	var consumerIds types.ConsumerIds
+	err := consumerIds.Unmarshal(bz)
+	if err != nil {
+		return types.ConsumerIds{}, err
+	}
+	return consumerIds, nil
 }
 
 // AppendSpawnTimeForConsumerToBeStopped
 func (k Keeper) AppendStopTimeForConsumerToBeStopped(ctx sdk.Context, consumerId string, stopTime time.Time) error {
 	store := ctx.KVStore(k.storeKey)
 
-	consumerIds, err := k.GetConsumersToBeStopped(ctx, stopTime)
+	consumerIdsStr, err := k.GetConsumersToBeStopped(ctx, stopTime)
 	if err != nil {
 		return err
 	}
-	consumerIds = append(consumerIds, consumerId)
+	consumerIds := append(consumerIdsStr.ConsumerIds, consumerId)
 
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(consumerIds)
+	consumerIdsNewStr := types.ConsumerIds{
+		ConsumerIds: consumerIds,
+	}
+
+	bz, err := consumerIdsNewStr.Marshal()
 	if err != nil {
 		return err
 	}
 
-	store.Set(types.StopTimeToConsumerIdsKey(stopTime), buf.Bytes())
+	store.Set(types.StopTimeToConsumerIdsKey(stopTime), bz)
 	return nil
 }
 
@@ -377,36 +386,37 @@ func (k Keeper) RemoveConsumerFromToBeStoppedConsumers(ctx sdk.Context, consumer
 		return err
 	}
 
-	if len(consumerIds) == 0 {
+	if len(consumerIds.ConsumerIds) == 0 {
 		return fmt.Errorf("no consumer ids for stop time: %s", stopTime.String())
 	}
 
 	// find the index of the consumer we want to remove
 	index := 0
-	for i := 0; i < len(consumerIds); i = i + 1 {
-		if consumerIds[i] == consumerId {
+	for i := 0; i < len(consumerIds.ConsumerIds); i = i + 1 {
+		if consumerIds.ConsumerIds[i] == consumerId {
 			index = i
 			break
 		}
 	}
-	if consumerIds[index] != consumerId {
+	if consumerIds.ConsumerIds[index] != consumerId {
 		return fmt.Errorf("failed to find consumer id (%s) in the chains to be stopped", consumerId)
 	}
 
-	if len(consumerIds) == 1 {
+	if len(consumerIds.ConsumerIds) == 1 {
 		store.Delete(types.StopTimeToConsumerIdsKey(stopTime))
 		return nil
 	}
 
-	updatedConsumerIds := append(consumerIds[:index], consumerIds[index+1:]...)
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(updatedConsumerIds)
+	updatedConsumerIds := append(consumerIds.ConsumerIds[:index], consumerIds.ConsumerIds[index+1:]...)
+	updatedConsumerIdsStr := types.ConsumerIds{
+		ConsumerIds: updatedConsumerIds,
+	}
+	bz, err := updatedConsumerIdsStr.Marshal()
 	if err != nil {
 		return err
 	}
 
-	store.Set(types.StopTimeToConsumerIdsKey(stopTime), buf.Bytes())
+	store.Set(types.StopTimeToConsumerIdsKey(stopTime), bz)
 	return nil
 }
 
@@ -539,14 +549,14 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint
 				"error", err)
 			continue
 		}
-		if len(result)+len(consumerIds) >= int(limit) {
-			remainingConsumerIds := len(result) + len(consumerIds) - int(limit)
-			if len(consumerIds[:len(consumerIds)-remainingConsumerIds]) == 0 {
+		if len(result)+len(consumerIds.ConsumerIds) >= int(limit) {
+			remainingConsumerIds := len(result) + len(consumerIds.ConsumerIds) - int(limit)
+			if len(consumerIds.ConsumerIds[:len(consumerIds.ConsumerIds)-remainingConsumerIds]) == 0 {
 				return result
 			}
-			return append(result, consumerIds[:len(consumerIds)-remainingConsumerIds]...)
+			return append(result, consumerIds.ConsumerIds[:len(consumerIds.ConsumerIds)-remainingConsumerIds]...)
 		} else {
-			result = append(result, consumerIds...)
+			result = append(result, consumerIds.ConsumerIds...)
 		}
 	}
 
@@ -576,15 +586,10 @@ func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
 	return nil
 }
 
-// PopulateAllowlist populates the allowlist store for the consumer chain with this consumer id
-func (k Keeper) PopulateAllowlist(ctx sdk.Context, consumerId string) error {
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		return err
-	}
-
+// UpdateAllowlist populates the allowlist store for the consumer chain with this consumer id
+func (k Keeper) UpdateAllowlist(ctx sdk.Context, consumerId string, allowlist []string) {
 	k.DeleteAllowlist(ctx, consumerId)
-	for _, address := range powerShapingParameters.Allowlist {
+	for _, address := range allowlist {
 		consAddr, err := sdk.ConsAddressFromBech32(address)
 		if err != nil {
 			continue
@@ -592,18 +597,12 @@ func (k Keeper) PopulateAllowlist(ctx sdk.Context, consumerId string) error {
 
 		k.SetAllowlist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 	}
-	return err
 }
 
-// PopulateDenylist populates the denylist store for the consumer chain with this consumer id
-func (k Keeper) PopulateDenylist(ctx sdk.Context, consumerId string) error {
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		return err
-	}
-
+// UpdateDenylist populates the denylist store for the consumer chain with this consumer id
+func (k Keeper) UpdateDenylist(ctx sdk.Context, consumerId string, denylist []string) {
 	k.DeleteDenylist(ctx, consumerId)
-	for _, address := range powerShapingParameters.Denylist {
+	for _, address := range denylist {
 		consAddr, err := sdk.ConsAddressFromBech32(address)
 		if err != nil {
 			continue
@@ -612,25 +611,19 @@ func (k Keeper) PopulateDenylist(ctx sdk.Context, consumerId string) error {
 		k.SetDenylist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 	}
 
-	return nil
 }
 
-// PopulateMinimumPowerInTopN populates the minimum power in Top N for the consumer chain with this consumer id
-func (k Keeper) PopulateMinimumPowerInTopN(ctx sdk.Context, consumerId string, oldTopN uint32) error {
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		return err
-	}
-
+// UpdateMinimumPowerInTopN populates the minimum power in Top N for the consumer chain with this consumer id
+func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, oldTopN uint32, newTopN uint32) error {
 	// if the top N changes, we need to update the new minimum power in top N
-	if powerShapingParameters.Top_N != oldTopN {
-		if powerShapingParameters.Top_N > 0 {
+	if newTopN != oldTopN {
+		if newTopN > 0 {
 			// if the chain receives a non-zero top N value, store the minimum power in the top N
 			bondedValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				return err
 			}
-			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, powerShapingParameters.Top_N)
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, newTopN)
 			if err != nil {
 				return err
 			}
@@ -672,14 +665,14 @@ func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context, limit uint32) [
 				"error", err)
 			continue
 		}
-		if len(result)+len(consumerIds) >= int(limit) {
-			remainingConsumerIds := len(result) + len(consumerIds) - int(limit)
-			if len(consumerIds[:len(consumerIds)-remainingConsumerIds]) == 0 {
+		if len(result)+len(consumerIds.ConsumerIds) >= int(limit) {
+			remainingConsumerIds := len(result) + len(consumerIds.ConsumerIds) - int(limit)
+			if len(consumerIds.ConsumerIds[:len(consumerIds.ConsumerIds)-remainingConsumerIds]) == 0 {
 				return result
 			}
-			return append(result, consumerIds[:len(consumerIds)-remainingConsumerIds]...)
+			return append(result, consumerIds.ConsumerIds[:len(consumerIds.ConsumerIds)-remainingConsumerIds]...)
 		} else {
-			result = append(result, consumerIds...)
+			result = append(result, consumerIds.ConsumerIds...)
 		}
 	}
 
@@ -715,28 +708,38 @@ func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.
 	return "", false
 }
 
-func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, spawnTime time.Time) {
-	if previousParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
-		// if this is not the first initialization, remove the consumer id from the old spawn time
-		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousParameters.SpawnTime)
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime time.Time, spawnTime time.Time) {
+	if !previousSpawnTime.Equal(time.Time{}) {
+		// if this is not the first initialization and hence `previousSpawnTime` does not contain the zero value of `Time`
+		// remove the consumer id from the old spawn time
+		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousSpawnTime)
 	}
-
 	k.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerId, spawnTime)
 }
 
 // CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence
-// is ready to launch
+// is ready to launch and at what spawn time
 // TODO (PERMISSIONLESS): could remove, all fields should be there because we validate the initialization parameters
-func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) bool {
+func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) {
+	// a chain that is already launched or stopped cannot launch again
+	phase, found := k.GetConsumerPhase(ctx, consumerId)
+	if !found || phase == Launched || phase == Stopped {
+		return time.Time{}, false
+	}
+
 	if initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
+		// a chain can only launch if the spawn time is in the future
+		spawnTimeInTheFuture := initializationParameters.SpawnTime.After(ctx.BlockTime())
+
 		genesisHashSet := initializationParameters.GenesisHash != nil
 		binaryHashSet := initializationParameters.BinaryHash != nil
 
 		consumerRedistributionFractionSet := initializationParameters.ConsumerRedistributionFraction != ""
 		blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
 		historicalEntriesSet := initializationParameters.HistoricalEntries > 0
-		return genesisHashSet && binaryHashSet &&
-			consumerRedistributionFractionSet && blocksPerDistributionTransmissionSet && historicalEntriesSet
+
+		return initializationParameters.SpawnTime, spawnTimeInTheFuture && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
+			blocksPerDistributionTransmissionSet && historicalEntriesSet
 	}
-	return false
+	return time.Time{}, false
 }

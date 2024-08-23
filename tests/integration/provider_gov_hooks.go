@@ -29,6 +29,16 @@ func (s *CCVTestSuite) TestAfterPropSubmissionAndVotingPeriodEnded() {
 	err = govKeeper.SetProposal(ctx, proposal)
 	s.Require().NoError(err)
 
+	// the proposal can only be submitted if the owner of the chain is the gov module
+	providerKeeper.SetConsumerOwnerAddress(ctx, msgUpdateConsumer.ConsumerId, "some bogus address")
+
+	err = providerKeeper.Hooks().AfterProposalSubmission(ctx, proposal.Id)
+	s.Require().Error(err)
+
+	// the proposal can only be submitted if the owner of the chain is the gov module
+	govModuleAddress := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	providerKeeper.SetConsumerOwnerAddress(ctx, msgUpdateConsumer.ConsumerId, govModuleAddress)
+
 	err = providerKeeper.Hooks().AfterProposalSubmission(ctx, proposal.Id)
 	s.Require().NoError(err)
 

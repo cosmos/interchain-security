@@ -11,6 +11,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"strings"
+	"time"
 )
 
 type msgServer struct {
@@ -311,30 +313,36 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	k.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
 	k.SetConsumerChainId(ctx, consumerId, msg.ChainId)
+	k.SetConsumerPhase(ctx, consumerId, Registered)
 
 	if err := k.SetConsumerMetadata(ctx, consumerId, msg.Metadata); err != nil {
-		return &types.MsgCreateConsumerResponse{}, err
+		return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
+			"cannot set consumer metadata: %s", err.Error())
 	}
 
 	// initialization parameters are optional and hence could be nil
 	if msg.InitializationParameters != nil {
 		if err := k.SetConsumerInitializationParameters(ctx, consumerId, *msg.InitializationParameters); err != nil {
-			return &types.MsgCreateConsumerResponse{}, err
+			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
+				"cannot set consumer initialization parameters: %s", err.Error())
 		}
 	}
 
 	// power-shaping parameters are optional and hence could be null
 	if msg.PowerShapingParameters != nil {
+		if msg.PowerShapingParameters.Top_N != 0 {
+			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrap(types.ErrCannotCreateTopNChain,
+				"cannot create a Top N chain using the `MsgCreateConsumer` message; use `MsgUpdateConsumer` instead")
+		}
 		if err := k.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
-			return &types.MsgCreateConsumerResponse{}, err
+			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
+				"cannot set power shaping parameters")
 		}
 	}
 
-	if k.CanLaunch(ctx, consumerId) {
+	if spawnTime, canLaunch := k.CanLaunch(ctx, consumerId); canLaunch {
 		k.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.PrepareConsumerForLaunch(ctx, consumerId, msg.InitializationParameters.SpawnTime)
-	} else {
-		k.SetConsumerPhase(ctx, consumerId, Registered)
+		k.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime)
 	}
 
 	return &types.MsgCreateConsumerResponse{ConsumerId: consumerId}, nil
@@ -345,6 +353,12 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	consumerId := msg.ConsumerId
 
+	phase, found := k.GetConsumerPhase(ctx, consumerId)
+	if found && phase == Stopped {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPhase,
+			"cannot update consumer chain that is in the stopped phase: %s", consumerId)
+	}
+
 	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
 	if err != nil {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
@@ -354,32 +368,74 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
 	}
 
-	if msg.PowerShapingParameters != nil && msg.PowerShapingParameters.Top_N > 0 && ownerAddress != k.GetAuthority() {
-		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToTopN,
-			"an update to a Top N chain can only be done if chain is owner is the gov module")
+	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
+		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
 	}
 
-	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
-
 	if msg.Metadata != nil {
-		k.Keeper.SetConsumerMetadata(ctx, msg.ConsumerId, *msg.Metadata)
+		if err := k.SetConsumerMetadata(ctx, consumerId, *msg.Metadata); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
+				"cannot set consumer metadata: %s", err.Error())
+		}
+	}
+
+	// get the previous spawn time so that we can use it in `PrepareConsumerForLaunch`
+	var previousSpawnTime time.Time
+	if previousInitializationParameters, err := k.Keeper.GetConsumerInitializationParameters(ctx, msg.ConsumerId); err != nil {
+		previousSpawnTime = previousInitializationParameters.SpawnTime
 	}
 
 	if msg.InitializationParameters != nil {
-		k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters)
+		if err = k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
+				"cannot set consumer initialization parameters: %s", err.Error())
+		}
 	}
 
 	if msg.PowerShapingParameters != nil {
+		// A consumer chain can only become a Top N chain if the owner is the gov module. Because of this, to create a
+		// Top N chain, we need two `MsgUpdateConsumer` messages: i) one that would set the `ownerAddress` to the gov module
+		// and ii) one that would set the `Top_N` to something greater than 0.
+		if msg.PowerShapingParameters.Top_N > 0 && ownerAddress != k.GetAuthority() {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToTopN,
+				"an update to a Top N chain can only be done if chain is owner is the gov module")
+		}
+
 		oldTopN := k.Keeper.GetTopN(ctx, consumerId)
-		k.Keeper.SetConsumerPowerShapingParameters(ctx, msg.ConsumerId, *msg.PowerShapingParameters)
-		k.Keeper.PopulateAllowlist(ctx, consumerId)
-		k.Keeper.PopulateDenylist(ctx, consumerId)
-		k.Keeper.PopulateMinimumPowerInTopN(ctx, consumerId, oldTopN)
+		if err = k.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
+				"cannot set power shaping parameters")
+		}
+
+		k.Keeper.UpdateAllowlist(ctx, consumerId, msg.PowerShapingParameters.Allowlist)
+		k.Keeper.UpdateDenylist(ctx, consumerId, msg.PowerShapingParameters.Denylist)
+		err = k.Keeper.UpdateMinimumPowerInTopN(ctx, consumerId, oldTopN, msg.PowerShapingParameters.Top_N)
+		if err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrCannotUpdateMinimumPowerInTopN,
+				"could not update minimum power in top N, oldTopN: %d, newTopN: %d, error: %s", oldTopN, msg.PowerShapingParameters.Top_N, err.Error())
+		}
 	}
 
-	if k.CanLaunch(ctx, consumerId) {
+	// A Top N cannot change its owner address to something different from the gov module if the chain
+	// remains a Top N chain.
+	currentOwnerAddress, err := k.GetConsumerOwnerAddress(ctx, consumerId)
+	if err != nil {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s: %s", ownerAddress, err.Error())
+	}
+
+	currentPowerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters, "cannot retrieve power shaping parameters: %s", err.Error())
+	}
+
+	if currentPowerShapingParameters.Top_N != 0 && currentOwnerAddress != k.GetAuthority() {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToOptIn,
+			"a move to a new owner address that is not the gov module can only be done if `Top N` is set to 0")
+	}
+
+	if spawnTime, canLaunch := k.CanLaunch(ctx, consumerId); canLaunch {
 		k.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.PrepareConsumerForLaunch(ctx, consumerId, msg.InitializationParameters.SpawnTime)
+		k.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime)
 	}
 
 	return &types.MsgUpdateConsumerResponse{}, nil
