@@ -35,15 +35,15 @@ Most chains in Cosmos (including the Cosmos Hub) use delegated PoS -- users dele
 Therefore, validators act as representatives chosen by their delegators to represent their interests. 
 However, delegators share the risk of their validators getting slashed or jailed:
 
-- When validators get slashed, a portion of their stake is being burned, including a portion of the tokens delegated by users.
-  As validators don't need to have their own stake, it is possible that delegators take all the risk of validators misbehaving and having their assets slashed.
-- When validators get jailed, they no longer receive block rewards (neither from the provider nor from the consumer chains). 
-  This applies also for their delegators. 
+* When validators get slashed, a portion of their stake is being burned, including a portion of the tokens delegated by users.
+  As validators don't need to have their own stake, it is possible that delegators take all the risk of validators misbehaving.
+* When validators get jailed, they no longer receive block rewards (neither from the provider nor from the consumer chains). 
+  This also applies to their delegators. 
   As a result, delegators might choose to restake their tokens with another validator.
   The longer the validators are jailed, the more likely is that delegators will restake.
   Thus, by getting jailed, validators risk damaging their reputation. 
 
-Misbehavior doesn't need to be malicious, e.g., most cases of double signing infractions are due to misconfiguration. 
+Misbehaviors don't need to be malicious, e.g., most cases of double signing infractions are due to misconfiguration. 
 This means that, by opting in on multiple consumer chains, validators and their delegators incur a higher risk.
 As a result, validators and their delegators want to be compensated for this additional risk, which makes the current design of ICS expensive. 
 
@@ -95,33 +95,39 @@ downtime.jail_duration <= 600s // 10 minutes
 
 Although consumer chains can set any values to these parameters (within the allowed bounds), we recommend the following settings, depending on the type of consumer chain. 
 
-- **Proof-of-Stake (PoS) Consumer Chains.** These are chains that have the full economical security of the provider validators that opted in. This means that all slashing and jailing parameters are the same as on the provider. 
+* **Proof-of-Stake (PoS) Consumer Chains.** These are chains that have the full economical security of the provider validators that opted in. This means that all slashing and jailing parameters are the same as on the provider. 
+  
   ```go
   double_sign.slash_fraction: 0.05 
   double_sign.jail_duration: time.Unix(253402300799, 0)
   downtime.slash_fraction: 0.0001 
   downtime.jail_duration: 600s
   ```
-- **Proof-of-Reputation (PoR) Consumer Chains.** 
+
+* **Proof-of-Reputation (PoR) Consumer Chains.** 
+  
   ```go
   double_sign.slash_fraction: 0 // no slashing
   double_sign.jail_duration: time.Unix(253402300799, 0)
   downtime.slash_fraction: 0 // no slashing
   downtime.jail_duration: 600s
   ```
+
   This means that when validators that opt in misbehave on PoR consumer chains, their stake on the provider is not being slashed, instead they are just jailed on the provider. 
   As a result, delegators incur (almost) no risk if their validators opt in on multiple PoR consumer chains.
   If their validators are jailed, then the delegators can redelegate to other validators. 
-  Note though that delegators cannot redelegate multiple times, which means that if the new validators get also tombstoned, the delegators need to wait for the unbonding period to elapse. 
-- **Testnet Consumer Chains.**
+  Note though that delegators cannot redelegate multiple times, which means that if the new validators also get permanently jailed, the delegators need to wait for the unbonding period to elapse. 
+* **Testnet Consumer Chains.**
+  
    ```go
   double_sign.slash_fraction: 0 // no slashing
   double_sign.jail_duration: 0 // no jailing
   downtime.slash_fraction: 0 // no slashing
   downtime.jail_duration: 0 // no jailing
   ```
+
   This means that validators are not punished for infractions on consumer chains. 
-  This setting is ideal for testing consumer chains before going in production as neither validators nor their delegators incur any risk from the validators opting in on this consumer chains. 
+  This setting is ideal for testing consumer chains before going in production, as neither validators nor their delegators incur any risk from the validators opting in on these consumer chains. 
 
 This means that both PoR and testnet consumer chains need only to cover the operational costs of the validators that opt in. 
 For example, if we take `$600` as the cost of running a validator node, a budget of `$3000` will be sufficient to cover the cost of four validators running such a consumer chain and have `$150` profit per validator as incentive.
@@ -131,37 +137,37 @@ In practice, this can be implemented via the per-consumer-chain commission rate 
 
 The implementation of this feature involves the following steps:
 
-- Add the `InfractionParameters` to `MsgCreateConsumer`.
-- On slashing events (for either downtime or double signing infractions), use the corresponding `slash_fraction` set by the consumer chain.
-- On jailing events (for either downtime or double signing infractions), use the corresponding `jail_duration` set by the consumer chain.
-- Cryptographic equivocation evidence received for PoR chains results in the misbehaving validators only being tombstoned and not slashed.
-- (Optional) Add the `InfractionParameters` to `MsgUpdateConsumer`, i.e., allow consumer chains to update the slashing and jailing parameters, but the changes will come into effect after a period equal to the staking module's unbonding period elapses to allow for validators to opt out.   
+* Add the `InfractionParameters` to `MsgCreateConsumer`.
+* On slashing events (for either downtime or double signing infractions), use the corresponding `slash_fraction` set by the consumer chain.
+* On jailing events (for either downtime or double signing infractions), use the corresponding `jail_duration` set by the consumer chain.
+* Cryptographic equivocation evidence received for PoR chains results in the misbehaving validators only being tombstoned and not slashed.
+* (Optional) Add the `InfractionParameters` to `MsgUpdateConsumer`, i.e., allow consumer chains to update the slashing and jailing parameters, but the changes will come into effect after a period equal to the staking module's unbonding period elapses to allow for validators to opt out.   
 
 ## Consequences
 
 ### Positive
 
-- Reduce the cost of ICS by removing the risk of slashing delegators.
+* Reduce the cost of ICS by removing the risk of slashing delegators.
 
 ### Negative
 
-- Reduce the economical security of consumer chains with weaker slashing conditions.
+* Reduce the economical security of consumer chains with weaker slashing conditions.
 
 #### Economic Security Model without Slashing
 
 The economic security model of most Cosmos chains relies on the following properties:
 
-- validators are not anonymous, which means that they could be legally liable if they are malicious;
-- the delegated PoS mechanism creates a reputation-based network of validators;
-- most validators have most of their stake coming from delegations (i.e., nothing at stake, besides reputation);
-- it is relatively difficult to enter the active validator set and even more so to climb the voting power ladder.
+* validators are not anonymous, which means that they could be legally liable if they are malicious;
+* the delegated PoS mechanism creates a reputation-based network of validators;
+* most validators have most of their stake coming from delegations (i.e., nothing at stake, besides reputation);
+* it is relatively difficult to enter the active validator set and even more so to climb the voting power ladder.
 
-These properties enables us to make the following assumption:
+These properties enable us to make the following assumption:
 
-- Being permanently removed from the provider validator set is strong enough of a deterrent to misbehaving on consumer chains.
+* Being permanently removed from the provider validator set is strong enough of a deterrent to misbehaving on consumer chains.
 
-The additional economical security a consumer gets from slashing is limited. 
-The reason is that slashing punishes delegators as most of the stake is delegated.
+The additional economical security a consumer gets from slashing is limited: 
+Since most of the stake is delegated, slashing punishes delegators more than validators.  
 
 One benefit of slashing is that it acts as a deterrent for someone buying a large amount of staking tokens in order to attack a consumer chain. 
 For example, an attacker could get `$15.000.000` worth of ATOM, which would give them around `1%` voting power on the Cosmos Hub (at the time of this writing).
