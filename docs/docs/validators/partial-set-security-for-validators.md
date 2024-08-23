@@ -113,7 +113,7 @@ interchain-security-pd query provider has-to-validate <provider-validator-addres
 that can be used by validator with `provider-validator-address` address to retrieve the list of chains that it has to validate.
 
 :::warning
-As a validator, the list of chains returned by `has-to-validate` is the list of chains they **should** be validating to avoid
+For a validator, the list of chains returned by `has-to-validate` is the list of chains the validator **should** be validating to avoid
 getting jailed for downtime.
 :::
 
