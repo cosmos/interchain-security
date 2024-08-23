@@ -1297,6 +1297,12 @@ func GetHermesConfig(hermesVersion, queryNodeIP string, chainCfg ChainConfig, is
 	return hermesConfig
 }
 
+// GetExtraValidatorConfigs returns a map of extra validator configurations.
+// These are configurations that are not part of the default configurations,
+// for cases where more validators are needed.
+// Commented out fields are fields that can be set, but are not necessary for the test
+// they are used in so far.
+// These are left as guidance to fill out as they become relevant in the future.
 func GetExtraValidatorConfigs() map[ValidatorID]ValidatorConfig {
 	return map[ValidatorID]ValidatorConfig{
 		ValidatorID("david"): {

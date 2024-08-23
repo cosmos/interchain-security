@@ -92,7 +92,7 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, chainID string, providerAddr types
 func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator, minPowerToOptIn int64) {
 	for _, val := range bondedValidators {
 		// log the validator
-		k.Logger(ctx).Info("Opting in validator", "validator", val.GetOperator())
+		k.Logger(ctx).Info("Checking whether to opt in validator because of top N", "validator", val.GetOperator())
 
 		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
 		if err != nil {
@@ -107,9 +107,6 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValid
 			continue
 		}
 		if power >= minPowerToOptIn {
-			k.Logger(ctx).Info("Before getting cons addr, but power is good",
-				"validator", val.GetOperator(),
-				"power", power)
 			consAddr, err := val.GetConsAddr()
 			if err != nil {
 				k.Logger(ctx).Error("could not retrieve validators consensus address: %s: %s",
@@ -121,13 +118,6 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, chainID string, bondedValid
 
 			// if validator already exists it gets overwritten
 			k.SetOptedIn(ctx, chainID, types.NewProviderConsAddress(consAddr))
-		} else {
-			// else validators that do not belong to the top N validators but were opted in, remain opted in
-			k.Logger(ctx).Info("After getting cons addr, but power is not good",
-				"validator", val.GetOperator(),
-				"power", power,
-				"minPowerToOptIn",
-				minPowerToOptIn)
 		}
 	}
 }
