@@ -11,6 +11,7 @@ import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos_proto/cosmos.proto";
+import "cosmos/staking/v1beta1/staking.proto";
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -339,13 +340,38 @@ message QueryConsumerValidatorsValidator {
   string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // The consumer public key of the validator used on the consumer chain
   tendermint.crypto.PublicKey consumer_key = 2;
-  // The power of the validator used on the consumer chain
-  int64 power = 3;
+  // [DEPRECATED] use consumer_power instead
+  int64 power = 3 [deprecated = true];
+    // The power of the validator used on the consumer chain
+  int64 consumer_power = 4;
   // The rate to charge delegators on the consumer chain, as a fraction
-  string rate = 4 [
+  string consumer_commission_rate = 5 [
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
+  // The rate to charge delegators on the provider chain, as a fraction
+  string provider_commission_rate = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+    ];
+  // description defines the description terms for the validator
+  cosmos.staking.v1beta1.Description description = 7 [(gogoproto.nullable) = false];
+  // provider_operator_address defines the address of the validator's operator
+  string provider_operator_address = 8 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  // jailed defined whether the validator has been jailed from bonded status or not.
+  bool jailed = 9;
+  // status is the validator status (bonded/unbonding/unbonded).
+  cosmos.staking.v1beta1.BondStatus status = 10;
+  // provider_tokens defines the delegated tokens (incl. self-delegation).
+  string provider_tokens = 11 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+  // The power of the validator used on the provider chain
+  int64 provider_power = 12;
+  // validates_current_epoch defines whether the validator has to validate for the current epoch or not
+  bool validates_current_epoch = 13;
 }
 
 message QueryConsumerValidatorsResponse {

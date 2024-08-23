@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -346,30 +345,41 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	for _, v := range consumerValSet {
+	for _, consumerVal := range consumerValSet {
+		provAddr := types.ProviderConsAddress{Address: consumerVal.ProviderConsAddr}
+		consAddr := provAddr.ToSdkConsAddr()
 
-		consAddr, err := sdk.ConsAddressFromBech32(sdk.ConsAddress(v.ProviderConsAddr).String())
+		providerVal, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid provider address")
+			k.Logger(ctx).Error("cannot find consensus address for provider address:%s", provAddr.String())
+			continue
 		}
 
-		var rate math.LegacyDec
+		hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerId)
+		if err != nil {
+			k.Logger(ctx).Error("cannot define if validator %s has to validate for consumer %s for current epoch",
+				provAddr.String(), consumerId)
+			continue
+		}
+
 		consumerRate, found := k.GetConsumerCommissionRate(ctx, consumerId, types.NewProviderConsAddress(consAddr))
-		if found {
-			rate = consumerRate
-		} else {
-			v, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown validator: %s", consAddr.String()))
-			}
-			rate = v.Commission.Rate
+		if !found {
+			consumerRate = providerVal.Commission.Rate
 		}
 
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
-			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
-			ConsumerKey:     v.PublicKey,
-			Power:           v.Power,
-			Rate:            rate,
+			ProviderAddress:         sdk.ConsAddress(consumerVal.ProviderConsAddr).String(),
+			ConsumerKey:             consumerVal.PublicKey,
+			ConsumerPower:           consumerVal.Power,
+			ConsumerCommissionRate:  consumerRate,
+			Description:             providerVal.Description,
+			ProviderOperatorAddress: providerVal.OperatorAddress,
+			Jailed:                  providerVal.Jailed,
+			Status:                  providerVal.Status,
+			ProviderTokens:          providerVal.Tokens,
+			ProviderCommissionRate:  providerVal.Commission.Rate,
+			ProviderPower:           providerVal.GetConsensusPower(k.stakingKeeper.PowerReduction(ctx)),
+			ValidatesCurrentEpoch:   hasToValidate,
 		})
 	}
 	return &types.QueryConsumerValidatorsResponse{

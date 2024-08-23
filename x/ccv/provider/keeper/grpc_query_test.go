@@ -112,28 +112,69 @@ func TestQueryConsumerValidators(t *testing.T) {
 	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
-	consumerKey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &consumerKey1}
-	expectedCommissionRate1 := math.LegacyMustNewDecFromStr("0.123")
-	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr1, expectedCommissionRate1)
+	val1 := createStakingValidator(ctx, mocks, 1, 1, 1)
+	valConsAddr1, _ := val1.GetConsAddr()
+	providerAddr1 := types.NewProviderConsAddress(valConsAddr1)
+	pk1, _ := val1.CmtConsPublicKey()
+	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &pk1}
+	val1.Tokens = sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction)
+	val1.Description = stakingtypes.Description{Moniker: "ConsumerValidator1"}
+	val1.Commission.Rate = math.LegacyMustNewDecFromStr("0.123")
 
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
-	consumerKey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &consumerKey2}
-	expectedCommissionRate2 := math.LegacyMustNewDecFromStr("0.123")
-	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr2, expectedCommissionRate2)
-
-	expectedResponse := types.QueryConsumerValidatorsResponse{
-		Validators: []*types.QueryConsumerValidatorsValidator{
-			{ProviderAddress: providerAddr1.String(), ConsumerKey: &consumerKey1, Power: 1, Rate: expectedCommissionRate1},
-			{ProviderAddress: providerAddr2.String(), ConsumerKey: &consumerKey2, Power: 2, Rate: expectedCommissionRate2},
-		},
-	}
+	val2 := createStakingValidator(ctx, mocks, 1, 2, 2)
+	valConsAddr2, _ := val2.GetConsAddr()
+	providerAddr2 := types.NewProviderConsAddress(valConsAddr2)
+	pk2, _ := val2.CmtConsPublicKey()
+	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &pk2}
+	val2.Tokens = sdk.TokensFromConsensusPower(2, sdk.DefaultPowerReduction)
+	val2.Description = stakingtypes.Description{Moniker: "ConsumerValidator2"}
+	val2.Commission.Rate = math.LegacyMustNewDecFromStr("0.123")
 
 	// set up the client id so the chain looks like it "started"
 	pk.SetConsumerClientId(ctx, consumerId, "clientID")
 	pk.SetConsumerValSet(ctx, consumerId, []types.ConsensusValidator{consumerValidator1, consumerValidator2})
+	// set a consumer commission rate for val1
+	val1ConsComRate := math.LegacyMustNewDecFromStr("0.456")
+	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr1, val1ConsComRate)
+
+	expectedResponse := types.QueryConsumerValidatorsResponse{
+		Validators: []*types.QueryConsumerValidatorsValidator{
+			{
+				ProviderAddress:         providerAddr1.String(),
+				ConsumerKey:             &pk1,
+				ConsumerPower:           1,
+				ConsumerCommissionRate:  val1ConsComRate,
+				Description:             val1.Description,
+				ProviderOperatorAddress: val1.OperatorAddress,
+				Jailed:                  val1.Jailed,
+				Status:                  val1.Status,
+				ProviderTokens:          val1.Tokens,
+				ProviderCommissionRate:  val1.Commission.Rate,
+				ProviderPower:           1,
+				ValidatesCurrentEpoch:   true,
+			},
+			{
+				ProviderAddress:         providerAddr2.String(),
+				ConsumerKey:             &pk2,
+				ConsumerPower:           2,
+				ConsumerCommissionRate:  val2.Commission.Rate,
+				Description:             val2.Description,
+				ProviderOperatorAddress: val2.OperatorAddress,
+				Jailed:                  val2.Jailed,
+				Status:                  val2.Status,
+				ProviderTokens:          val2.Tokens,
+				ProviderCommissionRate:  val2.Commission.Rate,
+				ProviderPower:           2,
+				ValidatesCurrentEpoch:   true,
+			},
+		},
+	}
+
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr1).Return(val1, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr2).Return(val2, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().PowerReduction(ctx).Return(sdk.DefaultPowerReduction).AnyTimes()
+
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{val1, val2}, []int64{1, 2}, -1) // -1 to allow the calls "AnyTimes"
 
 	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
@@ -141,14 +182,10 @@ func TestQueryConsumerValidators(t *testing.T) {
 
 	// validator with no set consumer commission rate
 	pk.DeleteConsumerCommissionRate(ctx, consumerId, providerAddr1)
-	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.456")
 	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
-	val := stakingtypes.Validator{Commission: stakingtypes.Commission{CommissionRates: stakingtypes.CommissionRates{Rate: expectedCommissionRate}}}
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-		ctx, providerAddr1.ToSdkConsAddr()).Return(val, nil).Times(1)
-	res, _ = pk.QueryConsumerValidators(ctx, &req)
-	require.Equal(t, expectedCommissionRate, res.Validators[0].Rate)
-
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, val1.Commission.Rate, res.Validators[0].ConsumerCommissionRate)
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
