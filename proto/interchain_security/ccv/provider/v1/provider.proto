@@ -460,3 +460,7 @@ message PowerShapingParameters {
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
   bool allow_inactive_vals = 7;
 }
+
+// ConsumerIds contains consumer ids of chains
+// Used so we can easily (de)serialize slices of strings
+message ConsumerIds { repeated string consumer_ids = 1; }

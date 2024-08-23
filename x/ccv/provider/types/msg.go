@@ -271,7 +271,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 	}
 
 	if msg.PowerShapingParameters != nil {
-		if msg.PowerShapingParameters.Top_N > 0 {
+		if msg.PowerShapingParameters.Top_N != 0 {
 			return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
 				"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
 		}
@@ -327,9 +327,13 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 		return err
 	}
 
-	const maxNewOwnerAddress = 500
-	if err := ValidateField("new owner address", msg.NewOwnerAddress, maxNewOwnerAddress); err != nil {
-		return err
+	// The new owner address can be empty, in which case the consumer chain does not change its owner.
+	// However, if the new owner address is not empty, we verify that it's a valid account address.
+	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
+		_, err := sdk.AccAddressFromBech32(msg.NewOwnerAddress)
+		if err != nil {
+			return err
+		}
 	}
 
 	if msg.Metadata != nil {
