@@ -370,10 +370,11 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	}
 
 	if msg.PowerShapingParameters != nil {
+		oldTopN := k.Keeper.GetTopN(ctx, consumerId)
 		k.Keeper.SetConsumerPowerShapingParameters(ctx, msg.ConsumerId, *msg.PowerShapingParameters)
 		k.Keeper.PopulateAllowlist(ctx, consumerId)
 		k.Keeper.PopulateDenylist(ctx, consumerId)
-		k.Keeper.PopulateMinimumPowerInTopN(ctx, consumerId)
+		k.Keeper.PopulateMinimumPowerInTopN(ctx, consumerId, oldTopN)
 	}
 
 	if k.CanLaunch(ctx, consumerId) {

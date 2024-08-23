@@ -616,19 +616,17 @@ func (k Keeper) PopulateDenylist(ctx sdk.Context, consumerId string) error {
 }
 
 // PopulateMinimumPowerInTopN populates the minimum power in Top N for the consumer chain with this consumer id
-func (k Keeper) PopulateMinimumPowerInTopN(ctx sdk.Context, consumerId string) error {
+func (k Keeper) PopulateMinimumPowerInTopN(ctx sdk.Context, consumerId string, oldTopN uint32) error {
 	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
 		return err
 	}
 
-	oldTopN := k.GetTopN(ctx, consumerId)
-
 	// if the top N changes, we need to update the new minimum power in top N
 	if powerShapingParameters.Top_N != oldTopN {
 		if powerShapingParameters.Top_N > 0 {
 			// if the chain receives a non-zero top N value, store the minimum power in the top N
-			bondedValidators, err := k.GetLastBondedValidators(ctx)
+			bondedValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				return err
 			}
