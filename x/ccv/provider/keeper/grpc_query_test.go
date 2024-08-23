@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 
@@ -104,7 +103,6 @@ func TestQueryConsumerValidators(t *testing.T) {
 	defer ctrl.Finish()
 
 	consumerId := "0"
-
 	req := types.QueryConsumerValidatorsRequest{
 		ConsumerId: consumerId,
 	}
@@ -113,10 +111,14 @@ func TestQueryConsumerValidators(t *testing.T) {
 	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
-	// set consumer initialization and power shaping params
-	blockTimePlus1Hour := ctx.BlockTime().Add(time.Hour)
-	pk.SetConsumerInitializationParameters(ctx, consumerId, types.ConsumerInitializationParameters{SpawnTime: &blockTimePlus1Hour})
-	pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{Top_N: 0})
+	// set the consumer to the "registered" phase
+	pk.SetConsumerPhase(ctx, consumerId, keeper.Registered)
+
+	// expect empty valset
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1) // -1 to allow the calls "AnyTimes"
+	res, err := pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Len(t, res.Validators, 0)
 
 	// create bonded validators
 	val1 := createStakingValidator(ctx, mocks, 1, 1, 1)
@@ -129,23 +131,28 @@ func TestQueryConsumerValidators(t *testing.T) {
 	valConsAddr2, _ := val2.GetConsAddr()
 	providerAddr2 := types.NewProviderConsAddress(valConsAddr2)
 
+	val3 := createStakingValidator(ctx, mocks, 1, 3, 3)
+	pk3, _ := val3.CmtConsPublicKey()
+	valConsAddr3, _ := val3.GetConsAddr()
+	providerAddr3 := types.NewProviderConsAddress(valConsAddr3)
+
 	// set expectation to return bonded validators
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{val1, val2}, []int64{1, 2}, -1) // -1 to allow the calls "AnyTimes"
 
 	// set max provider consensus vals to include all validators
 	params := pk.GetParams(ctx)
-	params.MaxProviderConsensusValidators = 2
+	params.MaxProviderConsensusValidators = 3
 	pk.SetParams(ctx, params)
 
 	// expect no validator to be returned since the consumer is Opt-In
-	res, err := pk.QueryConsumerValidators(ctx, &req)
+	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Len(t, res.Validators, 0)
 
 	// opt in one validator
 	pk.SetOptedIn(ctx, consumerId, providerAddr1)
 
-	// expect opted-in validators
+	// expect opted-in validator
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Len(t, res.Validators, 1)
@@ -165,8 +172,14 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, &expRes, res)
 
-	// advance time so that the chain looks like it "launched"
-	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour))
+	// expect same result when consumer is in "initialized" phase
+	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expRes, res)
+
+	// set consumer to the "launched" phase
+	pk.SetConsumerPhase(ctx, consumerId, keeper.Launched)
 
 	// expect an empty consumer valset
 	// since neither QueueVSCPackets or MakeConsumerGenesis was called at this point
@@ -186,9 +199,22 @@ func TestQueryConsumerValidators(t *testing.T) {
 			Power:            2,
 			PublicKey:        &pk2,
 		},
+		{
+			ProviderConsAddr: providerAddr3.Address.Bytes(),
+			Power:            3,
+			PublicKey:        &pk3,
+		},
 	})
 
-	// expect same response as before
+	// expect persisted consumer valset
+	expRes = types.QueryConsumerValidatorsResponse{
+		Validators: []*types.QueryConsumerValidatorsValidator{
+			{ProviderAddress: providerAddr1.String(), ConsumerKey: &pk1, Power: 1},
+			{ProviderAddress: providerAddr3.String(), ConsumerKey: &pk3, Power: 3},
+			{ProviderAddress: providerAddr2.String(), ConsumerKey: &pk2, Power: 2},
+		},
+	}
+
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expRes, res)

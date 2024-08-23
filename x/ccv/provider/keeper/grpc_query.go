@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -335,29 +333,30 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// check that the consumer is initialized
-	initParams, err := k.GetConsumerInitializationParameters(ctx, consumerId)
-	if err != nil {
+	// get the consumer phase
+	phase, ok := k.GetConsumerPhase(ctx, consumerId)
+	if !ok {
 		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrUnknownConsumerId, consumerId).Error())
 	}
 
 	// query consumer validator set
 
 	var consumerValSet []types.ConsensusValidator
-	// if the consumer hasn't launched yet, compute the consumer validator set
-	if ctx.BlockTime().Before(*initParams.SpawnTime) {
-		var bondedValidators []stakingtypes.Validator
+	var err error
 
-		powerParams, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	// if the consumer launched, the consumer valset has been persisted
+	if phase == Launched {
+		consumerValSet, err = k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, types.ErrInvalidConsumerParams.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		bondedValidators, err = k.GetLastBondedValidators(ctx)
+		//  if the consumer hasn't launched yet, compute the consumer validator set
+	} else {
+		bondedValidators, err := k.GetLastBondedValidators(ctx)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get last validators: %s", err))
 		}
-
-		if topN := powerParams.GetTop_N(); topN > 0 {
+		if topN := k.GetTopN(ctx, consumerId); topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			// of the active validators
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
@@ -379,15 +378,9 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		}
 
 		consumerValSet = k.ComputeNextValidators(ctx, consumerId, bondedValidators)
-	} else {
-		consumerValSet, err = k.GetConsumerValSet(ctx, consumerId)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
 	}
 
 	var validators []*types.QueryConsumerValidatorsValidator
-
 	for _, v := range consumerValSet {
 		validators = append(validators, &types.QueryConsumerValidatorsValidator{
 			ProviderAddress: sdk.ConsAddress(v.ProviderConsAddr).String(),
