@@ -302,11 +302,13 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 	votingAccounts := s.consumerChain.SenderAccounts
 	bondDenom, err := stakingKeeper.BondDenom(s.consumerCtx())
 	s.Require().NoError(err)
+
 	depositAmount := params.MinDeposit
 	duration := (3 * time.Second)
 	params.VotingPeriod = &duration
 	err = govKeeper.Params.Set(s.consumerCtx(), params)
 	s.Assert().NoError(err)
+
 	proposer := s.consumerChain.SenderAccount
 	s.consumerChain.NextBlock()
 	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)

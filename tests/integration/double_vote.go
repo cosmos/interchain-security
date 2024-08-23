@@ -12,8 +12,11 @@ import (
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
-// TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
-// of a consumer chain results in the expected tombstoning, jailing, and slashing of the misbehaved validator
+// TestHandleConsumerDoubleVoting tests the handling of double voting evidence from the consumer chain.
+// @Long Description@
+// The test sets up a CVV channel, creates various double voting scenarios, and submits these to the provider chain.
+// It checks if the provider chain correctly processes the evidence, jails and tombstones validators as needed, and applies the correct
+// slashing penalties. Finally, it verifies that invalid evidence is properly rejected and does not result in incorrect penalties.
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -266,8 +269,12 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	}
 }
 
-// TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations verifies that handling a successful double voting
-// evidence of a consumer chain results in the expected slashing of the misbehave validator undelegations
+// TestHandleConsumerDoubleVoting tests the handling of double voting evidence from the consumer chain and checks if slashing, undelegations, and redelegations are correctly processed.
+// @Long Description@
+// The test sets up a CVV channel, creates various double voting scenarios, and submits these to the provider chain.
+// It verifies that the evidence is processed correctly, ensures that the provider chain slashes the validator appropriately,
+// handles undelegations and redelegations accurately. Then it confirms that the validator’s staking status reflects these actions.
+// The test also checks if the slashing penalties are applied correctly and updates the validator’s balance and delegations as expected.
 func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0

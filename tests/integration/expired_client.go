@@ -17,9 +17,13 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.
-// While the consumer client is expired (or inactive for some reason) all packets will be queued and
-// and cleared once the consumer client is established.
+// TestVSCPacketSendExpiredClient tests queueing of VSCPackets when the consumer client is expired.
+// @Long Description@
+// The test sets up a CVV channel and expires the client on consumer chain. Then, it bonds tockens to provider,
+// sends CCV packet to consumer and checks pending packets. While the consumer client is expired (or inactive for some reason)
+// all packets will be queued. The packet sending and checks are then repeated. After that more tockens are bond on
+// provider to change validator powers. Finally expired client is upgraded to the consumer
+// and all packets are cleared once the consumer client is established.
 func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
@@ -83,7 +87,10 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 }
 
 // TestConsumerPacketSendExpiredClient tests the consumer sending packets when the provider client is expired.
-// While the provider client is expired  all packets will be queued and and cleared once the provider client is upgraded.
+// @Long Description@
+// The test sets up a CVV channel and bonds tockens on provider, then it sends CCV packet to consumer and rebonds tockens on provider.
+// Checks for pending VSC packets and relays all VSC packets to consumer. After that the provider client is expired.
+// Confirms that while the provider client is expired  all packets will be queued and then cleared once the provider client is upgraded.
 func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()

@@ -12,6 +12,8 @@ Integration tests are categorized into files as follows:
 - `distribution.go` - integration tests for the _Reward Distribution_ sub-protocol
 - `stop_consumer.go` - integration tests for the _Consumer Chain Removal_ sub-protocol
 - `normal_operations.go` - integration tests for _normal operations_ of ICS enabled chains
+- `changeover.go` - integration tests for testing reuse of existing transfer channels
+- `double_vote.go` - integration tests for testing the handling of double voting
 - `expired_client.go` - integration tests for testing expired clients
 - `key_assignment.go` - integration tests for testing key assignment
 - `instance_test.go` - ties the integration test structure into golang's standard test mechanism, with appropriate definitions for concrete app types and setup callback
