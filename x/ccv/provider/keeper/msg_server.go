@@ -9,8 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"time"
-
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -308,7 +306,6 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 // CreateConsumer creates a consumer chain
 func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateConsumer) (*types.MsgCreateConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	initGas := ctx.GasMeter().GasConsumed()
 
 	consumerId := k.FetchAndIncrementConsumerId(ctx)
 
@@ -335,14 +332,10 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	if k.CanLaunch(ctx, consumerId) {
 		k.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, msg.InitializationParameters.SpawnTime)
+		k.PrepareConsumerForLaunch(ctx, consumerId, msg.InitializationParameters.SpawnTime)
 	} else {
 		k.SetConsumerPhase(ctx, consumerId, Registered)
 	}
-
-	gasAfter := ctx.GasMeter().GasConsumed()
-	ctx.GasMeter().ConsumeGas(gasAfter-initGas, "creating a chain has an additional cost during spawn time, "+
-		"so charging double the gas here")
 
 	return &types.MsgCreateConsumerResponse{ConsumerId: consumerId}, nil
 }
@@ -357,34 +350,19 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
 	}
 
-	if msg.PowerShapingParameters != nil && msg.PowerShapingParameters.Top_N > 0 && msg.Signer != k.GetAuthority() {
-		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToTopN, "an update to a Top N chain can only be done through a governance proposal")
-	}
-
-	if msg.Signer == k.GetAuthority() {
-		// message is executed as part of governance proposal
-		if msg.PowerShapingParameters != nil && msg.PowerShapingParameters.Top_N == 0 {
-			// chain becomes an Opt In chain, hence we change the owner address
-			k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
-		} else {
-			// message is executed as part of governance proposal and hence we change the owner address to be the one of
-			// the gov module account address (e.g., a gov proposal with a single `MsgUpdateConsumer` might have led to this)
-			k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, k.GetAuthority())
-		}
-	} else if msg.Signer == ownerAddress {
-		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
-	} else {
-		// else means that `msg.Signer != k.GetAuthority` && `msgSigner != ownerAddress`
+	if msg.Signer != ownerAddress {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
 	}
 
-	if msg.Metadata != nil {
-		k.Keeper.SetConsumerMetadata(ctx, msg.ConsumerId, *msg.Metadata)
+	if msg.PowerShapingParameters != nil && msg.PowerShapingParameters.Top_N > 0 && ownerAddress != k.GetAuthority() {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToTopN,
+			"an update to a Top N chain can only be done if chain is owner is the gov module")
 	}
 
-	var previousSpawnTime time.Time
-	if previousParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
-		previousSpawnTime = previousParameters.SpawnTime
+	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
+
+	if msg.Metadata != nil {
+		k.Keeper.SetConsumerMetadata(ctx, msg.ConsumerId, *msg.Metadata)
 	}
 
 	if msg.InitializationParameters != nil {
@@ -393,11 +371,14 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	if msg.PowerShapingParameters != nil {
 		k.Keeper.SetConsumerPowerShapingParameters(ctx, msg.ConsumerId, *msg.PowerShapingParameters)
+		k.Keeper.PopulateAllowlist(ctx, consumerId)
+		k.Keeper.PopulateDenylist(ctx, consumerId)
+		k.Keeper.PopulateMinimumPowerInTopN(ctx, consumerId)
 	}
 
 	if k.CanLaunch(ctx, consumerId) {
 		k.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, msg.InitializationParameters.SpawnTime)
+		k.PrepareConsumerForLaunch(ctx, consumerId, msg.InitializationParameters.SpawnTime)
 	}
 
 	return &types.MsgUpdateConsumerResponse{}, nil

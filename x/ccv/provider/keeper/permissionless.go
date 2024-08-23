@@ -576,19 +576,11 @@ func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
 	return nil
 }
 
-// UpdateConsumer updates the chain with the provided consumer id
-func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
-	phase, found := k.GetConsumerPhase(ctx, consumerId)
-	if !found || phase == Stopped {
-		return errorsmod.Wrapf(types.ErrInvalidPhase,
-			"cannot update stopped or not existing chain: %s", consumerId)
-	}
-
+// PopulateAllowlist populates the allowlist store for the consumer chain with this consumer id
+func (k Keeper) PopulateAllowlist(ctx sdk.Context, consumerId string) error {
 	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
-		// TODO (permissionless) -- not really an invalid update record
-		return errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
-			"did not find update record for chain: %s", consumerId)
+		return err
 	}
 
 	k.DeleteAllowlist(ctx, consumerId)
@@ -599,6 +591,15 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 		}
 
 		k.SetAllowlist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
+	}
+	return err
+}
+
+// PopulateDenylist populates the denylist store for the consumer chain with this consumer id
+func (k Keeper) PopulateDenylist(ctx sdk.Context, consumerId string) error {
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		return err
 	}
 
 	k.DeleteDenylist(ctx, consumerId)
@@ -611,11 +612,17 @@ func (k Keeper) UpdateConsumer(ctx sdk.Context, consumerId string) error {
 		k.SetDenylist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 	}
 
-	oldTopN := k.GetTopN(ctx, consumerId)
-	if !found {
-		oldTopN = 0
-		k.Logger(ctx).Info("consumer chain top N not found, treating as 0", "consumerId", consumerId)
+	return nil
+}
+
+// PopulateMinimumPowerInTopN populates the minimum power in Top N for the consumer chain with this consumer id
+func (k Keeper) PopulateMinimumPowerInTopN(ctx sdk.Context, consumerId string) error {
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		return err
 	}
+
+	oldTopN := k.GetTopN(ctx, consumerId)
 
 	// if the top N changes, we need to update the new minimum power in top N
 	if powerShapingParameters.Top_N != oldTopN {
@@ -710,9 +717,11 @@ func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.
 	return "", false
 }
 
-func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime time.Time, spawnTime time.Time) {
-	// if this is not the first initialization, remove the consumer id from the old spawn time
-	k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousSpawnTime)
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, spawnTime time.Time) {
+	if previousParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
+		// if this is not the first initialization, remove the consumer id from the old spawn time
+		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousParameters.SpawnTime)
+	}
 
 	k.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerId, spawnTime)
 }
