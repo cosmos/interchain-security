@@ -222,7 +222,7 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 ) {
 	t.Helper()
 
-	SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, []int64{}, 1)
+	SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, 1)
 
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))

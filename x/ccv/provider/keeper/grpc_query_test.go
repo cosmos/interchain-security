@@ -146,7 +146,6 @@ func TestQueryConsumerValidators(t *testing.T) {
 		ctx, providerAddr1.ToSdkConsAddr()).Return(val, nil).Times(1)
 	res, _ = pk.QueryConsumerValidators(ctx, &req)
 	require.Equal(t, expectedCommissionRate, res.Validators[0].Rate)
-
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
@@ -157,7 +156,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	valConsAddr, _ := val.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(valConsAddr)
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, nil).AnyTimes()
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{val}, []int64{1}, -1) // -1 to allow the calls "AnyTimes"
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{val}, -1) // -1 to allow the calls "AnyTimes"
 
 	req := types.QueryConsumerChainsValidatorHasToValidateRequest{
 		ProviderAddress: providerAddr.String(),
@@ -248,7 +247,7 @@ func TestGetConsumerChain(t *testing.T) {
 	}
 	powers := []int64{50, 150, 300, 500} // sum = 1000
 	maxValidators := uint32(180)
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, maxValidators, vals, powers, -1) // -1 to allow the calls "AnyTimes"
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, maxValidators, vals, -1) // -1 to allow the calls "AnyTimes"
 
 	for i, val := range vals {
 		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
