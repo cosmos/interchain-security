@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Inactive Validators Integration Guide
 
-With the [inactive validators feature of Interchain Security](../adrs/adr-017-allowing-inactive-validators.md), validators outside of the active set on the provider chain can validate on consumer chains that allow this. Technically, this is achieved by *increasing* the MaxValidators paramater in the staking module, to let additional validators be part of the set of bonded validators. However, to keep the set of validators participating in consensus on the Cosmos Hub the same, we introduce the MaxProviderConsensusValidators parameter in the provider module, which will restrict the number of validators that actively validate on the provider chain.
+With the [inactive validators feature of Interchain Security](../adrs/adr-017-allowing-inactive-validators.md), validators outside of the active set on the provider chain can validate on consumer chains that allow this. Technically, this is achieved by *increasing* the MaxValidators parameter in the staking module, to let additional validators be part of the set of bonded validators. However, to keep the set of validators participating in consensus on the Cosmos Hub the same, we introduce the MaxProviderConsensusValidators parameter in the provider module, which will restrict the number of validators that actively validate on the provider chain.
 
 To clarify the terminology:
 
