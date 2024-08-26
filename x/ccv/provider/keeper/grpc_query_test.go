@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
@@ -322,22 +323,31 @@ func TestGetConsumerChain(t *testing.T) {
 		{},
 	}
 
+	metadataLists := make([]types.ConsumerMetadata, len(chainIDs))
+	consumerIDs := make([]string, len(chainIDs))
+
+	// skip first consumerID
+	pk.FetchAndIncrementConsumerId(ctx)
+
 	expectedGetAllOrder := []types.Chain{}
-	for i, chainID := range chainIDs {
+	for i, _ := range chainIDs {
+		consumerID := pk.FetchAndIncrementConsumerId(ctx)
+		consumerIDs[i] = consumerID
+
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
 		topN := topNs[i]
-		pk.SetConsumerClientId(ctx, chainID, clientID)
-		pk.SetConsumerPowerShapingParameters(ctx, chainID, types.PowerShapingParameters{
+		pk.SetConsumerClientId(ctx, consumerID, clientID)
+		pk.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{
 			Top_N:              topN,
 			ValidatorSetCap:    validatorSetCaps[i],
 			ValidatorsPowerCap: validatorPowerCaps[i],
 		})
-		pk.SetMinimumPowerInTopN(ctx, chainID, expectedMinPowerInTopNs[i])
+		pk.SetMinimumPowerInTopN(ctx, consumerID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
-			pk.SetAllowlist(ctx, chainID, addr)
+			pk.SetAllowlist(ctx, consumerID, addr)
 		}
 		for _, addr := range denylists[i] {
-			pk.SetDenylist(ctx, chainID, addr)
+			pk.SetDenylist(ctx, consumerID, addr)
 		}
 		strAllowlist := make([]string, len(allowlists[i]))
 		for j, addr := range allowlists[i] {
@@ -349,9 +359,15 @@ func TestGetConsumerChain(t *testing.T) {
 			strDenylist[j] = addr.String()
 		}
 
+		metadataLists[i] = types.ConsumerMetadata{Name: "consumer-" + strconv.Itoa(i)}
+		pk.SetConsumerMetadata(ctx, consumerID, metadataLists[i])
+
+		phase := uint32(i)
+		pk.SetConsumerPhase(ctx, consumerID, keeper.ConsumerPhase(byte(phase)))
+
 		expectedGetAllOrder = append(expectedGetAllOrder,
 			types.Chain{
-				ChainId:            chainID,
+				ChainId:            consumerID,
 				ClientId:           clientID,
 				Top_N:              topN,
 				MinPowerInTop_N:    expectedMinPowerInTopNs[i],
@@ -359,11 +375,13 @@ func TestGetConsumerChain(t *testing.T) {
 				ValidatorsPowerCap: validatorPowerCaps[i],
 				Allowlist:          strAllowlist,
 				Denylist:           strDenylist,
+				Phase:              uint32(i),
+				Metadata:           metadataLists[i],
 			})
 	}
 
-	for i, chainID := range pk.GetAllActiveConsumerIds(ctx) {
-		c, err := pk.GetConsumerChain(ctx, chainID)
+	for i, cID := range consumerIDs {
+		c, err := pk.GetConsumerChain(ctx, cID)
 		require.NoError(t, err)
 		require.Equal(t, expectedGetAllOrder[i], c)
 	}

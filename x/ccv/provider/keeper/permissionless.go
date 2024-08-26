@@ -2,15 +2,16 @@ package keeper
 
 import (
 	"bytes"
-	errorsmod "cosmossdk.io/errors"
-	storetypes "cosmossdk.io/store/types"
 	"encoding/binary"
 	"encoding/gob"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"strconv"
 	"time"
+
+	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // ConsumerPhase captures the phases of a consumer chain according to `docs/docs/adrs/adr-018-permissionless-ics.md`

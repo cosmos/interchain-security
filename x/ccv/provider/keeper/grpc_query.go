@@ -93,6 +93,16 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
+	phase, ok := k.GetConsumerPhase(ctx, consumerId)
+	if !ok {
+		return types.Chain{}, fmt.Errorf("cannot find phase for consumer (%s)", consumerId)
+	}
+
+	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot get metadata for consumer (%s): %w", consumerId, err)
+	}
+
 	return types.Chain{
 		ChainId:            consumerId,
 		ClientId:           clientID,
@@ -102,6 +112,8 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		ValidatorsPowerCap: validatorsPowerCap,
 		Allowlist:          strAllowlist,
 		Denylist:           strDenylist,
+		Phase:              uint32(phase),
+		Metadata:           metadata,
 	}, nil
 }
 
