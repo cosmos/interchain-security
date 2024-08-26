@@ -249,7 +249,6 @@ func TestQueryConsumerValidators(t *testing.T) {
 		consumerValidator3,
 	})
 
-	// expRes = types.QueryConsumerValidatorsResponse{}
 	expRes.Validators = append(expRes.Validators, &types.QueryConsumerValidatorsValidator{
 		ProviderAddress:         providerAddr3.String(),
 		ConsumerKey:             &pk3,
