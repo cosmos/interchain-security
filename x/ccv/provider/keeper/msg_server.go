@@ -106,11 +106,11 @@ func (k msgServer) RemoveConsumer(
 
 	previousStopTime, err := k.Keeper.GetConsumerStopTime(ctx, consumerId)
 	if err == nil {
-		k.Keeper.RemoveConsumerFromToBeStoppedConsumers(ctx, consumerId, previousStopTime)
+		k.Keeper.RemoveConsumerToBeStoppedFromStopTime(ctx, consumerId, previousStopTime)
 	}
 
 	k.Keeper.SetConsumerStopTime(ctx, consumerId, msg.StopTime)
-	k.Keeper.AppendStopTimeForConsumerToBeStopped(ctx, consumerId, msg.StopTime)
+	k.Keeper.AppendConsumerToBeStoppedOnStopTime(ctx, consumerId, msg.StopTime)
 
 	return &types.MsgRemoveConsumerResponse{}, nil
 }
@@ -309,20 +309,20 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateConsumer) (*types.MsgCreateConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	consumerId := k.FetchAndIncrementConsumerId(ctx)
+	consumerId := k.Keeper.FetchAndIncrementConsumerId(ctx)
 
-	k.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
-	k.SetConsumerChainId(ctx, consumerId, msg.ChainId)
-	k.SetConsumerPhase(ctx, consumerId, Registered)
+	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
+	k.Keeper.SetConsumerChainId(ctx, consumerId, msg.ChainId)
+	k.Keeper.SetConsumerPhase(ctx, consumerId, Registered)
 
-	if err := k.SetConsumerMetadata(ctx, consumerId, msg.Metadata); err != nil {
+	if err := k.Keeper.SetConsumerMetadata(ctx, consumerId, msg.Metadata); err != nil {
 		return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
 			"cannot set consumer metadata: %s", err.Error())
 	}
 
 	// initialization parameters are optional and hence could be nil
 	if msg.InitializationParameters != nil {
-		if err := k.SetConsumerInitializationParameters(ctx, consumerId, *msg.InitializationParameters); err != nil {
+		if err := k.Keeper.SetConsumerInitializationParameters(ctx, consumerId, *msg.InitializationParameters); err != nil {
 			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
 				"cannot set consumer initialization parameters: %s", err.Error())
 		}
@@ -334,15 +334,15 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrap(types.ErrCannotCreateTopNChain,
 				"cannot create a Top N chain using the `MsgCreateConsumer` message; use `MsgUpdateConsumer` instead")
 		}
-		if err := k.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
+		if err := k.Keeper.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
 			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
 				"cannot set power shaping parameters")
 		}
 	}
 
-	if spawnTime, canLaunch := k.CanLaunch(ctx, consumerId); canLaunch {
-		k.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime)
+	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
+		k.Keeper.SetConsumerPhase(ctx, consumerId, Initialized)
+		k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime)
 	}
 
 	return &types.MsgCreateConsumerResponse{ConsumerId: consumerId}, nil
@@ -353,18 +353,10 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	consumerId := msg.ConsumerId
 
-	phase, found := k.GetConsumerPhase(ctx, consumerId)
+	phase, found := k.Keeper.GetConsumerPhase(ctx, consumerId)
 	if found && phase == Stopped {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPhase,
 			"cannot update consumer chain that is in the stopped phase: %s", consumerId)
-	}
-
-	// The new owner address can be empty, in which case the consumer chain does not change its owner.
-	// However, if the new owner address is not empty, we verify that it's a valid account address.
-	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
-		if _, err := k.accountKeeper.AddressCodec().StringToBytes(msg.NewOwnerAddress); err != nil {
-			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidNewOwnerAddress, "invalid new owner address %s", msg.NewOwnerAddress)
-		}
 	}
 
 	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
@@ -376,12 +368,18 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
 	}
 
+	// The new owner address can be empty, in which case the consumer chain does not change its owner.
+	// However, if the new owner address is not empty, we verify that it's a valid account address.
 	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
+		if _, err := k.accountKeeper.AddressCodec().StringToBytes(msg.NewOwnerAddress); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidNewOwnerAddress, "invalid new owner address %s", msg.NewOwnerAddress)
+		}
+
 		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
 	}
 
 	if msg.Metadata != nil {
-		if err := k.SetConsumerMetadata(ctx, consumerId, *msg.Metadata); err != nil {
+		if err := k.Keeper.SetConsumerMetadata(ctx, consumerId, *msg.Metadata); err != nil {
 			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
 				"cannot set consumer metadata: %s", err.Error())
 		}
@@ -389,7 +387,8 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	// get the previous spawn time so that we can use it in `PrepareConsumerForLaunch`
 	var previousSpawnTime time.Time
-	if previousInitializationParameters, err := k.Keeper.GetConsumerInitializationParameters(ctx, msg.ConsumerId); err != nil {
+	previousInitializationParameters, err := k.Keeper.GetConsumerInitializationParameters(ctx, msg.ConsumerId)
+	if err == nil {
 		previousSpawnTime = previousInitializationParameters.SpawnTime
 	}
 
@@ -410,7 +409,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		}
 
 		oldTopN := k.Keeper.GetTopN(ctx, consumerId)
-		if err = k.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
+		if err = k.Keeper.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
 			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
 				"cannot set power shaping parameters")
 		}
@@ -426,12 +425,12 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	// A Top N cannot change its owner address to something different from the gov module if the chain
 	// remains a Top N chain.
-	currentOwnerAddress, err := k.GetConsumerOwnerAddress(ctx, consumerId)
+	currentOwnerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
 	if err != nil {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s: %s", ownerAddress, err.Error())
 	}
 
-	currentPowerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	currentPowerShapingParameters, err := k.Keeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters, "cannot retrieve power shaping parameters: %s", err.Error())
 	}
@@ -441,9 +440,9 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			"a move to a new owner address that is not the gov module can only be done if `Top N` is set to 0")
 	}
 
-	if spawnTime, canLaunch := k.CanLaunch(ctx, consumerId); canLaunch {
-		k.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime)
+	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
+		k.Keeper.SetConsumerPhase(ctx, consumerId, Initialized)
+		k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime)
 	}
 
 	return &types.MsgUpdateConsumerResponse{}, nil
