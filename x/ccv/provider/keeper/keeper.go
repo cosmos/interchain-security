@@ -211,64 +211,6 @@ func (k Keeper) DeleteConsumerIdToChannelId(ctx sdk.Context, consumerId string) 
 	store.Delete(types.ConsumerIdToChannelIdKey(consumerId))
 }
 
-// SetProposalIdToConsumerId stores a consumer id corresponding to a proposal that contains a `MsgUpdateConsumer` mesage.
-// This consumer id is deleted once the voting period for the proposal ends.
-func (k Keeper) SetProposalIdToConsumerId(ctx sdk.Context, proposalId uint64, consumerId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ProposedConsumerChainKey(proposalId), []byte(consumerId))
-}
-
-// GetProposalIdToConsumerId returns the proposed consumer id for the given proposal id.
-// This method is only used for testing.
-func (k Keeper) GetProposalIdToConsumerId(ctx sdk.Context, proposalId uint64) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	consumerChain := store.Get(types.ProposedConsumerChainKey(proposalId))
-	if consumerChain != nil {
-		return string(consumerChain), true
-	}
-	return "", false
-}
-
-// DeleteProposalIdToConsumerId deletes the proposal to consumer id record from store
-func (k Keeper) DeleteProposalIdToConsumerId(ctx sdk.Context, proposalId uint64) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ProposedConsumerChainKey(proposalId))
-}
-
-// GetAllProposedConsumerChainIDs returns the proposed consumer ids of all gov proposals that are still in the voting period
-func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ProposedConsumerChainKeyPrefix())
-	defer iterator.Close()
-
-	proposedChains := []types.ProposedChain{}
-	for ; iterator.Valid(); iterator.Next() {
-		proposalID, err := types.ParseProposedConsumerChainKey(iterator.Key())
-		if err != nil {
-			panic(fmt.Errorf("proposed chains cannot be parsed: %w", err))
-		}
-
-		proposedChains = append(proposedChains, types.ProposedChain{
-			ConsumerId: string(iterator.Value()),
-			ProposalID: proposalID,
-		})
-
-	}
-
-	return proposedChains
-}
-
-// GetAllPendingConsumerChainIDs gets pending consumer chains have not reach spawn time
-func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
-	chainIDs := []string{}
-	props := k.GetAllPendingConsumerAdditionProps(ctx)
-	for _, prop := range props {
-		chainIDs = append(chainIDs, prop.ChainId)
-	}
-
-	return chainIDs
-}
-
 // GetAllRegisteredConsumerIds gets all of the consumer chain IDs, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
@@ -818,7 +760,7 @@ func (k Keeper) GetAllOptedIn(
 	consumerId string,
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ConsumerIdWithLenKey(types.OptedInKeyPrefix(), consumerId)
+	key := types.StringIdWithLenKey(types.OptedInKeyPrefix(), consumerId)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -835,7 +777,7 @@ func (k Keeper) DeleteAllOptedIn(
 	consumerId string,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ConsumerIdWithLenKey(types.OptedInKeyPrefix(), consumerId)
+	key := types.StringIdWithLenKey(types.OptedInKeyPrefix(), consumerId)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 
 	var keysToDel [][]byte
@@ -898,7 +840,7 @@ func (k Keeper) GetAllCommissionRateValidators(
 	consumerId string,
 ) (addresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ConsumerIdWithLenKey(types.ConsumerCommissionRateKeyPrefix(), consumerId)
+	key := types.StringIdWithLenKey(types.ConsumerCommissionRateKeyPrefix(), consumerId)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -961,7 +903,7 @@ func (k Keeper) GetAllowList(
 	consumerId string,
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ConsumerIdWithLenKey(types.AllowlistKeyPrefix(), consumerId)
+	key := types.StringIdWithLenKey(types.AllowlistKeyPrefix(), consumerId)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -986,7 +928,7 @@ func (k Keeper) IsAllowlisted(
 // DeleteAllowlist deletes all allowlisted validators
 func (k Keeper) DeleteAllowlist(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdWithLenKey(types.AllowlistKeyPrefix(), consumerId))
+	iterator := storetypes.KVStorePrefixIterator(store, types.StringIdWithLenKey(types.AllowlistKeyPrefix(), consumerId))
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -1002,7 +944,7 @@ func (k Keeper) DeleteAllowlist(ctx sdk.Context, consumerId string) {
 // IsAllowlistEmpty returns `true` if no validator is allowlisted on chain `consumerId`
 func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, consumerId string) bool {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdWithLenKey(types.AllowlistKeyPrefix(), consumerId))
+	iterator := storetypes.KVStorePrefixIterator(store, types.StringIdWithLenKey(types.AllowlistKeyPrefix(), consumerId))
 	defer iterator.Close()
 
 	return !iterator.Valid()
@@ -1024,7 +966,7 @@ func (k Keeper) GetDenyList(
 	consumerId string,
 ) (providerConsAddresses []types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.ConsumerIdWithLenKey(types.DenylistKeyPrefix(), consumerId)
+	key := types.StringIdWithLenKey(types.DenylistKeyPrefix(), consumerId)
 	iterator := storetypes.KVStorePrefixIterator(store, key)
 	defer iterator.Close()
 
@@ -1049,7 +991,7 @@ func (k Keeper) IsDenylisted(
 // DeleteDenylist deletes all denylisted validators
 func (k Keeper) DeleteDenylist(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdWithLenKey(types.DenylistKeyPrefix(), consumerId))
+	iterator := storetypes.KVStorePrefixIterator(store, types.StringIdWithLenKey(types.DenylistKeyPrefix(), consumerId))
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -1065,7 +1007,7 @@ func (k Keeper) DeleteDenylist(ctx sdk.Context, consumerId string) {
 // IsDenylistEmpty returns `true` if no validator is denylisted on chain `consumerId`
 func (k Keeper) IsDenylistEmpty(ctx sdk.Context, consumerId string) bool {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdWithLenKey(types.DenylistKeyPrefix(), consumerId))
+	iterator := storetypes.KVStorePrefixIterator(store, types.StringIdWithLenKey(types.DenylistKeyPrefix(), consumerId))
 	defer iterator.Close()
 
 	return !iterator.Valid()

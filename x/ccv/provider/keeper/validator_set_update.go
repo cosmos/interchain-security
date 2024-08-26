@@ -14,7 +14,7 @@ import (
 
 // GetConsumerChainConsensusValidatorsKey returns the store key for consumer validators of the consumer chain with `consumerId`
 func (k Keeper) GetConsumerChainConsensusValidatorsKey(ctx sdk.Context, consumerId string) []byte {
-	return types.ConsumerIdWithLenKey(types.ConsumerValidatorKeyPrefix(), consumerId)
+	return types.StringIdWithLenKey(types.ConsumerValidatorKeyPrefix(), consumerId)
 }
 
 // SetConsumerValidator sets provided consumer `validator` on the consumer chain with `consumerId`

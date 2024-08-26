@@ -41,7 +41,7 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(4), providertypes.SlashMeterReplenishTimeCandidateKey()[0])
 	i++
-	require.Equal(t, byte(5), providertypes.ConsumerIdToChannelIdKey("chainID")[0])
+	require.Equal(t, byte(5), providertypes.ConsumerIdToChannelIdKey("13")[0])
 	i++
 	require.Equal(t, byte(6), providertypes.ChannelIdToConsumerIdKeyPrefix()[0])
 	i++
@@ -49,9 +49,9 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	// reserve 8 as deprecated
 	i++
-	require.Equal(t, byte(9), providertypes.PendingCAPKeyPrefix()[0])
+	// reserve 9 as deprecated
 	i++
-	require.Equal(t, byte(10), providertypes.PendingCRPKeyPrefix()[0])
+	// reserve 10 as deprecated
 	i++
 	// reserve 11 as deprecated
 	i++
@@ -59,19 +59,19 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(13), providertypes.ValsetUpdateBlockHeightKeyPrefix()[0])
 	i++
-	require.Equal(t, byte(14), providertypes.ConsumerGenesisKey("chainID")[0])
+	require.Equal(t, byte(14), providertypes.ConsumerGenesisKey("13")[0])
 	i++
-	require.Equal(t, byte(15), providertypes.SlashAcksKey("chainID")[0])
+	require.Equal(t, byte(15), providertypes.SlashAcksKey("13")[0])
 	i++
-	require.Equal(t, byte(16), providertypes.InitChainHeightKey("chainID")[0])
+	require.Equal(t, byte(16), providertypes.InitChainHeightKey("13")[0])
 	i++
-	require.Equal(t, byte(17), providertypes.PendingVSCsKey("chainID")[0])
+	require.Equal(t, byte(17), providertypes.PendingVSCsKey("13")[0])
 	i++
 	// reserve 18 as deprecated
 	i++
-	require.Equal(t, byte(19), providertypes.ThrottledPacketDataSizeKey("chainID")[0])
+	// reserve 19 as deprecated
 	i++
-	require.Equal(t, byte(20), providertypes.ThrottledPacketDataKeyPrefix())
+	// reserve 20 as deprecated
 	i++
 	// DEPRECATED
 	// require.Equal(t, uint8(21), providertypes.GlobalSlashEntryKeyPrefix()[0])
@@ -90,32 +90,32 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	// reserve 28 as deprecated
 	i++
-	require.Equal(t, byte(29), providertypes.EquivocationEvidenceMinHeightKey("chainID")[0])
+	require.Equal(t, byte(29), providertypes.EquivocationEvidenceMinHeightKey("13")[0])
 	i++
-	require.Equal(t, byte(30), providertypes.ProposedConsumerChainKeyPrefix()[0])
+	// reserve 30 as deprecated
 	i++
 	require.Equal(t, byte(31), providertypes.ConsumerValidatorKeyPrefix())
 	i++
 	require.Equal(t, byte(32), providertypes.OptedInKeyPrefix())
 	i++
 	// DEPRECATED
-	//require.Equal(t, byte(33), providertypes.TopNKey("chainID")[0])
+	//require.Equal(t, byte(33), providertypes.TopNKey("13")[0])
 	i++
 	// DEPRECATED
-	//require.Equal(t, byte(34), providertypes.ValidatorsPowerCapKey("chainID")[0])
+	//require.Equal(t, byte(34), providertypes.ValidatorsPowerCapKey("13")[0])
 	i++
 	// DEPRECATED
-	//require.Equal(t, byte(35), providertypes.ValidatorSetCapKey("chainID")[0])
+	//require.Equal(t, byte(35), providertypes.ValidatorSetCapKey("13")[0])
 	i++
 	require.Equal(t, byte(36), providertypes.AllowlistKeyPrefix())
 	i++
 	require.Equal(t, byte(37), providertypes.DenylistKeyPrefix())
 	i++
-	require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("chainID")[0])
+	require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
 	i++
 	require.Equal(t, byte(39), providertypes.ConsumerCommissionRateKeyPrefix())
 	i++
-	require.Equal(t, byte(40), providertypes.MinimumPowerInTopNKey("chainID")[0])
+	require.Equal(t, byte(40), providertypes.MinimumPowerInTopNKey("13")[0])
 	i++
 	require.Equal(t, byte(41), providertypes.ConsumerAddrsToPruneV2KeyPrefix())
 	i++
@@ -123,17 +123,17 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(43), providertypes.ConsumerIdKey()[0])
 	i++
-	require.Equal(t, byte(44), providertypes.ConsumerIdToChainIdKey("consumerId")[0])
+	require.Equal(t, byte(44), providertypes.ConsumerIdToChainIdKey("13")[0])
 	i++
-	require.Equal(t, byte(45), providertypes.ConsumerIdToOwnerAddressKey("consumerId")[0])
+	require.Equal(t, byte(45), providertypes.ConsumerIdToOwnerAddressKey("13")[0])
 	i++
 	require.Equal(t, byte(46), providertypes.ConsumerIdToMetadataKeyPrefix())
 	i++
 	require.Equal(t, byte(47), providertypes.ConsumerIdToInitializationParametersKeyPrefix())
 	i++
-	require.Equal(t, byte(48), providertypes.ConsumerIdToPowerShapingParametersKey("consumerId")[0])
+	require.Equal(t, byte(48), providertypes.ConsumerIdToPowerShapingParametersKey("13")[0])
 	i++
-	require.Equal(t, byte(49), providertypes.ConsumerIdToPhaseKey("consumerId")[0])
+	require.Equal(t, byte(49), providertypes.ConsumerIdToPhaseKey("13")[0])
 	i++
 	require.Equal(t, byte(50), providertypes.ConsumerIdToStopTimeKeyPrefix())
 	i++
@@ -180,41 +180,36 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ValidatorSetUpdateIdKey(),
 		providertypes.SlashMeterKey(),
 		providertypes.SlashMeterReplenishTimeCandidateKey(),
-		providertypes.ConsumerIdToChannelIdKey("chainID"),
+		providertypes.ConsumerIdToChannelIdKey("13"),
 		providertypes.ChannelToConsumerIdKey("channelID"),
-		providertypes.ConsumerIdToClientIdKey("chainID"),
-		providertypes.PendingCAPKey(time.Time{}, "chainID"),
-		providertypes.PendingCRPKey(time.Time{}, "chainID"),
+		providertypes.ConsumerIdToClientIdKey("13"),
 		providertypes.ValsetUpdateBlockHeightKey(7),
-		providertypes.ConsumerGenesisKey("chainID"),
-		providertypes.SlashAcksKey("chainID"),
-		providertypes.InitChainHeightKey("chainID"),
-		providertypes.PendingVSCsKey("chainID"),
-		providertypes.ThrottledPacketDataSizeKey("chainID"),
-		providertypes.ThrottledPacketDataKey("chainID", 88),
-		providertypes.ConsumerValidatorsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
+		providertypes.ConsumerGenesisKey("13"),
+		providertypes.SlashAcksKey("13"),
+		providertypes.InitChainHeightKey("13"),
+		providertypes.PendingVSCsKey("13"),
+		providertypes.ConsumerValidatorsKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ValidatorsByConsumerAddrKey("13", providertypes.NewConsumerConsAddress([]byte{0x05})),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerRewardDenomsKey("uatom"),
-		providertypes.EquivocationEvidenceMinHeightKey("chainID"),
-		providertypes.ProposedConsumerChainKey(1),
-		providertypes.ConsumerValidatorKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05}).Address.Bytes()),
-		providertypes.AllowlistKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.DenylistKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.OptedInKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.ConsumerRewardsAllocationKey("chainID"),
-		providertypes.ConsumerCommissionRateKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.MinimumPowerInTopNKey("chainID"),
-		providertypes.ConsumerAddrsToPruneV2Key("chainID", time.Time{}),
+		providertypes.EquivocationEvidenceMinHeightKey("13"),
+		providertypes.ConsumerValidatorKey("13", providertypes.NewProviderConsAddress([]byte{0x05}).Address.Bytes()),
+		providertypes.AllowlistKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.DenylistKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.OptedInKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ConsumerRewardsAllocationKey("13"),
+		providertypes.ConsumerCommissionRateKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.MinimumPowerInTopNKey("13"),
+		providertypes.ConsumerAddrsToPruneV2Key("13", time.Time{}),
 		providerkeeper.GetValidatorKey(types.LastProviderConsensusValsPrefix(), providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerIdKey(),
-		providertypes.ConsumerIdToChainIdKey("consumerId"),
-		providertypes.ConsumerIdToOwnerAddressKey("consumerId"),
-		providertypes.ConsumerIdToMetadataKey("consumerId"),
-		providertypes.ConsumerIdToInitializationParametersKey("consumerId"),
-		providertypes.ConsumerIdToPowerShapingParametersKey("consumerId"),
-		providertypes.ConsumerIdToPhaseKey("consumerId"),
-		providertypes.ConsumerIdToStopTimeKey("consumerId"),
+		providertypes.ConsumerIdToChainIdKey("13"),
+		providertypes.ConsumerIdToOwnerAddressKey("13"),
+		providertypes.ConsumerIdToMetadataKey("13"),
+		providertypes.ConsumerIdToInitializationParametersKey("13"),
+		providertypes.ConsumerIdToPowerShapingParametersKey("13"),
+		providertypes.ConsumerIdToPhaseKey("13"),
+		providertypes.ConsumerIdToStopTimeKey("13"),
 		providertypes.SpawnTimeToConsumerIdsKey(time.Time{}),
 		providertypes.StopTimeToConsumerIdsKey(time.Time{}),
 		providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05})),
@@ -222,86 +217,59 @@ func getAllFullyDefinedKeys() [][]byte {
 	}
 }
 
-// Tests the construction and parsing of ChainIdAndTs keys
-func TestChainIdAndTsKeyAndParse(t *testing.T) {
+// Tests the construction and parsing of StringIdAndTs keys
+func TestStringIdAndTsKeyAndParse(t *testing.T) {
 	tests := []struct {
-		prefix    byte
-		chainID   string
-		timestamp time.Time
+		prefix     byte
+		consumerID string
+		timestamp  time.Time
 	}{
-		{prefix: 0x01, chainID: "1", timestamp: time.Now()},
-		{prefix: 0x02, chainID: "some other ID", timestamp: time.Date(
+		{prefix: 0x01, consumerID: "1", timestamp: time.Now()},
+		{prefix: 0x02, consumerID: "111", timestamp: time.Date(
 			2003, 11, 17, 20, 34, 58, 651387237, time.UTC)},
-		{prefix: 0x03, chainID: "some other other chain ID", timestamp: time.Now().Add(5000 * time.Hour)},
+		{prefix: 0x03, consumerID: "2000", timestamp: time.Now().Add(5000 * time.Hour)},
 	}
 
 	for _, test := range tests {
-		key := providertypes.ConsumerIdAndTsKey(test.prefix, test.chainID, test.timestamp)
+		key := providertypes.StringIdAndTsKey(test.prefix, test.consumerID, test.timestamp)
 		require.NotEmpty(t, key)
-		// Expected bytes = prefix + chainID length + chainID + time bytes
-		expectedLen := 1 + 8 + len(test.chainID) + len(sdk.FormatTimeBytes(time.Time{}))
+		// Expected bytes = prefix + consumerID length + consumerID + time bytes
+		expectedLen := 1 + 8 + len(test.consumerID) + len(sdk.FormatTimeBytes(time.Time{}))
 		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedTime, err := providertypes.ParseConsumerIdAndTsKey(test.prefix, key)
-		require.Equal(t, test.chainID, parsedID)
+		parsedID, parsedTime, err := providertypes.ParseStringIdAndTsKey(test.prefix, key)
+		require.Equal(t, test.consumerID, parsedID)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
 		require.NoError(t, err)
 	}
 }
 
-// Tests the construction and parsing of ChainIdAndUintId keys
-func TestChainIdAndUintIdAndParse(t *testing.T) {
+// Tests the construction and parsing of StringIdAndUintId keys
+func TestStringIdAndUintIdAndParse(t *testing.T) {
 	tests := []struct {
-		prefix  byte
-		chainID string
-		uintID  uint64
+		prefix     byte
+		consumerID string
+		uintID     uint64
 	}{
-		{prefix: 0x01, chainID: "1", uintID: 1},
-		{prefix: 0x02, chainID: "some other ID", uintID: 2},
-		{prefix: 0x03, chainID: "some other other chain ID", uintID: 3},
+		{prefix: 0x01, consumerID: "1", uintID: 1},
+		{prefix: 0x02, consumerID: "13", uintID: 2},
+		{prefix: 0x03, consumerID: "245", uintID: 3},
 	}
 
 	for _, test := range tests {
-		key := providertypes.ChainIdAndUintIdKey(test.prefix, test.chainID, test.uintID)
+		key := providertypes.StringIdAndUintIdKey(test.prefix, test.consumerID, test.uintID)
 		require.NotEmpty(t, key)
-		// Expected bytes = prefix + chainID length + chainID + vscId bytes
-		expectedLen := 1 + 8 + len(test.chainID) + 8
+		// Expected bytes = prefix + consumerID length + consumerID + vscId bytes
+		expectedLen := 1 + 8 + len(test.consumerID) + 8
 		require.Equal(t, expectedLen, len(key))
-		parsedChainID, parsedUintID, err := providertypes.ParseChainIdAndUintIdKey(test.prefix, key)
-		require.Equal(t, test.chainID, parsedChainID)
+		parsedChainID, parsedUintID, err := providertypes.ParseStringIdAndUintIdKey(test.prefix, key)
+		require.Equal(t, test.consumerID, parsedChainID)
 		require.Equal(t, test.uintID, parsedUintID)
 		require.NoError(t, err)
 	}
 }
 
-// Tests the construction and parsing of keys for throttled packet data
-func TestThrottledPacketDataKeyAndParse(t *testing.T) {
-	tests := []struct {
-		consumerChainID string
-		ibcSeqNum       uint64
-	}{
-		{consumerChainID: "some chain id", ibcSeqNum: 45},
-		{consumerChainID: "some chain id that is longer", ibcSeqNum: 54038},
-		{consumerChainID: "some chain id that is longer-er     ", ibcSeqNum: 9999999999999999999},
-	}
-
-	for _, test := range tests {
-		key := providertypes.ThrottledPacketDataKey(test.consumerChainID, test.ibcSeqNum)
-		require.NotEmpty(t, key)
-		// This key should be of len: prefix + chainID length + chainID + ibcSeqNum
-		require.Equal(t, 1+8+len(test.consumerChainID)+8, len(key))
-		parsedChainID, parsedSeqNum := providertypes.MustParseThrottledPacketDataKey(key)
-		require.Equal(t, test.consumerChainID, parsedChainID)
-		require.Equal(t, test.ibcSeqNum, parsedSeqNum)
-	}
-
-	// Sanity check that two keys with different chain ids but same seq num are different
-	key1 := providertypes.ThrottledPacketDataKey("chain-7", 45)
-	key2 := providertypes.ThrottledPacketDataKey("chain-8", 45)
-	require.NotEqual(t, key1, key2)
-}
-
-// Tests the construction and parsing of ChainIdAndConsAddr keys
-func TestChainIdAndConsAddrAndParse(t *testing.T) {
+// Tests the construction and parsing of StringIdAndConsAddr keys
+func TestStringIdAndConsAddrAndParse(t *testing.T) {
 	cIds := []*cryptoutil.CryptoIdentity{
 		cryptoutil.NewCryptoIdentityFromIntSeed(99998),
 		cryptoutil.NewCryptoIdentityFromIntSeed(99999),
@@ -312,23 +280,23 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 	pubKey3 := cIds[2].TMCryptoPubKey()
 
 	tests := []struct {
-		prefix  byte
-		chainID string
-		addr    sdk.ConsAddress
+		prefix     byte
+		consumerId string
+		addr       sdk.ConsAddress
 	}{
-		{prefix: 0x01, chainID: "1", addr: sdk.ConsAddress(pubKey1.Address())},
-		{prefix: 0x02, chainID: "some other ID", addr: sdk.ConsAddress(pubKey2.Address())},
-		{prefix: 0x03, chainID: "some other other chain ID", addr: sdk.ConsAddress(pubKey3.Address())},
+		{prefix: 0x01, consumerId: "1", addr: sdk.ConsAddress(pubKey1.Address())},
+		{prefix: 0x02, consumerId: "23", addr: sdk.ConsAddress(pubKey2.Address())},
+		{prefix: 0x03, consumerId: "456", addr: sdk.ConsAddress(pubKey3.Address())},
 	}
 
 	for _, test := range tests {
-		key := providertypes.ConsumerIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
+		key := providertypes.StringIdAndConsAddrKey(test.prefix, test.consumerId, test.addr)
 		require.NotEmpty(t, key)
-		// Expected bytes = prefix + chainID length + chainID + consAddr bytes
-		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
+		// Expected bytes = prefix + consumerID length + consumerID + consAddr bytes
+		expectedLen := 1 + 8 + len(test.consumerId) + len(test.addr)
 		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedConsAddr, err := providertypes.ParseChainIdAndConsAddrKey(test.prefix, key)
-		require.Equal(t, test.chainID, parsedID)
+		parsedID, parsedConsAddr, err := providertypes.ParseStringIdAndConsAddrKey(test.prefix, key)
+		require.Equal(t, test.consumerId, parsedID)
 		require.Equal(t, test.addr, parsedConsAddr)
 		require.NoError(t, err)
 	}
@@ -381,23 +349,5 @@ func TestKeysWithUint64Payload(t *testing.T) {
 			key := function(test.integer)
 			require.Equal(t, sdk.Uint64ToBigEndian(test.integer), key[1:])
 		}
-	}
-}
-
-func TestParseProposedConsumerChainKey(t *testing.T) {
-	tests := []struct {
-		chainID    string
-		proposalID uint64
-	}{
-		{chainID: "1", proposalID: 1},
-		{chainID: "some other ID", proposalID: 12},
-		{chainID: "some other other chain ID", proposalID: 123},
-	}
-
-	for _, test := range tests {
-		key := providertypes.ProposedConsumerChainKey(test.proposalID)
-		pID, err := providertypes.ParseProposedConsumerChainKey(key)
-		require.NoError(t, err)
-		require.Equal(t, pID, test.proposalID)
 	}
 }

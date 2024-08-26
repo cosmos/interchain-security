@@ -105,6 +105,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	}, nil
 }
 
+// TODO (PERMISSIONLESS)
 func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -122,6 +123,7 @@ func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.Query
 	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &types.ConsumerAdditionProposals{Pending: props}}, nil
 }
 
+// TODO (PERMISSIONLESS)
 func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -230,6 +232,7 @@ func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *
 	}, nil
 }
 
+// TODO (PERMISSIONLESS)
 func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.QueryProposedChainIDsRequest) (*types.QueryProposedChainIDsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")

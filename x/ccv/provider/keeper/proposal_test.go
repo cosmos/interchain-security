@@ -1,13 +1,12 @@
 package keeper_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
-	"sort"
 	"testing"
 	"time"
+
+	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -114,162 +113,6 @@ func testCreatedConsumerClient(t *testing.T,
 	// more granular tests on consumer genesis should be defined in TestMakeConsumerGenesis
 	_, ok := providerKeeper.GetConsumerGenesis(ctx, consumerId)
 	require.True(t, ok)
-}
-
-// TestPendingConsumerAdditionPropDeletion tests the getting/setting
-// and deletion keeper methods for pending consumer addition props
-func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
-	testCases := []struct {
-		providertypes.ConsumerAdditionProposal
-		ExpDeleted bool
-	}{
-		{
-			ConsumerAdditionProposal: providertypes.ConsumerAdditionProposal{ChainId: "0", SpawnTime: time.Now().UTC()},
-			ExpDeleted:               true,
-		},
-		{
-			ConsumerAdditionProposal: providertypes.ConsumerAdditionProposal{ChainId: "1", SpawnTime: time.Now().UTC().Add(time.Hour)},
-			ExpDeleted:               false,
-		},
-	}
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	for _, tc := range testCases {
-		tc := tc
-		providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
-	}
-
-	ctx = ctx.WithBlockTime(time.Now().UTC())
-
-	propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(ctx)
-	// Delete consumer addition proposals, same as what would be done by BeginBlockInit
-	providerKeeper.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
-	numDeleted := 0
-	for _, tc := range testCases {
-		res, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.SpawnTime, tc.ChainId)
-		if !tc.ExpDeleted {
-			require.True(t, found)
-			require.NotEmpty(t, res, "consumer addition proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
-			continue
-		}
-		require.Empty(t, res, "consumer addition proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
-		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
-		numDeleted += 1
-	}
-}
-
-// TestGetConsumerAdditionPropsToExecute tests that pending consumer addition proposals
-// that are ready to execute are accessed in order by timestamp via the iterator
-func TestGetConsumerAdditionPropsToExecute(t *testing.T) {
-	now := time.Now().UTC()
-	sampleProp1 := providertypes.ConsumerAdditionProposal{ChainId: "chain-2", SpawnTime: now}
-	sampleProp2 := providertypes.ConsumerAdditionProposal{ChainId: "chain-1", SpawnTime: now.Add(time.Hour)}
-	sampleProp3 := providertypes.ConsumerAdditionProposal{ChainId: "chain-4", SpawnTime: now.Add(-time.Hour)}
-	sampleProp4 := providertypes.ConsumerAdditionProposal{ChainId: "chain-3", SpawnTime: now}
-	sampleProp5 := providertypes.ConsumerAdditionProposal{ChainId: "chain-1", SpawnTime: now.Add(2 * time.Hour)}
-
-	getExpectedOrder := func(props []providertypes.ConsumerAdditionProposal, accessTime time.Time) []providertypes.ConsumerAdditionProposal {
-		expectedOrder := []providertypes.ConsumerAdditionProposal{}
-		for _, prop := range props {
-			if !accessTime.Before(prop.SpawnTime) {
-				expectedOrder = append(expectedOrder, prop)
-			}
-		}
-		if len(expectedOrder) == 0 {
-			return nil
-		}
-		// sorting by SpawnTime.UnixNano()
-		sort.Slice(expectedOrder, func(i, j int) bool {
-			if expectedOrder[i].SpawnTime.UTC() == expectedOrder[j].SpawnTime.UTC() {
-				// proposals with same SpawnTime
-				return expectedOrder[i].ChainId < expectedOrder[j].ChainId
-			}
-			return expectedOrder[i].SpawnTime.UTC().Before(expectedOrder[j].SpawnTime.UTC())
-		})
-		return expectedOrder
-	}
-
-	testCases := []struct {
-		propSubmitOrder []providertypes.ConsumerAdditionProposal
-		accessTime      time.Time
-	}{
-		{
-			propSubmitOrder: []providertypes.ConsumerAdditionProposal{
-				sampleProp1, sampleProp2, sampleProp3, sampleProp4, sampleProp5,
-			},
-			accessTime: now,
-		},
-		{
-			propSubmitOrder: []providertypes.ConsumerAdditionProposal{
-				sampleProp3, sampleProp2, sampleProp1, sampleProp5, sampleProp4,
-			},
-			accessTime: now.Add(time.Hour),
-		},
-		{
-			propSubmitOrder: []providertypes.ConsumerAdditionProposal{
-				sampleProp5, sampleProp4, sampleProp3, sampleProp2, sampleProp1,
-			},
-			accessTime: now.Add(-2 * time.Hour),
-		},
-		{
-			propSubmitOrder: []providertypes.ConsumerAdditionProposal{
-				sampleProp5, sampleProp4, sampleProp3, sampleProp2, sampleProp1,
-			},
-			accessTime: now.Add(3 * time.Hour),
-		},
-	}
-
-	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-		defer ctrl.Finish()
-
-		expectedOrderedProps := getExpectedOrder(tc.propSubmitOrder, tc.accessTime)
-
-		for _, prop := range tc.propSubmitOrder {
-			cpProp := prop
-			providerKeeper.SetPendingConsumerAdditionProp(ctx, &cpProp)
-		}
-		propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(ctx.WithBlockTime(tc.accessTime))
-		require.Equal(t, expectedOrderedProps, propsToExecute)
-	}
-}
-
-// Test getting both matured and pending consumer addition proposals
-func TestGetAllConsumerAdditionProps(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now().UTC()
-	props := []providertypes.ConsumerAdditionProposal{
-		{ChainId: "chain-2", SpawnTime: now},
-		{ChainId: "chain-1", SpawnTime: now.Add(2 * time.Hour)},
-		{ChainId: "chain-4", SpawnTime: now.Add(-time.Hour)},
-		{ChainId: "chain-3", SpawnTime: now.Add(4 * time.Hour)},
-		{ChainId: "chain-1", SpawnTime: now},
-	}
-	expectedGetAllOrder := props
-	// sorting by SpawnTime.UnixNano()
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		tsi := uint64(expectedGetAllOrder[i].SpawnTime.UTC().UnixNano())
-		tsj := uint64(expectedGetAllOrder[j].SpawnTime.UTC().UnixNano())
-		cmpTimestamps := bytes.Compare(sdk.Uint64ToBigEndian(tsi), sdk.Uint64ToBigEndian(tsj))
-		if cmpTimestamps == 0 {
-			// proposals with same SpawnTime
-			return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
-		}
-		return cmpTimestamps == -1
-	})
-
-	for _, prop := range props {
-		cpProp := prop // bring into loop scope - avoids using iterator pointer instead of value pointer
-		pk.SetPendingConsumerAdditionProp(ctx, &cpProp)
-	}
-
-	// iterate and check all results are returned in the expected order
-	result := pk.GetAllPendingConsumerAdditionProps(ctx.WithBlockTime(now))
-	require.Len(t, result, len(props))
-	require.Equal(t, expectedGetAllOrder, result)
 }
 
 // Tests the StopConsumerChain method against the spec,
@@ -408,43 +251,6 @@ func TestStopConsumerChain(t *testing.T) {
 //		require.Equal(t, expectedOrderedProps, propsToExecute)
 //	}
 //}
-
-// Test getting both matured and pending consumer removal proposals
-func TestGetAllConsumerRemovalProps(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now().UTC()
-	props := []providertypes.ConsumerRemovalProposal{
-		{ChainId: "chain-2", StopTime: now},
-		{ChainId: "chain-1", StopTime: now.Add(2 * time.Hour)},
-		{ChainId: "chain-4", StopTime: now.Add(-time.Hour)},
-		{ChainId: "chain-3", StopTime: now.Add(4 * time.Hour)},
-		{ChainId: "chain-1", StopTime: now},
-	}
-	expectedGetAllOrder := props
-	// sorting by StopTime.UnixNano()
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		tsi := uint64(expectedGetAllOrder[i].StopTime.UTC().UnixNano())
-		tsj := uint64(expectedGetAllOrder[j].StopTime.UTC().UnixNano())
-		cmpTimestamps := bytes.Compare(sdk.Uint64ToBigEndian(tsi), sdk.Uint64ToBigEndian(tsj))
-		if cmpTimestamps == 0 {
-			// proposals with same StopTime
-			return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
-		}
-		return cmpTimestamps == -1
-	})
-
-	for _, prop := range props {
-		cpProp := prop // bring into loop scope - avoids using iterator pointer instead of value pointer
-		pk.SetPendingConsumerRemovalProp(ctx, &cpProp)
-	}
-
-	// iterate and check all results are returned in the expected order
-	result := pk.GetAllPendingConsumerRemovalProps(ctx.WithBlockTime(now))
-	require.Len(t, result, len(props))
-	require.Equal(t, expectedGetAllOrder, result)
-}
 
 // TestMakeConsumerGenesis tests the MakeConsumerGenesis keeper method.
 // An expected genesis state is hardcoded in json, unmarshaled, and compared

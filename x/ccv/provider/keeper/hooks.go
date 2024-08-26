@@ -2,8 +2,9 @@ package keeper
 
 import (
 	"context"
-	"cosmossdk.io/math"
 	"fmt"
+
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -107,6 +108,7 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 
 // AfterProposalSubmission - call hook if registered
 // If an update consumer message exists in the proposal, a record is created that maps the proposal id to the consumer id
+// TODO (PERMISSIONLESS)
 func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -160,6 +162,7 @@ func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64)
 
 // AfterProposalVotingPeriodEnded - call hook if registered
 // After proposal voting ends, the consumer to proposal id record in store is deleted.
+// TODO (PERMISSIONLESS)
 func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalId uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
