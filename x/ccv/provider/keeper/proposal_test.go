@@ -888,7 +888,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	for i, _ := range consumerIds {
 		chainId := chainIds[i]
 		// A consumer chain is setup corresponding to each consumerId, making these mocks necessary
-		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1)
+		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1)
 		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
 			chainId, clienttypes.NewHeight(2, 3))...)
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, chainId)...)
