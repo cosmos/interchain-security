@@ -13,6 +13,7 @@ Integration tests are categorized into files as follows:
 - `stop_consumer.go` - integration tests for the _Consumer Chain Removal_ sub-protocol
 - `normal_operations.go` - integration tests for _normal operations_ of ICS enabled chains
 - `provider_gov_hooks.go` - integration tests for testing provider hooks
+- `query_providerinfo_test.go` - integration tests for testing provider info
 - `changeover.go` - integration tests for testing reuse of existing transfer channels
 - `double_vote.go` - integration tests for testing the handling of double voting
 - `misbehavior.go` - integration tests for testing the handling of misbehaviors
