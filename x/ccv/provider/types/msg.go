@@ -3,10 +3,11 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	cmttypes "github.com/cometbft/cometbft/types"
 	"strconv"
 	"strings"
 	"time"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
@@ -325,15 +326,6 @@ func (msg MsgUpdateConsumer) Route() string { return RouterKey }
 func (msg MsgUpdateConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
 		return err
-	}
-
-	// The new owner address can be empty, in which case the consumer chain does not change its owner.
-	// However, if the new owner address is not empty, we verify that it's a valid account address.
-	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
-		_, err := sdk.AccAddressFromBech32(msg.NewOwnerAddress)
-		if err != nil {
-			return err
-		}
 	}
 
 	if msg.Metadata != nil {

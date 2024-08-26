@@ -217,36 +217,18 @@ func GetMocksForSlashValidator(
 	}
 }
 
-// SetupMocksForLastBondedValidatorsExpectation sets up the expectation for the `IterateLastValidatorPowers` `MaxValidators`, and `GetValidator` methods of the `mockStakingKeeper` object.
+// SetupMocksForLastBondedValidatorsExpectation sets up the expectation for the `GetBondedValidatorsByPower` and `MaxValidators` methods of the `mockStakingKeeper` object.
 // These are needed in particular when calling `GetLastBondedValidators` from the provider keeper.
 // Times is the number of times the expectation should be called. Provide -1 for `AnyTimes“.
-func SetupMocksForLastBondedValidatorsExpectation(mockStakingKeeper *MockStakingKeeper, maxValidators uint32, vals []stakingtypes.Validator, powers []int64, times int) {
-	iteratorCall := mockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx sdk.Context, cb func(sdk.ValAddress, int64) bool) error {
-			for i, val := range vals {
-				if stop := cb(sdk.ValAddress(val.OperatorAddress), powers[i]); stop {
-					break
-				}
-			}
-			return nil
-		})
+func SetupMocksForLastBondedValidatorsExpectation(mockStakingKeeper *MockStakingKeeper, maxValidators uint32, vals []stakingtypes.Validator, times int) {
+	validatorsCall := mockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(vals, nil)
 	maxValidatorsCall := mockStakingKeeper.EXPECT().MaxValidators(gomock.Any()).Return(maxValidators, nil)
 
 	if times == -1 {
-		iteratorCall.AnyTimes()
+		validatorsCall.AnyTimes()
 		maxValidatorsCall.AnyTimes()
 	} else {
-		iteratorCall.Times(times)
+		validatorsCall.Times(times)
 		maxValidatorsCall.Times(times)
-	}
-
-	// set up mocks for GetValidator calls
-	for _, val := range vals {
-		getValCall := mockStakingKeeper.EXPECT().GetValidator(gomock.Any(), sdk.ValAddress(val.OperatorAddress)).Return(val, nil)
-		if times == -1 {
-			getValCall.AnyTimes()
-		} else {
-			getValCall.Times(times)
-		}
 	}
 }

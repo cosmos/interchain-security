@@ -110,6 +110,9 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, consumerId string, providerAddr ty
 // OptInTopNValidators opts in to `consumerId` all the `bondedValidators` that have at least `minPowerToOptIn` power
 func (k Keeper) OptInTopNValidators(ctx sdk.Context, consumerId string, bondedValidators []stakingtypes.Validator, minPowerToOptIn int64) {
 	for _, val := range bondedValidators {
+		// log the validator
+		k.Logger(ctx).Debug("Checking whether to opt in validator because of top N", "validator", val.GetOperator())
+
 		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
 		if err != nil {
 			k.Logger(ctx).Error("could not retrieve validator address: %s: %s",
@@ -129,6 +132,8 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, consumerId string, bondedVa
 					val, err)
 				continue
 			}
+
+			k.Logger(ctx).Debug("Opting in validator", "validator", val.GetOperator())
 
 			// if validator already exists it gets overwritten
 			k.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(consAddr))

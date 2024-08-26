@@ -277,10 +277,10 @@ func (k Keeper) AppendSpawnTimeForConsumerToBeLaunched(ctx sdk.Context, consumer
 	if err != nil {
 		return err
 	}
-	consumerIds := append(consumerIdsSlice.ConsumerIds, consumerId)
+	consumerIds := append(consumerIdsSlice.Ids, consumerId)
 
 	appendedConsumerIdsStr := types.ConsumerIds{
-		ConsumerIds: consumerIds,
+		Ids: consumerIds,
 	}
 
 	bz, err := appendedConsumerIdsStr.Marshal()
@@ -301,31 +301,31 @@ func (k Keeper) RemoveConsumerFromToBeLaunchedConsumers(ctx sdk.Context, consume
 		return err
 	}
 
-	if len(consumerIds.ConsumerIds) == 0 {
+	if len(consumerIds.Ids) == 0 {
 		return fmt.Errorf("no consumer ids for spawn time: %s", spawnTime.String())
 	}
 
 	// find the index of the consumer we want to remove
 	index := 0
-	for i := 0; i < len(consumerIds.ConsumerIds); i = i + 1 {
-		if consumerIds.ConsumerIds[i] == consumerId {
+	for i := 0; i < len(consumerIds.Ids); i = i + 1 {
+		if consumerIds.Ids[i] == consumerId {
 			index = i
 			break
 		}
 	}
-	if consumerIds.ConsumerIds[index] != consumerId {
+	if consumerIds.Ids[index] != consumerId {
 		return fmt.Errorf("failed to find consumer id (%s) in the chains to be launched", consumerId)
 	}
 
-	if len(consumerIds.ConsumerIds) == 1 {
+	if len(consumerIds.Ids) == 1 {
 		store.Delete(types.SpawnTimeToConsumerIdsKey(spawnTime))
 		return nil
 	}
 
-	updatedConsumerIds := append(consumerIds.ConsumerIds[:index], consumerIds.ConsumerIds[index+1:]...)
+	updatedConsumerIds := append(consumerIds.Ids[:index], consumerIds.Ids[index+1:]...)
 
 	updatedConsumerIdsStr := types.ConsumerIds{
-		ConsumerIds: updatedConsumerIds,
+		Ids: updatedConsumerIds,
 	}
 
 	bz, err := updatedConsumerIdsStr.Marshal()
@@ -363,10 +363,10 @@ func (k Keeper) AppendStopTimeForConsumerToBeStopped(ctx sdk.Context, consumerId
 	if err != nil {
 		return err
 	}
-	consumerIds := append(consumerIdsStr.ConsumerIds, consumerId)
+	consumerIds := append(consumerIdsStr.Ids, consumerId)
 
 	consumerIdsNewStr := types.ConsumerIds{
-		ConsumerIds: consumerIds,
+		Ids: consumerIds,
 	}
 
 	bz, err := consumerIdsNewStr.Marshal()
@@ -387,30 +387,30 @@ func (k Keeper) RemoveConsumerFromToBeStoppedConsumers(ctx sdk.Context, consumer
 		return err
 	}
 
-	if len(consumerIds.ConsumerIds) == 0 {
+	if len(consumerIds.Ids) == 0 {
 		return fmt.Errorf("no consumer ids for stop time: %s", stopTime.String())
 	}
 
 	// find the index of the consumer we want to remove
 	index := 0
-	for i := 0; i < len(consumerIds.ConsumerIds); i = i + 1 {
-		if consumerIds.ConsumerIds[i] == consumerId {
+	for i := 0; i < len(consumerIds.Ids); i = i + 1 {
+		if consumerIds.Ids[i] == consumerId {
 			index = i
 			break
 		}
 	}
-	if consumerIds.ConsumerIds[index] != consumerId {
+	if consumerIds.Ids[index] != consumerId {
 		return fmt.Errorf("failed to find consumer id (%s) in the chains to be stopped", consumerId)
 	}
 
-	if len(consumerIds.ConsumerIds) == 1 {
+	if len(consumerIds.Ids) == 1 {
 		store.Delete(types.StopTimeToConsumerIdsKey(stopTime))
 		return nil
 	}
 
-	updatedConsumerIds := append(consumerIds.ConsumerIds[:index], consumerIds.ConsumerIds[index+1:]...)
+	updatedConsumerIds := append(consumerIds.Ids[:index], consumerIds.Ids[index+1:]...)
 	updatedConsumerIdsStr := types.ConsumerIds{
-		ConsumerIds: updatedConsumerIds,
+		Ids: updatedConsumerIds,
 	}
 	bz, err := updatedConsumerIdsStr.Marshal()
 	if err != nil {
@@ -550,14 +550,14 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint
 				"error", err)
 			continue
 		}
-		if len(result)+len(consumerIds.ConsumerIds) >= int(limit) {
-			remainingConsumerIds := len(result) + len(consumerIds.ConsumerIds) - int(limit)
-			if len(consumerIds.ConsumerIds[:len(consumerIds.ConsumerIds)-remainingConsumerIds]) == 0 {
+		if len(result)+len(consumerIds.Ids) >= int(limit) {
+			remainingConsumerIds := len(result) + len(consumerIds.Ids) - int(limit)
+			if len(consumerIds.Ids[:len(consumerIds.Ids)-remainingConsumerIds]) == 0 {
 				return result
 			}
-			return append(result, consumerIds.ConsumerIds[:len(consumerIds.ConsumerIds)-remainingConsumerIds]...)
+			return append(result, consumerIds.Ids[:len(consumerIds.Ids)-remainingConsumerIds]...)
 		} else {
-			result = append(result, consumerIds.ConsumerIds...)
+			result = append(result, consumerIds.Ids...)
 		}
 	}
 
@@ -666,14 +666,14 @@ func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context, limit uint32) [
 				"error", err)
 			continue
 		}
-		if len(result)+len(consumerIds.ConsumerIds) >= int(limit) {
-			remainingConsumerIds := len(result) + len(consumerIds.ConsumerIds) - int(limit)
-			if len(consumerIds.ConsumerIds[:len(consumerIds.ConsumerIds)-remainingConsumerIds]) == 0 {
+		if len(result)+len(consumerIds.Ids) >= int(limit) {
+			remainingConsumerIds := len(result) + len(consumerIds.Ids) - int(limit)
+			if len(consumerIds.Ids[:len(consumerIds.Ids)-remainingConsumerIds]) == 0 {
 				return result
 			}
-			return append(result, consumerIds.ConsumerIds[:len(consumerIds.ConsumerIds)-remainingConsumerIds]...)
+			return append(result, consumerIds.Ids[:len(consumerIds.Ids)-remainingConsumerIds]...)
 		} else {
-			result = append(result, consumerIds.ConsumerIds...)
+			result = append(result, consumerIds.Ids...)
 		}
 	}
 
@@ -728,19 +728,21 @@ func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) 
 		return time.Time{}, false
 	}
 
-	if initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
-		// a chain can only launch if the spawn time is in the future
-		spawnTimeInTheFuture := initializationParameters.SpawnTime.After(ctx.BlockTime())
-
-		genesisHashSet := initializationParameters.GenesisHash != nil
-		binaryHashSet := initializationParameters.BinaryHash != nil
-
-		consumerRedistributionFractionSet := initializationParameters.ConsumerRedistributionFraction != ""
-		blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
-		historicalEntriesSet := initializationParameters.HistoricalEntries > 0
-
-		return initializationParameters.SpawnTime, spawnTimeInTheFuture && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
-			blocksPerDistributionTransmissionSet && historicalEntriesSet
+	initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+	if err != nil {
+		return time.Time{}, false
 	}
-	return time.Time{}, false
+
+	// a chain can only launch if the spawn time is in the future
+	spawnTimeInTheFuture := initializationParameters.SpawnTime.After(ctx.BlockTime())
+
+	genesisHashSet := initializationParameters.GenesisHash != nil
+	binaryHashSet := initializationParameters.BinaryHash != nil
+
+	consumerRedistributionFractionSet := initializationParameters.ConsumerRedistributionFraction != ""
+	blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
+	historicalEntriesSet := initializationParameters.HistoricalEntries > 0
+
+	return initializationParameters.SpawnTime, spawnTimeInTheFuture && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
+		blocksPerDistributionTransmissionSet && historicalEntriesSet
 }

@@ -463,4 +463,4 @@ message PowerShapingParameters {
 
 // ConsumerIds contains consumer ids of chains
 // Used so we can easily (de)serialize slices of strings
-message ConsumerIds { repeated string consumer_ids = 1; }
+message ConsumerIds { repeated string ids = 1; }

@@ -246,6 +246,12 @@ var stepChoices = map[string]StepChoice{
 		description: "test minting without inactive validators as a sanity check",
 		testConfig:  MintTestCfg,
 	},
+	"inactive-vals-outside-max-validators": {
+		name:        "inactive-vals-outside-max-validators",
+		steps:       stepsInactiveValsTopNReproduce(),
+		description: "tests the behaviour of inactive validators with a top N = 100 chain and when max_validators is smaller than the total number of validators",
+		testConfig:  InactiveValsExtraValsTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {

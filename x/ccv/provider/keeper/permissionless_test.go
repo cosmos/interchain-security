@@ -1,6 +1,9 @@
 package keeper_test
 
 import (
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -9,8 +12,6 @@ import (
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 func TestFetchAndIncrementConsumerId(t *testing.T) {
@@ -338,26 +339,13 @@ func TestPopulateMinimumPowerInTopN(t *testing.T) {
 	require.False(t, found)
 
 	// test cases where Top N > 0 and for this we mock some validators
-	powers := []int64{30, 20, 10}
+	powers := []int64{10, 20, 30}
 	validators := []stakingtypes.Validator{
-		createStakingValidator(ctx, mocks, 3, powers[0], 3), // this validator has 50% of the total voting power
+		createStakingValidator(ctx, mocks, 1, powers[0], 1), // this validator has ~16 of the total voting power
 		createStakingValidator(ctx, mocks, 2, powers[1], 2), // this validator has ~33% of the total voting gpower
-		createStakingValidator(ctx, mocks, 1, powers[2], 1), // this validator has ~16 of the total voting power
+		createStakingValidator(ctx, mocks, 3, powers[2], 3), // this validator has 50% of the total voting power
 	}
-	mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx sdk.Context, cb func(sdk.ValAddress, int64) bool) error {
-			for i, val := range validators {
-				if stop := cb(sdk.ValAddress(val.OperatorAddress), powers[i]); stop {
-					break
-				}
-			}
-			return nil
-		}).AnyTimes()
-
-	// set up mocks for GetValidator calls
-	for _, val := range validators {
-		mocks.MockStakingKeeper.EXPECT().GetValidator(gomock.Any(), sdk.ValAddress(val.OperatorAddress)).Return(val, nil).AnyTimes()
-	}
+	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(validators, nil).AnyTimes()
 
 	maxProviderConsensusValidators := int64(3)
 	params := providerKeeper.GetParams(ctx)

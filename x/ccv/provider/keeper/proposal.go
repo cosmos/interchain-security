@@ -241,11 +241,17 @@ func (k Keeper) MakeConsumerGenesis(
 		if err != nil {
 			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
 		}
+
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
 		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
+		// log the minimum power in top N
+		k.Logger(ctx).Info("minimum power in top N at consumer genesis",
+			"consumerId", consumerId,
+			"minPower", minPower,
+		)
 		k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
 	}
