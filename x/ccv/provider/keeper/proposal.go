@@ -357,6 +357,8 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		}
 		k.SetConsumerPhase(cachedCtx, consumerId, Launched)
 
+		// the cached context is created with a new EventManager, so we merge the events into the original context
+		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		writeFn()
 	}
 }

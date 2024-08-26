@@ -342,7 +342,10 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
 		k.Keeper.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime)
+		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime); err != nil {
+			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
+				"cannot prepare chain with consumer id (%s) for launch", consumerId)
+		}
 	}
 
 	return &types.MsgCreateConsumerResponse{ConsumerId: consumerId}, nil
@@ -442,7 +445,10 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
 		k.Keeper.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime)
+		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
+				"cannot prepare chain with consumer id (%s) for launch", consumerId)
+		}
 	}
 
 	return &types.MsgUpdateConsumerResponse{}, nil

@@ -508,6 +508,48 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint
 	return result
 }
 
+// GetLaunchedConsumersReadyToStop returns the consumer ids of the pending launched consumer chains
+// that are ready to stop
+func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context, limit uint32) []string {
+	store := ctx.KVStore(k.storeKey)
+
+	stopTimeToConsumerIdsKeyPrefix := types.StopTimeToConsumerIdsKeyPrefix()
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{stopTimeToConsumerIdsKeyPrefix})
+	defer iterator.Close()
+
+	result := []string{}
+	for ; iterator.Valid(); iterator.Next() {
+		stopTime, err := types.ParseTime(types.StopTimeToConsumerIdsKeyPrefix(), iterator.Key())
+		if err != nil {
+			k.Logger(ctx).Error("failed to parse stop time",
+				"error", err)
+			continue
+		}
+		if stopTime.After(ctx.BlockTime()) {
+			return result
+		}
+
+		consumers, err := k.GetConsumersToBeStopped(ctx, stopTime)
+		if err != nil {
+			k.Logger(ctx).Error("failed to retrieve consumers to stop",
+				"stop time", stopTime,
+				"error", err)
+			continue
+		}
+		if len(result)+len(consumers.Ids) >= int(limit) {
+			remainingConsumerIds := len(result) + len(consumers.Ids) - int(limit)
+			if len(consumers.Ids[:len(consumers.Ids)-remainingConsumerIds]) == 0 {
+				return result
+			}
+			return append(result, consumers.Ids[:len(consumers.Ids)-remainingConsumerIds]...)
+		} else {
+			result = append(result, consumers.Ids...)
+		}
+	}
+
+	return result
+}
+
 // LaunchConsumer launches the chain with the provided consumer id by creating the consumer client and the respective
 // consumer genesis file
 func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
@@ -518,16 +560,13 @@ func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
 
 	consumerGenesis, found := k.GetConsumerGenesis(ctx, consumerId)
 	if !found {
-		return errorsmod.Wrapf(types.ErrNoConsumerGenesis, "consumer genesis could not be found")
+		return errorsmod.Wrapf(types.ErrNoConsumerGenesis, "consumer genesis could not be found for consumer id: %s", consumerId)
 	}
 
 	if len(consumerGenesis.Provider.InitialValSet) == 0 {
-		return errorsmod.Wrapf(types.ErrInvalidConsumerGenesis, "consumer genesis initial validator set is empty - no validators opted in")
+		return errorsmod.Wrapf(types.ErrInvalidConsumerGenesis, "consumer genesis initial validator set is empty - no validators opted in consumer id: %s", consumerId)
 	}
 
-	// The cached context is created with a new EventManager so we merge the event
-	// into the original context
-	ctx.EventManager().EmitEvents(ctx.EventManager().Events())
 	return nil
 }
 
@@ -582,48 +621,6 @@ func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, old
 	return nil
 }
 
-// GetLaunchedConsumersReadyToStop returns the consumer ids of the pending launched consumer chains
-// that are ready to stop
-func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context, limit uint32) []string {
-	store := ctx.KVStore(k.storeKey)
-
-	stopTimeToConsumerIdsKeyPrefix := types.StopTimeToConsumerIdsKeyPrefix()
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{stopTimeToConsumerIdsKeyPrefix})
-	defer iterator.Close()
-
-	result := []string{}
-	for ; iterator.Valid(); iterator.Next() {
-		stopTime, err := types.ParseTime(types.StopTimeToConsumerIdsKeyPrefix(), iterator.Key())
-		if err != nil {
-			k.Logger(ctx).Error("failed to parse stop time",
-				"error", err)
-			continue
-		}
-		if stopTime.After(ctx.BlockTime()) {
-			return result
-		}
-
-		consumerIds, err := k.GetConsumersToBeStopped(ctx, stopTime)
-		if err != nil {
-			k.Logger(ctx).Error("failed to retrieve consumers to stop",
-				"stop time", stopTime,
-				"error", err)
-			continue
-		}
-		if len(result)+len(consumerIds.Ids) >= int(limit) {
-			remainingConsumerIds := len(result) + len(consumerIds.Ids) - int(limit)
-			if len(consumerIds.Ids[:len(consumerIds.Ids)-remainingConsumerIds]) == 0 {
-				return result
-			}
-			return append(result, consumerIds.Ids[:len(consumerIds.Ids)-remainingConsumerIds]...)
-		} else {
-			result = append(result, consumerIds.Ids...)
-		}
-	}
-
-	return result
-}
-
 // IsValidatorOptedInToChainId checks if the validator with `providerAddr` is opted into the chain with the specified `chainId`.
 // It returns `found == true` and the corresponding chain's `consumerId` if the validator is opted in. Otherwise, it returns an empty string
 // for `consumerId` and `found == false`.
@@ -653,16 +650,18 @@ func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.
 	return "", false
 }
 
-func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime time.Time, spawnTime time.Time) {
-	fmt.Printf("previousSpawnTime: \n(%+v)\n", previousSpawnTime)
-	fmt.Printf("time.Time: \n(%+v)\n", time.Time{})
+// PrepareConsumerForLaunch prepares to move the launch of a consumer chain from the previous spawn time to spawn time.
+// Previous spawn time can correspond to its zero value if the validator was not previously set for launch.
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime time.Time, spawnTime time.Time) error {
 	if !previousSpawnTime.Equal(time.Time{}) {
-		fmt.Println("mpika edo")
 		// if this is not the first initialization and hence `previousSpawnTime` does not contain the zero value of `Time`
 		// remove the consumer id from the previous spawn time
-		k.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, consumerId, previousSpawnTime)
+		err := k.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, consumerId, previousSpawnTime)
+		if err != nil {
+			return err
+		}
 	}
-	k.AppendConsumerToBeLaunchedOnSpawnTime(ctx, consumerId, spawnTime)
+	return k.AppendConsumerToBeLaunchedOnSpawnTime(ctx, consumerId, spawnTime)
 }
 
 // CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence

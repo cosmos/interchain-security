@@ -387,6 +387,85 @@ func TestConsumersToBeStopped(t *testing.T) {
 	require.Equal(t, []string{"consumerId5"}, consumers.Ids)
 }
 
+// TestOptedInConsumerIds tests the `GetOptedInConsumerIds`, `AppendOptedInConsumerId`, and `RemoveOptedInConsumerId` methods
+func TestGetOptedInConsumerIds(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
+	consumers, err := providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
+	require.NoError(t, err)
+	require.Empty(t, consumers)
+
+	err = providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, "consumerId1")
+	require.NoError(t, err)
+	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
+	require.NoError(t, err)
+	require.Equal(t, providertypes.ConsumerIds{
+		Ids: []string{"consumerId1"},
+	}, consumers)
+
+	err = providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, "consumerId2")
+	require.NoError(t, err)
+	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
+	require.NoError(t, err)
+	require.Equal(t, providertypes.ConsumerIds{
+		Ids: []string{"consumerId1", "consumerId2"},
+	}, consumers)
+
+	err = providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, "consumerId3")
+	require.NoError(t, err)
+	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
+	require.NoError(t, err)
+	require.Equal(t, providertypes.ConsumerIds{
+		Ids: []string{"consumerId1", "consumerId2", "consumerId3"},
+	}, consumers)
+
+	// remove all the consumer ids
+	err = providerKeeper.RemoveOptedInConsumerId(ctx, providerAddr, "consumerId2")
+	require.NoError(t, err)
+	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
+	require.NoError(t, err)
+	require.Equal(t, providertypes.ConsumerIds{
+		Ids: []string{"consumerId1", "consumerId3"},
+	}, consumers)
+
+	err = providerKeeper.RemoveOptedInConsumerId(ctx, providerAddr, "consumerId3")
+	require.NoError(t, err)
+
+	err = providerKeeper.RemoveOptedInConsumerId(ctx, providerAddr, "consumerId1")
+	require.NoError(t, err)
+
+	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
+	require.NoError(t, err)
+	require.Empty(t, consumers)
+}
+
+// TestConsumerChainId tests the getter, setter, and deletion of the client id to consumer id methods
+func TestClientIdToConsumerId(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	_, found := providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
+	require.False(t, found)
+
+	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", "consumerId")
+	consumerId, found := providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
+	require.True(t, found)
+	require.Equal(t, "consumerId", consumerId)
+
+	// assert that overwriting the current consumer id record works
+	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", "consumerId2")
+	consumerId, found = providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
+	require.True(t, found)
+	require.Equal(t, "consumerId2", consumerId)
+
+	providerKeeper.DeleteClientIdToConsumerId(ctx, "clientId")
+	consumerId, found = providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
+	require.False(t, found)
+	require.Equal(t, "", consumerId)
+}
+
 // TestGetInitializedConsumersReadyToLaunch tests that the ready to-be-launched consumer chains are returned
 func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -421,31 +500,6 @@ func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 2))
 }
 
-// TestConsumerChainId tests the getter, setter, and deletion of the client id to consumer id methods
-func TestClientIdToConsumerId(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	_, found := providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
-	require.False(t, found)
-
-	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", "consumerId")
-	consumerId, found := providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
-	require.True(t, found)
-	require.Equal(t, "consumerId", consumerId)
-
-	// assert that overwriting the current consumer id record works
-	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", "consumerId2")
-	consumerId, found = providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
-	require.True(t, found)
-	require.Equal(t, "consumerId2", consumerId)
-
-	providerKeeper.DeleteClientIdToConsumerId(ctx, "clientId")
-	consumerId, found = providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
-	require.False(t, found)
-	require.Equal(t, "", consumerId)
-}
-
 func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -472,24 +526,6 @@ func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
 	// time has reached the stop time of all chains
 	ctx = ctx.WithBlockTime(time.Unix(30, 0))
 	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
-}
-
-func TestIsValidatorOptedInToChain(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	chainId := "chainId"
-	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
-	_, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
-	require.False(t, found)
-
-	expectedConsumerId := "consumerId"
-	providerKeeper.SetConsumerChainId(ctx, expectedConsumerId, chainId)
-	providerKeeper.SetOptedIn(ctx, expectedConsumerId, providerAddr)
-	providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, expectedConsumerId)
-	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
-	require.True(t, found)
-	require.Equal(t, expectedConsumerId, actualConsumerId)
 }
 
 func TestUpdateAllowlist(t *testing.T) {
@@ -589,4 +625,98 @@ func TestUpdateMinimumPowerInTopN(t *testing.T) {
 	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
 	require.True(t, found)
 	require.Equal(t, int64(10), minimumPowerInTopN)
+}
+
+func TestIsValidatorOptedInToChain(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainId := "chainId"
+	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
+	_, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
+	require.False(t, found)
+
+	expectedConsumerId := "consumerId"
+	providerKeeper.SetConsumerChainId(ctx, expectedConsumerId, chainId)
+	providerKeeper.SetOptedIn(ctx, expectedConsumerId, providerAddr)
+	providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, expectedConsumerId)
+	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
+	require.True(t, found)
+	require.Equal(t, expectedConsumerId, actualConsumerId)
+}
+
+func TestPrepareConsumerForLaunch(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	spawnTime := time.Now().UTC()
+	err := providerKeeper.PrepareConsumerForLaunch(ctx, "consumerId", time.Time{}, spawnTime)
+	require.NoError(t, err)
+
+	consumers, err := providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
+	require.NoError(t, err)
+	require.Equal(t, providertypes.ConsumerIds{Ids: []string{"consumerId"}}, consumers)
+
+	nextSpawnTime := spawnTime.Add(time.Hour)
+	err = providerKeeper.PrepareConsumerForLaunch(ctx, "consumerId", spawnTime, nextSpawnTime)
+	require.NoError(t, err)
+
+	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
+	require.NoError(t, err)
+	require.Empty(t, consumers)
+
+	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, nextSpawnTime)
+	require.NoError(t, err)
+	require.Equal(t, providertypes.ConsumerIds{Ids: []string{"consumerId"}}, consumers)
+}
+
+func TestCanLaunch(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// cannot launch an unknown chain
+	_, canLaunch := providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// cannot launch a chain without initialization parameters
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// set valid initialization parameters
+	initializationParameters := testkeeper.GetTestInitializationParameters()
+	err := providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", initializationParameters)
+	require.NoError(t, err)
+
+	// cannot launch a launched chain
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Launched)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// cannot launch a stopped chain
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Stopped)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// initialized chain can launch
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.True(t, canLaunch)
+
+	// initialized chain that has spawn time in the past cannot launch
+	ctx = ctx.WithBlockTime(initializationParameters.SpawnTime.Add(time.Second))
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// reset block time so the chain can launch
+	ctx = ctx.WithBlockTime(initializationParameters.SpawnTime.Add(-time.Second))
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.True(t, canLaunch)
+
+	// chain cannot launch without a genesis hash
+	initializationParameters.GenesisHash = nil
+	err = providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", initializationParameters)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.NoError(t, err)
+	require.False(t, canLaunch)
 }

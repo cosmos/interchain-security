@@ -163,5 +163,4 @@ func TestUpdateConsumer(t *testing.T) {
 	require.Equal(t, providertypes.ConsumerIds{
 		Ids: []string{consumerId},
 	}, consumerIds)
-
 }
