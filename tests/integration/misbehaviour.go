@@ -19,7 +19,8 @@ import (
 // The test sets up a CVV channel and sends an empty VSC packet to ensure that the consumer client revision height is greater than 0.
 // It then constructs a Misbehaviour object with two conflicting headers and process the equivocation evidence.
 // After that it verifies that the provider chain correctly processes this misbehavior. The test ensures that all involved
-// validators are jailed, tombstoned, and slashed according to the expected outcomes. It includes steps to assert that their tokens are adjusted based on the slashing fraction.
+// validators are jailed, tombstoned, and slashed according to the expected outcomes. It includes steps to assert
+// that their tokens are adjusted based on the slashing fraction.
 func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
