@@ -18,5 +18,5 @@ const (
 	AttributeConsumerConsensusPubKey   = "consumer_consensus_pub_key"
 	AttributeConsumerRewardDenom       = "consumer_reward_denom"
 	AttributeConsumerCommissionRate    = "consumer_commission_rate"
-	AttributeConsumerChainID           = "consumer_chain_id"
+	AttributeConsumerId                = "consumer_chain_id"
 )

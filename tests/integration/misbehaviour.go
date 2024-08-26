@@ -34,7 +34,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	misb := &ibctmtypes.Misbehaviour{
 		ClientId: s.path.EndpointA.ClientID,
 		Header1: s.consumerChain.CreateTMClientHeader(
-			s.consumerChain.ChainID,
+			s.getFirstBundle().Chain.ChainID,
 			int64(clientHeight.RevisionHeight+1),
 			clientHeight,
 			altTime,
@@ -46,7 +46,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		// create a different header by changing the header timestamp only
 		// in order to create an equivocation, i.e. both headers have the same deterministic states
 		Header2: s.consumerChain.CreateTMClientHeader(
-			s.consumerChain.ChainID,
+			s.getFirstBundle().Chain.ChainID,
 			int64(clientHeight.RevisionHeight+1),
 			clientHeight,
 			altTime.Add(10*time.Second),
@@ -61,13 +61,13 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	validator, _ := s.getValByIdx(0)
 	initialTokens := math.LegacyNewDecFromInt(validator.GetTokens())
 
-	err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), *misb)
+	err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), s.getFirstBundle().ConsumerId, *misb)
 	s.NoError(err)
 
 	// verify that validators are jailed, tombstoned, and slashed
 	for _, v := range clientTMValset.Validators {
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
-		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, types.NewConsumerConsAddress(consuAddr))
+		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.getFirstBundle().ConsumerId, types.NewConsumerConsAddress(consuAddr))
 		val, err := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
 		s.Require().NoError(err)
 		s.Require().True(val.Jailed)
@@ -102,7 +102,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 
 	// create a consumer client header
 	clientHeader := s.consumerChain.CreateTMClientHeader(
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 		int64(clientHeight.RevisionHeight+1),
 		clientHeight,
 		altTime,
@@ -144,7 +144,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			"incorrect valset - shouldn't pass",
 			func() *ibctmtypes.Misbehaviour {
 				clientHeader := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					altTime.Add(time.Minute),
@@ -155,7 +155,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				)
 
 				clientHeaderWithCorruptedValset := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					altTime.Add(time.Hour),
@@ -181,7 +181,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			"incorrect valset 2 - shouldn't pass",
 			func() *ibctmtypes.Misbehaviour {
 				clientHeader := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					altTime.Add(time.Minute),
@@ -192,7 +192,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				)
 
 				clientHeaderWithCorruptedSigs := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					altTime.Add(time.Hour),
@@ -220,7 +220,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			"incorrect signatures - shouldn't pass",
 			func() *ibctmtypes.Misbehaviour {
 				clientHeader := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					altTime.Add(time.Minute),
@@ -231,7 +231,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				)
 
 				clientHeaderWithCorruptedSigs := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					altTime.Add(time.Hour),
@@ -262,7 +262,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					// the resulting header contains invalid fields
 					// i.e. ValidatorsHash, NextValidatorsHash.
 					Header2: s.consumerChain.CreateTMClientHeader(
-						s.consumerChain.ChainID,
+						s.getFirstBundle().Chain.ChainID,
 						int64(clientHeight.RevisionHeight+1),
 						clientHeight,
 						altTime,
@@ -286,7 +286,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					Header1:  clientHeader,
 					// the resulting header contains a different BlockID
 					Header2: s.consumerChain.CreateTMClientHeader(
-						s.consumerChain.ChainID,
+						s.getFirstBundle().Chain.ChainID,
 						int64(clientHeight.RevisionHeight+1),
 						clientHeight,
 						altTime.Add(time.Minute),
@@ -308,7 +308,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				// create a valid header with a different hash
 				// and commit round
 				amnesiaHeader := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					altTime.Add(time.Minute),
@@ -383,7 +383,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 
 	// create a valid client header
 	clientHeader := s.consumerChain.CreateTMClientHeader(
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 		int64(clientHeight.RevisionHeight+1),
 		clientHeight,
 		headerTs,
@@ -402,7 +402,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	// create a conflicting client with different block ID using
 	// to alternative validator set
 	clientHeaderWithDiffBlockID := s.consumerChain.CreateTMClientHeader(
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 		int64(clientHeight.RevisionHeight+1),
 		clientHeight,
 		headerTs,
@@ -419,7 +419,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 
 	// create a conflicting client header with insufficient voting power
 	clientHeaderWithInsufficientVotingPower := s.consumerChain.CreateTMClientHeader(
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 		int64(clientHeight.RevisionHeight+1),
 		clientHeight,
 		// use a different block time to change the header BlockID
@@ -434,7 +434,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	equivocationEvidenceMinHeight := clientHeight.RevisionHeight + 1
 	s.providerApp.GetProviderKeeper().SetEquivocationEvidenceMinHeight(
 		s.providerCtx(),
-		s.consumerChain.ChainID,
+		s.getFirstBundle().ConsumerId,
 		equivocationEvidenceMinHeight,
 	)
 
@@ -485,7 +485,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 				ClientId: s.path.EndpointA.ClientID,
 				Header1:  clientHeader,
 				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(clientHeight.RevisionHeight+2),
 					clientHeight,
 					headerTs,
@@ -502,7 +502,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
 				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(equivocationEvidenceMinHeight-1),
 					clientHeight,
 					headerTs,
@@ -512,7 +512,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 					altSigners,
 				),
 				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+					s.getFirstBundle().Chain.ChainID,
 					int64(equivocationEvidenceMinHeight-1),
 					clientHeight,
 					headerTs,
@@ -547,7 +547,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			err := s.providerApp.GetProviderKeeper().CheckMisbehaviour(s.providerCtx(), *tc.misbehaviour)
+			err := s.providerApp.GetProviderKeeper().CheckMisbehaviour(s.providerCtx(), s.getFirstBundle().ConsumerId, *tc.misbehaviour)
 			cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointA.ClientID)
 			s.Require().True(ok)
 			// verify that the client wasn't frozen

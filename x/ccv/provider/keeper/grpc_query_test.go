@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -21,7 +23,7 @@ import (
 )
 
 func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
-	chainID := consumer
+	consumerId := "0"
 
 	providerConsAddress, err := sdk.ConsAddressFromBech32("cosmosvalcons1wpex7anfv3jhystyv3eq20r35a")
 	require.NoError(t, err)
@@ -34,9 +36,9 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	pk.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
+	pk.SetValidatorConsumerPubKey(ctx, consumerId, providerAddr, consumerKey)
 
-	consumerPubKey, found := pk.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+	consumerPubKey, found := pk.GetValidatorConsumerPubKey(ctx, consumerId, providerAddr)
 	require.True(t, found, "consumer pubkey not found")
 	require.NotEmpty(t, consumerPubKey, "consumer pubkey is empty")
 	require.Equal(t, consumerPubKey, consumerKey)
@@ -45,17 +47,16 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, nil)
 	require.Error(t, err)
 
-	// Request with chainId is empty
+	// Request with empty consumer id
 	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{})
 	require.Error(t, err)
 
-	// Request with chainId is invalid
-	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ChainId: "invalidChainId"})
-	require.NoError(t, err)
-	require.Equal(t, []*types.PairValConAddrProviderAndConsumer{}, response.PairValConAddr)
+	// Request with invalid consumer id
+	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: "invalidConsumerId"})
+	require.Error(t, err)
 
 	// Request is valid
-	response, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ChainId: chainID})
+	response, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: consumerId})
 	require.NoError(t, err)
 
 	expectedResult := types.PairValConAddrProviderAndConsumer{
@@ -68,20 +69,21 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 }
 
 func TestQueryConsumerChainOptedInValidators(t *testing.T) {
-	chainID := "chainID"
-
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	consumerId := "0"
+
 	req := types.QueryConsumerChainOptedInValidatorsRequest{
-		ChainId: chainID,
+		ConsumerId: consumerId,
 	}
 
 	// error returned from not yet proposed or not yet registered chain
 	_, err := pk.QueryConsumerChainOptedInValidators(ctx, &req)
 	require.Error(t, err)
 
-	pk.SetProposedConsumerChain(ctx, chainID, 1)
+	pk.FetchAndIncrementConsumerId(ctx)
+	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
 
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
@@ -89,63 +91,101 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 		ValidatorsProviderAddresses: []string{providerAddr1.String(), providerAddr2.String()},
 	}
 
-	pk.SetOptedIn(ctx, chainID, providerAddr1)
-	pk.SetOptedIn(ctx, chainID, providerAddr2)
+	pk.SetOptedIn(ctx, consumerId, providerAddr1)
+	pk.SetOptedIn(ctx, consumerId, providerAddr2)
 	res, err := pk.QueryConsumerChainOptedInValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expectedResponse, res)
 }
 
 func TestQueryConsumerValidators(t *testing.T) {
-	chainID := "chainID"
-
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	consumerId := "0"
+
 	req := types.QueryConsumerValidatorsRequest{
-		ChainId: chainID,
+		ConsumerId: consumerId,
 	}
 
 	// error returned from not-started chain
 	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
-	consumerKey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &consumerKey1}
-	expectedCommissionRate1 := math.LegacyMustNewDecFromStr("0.123")
-	pk.SetConsumerCommissionRate(ctx, chainID, providerAddr1, expectedCommissionRate1)
+	val1 := createStakingValidator(ctx, mocks, 1, 1, 1)
+	valConsAddr1, _ := val1.GetConsAddr()
+	providerAddr1 := types.NewProviderConsAddress(valConsAddr1)
+	pk1, _ := val1.CmtConsPublicKey()
+	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &pk1}
+	val1.Tokens = sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction)
+	val1.Description = stakingtypes.Description{Moniker: "ConsumerValidator1"}
+	val1.Commission.Rate = math.LegacyMustNewDecFromStr("0.123")
 
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
-	consumerKey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &consumerKey2}
-	expectedCommissionRate2 := math.LegacyMustNewDecFromStr("0.123")
-	pk.SetConsumerCommissionRate(ctx, chainID, providerAddr2, expectedCommissionRate2)
+	val2 := createStakingValidator(ctx, mocks, 1, 2, 2)
+	valConsAddr2, _ := val2.GetConsAddr()
+	providerAddr2 := types.NewProviderConsAddress(valConsAddr2)
+	pk2, _ := val2.CmtConsPublicKey()
+	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &pk2}
+	val2.Tokens = sdk.TokensFromConsensusPower(2, sdk.DefaultPowerReduction)
+	val2.Description = stakingtypes.Description{Moniker: "ConsumerValidator2"}
+	val2.Commission.Rate = math.LegacyMustNewDecFromStr("0.123")
+
+	// set up the client id so the chain looks like it "started"
+	pk.SetConsumerClientId(ctx, consumerId, "clientID")
+	pk.SetConsumerValSet(ctx, consumerId, []types.ConsensusValidator{consumerValidator1, consumerValidator2})
+	// set a consumer commission rate for val1
+	val1ConsComRate := math.LegacyMustNewDecFromStr("0.456")
+	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr1, val1ConsComRate)
 
 	expectedResponse := types.QueryConsumerValidatorsResponse{
 		Validators: []*types.QueryConsumerValidatorsValidator{
-			{ProviderAddress: providerAddr1.String(), ConsumerKey: &consumerKey1, Power: 1, Rate: expectedCommissionRate1},
-			{ProviderAddress: providerAddr2.String(), ConsumerKey: &consumerKey2, Power: 2, Rate: expectedCommissionRate2},
+			{
+				ProviderAddress:         providerAddr1.String(),
+				ConsumerKey:             &pk1,
+				ConsumerPower:           1,
+				ConsumerCommissionRate:  val1ConsComRate,
+				Description:             val1.Description,
+				ProviderOperatorAddress: val1.OperatorAddress,
+				Jailed:                  val1.Jailed,
+				Status:                  val1.Status,
+				ProviderTokens:          val1.Tokens,
+				ProviderCommissionRate:  val1.Commission.Rate,
+				ProviderPower:           1,
+				ValidatesCurrentEpoch:   true,
+			},
+			{
+				ProviderAddress:         providerAddr2.String(),
+				ConsumerKey:             &pk2,
+				ConsumerPower:           2,
+				ConsumerCommissionRate:  val2.Commission.Rate,
+				Description:             val2.Description,
+				ProviderOperatorAddress: val2.OperatorAddress,
+				Jailed:                  val2.Jailed,
+				Status:                  val2.Status,
+				ProviderTokens:          val2.Tokens,
+				ProviderCommissionRate:  val2.Commission.Rate,
+				ProviderPower:           2,
+				ValidatesCurrentEpoch:   true,
+			},
 		},
 	}
 
-	// set up the client id so the chain looks like it "started"
-	pk.SetConsumerClientId(ctx, chainID, "clientID")
-	pk.SetConsumerValSet(ctx, chainID, []types.ConsensusValidator{consumerValidator1, consumerValidator2})
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr1).Return(val1, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr2).Return(val2, nil).AnyTimes()
+	mocks.MockStakingKeeper.EXPECT().PowerReduction(ctx).Return(sdk.DefaultPowerReduction).AnyTimes()
+
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{val1, val2}, -1) // -1 to allow the calls "AnyTimes"
 
 	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expectedResponse, res)
 
 	// validator with no set consumer commission rate
-	pk.DeleteConsumerCommissionRate(ctx, chainID, providerAddr1)
-	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.456")
+	pk.DeleteConsumerCommissionRate(ctx, consumerId, providerAddr1)
 	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
-	val := stakingtypes.Validator{Commission: stakingtypes.Commission{CommissionRates: stakingtypes.CommissionRates{Rate: expectedCommissionRate}}}
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-		ctx, providerAddr1.ToSdkConsAddr()).Return(val, nil).Times(1)
-	res, _ = pk.QueryConsumerValidators(ctx, &req)
-	require.Equal(t, expectedCommissionRate, res.Validators[0].Rate)
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, val1.Commission.Rate, res.Validators[0].ConsumerCommissionRate)
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
@@ -197,14 +237,14 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 }
 
 func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
-	chainID := "chainID"
+	consumerId := "0"
 
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	req := types.QueryValidatorConsumerCommissionRateRequest{
-		ChainId:         chainID,
+		ConsumerId:      consumerId,
 		ProviderAddress: providerAddr.String(),
 	}
 
@@ -212,15 +252,17 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 	_, err := pk.QueryValidatorConsumerCommissionRate(ctx, &req)
 	require.Error(t, err)
 
-	pk.SetProposedConsumerChain(ctx, chainID, 1)
+	pk.FetchAndIncrementConsumerId(ctx)
+	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+
 	// validator with set consumer commission rate
 	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.123")
-	pk.SetConsumerCommissionRate(ctx, chainID, providerAddr, expectedCommissionRate)
+	pk.SetConsumerCommissionRate(ctx, consumerId, providerAddr, expectedCommissionRate)
 	res, _ := pk.QueryValidatorConsumerCommissionRate(ctx, &req)
 	require.Equal(t, expectedCommissionRate, res.Rate)
 
 	// validator with no set consumer commission rate
-	pk.DeleteConsumerCommissionRate(ctx, chainID, providerAddr)
+	pk.DeleteConsumerCommissionRate(ctx, consumerId, providerAddr)
 	expectedCommissionRate = math.LegacyMustNewDecFromStr("0.456")
 
 	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
@@ -285,9 +327,11 @@ func TestGetConsumerChain(t *testing.T) {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
 		topN := topNs[i]
 		pk.SetConsumerClientId(ctx, chainID, clientID)
-		pk.SetTopN(ctx, chainID, topN)
-		pk.SetValidatorSetCap(ctx, chainID, validatorSetCaps[i])
-		pk.SetValidatorsPowerCap(ctx, chainID, validatorPowerCaps[i])
+		pk.SetConsumerPowerShapingParameters(ctx, chainID, types.PowerShapingParameters{
+			Top_N:              topN,
+			ValidatorSetCap:    validatorSetCaps[i],
+			ValidatorsPowerCap: validatorPowerCaps[i],
+		})
 		pk.SetMinimumPowerInTopN(ctx, chainID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
 			pk.SetAllowlist(ctx, chainID, addr)
@@ -318,9 +362,25 @@ func TestGetConsumerChain(t *testing.T) {
 			})
 	}
 
-	for i, chainID := range pk.GetAllRegisteredAndProposedChainIDs(ctx) {
+	for i, chainID := range pk.GetAllActiveConsumerIds(ctx) {
 		c, err := pk.GetConsumerChain(ctx, chainID)
 		require.NoError(t, err)
 		require.Equal(t, expectedGetAllOrder[i], c)
 	}
+}
+
+func TestQueryConsumerIdFromClientId(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	_, err := providerKeeper.QueryConsumerIdFromClientId(ctx, &types.QueryConsumerIdFromClientIdRequest{ClientId: "clientId"})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "no known consumer chain")
+
+	expectedConsumerId := "consumerId"
+	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", expectedConsumerId)
+
+	res, err := providerKeeper.QueryConsumerIdFromClientId(ctx, &types.QueryConsumerIdFromClientIdRequest{ClientId: "clientId"})
+	require.NoError(t, err)
+	require.Equal(t, expectedConsumerId, res.ConsumerId)
 }

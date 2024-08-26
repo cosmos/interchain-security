@@ -40,6 +40,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerChainsValidatorHasToValidate())
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	cmd.AddCommand(CmdBlocksUntilNextEpoch())
+	cmd.AddCommand(CmdConsumerIdFromClientId())
 	return cmd
 }
 
@@ -57,7 +58,7 @@ func CmdConsumerGenesis() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := types.QueryConsumerGenesisRequest{ChainId: args[0]}
+			req := types.QueryConsumerGenesisRequest{ConsumerId: args[0]}
 			res, err := queryClient.QueryConsumerGenesis(cmd.Context(), &req)
 			if err != nil {
 				return err
@@ -211,7 +212,7 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			consumerChainID := args[0]
+			consumerId := args[0]
 
 			addr, err := sdk.ConsAddressFromBech32(args[1])
 			if err != nil {
@@ -219,7 +220,7 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 			}
 
 			req := &types.QueryValidatorConsumerAddrRequest{
-				ChainId:         consumerChainID,
+				ConsumerId:      consumerId,
 				ProviderAddress: addr.String(),
 			}
 			res, err := queryClient.QueryValidatorConsumerAddr(cmd.Context(), req)
@@ -366,7 +367,7 @@ func CmdAllPairsValConAddrByConsumerChainID() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := types.QueryAllPairsValConAddrByConsumerChainIDRequest{ChainId: args[0]}
+			req := types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: args[0]}
 			res, err := queryClient.QueryAllPairsValConAddrByConsumerChainID(cmd.Context(), &req)
 			if err != nil {
 				return err
@@ -435,7 +436,7 @@ $ %s consumer-opted-in-validators foochain
 			queryClient := types.NewQueryClient(clientCtx)
 
 			res, err := queryClient.QueryConsumerChainOptedInValidators(cmd.Context(),
-				&types.QueryConsumerChainOptedInValidatorsRequest{ChainId: args[0]})
+				&types.QueryConsumerChainOptedInValidatorsRequest{ConsumerId: args[0]})
 			if err != nil {
 				return err
 			}
@@ -470,7 +471,7 @@ $ %s consumer-validators foochain
 			queryClient := types.NewQueryClient(clientCtx)
 
 			res, err := queryClient.QueryConsumerValidators(cmd.Context(),
-				&types.QueryConsumerValidatorsRequest{ChainId: args[0]})
+				&types.QueryConsumerValidatorsRequest{ConsumerId: args[0]})
 			if err != nil {
 				return err
 			}
@@ -554,7 +555,7 @@ $ %s validator-consumer-commission-rate foochain %s1gghjut3ccd8ay0zduzj64hwre2fx
 
 			res, err := queryClient.QueryValidatorConsumerCommissionRate(cmd.Context(),
 				&types.QueryValidatorConsumerCommissionRateRequest{
-					ChainId:         args[0],
+					ConsumerId:      args[0],
 					ProviderAddress: addr.String(),
 				})
 			if err != nil {
@@ -584,6 +585,33 @@ func CmdBlocksUntilNextEpoch() *cobra.Command {
 
 			req := &types.QueryBlocksUntilNextEpochRequest{}
 			res, err := queryClient.QueryBlocksUntilNextEpoch(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdConsumerIdFromClientId() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "consumer-id-from-client-id [client-id]",
+		Short: "Query the consumer id of the chain associated with the provided client id",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryConsumerIdFromClientIdRequest{ClientId: args[0]}
+			res, err := queryClient.QueryConsumerIdFromClientId(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

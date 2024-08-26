@@ -20,8 +20,8 @@ import (
 
 const (
 	ProposalTypeConsumerAddition     = "ConsumerAddition"
-	ProposalTypeConsumerRemoval      = "ConsumerRemoval"
-	ProposalTypeConsumerModification = "ConsumerModification"
+	ProposalTypeConsumerRemoval      = "RemoveConsumer"
+	ProposalTypeConsumerModification = "UpdateConsumer"
 	ProposalTypeEquivocation         = "Equivocation"
 	ProposalTypeChangeRewardDenoms   = "ChangeRewardDenoms"
 )
@@ -29,7 +29,6 @@ const (
 var (
 	_ govv1beta1.Content = &ConsumerAdditionProposal{}
 	_ govv1beta1.Content = &ConsumerRemovalProposal{}
-	_ govv1beta1.Content = &ConsumerModificationProposal{}
 	_ govv1beta1.Content = &ChangeRewardDenomsProposal{}
 	_ govv1beta1.Content = &EquivocationProposal{}
 )
@@ -236,55 +235,6 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 
 	if sccp.StopTime.IsZero() {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
-	}
-	return nil
-}
-
-// NewConsumerModificationProposal creates a new consumer modification proposal.
-func NewConsumerModificationProposal(title, description, chainID string,
-	topN uint32,
-	validatorsPowerCap uint32,
-	validatorSetCap uint32,
-	allowlist []string,
-	denylist []string,
-	minStake uint64,
-	allowInactiveVals bool,
-) govv1beta1.Content {
-	return &ConsumerModificationProposal{
-		Title:              title,
-		Description:        description,
-		ChainId:            chainID,
-		Top_N:              topN,
-		ValidatorsPowerCap: validatorsPowerCap,
-		ValidatorSetCap:    validatorSetCap,
-		Allowlist:          allowlist,
-		Denylist:           denylist,
-		MinStake:           minStake,
-		AllowInactiveVals:  allowInactiveVals,
-	}
-}
-
-// ProposalRoute returns the routing key of a consumer modification proposal.
-func (cccp *ConsumerModificationProposal) ProposalRoute() string { return RouterKey }
-
-// ProposalType returns the type of the consumer modification proposal.
-func (cccp *ConsumerModificationProposal) ProposalType() string {
-	return ProposalTypeConsumerModification
-}
-
-// ValidateBasic runs basic stateless validity checks
-func (cccp *ConsumerModificationProposal) ValidateBasic() error {
-	if err := govv1beta1.ValidateAbstract(cccp); err != nil {
-		return err
-	}
-
-	if strings.TrimSpace(cccp.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerModificationProposal, "consumer chain id must not be blank")
-	}
-
-	err := ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap)
-	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
 	}
 	return nil
 }
