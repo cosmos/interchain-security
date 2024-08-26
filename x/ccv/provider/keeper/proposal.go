@@ -45,7 +45,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	phase, found := k.GetConsumerPhase(ctx, consumerId)
 	if !found || phase != Initialized {
 		return errorsmod.Wrapf(types.ErrInvalidPhase,
-			"cannot create client for consumer chain that is not in the Initialized phase: %s", consumerId)
+			"cannot create client for consumer chain that is not in the Initialized phase but in phase %d: %s", phase, consumerId)
 	}
 
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
@@ -94,7 +94,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	k.SetConsumerClientId(ctx, consumerId, clientID)
 	k.SetClientIdToConsumerId(ctx, clientID, consumerId)
 
-	k.Logger(ctx).Info("consumer chain registered (client created)",
+	k.Logger(ctx).Info("consumer chain launched (client created)",
 		"consumer id", consumerId,
 		"client id", clientID,
 	)
@@ -345,7 +345,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		}
 		// Remove consumer to prevent re-trying launching this chain.
 		// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
-		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, record.SpawnTime)
+		k.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, consumerId, record.SpawnTime)
 
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.LaunchConsumer(cachedCtx, consumerId)
@@ -492,7 +492,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 
 		k.SetConsumerPhase(cachedCtx, consumerId, Stopped)
-		k.RemoveConsumerFromToBeStoppedConsumers(ctx, consumerId, stopTime)
+		k.RemoveConsumerToBeStoppedFromStopTime(ctx, consumerId, stopTime)
 		writeFn()
 
 		k.Logger(ctx).Info("executed consumer removal",
