@@ -192,8 +192,12 @@ message QueryConsumerGenesisResponse {
 }
 
 message QueryConsumerChainsRequest {
+ // filter_by_phase enable the filtering of the consumer chains
+ // returned by phase, default is "Launched"  
   bool filter_by_phase = 1;
-  uint32 phase = 2;
+// The phase of the consumer chains returned
+// Registered=0|Initialized=1|FailedToLaunched=2|Launched=3|Stopped=4
+uint32 phase = 2;
 }
 
 message QueryConsumerChainsResponse { repeated Chain chains = 1; }
@@ -228,7 +232,7 @@ message Chain {
   repeated string allowlist = 7;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
-  // The phase the consumer chain is (Registered=0|Initialized=1|FailedToLaunched=2|Launched=3|Stopped=4)
+  // The phase the consumer chain is in (Registered=0|Initialized=1|FailedToLaunched=2|Launched=3|Stopped=4)
   uint32 phase = 9;
   // The consumer chain metadata 
   ConsumerMetadata metadata = 10  [(gogoproto.nullable) = false ];

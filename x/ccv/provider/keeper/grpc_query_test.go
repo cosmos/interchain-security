@@ -2,9 +2,9 @@ package keeper_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
-
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -18,6 +18,7 @@ import (
 
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -400,4 +401,106 @@ func TestQueryConsumerIdFromClientId(t *testing.T) {
 	res, err := providerKeeper.QueryConsumerIdFromClientId(ctx, &types.QueryConsumerIdFromClientIdRequest{ClientId: "clientId"})
 	require.NoError(t, err)
 	require.Equal(t, expectedConsumerId, res.ConsumerId)
+}
+
+// TestGetConsumerChain tests GetConsumerChain behaviour correctness
+func TestGetConsumerChains(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerNum := 4
+	consumerIds := make([]string, consumerNum)
+	consumers := make([]*types.Chain, consumerNum)
+
+	req := types.QueryConsumerChainsRequest{}
+	expectedResponse := types.QueryConsumerChainsResponse{
+		Chains: []*types.Chain{},
+	}
+	// expect to consumer
+	res, err := pk.QueryConsumerChains(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expectedResponse, res)
+
+	// create four consumer chains all in the "Registered" phase
+	for i := 0; i < consumerNum; i++ {
+		cID := pk.FetchAndIncrementConsumerId(ctx)
+		c := types.Chain{
+			ChainId:            cID,
+			MinPowerInTop_N:    -1,
+			ValidatorsPowerCap: 0,
+			ValidatorSetCap:    0,
+			Allowlist:          []string{},
+			Denylist:           []string{},
+			Phase:              uint32(keeper.Registered),
+			Metadata:           types.ConsumerMetadata{Name: "consumer-" + strconv.Itoa(0)},
+		}
+		pk.SetConsumerPhase(ctx, cID, keeper.ConsumerPhase(c.Phase))
+		pk.SetConsumerMetadata(ctx, cID, c.Metadata)
+
+		consumerIds[i] = cID
+		consumers[i] = &c
+	}
+
+	// expect no consumers when phase filter isn't set
+	res, err = pk.QueryConsumerChains(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expectedResponse, res)
+
+	// expect all consumers when phase filter is enable and set to "Registered"
+	req.FilterByPhase = true
+	req.Phase = uint32(keeper.Registered)
+	expectedResponse.Chains = consumers
+
+	res, err = pk.QueryConsumerChains(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expectedResponse, res)
+
+	// update a consumer to be perceived as "Launched"
+	consumers[0].ClientId = "clientID"
+	consumers[0].Phase = uint32(keeper.Launched)
+	pk.SetConsumerClientId(ctx, consumers[0].ChainId, "clientID")
+	pk.SetConsumerPhase(ctx, consumers[0].ChainId, keeper.Launched)
+
+	// expect the updated consumers when phase filter is enable and set to "Registered"
+	req.FilterByPhase = true
+	req.Phase = uint32(keeper.Launched)
+	expectedResponse.Chains = consumers[0:1]
+
+	res, err = pk.QueryConsumerChains(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expectedResponse, res)
+
+	// repeat the same test for the Initialized and FailedToLaunched and Stopped phase
+	// Initialized
+	req.Phase = uint32(keeper.Initialized)
+	consumers[1].Phase = uint32(keeper.Initialized)
+
+	err = pk.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumers[1].ChainId, time.Now())
+	pk.SetConsumerPhase(ctx, consumers[1].ChainId, keeper.Initialized)
+	require.NoError(t, err)
+	expectedResponse.Chains = consumers[1:2]
+
+	res, err = pk.QueryConsumerChains(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expectedResponse, res)
+
+	// Stopped
+	req.Phase = uint32(keeper.Stopped)
+	consumers[2].Phase = uint32(keeper.Stopped)
+	pk.SetConsumerPhase(ctx, consumers[2].ChainId, keeper.Stopped)
+
+	expectedResponse.Chains = consumers[2:3]
+	res, err = pk.QueryConsumerChains(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expectedResponse, res)
+
+	// FailedToLaunch
+	req.Phase = uint32(keeper.FailedToLaunch)
+	consumers[3].Phase = uint32(keeper.FailedToLaunch)
+	pk.SetConsumerPhase(ctx, consumers[3].ChainId, keeper.FailedToLaunch)
+
+	expectedResponse.Chains = consumers[3:]
+	res, err = pk.QueryConsumerChains(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expectedResponse, res)
 }

@@ -12,7 +12,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -58,29 +57,33 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	consumerIDs := []string{}
 
-	if req.FilterByPhase {
-		switch phase := byte(req.Phase); phase {
-		case keeper.Launched:
-			for _, cID := range k.GetAllRegisteredConsumerIds(ctx) {
-				consumerIDs = append(consumerIDs, cID)
-			}
-		case keeper.Initialized:
-			consumerIDs = append(consumerIDs, k.GetInitializedConsumersReadyToLaunch(ctx, uint32(lastCID-1))...)
-		case keeper.Registered || keeper.FailedToLaunch || keeper.Stopped:
-			for i := 0; i < lastCID; i++ {
-				p, ok := k.GetConsumerPhase(ctx, strconv.Itoa(i))
-				if !ok {
-					// log something
-					continue
-				}
-				if byte(p) == phase {
-					consumerIDs = append(consumerIDs, strconv.Itoa(i))
-				}
-			}
+	// return the consumer chains in the "Launched" phase by default
+	phase := Launched
 
-		default:
-			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid consumer phase %s", phase))
+	// update phase if filter flag is  set
+	if req.FilterByPhase {
+		phase = ConsumerPhase(byte(req.Phase))
+	}
+
+	switch {
+	case phase == Launched:
+		consumerIDs = append(consumerIDs, k.GetAllRegisteredConsumerIds(ctx)...)
+	case phase == Initialized:
+		consumerIDs = append(consumerIDs, k.GetInitializedConsumers(ctx)...)
+	case phase == Registered || phase == FailedToLaunch || phase == Stopped:
+		for i := 0; i < lastCID; i++ {
+			p, ok := k.GetConsumerPhase(ctx, strconv.Itoa(i))
+			if !ok {
+				// log something
+				continue
+			}
+			if p == phase {
+				consumerIDs = append(consumerIDs, strconv.Itoa(i))
+			}
 		}
+
+	default:
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid consumer phase %v", phase))
 	}
 
 	chains := make([]*types.Chain, len(consumerIDs))
@@ -98,10 +101,10 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
 func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chain, error) {
-	clientID, found := k.GetConsumerClientId(ctx, consumerId)
-	if !found {
-		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", consumerId)
-	}
+	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
+	// if !found {
+	// 	return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", consumerId)
+	// }
 
 	topN := k.GetTopN(ctx, consumerId)
 

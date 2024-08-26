@@ -137,8 +137,12 @@ func (m *QueryConsumerGenesisResponse) GetGenesisState() types.ConsumerGenesisSt
 }
 
 type QueryConsumerChainsRequest struct {
-	FilterByPhase bool   `protobuf:"varint,1,opt,name=filter_by_phase,json=filterByPhase,proto3" json:"filter_by_phase,omitempty"`
-	Phase         uint32 `protobuf:"varint,2,opt,name=phase,proto3" json:"phase,omitempty"`
+	// filter_by_phase enable the filtering of the consumer chains
+	// returned by phase, default is "Launched"
+	FilterByPhase bool `protobuf:"varint,1,opt,name=filter_by_phase,json=filterByPhase,proto3" json:"filter_by_phase,omitempty"`
+	// The phase of the consumer chains returned
+	// Registered=0|Initialized=1|FailedToLaunched=2|Launched=3|Stopped=4
+	Phase uint32 `protobuf:"varint,2,opt,name=phase,proto3" json:"phase,omitempty"`
 }
 
 func (m *QueryConsumerChainsRequest) Reset()         { *m = QueryConsumerChainsRequest{} }
@@ -418,7 +422,7 @@ type Chain struct {
 	Allowlist []string `protobuf:"bytes,7,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
 	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,8,rep,name=denylist,proto3" json:"denylist,omitempty"`
-	// The phase the consumer chain is (Registered=0|Initialized=1|FailedToLaunched=2|Launched=3|Stopped=4)
+	// The phase the consumer chain is in (Registered=0|Initialized=1|FailedToLaunched=2|Launched=3|Stopped=4)
 	Phase uint32 `protobuf:"varint,9,opt,name=phase,proto3" json:"phase,omitempty"`
 	// The consumer chain metadata
 	Metadata ConsumerMetadata `protobuf:"bytes,10,opt,name=metadata,proto3" json:"metadata"`
