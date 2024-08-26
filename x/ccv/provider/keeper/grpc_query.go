@@ -50,9 +50,9 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	lastCID, err := strconv.Atoi(k.FetchAndIncrementConsumerId(ctx))
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to get last consumer ID")
+	lastCID, ok := k.GetConsumerId(ctx)
+	if !ok {
+		return &types.QueryConsumerChainsResponse{}, nil
 	}
 
 	consumerIDs := []string{}
@@ -71,14 +71,14 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	case phase == Initialized:
 		consumerIDs = append(consumerIDs, k.GetInitializedConsumers(ctx)...)
 	case phase == Registered || phase == FailedToLaunch || phase == Stopped:
-		for i := 0; i < lastCID; i++ {
-			p, ok := k.GetConsumerPhase(ctx, strconv.Itoa(i))
+		for i := uint64(0); i <= lastCID; i++ {
+			p, ok := k.GetConsumerPhase(ctx, strconv.FormatInt(int64(i), 10))
 			if !ok {
 				// log something
 				continue
 			}
 			if p == phase {
-				consumerIDs = append(consumerIDs, strconv.Itoa(i))
+				consumerIDs = append(consumerIDs, strconv.FormatInt(int64(i), 10))
 			}
 		}
 
@@ -101,12 +101,6 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
 func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chain, error) {
-	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
-	// if !found {
-	// 	return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", consumerId)
-	// }
-
-	topN := k.GetTopN(ctx, consumerId)
 
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
@@ -140,6 +134,9 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	if err != nil {
 		return types.Chain{}, fmt.Errorf("cannot get metadata for consumer (%s): %w", consumerId, err)
 	}
+
+	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
+	topN := k.GetTopN(ctx, consumerId)
 
 	return types.Chain{
 		ChainId:            consumerId,
