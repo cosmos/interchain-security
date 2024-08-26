@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -11,6 +12,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -49,13 +51,46 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	chains := []*types.Chain{}
-	for _, chainID := range k.GetAllRegisteredConsumerIds(ctx) {
-		c, err := k.GetConsumerChain(ctx, chainID)
+	lastCID, err := strconv.Atoi(k.FetchAndIncrementConsumerId(ctx))
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get last consumer ID")
+	}
+
+	consumerIDs := []string{}
+
+	if req.FilterByPhase {
+		switch phase := byte(req.Phase); phase {
+		case keeper.Launched:
+			for _, cID := range k.GetAllRegisteredConsumerIds(ctx) {
+				consumerIDs = append(consumerIDs, cID)
+			}
+		case keeper.Initialized:
+			consumerIDs = append(consumerIDs, k.GetInitializedConsumersReadyToLaunch(ctx, uint32(lastCID-1))...)
+		case keeper.Registered || keeper.FailedToLaunch || keeper.Stopped:
+			for i := 0; i < lastCID; i++ {
+				p, ok := k.GetConsumerPhase(ctx, strconv.Itoa(i))
+				if !ok {
+					// log something
+					continue
+				}
+				if byte(p) == phase {
+					consumerIDs = append(consumerIDs, strconv.Itoa(i))
+				}
+			}
+
+		default:
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid consumer phase %s", phase))
+		}
+	}
+
+	chains := make([]*types.Chain, len(consumerIDs))
+	for i, cID := range consumerIDs {
+		c, err := k.GetConsumerChain(ctx, cID)
 		if err != nil {
+			// log something instead?
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		chains = append(chains, &c)
+		chains[i] = &c
 	}
 
 	return &types.QueryConsumerChainsResponse{Chains: chains}, nil

@@ -191,7 +191,10 @@ message QueryConsumerGenesisResponse {
       [ (gogoproto.nullable) = false ];
 }
 
-message QueryConsumerChainsRequest {}
+message QueryConsumerChainsRequest {
+  bool filter_by_phase = 1;
+  uint32 phase = 2;
+}
 
 message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 

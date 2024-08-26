@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
@@ -330,7 +329,7 @@ func TestGetConsumerChain(t *testing.T) {
 	pk.FetchAndIncrementConsumerId(ctx)
 
 	expectedGetAllOrder := []types.Chain{}
-	for i, _ := range chainIDs {
+	for i, chainID := range chainIDs {
 		consumerID := pk.FetchAndIncrementConsumerId(ctx)
 		consumerIDs[i] = consumerID
 
@@ -359,7 +358,7 @@ func TestGetConsumerChain(t *testing.T) {
 			strDenylist[j] = addr.String()
 		}
 
-		metadataLists[i] = types.ConsumerMetadata{Name: "consumer-" + strconv.Itoa(i)}
+		metadataLists[i] = types.ConsumerMetadata{Name: chainID}
 		pk.SetConsumerMetadata(ctx, consumerID, metadataLists[i])
 
 		phase := uint32(i)
