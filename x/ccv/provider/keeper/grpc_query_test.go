@@ -282,6 +282,13 @@ func TestQueryConsumerValidators(t *testing.T) {
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, val1.Commission.Rate, res.Validators[0].ConsumerCommissionRate)
+
+	// set consumer to stopped phase
+	pk.SetConsumerPhase(ctx, consumerId, keeper.Stopped)
+	// expect empty valset
+	res, err = pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Empty(t, res)
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
