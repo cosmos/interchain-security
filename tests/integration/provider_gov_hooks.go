@@ -13,8 +13,13 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 )
 
-// tests AfterProposalSubmission and AfterProposalVotingPeriodEnded hooks
-// hooks require adding a proposal in the gov module and registering a consumer chain with the provider module
+// TestAfterPropSubmissionAndVotingPeriodEnded tests the results of GetProviderInfo method.
+// @Long Description
+// The test sets up the account that will submit the proposal, and then the proposal is created.
+// After the proposal is submitted the AfterProposalSubmission hook is triggered
+// and it should handle the submission of the proposal in the provider module.
+// Proposal submission is then verified, and lastly AfterProposalVotingPeriodEnded is triggered.
+// Tests verifies the deletion of the proposal.
 func (s *CCVTestSuite) TestAfterPropSubmissionAndVotingPeriodEnded() {
 	ctx := s.providerChain.GetContext()
 	providerKeeper := s.providerApp.GetProviderKeeper()
