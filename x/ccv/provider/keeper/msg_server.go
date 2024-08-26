@@ -2,8 +2,11 @@ package keeper
 
 import (
 	"context"
-	errorsmod "cosmossdk.io/errors"
 	"fmt"
+	"strings"
+	"time"
+
+	errorsmod "cosmossdk.io/errors"
 	tmtypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,7 +14,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
-	"strings"
 )
 
 type msgServer struct {
@@ -312,6 +314,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	k.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
 	k.SetConsumerChainId(ctx, consumerId, msg.ChainId)
+	k.SetConsumerPhase(ctx, consumerId, Registered)
 
 	if err := k.SetConsumerMetadata(ctx, consumerId, msg.Metadata); err != nil {
 		return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
@@ -338,11 +341,9 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 		}
 	}
 
-	if k.CanLaunch(ctx, consumerId) {
+	if spawnTime, canLaunch := k.CanLaunch(ctx, consumerId); canLaunch {
 		k.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.PrepareConsumerForLaunch(ctx, consumerId, msg.InitializationParameters.SpawnTime)
-	} else {
-		k.SetConsumerPhase(ctx, consumerId, Registered)
+		k.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime)
 	}
 
 	return &types.MsgCreateConsumerResponse{ConsumerId: consumerId}, nil
@@ -353,6 +354,12 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	consumerId := msg.ConsumerId
 
+	phase, found := k.GetConsumerPhase(ctx, consumerId)
+	if found && phase == Stopped {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPhase,
+			"cannot update consumer chain that is in the stopped phase: %s", consumerId)
+	}
+
 	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
 	if err != nil {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
@@ -360,14 +367,6 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	if msg.Signer != ownerAddress {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
-	}
-
-	// A consumer chain can only become a Top N chain if the owner is the gov module. Because of this, to create a
-	// Top N chain, we need two `MsgUpdateConsumer` messages: i) one that would set the `ownerAddress` to the gov module
-	// and ii) one that would set the `Top_N` to something greater than 0.
-	if msg.PowerShapingParameters != nil && msg.PowerShapingParameters.Top_N > 0 && ownerAddress != k.GetAuthority() {
-		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToTopN,
-			"an update to a Top N chain can only be done if chain is owner is the gov module")
 	}
 
 	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
@@ -381,6 +380,12 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		}
 	}
 
+	// get the previous spawn time so that we can use it in `PrepareConsumerForLaunch`
+	var previousSpawnTime time.Time
+	if previousInitializationParameters, err := k.Keeper.GetConsumerInitializationParameters(ctx, msg.ConsumerId); err != nil {
+		previousSpawnTime = previousInitializationParameters.SpawnTime
+	}
+
 	if msg.InitializationParameters != nil {
 		if err = k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters); err != nil {
 			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
@@ -389,6 +394,14 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	}
 
 	if msg.PowerShapingParameters != nil {
+		// A consumer chain can only become a Top N chain if the owner is the gov module. Because of this, to create a
+		// Top N chain, we need two `MsgUpdateConsumer` messages: i) one that would set the `ownerAddress` to the gov module
+		// and ii) one that would set the `Top_N` to something greater than 0.
+		if msg.PowerShapingParameters.Top_N > 0 && ownerAddress != k.GetAuthority() {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToTopN,
+				"an update to a Top N chain can only be done if chain is owner is the gov module")
+		}
+
 		oldTopN := k.Keeper.GetTopN(ctx, consumerId)
 		if err = k.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
 			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
@@ -404,7 +417,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		}
 	}
 
-	// Last check: a Top N cannot change its owner address to something different from the gov module if the chain
+	// A Top N cannot change its owner address to something different from the gov module if the chain
 	// remains a Top N chain.
 	currentOwnerAddress, err := k.GetConsumerOwnerAddress(ctx, consumerId)
 	if err != nil {
@@ -421,9 +434,9 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			"a move to a new owner address that is not the gov module can only be done if `Top N` is set to 0")
 	}
 
-	if k.CanLaunch(ctx, consumerId) {
+	if spawnTime, canLaunch := k.CanLaunch(ctx, consumerId); canLaunch {
 		k.SetConsumerPhase(ctx, consumerId, Initialized)
-		k.PrepareConsumerForLaunch(ctx, consumerId, msg.InitializationParameters.SpawnTime)
+		k.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime)
 	}
 
 	return &types.MsgUpdateConsumerResponse{}, nil

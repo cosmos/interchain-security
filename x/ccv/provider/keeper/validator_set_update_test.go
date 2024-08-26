@@ -126,6 +126,7 @@ func createStakingValidator(ctx sdk.Context, mocks testkeeper.MockedKeepers, ind
 	return stakingtypes.Validator{
 		OperatorAddress: providerValidatorAddr.String(),
 		ConsensusPubkey: pkAny,
+		Status:          stakingtypes.Bonded,
 	}
 }
 

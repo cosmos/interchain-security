@@ -2,15 +2,16 @@ package keeper
 
 import (
 	"bytes"
-	errorsmod "cosmossdk.io/errors"
-	storetypes "cosmossdk.io/store/types"
 	"encoding/binary"
 	"encoding/gob"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"strconv"
 	"time"
+
+	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
 // ConsumerPhase captures the phases of a consumer chain according to `docs/docs/adrs/adr-018-permissionless-ics.md`
@@ -708,24 +709,23 @@ func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.
 	return "", false
 }
 
-func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, spawnTime time.Time) {
-	if previousParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
-		// if this is not the first initialization, remove the consumer id from the old spawn time
-		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousParameters.SpawnTime)
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime time.Time, spawnTime time.Time) {
+	if !previousSpawnTime.Equal(time.Time{}) {
+		// if this is not the first initialization and hence `previousSpawnTime` does not contain the zero value of `Time`
+		// remove the consumer id from the old spawn time
+		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, previousSpawnTime)
 	}
-
 	k.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerId, spawnTime)
 }
 
 // CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence
-// is ready to launch
+// is ready to launch and at what spawn time
 // TODO (PERMISSIONLESS): could remove, all fields should be there because we validate the initialization parameters
-func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) bool {
-
+func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) {
 	// a chain that is already launched or stopped cannot launch again
 	phase, found := k.GetConsumerPhase(ctx, consumerId)
 	if !found || phase == Launched || phase == Stopped {
-		return false
+		return time.Time{}, false
 	}
 
 	if initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId); err == nil {
@@ -739,8 +739,8 @@ func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) bool {
 		blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
 		historicalEntriesSet := initializationParameters.HistoricalEntries > 0
 
-		return spawnTimeInTheFuture && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
+		return initializationParameters.SpawnTime, spawnTimeInTheFuture && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
 			blocksPerDistributionTransmissionSet && historicalEntriesSet
 	}
-	return false
+	return time.Time{}, false
 }
