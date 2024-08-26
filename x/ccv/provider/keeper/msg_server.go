@@ -2,18 +2,17 @@ package keeper
 
 import (
 	"context"
-
 	errorsmod "cosmossdk.io/errors"
-
+	"fmt"
+	tmtypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	tmtypes "github.com/cometbft/cometbft/types"
-
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"strings"
+	"time"
 )
 
 type msgServer struct {
@@ -67,11 +66,11 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, err
 	}
 
-	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
+	if err := k.Keeper.AssignConsumerKey(ctx, msg.ConsumerId, validator, consumerTMPublicKey); err != nil {
 		return nil, err
 	}
 	k.Logger(ctx).Info("assigned consumer key",
-		"consumer chainID", msg.ChainId,
+		"consumer id", msg.ConsumerId,
 		"validator operator addr", msg.ProviderAddr,
 		"consumer public key", msg.ConsumerKey,
 	)
@@ -87,36 +86,33 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
 
-// ConsumerAddition defines an RPC handler method for MsgConsumerAddition
-func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {
-	if k.GetAuthority() != msg.Authority {
-		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerAdditionProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
-	}
-	return &types.MsgConsumerAdditionResponse{}, nil
-}
-
-// ConsumerRemoval defines an RPC handler method for MsgConsumerRemoval
-func (k msgServer) ConsumerRemoval(
+// RemoveConsumer defines an RPC handler method for MsgRemoveConsumer
+func (k msgServer) RemoveConsumer(
 	goCtx context.Context,
-	msg *types.MsgConsumerRemoval,
-) (*types.MsgConsumerRemovalResponse, error) {
+	msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerRemovalProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
+
+	consumerId := msg.ConsumerId
+
+	phase, found := k.Keeper.GetConsumerPhase(ctx, consumerId)
+	if !found || phase != Launched {
+		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
+			"chain with consumer id: %s has to be in its launched phase", consumerId)
 	}
 
-	return &types.MsgConsumerRemovalResponse{}, nil
+	previousStopTime, err := k.Keeper.GetConsumerStopTime(ctx, consumerId)
+	if err == nil {
+		k.Keeper.RemoveConsumerFromToBeStoppedConsumers(ctx, consumerId, previousStopTime)
+	}
+
+	k.Keeper.SetConsumerStopTime(ctx, consumerId, msg.StopTime)
+	k.Keeper.AppendStopTimeForConsumerToBeStopped(ctx, consumerId, msg.StopTime)
+
+	return &types.MsgRemoveConsumerResponse{}, nil
 }
 
 // ChangeRewardDenoms defines a rpc handler method for MsgChangeRewardDenoms
@@ -136,7 +132,7 @@ func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChang
 
 func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
+	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, msg.ConsumerId, *msg.Misbehaviour); err != nil {
 		return nil, err
 	}
 
@@ -185,9 +181,9 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		return nil, err
 	}
 
-	// handle the double voting evidence using the chain ID of the infraction block header
-	// and the malicious validator's public key
-	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader.Header.ChainID, pubkey); err != nil {
+	// handle the double voting evidence using the malicious validator's public key
+	consumerId := msg.ConsumerId
+	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, consumerId, evidence, pubkey); err != nil {
 		return nil, err
 	}
 
@@ -223,7 +219,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 	}
 	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	err = k.Keeper.HandleOptIn(ctx, msg.ChainId, providerConsAddr, msg.ConsumerKey)
+	err = k.Keeper.HandleOptIn(ctx, msg.ConsumerId, providerConsAddr, msg.ConsumerKey)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +255,7 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 	}
 	providerConsAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	err = k.Keeper.HandleOptOut(ctx, msg.ChainId, providerConsAddr)
+	err = k.Keeper.HandleOptOut(ctx, msg.ConsumerId, providerConsAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -293,14 +289,14 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 		return nil, err
 	}
 
-	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ChainId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
+	if err := k.HandleSetConsumerCommissionRate(ctx, msg.ConsumerId, types.NewProviderConsAddress(consAddr), msg.Rate); err != nil {
 		return nil, err
 	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeSetConsumerCommissionRate,
-			sdk.NewAttribute(types.AttributeConsumerChainID, msg.ChainId),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
 		),
@@ -309,16 +305,158 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 	return &types.MsgSetConsumerCommissionRateResponse{}, nil
 }
 
-func (k msgServer) ConsumerModification(goCtx context.Context, msg *types.MsgConsumerModification) (*types.MsgConsumerModificationResponse, error) {
-	if k.GetAuthority() != msg.Authority {
-		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
-	}
-
+// CreateConsumer creates a consumer chain
+func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateConsumer) (*types.MsgCreateConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerModificationProposal(ctx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling ConsumerModification proposal")
+
+	consumerId := k.FetchAndIncrementConsumerId(ctx)
+
+	k.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
+	k.SetConsumerChainId(ctx, consumerId, msg.ChainId)
+	k.SetConsumerPhase(ctx, consumerId, Registered)
+
+	if err := k.SetConsumerMetadata(ctx, consumerId, msg.Metadata); err != nil {
+		return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
+			"cannot set consumer metadata: %s", err.Error())
 	}
 
-	return &types.MsgConsumerModificationResponse{}, nil
+	// initialization parameters are optional and hence could be nil
+	if msg.InitializationParameters != nil {
+		if err := k.SetConsumerInitializationParameters(ctx, consumerId, *msg.InitializationParameters); err != nil {
+			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
+				"cannot set consumer initialization parameters: %s", err.Error())
+		}
+	}
+
+	// power-shaping parameters are optional and hence could be null
+	if msg.PowerShapingParameters != nil {
+		if msg.PowerShapingParameters.Top_N != 0 {
+			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrap(types.ErrCannotCreateTopNChain,
+				"cannot create a Top N chain using the `MsgCreateConsumer` message; use `MsgUpdateConsumer` instead")
+		}
+		if err := k.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
+			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
+				"cannot set power shaping parameters")
+		}
+	}
+
+	if spawnTime, canLaunch := k.CanLaunch(ctx, consumerId); canLaunch {
+		k.SetConsumerPhase(ctx, consumerId, Initialized)
+		k.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime)
+	}
+
+	return &types.MsgCreateConsumerResponse{ConsumerId: consumerId}, nil
+}
+
+// UpdateConsumer updates the record of a consumer chain
+func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateConsumer) (*types.MsgUpdateConsumerResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	consumerId := msg.ConsumerId
+
+	phase, found := k.GetConsumerPhase(ctx, consumerId)
+	if found && phase == Stopped {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPhase,
+			"cannot update consumer chain that is in the stopped phase: %s", consumerId)
+	}
+
+	// The new owner address can be empty, in which case the consumer chain does not change its owner.
+	// However, if the new owner address is not empty, we verify that it's a valid account address.
+	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
+		if _, err := k.accountKeeper.AddressCodec().StringToBytes(msg.NewOwnerAddress); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidNewOwnerAddress, "invalid new owner address %s", msg.NewOwnerAddress)
+		}
+	}
+
+	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
+	if err != nil {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
+	}
+
+	if msg.Signer != ownerAddress {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
+	}
+
+	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
+		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
+	}
+
+	if msg.Metadata != nil {
+		if err := k.SetConsumerMetadata(ctx, consumerId, *msg.Metadata); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
+				"cannot set consumer metadata: %s", err.Error())
+		}
+	}
+
+	// get the previous spawn time so that we can use it in `PrepareConsumerForLaunch`
+	var previousSpawnTime time.Time
+	if previousInitializationParameters, err := k.Keeper.GetConsumerInitializationParameters(ctx, msg.ConsumerId); err != nil {
+		previousSpawnTime = previousInitializationParameters.SpawnTime
+	}
+
+	if msg.InitializationParameters != nil {
+		if err = k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
+				"cannot set consumer initialization parameters: %s", err.Error())
+		}
+	}
+
+	if msg.PowerShapingParameters != nil {
+		// A consumer chain can only become a Top N chain if the owner is the gov module. Because of this, to create a
+		// Top N chain, we need two `MsgUpdateConsumer` messages: i) one that would set the `ownerAddress` to the gov module
+		// and ii) one that would set the `Top_N` to something greater than 0.
+		if msg.PowerShapingParameters.Top_N > 0 && ownerAddress != k.GetAuthority() {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToTopN,
+				"an update to a Top N chain can only be done if chain is owner is the gov module")
+		}
+
+		oldTopN := k.Keeper.GetTopN(ctx, consumerId)
+		if err = k.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
+				"cannot set power shaping parameters")
+		}
+
+		k.Keeper.UpdateAllowlist(ctx, consumerId, msg.PowerShapingParameters.Allowlist)
+		k.Keeper.UpdateDenylist(ctx, consumerId, msg.PowerShapingParameters.Denylist)
+		err = k.Keeper.UpdateMinimumPowerInTopN(ctx, consumerId, oldTopN, msg.PowerShapingParameters.Top_N)
+		if err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrCannotUpdateMinimumPowerInTopN,
+				"could not update minimum power in top N, oldTopN: %d, newTopN: %d, error: %s", oldTopN, msg.PowerShapingParameters.Top_N, err.Error())
+		}
+	}
+
+	// A Top N cannot change its owner address to something different from the gov module if the chain
+	// remains a Top N chain.
+	currentOwnerAddress, err := k.GetConsumerOwnerAddress(ctx, consumerId)
+	if err != nil {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s: %s", ownerAddress, err.Error())
+	}
+
+	currentPowerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters, "cannot retrieve power shaping parameters: %s", err.Error())
+	}
+
+	if currentPowerShapingParameters.Top_N != 0 && currentOwnerAddress != k.GetAuthority() {
+		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidTransformToOptIn,
+			"a move to a new owner address that is not the gov module can only be done if `Top N` is set to 0")
+	}
+
+	if spawnTime, canLaunch := k.CanLaunch(ctx, consumerId); canLaunch {
+		k.SetConsumerPhase(ctx, consumerId, Initialized)
+		k.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime)
+	}
+
+	return &types.MsgUpdateConsumerResponse{}, nil
+}
+
+func (k msgServer) ConsumerAddition(_ context.Context, _ *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {
+	return nil, fmt.Errorf("`MsgConsumerAddition` is deprecated. Use `MsgCreateConsumer`")
+}
+
+func (k msgServer) ConsumerModification(_ context.Context, _ *types.MsgConsumerModification) (*types.MsgConsumerModificationResponse, error) {
+	return nil, fmt.Errorf("`MsgConsumerModification` is deprecated. Use `MsgUpdateConsumer` instead")
+}
+
+func (k msgServer) ConsumerRemoval(_ context.Context, _ *types.MsgConsumerRemoval) (*types.MsgConsumerRemovalResponse, error) {
+	return nil, fmt.Errorf("`MsgConsumerRemoval` is deprecated. Use `MsgRemoveConsumer` instead")
 }

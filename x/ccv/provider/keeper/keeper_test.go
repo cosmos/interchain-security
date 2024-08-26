@@ -229,7 +229,7 @@ func TestGetAllRegisteredConsumerChainIDs(t *testing.T) {
 	defer ctrl.Finish()
 
 	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
-	// GetAllRegisteredConsumerChainIDs iterates over chainID in lexicographical order
+	// GetAllRegisteredConsumerIds iterates over consumerId in lexicographical order
 	expectedChainIDs := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
 
 	for i, chainID := range chainIDs {
@@ -237,30 +237,37 @@ func TestGetAllRegisteredConsumerChainIDs(t *testing.T) {
 		pk.SetConsumerClientId(ctx, chainID, clientID)
 	}
 
-	result := pk.GetAllRegisteredConsumerChainIDs(ctx)
+	result := pk.GetAllRegisteredConsumerIds(ctx)
 	require.Len(t, result, len(chainIDs))
 	require.Equal(t, expectedChainIDs, result)
 }
 
-// TestGetAllChannelToChains tests GetAllChannelToChains behaviour correctness
+// TestGetAllChannelToChains tests GetAllChannelToConsumers behaviour correctness
 func TestGetAllChannelToChains(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
-	expectedGetAllOrder := []types.ChannelToChain{}
-	for i, chainID := range chainIDs {
-		channelID := fmt.Sprintf("client-%d", len(chainIDs)-i)
-		pk.SetChannelToChain(ctx, channelID, chainID)
-		expectedGetAllOrder = append(expectedGetAllOrder, types.ChannelToChain{ChainId: chainID, ChannelId: channelID})
+	consumerIds := []string{"2", "1", "4", "3"}
+	var expectedGetAllOrder []struct {
+		ChannelId  string
+		ConsumerId string
+	}
+
+	for i, consumerId := range consumerIds {
+		channelID := fmt.Sprintf("client-%d", len(consumerIds)-i)
+		pk.SetChannelToConsumerId(ctx, channelID, consumerId)
+		expectedGetAllOrder = append(expectedGetAllOrder, struct {
+			ChannelId  string
+			ConsumerId string
+		}{ConsumerId: consumerId, ChannelId: channelID})
 	}
 	// sorting by channelID
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
 		return expectedGetAllOrder[i].ChannelId < expectedGetAllOrder[j].ChannelId
 	})
 
-	result := pk.GetAllChannelToChains(ctx)
-	require.Len(t, result, len(chainIDs))
+	result := pk.GetAllChannelToConsumers(ctx)
+	require.Len(t, result, len(consumerIds))
 	require.Equal(t, expectedGetAllOrder, result)
 }
 
@@ -282,19 +289,19 @@ func TestSetProposedConsumerChains(t *testing.T) {
 	defer ctrl.Finish()
 
 	tests := []struct {
-		chainID    string
-		proposalID uint64
+		consumerId string
+		proposalId uint64
 	}{
-		{chainID: "1", proposalID: 1},
-		{chainID: "some other ID", proposalID: 12},
-		{chainID: "some other other chain ID", proposalID: 123},
-		{chainID: "", proposalID: 1234},
+		{consumerId: "1", proposalId: 1},
+		{consumerId: "some other ID", proposalId: 12},
+		{consumerId: "some other other chain ID", proposalId: 123},
+		{consumerId: "", proposalId: 1234},
 	}
 
 	for _, test := range tests {
-		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
-		cID, _ := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
-		require.Equal(t, cID, test.chainID)
+		providerKeeper.SetProposalIdToConsumerId(ctx, test.proposalId, test.consumerId)
+		cID, _ := providerKeeper.GetProposalIdToConsumerId(ctx, test.proposalId)
+		require.Equal(t, cID, test.consumerId)
 	}
 }
 
@@ -303,23 +310,23 @@ func TestDeleteProposedConsumerChainInStore(t *testing.T) {
 	defer ctrl.Finish()
 
 	tests := []struct {
-		chainID          string
-		proposalID       uint64
-		deleteProposalID uint64
+		chainId          string
+		proposalId       uint64
+		deleteProposalId uint64
 		ok               bool
 	}{
-		{chainID: "1", proposalID: 1, deleteProposalID: 1, ok: true},
-		{chainID: "", proposalID: 12, deleteProposalID: 12, ok: true},
-		{chainID: "1", proposalID: 0, deleteProposalID: 1, ok: false},
+		{chainId: "1", proposalId: 1, deleteProposalId: 1, ok: true},
+		{chainId: "", proposalId: 12, deleteProposalId: 12, ok: true},
+		{chainId: "1", proposalId: 0, deleteProposalId: 1, ok: false},
 	}
 	for _, test := range tests {
-		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
-		providerKeeper.DeleteProposedConsumerChainInStore(ctx, test.deleteProposalID)
-		cID, found := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
+		providerKeeper.SetProposalIdToConsumerId(ctx, test.proposalId, test.chainId)
+		providerKeeper.DeleteProposalIdToConsumerId(ctx, test.deleteProposalId)
+		cID, found := providerKeeper.GetProposalIdToConsumerId(ctx, test.proposalId)
 		if test.ok {
 			require.False(t, found)
 		} else {
-			require.Equal(t, cID, test.chainID)
+			require.Equal(t, cID, test.chainId)
 		}
 	}
 }
@@ -331,21 +338,21 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 		{},
 		{
 			{
-				ChainID:    "1",
+				ConsumerId: "1",
 				ProposalID: 1,
 			},
 		},
 		{
 			{
-				ChainID:    "1",
+				ConsumerId: "1",
 				ProposalID: 1,
 			},
 			{
-				ChainID:    "2",
+				ConsumerId: "2",
 				ProposalID: 2,
 			},
 			{
-				ChainID:    "",
+				ConsumerId: "",
 				ProposalID: 3,
 			},
 		},
@@ -353,7 +360,7 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 
 	for _, test := range tests {
 		for _, tc := range test {
-			providerKeeper.SetProposedConsumerChain(ctx, tc.ChainID, tc.ProposalID)
+			providerKeeper.SetProposalIdToConsumerId(ctx, tc.ProposalID, tc.ConsumerId)
 		}
 
 		chains := providerKeeper.GetAllProposedConsumerChainIDs(ctx)
@@ -367,7 +374,7 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 		require.Equal(t, chains, test)
 
 		for _, tc := range test {
-			providerKeeper.DeleteProposedConsumerChainInStore(ctx, tc.ProposalID)
+			providerKeeper.DeleteProposalIdToConsumerId(ctx, tc.ProposalID)
 		}
 	}
 }
@@ -378,27 +385,28 @@ func TestTopN(t *testing.T) {
 	defer ctrl.Finish()
 
 	tests := []struct {
-		chainID string
-		N       uint32
-		isOptIn bool
+		consumerId string
+		N          uint32
+		isOptIn    bool
 	}{
-		{chainID: "TopNChain1", N: 50, isOptIn: false},
-		{chainID: "TopNChain2", N: 100, isOptIn: false},
-		{chainID: "OptInChain", N: 0, isOptIn: true},
+		{consumerId: "TopNChain1", N: 50, isOptIn: false},
+		{consumerId: "TopNChain2", N: 100, isOptIn: false},
+		{consumerId: "OptInChain", N: 0, isOptIn: true},
 	}
 
 	for _, test := range tests {
-		providerKeeper.SetTopN(ctx, test.chainID, test.N)
-		topN, found := providerKeeper.GetTopN(ctx, test.chainID)
+		providerKeeper.SetConsumerPowerShapingParameters(ctx, test.consumerId, types.PowerShapingParameters{
+			Top_N: test.N,
+		})
+		topN := providerKeeper.GetTopN(ctx, test.consumerId)
 		require.Equal(t, test.N, topN)
-		require.True(t, found)
 
 		if test.isOptIn {
-			require.True(t, providerKeeper.IsOptIn(ctx, test.chainID))
-			require.False(t, providerKeeper.IsTopN(ctx, test.chainID))
+			require.True(t, providerKeeper.IsOptIn(ctx, test.consumerId))
+			require.False(t, providerKeeper.IsTopN(ctx, test.consumerId))
 		} else {
-			require.False(t, providerKeeper.IsOptIn(ctx, test.chainID))
-			require.True(t, providerKeeper.IsTopN(ctx, test.chainID))
+			require.False(t, providerKeeper.IsOptIn(ctx, test.consumerId))
+			require.True(t, providerKeeper.IsTopN(ctx, test.consumerId))
 		}
 	}
 }
@@ -414,10 +422,10 @@ func TestGetAllOptedIn(t *testing.T) {
 	}
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
-		providerKeeper.SetOptedIn(ctx, "chainID", expectedOptedInValidator)
+		providerKeeper.SetOptedIn(ctx, "consumerId", expectedOptedInValidator)
 	}
 
-	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "chainID")
+	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "consumerId")
 
 	// sort validators first to be able to compare
 	sortOptedInValidators := func(addresses []types.ProviderConsAddress) {
@@ -438,19 +446,19 @@ func TestOptedIn(t *testing.T) {
 	optedInValidator1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	optedInValidator2 := types.NewProviderConsAddress([]byte("providerAddr2"))
 
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
-	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator1)
-	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
-	providerKeeper.DeleteOptedIn(ctx, "chainID", optedInValidator1)
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
+	providerKeeper.SetOptedIn(ctx, "consumerId", optedInValidator1)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
+	providerKeeper.DeleteOptedIn(ctx, "consumerId", optedInValidator1)
+	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
 
-	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator1)
-	providerKeeper.SetOptedIn(ctx, "chainID", optedInValidator2)
-	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
-	require.True(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator2))
-	providerKeeper.DeleteAllOptedIn(ctx, "chainID")
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator1))
-	require.False(t, providerKeeper.IsOptedIn(ctx, "chainID", optedInValidator2))
+	providerKeeper.SetOptedIn(ctx, "consumerId", optedInValidator1)
+	providerKeeper.SetOptedIn(ctx, "consumerId", optedInValidator2)
+	require.True(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
+	require.True(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator2))
+	providerKeeper.DeleteAllOptedIn(ctx, "consumerId")
+	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
+	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator2))
 }
 
 // TestConsumerCommissionRate tests the `SetConsumerCommissionRate`, `GetConsumerCommissionRate`, and `DeleteConsumerCommissionRate` methods
@@ -461,31 +469,31 @@ func TestConsumerCommissionRate(t *testing.T) {
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
 
-	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr1)
 	require.False(t, found)
 	require.Equal(t, math.LegacyZeroDec(), cr)
 
-	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr1, math.LegacyOneDec())
-	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	providerKeeper.SetConsumerCommissionRate(ctx, "consumerId", providerAddr1, math.LegacyOneDec())
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr1)
 	require.True(t, found)
 	require.Equal(t, math.LegacyOneDec(), cr)
 
-	providerKeeper.SetConsumerCommissionRate(ctx, "chainID", providerAddr2, math.LegacyZeroDec())
-	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
+	providerKeeper.SetConsumerCommissionRate(ctx, "consumerId", providerAddr2, math.LegacyZeroDec())
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr2)
 	require.True(t, found)
 	require.Equal(t, math.LegacyZeroDec(), cr)
 
-	provAddrs := providerKeeper.GetAllCommissionRateValidators(ctx, "chainID")
+	provAddrs := providerKeeper.GetAllCommissionRateValidators(ctx, "consumerId")
 	require.Len(t, provAddrs, 2)
 
 	for _, addr := range provAddrs {
-		providerKeeper.DeleteConsumerCommissionRate(ctx, "chainID", addr)
+		providerKeeper.DeleteConsumerCommissionRate(ctx, "consumerId", addr)
 	}
 
-	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr1)
+	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr1)
 	require.False(t, found)
 
-	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "chainID", providerAddr2)
+	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr2)
 	require.False(t, found)
 }
 
@@ -494,7 +502,7 @@ func TestAllowlist(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	chainID := "consumerId"
 
 	// no validator was allowlisted and hence the allowlist is empty
 	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
@@ -522,7 +530,7 @@ func TestDenylist(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	chainID := "consumerId"
 
 	// no validator was denylisted and hence the denylist is empty
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
@@ -549,22 +557,25 @@ func TestDenylist(t *testing.T) {
 func TestAllowInactiveValidators(t *testing.T) {
 	k, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-	chainID := "chainID"
+	consumerId := "consumerId"
 
 	// check that by default, AllowsInactiveValidators returns false
-	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
+	require.False(t, k.AllowsInactiveValidators(ctx, consumerId))
 
 	// set the chain to allow inactive validators
-	k.SetInactiveValidatorsAllowed(ctx, chainID, true)
-
+	k.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
+		AllowInactiveVals: true,
+	})
 	// check that AllowsInactiveValidators returns true
-	require.True(t, k.AllowsInactiveValidators(ctx, chainID))
+	require.True(t, k.AllowsInactiveValidators(ctx, consumerId))
 
 	// set the chain to not allow inactive validators
-	k.SetInactiveValidatorsAllowed(ctx, chainID, false)
+	k.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
+		AllowInactiveVals: false,
+	})
 
 	// check that AllowsInactiveValidators returns false
-	require.False(t, k.AllowsInactiveValidators(ctx, chainID))
+	require.False(t, k.AllowsInactiveValidators(ctx, consumerId))
 }
 
 // Tests setting, getting and deleting parameters that are stored per-consumer chain.
@@ -579,49 +590,65 @@ func TestKeeperConsumerParams(t *testing.T) {
 	tests := []struct {
 		name         string
 		settingFunc  func(sdk.Context, string, int64)
-		getFunc      func(sdk.Context, string) (int64, bool)
+		getFunc      func(sdk.Context, string) int64
 		deleteFunc   func(sdk.Context, string)
 		initialValue int64
 		updatedValue int64
 	}{
 		{
-			name:         "Minimum Power In Top N",
-			settingFunc:  func(ctx sdk.Context, id string, val int64) { k.SetMinimumPowerInTopN(ctx, id, val) },
-			getFunc:      func(ctx sdk.Context, id string) (int64, bool) { return k.GetMinimumPowerInTopN(ctx, id) },
+			name:        "Minimum Power In Top N",
+			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinimumPowerInTopN(ctx, id, val) },
+			getFunc: func(ctx sdk.Context, id string) int64 {
+				minimumPowerInTopN, _ := k.GetMinimumPowerInTopN(ctx, id)
+				return minimumPowerInTopN
+			},
 			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinimumPowerInTopN(ctx, id) },
 			initialValue: 1000,
 			updatedValue: 2000,
 		},
 		{
-			name:        "Minimum Stake",
-			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetMinStake(ctx, id, uint64(val)) },
-			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
-				val, found := k.GetMinStake(ctx, id)
-				return int64(val), found
+			name: "Minimum Stake",
+			settingFunc: func(ctx sdk.Context, id string, val int64) {
+				k.SetConsumerPowerShapingParameters(ctx, id,
+					types.PowerShapingParameters{
+						MinStake: uint64(val),
+					})
 			},
-			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteMinStake(ctx, id) },
+			getFunc: func(ctx sdk.Context, id string) int64 {
+				return int64(k.GetMinStake(ctx, id))
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerPowerShapingParameters(ctx, id) },
 			initialValue: 1000,
 			updatedValue: 2000,
 		},
 		{
-			name:        "Validator Set Cap",
-			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetValidatorSetCap(ctx, id, uint32(val)) },
-			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
-				val, found := k.GetValidatorSetCap(ctx, id)
-				return int64(val), found
+			name: "Validator Set Cap",
+			settingFunc: func(ctx sdk.Context, id string, val int64) {
+				k.SetConsumerPowerShapingParameters(ctx, id,
+					types.PowerShapingParameters{
+						ValidatorSetCap: uint32(val),
+					})
 			},
-			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorSetCap(ctx, id) },
+			getFunc: func(ctx sdk.Context, id string) int64 {
+				return int64(k.GetValidatorSetCap(ctx, id))
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerPowerShapingParameters(ctx, id) },
 			initialValue: 10,
 			updatedValue: 200,
 		},
 		{
-			name:        "Validator Powers Cap",
-			settingFunc: func(ctx sdk.Context, id string, val int64) { k.SetValidatorsPowerCap(ctx, id, uint32(val)) },
-			getFunc: func(ctx sdk.Context, id string) (int64, bool) {
-				val, found := k.GetValidatorsPowerCap(ctx, id)
-				return int64(val), found
+			name: "Validator Powers Cap",
+			settingFunc: func(ctx sdk.Context, id string, val int64) {
+				k.SetConsumerPowerShapingParameters(ctx, id,
+					types.PowerShapingParameters{
+						ValidatorsPowerCap: uint32(val),
+					})
 			},
-			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteValidatorsPowerCap(ctx, id) },
+			getFunc: func(ctx sdk.Context, id string) int64 {
+				val := k.GetValidatorsPowerCap(ctx, id)
+				return int64(val)
+			},
+			deleteFunc:   func(ctx sdk.Context, id string) { k.DeleteConsumerPowerShapingParameters(ctx, id) },
 			initialValue: 10,
 			updatedValue: 11,
 		},
@@ -629,40 +656,38 @@ func TestKeeperConsumerParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			chainID := "chainID"
+			chainID := "consumerId"
 			// Set initial value
 			tt.settingFunc(ctx, chainID, int64(tt.initialValue))
 
 			// Retrieve and check initial value
-			actualValue, found := tt.getFunc(ctx, chainID)
-			require.True(t, found)
+			actualValue := tt.getFunc(ctx, chainID)
 			require.EqualValues(t, tt.initialValue, actualValue)
 
 			// Update value
 			tt.settingFunc(ctx, chainID, int64(tt.updatedValue))
 
 			// Retrieve and check updated value
-			newActualValue, found := tt.getFunc(ctx, chainID)
-			require.True(t, found)
+			newActualValue := tt.getFunc(ctx, chainID)
 			require.EqualValues(t, tt.updatedValue, newActualValue)
 
-			// Check non-existent chain ID
-			_, found = tt.getFunc(ctx, "not the chainID")
-			require.False(t, found)
+			// Check non-existent consumer id
+			res := tt.getFunc(ctx, "not the consumerId")
+			require.Zero(t, res)
 
 			// Delete value
 			tt.deleteFunc(ctx, chainID)
 
 			// Check that value was deleted
-			_, found = tt.getFunc(ctx, chainID)
-			require.False(t, found)
+			res = tt.getFunc(ctx, chainID)
+			require.Zero(t, res)
 
 			// Try deleting again
 			tt.deleteFunc(ctx, chainID)
 
 			// Check that the value is still deleted
-			_, found = tt.getFunc(ctx, chainID)
-			require.False(t, found)
+			res = tt.getFunc(ctx, chainID)
+			require.Zero(t, res)
 		})
 	}
 }

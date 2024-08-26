@@ -36,6 +36,15 @@ func NewHandler(k *keeper.Keeper) baseapp.MsgServiceHandler {
 		case *types.MsgSetConsumerCommissionRate:
 			res, err := msgServer.SetConsumerCommissionRate(ctx, msg)
 			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgCreateConsumer:
+			res, err := msgServer.CreateConsumer(ctx, msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgUpdateConsumer:
+			res, err := msgServer.UpdateConsumer(ctx, msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgRemoveConsumer:
+			res, err := msgServer.RemoveConsumer(ctx, msg)
+			return sdk.WrapServiceResult(ctx, res, err)
 		default:
 			return nil, errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)
 		}

@@ -2,8 +2,8 @@ package keeper
 
 import (
 	"context"
-
 	"cosmossdk.io/math"
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -106,26 +106,76 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 //
 
 // AfterProposalSubmission - call hook if registered
-// After a consumerAddition proposal submission, a record is created
-// that maps the proposal ID to the consumer chain ID.
-func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64) error {
+// If an update consumer message exists in the proposal, a record is created that maps the proposal id to the consumer id
+func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if p, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
-		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
+
+	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalId)
+	if err != nil {
+		return fmt.Errorf("cannot retrieve proposal with id: %d", proposalId)
 	}
+
+	hasUpdateConsumerMsg := false
+	for _, msg := range p.GetMessages() {
+		sdkMsg, isMsgUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
+		if isMsgUpdateConsumer {
+			// A `MsgUpdateConsumer` can only succeed if the owner of the consumer chain is the gov module.
+			// If that's not the case, we immediately fail the proposal.
+			// Note that someone could potentially change the owner of a chain to be that of the gov module
+			// while a proposal is active and before the proposal is executed. Even then, we still do not allow
+			// `MsgUpdateConsumer` proposals if the owner of the chain is not the gov module to avoid someone forgetting
+			// to change the owner address while the proposal is active.
+			ownerAddress, err := h.k.GetConsumerOwnerAddress(ctx, sdkMsg.ConsumerId)
+			if err != nil {
+				return fmt.Errorf("cannot find owner address for consumer with consumer id (%s): %s", sdkMsg.ConsumerId, err.Error())
+			} else if ownerAddress != h.k.GetAuthority() {
+				return fmt.Errorf("owner address (%s) is not the gov module (%s)", ownerAddress, h.k.GetAuthority())
+			}
+
+			if hasUpdateConsumerMsg {
+				return fmt.Errorf("proposal can contain at most one `MsgUpdateConsumer` message")
+			}
+			hasUpdateConsumerMsg = true
+			h.k.SetProposalIdToConsumerId(ctx, proposalId, sdkMsg.ConsumerId)
+		}
+
+		// if the proposal contains a deprecated message, cancel the proposal
+		_, isMsgConsumerAddition := msg.GetCachedValue().(*providertypes.MsgConsumerAddition)
+		if isMsgConsumerAddition {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerAddition`; use `MsgCreateConsumer` instead")
+		}
+
+		_, isMsgConsumerModification := msg.GetCachedValue().(*providertypes.MsgConsumerModification)
+		if isMsgConsumerModification {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerModification`; use `MsgUpdateConsumer` instead")
+		}
+		_, isMsgConsumerRemoval := msg.GetCachedValue().(*providertypes.MsgConsumerRemoval)
+		if isMsgConsumerRemoval {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerRemoval`; use `MsgRemoveConsumer` instead")
+		}
+	}
+
 	return nil
 }
 
 // AfterProposalVotingPeriodEnded - call hook if registered
-// After proposal voting ends, the consumer chainID in store is deleted.
-// When a consumerAddition proposal passes, the consumer chainID is available in providerKeeper.GetAllPendingConsumerAdditionProps
-// or providerKeeper.GetAllConsumerChains(ctx).
-func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalID uint64) error {
+// After proposal voting ends, the consumer to proposal id record in store is deleted.
+func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalId uint64) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
-		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
+	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalId)
+	if err != nil {
+		return fmt.Errorf("cannot retrieve proposal with id: %d", proposalId)
 	}
+
+	for _, msg := range p.GetMessages() {
+		_, isUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
+		if isUpdateConsumer {
+			h.k.DeleteProposalIdToConsumerId(ctx, proposalId)
+			return nil
+		}
+	}
+
 	return nil
 }
 

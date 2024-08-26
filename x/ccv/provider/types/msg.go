@@ -3,7 +3,10 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	cmttypes "github.com/cometbft/cometbft/types"
+	"strconv"
 	"strings"
+	"time"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
@@ -23,6 +26,9 @@ const (
 	TypeMsgAssignConsumerKey          = "assign_consumer_key"
 	TypeMsgSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
 	TypeMsgSubmitConsumerDoubleVoting = "submit_consumer_double_vote"
+	TypeMsgCreateConsumer             = "create_consumer"
+	TypeMsgUpdateConsumer             = "update_consumer"
+	TypeMsgRemoveConsumer             = "remove_consumer"
 	TypeMsgOptIn                      = "opt_in"
 	TypeMsgOptOut                     = "opt_out"
 	TypeMsgSetConsumerCommissionRate  = "set_consumer_commission_rate"
@@ -30,23 +36,23 @@ const (
 
 var (
 	_ sdk.Msg = (*MsgAssignConsumerKey)(nil)
-	_ sdk.Msg = (*MsgConsumerAddition)(nil)
-	_ sdk.Msg = (*MsgConsumerRemoval)(nil)
-	_ sdk.Msg = (*MsgConsumerModification)(nil)
 	_ sdk.Msg = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.Msg = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.Msg = (*MsgSubmitConsumerDoubleVoting)(nil)
+	_ sdk.Msg = (*MsgCreateConsumer)(nil)
+	_ sdk.Msg = (*MsgUpdateConsumer)(nil)
+	_ sdk.Msg = (*MsgRemoveConsumer)(nil)
 	_ sdk.Msg = (*MsgOptIn)(nil)
 	_ sdk.Msg = (*MsgOptOut)(nil)
 	_ sdk.Msg = (*MsgSetConsumerCommissionRate)(nil)
 
 	_ sdk.HasValidateBasic = (*MsgAssignConsumerKey)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerRemoval)(nil)
-	_ sdk.HasValidateBasic = (*MsgConsumerModification)(nil)
 	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerMisbehaviour)(nil)
 	_ sdk.HasValidateBasic = (*MsgSubmitConsumerDoubleVoting)(nil)
+	_ sdk.HasValidateBasic = (*MsgCreateConsumer)(nil)
+	_ sdk.HasValidateBasic = (*MsgUpdateConsumer)(nil)
+	_ sdk.HasValidateBasic = (*MsgRemoveConsumer)(nil)
 	_ sdk.HasValidateBasic = (*MsgOptIn)(nil)
 	_ sdk.HasValidateBasic = (*MsgOptOut)(nil)
 	_ sdk.HasValidateBasic = (*MsgSetConsumerCommissionRate)(nil)
@@ -54,11 +60,11 @@ var (
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
-func NewMsgAssignConsumerKey(chainID string, providerValidatorAddress sdk.ValAddress,
+func NewMsgAssignConsumerKey(consumerId string, providerValidatorAddress sdk.ValAddress,
 	consumerConsensusPubKey, signer string,
 ) (*MsgAssignConsumerKey, error) {
 	return &MsgAssignConsumerKey{
-		ChainId:      chainID,
+		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
 		Signer:       signer,
@@ -94,14 +100,8 @@ func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgAssignConsumerKey) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
-	}
-	// It is possible to assign keys for consumer chains that are not yet approved.
-	// This can only be done by a signing validator, but it is still sensible
-	// to limit the chainID size to prevent abuse.
-	if 128 < len(msg.ChainId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -147,6 +147,9 @@ func (msg MsgSubmitConsumerMisbehaviour) Type() string {
 func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 	if msg.Submitter == "" {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+	}
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 
 	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
@@ -208,6 +211,10 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 		return fmt.Errorf("invalid infraction block header, validator set is nil")
 	}
 
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -227,11 +234,171 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{addr}
 }
 
+// NewMsgCreateConsumer creates a new MsgCreateConsumer instance
+func NewMsgCreateConsumer(signer string, chainId string, metadata ConsumerMetadata,
+	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgCreateConsumer, error) {
+	return &MsgCreateConsumer{
+		Signer:                   signer,
+		ChainId:                  chainId,
+		Metadata:                 metadata,
+		InitializationParameters: initializationParameters,
+		PowerShapingParameters:   powerShapingParameters,
+	}, nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgCreateConsumer) Type() string {
+	return TypeMsgCreateConsumer
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgCreateConsumer) Route() string { return RouterKey }
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgCreateConsumer) ValidateBasic() error {
+	if err := ValidateField("chain id", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
+		return err
+	}
+
+	if err := ValidateConsumerMetadata(msg.Metadata); err != nil {
+		return err
+	}
+
+	if msg.InitializationParameters != nil {
+		if err := ValidateInitializationParameters(*msg.InitializationParameters); err != nil {
+			return err
+		}
+	}
+
+	if msg.PowerShapingParameters != nil {
+		if msg.PowerShapingParameters.Top_N != 0 {
+			return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
+				"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
+		}
+		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgCreateConsumer) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
-// If the validator address is not same as delegator's, then the validator must
-// sign the msg as well.
-func (msg *MsgConsumerAddition) GetSigners() []sdk.AccAddress {
+func (msg MsgCreateConsumer) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
+func NewMsgUpdateConsumer(signer string, consumerId string, ownerAddress string, metadata *ConsumerMetadata,
+	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgUpdateConsumer, error) {
+	return &MsgUpdateConsumer{
+		Signer:                   signer,
+		ConsumerId:               consumerId,
+		NewOwnerAddress:          ownerAddress,
+		Metadata:                 metadata,
+		InitializationParameters: initializationParameters,
+		PowerShapingParameters:   powerShapingParameters,
+	}, nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgUpdateConsumer) Type() string {
+	return TypeMsgUpdateConsumer
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgUpdateConsumer) Route() string { return RouterKey }
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgUpdateConsumer) ValidateBasic() error {
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
+	}
+
+	if msg.Metadata != nil {
+		if err := ValidateConsumerMetadata(*msg.Metadata); err != nil {
+			return err
+		}
+	}
+
+	if msg.InitializationParameters != nil {
+		if err := ValidateInitializationParameters(*msg.InitializationParameters); err != nil {
+			return err
+		}
+	}
+
+	if msg.PowerShapingParameters != nil {
+		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgUpdateConsumer) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgUpdateConsumer) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// NewMsgRemoveConsumer creates a new MsgRemoveConsumer instance
+func NewMsgRemoveConsumer(signer string, consumerId string, stopTime time.Time) (*MsgRemoveConsumer, error) {
+	return &MsgRemoveConsumer{
+		Authority:  signer,
+		ConsumerId: consumerId,
+		StopTime:   stopTime,
+	}, nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgRemoveConsumer) Type() string {
+	return TypeMsgRemoveConsumer
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgRemoveConsumer) Route() string { return RouterKey }
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgRemoveConsumer) ValidateBasic() error {
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgRemoveConsumer) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgRemoveConsumer) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
 	if err != nil {
 		// same behavior as in cosmos-sdk
@@ -240,8 +407,11 @@ func (msg *MsgConsumerAddition) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{valAddr.Bytes()}
 }
 
+// Route implements the sdk.Msg interface.
+func (msg MsgConsumerAddition) Route() string { return RouterKey }
+
 // ValidateBasic implements the sdk.Msg interface.
-func (msg *MsgConsumerAddition) ValidateBasic() error {
+func (msg MsgConsumerAddition) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return ErrBlankConsumerChainID
 	}
@@ -292,19 +462,28 @@ func (msg *MsgConsumerAddition) ValidateBasic() error {
 	return nil
 }
 
-func (msg *MsgConsumerRemoval) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
-	}
-
-	if msg.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
-	}
-	return nil
+// Type implements the sdk.Msg interface.
+func (msg MsgConsumerAddition) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
 }
 
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgConsumerAddition) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgConsumerModification) Route() string { return RouterKey }
+
 // ValidateBasic implements the sdk.Msg interface.
-func (msg *MsgConsumerModification) ValidateBasic() error {
+func (msg MsgConsumerModification) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return ErrBlankConsumerChainID
 	}
@@ -317,10 +496,59 @@ func (msg *MsgConsumerModification) ValidateBasic() error {
 	return nil
 }
 
+// Type implements the sdk.Msg interface.
+func (msg MsgConsumerModification) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgConsumerModification) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgConsumerRemoval) Route() string { return RouterKey }
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgConsumerRemoval) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
+	}
+
+	if msg.StopTime.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
+	}
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgConsumerRemoval) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgConsumerRemoval) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
 // NewMsgOptIn creates a new NewMsgOptIn instance.
-func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
+func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
 	return &MsgOptIn{
-		ChainId:      chainID,
+		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
 		Signer:       signer,
@@ -348,14 +576,8 @@ func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgOptIn) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
-	}
-	// It is possible to opt in to validate on consumer chains that are not yet approved.
-	// This can only be done by a signing validator, but it is still sensible
-	// to limit the chainID size to prevent abuse.
-	if 128 < len(msg.ChainId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -371,9 +593,9 @@ func (msg MsgOptIn) ValidateBasic() error {
 }
 
 // NewMsgOptOut creates a new NewMsgOptIn instance.
-func NewMsgOptOut(chainID string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
+func NewMsgOptOut(consumerId string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
 	return &MsgOptOut{
-		ChainId:      chainID,
+		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
 		Signer:       signer,
 	}, nil
@@ -406,14 +628,8 @@ func (msg MsgOptOut) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgOptOut) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
-	}
-	// It is possible to assign keys for consumer chains that are not yet approved.
-	// This can only be done by a signing validator, but it is still sensible
-	// to limit the chainID size to prevent abuse.
-	if 128 < len(msg.ChainId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -423,9 +639,9 @@ func (msg MsgOptOut) ValidateBasic() error {
 }
 
 // NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
-func NewMsgSetConsumerCommissionRate(chainID string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
+func NewMsgSetConsumerCommissionRate(consumerId string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
 	return &MsgSetConsumerCommissionRate{
-		ChainId:      chainID,
+		ConsumerId:   consumerId,
 		Rate:         commission,
 		ProviderAddr: providerValidatorAddress.String(),
 		Signer:       signer,
@@ -441,12 +657,8 @@ func (msg MsgSetConsumerCommissionRate) Type() string {
 }
 
 func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
-	}
-
-	if 128 < len(msg.ChainId) {
-		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -506,4 +718,139 @@ func (msg MsgSetConsumerCommissionRate) GetSigners() []sdk.AccAddress {
 func (msg MsgSetConsumerCommissionRate) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
+}
+
+// ValidateConsumerId validates the provided consumer id and returns an error if it is not valid
+func ValidateConsumerId(consumerId string) error {
+	if strings.TrimSpace(consumerId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot be blank")
+	}
+
+	// check that `consumerId` corresponds to a `uint64`
+	_, err := strconv.ParseUint(consumerId, 10, 64)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id (%s) cannot be parsed: %s", consumerId, err.Error())
+	}
+
+	return nil
+}
+
+// ValidateField validates that `field` is not empty and has at most `maxLength` characters
+func ValidateField(nameOfTheField string, field string, maxLength int) error {
+	if strings.TrimSpace(field) == "" {
+		return fmt.Errorf("%s cannot be empty", nameOfTheField)
+	} else if len(field) > maxLength {
+		return fmt.Errorf("%s is too long; got: %d, max: %d", nameOfTheField, len(field), maxLength)
+	}
+	return nil
+}
+
+// ValidateConsumerMetadata validates that all the provided metadata are in the expected range
+func ValidateConsumerMetadata(metadata ConsumerMetadata) error {
+	const maxNameLength = 100
+	const maxDescriptionLength = 50000
+	const maxMetadataLength = 1000
+
+	if err := ValidateField("name", metadata.Name, maxNameLength); err != nil {
+		return err
+	}
+
+	if err := ValidateField("description", metadata.Description, maxDescriptionLength); err != nil {
+		return err
+	}
+
+	if err := ValidateField("metadata", metadata.Metadata, maxMetadataLength); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ValidatePowerShapingParameters validates that all the provided power-shaping parameters are in the expected range
+func ValidatePowerShapingParameters(powerShapingParameters PowerShapingParameters) error {
+	const maxAllowlistLength = 500
+	const maxDenylistLength = 500
+
+	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
+	// Opt In chain) or in the range [50, 100] (for a Top N chain).
+	if powerShapingParameters.Top_N != 0 && (powerShapingParameters.Top_N < 50 || powerShapingParameters.Top_N > 100) {
+		return fmt.Errorf("parameter Top N can either be 0 or in the range [50, 100]")
+	}
+
+	if powerShapingParameters.ValidatorsPowerCap != 0 && powerShapingParameters.ValidatorsPowerCap > 100 {
+		return fmt.Errorf("validators' power cap has to be in the range [1, 100]")
+	}
+
+	if len(powerShapingParameters.Allowlist) > maxAllowlistLength {
+		return fmt.Errorf("allowlist cannot exceed length: %d", maxAllowlistLength)
+	}
+
+	if len(powerShapingParameters.Denylist) > maxDenylistLength {
+		return fmt.Errorf("denylist cannot exceed length: %d", maxDenylistLength)
+	}
+
+	return nil
+}
+
+// ValidateInitializationParameters validates that all the provided parameters are in the expected range
+func ValidateInitializationParameters(initializationParameters ConsumerInitializationParameters) error {
+	const maxGenesisHashLength = 1000
+	const maxBinaryHashLength = 1000
+	const maxConsumerRedistributionFractionLength = 50
+	const maxDistributionTransmissionChannelLength = 1000
+
+	if initializationParameters.InitialHeight.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "initial height cannot be zero")
+	}
+
+	if len(initializationParameters.GenesisHash) == 0 {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "genesis hash cannot be empty")
+	} else if len(initializationParameters.GenesisHash) > maxGenesisHashLength {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "genesis hash cannot exceed %d bytes", maxGenesisHashLength)
+	}
+
+	if len(initializationParameters.BinaryHash) == 0 {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "binary hash cannot be empty")
+	} else if len(initializationParameters.BinaryHash) > maxBinaryHashLength {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "binary hash cannot exceed %d bytes", maxBinaryHashLength)
+	}
+
+	if initializationParameters.SpawnTime.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "spawn time cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateStringFraction(initializationParameters.ConsumerRedistributionFraction); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "consumer redistribution fraction is invalid: %s", err.Error())
+	} else if err := ValidateField("consumer redistribution fraction", initializationParameters.ConsumerRedistributionFraction, maxConsumerRedistributionFractionLength); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "consumer redistribution fraction is invalid: %s", err.Error())
+	}
+
+	if err := ccvtypes.ValidatePositiveInt64(initializationParameters.BlocksPerDistributionTransmission); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "blocks per distribution transmission has to be positive")
+	}
+
+	if err := ccvtypes.ValidateDistributionTransmissionChannel(initializationParameters.DistributionTransmissionChannel); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "distribution transmission channel is invalid: %s", err.Error())
+	} else if len(initializationParameters.DistributionTransmissionChannel) > maxDistributionTransmissionChannelLength {
+		// note that the distribution transmission channel can be the empty string (i.e., "") and hence we only check its max length here
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "distribution transmission channel exceeds %d length", maxDistributionTransmissionChannelLength)
+	}
+
+	if err := ccvtypes.ValidatePositiveInt64(initializationParameters.HistoricalEntries); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "historical entries has to be positive")
+	}
+
+	if err := ccvtypes.ValidateDuration(initializationParameters.CcvTimeoutPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "ccv timeout period cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateDuration(initializationParameters.TransferTimeoutPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "transfer timeout period cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateDuration(initializationParameters.UnbondingPeriod); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "invalid unbonding period: %s", err.Error())
+	}
+
+	return nil
 }

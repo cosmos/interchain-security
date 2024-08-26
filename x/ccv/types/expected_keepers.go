@@ -143,6 +143,7 @@ type BankKeeper interface {
 // AccountKeeper defines the expected account keeper used for simulations
 type AccountKeeper interface {
 	GetModuleAccount(ctx context.Context, name string) sdk.ModuleAccountI
+	AddressCodec() addresscodec.Codec
 }
 
 // IBCTransferKeeper defines the expected interface needed for distribution transfer
