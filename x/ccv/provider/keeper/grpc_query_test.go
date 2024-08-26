@@ -408,18 +408,9 @@ func TestGetConsumerChains(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	consumerNum := 4
+	consumerNum := 5
 	consumerIds := make([]string, consumerNum)
 	consumers := make([]*types.Chain, consumerNum)
-
-	req := types.QueryConsumerChainsRequest{}
-	expectedResponse := types.QueryConsumerChainsResponse{
-		Chains: []*types.Chain{},
-	}
-	// expect to consumer
-	res, err := pk.QueryConsumerChains(ctx, &req)
-	require.NoError(t, err)
-	require.Equal(t, &expectedResponse, res)
 
 	// create four consumer chains all in the "Registered" phase
 	for i := 0; i < consumerNum; i++ {
@@ -441,66 +432,75 @@ func TestGetConsumerChains(t *testing.T) {
 		consumers[i] = &c
 	}
 
-	// expect no consumers when phase filter isn't set
-	res, err = pk.QueryConsumerChains(ctx, &req)
-	require.NoError(t, err)
-	require.Equal(t, &expectedResponse, res)
+	testCases := []struct {
+		name         string
+		setup        func(ctx sdk.Context, pk keeper.Keeper)
+		filterPhase  bool
+		phase        keeper.ConsumerPhase
+		expConsumers []*types.Chain
+	}{{
+		name:         "expect no consumers when phase filter isn't set",
+		setup:        func(ctx sdk.Context, pk keeper.Keeper) {},
+		expConsumers: []*types.Chain{},
+	}, {
+		name:         "expect all consumers when phase filter is enabled and set to Registered",
+		setup:        func(ctx sdk.Context, pk keeper.Keeper) {},
+		filterPhase:  true,
+		phase:        keeper.Registered,
+		expConsumers: consumers,
+	}, {
+		name: "expect launched consumers when phase filter is enabled and set to Launched",
+		setup: func(ctx sdk.Context, pk keeper.Keeper) {
+			consumers[1].ClientId = "clientID"
+			consumers[1].Phase = uint32(keeper.Launched)
+			pk.SetConsumerClientId(ctx, consumers[1].ChainId, "clientID")
+			pk.SetConsumerPhase(ctx, consumers[1].ChainId, keeper.Launched)
+		},
+		filterPhase:  true,
+		phase:        keeper.Launched,
+		expConsumers: consumers[1:2],
+	}, {
+		name: "expect initialized consumers when phase filter is enabled and set to Initialized",
+		setup: func(ctx sdk.Context, pk keeper.Keeper) {
+			consumers[2].Phase = uint32(keeper.Initialized)
+			err := pk.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumers[2].ChainId, time.Now())
+			require.NoError(t, err)
+			pk.SetConsumerPhase(ctx, consumers[2].ChainId, keeper.Initialized)
+		},
+		filterPhase:  true,
+		phase:        keeper.Initialized,
+		expConsumers: consumers[2:3],
+	}, {
+		name: "expect consumers that failed to launch when phase filter is enabled and set to FailToLaunch",
+		setup: func(ctx sdk.Context, pk keeper.Keeper) {
+			consumers[3].Phase = uint32(keeper.FailedToLaunch)
+			pk.SetConsumerPhase(ctx, consumers[3].ChainId, keeper.FailedToLaunch)
+		},
+		filterPhase:  true,
+		phase:        keeper.FailedToLaunch,
+		expConsumers: consumers[3:4],
+	}, {
+		name: "expect stopped consumers when phase filter is enabled and set to Stopped",
+		setup: func(ctx sdk.Context, pk keeper.Keeper) {
+			consumers[4].Phase = uint32(keeper.Stopped)
+			pk.SetConsumerPhase(ctx, consumers[4].ChainId, keeper.Stopped)
+		},
+		filterPhase:  true,
+		phase:        keeper.Stopped,
+		expConsumers: consumers[4:],
+	},
+	}
 
-	// expect all consumers when phase filter is enable and set to "Registered"
-	req.FilterByPhase = true
-	req.Phase = uint32(keeper.Registered)
-	expectedResponse.Chains = consumers
-
-	res, err = pk.QueryConsumerChains(ctx, &req)
-	require.NoError(t, err)
-	require.Equal(t, &expectedResponse, res)
-
-	// update a consumer to be perceived as "Launched"
-	consumers[0].ClientId = "clientID"
-	consumers[0].Phase = uint32(keeper.Launched)
-	pk.SetConsumerClientId(ctx, consumers[0].ChainId, "clientID")
-	pk.SetConsumerPhase(ctx, consumers[0].ChainId, keeper.Launched)
-
-	// expect the updated consumers when phase filter is enable and set to "Registered"
-	req.FilterByPhase = true
-	req.Phase = uint32(keeper.Launched)
-	expectedResponse.Chains = consumers[0:1]
-
-	res, err = pk.QueryConsumerChains(ctx, &req)
-	require.NoError(t, err)
-	require.Equal(t, &expectedResponse, res)
-
-	// repeat the same test for the Initialized and FailedToLaunched and Stopped phase
-	// Initialized
-	req.Phase = uint32(keeper.Initialized)
-	consumers[1].Phase = uint32(keeper.Initialized)
-
-	err = pk.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumers[1].ChainId, time.Now())
-	pk.SetConsumerPhase(ctx, consumers[1].ChainId, keeper.Initialized)
-	require.NoError(t, err)
-	expectedResponse.Chains = consumers[1:2]
-
-	res, err = pk.QueryConsumerChains(ctx, &req)
-	require.NoError(t, err)
-	require.Equal(t, &expectedResponse, res)
-
-	// Stopped
-	req.Phase = uint32(keeper.Stopped)
-	consumers[2].Phase = uint32(keeper.Stopped)
-	pk.SetConsumerPhase(ctx, consumers[2].ChainId, keeper.Stopped)
-
-	expectedResponse.Chains = consumers[2:3]
-	res, err = pk.QueryConsumerChains(ctx, &req)
-	require.NoError(t, err)
-	require.Equal(t, &expectedResponse, res)
-
-	// FailedToLaunch
-	req.Phase = uint32(keeper.FailedToLaunch)
-	consumers[3].Phase = uint32(keeper.FailedToLaunch)
-	pk.SetConsumerPhase(ctx, consumers[3].ChainId, keeper.FailedToLaunch)
-
-	expectedResponse.Chains = consumers[3:]
-	res, err = pk.QueryConsumerChains(ctx, &req)
-	require.NoError(t, err)
-	require.Equal(t, &expectedResponse, res)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.setup(ctx, pk)
+			req := types.QueryConsumerChainsRequest{tc.filterPhase, uint32(tc.phase)}
+			expectedResponse := types.QueryConsumerChainsResponse{
+				Chains: tc.expConsumers,
+			}
+			res, err := pk.QueryConsumerChains(ctx, &req)
+			require.NoError(t, err)
+			require.Equal(t, &expectedResponse, res)
+		})
+	}
 }
