@@ -327,15 +327,6 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 		return err
 	}
 
-	// The new owner address can be empty, in which case the consumer chain does not change its owner.
-	// However, if the new owner address is not empty, we verify that it's a valid account address.
-	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
-		_, err := sdk.AccAddressFromBech32(msg.NewOwnerAddress)
-		if err != nil {
-			return err
-		}
-	}
-
 	if msg.Metadata != nil {
 		if err := ValidateConsumerMetadata(*msg.Metadata); err != nil {
 			return err

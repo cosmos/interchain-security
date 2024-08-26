@@ -393,7 +393,7 @@ message MsgUpdateConsumer {
   string consumer_id = 2;
 
   // the new owner of the consumer when updated
-  string new_owner_address = 3;
+  string new_owner_address = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // the metadata of the consumer when updated
   ConsumerMetadata metadata = 4;

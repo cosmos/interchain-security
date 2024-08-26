@@ -359,6 +359,14 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			"cannot update consumer chain that is in the stopped phase: %s", consumerId)
 	}
 
+	// The new owner address can be empty, in which case the consumer chain does not change its owner.
+	// However, if the new owner address is not empty, we verify that it's a valid account address.
+	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
+		if _, err := k.accountKeeper.AddressCodec().StringToBytes(msg.NewOwnerAddress); err != nil {
+			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidNewOwnerAddress, "invalid new owner address %s", msg.NewOwnerAddress)
+		}
+	}
+
 	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
 	if err != nil {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
