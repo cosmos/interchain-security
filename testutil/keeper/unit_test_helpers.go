@@ -283,7 +283,7 @@ func GetTestConsumerMetadata() providertypes.ConsumerMetadata {
 
 func GetTestInitializationParameters() providertypes.ConsumerInitializationParameters {
 	initialHeight := clienttypes.NewHeight(4, 5)
-	spawnTime := time.Now()
+	spawnTime := time.Now().UTC()
 	ccvTimeoutPeriod := types.DefaultCCVTimeoutPeriod
 	transferTimeoutPeriod := types.DefaultTransferTimeoutPeriod
 	unbondingPeriod := types.DefaultConsumerUnbondingPeriod

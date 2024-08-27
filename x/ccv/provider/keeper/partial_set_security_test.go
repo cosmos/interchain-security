@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"bytes"
+	"fmt"
 	"sort"
 	"testing"
 
@@ -384,29 +385,45 @@ func TestCanValidateChain(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validator := createStakingValidator(ctx, mocks, 0, 1, 1)
+	consumerID := "0"
+
+	validator := createStakingValidator(ctx, mocks, 0, 1, 1) // adds GetLastValidatorPower expectation to mocks
 	consAddr, _ := validator.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(consAddr)
 
 	// with no allowlist or denylist, the validator has to be opted in, in order to consider it
-	require.False(t, providerKeeper.CanValidateChain(ctx, "consumerId", providerAddr))
-	providerKeeper.SetOptedIn(ctx, "consumerId", types.NewProviderConsAddress(consAddr))
-	require.True(t, providerKeeper.CanValidateChain(ctx, "consumerId", providerAddr))
+	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
+
+	// with TopN chains, the validator can be considered,
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), providerAddr.Address).Return(validator, nil).Times(2)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 50})
+	// validator's power is LT the min power
+	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 2))
+	// validator's power is GTE the min power
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
+
+	// when validator is opted-in it can validate regardless of its min power
+	providerKeeper.SetOptedIn(ctx, consumerID, types.NewProviderConsAddress(consAddr))
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 2))
+
+	// With OptIn chains, validator can validate only if it has already opted-in
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 0})
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 2))
 
 	// create an allow list but do not add the validator `providerAddr` to it
 	validatorA := createStakingValidator(ctx, mocks, 1, 1, 2)
 	consAddrA, _ := validatorA.GetConsAddr()
-	providerKeeper.SetAllowlist(ctx, "consumerId", types.NewProviderConsAddress(consAddrA))
-	require.False(t, providerKeeper.CanValidateChain(ctx, "consumerId", providerAddr))
-	providerKeeper.SetAllowlist(ctx, "consumerId", types.NewProviderConsAddress(consAddr))
-	require.True(t, providerKeeper.CanValidateChain(ctx, "consumerId", providerAddr))
+	providerKeeper.SetAllowlist(ctx, consumerID, types.NewProviderConsAddress(consAddrA))
+	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
+	providerKeeper.SetAllowlist(ctx, consumerID, types.NewProviderConsAddress(consAddr))
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
 
 	// create a denylist but do not add validator `providerAddr` to it
-	providerKeeper.SetDenylist(ctx, "consumerId", types.NewProviderConsAddress(consAddrA))
-	require.True(t, providerKeeper.CanValidateChain(ctx, "consumerId", providerAddr))
+	providerKeeper.SetDenylist(ctx, consumerID, types.NewProviderConsAddress(consAddrA))
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
 	// add validator `providerAddr` to the denylist
-	providerKeeper.SetDenylist(ctx, "consumerId", types.NewProviderConsAddress(consAddr))
-	require.False(t, providerKeeper.CanValidateChain(ctx, "consumerId", providerAddr))
+	providerKeeper.SetDenylist(ctx, consumerID, types.NewProviderConsAddress(consAddr))
+	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
 }
 
 func TestCapValidatorSet(t *testing.T) {
@@ -820,7 +837,7 @@ func TestIfInactiveValsDisallowedProperty(t *testing.T) {
 		providerKeeper.SetParams(ctx, params)
 
 		// Compute the next validators
-		nextVals := providerKeeper.ComputeNextValidators(ctx, "consumerId", vals)
+		nextVals := providerKeeper.ComputeNextValidators(ctx, "consumerId", vals, 0)
 
 		// Check that the length of nextVals is at most maxProviderConsensusVals
 		require.LessOrEqual(r, len(nextVals), int(maxProviderConsensusVals), "The length of nextVals should be at most maxProviderConsensusVals")
@@ -842,4 +859,74 @@ func TestIfInactiveValsDisallowedProperty(t *testing.T) {
 			)
 		}
 	})
+}
+
+func TestHasMinPower(t *testing.T) {
+	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerConsPubKey := ed25519.GenPrivKeyFromSecret([]byte{1}).PubKey()
+	consAddr := sdk.ConsAddress(providerConsPubKey.Address())
+	providerAddr := types.NewProviderConsAddress(consAddr)
+
+	testCases := []struct {
+		name        string
+		minPower    uint64
+		expectation func(sdk.ConsAddress, testkeeper.MockedKeepers)
+		hasMinPower bool
+	}{
+		{
+			name: "cannot find validator by cons address",
+			expectation: func(sdk.ConsAddress, testkeeper.MockedKeepers) {
+				mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).
+					Return(stakingtypes.Validator{}, fmt.Errorf("validator not found")).Times(1)
+			},
+			hasMinPower: false,
+		}, {
+			name: "cannot convert validator operator address",
+			expectation: func(consAddr sdk.ConsAddress, mocks testkeeper.MockedKeepers) {
+				mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).Return(stakingtypes.Validator{OperatorAddress: "xxxx"}, nil).Times(1)
+			},
+			hasMinPower: false,
+		}, {
+			name: "cannot find last validator power",
+			expectation: func(consAddr sdk.ConsAddress, mocks testkeeper.MockedKeepers) {
+				valAddr := sdk.ValAddress(providerAddr.Address.Bytes())
+				mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).
+					Return(stakingtypes.Validator{OperatorAddress: valAddr.String()}, nil)
+				mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).
+					Return(int64(0), fmt.Errorf("last power not found")).Times(1)
+			},
+			hasMinPower: false,
+		}, {
+			name: "validator power is LT min power",
+			expectation: func(consAddr sdk.ConsAddress, mocks testkeeper.MockedKeepers) {
+				valAddr := sdk.ValAddress(providerAddr.Address.Bytes())
+				mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).
+					Return(stakingtypes.Validator{OperatorAddress: valAddr.String()}, nil)
+				mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).
+					Return(int64(5), nil).Times(1)
+			},
+			hasMinPower: false,
+		}, {
+			name: "validator power is GTE min power",
+			expectation: func(consAddr sdk.ConsAddress, mocks testkeeper.MockedKeepers) {
+				valAddr := sdk.ValAddress(providerAddr.Address.Bytes())
+				mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).
+					Return(stakingtypes.Validator{OperatorAddress: valAddr.String()}, nil)
+				mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).
+					Return(int64(10), nil).Times(1)
+			},
+			hasMinPower: true,
+		},
+	}
+
+	minPower := int64(10)
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expectation(consAddr, mocks)
+			require.Equal(t, tc.hasMinPower, pk.HasMinPower(ctx, providerAddr, minPower))
+		})
+	}
 }

@@ -199,6 +199,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		}
 		topN := k.GetTopN(ctx, consumerId)
 
+		minPower := int64(0)
 		if topN > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			// of the active validators
@@ -208,7 +209,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 				panic(fmt.Errorf("failed to get active validators: %w", err))
 			}
 
-			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
 			if err != nil {
 				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
 				panic(fmt.Errorf("failed to compute min power to opt in for chain %v: %w", consumerId, err))
@@ -220,7 +221,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators)
+		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, consumerId, nextValidators)
