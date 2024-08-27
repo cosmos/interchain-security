@@ -14,7 +14,7 @@ import (
 )
 
 // TestAfterPropSubmissionAndVotingPeriodEnded tests the results of GetProviderInfo method.
-// @Long Description
+// @Long Description@
 // The test sets up the account that will submit the proposal, and then the proposal is created.
 // After the proposal is submitted the AfterProposalSubmission hook is triggered
 // and it should handle the submission of the proposal in the provider module.
