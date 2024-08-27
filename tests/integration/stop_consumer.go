@@ -10,7 +10,17 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// Tests the functionality of stopping a consumer chain at a higher level than unit tests
+// TestStopConsumerChain tests the functionality of stopping a consumer chain at a higher level than unit tests.
+// @Long Description@
+// It retrieves a validator from the provider chain's validators and then the delegator address.
+// Then the test sets up test operations, populating the provider chain states using the following operations:
+//   - Setup CCV channels; establishes the CCV channel and sets channelToChain, chainToChannel, and initHeight mapping for the consumer chain ID.
+//   - Delegate the total bond amount to the chosen validator.
+//   - Undelegate the shares in four consecutive blocks evenly; create UnbondingOp and UnbondingOpIndex entries for the consumer chain ID.
+//   - Set SlashAck state for the consumer chain ID.
+//
+// After, the setup operations are executed, and the consumer chain is stopped. Finally, the test checks that the state
+// associated with the consumer chain is properly cleaned up after it is stopped.
 func (s *CCVTestSuite) TestStopConsumerChain() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
