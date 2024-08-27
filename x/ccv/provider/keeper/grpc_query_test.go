@@ -279,7 +279,7 @@ func TestGetConsumerChain(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainIDs := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
+	chainIds := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
 
 	// mock the validator set
 	vals := []stakingtypes.Validator{
@@ -323,31 +323,31 @@ func TestGetConsumerChain(t *testing.T) {
 		{},
 	}
 
-	metadataLists := make([]types.ConsumerMetadata, len(chainIDs))
-	consumerIDs := make([]string, len(chainIDs))
+	metadataLists := make([]types.ConsumerMetadata, len(chainIds))
+	consumerIds := make([]string, len(chainIds))
 
 	// skip first consumerID
 	pk.FetchAndIncrementConsumerId(ctx)
 
 	expectedGetAllOrder := []types.Chain{}
-	for i, chainID := range chainIDs {
-		consumerID := pk.FetchAndIncrementConsumerId(ctx)
-		consumerIDs[i] = consumerID
+	for i, chainID := range chainIds {
+		consumerId := pk.FetchAndIncrementConsumerId(ctx)
+		consumerIds[i] = consumerId
 
-		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+		clientID := fmt.Sprintf("client-%d", len(chainIds)-i)
 		topN := topNs[i]
-		pk.SetConsumerClientId(ctx, consumerID, clientID)
-		pk.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{
+		pk.SetConsumerClientId(ctx, consumerId, clientID)
+		pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
 			Top_N:              topN,
 			ValidatorSetCap:    validatorSetCaps[i],
 			ValidatorsPowerCap: validatorPowerCaps[i],
 		})
-		pk.SetMinimumPowerInTopN(ctx, consumerID, expectedMinPowerInTopNs[i])
+		pk.SetMinimumPowerInTopN(ctx, consumerId, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
-			pk.SetAllowlist(ctx, consumerID, addr)
+			pk.SetAllowlist(ctx, consumerId, addr)
 		}
 		for _, addr := range denylists[i] {
-			pk.SetDenylist(ctx, consumerID, addr)
+			pk.SetDenylist(ctx, consumerId, addr)
 		}
 		strAllowlist := make([]string, len(allowlists[i]))
 		for j, addr := range allowlists[i] {
@@ -360,14 +360,14 @@ func TestGetConsumerChain(t *testing.T) {
 		}
 
 		metadataLists[i] = types.ConsumerMetadata{Name: chainID}
-		pk.SetConsumerMetadata(ctx, consumerID, metadataLists[i])
+		pk.SetConsumerMetadata(ctx, consumerId, metadataLists[i])
 
 		phase := uint32(i)
-		pk.SetConsumerPhase(ctx, consumerID, keeper.ConsumerPhase(byte(phase)))
+		pk.SetConsumerPhase(ctx, consumerId, keeper.ConsumerPhase(byte(phase)))
 
 		expectedGetAllOrder = append(expectedGetAllOrder,
 			types.Chain{
-				ChainId:            consumerID,
+				ChainId:            consumerId,
 				ClientId:           clientID,
 				Top_N:              topN,
 				MinPowerInTop_N:    expectedMinPowerInTopNs[i],
@@ -380,8 +380,8 @@ func TestGetConsumerChain(t *testing.T) {
 			})
 	}
 
-	for i, cID := range consumerIDs {
-		c, err := pk.GetConsumerChain(ctx, cID)
+	for i, cId := range consumerIds {
+		c, err := pk.GetConsumerChain(ctx, cId)
 		require.NoError(t, err)
 		require.Equal(t, expectedGetAllOrder[i], c)
 	}
@@ -412,7 +412,7 @@ func TestGetConsumerChains(t *testing.T) {
 	consumerIds := make([]string, consumerNum)
 	consumers := make([]*types.Chain, consumerNum)
 
-	// create four consumer chains all in the "Registered" phase
+	// create five consumer chains all in the "Registered" phase
 	for i := 0; i < consumerNum; i++ {
 		cID := pk.FetchAndIncrementConsumerId(ctx)
 		c := types.Chain{

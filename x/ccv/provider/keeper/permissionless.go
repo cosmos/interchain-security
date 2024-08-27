@@ -564,6 +564,7 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint
 	return result
 }
 
+// GetInitializedConsumers returns the initialized consumer chains
 // TODO: @sainoe merge with func above
 func (k Keeper) GetInitializedConsumers(ctx sdk.Context) []string {
 	store := ctx.KVStore(k.storeKey)

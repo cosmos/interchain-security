@@ -55,7 +55,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 		return &types.QueryConsumerChainsResponse{}, nil
 	}
 
-	consumerIDs := []string{}
+	consumerIds := []string{}
 
 	// return the consumer chains in the "Launched" phase by default
 	phase := Launched
@@ -67,9 +67,9 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	switch {
 	case phase == Launched:
-		consumerIDs = append(consumerIDs, k.GetAllRegisteredConsumerIds(ctx)...)
+		consumerIds = append(consumerIds, k.GetAllRegisteredConsumerIds(ctx)...)
 	case phase == Initialized:
-		consumerIDs = append(consumerIDs, k.GetInitializedConsumers(ctx)...)
+		consumerIds = append(consumerIds, k.GetInitializedConsumers(ctx)...)
 	case phase == Registered || phase == FailedToLaunch || phase == Stopped:
 		for i := uint64(0); i <= lastCID; i++ {
 			p, ok := k.GetConsumerPhase(ctx, strconv.FormatInt(int64(i), 10))
@@ -78,7 +78,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 				continue
 			}
 			if p == phase {
-				consumerIDs = append(consumerIDs, strconv.FormatInt(int64(i), 10))
+				consumerIds = append(consumerIds, strconv.FormatInt(int64(i), 10))
 			}
 		}
 
@@ -86,8 +86,8 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid consumer phase %v", phase))
 	}
 
-	chains := make([]*types.Chain, len(consumerIDs))
-	for i, cID := range consumerIDs {
+	chains := make([]*types.Chain, len(consumerIds))
+	for i, cID := range consumerIds {
 		c, err := k.GetConsumerChain(ctx, cID)
 		if err != nil {
 			// log something instead?
@@ -109,9 +109,17 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		minPowerInTopN = -1
 	}
 
-	validatorSetCap := k.GetValidatorSetCap(ctx, consumerId)
+	chainID, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find chain ID for consumer (%s)", consumerId)
+	}
 
-	validatorsPowerCap := k.GetValidatorsPowerCap(ctx, consumerId)
+	clientId, _ := k.GetConsumerClientId(ctx, consumerId)
+
+	phase, ok := k.GetConsumerPhase(ctx, consumerId)
+	if !ok {
+		return types.Chain{}, fmt.Errorf("cannot find phase for consumer (%s)", consumerId)
+	}
 
 	allowlist := k.GetAllowList(ctx, consumerId)
 	strAllowlist := make([]string, len(allowlist))
@@ -125,26 +133,18 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
-	phase, ok := k.GetConsumerPhase(ctx, consumerId)
-	if !ok {
-		return types.Chain{}, fmt.Errorf("cannot find phase for consumer (%s)", consumerId)
-	}
-
 	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
 	if err != nil {
 		return types.Chain{}, fmt.Errorf("cannot get metadata for consumer (%s): %w", consumerId, err)
 	}
 
-	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
-	topN := k.GetTopN(ctx, consumerId)
-
 	return types.Chain{
-		ChainId:            consumerId,
-		ClientId:           clientID,
-		Top_N:              topN,
+		ChainId:            chainID,
+		ClientId:           clientId,
+		Top_N:              k.GetTopN(ctx, consumerId),
 		MinPowerInTop_N:    minPowerInTopN,
-		ValidatorSetCap:    validatorSetCap,
-		ValidatorsPowerCap: validatorsPowerCap,
+		ValidatorSetCap:    k.GetValidatorSetCap(ctx, consumerId),
+		ValidatorsPowerCap: k.GetValidatorsPowerCap(ctx, consumerId),
 		Allowlist:          strAllowlist,
 		Denylist:           strDenylist,
 		Phase:              uint32(phase),
