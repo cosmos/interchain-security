@@ -325,7 +325,7 @@ func (k Keeper) CanValidateChain(ctx sdk.Context, consumerId string, providerAdd
 	// check if the validator is already opted-in
 	optedIn := k.IsOptedIn(ctx, consumerId, providerAddr)
 
-	// check if the validator is automatically opt-in for a topN chain
+	// check if the validator is automatically opted-in for a topN chain
 	if !optedIn && k.GetTopN(ctx, consumerId) > 0 {
 		optedIn = k.HasMinPower(ctx, providerAddr, minPowerToOptIn)
 	}
