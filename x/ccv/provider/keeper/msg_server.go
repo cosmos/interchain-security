@@ -87,16 +87,18 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 }
 
 // RemoveConsumer defines an RPC handler method for MsgRemoveConsumer
-func (k msgServer) RemoveConsumer(
-	goCtx context.Context,
-	msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
-	if k.GetAuthority() != msg.Authority {
-		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
-	}
-
+func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	consumerId := msg.ConsumerId
+	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
+	if err != nil {
+		return &types.MsgRemoveConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
+	}
+
+	if msg.Signer != ownerAddress {
+		return &types.MsgRemoveConsumerResponse{}, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
+	}
 
 	phase, found := k.Keeper.GetConsumerPhase(ctx, consumerId)
 	if !found || phase != Launched {
