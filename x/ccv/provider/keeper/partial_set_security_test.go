@@ -404,26 +404,26 @@ func TestCanValidateChain(t *testing.T) {
 
 	// when validator is opted-in it can validate regardless of its min power
 	providerKeeper.SetOptedIn(ctx, consumerID, types.NewProviderConsAddress(consAddr))
-	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 2))
 
 	// With OptIn chains, validator can validate only if it has already opted-in
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 0})
-	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 2))
 
 	// create an allow list but do not add the validator `providerAddr` to it
 	validatorA := createStakingValidator(ctx, mocks, 1, 1, 2)
 	consAddrA, _ := validatorA.GetConsAddr()
 	providerKeeper.SetAllowlist(ctx, consumerID, types.NewProviderConsAddress(consAddrA))
-	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
+	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
 	providerKeeper.SetAllowlist(ctx, consumerID, types.NewProviderConsAddress(consAddr))
-	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
 
 	// create a denylist but do not add validator `providerAddr` to it
 	providerKeeper.SetDenylist(ctx, consumerID, types.NewProviderConsAddress(consAddrA))
-	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
+	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
 	// add validator `providerAddr` to the denylist
 	providerKeeper.SetDenylist(ctx, consumerID, types.NewProviderConsAddress(consAddr))
-	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
+	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
 }
 
 func TestCapValidatorSet(t *testing.T) {
