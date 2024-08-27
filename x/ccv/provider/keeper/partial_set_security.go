@@ -327,7 +327,7 @@ func (k Keeper) CanValidateChain(ctx sdk.Context, consumerId string, providerAdd
 
 	// check if the validator is automatically opt-in for a topN chain
 	if !optedIn && k.GetTopN(ctx, consumerId) > 0 {
-		optedIn = k.HasMinPower(ctx, providerAddr, uint64(minPowerToOptIn))
+		optedIn = k.HasMinPower(ctx, providerAddr, minPowerToOptIn)
 	}
 
 	// only consider opted-in validators
@@ -386,26 +386,41 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, consumerId string, bonded
 }
 
 // HasMinPower returns true if the `providerAddr` voting power is GTE than the given minimum power
-func (k Keeper) HasMinPower(ctx sdk.Context, providerAddr types.ProviderConsAddress, minPower uint64) bool {
+func (k Keeper) HasMinPower(ctx sdk.Context, providerAddr types.ProviderConsAddress, minPower int64) bool {
 	val, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.Address)
 	if err != nil {
-		k.Logger(ctx).Error("cannot get last validator power %s: %s", providerAddr, err)
+		k.Logger(ctx).Error(
+			"cannot get last validator power",
+			"provider address",
+			providerAddr,
+			"error",
+			err,
+		)
 		return false
 	}
 
 	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
 	if err != nil {
-		k.Logger(ctx).Error("could not retrieve validator address  %s: %s",
-			val.GetOperator(), err)
+		k.Logger(ctx).Error(
+			"could not retrieve validator address",
+			"operator address",
+			val.GetOperator(),
+			"error",
+			err,
+		)
 		return false
 	}
 
 	power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
 	if err != nil {
-		k.Logger(ctx).Error("could not retrieve last power of validator address: %s: %s",
-			val.GetOperator(), err)
+		k.Logger(ctx).Error("could not retrieve last power of validator address",
+			"operator address",
+			val.GetOperator(),
+			"error",
+			err,
+		)
 		return false
 	}
 
-	return uint64(power) >= minPower
+	return power >= minPower
 }

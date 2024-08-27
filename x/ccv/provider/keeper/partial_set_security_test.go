@@ -921,7 +921,7 @@ func TestHasMinPower(t *testing.T) {
 		},
 	}
 
-	minPower := uint64(10)
+	minPower := int64(10)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

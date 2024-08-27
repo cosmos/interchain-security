@@ -441,13 +441,15 @@ func (k Keeper) hasToValidate(
 	minPowerToOptIn := int64(0)
 	// If the consumer is TopN compute the minimum power
 	if topN := k.GetTopN(ctx, consumerId); topN > 0 {
+		// compute the minimum power to opt-in since the one in the state is stale
+		// Note that the effective min power will be computed at the end of the epoch
 		minPowerToOptIn, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
 		if err != nil {
 			return false, err
 		}
 	}
 
-	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
+	// if the validator belongs to the validators of the next epoch, then if nothing changes
 	// the validator would have to validate in the next epoch
 	lastVals, err := k.GetLastBondedValidators(ctx)
 	if err != nil {
