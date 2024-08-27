@@ -11,6 +11,15 @@ import (
 )
 
 // TestSlashRetries tests the throttling v2 retry logic at an integration level.
+// @Long Description@
+// This test sets up the CCV channels and the provider. It retrieves the validators and ensures that none are initially jailed.
+// Two validators are then selected, and their signing information is set up.
+// The test also sets up the consumer, and then constructs and queues a slashing packet for the first validator.
+// It verifies that the packet is sent. Packet is then recived on the provider side and handled. The test then confirms that the first validator has been jailed
+// and checks the provider's slash meter to ensure it reflects the correct state. The packet is acknowledged on the consumer chain, and it is verified
+// that the slash record has been deleted and no pending packets remain. Additionally, it confirms that packet sending is now permitted.
+// The test then queues a second slashing packet for the second validator and verifies its pending status. Finally, it handles the second packet,
+// checks that the second validator is jailed, and confirms the final state of the slash record and pending packets on the consumer chain.
 func (s *CCVTestSuite) TestSlashRetries() {
 	s.SetupAllCCVChannels()
 	s.SendEmptyVSCPacket() // Establish ccv channel
