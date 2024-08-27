@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"strconv"
 	"time"
@@ -691,4 +692,55 @@ func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) 
 
 	return initializationParameters.SpawnTime, spawnTimeInTheFuture && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
 		blocksPerDistributionTransmissionSet && historicalEntriesSet
+}
+
+// HasAtMostOnceCorrectMsgUpdateConsumer checks that the proposal has at most one `MsgUpdateConsumer` that is
+// correctly set (i.e., the owner address of the to-be-updated consumer corresponds to the gov module). Returns
+// the single `MsgUpdateConsumer` message if only one correctly set exists.
+func (k Keeper) HasAtMostOnceCorrectMsgUpdateConsumer(ctx sdk.Context, proposal *govv1.Proposal) (*types.MsgUpdateConsumer, error) {
+	var msgUpdateConsumer *types.MsgUpdateConsumer
+	for _, msg := range proposal.GetMessages() {
+		sdkMsg, isMsgUpdateConsumer := msg.GetCachedValue().(*types.MsgUpdateConsumer)
+		if isMsgUpdateConsumer {
+			// A `MsgUpdateConsumer` can only succeed if the owner of the consumer chain is the gov module.
+			// If that's not the case, we immediately fail the proposal.
+			// Note that someone could potentially change the owner of a chain to be that of the gov module
+			// while a proposal is active and before the proposal is executed. Even then, we still do not allow
+			// `MsgUpdateConsumer` proposals if the owner of the chain is not the gov module to avoid someone forgetting
+			// to change the owner address while the proposal is active.
+			ownerAddress, err := k.GetConsumerOwnerAddress(ctx, sdkMsg.ConsumerId)
+			if err != nil {
+				return nil, fmt.Errorf("cannot find owner address for consumer with consumer id (%s): %s", sdkMsg.ConsumerId, err.Error())
+			} else if ownerAddress != k.GetAuthority() {
+				return nil, fmt.Errorf("owner address (%s) is not the gov module (%s)", ownerAddress, k.GetAuthority())
+			}
+
+			if msgUpdateConsumer != nil {
+				return nil, fmt.Errorf("proposal can contain at most one `MsgUpdateConsumer` message")
+			}
+			msgUpdateConsumer = sdkMsg
+		}
+	}
+	return msgUpdateConsumer, nil
+}
+
+// DoesNotHaveDeprecatedMessage checks that the provided proposal does not contain any deprecated messages and returns
+// an error if this is the case
+func DoesNotHaveDeprecatedMessage(proposal *govv1.Proposal) error {
+	for _, msg := range proposal.GetMessages() {
+		// if the proposal contains a deprecated message, cancel the proposal
+		_, isMsgConsumerAddition := msg.GetCachedValue().(*types.MsgConsumerAddition)
+		if isMsgConsumerAddition {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerAddition`; use `MsgCreateConsumer` instead")
+		}
+		_, isMsgConsumerModification := msg.GetCachedValue().(*types.MsgConsumerModification)
+		if isMsgConsumerModification {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerModification`; use `MsgUpdateConsumer` instead")
+		}
+		_, isMsgConsumerRemoval := msg.GetCachedValue().(*types.MsgConsumerRemoval)
+		if isMsgConsumerRemoval {
+			return fmt.Errorf("proposal cannot contain deprecated `MsgConsumerRemoval`; use `MsgRemoveConsumer` instead")
+		}
+	}
+	return nil
 }
