@@ -680,8 +680,7 @@ func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) 
 		return time.Time{}, false
 	}
 
-	// a chain can only launch if the spawn time is in the future
-	spawnTimeInTheFuture := initializationParameters.SpawnTime.After(ctx.BlockTime())
+	spawnTimeIsNotZero := !initializationParameters.SpawnTime.Equal(time.Time{})
 
 	genesisHashSet := initializationParameters.GenesisHash != nil
 	binaryHashSet := initializationParameters.BinaryHash != nil
@@ -690,7 +689,7 @@ func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) 
 	blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
 	historicalEntriesSet := initializationParameters.HistoricalEntries > 0
 
-	return initializationParameters.SpawnTime, spawnTimeInTheFuture && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
+	return initializationParameters.SpawnTime, spawnTimeIsNotZero && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
 		blocksPerDistributionTransmissionSet && historicalEntriesSet
 }
 
