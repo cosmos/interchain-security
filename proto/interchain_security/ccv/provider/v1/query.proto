@@ -192,12 +192,9 @@ message QueryConsumerGenesisResponse {
 }
 
 message QueryConsumerChainsRequest {
-  // filter_by_phase enables the filtering of the consumer chains
-  // returned by phase, default is "Launched"  
-  bool filter_by_phase = 1;
-  // The phase of the consumer chains returned
+  // The phase of the consumer chains returned, default is 0 i.e. "Registered"
   // Registered=0|Initialized=1|FailedToLaunch=2|Launched=3|Stopped=4
-  uint32 phase = 2;
+  uint32 phase = 1;
 }
 
 message QueryConsumerChainsResponse { repeated Chain chains = 1; }

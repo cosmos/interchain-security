@@ -56,14 +56,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	}
 
 	consumerIds := []string{}
-
-	// return the consumer chains in the "Launched" phase by default
-	phase := Launched
-
-	// update phase if filter flag is  set
-	if req.FilterByPhase {
-		phase = ConsumerPhase(byte(req.Phase))
-	}
+	phase := ConsumerPhase(byte(req.Phase))
 
 	switch {
 	case phase == Launched:
@@ -101,7 +94,6 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
 func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chain, error) {
-
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
 	if !found {
@@ -111,7 +103,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 
 	chainID, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
-		return types.Chain{}, fmt.Errorf("cannot find chain ID for consumer (%s)", consumerId)
+		return types.Chain{}, fmt.Errorf("cannot find chain ID for consumer (%s):%s", consumerId, err)
 	}
 
 	clientId, _ := k.GetConsumerClientId(ctx, consumerId)
