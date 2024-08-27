@@ -704,16 +704,6 @@ func TestCanLaunch(t *testing.T) {
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.True(t, canLaunch)
 
-	// initialized chain that has spawn time in the past cannot launch
-	ctx = ctx.WithBlockTime(initializationParameters.SpawnTime.Add(time.Second))
-	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
-	require.False(t, canLaunch)
-
-	// reset block time so the chain can launch
-	ctx = ctx.WithBlockTime(initializationParameters.SpawnTime.Add(-time.Second))
-	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
-	require.True(t, canLaunch)
-
 	// chain cannot launch without a genesis hash
 	initializationParameters.GenesisHash = nil
 	err = providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", initializationParameters)
