@@ -13,57 +13,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 )
 
-// TestAfterPropSubmissionAndVotingPeriodEnded tests AfterProposalSubmission and AfterProposalVotingPeriodEnded hooks
-// require adding a proposal in the gov module and registering a consumer chain with the provider module
-func (s *CCVTestSuite) TestAfterPropSubmissionAndVotingPeriodEnded() {
-	ctx := s.providerChain.GetContext()
-	providerKeeper := s.providerApp.GetProviderKeeper()
-	govKeeper := s.providerApp.GetTestGovKeeper()
-	proposer := s.providerChain.SenderAccount
-
-	msgUpdateConsumer := testkeeper.GetTestMsgUpdateConsumer()
-
-	proposal, err := v1.NewProposal([]sdk.Msg{&msgUpdateConsumer}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", proposer.GetAddress(), false)
-	s.Require().NoError(err)
-
-	err = govKeeper.SetProposal(ctx, proposal)
-	s.Require().NoError(err)
-
-	// the proposal can only be submitted if the owner of the chain is the gov module
-	providerKeeper.SetConsumerOwnerAddress(ctx, msgUpdateConsumer.ConsumerId, "some bogus address")
-
-	err = providerKeeper.Hooks().AfterProposalSubmission(ctx, proposal.Id)
-	s.Require().Error(err)
-
-	// the proposal can only be submitted if the owner of the chain is the gov module
-	govModuleAddress := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-	providerKeeper.SetConsumerOwnerAddress(ctx, msgUpdateConsumer.ConsumerId, govModuleAddress)
-
-	err = providerKeeper.Hooks().AfterProposalSubmission(ctx, proposal.Id)
-	s.Require().NoError(err)
-
-	// verify that the proposal id is created
-	consumerIdOnProvider, ok := providerKeeper.GetProposalIdToConsumerId(ctx, proposal.Id)
-	s.Require().True(ok)
-	s.Require().NotEmpty(consumerIdOnProvider)
-	s.Require().Equal(msgUpdateConsumer.ConsumerId, consumerIdOnProvider)
-
-	providerKeeper.Hooks().AfterProposalVotingPeriodEnded(ctx, proposal.Id)
-	// verify that the proposal id is deleted
-	s.Require().Empty(providerKeeper.GetProposalIdToConsumerId(ctx, proposal.Id))
-
-	// assert that a proposal with more than one `MsgUpdateConsumer` messages fails
-	proposal, err = v1.NewProposal([]sdk.Msg{&msgUpdateConsumer, &msgUpdateConsumer}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", proposer.GetAddress(), false)
-	s.Require().NoError(err)
-
-	err = govKeeper.SetProposal(ctx, proposal)
-	s.Require().NoError(err)
-
-	err = providerKeeper.Hooks().AfterProposalSubmission(ctx, proposal.Id)
-	s.Require().Error(err)
-
-}
-
 func (s *CCVTestSuite) TestGetConsumerAdditionFromProp() {
 	ctx := s.providerChain.GetContext()
 	proposer := s.providerChain.SenderAccount

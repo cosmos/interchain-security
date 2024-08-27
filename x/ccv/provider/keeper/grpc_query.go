@@ -3,6 +3,8 @@ package keeper
 import (
 	"context"
 	"fmt"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"math"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -105,39 +107,34 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	}, nil
 }
 
-// TODO (PERMISSIONLESS)
 func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	var props []*types.ConsumerAdditionProposal
-
-	for _, prop := range k.GetAllPendingConsumerAdditionProps(ctx) {
-		// prevent implicit memory aliasing
-		p := prop
-		props = append(props, &p)
-	}
-
-	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &types.ConsumerAdditionProposals{Pending: props}}, nil
+	return nil, status.Error(codes.Unimplemented, "This query is not supported anymore. Use `QueryConsumersThatAreAboutToStart` instead")
 }
 
-// TODO (PERMISSIONLESS)
-func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
+func (k Keeper) QueryConsumersThatAreAboutToStart(goCtx context.Context, req *types.QueryConsumersThatAreAboutToStartRequest) (*types.QueryConsumersThatAreAboutToStartResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var props []*types.ConsumerRemovalProposal
-	for _, prop := range k.GetAllPendingConsumerRemovalProps(ctx) {
-		// prevent implicit memory aliasing
-		p := prop
-		props = append(props, &p)
+
+	consumerIds := k.GetInitializedConsumersReadyToLaunch(ctx, math.MaxUint32)
+	return &types.QueryConsumersThatAreAboutToStartResponse{ConsumerIds: consumerIds}, nil
+}
+
+func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "This query is not supported anymore. Use `QueryConsumersThatAreAboutToStop` instead")
+}
+
+func (k Keeper) QueryConsumersThatAreAboutToStop(goCtx context.Context, req *types.QueryConsumersThatAreAboutToStopRequest) (*types.QueryConsumersThatAreAboutToStopResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &types.ConsumerRemovalProposals{Pending: props}}, nil
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	consumerIds := k.GetLaunchedConsumersReadyToStop(ctx, math.MaxUint32)
+	return &types.QueryConsumersThatAreAboutToStopResponse{ConsumerIds: consumerIds}, nil
 }
 
 func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {
@@ -232,7 +229,6 @@ func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *
 	}, nil
 }
 
-// TODO (PERMISSIONLESS)
 func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.QueryProposedChainIDsRequest) (*types.QueryProposedChainIDsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -240,10 +236,33 @@ func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	chains := k.GetAllProposedConsumerChainIDs(ctx)
+	var proposals []govv1.Proposal
+	err := k.govKeeper.Proposals.Walk(ctx, nil, func(proposalId uint64, proposal govv1.Proposal) (stop bool, err error) {
+		proposals = append(proposals, proposal)
+		return false, nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to retrieve proposals")
+	}
+
+	var proposedChains []types.ProposedChain
+	for _, proposal := range proposals {
+		status := proposal.Status
+		if status != govv1.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD && status != govv1.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD {
+			// we only care about active proposals
+			continue
+		}
+
+		messages := proposal.GetMessages()
+		for _, msg := range messages {
+			if sdkMsg, isMsgUpdateConsumer := msg.GetCachedValue().(*types.MsgUpdateConsumer); isMsgUpdateConsumer {
+				proposedChains = append(proposedChains, types.ProposedChain{ProposalID: proposal.Id, ConsumerId: sdkMsg.ConsumerId})
+			}
+		}
+	}
 
 	return &types.QueryProposedChainIDsResponse{
-		ProposedChains: chains,
+		ProposedChains: proposedChains,
 	}, nil
 }
 

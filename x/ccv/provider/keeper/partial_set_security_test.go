@@ -80,7 +80,6 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	}
 
 	gomock.InOrder(calls...)
-	providerKeeper.SetProposalIdToConsumerId(ctx, 1, "consumerId")
 
 	// create a sample consumer key to assign to the `providerAddr` validator
 	// on the consumer chain with `consumerId`
@@ -198,7 +197,6 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	consumerId := "0"
 	providerKeeper.FetchAndIncrementConsumerId(ctx)
 	providerKeeper.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
-	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{ChainId: consumerId})
 
 	// check that there's no commission rate set for the validator yet
 	_, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)

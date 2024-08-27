@@ -384,3 +384,7 @@ func TestQueryConsumerIdFromClientId(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expectedConsumerId, res.ConsumerId)
 }
+
+func TestQueryProposedConsumerChainIDs(t *testing.T) {
+	// TODO (PERMISSIONLESS)
+}

@@ -62,14 +62,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				nil,
 			),
 		},
-		[]providertypes.ConsumerAdditionProposal{{
-			ChainId:   cChainIDs[0],
-			SpawnTime: oneHourFromNow,
-		}},
-		[]providertypes.ConsumerRemovalProposal{{
-			ChainId:  cChainIDs[0],
-			StopTime: oneHourFromNow,
-		}},
 		params,
 		[]providertypes.ValidatorConsumerPubKey{
 			{
@@ -139,10 +131,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	height, found := pk.GetValsetUpdateBlockHeight(ctx, vscID)
 	require.True(t, found)
 	require.Equal(t, initHeight, height)
-	addProp, found := pk.GetPendingConsumerAdditionProp(ctx, oneHourFromNow, cChainIDs[0])
-	require.True(t, found)
-	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
-	require.True(t, pk.PendingConsumerRemovalPropExists(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
 
 	providerConsensusValSet, err := pk.GetLastProviderConsensusValSet(ctx)

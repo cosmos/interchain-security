@@ -137,7 +137,7 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, consumerId string, bondedVa
 
 			// if validator already exists it gets overwritten
 			k.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(consAddr))
-			k.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(consAddr))
+			k.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(consAddr), consumerId)
 		} // else validators that do not belong to the top N validators but were opted in, remain opted in
 	}
 }

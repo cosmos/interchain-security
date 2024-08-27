@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
@@ -45,6 +46,7 @@ const (
 	InitChainHeightKeyPrefix               = byte(16)
 	PendingVSCsKeyPrefix                   = byte(17)
 	EquivocationEvidenceMinHeightKeyPrefix = byte(29)
+	ConsumerRewardsAllocationKeyPrefix     = byte(38)
 	MinimumPowerInTopNKeyPrefix            = byte(40)
 )
 
@@ -128,7 +130,7 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 	chainIds := []string{}
 	iterator := storetypes.KVStorePrefixIterator(store, []byte{LegacyChainToClientKeyPrefix})
 	for ; iterator.Valid(); iterator.Next() {
-		// remove 1 byte prefix from key to retrieve chainID
+		// remove 1 byte prefix from key to retrieve chainId
 		chainId := string(iterator.Key()[1:])
 		chainIds = append(chainIds, chainId)
 	}
@@ -138,70 +140,75 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 	}
 
 	for _, chainId := range chainIds {
-		// create new consumerID
+		// create new consumerId
 		consumerId := pk.FetchAndIncrementConsumerId(ctx)
 
 		// re-key store
 
-		// chainId -> clientId
-		rekeyFromChainIdToConsumerId(store, LegacyChainToClientKeyPrefix, chainId, consumerId)
+		// channelId -> chainId
+		channelId, found := pk.GetConsumerIdToChannelId(ctx, chainId)
+		if !found {
+			return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot find channel id associated with consumer id: %s", consumerId)
+		}
+		pk.SetChannelToConsumerId(ctx, channelId, consumerId)
+
 		// chainId -> channelId
 		rekeyFromChainIdToConsumerId(store, LegacyChainToChannelKeyPrefix, chainId, consumerId)
+
+		// chainId -> clientId
+		rekeyFromChainIdToConsumerId(store, LegacyChainToClientKeyPrefix, chainId, consumerId)
+
 		// chainId -> consumer genesis
 		rekeyFromChainIdToConsumerId(store, ConsumerGenesisKeyPrefix, chainId, consumerId)
+
 		// chainId -> SlashAcks
 		rekeyFromChainIdToConsumerId(store, SlashAcksKeyPrefix, chainId, consumerId)
+
 		// chainId -> InitChainHeight
 		rekeyFromChainIdToConsumerId(store, InitChainHeightKeyPrefix, chainId, consumerId)
+
 		// chainId -> PendingVSCs
 		rekeyFromChainIdToConsumerId(store, PendingVSCsKeyPrefix, chainId, consumerId)
-		// chainId -> EquivocationEvidenceMinHeight
-		rekeyFromChainIdToConsumerId(store, EquivocationEvidenceMinHeightKeyPrefix, chainId, consumerId)
-		// chainId -> MinimumPowerInTopN
-		rekeyFromChainIdToConsumerId(store, MinimumPowerInTopNKeyPrefix, chainId, consumerId)
 
 		// chainId -> ConsumerValidators
 		rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerValidatorsKeyPrefix(), chainId, consumerId)
+
 		// chainId -> ValidatorsByConsumerAddr
 		rekeyChainIdAndConsAddrKey(store, providertypes.ValidatorsByConsumerAddrKeyPrefix(), chainId, consumerId)
-		// chainId -> ConsumerCommissionRate
-		rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerCommissionRateKeyPrefix(), chainId, consumerId)
+
+		// chainId -> EquivocationEvidenceMinHeight
+		rekeyFromChainIdToConsumerId(store, EquivocationEvidenceMinHeightKeyPrefix, chainId, consumerId)
+
 		// chainId -> ConsumerValidator
 		rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerValidatorKeyPrefix(), chainId, consumerId)
-		// chainId -> Allowlist
-		rekeyChainIdAndConsAddrKey(store, providertypes.AllowlistKeyPrefix(), chainId, consumerId)
-		// chainId -> Denylist
-		rekeyChainIdAndConsAddrKey(store, providertypes.DenylistKeyPrefix(), chainId, consumerId)
+
 		// chainId -> OptedIn
 		rekeyChainIdAndConsAddrKey(store, providertypes.OptedInKeyPrefix(), chainId, consumerId)
+
+		// chainId -> Allowlist
+		rekeyChainIdAndConsAddrKey(store, providertypes.AllowlistKeyPrefix(), chainId, consumerId)
+
+		// chainId -> Denylist
+		rekeyChainIdAndConsAddrKey(store, providertypes.DenylistKeyPrefix(), chainId, consumerId)
+
+		// chainId -> ConsumerRewardsAllocations
+		rekeyFromChainIdToConsumerId(store, ConsumerRewardsAllocationKeyPrefix, chainId, consumerId)
+
+		// chainId -> ConsumerCommissionRate
+		rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerCommissionRateKeyPrefix(), chainId, consumerId)
+
+		// chainId -> MinimumPowerInTopN
+		rekeyFromChainIdToConsumerId(store, MinimumPowerInTopNKeyPrefix, chainId, consumerId)
 
 		// chainId -> ConsumerAddrsToPruneV2
 		rekeyChainIdAndTsKey(store, providertypes.ConsumerAddrsToPruneV2KeyPrefix(), chainId, consumerId)
 
-		// set channelId -> consumerId mapping
-		channelId, found := pk.GetConsumerIdToChannelId(ctx, consumerId)
-		if !found {
-			return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot find channel ID associated with consumer ID: %s", consumerId)
-		}
-		pk.SetChannelToConsumerId(ctx, channelId, consumerId)
-
-		// set clientId -> consumerId mapping
-		clinetId, found := pk.GetConsumerClientId(ctx, consumerId)
-		if !found {
-			return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot find client ID associated with consumer ID: %s", consumerId)
-		}
-		pk.SetClientIdToConsumerId(ctx, clinetId, consumerId)
+		pk.SetConsumerChainId(ctx, consumerId, chainId)
 
 		// set ownership -- all existing chains are owned by gov
 		pk.SetConsumerOwnerAddress(ctx, consumerId, pk.GetAuthority())
-		pk.SetConsumerChainId(ctx, consumerId, chainId)
-
-		// set phase to launched
-		// TODO make sure the chain cannot be in Stopped phase
-		pk.SetConsumerPhase(ctx, consumerId, providerkeeper.Launched)
 
 		// Note: ConsumerMetadata will be populated in the upgrade handler
-
 		// Note: InitializationParameters is not needed since the chain is already launched
 
 		// migrate power shaping params
@@ -211,37 +218,86 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		if buf != nil {
 			topN = binary.BigEndian.Uint32(buf)
 		}
+
 		validatorsPowerCapKey := append([]byte{LegacyValidatorsPowerCapKeyPrefix}, []byte(chainId)...)
 		var validatorsPowerCap uint32 = 0
 		buf = store.Get(validatorsPowerCapKey)
 		if buf != nil {
 			validatorsPowerCap = binary.BigEndian.Uint32(buf)
 		}
+
 		validatorSetCapKey := append([]byte{LegacyValidatorSetCapKeyPrefix}, []byte(chainId)...)
 		var validatorSetCap uint32 = 0
 		buf = store.Get(validatorSetCapKey)
 		if buf != nil {
 			validatorSetCap = binary.BigEndian.Uint32(buf)
 		}
+
+		bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
+		var allowlist []string
+		for _, addr := range pk.GetAllowList(ctx, consumerId) {
+			foo, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
+			allowlist = append(allowlist, foo)
+		}
+
+		var denylist []string
+		for _, addr := range pk.GetDenyList(ctx, consumerId) {
+			foo, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
+			allowlist = append(allowlist, foo)
+		}
+
 		powerShapingParameters := providertypes.PowerShapingParameters{
 			Top_N:              topN,
 			ValidatorsPowerCap: validatorsPowerCap,
 			ValidatorSetCap:    validatorSetCap,
-			Allowlist:          []string{}, // leave empty
-			Denylist:           []string{}, // leave empty
-			MinStake:           0,
-			AllowInactiveVals:  false,
+			Allowlist:          allowlist,
+			Denylist:           denylist,
+			// do not set those since they do not exist in a previous interchain-security version and hence cannot be set
+			MinStake:          0,
+			AllowInactiveVals: false,
 		}
 		err := pk.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
 		if err != nil {
 			return err
 		}
 
-		// TODO other keys
-		// - ConsumerIdToStopTimeKey
-		// - ProviderConsAddrToOptedInConsumerIdsKey
-		// - ...
+		// set phase to launched
+		pk.SetConsumerPhase(ctx, consumerId, providerkeeper.Launched)
 
+		// An already-launched chain might haven been set to be removed. After the migration, we won't be looking
+		// at the removal props anymore to remove chains. Because of this, if the chain is set to be removed we
+		// set its stop time and append the consumer to be stopped.
+		removalProps, err := legacyGetAllPendingConsumerRemovalProps(store)
+		if err != nil {
+			return err
+		}
+		for _, prop := range removalProps {
+			if prop.ChainId == chainId {
+				err := pk.SetConsumerStopTime(ctx, consumerId, prop.StopTime)
+				if err != nil {
+					return err
+				}
+				err = pk.AppendConsumerToBeStoppedOnStopTime(ctx, consumerId, prop.StopTime)
+				if err != nil {
+					return err
+				}
+
+				break
+			}
+		}
+
+		// This is to migrate everything under `ProviderConsAddrToOptedInConsumerIdsKey`
+		// `OptedIn` was already re-keyed earlier (see above) and hence we can use `consumerId` here.
+		for _, providerConsAddr := range pk.GetAllOptedIn(ctx, consumerId) {
+			pk.AppendOptedInConsumerId(ctx, providerConsAddr, consumerId)
+		}
+
+		// set clientId -> consumerId mapping
+		clientId, found := pk.GetConsumerClientId(ctx, consumerId) // consumer to client was already re-keyed so we can use `consumerId` here
+		if !found {
+			return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot find client ID associated with consumer ID: %s", consumerId)
+		}
+		pk.SetClientIdToConsumerId(ctx, clientId, consumerId)
 	}
 
 	return nil
@@ -256,9 +312,47 @@ func MigratePreLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore,
 	}
 
 	for _, prop := range props {
-		// TODO
-		// - each prop should have a spawn time set, so it can be added to AppendConsumerToBeLaunchedOnSpawnTime
-		// - populate the state accordingly, including the InitializationParameters
+		consumerId := pk.FetchAndIncrementConsumerId(ctx)
+
+		pk.SetConsumerOwnerAddress(ctx, consumerId, pk.GetAuthority())
+		pk.SetConsumerChainId(ctx, consumerId, prop.ChainId)
+
+		consumerMetadata := providertypes.ConsumerMetadata{
+			Name:        prop.ChainId,
+			Description: prop.Description,
+		}
+		pk.SetConsumerMetadata(ctx, consumerId, consumerMetadata)
+
+		initializationParameters := providertypes.ConsumerInitializationParameters{
+			InitialHeight:                     prop.InitialHeight,
+			GenesisHash:                       prop.GenesisHash,
+			BinaryHash:                        prop.BinaryHash,
+			SpawnTime:                         prop.SpawnTime,
+			UnbondingPeriod:                   prop.UnbondingPeriod,
+			CcvTimeoutPeriod:                  prop.CcvTimeoutPeriod,
+			TransferTimeoutPeriod:             prop.TransferTimeoutPeriod,
+			ConsumerRedistributionFraction:    prop.ConsumerRedistributionFraction,
+			BlocksPerDistributionTransmission: prop.BlocksPerDistributionTransmission,
+			HistoricalEntries:                 prop.HistoricalEntries,
+			DistributionTransmissionChannel:   prop.DistributionTransmissionChannel,
+		}
+		pk.SetConsumerInitializationParameters(ctx, consumerId, initializationParameters)
+
+		powerShapingParameters := providertypes.PowerShapingParameters{
+			Top_N:              prop.Top_N,
+			ValidatorsPowerCap: prop.ValidatorsPowerCap,
+			ValidatorSetCap:    prop.ValidatorSetCap,
+			Allowlist:          prop.Allowlist,
+			Denylist:           prop.Denylist,
+			MinStake:           prop.MinStake,
+			AllowInactiveVals:  prop.AllowInactiveVals,
+		}
+		pk.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
+
+		if spawnTime, canLaunch := pk.CanLaunch(ctx, consumerId); canLaunch {
+			pk.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
+			pk.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime)
+		}
 	}
 
 	// Note that the keys are deleted in CleanupState
@@ -269,12 +363,16 @@ func MigratePreLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore,
 // MigrateStoppedConsumerChains migrates all the state for consumer chains about to be stopped
 // Note that it must be executed before CleanupState.
 func MigrateStoppedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper) error {
+	// NOTE: We already do the migration of to-be-stopped chains in `MigrateLaunchedConsumerChains`. If a chain can/is to be stopped
+	// it means it still launched at the moment of the migration.
+
 	props, err := legacyGetAllPendingConsumerRemovalProps(store)
 	if err != nil {
 		return err
 	}
 
 	for _, prop := range props {
+		_ = prop
 		// TODO
 		// - each prop should have a stop time set, so it can be added to AppendConsumerToBeStoppedOnStopTime
 		// - populate the state accordingly
