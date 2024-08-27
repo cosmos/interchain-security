@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
@@ -719,4 +720,61 @@ func TestCanLaunch(t *testing.T) {
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.NoError(t, err)
 	require.False(t, canLaunch)
+}
+
+func TestHasAtMostOnceCorrectMsgUpdateConsumer(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	expectedMsgUpdateConsumer := providertypes.MsgUpdateConsumer{Signer: "signer", ConsumerId: "consumerId", NewOwnerAddress: "new owner address"}
+
+	proposal, err := govv1.NewProposal([]sdk.Msg{&expectedMsgUpdateConsumer}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", sdk.AccAddress{}, false)
+	require.NoError(t, err)
+
+	_, err = providerKeeper.HasAtMostOnceCorrectMsgUpdateConsumer(ctx, &proposal)
+	require.ErrorContains(t, err, "cannot find owner address")
+
+	// set owner address that is not the gov module
+	providerKeeper.SetConsumerOwnerAddress(ctx, "consumerId", "owner address")
+	_, err = providerKeeper.HasAtMostOnceCorrectMsgUpdateConsumer(ctx, &proposal)
+	require.ErrorContains(t, err, "is not the gov module")
+
+	// set owner address that is the gov module
+	providerKeeper.SetConsumerOwnerAddress(ctx, "consumerId", "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	actualMsgUpdateConsumer, err := providerKeeper.HasAtMostOnceCorrectMsgUpdateConsumer(ctx, &proposal)
+	require.NoError(t, err)
+	require.Equal(t, expectedMsgUpdateConsumer, *actualMsgUpdateConsumer)
+
+	// a proposal with 2 `MsgUpdateConsumer` messages
+	invalidProposal, err := govv1.NewProposal([]sdk.Msg{&expectedMsgUpdateConsumer, &expectedMsgUpdateConsumer}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", sdk.AccAddress{}, false)
+	actualMsgUpdateConsumer, err = providerKeeper.HasAtMostOnceCorrectMsgUpdateConsumer(ctx, &invalidProposal)
+	require.ErrorContains(t, err, "proposal can contain at most one")
+	require.Nil(t, actualMsgUpdateConsumer)
+}
+
+func TestDoesNotHaveDeprecatedMessage(t *testing.T) {
+	msgConsumerAddition := providertypes.MsgConsumerAddition{}
+	proposal, err := govv1.NewProposal([]sdk.Msg{&msgConsumerAddition}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", sdk.AccAddress{}, false)
+	require.NoError(t, err)
+	err = keeper.DoesNotHaveDeprecatedMessage(&proposal)
+	require.ErrorContains(t, err, "cannot contain deprecated `MsgConsumerAddition`")
+
+	msgConsumerModification := providertypes.MsgConsumerModification{}
+	proposal, err = govv1.NewProposal([]sdk.Msg{&msgConsumerModification}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", sdk.AccAddress{}, false)
+	require.NoError(t, err)
+	err = keeper.DoesNotHaveDeprecatedMessage(&proposal)
+	require.ErrorContains(t, err, "cannot contain deprecated `MsgConsumerModification`")
+
+	msgConsumerRemoval := providertypes.MsgConsumerRemoval{}
+	proposal, err = govv1.NewProposal([]sdk.Msg{&msgConsumerRemoval}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", sdk.AccAddress{}, false)
+	require.NoError(t, err)
+	err = keeper.DoesNotHaveDeprecatedMessage(&proposal)
+	require.ErrorContains(t, err, "cannot contain deprecated `MsgConsumerRemoval`")
+
+	// a proposal with no deprecated messages
+	msgUpdateConsumer := providertypes.MsgUpdateConsumer{Signer: "signer", ConsumerId: "consumerId", NewOwnerAddress: "new owner address"}
+	proposal, err = govv1.NewProposal([]sdk.Msg{&msgUpdateConsumer}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", sdk.AccAddress{}, false)
+	require.NoError(t, err)
+	err = keeper.DoesNotHaveDeprecatedMessage(&proposal)
+	require.Nil(t, err)
 }

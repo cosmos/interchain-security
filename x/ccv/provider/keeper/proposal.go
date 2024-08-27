@@ -488,13 +488,13 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 				"err", err.Error())
 			continue
 		}
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		// TODO (PERMISSIONLESS): verify this here and in the initialized chains to launch
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 
 		k.SetConsumerPhase(cachedCtx, consumerId, Stopped)
 		k.RemoveConsumerToBeStoppedFromStopTime(ctx, consumerId, stopTime)
+
+		// The cached context is created with a new EventManager so we merge the event into the original context
+		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
+
 		writeFn()
 
 		k.Logger(ctx).Info("executed consumer removal",
