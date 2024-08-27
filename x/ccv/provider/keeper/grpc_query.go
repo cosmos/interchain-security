@@ -437,29 +437,29 @@ func (k Keeper) hasToValidate(
 	if err != nil {
 		return false, nil
 	}
-	if topN := k.GetTopN(ctx, consumerId); topN > 0 {
-		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, found := k.GetMinimumPowerInTopN(ctx, consumerId)
-		if found {
-			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
-		} else {
-			k.Logger(ctx).Error("did not find min power in top N for chain", "chain", consumerId)
-		}
-	}
 
-	// if the validator is opted in and belongs to the validators of the next epoch, then if nothing changes
-	// the validator would have to validate in the next epoch
-	if k.IsOptedIn(ctx, consumerId, provAddr) {
-		lastVals, err := k.GetLastBondedValidators(ctx)
+	minPowerToOptIn := int64(0)
+	// If the consumer is TopN compute the minimum power
+	if topN := k.GetTopN(ctx, consumerId); topN > 0 {
+		// compute the minimum power to opt-in since the one in the state is stale
+		// Note that the effective min power will be computed at the end of the epoch
+		minPowerToOptIn, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
 		if err != nil {
 			return false, err
 		}
-		nextValidators := k.ComputeNextValidators(ctx, consumerId, lastVals)
-		for _, v := range nextValidators {
-			consAddr := sdk.ConsAddress(v.ProviderConsAddr)
-			if provAddr.ToSdkConsAddr().Equals(consAddr) {
-				return true, nil
-			}
+	}
+
+	// if the validator belongs to the validators of the next epoch, then if nothing changes
+	// the validator would have to validate in the next epoch
+	lastVals, err := k.GetLastBondedValidators(ctx)
+	if err != nil {
+		return false, err
+	}
+	nextValidators := k.ComputeNextValidators(ctx, consumerId, lastVals, minPowerToOptIn)
+	for _, v := range nextValidators {
+		consAddr := sdk.ConsAddress(v.ProviderConsAddr)
+		if provAddr.ToSdkConsAddr().Equals(consAddr) {
+			return true, nil
 		}
 	}
 
