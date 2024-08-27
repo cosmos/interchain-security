@@ -397,16 +397,16 @@ func TestCanValidateChain(t *testing.T) {
 	// with TopN chains, the validator can be considered,
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), providerAddr.Address).Return(validator, nil).Times(2)
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 50})
-	// validator is LT min power
+	// validator's power is LT the min power
 	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 2))
-	// validator is GTE min power
+	// validator's power is GTE the min power
 	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
 
-	// when validator is opted-in it can validate regardless of it the min power
+	// when validator is opted-in it can validate regardless of its min power
 	providerKeeper.SetOptedIn(ctx, consumerID, types.NewProviderConsAddress(consAddr))
 	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
 
-	// With OptIn chains, validator can validator only if it's opted-in
+	// With OptIn chains, validator can validate only if it has already opted-in
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 0})
 	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 0))
 

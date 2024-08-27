@@ -232,7 +232,7 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 	}
 
-	minPowerToOptIn := int64(0)
+	minPower := int64(0)
 	if powerShapingParameters.Top_N > 0 {
 		// get the consensus active validators
 		// we do not want to base the power calculation for the top N
@@ -244,21 +244,21 @@ func (k Keeper) MakeConsumerGenesis(
 		}
 
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPowerToOptIn, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
+		minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
 		// log the minimum power in top N
 		k.Logger(ctx).Info("minimum power in top N at consumer genesis",
 			"consumerId", consumerId,
-			"minPower", minPowerToOptIn,
+			"minPower", minPower,
 		)
-		k.OptInTopNValidators(ctx, consumerId, activeValidators, minPowerToOptIn)
-		k.SetMinimumPowerInTopN(ctx, consumerId, minPowerToOptIn)
+		k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
+		k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
 	}
 
 	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
-	nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPowerToOptIn)
+	nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
 	k.SetConsumerValSet(ctx, consumerId, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
