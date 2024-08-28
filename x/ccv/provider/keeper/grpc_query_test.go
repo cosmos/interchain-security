@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -83,7 +81,7 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 	require.Error(t, err)
 
 	pk.FetchAndIncrementConsumerId(ctx)
-	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
@@ -253,7 +251,7 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 	require.Error(t, err)
 
 	pk.FetchAndIncrementConsumerId(ctx)
-	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 
 	// validator with set consumer commission rate
 	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.123")

@@ -3,9 +3,9 @@ package ibc_testing
 import (
 	"encoding/json"
 	"fmt"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
+
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
@@ -158,7 +158,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerKeeper.SetConsumerMetadata(providerChain.GetContext(), consumerId, consumerMetadata)
 	providerKeeper.SetConsumerInitializationParameters(providerChain.GetContext(), consumerId, initializationParameters)
 	providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
-	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, keeper.Initialized)
+	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
 
 	// opt-in all validators

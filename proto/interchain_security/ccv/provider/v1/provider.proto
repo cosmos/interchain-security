@@ -464,3 +464,20 @@ message PowerShapingParameters {
 // ConsumerIds contains consumer ids of chains
 // Used so we can easily (de)serialize slices of strings
 message ConsumerIds { repeated string ids = 1; }
+
+// ConsumerPhase indicates the phases of a consumer chain according to ADR 018
+enum ConsumerPhase {
+  // UNSPECIFIED defines an empty phase.
+  CONSUMER_PHASE_UNSPECIFIED = 0;
+  // REGISTERED defines the phase in which a consumer chain has been assigned a unique consumer id.
+  // A chain in this phase cannot yet launch.
+  CONSUMER_PHASE_REGISTERED = 1;
+  // INITIALIZED defines the phase in which a consumer chain has set all the needed parameters to launch but
+	// has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
+  CONSUMER_PHASE_INITIALIZED = 2;
+  // LAUNCHED defines the phase in which a consumer chain is running and consuming a subset of the validator
+	// set of the provider.
+  CONSUMER_PHASE_LAUNCHED = 3;
+  // STOPPED defines the phase in which a previously-launched chain has stopped.
+  CONSUMER_PHASE_STOPPED = 4;
+}
