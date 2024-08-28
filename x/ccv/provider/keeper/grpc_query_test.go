@@ -326,9 +326,6 @@ func TestGetConsumerChain(t *testing.T) {
 	metadataLists := make([]types.ConsumerMetadata, len(chainIds))
 	consumerIds := make([]string, len(chainIds))
 
-	// skip first consumerID
-	pk.FetchAndIncrementConsumerId(ctx)
-
 	expectedGetAllOrder := []types.Chain{}
 	for i, chainID := range chainIds {
 		consumerId := pk.FetchAndIncrementConsumerId(ctx)

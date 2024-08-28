@@ -67,8 +67,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 		for i := uint64(0); i <= lastCID; i++ {
 			p, ok := k.GetConsumerPhase(ctx, strconv.FormatInt(int64(i), 10))
 			if !ok {
-				// log something
-				continue
+				return nil, status.Error(codes.Internal, fmt.Sprintf("cannot retrieve phase for consumer id: %d", phase))
 			}
 			if p == phase {
 				consumerIds = append(consumerIds, strconv.FormatInt(int64(i), 10))
@@ -83,7 +82,6 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	for i, cID := range consumerIds {
 		c, err := k.GetConsumerChain(ctx, cID)
 		if err != nil {
-			// log something instead?
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		chains[i] = &c
