@@ -2,8 +2,9 @@ package v8
 
 import (
 	"encoding/binary"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
@@ -260,7 +261,7 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		}
 
 		// set phase to launched
-		pk.SetConsumerPhase(ctx, consumerId, providerkeeper.Launched)
+		pk.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 		// This is to migrate everything under `ProviderConsAddrToOptedInConsumerIdsKey`
 		// `OptedIn` was already re-keyed earlier (see above) and hence we can use `consumerId` here.

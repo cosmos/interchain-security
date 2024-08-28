@@ -198,7 +198,6 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	consumerId := "0"
 	providerKeeper.FetchAndIncrementConsumerId(ctx)
 	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
-	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{ChainId: consumerId})
 
 	// check that there's no commission rate set for the validator yet
 	_, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)

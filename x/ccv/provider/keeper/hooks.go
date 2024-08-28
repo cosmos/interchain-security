@@ -2,8 +2,8 @@ package keeper
 
 import (
 	"context"
+
 	"cosmossdk.io/math"
-	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -108,49 +108,12 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 // AfterProposalSubmission - call hook if registered
 // If an update consumer message exists in the proposal, a record is created that maps the proposal id to the consumer id
 func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64) error {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalId)
-	if err != nil {
-		return fmt.Errorf("cannot retrieve proposal with id: %d", proposalId)
-	}
-
-	err = DoesNotHaveDeprecatedMessage(&p)
-	if err != nil {
-		return err
-	}
-
-	msgUpdateConsumer, err := h.k.HasAtMostOnceCorrectMsgUpdateConsumer(ctx, &p)
-	if err != nil {
-		return err
-	}
-
-	if msgUpdateConsumer != nil {
-		// a correctly set `MsgUpdateConsumer` was found
-		h.k.SetProposalIdToConsumerId(ctx, proposalId, msgUpdateConsumer.ConsumerId)
-	}
-
 	return nil
 }
 
 // AfterProposalVotingPeriodEnded - call hook if registered
 // After proposal voting ends, the consumer to proposal id record in store is deleted.
 func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalId uint64) error {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalId)
-	if err != nil {
-		return fmt.Errorf("cannot retrieve proposal with id: %d", proposalId)
-	}
-
-	for _, msg := range p.GetMessages() {
-		_, isUpdateConsumer := msg.GetCachedValue().(*providertypes.MsgUpdateConsumer)
-		if isUpdateConsumer {
-			h.k.DeleteProposalIdToConsumerId(ctx, proposalId)
-			return nil
-		}
-	}
-
 	return nil
 }
 
