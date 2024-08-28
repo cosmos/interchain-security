@@ -205,6 +205,8 @@ func (h Hooks) GetConsumerAdditionFromProp(
 			ValidatorSetCap:                   sdkMsg.ValidatorSetCap,
 			Allowlist:                         sdkMsg.Allowlist,
 			Denylist:                          sdkMsg.Denylist,
+			MinStake:                          sdkMsg.MinStake,
+			AllowInactiveVals:                 sdkMsg.AllowInactiveVals,
 		}
 		return proposal, true
 	}

@@ -95,6 +95,10 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
+	allowInactiveVals := k.AllowsInactiveValidators(ctx, chainID)
+
+	minStake, _ := k.GetMinStake(ctx, chainID)
+
 	return types.Chain{
 		ChainId:            consumerId,
 		ClientId:           clientID,
@@ -104,6 +108,8 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		ValidatorsPowerCap: validatorsPowerCap,
 		Allowlist:          strAllowlist,
 		Denylist:           strDenylist,
+		AllowInactiveVals:  allowInactiveVals,
+		MinStake:           minStake,
 	}, nil
 }
 
