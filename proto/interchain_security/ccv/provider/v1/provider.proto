@@ -465,7 +465,7 @@ message PowerShapingParameters {
 // Used so we can easily (de)serialize slices of strings
 message ConsumerIds { repeated string ids = 1; }
 
-// ConsumerPhase indicates the phases of a consumer chain according to ADR 018
+// ConsumerPhase indicates the phases of a consumer chain according to ADR 019
 enum ConsumerPhase {
   // UNSPECIFIED defines an empty phase.
   CONSUMER_PHASE_UNSPECIFIED = 0;
