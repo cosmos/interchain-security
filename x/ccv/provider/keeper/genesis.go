@@ -32,17 +32,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 		k.SetValsetUpdateBlockHeight(ctx, v2h.ValsetUpdateId, v2h.Height)
 	}
 
-	// TODO (PERMISSIONLESS)
-	// for _, prop := range genState.ConsumerAdditionProposals {
-	// 	// prevent implicit memory aliasing
-	// 	p := prop
-	// 	k.SetPendingConsumerAdditionProp(ctx, &p)
-	// }
-	// for _, prop := range genState.ConsumerRemovalProposals {
-	// 	p := prop
-	// 	k.SetPendingConsumerRemovalProp(ctx, &p)
-	// }
-
 	// Set initial state for each consumer chain
 	for _, cs := range genState.ConsumerStates {
 		chainID := cs.ChainId
