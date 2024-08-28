@@ -252,6 +252,12 @@ var stepChoices = map[string]StepChoice{
 		description: "tests the behaviour of inactive validators with a top N = 100 chain and when max_validators is smaller than the total number of validators",
 		testConfig:  InactiveValsExtraValsTestCfg,
 	},
+	"inactive-vals-topN-100": {
+		name:        "inactive-vals-topN-100",
+		steps:       stepsInactiveValsTopN100(),
+		description: "tests the behaviour of inactive validators with a top N = 100 chain",
+		testConfig:  InactiveValsExtraValsTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {

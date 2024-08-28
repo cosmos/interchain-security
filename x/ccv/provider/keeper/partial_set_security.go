@@ -333,6 +333,7 @@ func (k Keeper) FulfillsMinStake(ctx sdk.Context, chainID string, providerAddr t
 
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
 func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedValidators []stakingtypes.Validator) []types.ConsensusValidator {
+	k.Logger(ctx).Info("Computing next validators", "chainID", chainID, "bondedValidators", bondedValidators)
 	// sort the bonded validators by number of staked tokens in descending order
 	sort.Slice(bondedValidators, func(i, j int) bool {
 		return bondedValidators[i].GetBondedTokens().GT(bondedValidators[j].GetBondedTokens())
@@ -342,6 +343,7 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedVal
 	// since those are the ones that participate in consensus
 	allowInactiveVals := k.AllowsInactiveValidators(ctx, chainID)
 	if !allowInactiveVals {
+		k.Logger(ctx).Info("Inactive validators are not allowed", "chainID", chainID)
 		// only leave the first MaxProviderConsensusValidators bonded validators
 		maxProviderConsensusVals := k.GetMaxProviderConsensusValidators(ctx)
 		if len(bondedValidators) > int(maxProviderConsensusVals) {
@@ -354,6 +356,11 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, chainID string, bondedVal
 			return k.CanValidateChain(ctx, chainID, providerAddr) && k.FulfillsMinStake(ctx, chainID, providerAddr)
 		})
 
+	k.Logger(ctx).Info("Next validators after filter", "chainID", chainID, "nextValidators", nextValidators)
+
 	nextValidators = k.CapValidatorSet(ctx, chainID, nextValidators)
+
+	k.Logger(ctx).Info("Next validators after capping validator set", "chainID", chainID, "nextValidators", nextValidators)
+
 	return k.CapValidatorsPower(ctx, chainID, nextValidators)
 }

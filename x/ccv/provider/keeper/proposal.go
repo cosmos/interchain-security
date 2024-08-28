@@ -44,6 +44,8 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.
 		ValidatorSetCap:                   proposal.ValidatorSetCap,
 		Allowlist:                         proposal.Allowlist,
 		Denylist:                          proposal.Denylist,
+		MinStake:                          proposal.MinStake,
+		AllowInactiveVals:                 proposal.AllowInactiveVals,
 	}
 
 	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)

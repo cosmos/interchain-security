@@ -276,3 +276,182 @@ func stepsInactiveValsTopNReproduce() []Step {
 		},
 	}
 }
+
+func stepsInactiveValsTopN100() []Step {
+	alice_power := uint(30)
+	bob_power := uint(29)
+	carol_power := uint(20)
+	david_power := uint(10)
+	eve_power := uint(7)
+	fred_power := uint(4)
+
+	return []Step{
+		{
+			Action: StartChainAction{
+				Chain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: alice_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: bob_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: carol_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("david"), Stake: david_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("eve"), Stake: eve_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("fred"), Stake: fred_power * 1000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): alice_power,
+						ValidatorID("bob"):   bob_power,
+						ValidatorID("carol"): carol_power,
+						ValidatorID("david"): david_power,
+						ValidatorID("eve"):   0, // max provider consensus validators is 4, so eve and fred are at 0 power
+						ValidatorID("fred"):  0,
+					},
+					StakedTokens: &map[ValidatorID]uint{
+						ValidatorID("alice"): alice_power * 1000000,
+						ValidatorID("bob"):   bob_power * 1000000,
+						ValidatorID("carol"): carol_power * 1000000,
+						ValidatorID("david"): david_power * 1000000,
+						ValidatorID("eve"):   eve_power * 1000000,
+						ValidatorID("fred"):  fred_power * 1000000,
+					},
+				},
+			},
+		},
+		{
+			Action: SubmitConsumerAdditionProposalAction{
+				Chain:             ChainID("provi"),
+				From:              ValidatorID("alice"),
+				Deposit:           10000001,
+				ConsumerChain:     ChainID("consu"),
+				SpawnTime:         0,
+				InitialHeight:     clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:              100,
+				AllowInactiveVals: true,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol"), ValidatorID("david"), ValidatorID("eve")},
+				Vote:       []string{"yes", "yes", "yes", "yes", "yes"},
+				PropNumber: 1,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         ChainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+						},
+					},
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {"consu"},
+						ValidatorID("david"): {"consu"},
+						ValidatorID("eve"):   {},
+						ValidatorID("fred"):  {},
+					},
+				},
+			},
+		},
+		{
+			Action: StartConsumerChainAction{
+				ConsumerChain: ChainID("consu"),
+				ProviderChain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: alice_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: bob_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: carol_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("david"), Stake: david_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("eve"), Stake: eve_power * 1000000, Allocation: 10000000000},
+					{Id: ValidatorID("fred"), Stake: fred_power * 1000000, Allocation: 10000000000},
+				},
+				// For consumers that're launching with the provider being on an earlier version
+				// of ICS before the soft opt-out threshold was introduced, we need to set the
+				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
+				// consumer binary doesn't panic. Sdk requires that all params are set to valid
+				// values from the genesis file.
+				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): alice_power,
+						ValidatorID("bob"):   bob_power,
+						ValidatorID("carol"): carol_power,
+						ValidatorID("david"): david_power,
+						ValidatorID("eve"):   0,
+						ValidatorID("fred"):  0,
+					},
+				},
+			},
+		},
+		{
+			Action: AddIbcConnectionAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				ClientA: 0,
+				ClientB: 0,
+			},
+			State: State{},
+		},
+		{
+			Action: AddIbcChannelAction{
+				ChainA:      ChainID("consu"),
+				ChainB:      ChainID("provi"),
+				ConnectionA: 0,
+				PortA:       "consumer",
+				PortB:       "provider",
+				Order:       "ordered",
+			},
+			State: State{},
+		},
+		{
+			// opt in eve, since she is not forced to validate by the top N = 100
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("eve"),
+			},
+			State: State{},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): alice_power,
+						ValidatorID("bob"):   bob_power,
+						ValidatorID("carol"): carol_power,
+						ValidatorID("david"): david_power,
+						ValidatorID("eve"):   eve_power, // eve is opted in
+						ValidatorID("fred"):  0,
+					},
+				},
+			},
+		},
+	}
+}
