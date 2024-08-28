@@ -352,7 +352,7 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		//  if the consumer hasn't been launched being stopped, compute the consumer validator set
+		//  if the consumer hasn't been launched or stopped, compute the consumer validator set
 	} else if phase != Stopped {
 		bondedValidators, err := k.GetLastBondedValidators(ctx)
 		if err != nil {
