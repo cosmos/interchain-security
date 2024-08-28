@@ -409,7 +409,12 @@ func TestQueryConsumerChains(t *testing.T) {
 	consumerIds := make([]string, consumerNum)
 	consumers := make([]*types.Chain, consumerNum)
 
-	// create five consumer chains all in the "Registered" phase
+	// expect no error and returned chains
+	res, err := pk.QueryConsumerChains(ctx, &types.QueryConsumerChainsRequest{})
+	require.NoError(t, err)
+	require.Len(t, res.Chains, 0)
+
+	// create five consumer chains in different phase
 	for i := 0; i < consumerNum; i++ {
 		cID := pk.FetchAndIncrementConsumerId(ctx)
 		chainID := "consumer-" + strconv.Itoa(i)
@@ -420,7 +425,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			ValidatorSetCap:    0,
 			Allowlist:          []string{},
 			Denylist:           []string{},
-			Phase:              uint32(keeper.Registered),
+			Phase:              uint32(i),
 			Metadata:           types.ConsumerMetadata{Name: chainID},
 		}
 		pk.SetConsumerPhase(ctx, cID, keeper.ConsumerPhase(c.Phase))
@@ -432,59 +437,88 @@ func TestQueryConsumerChains(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name         string
-		setup        func(ctx sdk.Context, pk keeper.Keeper)
-		phase        keeper.ConsumerPhase
-		expConsumers []*types.Chain
+		name            string
+		setup           func(ctx sdk.Context, pk keeper.Keeper)
+		filter_by_phase bool
+		phase_filter    keeper.ConsumerPhase
+		limit           uint32
+		expConsumers    []*types.Chain
 	}{
 		{
-			name:         "expect all consumers when phase is set to default value 0 i.e. Registered",
+			name:         "expect all consumers when phase filter isn't set",
 			setup:        func(ctx sdk.Context, pk keeper.Keeper) {},
-			phase:        keeper.Registered,
 			expConsumers: consumers,
-		}, {
-			name: "expect launched consumers when phase is set to Launched",
+		},
+		{
+			name:         "expect an amount of consumer equal to the limit",
+			setup:        func(ctx sdk.Context, pk keeper.Keeper) {},
+			expConsumers: consumers[:3],
+			limit:        uint32(3),
+		},
+		{
+			name: "expect registered consumers when phase filter is set to Registered",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[1].ClientId = "clientID"
-				consumers[1].Phase = uint32(keeper.Launched)
-				pk.SetConsumerClientId(ctx, consumerIds[1], "clientID")
-				pk.SetConsumerPhase(ctx, consumerIds[1], keeper.Launched)
+				consumers[0].Phase = uint32(keeper.Registered)
+				pk.SetConsumerPhase(ctx, consumerIds[0], keeper.Registered)
 			},
-			phase:        keeper.Launched,
-			expConsumers: consumers[1:2],
-		}, {
+			filter_by_phase: true,
+			phase_filter:    keeper.Registered,
+			expConsumers:    consumers[0:1],
+		},
+		{
 			name: "expect initialized consumers when phase is set to Initialized",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[2].Phase = uint32(keeper.Initialized)
-				err := pk.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerIds[2], time.Now())
+				consumers[1].Phase = uint32(keeper.Initialized)
+				err := pk.AppendSpawnTimeForConsumerToBeLaunched(ctx, consumerIds[1], time.Now())
 				require.NoError(t, err)
-				pk.SetConsumerPhase(ctx, consumerIds[2], keeper.Initialized)
+				pk.SetConsumerPhase(ctx, consumerIds[1], keeper.Initialized)
 			},
-			phase:        keeper.Initialized,
-			expConsumers: consumers[2:3],
-		}, {
+			filter_by_phase: true,
+			phase_filter:    keeper.Initialized,
+			expConsumers:    consumers[1:2],
+		},
+		{
 			name: "expect consumers that failed to launch when phase is set to FailToLaunch",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[3].Phase = uint32(keeper.FailedToLaunch)
-				pk.SetConsumerPhase(ctx, consumerIds[3], keeper.FailedToLaunch)
+				consumers[2].Phase = uint32(keeper.FailedToLaunch)
+				pk.SetConsumerPhase(ctx, consumerIds[2], keeper.FailedToLaunch)
 			},
-			phase:        keeper.FailedToLaunch,
-			expConsumers: consumers[3:4],
-		}, {
+			filter_by_phase: true,
+			phase_filter:    keeper.FailedToLaunch,
+			expConsumers:    consumers[2:3],
+		},
+		{
+			name: "expect launched consumers when phase is set to Launched",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				consumers[3].Phase = uint32(keeper.Launched)
+				consumers[3].ClientId = "ClientID"
+				pk.SetConsumerClientId(ctx, consumerIds[3], consumers[3].ClientId)
+				pk.SetConsumerPhase(ctx, consumerIds[3], keeper.Launched)
+			},
+			filter_by_phase: true,
+			phase_filter:    keeper.Launched,
+			expConsumers:    consumers[3:4],
+		},
+		{
 			name: "expect stopped consumers when phase is set to Stopped",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
 				consumers[4].Phase = uint32(keeper.Stopped)
 				pk.SetConsumerPhase(ctx, consumerIds[4], keeper.Stopped)
 			},
-			phase:        keeper.Stopped,
-			expConsumers: consumers[4:],
+			filter_by_phase: true,
+			phase_filter:    keeper.Stopped,
+			expConsumers:    consumers[4:],
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.setup(ctx, pk)
-			req := types.QueryConsumerChainsRequest{Phase: uint32(tc.phase)}
+			req := types.QueryConsumerChainsRequest{
+				FilterByPhase: tc.filter_by_phase,
+				Phase:         uint32(tc.phase_filter),
+				Limit:         tc.limit,
+			}
 			expectedResponse := types.QueryConsumerChainsResponse{
 				Chains: tc.expConsumers,
 			}

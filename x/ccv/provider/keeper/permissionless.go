@@ -564,39 +564,6 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint
 	return result
 }
 
-// GetInitializedConsumers returns the initialized consumer chains
-// TODO: @sainoe merge with func above
-func (k Keeper) GetInitializedConsumers(ctx sdk.Context) []string {
-	store := ctx.KVStore(k.storeKey)
-
-	spawnTimeToConsumerIdsKeyPrefix := types.SpawnTimeToConsumerIdsKeyPrefix()
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{spawnTimeToConsumerIdsKeyPrefix})
-	defer iterator.Close()
-
-	result := []string{}
-	for ; iterator.Valid(); iterator.Next() {
-		spawnTime, err := types.ParseTime(types.SpawnTimeToConsumerIdsKeyPrefix(), iterator.Key())
-		if err != nil {
-			k.Logger(ctx).Error("failed to parse spawn time",
-				"error", err)
-			continue
-		}
-
-		// if current block time is equal to or after spawnTime, and the chain is initialized, we can launch the chain
-		consumerIds, err := k.GetConsumersToBeLaunched(ctx, spawnTime)
-		if err != nil {
-			k.Logger(ctx).Error("failed to retrieve consumers to launch",
-				"spawn time", spawnTime,
-				"error", err)
-			continue
-		}
-
-		result = append(result, consumerIds.Ids...)
-	}
-
-	return result
-}
-
 // LaunchConsumer launches the chain with the provided consumer id by creating the consumer client and the respective
 // consumer genesis file
 func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {

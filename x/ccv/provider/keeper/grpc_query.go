@@ -10,8 +10,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -50,36 +50,47 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	lastCID, ok := k.GetConsumerId(ctx)
-	if !ok {
-		return &types.QueryConsumerChainsResponse{}, nil
-	}
-
 	consumerIds := []string{}
+
 	phase := ConsumerPhase(byte(req.Phase))
 
-	switch {
-	case phase == Launched:
+	// if phase filter is set Launched get consumer from the state directly
+	if req.FilterByPhase && phase == Launched {
 		consumerIds = append(consumerIds, k.GetAllRegisteredConsumerIds(ctx)...)
-	case phase == Initialized:
-		consumerIds = append(consumerIds, k.GetInitializedConsumers(ctx)...)
-	case phase == Registered || phase == FailedToLaunch || phase == Stopped:
-		for i := uint64(0); i <= lastCID; i++ {
-			p, ok := k.GetConsumerPhase(ctx, strconv.FormatInt(int64(i), 10))
-			if !ok {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("cannot retrieve phase for consumer id: %d", phase))
-			}
-			if p == phase {
-				consumerIds = append(consumerIds, strconv.FormatInt(int64(i), 10))
-			}
+		// otherwise iterate over all the consumer using the last unused consumer Id
+	} else {
+		firstUnusedConsumerId, ok := k.GetConsumerId(ctx)
+		if !ok {
+			return &types.QueryConsumerChainsResponse{}, nil
 		}
+		for i := uint64(0); i < firstUnusedConsumerId; i++ {
+			// if the filter is set, verify that the consumer has the same phase
+			if req.FilterByPhase {
+				p, ok := k.GetConsumerPhase(ctx, strconv.FormatInt(int64(i), 10))
+				if !ok {
+					return nil, status.Error(codes.Internal, fmt.Sprintf("cannot retrieve phase for consumer id: %d", i))
+				}
+				if p != phase {
+					continue
+				}
+			}
 
-	default:
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid consumer phase %v", phase))
+			consumerIds = append(consumerIds, strconv.FormatInt(int64(i), 10))
+		}
 	}
 
-	chains := make([]*types.Chain, len(consumerIds))
+	// set limit to default value
+	limit := 100
+	if req.Limit != 0 {
+		// update limit if specified
+		limit = int(req.Limit)
+	}
+
+	chains := make([]*types.Chain, math.Min(len(consumerIds), limit))
 	for i, cID := range consumerIds {
+		if i == limit {
+			break
+		}
 		c, err := k.GetConsumerChain(ctx, cID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
