@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -75,9 +76,9 @@ func CmdConsumerGenesis() *cobra.Command {
 
 func CmdConsumerChains() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list-consumer-chains",
+		Use:   "list-consumer-chains [phase] [limit]",
 		Short: "Query active consumer chains for provider chain.",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -86,6 +87,24 @@ func CmdConsumerChains() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			req := &types.QueryConsumerChainsRequest{}
+
+			if args[0] != "" {
+				phase, err := strconv.Atoi(args[0])
+				if err != nil {
+					return err
+				}
+				req.FilterByPhase = true
+				req.Phase = uint32(phase)
+			}
+
+			if args[1] != "" {
+				limit, err := strconv.Atoi(args[1])
+				if err != nil {
+					return err
+				}
+				req.Limit = uint32(limit)
+			}
+
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
 			if err != nil {
 				return err
