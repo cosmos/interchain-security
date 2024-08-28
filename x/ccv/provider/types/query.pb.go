@@ -2369,7 +2369,7 @@ type QueryClient interface {
 	// associated with the provided client id
 	QueryConsumerIdFromClientId(ctx context.Context, in *QueryConsumerIdFromClientIdRequest, opts ...grpc.CallOption) (*QueryConsumerIdFromClientIdResponse, error)
 	// QueryConsumerChain returns the consumer chain
-	// associated with the consumer id
+	// associated with the provided consumer id
 	QueryConsumerChain(ctx context.Context, in *QueryConsumerChainRequest, opts ...grpc.CallOption) (*QueryConsumerChainResponse, error)
 }
 
@@ -2595,7 +2595,7 @@ type QueryServer interface {
 	// associated with the provided client id
 	QueryConsumerIdFromClientId(context.Context, *QueryConsumerIdFromClientIdRequest) (*QueryConsumerIdFromClientIdResponse, error)
 	// QueryConsumerChain returns the consumer chain
-	// associated with the consumer id
+	// associated with the provided consumer id
 	QueryConsumerChain(context.Context, *QueryConsumerChainRequest) (*QueryConsumerChainResponse, error)
 }
 

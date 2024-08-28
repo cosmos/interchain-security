@@ -180,7 +180,7 @@ service Query {
   }
 
   // QueryConsumerChain returns the consumer chain
-  // associated with the consumer id
+  // associated with the provided consumer id
   rpc QueryConsumerChain(QueryConsumerChainRequest)
       returns (QueryConsumerChainResponse) {
     option (google.api.http).get =
