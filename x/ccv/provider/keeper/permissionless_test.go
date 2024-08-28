@@ -1,6 +1,9 @@
 package keeper_test
 
 import (
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -10,8 +13,6 @@ import (
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 // TestConsumerId tests setters and getters of consumer id (i.e., `FetchAndIncrementConsumerId` and `GetConsumerId`)
@@ -231,18 +232,16 @@ func TestConsumerPhase(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, found := providerKeeper.GetConsumerPhase(ctx, "consumerId")
-	require.False(t, found)
+	phase := providerKeeper.GetConsumerPhase(ctx, "consumerId")
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED, phase)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
-	phase, found := providerKeeper.GetConsumerPhase(ctx, "consumerId")
-	require.True(t, found)
-	require.Equal(t, keeper.Initialized, phase)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	phase = providerKeeper.GetConsumerPhase(ctx, "consumerId")
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED, phase)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Launched)
-	phase, found = providerKeeper.GetConsumerPhase(ctx, "consumerId")
-	require.True(t, found)
-	require.Equal(t, keeper.Launched, phase)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	phase = providerKeeper.GetConsumerPhase(ctx, "consumerId")
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED, phase)
 }
 
 // TestConsumerStopTime tests the getter, setter, and deletion of the consumer id to stop times methods
@@ -680,7 +679,7 @@ func TestCanLaunch(t *testing.T) {
 	require.False(t, canLaunch)
 
 	// cannot launch a chain without initialization parameters
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.False(t, canLaunch)
 
@@ -690,17 +689,17 @@ func TestCanLaunch(t *testing.T) {
 	require.NoError(t, err)
 
 	// cannot launch a launched chain
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Launched)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.False(t, canLaunch)
 
 	// cannot launch a stopped chain
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Stopped)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.False(t, canLaunch)
 
 	// initialized chain can launch
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.True(t, canLaunch)
 

@@ -752,8 +752,10 @@ func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
 	consumerIds := []string{}
 	for i := uint64(0); i < latestConsumerId; i++ {
 		consumerId := fmt.Sprintf("%d", i)
-		phase, foundPhase := k.GetConsumerPhase(ctx, consumerId)
-		if !foundPhase || (phase != Registered && phase != Initialized && phase != Launched) {
+		phase := k.GetConsumerPhase(ctx, consumerId)
+		if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
+			phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
+			phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 			continue
 		}
 		consumerIds = append(consumerIds, consumerId)

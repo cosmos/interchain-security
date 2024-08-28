@@ -42,8 +42,8 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 		return err
 	}
 
-	phase, found := k.GetConsumerPhase(ctx, consumerId)
-	if !found || phase != Initialized {
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED {
 		return errorsmod.Wrapf(types.ErrInvalidPhase,
 			"cannot create client for consumer chain that is not in the Initialized phase but in phase %d: %s", phase, consumerId)
 	}
@@ -357,7 +357,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 				"error", err)
 			continue
 		}
-		k.SetConsumerPhase(cachedCtx, consumerId, Launched)
+		k.SetConsumerPhase(cachedCtx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 		// the cached context is created with a new EventManager, so we merge the events into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
@@ -491,7 +491,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 			continue
 		}
 
-		k.SetConsumerPhase(cachedCtx, consumerId, Stopped)
+		k.SetConsumerPhase(cachedCtx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 		k.RemoveConsumerToBeStoppedFromStopTime(ctx, consumerId, stopTime)
 
 		// The cached context is created with a new EventManager so we merge the event into the original context

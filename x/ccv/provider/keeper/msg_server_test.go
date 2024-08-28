@@ -1,13 +1,14 @@
 package keeper_test
 
 import (
+	"testing"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 func TestCreateConsumer(t *testing.T) {
@@ -31,9 +32,8 @@ func TestCreateConsumer(t *testing.T) {
 	require.Equal(t, consumerMetadata, actualMetadata)
 	ownerAddress, err := providerKeeper.GetConsumerOwnerAddress(ctx, "0")
 	require.Equal(t, "signer", ownerAddress)
-	phase, found := providerKeeper.GetConsumerPhase(ctx, "0")
-	require.True(t, found)
-	require.Equal(t, providerkeeper.Registered, phase)
+	phase := providerKeeper.GetConsumerPhase(ctx, "0")
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_REGISTERED, phase)
 
 	consumerMetadata = providertypes.ConsumerMetadata{
 		Name:        "chain name",
@@ -51,9 +51,8 @@ func TestCreateConsumer(t *testing.T) {
 	require.Equal(t, consumerMetadata, actualMetadata)
 	ownerAddress, err = providerKeeper.GetConsumerOwnerAddress(ctx, "1")
 	require.Equal(t, "signer2", ownerAddress)
-	phase, found = providerKeeper.GetConsumerPhase(ctx, "1")
-	require.True(t, found)
-	require.Equal(t, providerkeeper.Registered, phase)
+	phase = providerKeeper.GetConsumerPhase(ctx, "1")
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_REGISTERED, phase)
 }
 
 func TestUpdateConsumer(t *testing.T) {
@@ -132,9 +131,8 @@ func TestUpdateConsumer(t *testing.T) {
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
 
 	// assert phase
-	phase, found := providerKeeper.GetConsumerPhase(ctx, consumerId)
-	require.True(t, found)
-	require.Equal(t, providerkeeper.Initialized, phase)
+	phase := providerKeeper.GetConsumerPhase(ctx, consumerId)
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED, phase)
 
 	// assert that chain is set to launch
 	consumerIds, err := providerKeeper.GetConsumersToBeLaunched(ctx, expectedInitializationParameters.SpawnTime)
