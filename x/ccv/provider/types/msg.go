@@ -3,10 +3,11 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	cmttypes "github.com/cometbft/cometbft/types"
 	"strconv"
 	"strings"
 	"time"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
