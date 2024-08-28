@@ -95,12 +95,6 @@ func (m Migrator) Migrate7to8(ctx sdktypes.Context) error {
 	if err := v8.MigrateLaunchedConsumerChains(ctx, store, m.providerKeeper); err != nil {
 		return err
 	}
-	if err := v8.MigratePreLaunchedConsumerChains(ctx, store, m.providerKeeper); err != nil {
-		return err
-	}
-	if err := v8.MigrateStoppedConsumerChains(ctx, store, m.providerKeeper); err != nil {
-		return err
-	}
 	v8.CleanupState(store)
 
 	return nil

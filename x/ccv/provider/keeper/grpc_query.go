@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"fmt"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -105,41 +104,6 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	}, nil
 }
 
-// TODO (PERMISSIONLESS)
-func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	var props []*types.ConsumerAdditionProposal
-
-	for _, prop := range k.GetAllPendingConsumerAdditionProps(ctx) {
-		// prevent implicit memory aliasing
-		p := prop
-		props = append(props, &p)
-	}
-
-	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &types.ConsumerAdditionProposals{Pending: props}}, nil
-}
-
-// TODO (PERMISSIONLESS)
-func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	var props []*types.ConsumerRemovalProposal
-	for _, prop := range k.GetAllPendingConsumerRemovalProps(ctx) {
-		// prevent implicit memory aliasing
-		p := prop
-		props = append(props, &p)
-	}
-
-	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &types.ConsumerRemovalProposals{Pending: props}}, nil
-}
-
 func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
@@ -229,21 +193,6 @@ func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *
 
 	return &types.QueryRegisteredConsumerRewardDenomsResponse{
 		Denoms: denoms,
-	}, nil
-}
-
-// TODO (PERMISSIONLESS)
-func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.QueryProposedChainIDsRequest) (*types.QueryProposedChainIDsResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	chains := k.GetAllProposedConsumerChainIDs(ctx)
-
-	return &types.QueryProposedChainIDsResponse{
-		ProposedChains: chains,
 	}, nil
 }
 

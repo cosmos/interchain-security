@@ -81,7 +81,6 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	}
 
 	gomock.InOrder(calls...)
-	providerKeeper.SetProposalIdToConsumerId(ctx, 1, "consumerId")
 
 	// create a sample consumer key to assign to the `providerAddr` validator
 	// on the consumer chain with `consumerId`

@@ -26,13 +26,10 @@ func NewQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(CmdConsumerGenesis())
 	cmd.AddCommand(CmdConsumerChains())
-	cmd.AddCommand(CmdConsumerStartProposals())
-	cmd.AddCommand(CmdConsumerStopProposals())
 	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
 	cmd.AddCommand(CmdProviderValidatorKey())
 	cmd.AddCommand(CmdThrottleState())
 	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
-	cmd.AddCommand(CmdProposedConsumerChains())
 	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
 	cmd.AddCommand(CmdProviderParameters())
 	cmd.AddCommand(CmdConsumerChainOptedInValidators())
@@ -87,95 +84,6 @@ func CmdConsumerChains() *cobra.Command {
 
 			req := &types.QueryConsumerChainsRequest{}
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
-
-func CmdProposedConsumerChains() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-proposed-consumer-chains",
-		Short: "Query chainIDs in consumer addition proposal before voting finishes",
-		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-			queryClient := types.NewQueryClient(clientCtx)
-
-			req := &types.QueryProposedChainIDsRequest{}
-			res, err := queryClient.QueryProposedConsumerChainIDs(cmd.Context(), req)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
-
-func CmdConsumerStartProposals() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-start-proposals",
-		Short: "Query consumer chains start proposals on provider chain.",
-		Long: `Query mature and pending consumer chains start proposals on provider chain.
-		Matured proposals will be executed on the next block - their spawn_time has passed
-		Pending proposals are waiting for their spawn_time to pass.
-		`,
-		Args: cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-			queryClient := types.NewQueryClient(clientCtx)
-
-			req := &types.QueryConsumerChainStartProposalsRequest{}
-			res, err := queryClient.QueryConsumerChainStarts(cmd.Context(), req)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
-
-func CmdConsumerStopProposals() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-stop-proposals",
-		Short: "Query consumer chains stop proposals on provider chain.",
-		Long: `Query mature and pending consumer chains stop proposals on provider chain.
-		Matured proposals will be executed on the next block - their stop_time has passed
-		Pending proposals are waiting for their stop_time to pass.
-		`,
-		Args: cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-			queryClient := types.NewQueryClient(clientCtx)
-
-			req := &types.QueryConsumerChainStopProposalsRequest{}
-			res, err := queryClient.QueryConsumerChainStops(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

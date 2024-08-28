@@ -104,8 +104,6 @@ func TestInitGenesis(t *testing.T) {
 			providerKeeper.GetValidatorSetUpdateId(ctx),
 			nil,
 			tc.consumerStates,
-			nil,
-			nil,
 			types.DefaultParams(),
 			nil,
 			nil,
