@@ -37,7 +37,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ConsumerPhase indicates the phases of a consumer chain according to ADR 018
+// ConsumerPhase indicates the phases of a consumer chain according to ADR 019
 type ConsumerPhase int32
 
 const (

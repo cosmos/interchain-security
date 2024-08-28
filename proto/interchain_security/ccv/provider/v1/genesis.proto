@@ -17,6 +17,12 @@ message GenesisState {
     // Reserve 4th slot for removed mature_unbonding_ops field
     reserved 4;
 
+    // Reserve 6th slot for removed consumer_addition_proposals field
+    reserved 6;
+
+    // Reserve 7th slot for removed consumer_removal_proposals field
+    reserved 7;
+
     // Reserve 11th slot for consumer_addrs_to_prune field
     reserved 11;
 
@@ -36,12 +42,6 @@ message GenesisState {
   // empty for a new chain
   repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
       [ (gogoproto.nullable) = false ];
-  // [DEPRECATED] empty for a new chain
-  repeated ConsumerAdditionProposal consumer_addition_proposals = 6
-      [ deprecated = true, (gogoproto.nullable) = false ];
-  // [DEPRECATED] empty for a new chain
-  repeated ConsumerRemovalProposal consumer_removal_proposals = 7
-      [ deprecated = true, (gogoproto.nullable) = false ];
   Params params = 8 [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 9

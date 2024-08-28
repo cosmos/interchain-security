@@ -45,18 +45,6 @@ func (gs GenesisState) Validate() error {
 		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
 	}
 
-	for _, prop := range gs.ConsumerAdditionProposals {
-		if err := prop.ValidateBasic(); err != nil {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis, err.Error())
-		}
-	}
-
-	for _, prop := range gs.ConsumerRemovalProposals {
-		if err := prop.ValidateBasic(); err != nil {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis, err.Error())
-		}
-	}
-
 	if len(gs.ValsetUpdateIdToHeight) > 0 {
 		// check only the first tuple of the list since it is ordered by VSC ID
 		if gs.ValsetUpdateIdToHeight[0].ValsetUpdateId == 0 {
