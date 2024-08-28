@@ -51,11 +51,10 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	consumerIds := []string{}
+	phaseFilter := req.Phase
 
-	phase := types.ConsumerPhase(req.Phase)
-
-	// if phase filter is set Launched get consumer from the state directly
-	if req.FilterByPhase && phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+	// if the phase filter is set Launched get consumer from the state directly
+	if phaseFilter == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 		consumerIds = append(consumerIds, k.GetAllRegisteredConsumerIds(ctx)...)
 		// otherwise iterate over all the consumer using the last unused consumer Id
 	} else {
@@ -64,13 +63,13 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 			return &types.QueryConsumerChainsResponse{}, nil
 		}
 		for i := uint64(0); i < firstUnusedConsumerId; i++ {
-			// if the filter is set, verify that the consumer has the same phase
-			if req.FilterByPhase {
+			// if the phase filter is set, verify that the consumer has the same phase
+			if phaseFilter != types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
 				p := k.GetConsumerPhase(ctx, strconv.FormatInt(int64(i), 10))
 				if p == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
 					return nil, status.Error(codes.Internal, fmt.Sprintf("cannot retrieve phase for consumer id: %d", i))
 				}
-				if p != phase {
+				if p != phaseFilter {
 					continue
 				}
 			}

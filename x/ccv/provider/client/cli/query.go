@@ -93,7 +93,6 @@ func CmdConsumerChains() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				req.FilterByPhase = true
 				req.Phase = types.ConsumerPhase(phase)
 			}
 

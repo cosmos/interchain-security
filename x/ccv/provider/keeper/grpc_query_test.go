@@ -438,12 +438,11 @@ func TestQueryConsumerChains(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name            string
-		setup           func(ctx sdk.Context, pk keeper.Keeper)
-		filter_by_phase bool
-		phase_filter    types.ConsumerPhase
-		limit           int32
-		expConsumers    []*types.Chain
+		name         string
+		setup        func(ctx sdk.Context, pk keeper.Keeper)
+		phase_filter types.ConsumerPhase
+		limit        int32
+		expConsumers []*types.Chain
 	}{
 		{
 			name:         "expect all consumers when phase filter isn't set",
@@ -462,9 +461,8 @@ func TestQueryConsumerChains(t *testing.T) {
 				consumers[0].Phase = types.ConsumerPhase_CONSUMER_PHASE_REGISTERED
 				pk.SetConsumerPhase(ctx, consumerIds[0], types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
 			},
-			filter_by_phase: true,
-			phase_filter:    types.ConsumerPhase_CONSUMER_PHASE_REGISTERED,
-			expConsumers:    consumers[0:1],
+			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_REGISTERED,
+			expConsumers: consumers[0:1],
 		},
 		{
 			name: "expect initialized consumers when phase is set to Initialized",
@@ -474,9 +472,8 @@ func TestQueryConsumerChains(t *testing.T) {
 				require.NoError(t, err)
 				pk.SetConsumerPhase(ctx, consumerIds[1], types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 			},
-			filter_by_phase: true,
-			phase_filter:    types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED,
-			expConsumers:    consumers[1:2],
+			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED,
+			expConsumers: consumers[1:2],
 		},
 		{
 			name: "expect launched consumers when phase is set to Launched",
@@ -486,9 +483,8 @@ func TestQueryConsumerChains(t *testing.T) {
 				pk.SetConsumerClientId(ctx, consumerIds[2], consumers[2].ClientId)
 				pk.SetConsumerPhase(ctx, consumerIds[2], types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 			},
-			filter_by_phase: true,
-			phase_filter:    types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED,
-			expConsumers:    consumers[2:3],
+			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED,
+			expConsumers: consumers[2:3],
 		},
 		{
 			name: "expect stopped consumers when phase is set to Stopped",
@@ -496,9 +492,8 @@ func TestQueryConsumerChains(t *testing.T) {
 				consumers[3].Phase = types.ConsumerPhase_CONSUMER_PHASE_STOPPED
 				pk.SetConsumerPhase(ctx, consumerIds[3], types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 			},
-			filter_by_phase: true,
-			phase_filter:    types.ConsumerPhase_CONSUMER_PHASE_STOPPED,
-			expConsumers:    consumers[3:],
+			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_STOPPED,
+			expConsumers: consumers[3:],
 		},
 	}
 
@@ -506,9 +501,8 @@ func TestQueryConsumerChains(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.setup(ctx, pk)
 			req := types.QueryConsumerChainsRequest{
-				FilterByPhase: tc.filter_by_phase,
-				Phase:         tc.phase_filter,
-				Limit:         tc.limit,
+				Phase: tc.phase_filter,
+				Limit: tc.limit,
 			}
 			expectedResponse := types.QueryConsumerChainsResponse{
 				Chains: tc.expConsumers,
