@@ -2,7 +2,7 @@ package integration
 
 // TestQueryProviderInfo tests the results of GetProviderInfo method.
 // @Long Description@
-// The test sets up a CVV channel and sends an empty VSC packet.
+// The test sets up a CCV channel and sends an empty VSC packet.
 // Then verifies that the result of GetProviderInfo method is correct and it
 // provides expected information about the blockchain provider and consumer.
 func (s *CCVTestSuite) TestQueryProviderInfo() {
