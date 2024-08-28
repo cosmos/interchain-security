@@ -230,7 +230,7 @@ cat ./bob/config/priv_validator_key.json # gets you the private key
 interchain-security-pd tendermint show-address  --home ./bob # returns valcons
 interchain-security-pd keys add bob --keyring-backend test --home ./bob --output json # gives mnemonic, account address
 interchain-security-pd keys show bob --keyring-backend test --bech=val --home ./bob --output json # returns valoper address
-cat ./bob/config/node_key.json // returns the node key
+cat ./bob/config/node_key.json # returns the node key
 ```
 
 Fill these values into the `ValidatorConfig` struct in `config.go`.
