@@ -39,6 +39,7 @@ service Msg {
   rpc ConsumerModification(MsgConsumerModification) returns (MsgConsumerModificationResponse) {
     option deprecated = true;
   }
+  rpc ChangeRewardDenoms(MsgChangeRewardDenoms) returns (MsgChangeRewardDenomsResponse);
 }
 
 
@@ -223,7 +224,7 @@ message MsgConsumerRemovalResponse {}
 // MsgRemoveConsumer defines the message used to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is eventually removed from the provider chain.
 message MsgRemoveConsumer {
-  option (cosmos.msg.v1.signer) = "authority";
+  option (cosmos.msg.v1.signer) = "signer";
 
   // the consumer id of the consumer chain to be stopped
   string consumer_id = 1;
@@ -232,7 +233,7 @@ message MsgRemoveConsumer {
   google.protobuf.Timestamp stop_time = 2
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
   // signer address
-  string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgRemoveConsumerResponse defines response type for MsgRemoveConsumer messages

@@ -6,8 +6,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -85,7 +83,7 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 	require.Error(t, err)
 
 	pk.FetchAndIncrementConsumerId(ctx)
-	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
@@ -114,7 +112,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Error(t, err)
 
 	// set the consumer to the "registered" phase
-	pk.SetConsumerPhase(ctx, consumerId, keeper.Registered)
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
 
 	// expect empty valset
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1) // -1 to allow the calls "AnyTimes"
@@ -228,13 +226,13 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Equal(t, &expRes, res)
 
 	// expect same result when consumer is in "initialized" phase
-	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expRes, res)
 
 	// set consumer to the "launched" phase
-	pk.SetConsumerPhase(ctx, consumerId, keeper.Launched)
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 	// expect an empty consumer valset
 	// since neither QueueVSCPackets or MakeConsumerGenesis was called at this point
@@ -284,7 +282,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Equal(t, val1.Commission.Rate, res.Validators[0].ConsumerCommissionRate)
 
 	// set consumer to stopped phase
-	pk.SetConsumerPhase(ctx, consumerId, keeper.Stopped)
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 	// expect empty valset
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
@@ -356,7 +354,7 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 	require.Error(t, err)
 
 	pk.FetchAndIncrementConsumerId(ctx)
-	pk.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 
 	// validator with set consumer commission rate
 	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.123")

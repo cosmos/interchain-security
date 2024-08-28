@@ -369,7 +369,7 @@ func (msg MsgUpdateConsumer) GetSigners() []sdk.AccAddress {
 // NewMsgRemoveConsumer creates a new MsgRemoveConsumer instance
 func NewMsgRemoveConsumer(signer string, consumerId string, stopTime time.Time) (*MsgRemoveConsumer, error) {
 	return &MsgRemoveConsumer{
-		Authority:  signer,
+		Signer:     signer,
 		ConsumerId: consumerId,
 		StopTime:   stopTime,
 	}, nil
@@ -400,7 +400,7 @@ func (msg MsgRemoveConsumer) GetSignBytes() []byte {
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
 func (msg MsgRemoveConsumer) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
+	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
 	if err != nil {
 		// same behavior as in cosmos-sdk
 		panic(err)

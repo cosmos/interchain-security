@@ -37,10 +37,10 @@ func TestHandleOptIn(t *testing.T) {
 	require.Error(t, providerKeeper.HandleOptIn(ctx, "unknownConsumerId", providerAddr, ""))
 
 	// trying to opt in to a stopped consumer chain
-	providerKeeper.SetConsumerPhase(ctx, "stoppedConsumerId", keeper.Stopped)
+	providerKeeper.SetConsumerPhase(ctx, "stoppedConsumerId", types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 	require.Error(t, providerKeeper.HandleOptIn(ctx, "stoppedConsumerId", providerAddr, ""))
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	providerKeeper.SetConsumerChainId(ctx, "consumerId", "chainId")
 	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", providerAddr))
 	err := providerKeeper.HandleOptIn(ctx, "consumerId", providerAddr, "")
@@ -49,7 +49,7 @@ func TestHandleOptIn(t *testing.T) {
 
 	// validator tries to opt in to another chain with chain id ("chainId") while it is already opted in to
 	// a different chain with the same chain id
-	providerKeeper.SetConsumerPhase(ctx, "consumerId2", keeper.Initialized)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId2", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	providerKeeper.SetConsumerChainId(ctx, "consumerId2", "chainId")
 	err = providerKeeper.HandleOptIn(ctx, "consumerId2", providerAddr, "")
 	require.ErrorContains(t, err, "validator is already opted in to a chain")
@@ -89,7 +89,7 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	expectedConsumerPubKey, err := providerKeeper.ParseConsumerKey(consumerKey)
 	require.NoError(t, err)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", keeper.Initialized)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	providerKeeper.SetConsumerChainId(ctx, "consumerId", "consumerId")
 	err = providerKeeper.HandleOptIn(ctx, "consumerId", providerAddr, consumerKey)
 	require.NoError(t, err)
@@ -198,7 +198,7 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	// setup a pending consumer chain
 	consumerId := "0"
 	providerKeeper.FetchAndIncrementConsumerId(ctx)
-	providerKeeper.SetConsumerPhase(ctx, consumerId, keeper.Initialized)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{ChainId: consumerId})
 
 	// check that there's no commission rate set for the validator yet

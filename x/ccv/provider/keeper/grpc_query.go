@@ -336,9 +336,9 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// get the consumer phase
-	phase, ok := k.GetConsumerPhase(ctx, consumerId)
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrUnknownConsumerId, consumerId).Error())
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot find a phase for consumer: %s", consumerId)
 	}
 
 	// query consumer validator set
@@ -347,22 +347,22 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	var err error
 
 	// if the consumer launched, the consumer valset has been persisted
-	if phase == Launched {
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 		consumerValSet, err = k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		//  if the consumer hasn't been launched or stopped, compute the consumer validator set
-	} else if phase != Stopped {
+	} else if phase != types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
 		bondedValidators, err := k.GetLastBondedValidators(ctx)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get last validators: %s", err))
 		}
 		minPower := int64(0)
+		// for TopN chains, compute the minPower that will be automatically opted in
 		if topN := k.GetTopN(ctx, consumerId); topN > 0 {
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
-				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
 				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get active validators: %s", err))
 			}
 

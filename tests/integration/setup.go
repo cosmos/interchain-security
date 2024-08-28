@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"testing"
 
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
@@ -22,6 +21,7 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
@@ -150,7 +150,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	//  2. MakeGenesis is called on the provider chain
 	//  3. ibc/testing sets the tendermint header for the consumer chain app
 
-	providerKeeper.SetConsumerPhase(suite.providerCtx(), icstestingutils.FirstConsumerId, keeper.Initialized)
+	providerKeeper.SetConsumerPhase(suite.providerCtx(), icstestingutils.FirstConsumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerId)
 
 	// start consumer chains

@@ -235,7 +235,7 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper.SetConsumerMetadata(ctx, consumerId, GetTestConsumerMetadata())
 	providerKeeper.SetConsumerInitializationParameters(ctx, consumerId, GetTestInitializationParameters())
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, GetTestPowerShapingParameters())
-	providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 
 	err := providerKeeper.CreateConsumerClient(ctx, consumerId)
 	require.NoError(t, err)
