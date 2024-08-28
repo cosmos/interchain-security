@@ -473,7 +473,7 @@ enum ConsumerPhase {
   // A chain in this phase cannot yet launch.
   CONSUMER_PHASE_REGISTERED = 1;
   // INITIALIZED defines the phase in which a consumer chain has set all the needed parameters to launch but
-	// has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
+  // has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
   CONSUMER_PHASE_INITIALIZED = 2;
   // LAUNCHED defines the phase in which a consumer chain is running and consuming a subset of the validator
 	// set of the provider.
