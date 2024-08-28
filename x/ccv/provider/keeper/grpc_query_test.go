@@ -280,6 +280,15 @@ func TestGetConsumerChain(t *testing.T) {
 		{},
 	}
 
+	allowInactiveVals := []bool{true, false, true, false}
+
+	minStakes := []math.Int{
+		math.NewInt(0),
+		math.NewInt(100),
+		math.NewInt(200),
+		math.NewInt(300),
+	}
+
 	expectedGetAllOrder := []types.Chain{}
 	for i, chainID := range chainIDs {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
@@ -289,6 +298,8 @@ func TestGetConsumerChain(t *testing.T) {
 		pk.SetValidatorSetCap(ctx, chainID, validatorSetCaps[i])
 		pk.SetValidatorsPowerCap(ctx, chainID, validatorPowerCaps[i])
 		pk.SetMinimumPowerInTopN(ctx, chainID, expectedMinPowerInTopNs[i])
+		pk.SetInactiveValidatorsAllowed(ctx, chainID, allowInactiveVals[i])
+		pk.SetMinStake(ctx, chainID, minStakes[i].Uint64())
 		for _, addr := range allowlists[i] {
 			pk.SetAllowlist(ctx, chainID, addr)
 		}
@@ -315,6 +326,8 @@ func TestGetConsumerChain(t *testing.T) {
 				ValidatorsPowerCap: validatorPowerCaps[i],
 				Allowlist:          strAllowlist,
 				Denylist:           strDenylist,
+				AllowInactiveVals:  allowInactiveVals[i],
+				MinStake:           minStakes[i].Uint64(),
 			})
 	}
 
