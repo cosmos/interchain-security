@@ -42,10 +42,10 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 		return err
 	}
 
-	phase, found := k.GetConsumerPhase(ctx, consumerId)
-	if !found || phase != Initialized {
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED {
 		return errorsmod.Wrapf(types.ErrInvalidPhase,
-			"cannot create client for consumer chain that is not in the Initialized phase: %s", consumerId)
+			"cannot create client for consumer chain that is not in the Initialized phase but in phase %d: %s", phase, consumerId)
 	}
 
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
@@ -94,7 +94,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	k.SetConsumerClientId(ctx, consumerId, clientID)
 	k.SetClientIdToConsumerId(ctx, clientID, consumerId)
 
-	k.Logger(ctx).Info("consumer chain registered (client created)",
+	k.Logger(ctx).Info("consumer chain launched (client created)",
 		"consumer id", consumerId,
 		"client id", clientID,
 	)
@@ -232,6 +232,7 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
 	}
 
+	minPower := int64(0)
 	if powerShapingParameters.Top_N > 0 {
 		// get the consensus active validators
 		// we do not want to base the power calculation for the top N
@@ -243,7 +244,7 @@ func (k Keeper) MakeConsumerGenesis(
 		}
 
 		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
+		minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 		if err != nil {
 			return gen, nil, err
 		}
@@ -255,8 +256,9 @@ func (k Keeper) MakeConsumerGenesis(
 		k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
 	}
+
 	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
-	nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators)
+	nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
 	k.SetConsumerValSet(ctx, consumerId, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
@@ -345,7 +347,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		}
 		// Remove consumer to prevent re-trying launching this chain.
 		// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
-		k.RemoveConsumerFromToBeLaunchedConsumers(ctx, consumerId, record.SpawnTime)
+		k.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, consumerId, record.SpawnTime)
 
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.LaunchConsumer(cachedCtx, consumerId)
@@ -355,8 +357,10 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 				"error", err)
 			continue
 		}
-		k.SetConsumerPhase(cachedCtx, consumerId, Launched)
+		k.SetConsumerPhase(cachedCtx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
+		// the cached context is created with a new EventManager, so we merge the events into the original context
+		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		writeFn()
 	}
 }
@@ -486,13 +490,13 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 				"err", err.Error())
 			continue
 		}
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		// TODO (PERMISSIONLESS): verify this here and in the initialized chains to launch
+
+		k.SetConsumerPhase(cachedCtx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+		k.RemoveConsumerToBeStoppedFromStopTime(ctx, consumerId, stopTime)
+
+		// The cached context is created with a new EventManager so we merge the event into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 
-		k.SetConsumerPhase(cachedCtx, consumerId, Stopped)
-		k.RemoveConsumerFromToBeStoppedConsumers(ctx, consumerId, stopTime)
 		writeFn()
 
 		k.Logger(ctx).Info("executed consumer removal",

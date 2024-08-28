@@ -7,13 +7,13 @@
 ### API BREAKING
 
 - [Provider](x/ccv/provider)
-  - Fix incorrect message defitions in the proto files of the provider module
+  - Fix incorrect message definitions in the proto files of the provider module
     ([\#2095](https://github.com/cosmos/interchain-security/pull/2095))
 
 ### STATE BREAKING
 
 - [Provider](x/ccv/provider)
-  - Fix incorrect message defitions in the proto files of the provider module
+  - Fix incorrect message definitions in the proto files of the provider module
     ([\#2095](https://github.com/cosmos/interchain-security/pull/2095))
 
 ## v5.1.0

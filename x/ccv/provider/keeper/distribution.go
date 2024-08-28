@@ -74,33 +74,33 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		return
 	}
 
-	// Iterate over all registered consumer chains
-	for _, consumerChainID := range k.GetAllRegisteredConsumerIds(ctx) {
+	// Iterate over all launched consumer chains
+	for _, consumerId := range k.GetAllRegisteredConsumerIds(ctx) {
 
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
 		// of non-whitelisted denominations.
-		alloc := k.GetConsumerRewardsAllocation(ctx, consumerChainID)
+		alloc := k.GetConsumerRewardsAllocation(ctx, consumerId)
 		if alloc.Rewards.IsZero() {
 			continue
 		}
 
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
-		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
+		if k.ComputeConsumerTotalVotingPower(ctx, consumerId) == 0 {
 			rewardsToSend, rewardsChange := alloc.Rewards.TruncateDecimal()
 			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsToSend, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 			if err != nil {
 				k.Logger(ctx).Error(
 					"fail to allocate rewards from consumer chain %s to community pool: %s",
-					consumerChainID,
+					consumerId,
 					err,
 				)
 			}
 
 			// set the consumer allocation to the remaining reward decimals
 			alloc.Rewards = rewardsChange
-			k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
+			k.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
 
 			return
 		}
@@ -112,7 +112,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if err != nil {
 			k.Logger(ctx).Error(
 				"cannot get community tax while allocating rewards from consumer chain %s: %s",
-				consumerChainID,
+				consumerId,
 				err,
 			)
 			continue
@@ -132,7 +132,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if err != nil {
 			k.Logger(ctx).Error(
 				"cannot send rewards to distribution module account %s: %s",
-				consumerChainID,
+				consumerId,
 				err,
 			)
 			continue
@@ -141,7 +141,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		// allocate tokens to consumer validators
 		k.AllocateTokensToConsumerValidators(
 			ctx,
-			consumerChainID,
+			consumerId,
 			sdk.NewDecCoinsFromCoins(validatorsRewardsTrunc...),
 		)
 
@@ -151,7 +151,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if err != nil {
 			k.Logger(ctx).Error(
 				"fail to allocate rewards from consumer chain %s to community pool: %s",
-				consumerChainID,
+				consumerId,
 				err,
 			)
 			continue
@@ -159,7 +159,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 
 		// set consumer allocations to the remaining rewards decimals
 		alloc.Rewards = validatorsRewardsChange.Add(remainingChanges...)
-		k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
+		k.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
 	}
 }
 

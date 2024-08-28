@@ -16,11 +16,13 @@ import (
 // HandleOptIn prepares validator `providerAddr` to opt in to `consumerId` with an optional `consumerKey` consumer public key.
 // Note that the validator only opts in at the end of an epoch.
 func (k Keeper) HandleOptIn(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, consumerKey string) error {
-	phase, found := k.GetConsumerPhase(ctx, consumerId)
-	if !found || phase == Stopped {
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
+		phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
+		phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 		return errorsmod.Wrapf(
 			types.ErrInvalidPhase,
-			"opting in to an unknown (or stopped) consumer chain, with id: %s", consumerId)
+			"cannot opt in to a consumer chain that is not in the registered, initialized, or launched phase: %s", consumerId)
 	}
 
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
@@ -136,7 +138,6 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, consumerId string, bondedVa
 			k.Logger(ctx).Debug("Opting in validator", "validator", val.GetOperator())
 
 			// if validator already exists it gets overwritten
-			k.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 			k.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 		} // else validators that do not belong to the top N validators but were opted in, remain opted in
 	}
@@ -322,9 +323,17 @@ func NoMoreThanPercentOfTheSum(validators []types.ConsensusValidator, percent ui
 
 // CanValidateChain returns true if the validator `providerAddr` is opted-in to chain with `consumerId` and the allowlist
 // and denylist do not prevent the validator from validating the chain.
-func (k Keeper) CanValidateChain(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) bool {
+func (k Keeper) CanValidateChain(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, minPowerToOptIn int64) bool {
+	// check if the validator is already opted-in
+	optedIn := k.IsOptedIn(ctx, consumerId, providerAddr)
+
+	// check if the validator is automatically opted-in for a topN chain
+	if !optedIn && k.GetTopN(ctx, consumerId) > 0 {
+		optedIn = k.HasMinPower(ctx, providerAddr, minPowerToOptIn)
+	}
+
 	// only consider opted-in validators
-	return k.IsOptedIn(ctx, consumerId, providerAddr) &&
+	return optedIn &&
 		// if an allowlist is declared, only consider allowlisted validators
 		(k.IsAllowlistEmpty(ctx, consumerId) ||
 			k.IsAllowlisted(ctx, consumerId, providerAddr)) &&
@@ -352,7 +361,7 @@ func (k Keeper) FulfillsMinStake(ctx sdk.Context, consumerId string, providerAdd
 }
 
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
-func (k Keeper) ComputeNextValidators(ctx sdk.Context, consumerId string, bondedValidators []stakingtypes.Validator) []types.ConsensusValidator {
+func (k Keeper) ComputeNextValidators(ctx sdk.Context, consumerId string, bondedValidators []stakingtypes.Validator, minPowerToOptIn int64) []types.ConsensusValidator {
 	// sort the bonded validators by number of staked tokens in descending order
 	sort.Slice(bondedValidators, func(i, j int) bool {
 		return bondedValidators[i].GetBondedTokens().GT(bondedValidators[j].GetBondedTokens())
@@ -371,9 +380,49 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, consumerId string, bonded
 
 	nextValidators := k.FilterValidators(ctx, consumerId, bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
-			return k.CanValidateChain(ctx, consumerId, providerAddr) && k.FulfillsMinStake(ctx, consumerId, providerAddr)
+			return k.CanValidateChain(ctx, consumerId, providerAddr, minPowerToOptIn) && k.FulfillsMinStake(ctx, consumerId, providerAddr)
 		})
 
 	nextValidators = k.CapValidatorSet(ctx, consumerId, nextValidators)
 	return k.CapValidatorsPower(ctx, consumerId, nextValidators)
+}
+
+// HasMinPower returns true if the `providerAddr` voting power is GTE than the given minimum power
+func (k Keeper) HasMinPower(ctx sdk.Context, providerAddr types.ProviderConsAddress, minPower int64) bool {
+	val, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.Address)
+	if err != nil {
+		k.Logger(ctx).Error(
+			"cannot get last validator power",
+			"provider address",
+			providerAddr,
+			"error",
+			err,
+		)
+		return false
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+	if err != nil {
+		k.Logger(ctx).Error(
+			"could not retrieve validator address",
+			"operator address",
+			val.GetOperator(),
+			"error",
+			err,
+		)
+		return false
+	}
+
+	power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
+	if err != nil {
+		k.Logger(ctx).Error("could not retrieve last power of validator address",
+			"operator address",
+			val.GetOperator(),
+			"error",
+			err,
+		)
+		return false
+	}
+
+	return power >= minPower
 }

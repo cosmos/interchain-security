@@ -94,7 +94,7 @@ func CmdConsumerChains() *cobra.Command {
 					return err
 				}
 				req.FilterByPhase = true
-				req.Phase = uint32(phase)
+				req.Phase = types.ConsumerPhase(phase)
 			}
 
 			if args[1] != "" {
@@ -102,7 +102,7 @@ func CmdConsumerChains() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				req.Limit = uint32(limit)
+				req.Limit = int32(limit)
 			}
 
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
