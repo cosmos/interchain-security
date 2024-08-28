@@ -178,6 +178,14 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_id/{client_id}";
   }
+
+  // QueryConsumerChain returns the consumer chain
+  // associated with the consumer id
+  rpc QueryConsumerChain(QueryConsumerChainRequest)
+      returns (QueryConsumerChainResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_chain/{consumer_id}";
+  }
 }
 
 message QueryConsumerGenesisRequest {
@@ -425,4 +433,17 @@ message QueryConsumerIdFromClientIdRequest {
 message QueryConsumerIdFromClientIdResponse {
   // the consumer id of the chain associated with this client id
   string consumer_id = 1;
+}
+
+message QueryConsumerChainRequest {
+  string consumer_id = 1;
+}
+
+message QueryConsumerChainResponse {
+  string chain_id = 1;
+  string owner_address = 2;
+  uint32 phase = 3;
+  ConsumerMetadata metadata = 4 [ (gogoproto.nullable) = false ];
+  ConsumerInitializationParameters init_params = 5;
+  PowerShapingParameters power_shaping_params = 6;  
 }

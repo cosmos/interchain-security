@@ -369,18 +369,72 @@ func TestGetConsumerChain(t *testing.T) {
 	}
 }
 
-func TestQueryConsumerIdFromClientId(t *testing.T) {
+func TestQueryConsumerChain(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, err := providerKeeper.QueryConsumerIdFromClientId(ctx, &types.QueryConsumerIdFromClientIdRequest{ClientId: "clientId"})
+	consumerId := "0"
+	chainId := "consumer-1"
+
+	req := types.QueryConsumerChainRequest{
+		ConsumerId: consumerId,
+	}
+
+	// expect error when consumer isn't associated with a chain id
+	_, err := providerKeeper.QueryConsumerChain(ctx, &req)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "no known consumer chain")
 
-	expectedConsumerId := "consumerId"
-	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", expectedConsumerId)
+	providerKeeper.SetConsumerChainId(ctx, consumerId, chainId)
 
-	res, err := providerKeeper.QueryConsumerIdFromClientId(ctx, &types.QueryConsumerIdFromClientIdRequest{ClientId: "clientId"})
+	// expect error when consumer doesn't have an owner address set
+	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
+	require.Error(t, err)
+
+	providerKeeper.SetConsumerOwnerAddress(ctx, consumerId, providerKeeper.GetAuthority())
+
+	// expect error when consumer doesn't have a valid phase
+	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
+	require.Error(t, err)
+
+	providerKeeper.SetConsumerPhase(ctx, consumerId, keeper.Registered)
+
+	// expect error when consumer doesn't have metadata
+	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
+	require.Error(t, err)
+
+	providerKeeper.SetConsumerMetadata(ctx, consumerId, types.ConsumerMetadata{Name: chainId})
+
+	expRes := types.QueryConsumerChainResponse{
+		ChainId:            chainId,
+		OwnerAddress:       providerKeeper.GetAuthority(),
+		Metadata:           types.ConsumerMetadata{Name: chainId},
+		Phase:              uint32(keeper.Registered),
+		InitParams:         &types.ConsumerInitializationParameters{},
+		PowerShapingParams: &types.PowerShapingParameters{},
+	}
+
+	// expect no error when neither the consumer init and power shaping params are set
+	res, err := providerKeeper.QueryConsumerChain(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, expectedConsumerId, res.ConsumerId)
+	require.Equal(t, &expRes, res)
+
+	providerKeeper.SetConsumerInitializationParameters(
+		ctx,
+		consumerId,
+		types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime()},
+	)
+
+	providerKeeper.SetConsumerPowerShapingParameters(
+		ctx,
+		consumerId,
+		types.PowerShapingParameters{Top_N: uint32(50)},
+	)
+
+	expRes.InitParams = &types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime()}
+	expRes.PowerShapingParams = &types.PowerShapingParameters{Top_N: uint32(50)}
+
+	// expect no error
+	res, err = providerKeeper.QueryConsumerChain(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expRes, res)
 }

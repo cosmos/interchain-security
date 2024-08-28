@@ -1,15 +1,16 @@
 package keeper
 
 import (
-	errorsmod "cosmossdk.io/errors"
-	storetypes "cosmossdk.io/store/types"
 	"encoding/binary"
 	"fmt"
+	"strconv"
+	"time"
+
+	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	"strconv"
-	"time"
 )
 
 // ConsumerPhase captures the phases of a consumer chain according to `docs/docs/adrs/adr-018-permissionless-ics.md`
@@ -93,9 +94,9 @@ func (k Keeper) GetConsumerOwnerAddress(ctx sdk.Context, consumerId string) (str
 }
 
 // SetConsumerOwnerAddress sets the chain id associated with this consumer id
-func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId string, chainId string) {
+func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId string, ownerAddr string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(chainId))
+	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(ownerAddr))
 }
 
 // DeleteConsumerOwnerAddress deletes the owner address associated with this consumer id

@@ -530,3 +530,48 @@ func (k Keeper) QueryConsumerIdFromClientId(goCtx context.Context, req *types.Qu
 
 	return &types.QueryConsumerIdFromClientIdResponse{ConsumerId: consumerId}, nil
 }
+
+// QueryConsumerChain returns the consumer chain associated with the consumer id
+func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsumerChainRequest) (*types.QueryConsumerChainResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	consumerId := req.ConsumerId
+	if err := types.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	chainId, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve chain id for consumer id: %s", consumerId)
+	}
+
+	ownerAddress, err := k.GetConsumerOwnerAddress(ctx, consumerId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve owner address for consumer id: %s", consumerId)
+	}
+
+	phase, ok := k.GetConsumerPhase(ctx, consumerId)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve phase for consumer id: %s", consumerId)
+	}
+
+	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve metadata for consumer id: %s", consumerId)
+	}
+
+	initParams, _ := k.GetConsumerInitializationParameters(ctx, consumerId)
+	powerParams, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+
+	return &types.QueryConsumerChainResponse{
+		ChainId:            chainId,
+		OwnerAddress:       ownerAddress,
+		Phase:              uint32(phase),
+		Metadata:           metadata,
+		InitParams:         &initParams,
+		PowerShapingParams: &powerParams,
+	}, nil
+}
