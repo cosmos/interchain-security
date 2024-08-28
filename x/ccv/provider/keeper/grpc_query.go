@@ -563,6 +563,7 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve metadata for consumer id: %s", consumerId)
 	}
 
+	// neither the init nor the power shaping params are mandatory for consumers
 	initParams, _ := k.GetConsumerInitializationParameters(ctx, consumerId)
 	powerParams, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 
