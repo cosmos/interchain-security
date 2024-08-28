@@ -360,9 +360,9 @@ func TestGetConsumerChain(t *testing.T) {
 		metadataLists[i] = types.ConsumerMetadata{Name: chainID}
 		pk.SetConsumerMetadata(ctx, consumerId, metadataLists[i])
 
-		phase := int32(i)
+		phase := types.ConsumerPhase(int32(i + 1))
 
-		pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase(phase))
+		pk.SetConsumerPhase(ctx, consumerId, phase)
 
 		expectedGetAllOrder = append(expectedGetAllOrder,
 			types.Chain{
@@ -374,7 +374,7 @@ func TestGetConsumerChain(t *testing.T) {
 				ValidatorsPowerCap: validatorPowerCaps[i],
 				Allowlist:          strAllowlist,
 				Denylist:           strDenylist,
-				Phase:              types.ConsumerPhase(i),
+				Phase:              phase,
 				Metadata:           metadataLists[i],
 			})
 	}
