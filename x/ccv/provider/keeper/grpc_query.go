@@ -65,6 +65,11 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
 func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chain, error) {
+	chainID, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find chainID for consumer (%s)", consumerId)
+	}
+
 	clientID, found := k.GetConsumerClientId(ctx, consumerId)
 	if !found {
 		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", consumerId)
@@ -95,12 +100,12 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
-	allowInactiveVals := k.AllowsInactiveValidators(ctx, chainID)
+	allowInactiveVals := k.AllowsInactiveValidators(ctx, consumerId)
 
-	minStake, _ := k.GetMinStake(ctx, chainID)
+	minStake := k.GetMinStake(ctx, consumerId)
 
 	return types.Chain{
-		ChainId:            consumerId,
+		ChainId:            chainID,
 		ClientId:           clientID,
 		Top_N:              topN,
 		MinPowerInTop_N:    minPowerInTopN,
