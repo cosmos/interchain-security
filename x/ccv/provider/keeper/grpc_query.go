@@ -360,8 +360,6 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		}
 		minPower := int64(0)
 		if topN := k.GetTopN(ctx, consumerId); topN > 0 {
-			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			// of the active validators
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
@@ -370,7 +368,6 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
 			if err != nil {
-				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
 				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute min power to opt in for chain %s: %s", consumerId, err))
 			}
 		}
