@@ -221,7 +221,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.startConsumerEvidenceDetector(action, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
 		target = td.getTargetDriver(action.Chain)
-		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+		version := target.testConfig.providerVersion
+		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
 			target.submitChangeRewardDenomsLegacyProposal(action, td.verbose)
 		} else {
 			target.submitChangeRewardDenomsProposal(action, td.verbose)
