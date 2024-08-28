@@ -105,14 +105,10 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 // gov hooks
 //
 
-// AfterProposalSubmission - call hook if registered
-// If an update consumer message exists in the proposal, a record is created that maps the proposal id to the consumer id
 func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64) error {
 	return nil
 }
 
-// AfterProposalVotingPeriodEnded - call hook if registered
-// After proposal voting ends, the consumer to proposal id record in store is deleted.
 func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalId uint64) error {
 	return nil
 }

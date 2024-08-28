@@ -379,6 +379,8 @@ func TestGetConsumerChain(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	consumerIDs := []string{"1", "23", "345", "6789"}
+
 	chainIDs := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
 
 	// mock the validator set
@@ -423,22 +425,34 @@ func TestGetConsumerChain(t *testing.T) {
 		{},
 	}
 
+	allowInactiveVals := []bool{true, false, true, false}
+
+	minStakes := []math.Int{
+		math.NewInt(0),
+		math.NewInt(100),
+		math.NewInt(200),
+		math.NewInt(300),
+	}
+
 	expectedGetAllOrder := []types.Chain{}
-	for i, chainID := range chainIDs {
-		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+	for i, consumerID := range consumerIDs {
+		pk.SetConsumerChainId(ctx, consumerID, chainIDs[i])
+		clientID := fmt.Sprintf("client-%d", len(consumerID)-i)
 		topN := topNs[i]
-		pk.SetConsumerClientId(ctx, chainID, clientID)
-		pk.SetConsumerPowerShapingParameters(ctx, chainID, types.PowerShapingParameters{
+		pk.SetConsumerClientId(ctx, consumerID, clientID)
+		pk.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{
 			Top_N:              topN,
 			ValidatorSetCap:    validatorSetCaps[i],
 			ValidatorsPowerCap: validatorPowerCaps[i],
+			AllowInactiveVals:  allowInactiveVals[i],
+			MinStake:           minStakes[i].Uint64(),
 		})
-		pk.SetMinimumPowerInTopN(ctx, chainID, expectedMinPowerInTopNs[i])
+		pk.SetMinimumPowerInTopN(ctx, consumerID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
-			pk.SetAllowlist(ctx, chainID, addr)
+			pk.SetAllowlist(ctx, consumerID, addr)
 		}
 		for _, addr := range denylists[i] {
-			pk.SetDenylist(ctx, chainID, addr)
+			pk.SetDenylist(ctx, consumerID, addr)
 		}
 		strAllowlist := make([]string, len(allowlists[i]))
 		for j, addr := range allowlists[i] {
@@ -452,7 +466,7 @@ func TestGetConsumerChain(t *testing.T) {
 
 		expectedGetAllOrder = append(expectedGetAllOrder,
 			types.Chain{
-				ChainId:            chainID,
+				ChainId:            chainIDs[i],
 				ClientId:           clientID,
 				Top_N:              topN,
 				MinPowerInTop_N:    expectedMinPowerInTopNs[i],
@@ -460,6 +474,8 @@ func TestGetConsumerChain(t *testing.T) {
 				ValidatorsPowerCap: validatorPowerCaps[i],
 				Allowlist:          strAllowlist,
 				Denylist:           strDenylist,
+				AllowInactiveVals:  allowInactiveVals[i],
+				MinStake:           minStakes[i].Uint64(),
 			})
 	}
 
