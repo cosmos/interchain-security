@@ -104,13 +104,6 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	}, nil
 }
 
-func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "This query is not supported anymore.")
-}
-
-func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "This query is not supported anymore.")
-}
 func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
@@ -201,10 +194,6 @@ func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *
 	return &types.QueryRegisteredConsumerRewardDenomsResponse{
 		Denoms: denoms,
 	}, nil
-}
-
-func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.QueryProposedChainIDsRequest) (*types.QueryProposedChainIDsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "This query is not supported anymore.")
 }
 
 func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, req *types.QueryAllPairsValConAddrByConsumerChainIDRequest) (*types.QueryAllPairsValConAddrByConsumerChainIDResponse, error) {

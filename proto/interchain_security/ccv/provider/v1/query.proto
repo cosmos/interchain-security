@@ -35,20 +35,6 @@ service Query {
         "/interchain_security/ccv/provider/consumer_chains";
   }
 
-  rpc QueryConsumerChainStarts(QueryConsumerChainStartProposalsRequest)
-      returns (QueryConsumerChainStartProposalsResponse) {
-    option deprecated = true;
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumer_chain_start_proposals";
-  }
-
-  rpc QueryConsumerChainStops(QueryConsumerChainStopProposalsRequest)
-      returns (QueryConsumerChainStopProposalsResponse) {
-    option deprecated = true;
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
-  }
-
   // QueryValidatorConsumerAddr queries the address
   // assigned by a validator for a consumer chain.
   rpc QueryValidatorConsumerAddr(QueryValidatorConsumerAddrRequest)
@@ -81,16 +67,6 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
-
-  // [DEPRECATED] QueryProposedConsumerChainIDs returns the chain IDs of the proposed consumer chain addition proposals
-  // that are still in the voting period
-  rpc QueryProposedConsumerChainIDs(
-      QueryProposedChainIDsRequest)
-      returns (QueryProposedChainIDsResponse) {
-    option deprecated = true;
-  option (google.api.http).get =
-      "/interchain_security/ccv/provider/proposed_consumer_chains";
-      }
 
   // QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
   // between provider and consumer chain
@@ -196,18 +172,6 @@ message QueryConsumerChainsRequest {}
 
 message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 
-message QueryConsumerChainStartProposalsRequest {}
-
-message QueryConsumerChainStartProposalsResponse {
-  ConsumerAdditionProposals proposals = 1 [deprecated = true];
-}
-
-message QueryConsumerChainStopProposalsRequest {}
-
-message QueryConsumerChainStopProposalsResponse {
-  ConsumerRemovalProposals proposals = 1 [deprecated = true];
-}
-
 message Chain {
   string chain_id = 1;
   string client_id = 2;
@@ -278,21 +242,6 @@ message QueryRegisteredConsumerRewardDenomsRequest {}
 
 message QueryRegisteredConsumerRewardDenomsResponse {
   repeated string denoms = 1;
-}
-
-// [DEPRECATED]: request used in query that is not currently supported
-message QueryProposedChainIDsRequest {}
-
-// [DEPRECATED]: response used in query that is not currently supported
-message QueryProposedChainIDsResponse {
-  repeated ProposedChain proposedChains = 1
-  [ deprecated = true, (gogoproto.nullable) = false ];
-}
-
-message ProposedChain {
-  string chainID = 1 [deprecated = true];
-  uint64 proposalID = 2 [deprecated = true];
-  string consumer_id = 3 [deprecated = true];
 }
 
 message QueryAllPairsValConAddrByConsumerChainIDRequest {
