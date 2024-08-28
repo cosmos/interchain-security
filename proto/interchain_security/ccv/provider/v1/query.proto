@@ -35,8 +35,6 @@ service Query {
         "/interchain_security/ccv/provider/consumer_chains";
   }
 
-  // [DEPRECATED]: Use `QueryConsumersThatAreAboutToStart` instead
-  // QueryConsumerChainStarts queries consumer chain start proposals.
   rpc QueryConsumerChainStarts(QueryConsumerChainStartProposalsRequest)
       returns (QueryConsumerChainStartProposalsResponse) {
     option deprecated = true;
@@ -44,25 +42,11 @@ service Query {
         "/interchain_security/ccv/provider/consumer_chain_start_proposals";
   }
 
-  rpc QueryConsumersThatAreAboutToStart(QueryConsumersThatAreAboutToStartRequest)
-      returns (QueryConsumersThatAreAboutToStartResponse) {
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumers_that_are_about_to_start";
-  }
-
-  // [DEPRECATED]: Use `QueryConsumersThatAreAboutToStop` instead
-  // QueryConsumerChainStops queries consumer chain stop proposals.
   rpc QueryConsumerChainStops(QueryConsumerChainStopProposalsRequest)
       returns (QueryConsumerChainStopProposalsResponse) {
     option deprecated = true;
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
-  }
-
-  rpc QueryConsumersThatAreAboutToStop(QueryConsumersThatAreAboutToStopRequest)
-      returns (QueryConsumersThatAreAboutToStopResponse) {
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumers_that_are_about_to_stop";
   }
 
   // QueryValidatorConsumerAddr queries the address
@@ -98,11 +82,12 @@ service Query {
         "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
 
-  // QueryProposedConsumerChainIDs returns the chain IDs of the proposed consumer chain addition proposals
+  // [DEPRECATED] QueryProposedConsumerChainIDs returns the chain IDs of the proposed consumer chain addition proposals
   // that are still in the voting period
   rpc QueryProposedConsumerChainIDs(
       QueryProposedChainIDsRequest)
       returns (QueryProposedChainIDsResponse) {
+    option deprecated = true;
   option (google.api.http).get =
       "/interchain_security/ccv/provider/proposed_consumer_chains";
       }
@@ -211,34 +196,17 @@ message QueryConsumerChainsRequest {}
 
 message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 
-// [DEPRECATED] use `QueryConsumersThatAreAboutToStartRequest` instead
 message QueryConsumerChainStartProposalsRequest {}
 
-// [DEPRECATED] use `QueryConsumersThatAreAboutToStartResponse` instead
 message QueryConsumerChainStartProposalsResponse {
   ConsumerAdditionProposals proposals = 1 [deprecated = true];
 }
 
-message QueryConsumersThatAreAboutToStartRequest {}
-
-message QueryConsumersThatAreAboutToStartResponse {
-  repeated string consumer_ids = 1;
-}
-
-// [DEPRECATED] use `QueryConsumersThatAreAboutToStopRequest` instead
 message QueryConsumerChainStopProposalsRequest {}
 
-// [DEPRECATED] use `QueryConsumersThatAreAboutToStopResponse` instead
 message QueryConsumerChainStopProposalsResponse {
   ConsumerRemovalProposals proposals = 1 [deprecated = true];
 }
-
-message QueryConsumersThatAreAboutToStopRequest {}
-
-message QueryConsumersThatAreAboutToStopResponse {
-  repeated string consumer_ids = 1;
-}
-
 
 message Chain {
   string chain_id = 1;
@@ -312,18 +280,19 @@ message QueryRegisteredConsumerRewardDenomsResponse {
   repeated string denoms = 1;
 }
 
+// [DEPRECATED]: request used in query that is not currently supported
 message QueryProposedChainIDsRequest {}
 
+// [DEPRECATED]: response used in query that is not currently supported
 message QueryProposedChainIDsResponse {
   repeated ProposedChain proposedChains = 1
-  [ (gogoproto.nullable) = false ];
+  [ deprecated = true, (gogoproto.nullable) = false ];
 }
 
 message ProposedChain {
-  // [DEPRECATED] use `consumer_id` instead
   string chainID = 1 [deprecated = true];
-  uint64 proposalID = 2;
-  string consumer_id = 3;
+  uint64 proposalID = 2 [deprecated = true];
+  string consumer_id = 3 [deprecated = true];
 }
 
 message QueryAllPairsValConAddrByConsumerChainIDRequest {

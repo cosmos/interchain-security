@@ -27,9 +27,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerGenesis())
 	cmd.AddCommand(CmdConsumerChains())
 	cmd.AddCommand(CmdConsumerStartProposals())
-	cmd.AddCommand(CmdListConsumersThatAreAboutToStart())
 	cmd.AddCommand(CmdConsumerStopProposals())
-	cmd.AddCommand(CmdListConsumersThatAreAboutToStop())
 	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
 	cmd.AddCommand(CmdProviderValidatorKey())
 	cmd.AddCommand(CmdThrottleState())
@@ -134,7 +132,7 @@ func CmdProposedConsumerChains() *cobra.Command {
 func CmdConsumerStartProposals() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-start-proposals",
-		Short: "DEPRECATED! Use `list-consumers-that-will-start` instead.",
+		Short: "DEPRECATED! Do not use.",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -158,37 +156,10 @@ func CmdConsumerStartProposals() *cobra.Command {
 	return cmd
 }
 
-func CmdListConsumersThatAreAboutToStart() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-consumers-that-will-start",
-		Short: "Query all the consumer chains that are initialized and about to start.",
-		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-			queryClient := types.NewQueryClient(clientCtx)
-
-			req := &types.QueryConsumersThatAreAboutToStartRequest{}
-			res, err := queryClient.QueryConsumersThatAreAboutToStart(cmd.Context(), req)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
-
 func CmdConsumerStopProposals() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-stop-proposals",
-		Short: "DEPRECATED! Use `list-consumers-that-will-stop` instead.",
+		Short: "DEPRECATED! Do not use.",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -199,33 +170,6 @@ func CmdConsumerStopProposals() *cobra.Command {
 
 			req := &types.QueryConsumerChainStopProposalsRequest{}
 			res, err := queryClient.QueryConsumerChainStops(cmd.Context(), req)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
-
-func CmdListConsumersThatAreAboutToStop() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-consumers-that-will-stop",
-		Short: "Query all the consumer chains that are launched and about to stop.",
-		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-			queryClient := types.NewQueryClient(clientCtx)
-
-			req := &types.QueryConsumersThatAreAboutToStopRequest{}
-			res, err := queryClient.QueryConsumersThatAreAboutToStop(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

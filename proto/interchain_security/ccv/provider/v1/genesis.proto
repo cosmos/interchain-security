@@ -36,12 +36,12 @@ message GenesisState {
   // empty for a new chain
   repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
       [ (gogoproto.nullable) = false ];
-  // empty for a new chain
+  // [DEPRECATED] empty for a new chain
   repeated ConsumerAdditionProposal consumer_addition_proposals = 6
-      [ (gogoproto.nullable) = false ];
-  // empty for a new chain
+      [ deprecated = true, (gogoproto.nullable) = false ];
+  // [DEPRECATED] empty for a new chain
   repeated ConsumerRemovalProposal consumer_removal_proposals = 7
-      [ (gogoproto.nullable) = false ];
+      [ deprecated = true, (gogoproto.nullable) = false ];
   Params params = 8 [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 9

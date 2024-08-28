@@ -1,9 +1,7 @@
 package v8
 
 import (
-	"bytes"
 	"encoding/binary"
-	"fmt"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"time"
 
@@ -264,28 +262,6 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		// set phase to launched
 		pk.SetConsumerPhase(ctx, consumerId, providerkeeper.Launched)
 
-		// An already-launched chain might haven been set to be removed. After the migration, we won't be looking
-		// at the removal props anymore to remove chains. Because of this, if the chain is set to be removed we
-		// set its stop time and append the consumer to be stopped.
-		removalProps, err := legacyGetAllPendingConsumerRemovalProps(store)
-		if err != nil {
-			return err
-		}
-		for _, prop := range removalProps {
-			if prop.ChainId == chainId {
-				err := pk.SetConsumerStopTime(ctx, consumerId, prop.StopTime)
-				if err != nil {
-					return err
-				}
-				err = pk.AppendConsumerToBeStoppedOnStopTime(ctx, consumerId, prop.StopTime)
-				if err != nil {
-					return err
-				}
-
-				break
-			}
-		}
-
 		// This is to migrate everything under `ProviderConsAddrToOptedInConsumerIdsKey`
 		// `OptedIn` was already re-keyed earlier (see above) and hence we can use `consumerId` here.
 		for _, providerConsAddr := range pk.GetAllOptedIn(ctx, consumerId) {
@@ -299,86 +275,6 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		}
 		pk.SetClientIdToConsumerId(ctx, clientId, consumerId)
 	}
-
-	return nil
-}
-
-// MigratePreLaunchedConsumerChains migrates all the state for consumer chains not yet launched
-// Note that it must be executed before CleanupState.
-func MigratePreLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper) error {
-	props, err := legacyGetAllPendingConsumerAdditionProps(store)
-	if err != nil {
-		return err
-	}
-
-	for _, prop := range props {
-		consumerId := pk.FetchAndIncrementConsumerId(ctx)
-
-		pk.SetConsumerOwnerAddress(ctx, consumerId, pk.GetAuthority())
-		pk.SetConsumerChainId(ctx, consumerId, prop.ChainId)
-
-		consumerMetadata := providertypes.ConsumerMetadata{
-			Name:        prop.ChainId,
-			Description: prop.Description,
-		}
-		pk.SetConsumerMetadata(ctx, consumerId, consumerMetadata)
-
-		initializationParameters := providertypes.ConsumerInitializationParameters{
-			InitialHeight:                     prop.InitialHeight,
-			GenesisHash:                       prop.GenesisHash,
-			BinaryHash:                        prop.BinaryHash,
-			SpawnTime:                         prop.SpawnTime,
-			UnbondingPeriod:                   prop.UnbondingPeriod,
-			CcvTimeoutPeriod:                  prop.CcvTimeoutPeriod,
-			TransferTimeoutPeriod:             prop.TransferTimeoutPeriod,
-			ConsumerRedistributionFraction:    prop.ConsumerRedistributionFraction,
-			BlocksPerDistributionTransmission: prop.BlocksPerDistributionTransmission,
-			HistoricalEntries:                 prop.HistoricalEntries,
-			DistributionTransmissionChannel:   prop.DistributionTransmissionChannel,
-		}
-		pk.SetConsumerInitializationParameters(ctx, consumerId, initializationParameters)
-
-		powerShapingParameters := providertypes.PowerShapingParameters{
-			Top_N:              prop.Top_N,
-			ValidatorsPowerCap: prop.ValidatorsPowerCap,
-			ValidatorSetCap:    prop.ValidatorSetCap,
-			Allowlist:          prop.Allowlist,
-			Denylist:           prop.Denylist,
-			MinStake:           prop.MinStake,
-			AllowInactiveVals:  prop.AllowInactiveVals,
-		}
-		pk.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
-
-		if spawnTime, canLaunch := pk.CanLaunch(ctx, consumerId); canLaunch {
-			pk.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
-			pk.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime)
-		}
-	}
-
-	// Note that the keys are deleted in CleanupState
-
-	return nil
-}
-
-// MigrateStoppedConsumerChains migrates all the state for consumer chains about to be stopped
-// Note that it must be executed before CleanupState.
-func MigrateStoppedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk providerkeeper.Keeper) error {
-	// NOTE: We already do the migration of to-be-stopped chains in `MigrateLaunchedConsumerChains`. If a chain can/is to be stopped
-	// it means it still launched at the moment of the migration.
-
-	props, err := legacyGetAllPendingConsumerRemovalProps(store)
-	if err != nil {
-		return err
-	}
-
-	for _, prop := range props {
-		_ = prop
-		// TODO
-		// - each prop should have a stop time set, so it can be added to AppendConsumerToBeStoppedOnStopTime
-		// - populate the state accordingly
-	}
-
-	// Note that the keys are deleted in CleanupState
 
 	return nil
 }
@@ -501,81 +397,4 @@ func removePrefix(store storetypes.KVStore, prefix byte) {
 	for _, delKey := range keysToDel {
 		store.Delete(delKey)
 	}
-}
-
-// legacyGetAllPendingConsumerAdditionProps gets all pending consumer addition proposals.
-//
-// Note that the pending consumer addition proposals are stored under keys with the following format:
-// PendingCAPKeyPrefix | spawnTime.UnixNano() | consumerId
-// Thus, the returned array is in spawnTime order. If two proposals have the same spawnTime,
-// then they are ordered by consumerId.
-func legacyGetAllPendingConsumerAdditionProps(store storetypes.KVStore) ([]providertypes.ConsumerAdditionProposal, error) {
-	props := []providertypes.ConsumerAdditionProposal{}
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{LegacyPendingCAPKeyPrefix})
-	for ; iterator.Valid(); iterator.Next() {
-		var prop providertypes.ConsumerAdditionProposal
-		err := prop.Unmarshal(iterator.Value())
-		if err != nil {
-			return props, err
-		}
-		props = append(props, prop)
-	}
-	err := iterator.Close()
-	if err != nil {
-		return props, err
-	}
-	return props, nil
-}
-
-func legacyGetAllPendingConsumerRemovalProps(store storetypes.KVStore) ([]providertypes.ConsumerRemovalProposal, error) {
-	props := []providertypes.ConsumerRemovalProposal{}
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{LegacyPendingCRPKeyPrefix})
-	for ; iterator.Valid(); iterator.Next() {
-		var prop providertypes.ConsumerRemovalProposal
-		err := prop.Unmarshal(iterator.Value())
-		if err != nil {
-			return props, err
-		}
-		props = append(props, prop)
-	}
-	err := iterator.Close()
-	if err != nil {
-		return props, err
-	}
-	return props, nil
-}
-
-// legacyGetAllProposedConsumerChainIDs returns the proposed consumer ids of all gov proposals that are still in the voting period
-func legacyGetAllProposedConsumerChainIDs(store storetypes.KVStore) ([]providertypes.ProposedChain, error) {
-	proposedChains := []providertypes.ProposedChain{}
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{LegacyProposedConsumerChainKeyPrefix})
-	for ; iterator.Valid(); iterator.Next() {
-		proposalID, err := legacyParseProposedConsumerChainKey(iterator.Key())
-		if err != nil {
-			return proposedChains, err
-		}
-		proposedChains = append(proposedChains, providertypes.ProposedChain{
-			ConsumerId: string(iterator.Value()),
-			ProposalID: proposalID,
-		})
-
-	}
-	err := iterator.Close()
-	if err != nil {
-		return proposedChains, err
-	}
-
-	return proposedChains, nil
-}
-
-// ParseProposedConsumerChainKey get the proposalID in the key
-func legacyParseProposedConsumerChainKey(bz []byte) (uint64, error) {
-	expectedPrefix := []byte{LegacyProposedConsumerChainKeyPrefix}
-	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
-	}
-	proposalID := sdk.BigEndianToUint64(bz[prefixL:])
-
-	return proposalID, nil
 }
