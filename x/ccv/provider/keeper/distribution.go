@@ -361,3 +361,29 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, consumerId stri
 		commissionRate,
 	)
 }
+
+// TODO: this method needs to be tested
+func (k Keeper) ChangeRewardDenoms(ctx sdk.Context, denomsToAdd, denomsToRemove []string) []sdk.Attribute {
+	eventAttributes := []sdk.Attribute{}
+	for _, denomToAdd := range denomsToAdd {
+		// Log error and move on if one of the denoms is already registered
+		if k.ConsumerRewardDenomExists(ctx, denomToAdd) {
+			ctx.Logger().Error("denom %s already registered", denomToAdd)
+			continue
+		}
+		k.SetConsumerRewardDenom(ctx, denomToAdd)
+
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeAddConsumerRewardDenom, denomToAdd))
+	}
+	for _, denomToRemove := range denomsToRemove {
+		// Log error and move on if one of the denoms is not registered
+		if !k.ConsumerRewardDenomExists(ctx, denomToRemove) {
+			ctx.Logger().Error("denom %s not registered", denomToRemove)
+			continue
+		}
+		k.DeleteConsumerRewardDenom(ctx, denomToRemove)
+
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeRemoveConsumerRewardDenom, denomToRemove))
+	}
+	return eventAttributes
+}
