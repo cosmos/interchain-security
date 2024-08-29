@@ -117,27 +117,38 @@ func (k Keeper) OptInTopNValidators(ctx sdk.Context, consumerId string, bondedVa
 
 		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
 		if err != nil {
-			k.Logger(ctx).Error("could not retrieve validator address: %s: %s",
-				val.GetOperator(), err)
+			k.Logger(ctx).Error("could not retrieve validator address from operator address",
+				"validator operator address", val.GetOperator(),
+				"error", err.Error())
 			continue
 		}
 		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
 		if err != nil {
-			k.Logger(ctx).Error("could not retrieve last power of validator address: %s: %s",
-				val.GetOperator(), err)
+			k.Logger(ctx).Error("could not retrieve last power of validator",
+				"validator operator address", val.GetOperator(),
+				"error", err.Error())
 			continue
 		}
 		if power >= minPowerToOptIn {
 			consAddr, err := val.GetConsAddr()
 			if err != nil {
-				k.Logger(ctx).Error("could not retrieve validators consensus address: %s: %s",
-					val, err)
+				k.Logger(ctx).Error("could not retrieve validator consensus address",
+					"validator operator address", val.GetOperator(),
+					"error", err.Error())
 				continue
 			}
 
 			k.Logger(ctx).Debug("Opting in validator", "validator", val.GetOperator())
 
 			// if validator already exists it gets overwritten
+			err = k.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(consAddr), consumerId)
+			if err != nil {
+				k.Logger(ctx).Error("could not append validator as opted-in validator for this consumer chain",
+					"validator operator address", val.GetOperator(),
+					"consumer id", consumerId,
+					"error", err.Error())
+				continue
+			}
 			k.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 		} // else validators that do not belong to the top N validators but were opted in, remain opted in
 	}

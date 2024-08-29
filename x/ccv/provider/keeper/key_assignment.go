@@ -118,13 +118,13 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, consumerId *stri
 		prefix = []byte{consumerValidatorsKeyPrefix}
 	} else {
 		// iterate over the validators public keys assigned for consumerId
-		prefix = types.ConsumerIdWithLenKey(consumerValidatorsKeyPrefix, *consumerId)
+		prefix = types.StringIdWithLenKey(consumerValidatorsKeyPrefix, *consumerId)
 	}
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		// TODO: store consumerId and provider cons address in value bytes, marshaled as protobuf type
-		consumerId, providerAddrTmp, err := types.ParseChainIdAndConsAddrKey(consumerValidatorsKeyPrefix, iterator.Key())
+		consumerId, providerAddrTmp, err := types.ParseStringIdAndConsAddrKey(consumerValidatorsKeyPrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// the store key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
@@ -203,13 +203,13 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, consumerId *stri
 		prefix = []byte{validatorsByConsumerAddrKeyPrefix}
 	} else {
 		// iterate over the mappings from consensus addresses on consumerId
-		prefix = types.ConsumerIdWithLenKey(validatorsByConsumerAddrKeyPrefix, *consumerId)
+		prefix = types.StringIdWithLenKey(validatorsByConsumerAddrKeyPrefix, *consumerId)
 	}
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		// TODO: store consumerId and consumer cons address in value bytes, marshaled as protobuf type
-		consumerId, consumerAddrTmp, err := types.ParseChainIdAndConsAddrKey(validatorsByConsumerAddrKeyPrefix, iterator.Key())
+		consumerId, consumerAddrTmp, err := types.ParseStringIdAndConsAddrKey(validatorsByConsumerAddrKeyPrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in SetValidatorByConsumerAddr.
@@ -307,7 +307,7 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 ) (consumerAddrsToPrune types.AddressList) {
 	store := ctx.KVStore(k.storeKey)
 	consumerAddrsToPruneKeyPrefix := types.ConsumerAddrsToPruneV2KeyPrefix()
-	startPrefix := types.ConsumerIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
+	startPrefix := types.StringIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
 	iterator := store.Iterator(startPrefix,
 		storetypes.InclusiveEndBytes(types.ConsumerAddrsToPruneV2Key(consumerId, ts)))
 	defer iterator.Close()
@@ -315,10 +315,10 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 	var keysToDel [][]byte
 	for ; iterator.Valid(); iterator.Next() {
 		// Sanity check
-		if _, pruneTs, err := types.ParseConsumerIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key()); err != nil {
+		if _, pruneTs, err := types.ParseStringIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key()); err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
-			k.Logger(ctx).Error("ParseConsumerIdAndTsKey failed",
+			k.Logger(ctx).Error("ParseStringIdAndTsKey failed",
 				"key", string(iterator.Key()),
 				"error", err.Error(),
 			)
@@ -360,11 +360,11 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, consumerId string) (consumerAddrsToPrune []types.ConsumerAddrsToPruneV2) {
 	store := ctx.KVStore(k.storeKey)
 	consumerAddrsToPruneKeyPrefix := types.ConsumerAddrsToPruneV2KeyPrefix()
-	iteratorPrefix := types.ConsumerIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
+	iteratorPrefix := types.StringIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
 	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		_, ts, err := types.ParseConsumerIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key())
+		_, ts, err := types.ParseStringIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.

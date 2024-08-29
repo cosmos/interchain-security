@@ -16,23 +16,19 @@ func NewGenesisState(
 	vscID uint64,
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
-	additionProposals []ConsumerAdditionProposal,
-	removalProposals []ConsumerRemovalProposal,
 	params Params,
 	validatorConsumerPubkeys []ValidatorConsumerPubKey,
 	validatorsByConsumerAddr []ValidatorByConsumerAddr,
 	consumerAddrsToPrune []ConsumerAddrsToPruneV2,
 ) *GenesisState {
 	return &GenesisState{
-		ValsetUpdateId:            vscID,
-		ValsetUpdateIdToHeight:    vscIdToHeights,
-		ConsumerStates:            consumerStates,
-		ConsumerAdditionProposals: additionProposals,
-		ConsumerRemovalProposals:  removalProposals,
-		Params:                    params,
-		ValidatorConsumerPubkeys:  validatorConsumerPubkeys,
-		ValidatorsByConsumerAddr:  validatorsByConsumerAddr,
-		ConsumerAddrsToPruneV2:    consumerAddrsToPrune,
+		ValsetUpdateId:           vscID,
+		ValsetUpdateIdToHeight:   vscIdToHeights,
+		ConsumerStates:           consumerStates,
+		Params:                   params,
+		ValidatorConsumerPubkeys: validatorConsumerPubkeys,
+		ValidatorsByConsumerAddr: validatorsByConsumerAddr,
+		ConsumerAddrsToPruneV2:   consumerAddrsToPrune,
 	}
 }
 
@@ -47,18 +43,6 @@ func DefaultGenesisState() *GenesisState {
 func (gs GenesisState) Validate() error {
 	if gs.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
-	}
-
-	for _, prop := range gs.ConsumerAdditionProposals {
-		if err := prop.ValidateBasic(); err != nil {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis, err.Error())
-		}
-	}
-
-	for _, prop := range gs.ConsumerRemovalProposals {
-		if err := prop.ValidateBasic(); err != nil {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis, err.Error())
-		}
 	}
 
 	if len(gs.ValsetUpdateIdToHeight) > 0 {
