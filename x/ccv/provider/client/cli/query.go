@@ -89,7 +89,7 @@ func CmdConsumerChains() *cobra.Command {
 
 			req := &types.QueryConsumerChainsRequest{}
 
-			if args[0] != "" {
+			if len(args) >= 1 && args[0] != "" {
 				phase, err := strconv.ParseInt(args[0], 10, 32)
 				if err != nil {
 					return err
@@ -97,7 +97,7 @@ func CmdConsumerChains() *cobra.Command {
 				req.Phase = types.ConsumerPhase(phase)
 			}
 
-			if args[1] != "" {
+			if len(args) == 2 && args[1] != "" {
 				limit, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					return err
