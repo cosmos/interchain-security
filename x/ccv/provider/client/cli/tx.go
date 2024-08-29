@@ -229,7 +229,7 @@ where create_consumer.json content:
 {
   "chain_id": "consu",
   "metadata": {
-    "name": "chain provi",
+    "name": "chain consumer",
     "description": "no description",
     "metadata": "no metadata"
   },
@@ -321,7 +321,7 @@ Example:
    "consumer_id": "0",
    "new_owner_address": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
    "metadata": {
-    "name": "chain provi",
+    "name": "chain consumer",
     "description": "no description",
     "metadata": "no metadata"
    },
