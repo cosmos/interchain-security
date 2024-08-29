@@ -5,14 +5,15 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	errorsmod "cosmossdk.io/errors"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -51,13 +52,51 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	chains := []*types.Chain{}
-	for _, chainID := range k.GetAllRegisteredConsumerIds(ctx) {
-		c, err := k.GetConsumerChain(ctx, chainID)
+	consumerIds := []string{}
+	phaseFilter := req.Phase
+
+	// if the phase filter is set Launched get consumer from the state directly
+	if phaseFilter == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+		consumerIds = append(consumerIds, k.GetAllRegisteredConsumerIds(ctx)...)
+		// otherwise iterate over all the consumer using the last unused consumer Id
+	} else {
+		firstUnusedConsumerId, ok := k.GetConsumerId(ctx)
+		if !ok {
+			return &types.QueryConsumerChainsResponse{}, nil
+		}
+		for i := uint64(0); i < firstUnusedConsumerId; i++ {
+			// if the phase filter is set, verify that the consumer has the same phase
+			if phaseFilter != types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
+				p := k.GetConsumerPhase(ctx, strconv.FormatInt(int64(i), 10))
+				if p == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
+					return nil, status.Error(codes.Internal, fmt.Sprintf("cannot retrieve phase for consumer id: %d", i))
+				}
+				if p != phaseFilter {
+					continue
+				}
+			}
+
+			consumerIds = append(consumerIds, strconv.FormatInt(int64(i), 10))
+		}
+	}
+
+	// set limit to default value
+	limit := 100
+	if req.Limit != 0 {
+		// update limit if specified
+		limit = int(req.Limit)
+	}
+
+	chains := make([]*types.Chain, math.Min(len(consumerIds), limit))
+	for i, cID := range consumerIds {
+		if i == limit {
+			break
+		}
+		c, err := k.GetConsumerChain(ctx, cID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		chains = append(chains, &c)
+		chains[i] = &c
 	}
 
 	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
@@ -70,11 +109,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		return types.Chain{}, fmt.Errorf("cannot find chainID for consumer (%s)", consumerId)
 	}
 
-	clientID, found := k.GetConsumerClientId(ctx, consumerId)
-	if !found {
-		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", consumerId)
-	}
-
+	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
 	topN := k.GetTopN(ctx, consumerId)
 
 	// Get the minimal power in the top N for the consumer chain
@@ -84,9 +119,10 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		minPowerInTopN = -1
 	}
 
-	validatorSetCap := k.GetValidatorSetCap(ctx, consumerId)
-
-	validatorsPowerCap := k.GetValidatorsPowerCap(ctx, consumerId)
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
+		return types.Chain{}, fmt.Errorf("cannot find phase for consumer (%s)", consumerId)
+	}
 
 	allowlist := k.GetAllowList(ctx, consumerId)
 	strAllowlist := make([]string, len(allowlist))
@@ -100,8 +136,12 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
-	allowInactiveVals := k.AllowsInactiveValidators(ctx, consumerId)
+	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot get metadata for consumer (%s): %w", consumerId, err)
+	}
 
+	allowInactiveVals := k.AllowsInactiveValidators(ctx, consumerId)
 	minStake := k.GetMinStake(ctx, consumerId)
 
 	return types.Chain{
@@ -109,10 +149,12 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		ClientId:           clientID,
 		Top_N:              topN,
 		MinPowerInTop_N:    minPowerInTopN,
-		ValidatorSetCap:    validatorSetCap,
-		ValidatorsPowerCap: validatorsPowerCap,
+		ValidatorSetCap:    k.GetValidatorSetCap(ctx, consumerId),
+		ValidatorsPowerCap: k.GetValidatorsPowerCap(ctx, consumerId),
 		Allowlist:          strAllowlist,
 		Denylist:           strDenylist,
+		Phase:              phase,
+		Metadata:           metadata,
 		AllowInactiveVals:  allowInactiveVals,
 		MinStake:           minStake,
 	}, nil
