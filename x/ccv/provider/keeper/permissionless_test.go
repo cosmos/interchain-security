@@ -736,6 +736,7 @@ func TestHasAtMostOnceCorrectMsgUpdateConsumer(t *testing.T) {
 
 	// a proposal with 2 `MsgUpdateConsumer` messages
 	invalidProposal, err := govv1.NewProposal([]sdk.Msg{&expectedMsgUpdateConsumer, &expectedMsgUpdateConsumer}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", sdk.AccAddress{}, false)
+	require.NoError(t, err)
 	actualMsgUpdateConsumer, err = providerKeeper.HasAtMostOnceCorrectMsgUpdateConsumer(ctx, &invalidProposal)
 	require.ErrorContains(t, err, "proposal can contain at most one")
 	require.Nil(t, actualMsgUpdateConsumer)
