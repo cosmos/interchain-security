@@ -11,15 +11,13 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // HandleOptIn prepares validator `providerAddr` to opt in to `consumerId` with an optional `consumerKey` consumer public key.
 // Note that the validator only opts in at the end of an epoch.
 func (k Keeper) HandleOptIn(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, consumerKey string) error {
-	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
-		phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
-		phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+	if !k.IsConsumerActive(ctx, consumerId) {
 		return errorsmod.Wrapf(
 			types.ErrInvalidPhase,
 			"cannot opt in to a consumer chain that is not in the registered, initialized, or launched phase: %s", consumerId)
@@ -68,15 +66,28 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, consumerId string, providerAddr typ
 // HandleOptOut prepares validator `providerAddr` to opt out from running `consumerId`.
 // Note that the validator only opts out at the end of an epoch.
 func (k Keeper) HandleOptOut(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) error {
-	if _, found := k.GetConsumerClientId(ctx, consumerId); !found {
-		// A validator can only opt out from a running chain. We check this by checking the consumer client id, because
-		// `SetConsumerClientId` is set when the chain starts in `CreateConsumerClientInCachedCtx` of `BeginBlockInit`.
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerId,
-			"opting out of an unknown or not running consumer chain, with id: %s", consumerId)
+			"opting out of an unknown consumer chain, consumerId(%s)", consumerId,
+		)
+	}
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+		// A validator can only opt out from a running chain
+		return errorsmod.Wrapf(
+			types.ErrInvalidPhase,
+			"opting out of a consumer chain not yet launched, consumerId(%s)", consumerId,
+		)
 	}
 
-	if topN := k.GetTopN(ctx, consumerId); topN > 0 {
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		return errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
+			"cannot get consumer power shaping parameters: %s", err.Error(),
+		)
+	}
+	if powerShapingParameters.Top_N > 0 {
 		// a validator cannot opt out from a Top N chain if the validator is in the Top N validators
 		validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 		if err != nil {
@@ -202,13 +213,18 @@ func (k Keeper) ComputeMinPowerInTopN(ctx sdk.Context, bondedValidators []stakin
 
 // CapValidatorSet caps the provided `validators` if chain with `consumerId` is an Opt In chain with a validator-set cap.
 // If cap is `k`, `CapValidatorSet` returns the first `k` validators from `validators` with the highest power.
-func (k Keeper) CapValidatorSet(ctx sdk.Context, consumerId string, validators []types.ConsensusValidator) []types.ConsensusValidator {
-	if k.GetTopN(ctx, consumerId) > 0 {
+func (k Keeper) CapValidatorSet(
+	ctx sdk.Context,
+	powerShapingParameters types.PowerShapingParameters,
+	validators []types.ConsensusValidator,
+) []types.ConsensusValidator {
+	if powerShapingParameters.Top_N > 0 {
 		// is a no-op if the chain is a Top N chain
 		return validators
 	}
 
-	if validatorSetCap := k.GetValidatorSetCap(ctx, consumerId); validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
+	validatorSetCap := powerShapingParameters.ValidatorSetCap
+	if validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
 		sort.Slice(validators, func(i, j int) bool {
 			return validators[i].Power > validators[j].Power
 		})
@@ -223,9 +239,13 @@ func (k Keeper) CapValidatorSet(ctx sdk.Context, consumerId string, validators [
 // with their new powers. Works on a best-basis effort because there are cases where we cannot guarantee that all validators
 // on the consumer chain have less power than the set validators-power cap. For example, if we have 10 validators and
 // the power cap is set to 5%, we need at least one validator to have more than 10% of the voting power on the consumer chain.
-func (k Keeper) CapValidatorsPower(ctx sdk.Context, consumerId string, validators []types.ConsensusValidator) []types.ConsensusValidator {
-	if p := k.GetValidatorsPowerCap(ctx, consumerId); p > 0 {
-		return NoMoreThanPercentOfTheSum(validators, p)
+func (k Keeper) CapValidatorsPower(
+	ctx sdk.Context,
+	validatorsPowerCap uint32,
+	validators []types.ConsensusValidator,
+) []types.ConsensusValidator {
+	if validatorsPowerCap > 0 {
+		return NoMoreThanPercentOfTheSum(validators, validatorsPowerCap)
 	} else {
 		// is a no-op if power cap is not set for `consumerId`
 		return validators
@@ -334,12 +354,18 @@ func NoMoreThanPercentOfTheSum(validators []types.ConsensusValidator, percent ui
 
 // CanValidateChain returns true if the validator `providerAddr` is opted-in to chain with `consumerId` and the allowlist
 // and denylist do not prevent the validator from validating the chain.
-func (k Keeper) CanValidateChain(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, minPowerToOptIn int64) bool {
+func (k Keeper) CanValidateChain(
+	ctx sdk.Context,
+	consumerId string,
+	providerAddr types.ProviderConsAddress,
+	topN uint32,
+	minPowerToOptIn int64,
+) bool {
 	// check if the validator is already opted-in
 	optedIn := k.IsOptedIn(ctx, consumerId, providerAddr)
 
 	// check if the validator is automatically opted-in for a topN chain
-	if !optedIn && k.GetTopN(ctx, consumerId) > 0 {
+	if !optedIn && topN > 0 {
 		optedIn = k.HasMinPower(ctx, providerAddr, minPowerToOptIn)
 	}
 
@@ -355,8 +381,11 @@ func (k Keeper) CanValidateChain(ctx sdk.Context, consumerId string, providerAdd
 
 // FulfillsMinStake returns true if the validator `providerAddr` has enough stake to validate chain with `consumerId`
 // by checking its staked tokens against the minimum stake required to validate the chain.
-func (k Keeper) FulfillsMinStake(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) bool {
-	minStake := k.GetMinStake(ctx, consumerId)
+func (k Keeper) FulfillsMinStake(
+	ctx sdk.Context,
+	minStake uint64,
+	providerAddr types.ProviderConsAddress,
+) bool {
 	if minStake == 0 {
 		return true
 	}
@@ -372,7 +401,13 @@ func (k Keeper) FulfillsMinStake(ctx sdk.Context, consumerId string, providerAdd
 }
 
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
-func (k Keeper) ComputeNextValidators(ctx sdk.Context, consumerId string, bondedValidators []stakingtypes.Validator, minPowerToOptIn int64) []types.ConsensusValidator {
+func (k Keeper) ComputeNextValidators(
+	ctx sdk.Context,
+	consumerId string,
+	bondedValidators []stakingtypes.Validator,
+	powerShapingParameters types.PowerShapingParameters,
+	minPowerToOptIn int64,
+) []types.ConsensusValidator {
 	// sort the bonded validators by number of staked tokens in descending order
 	sort.Slice(bondedValidators, func(i, j int) bool {
 		return bondedValidators[i].GetBondedTokens().GT(bondedValidators[j].GetBondedTokens())
@@ -380,8 +415,7 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, consumerId string, bonded
 
 	// if inactive validators are not allowed, only consider the first `MaxProviderConsensusValidators` validators
 	// since those are the ones that participate in consensus
-	allowInactiveVals := k.AllowsInactiveValidators(ctx, consumerId)
-	if !allowInactiveVals {
+	if !powerShapingParameters.AllowInactiveVals {
 		// only leave the first MaxProviderConsensusValidators bonded validators
 		maxProviderConsensusVals := k.GetMaxProviderConsensusValidators(ctx)
 		if len(bondedValidators) > int(maxProviderConsensusVals) {
@@ -391,11 +425,12 @@ func (k Keeper) ComputeNextValidators(ctx sdk.Context, consumerId string, bonded
 
 	nextValidators := k.FilterValidators(ctx, consumerId, bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
-			return k.CanValidateChain(ctx, consumerId, providerAddr, minPowerToOptIn) && k.FulfillsMinStake(ctx, consumerId, providerAddr)
+			return k.CanValidateChain(ctx, consumerId, providerAddr, powerShapingParameters.Top_N, minPowerToOptIn) &&
+				k.FulfillsMinStake(ctx, powerShapingParameters.MinStake, providerAddr)
 		})
 
-	nextValidators = k.CapValidatorSet(ctx, consumerId, nextValidators)
-	return k.CapValidatorsPower(ctx, consumerId, nextValidators)
+	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, nextValidators)
+	return k.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, nextValidators)
 }
 
 // HasMinPower returns true if the `providerAddr` voting power is GTE than the given minimum power

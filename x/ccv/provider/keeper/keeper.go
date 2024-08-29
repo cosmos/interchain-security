@@ -694,39 +694,13 @@ func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
 	consumerIds := []string{}
 	for i := uint64(0); i < latestConsumerId; i++ {
 		consumerId := fmt.Sprintf("%d", i)
-		phase := k.GetConsumerPhase(ctx, consumerId)
-		if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
-			phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
-			phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+		if !k.IsConsumerActive(ctx, consumerId) {
 			continue
 		}
 		consumerIds = append(consumerIds, consumerId)
 	}
 
 	return consumerIds
-}
-
-// GetTopN returns N if chain `consumerId` has a top N associated, and 0 otherwise.
-func (k Keeper) GetTopN(
-	ctx sdk.Context,
-	consumerId string,
-) uint32 {
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
-	}
-
-	return powerShapingParameters.Top_N
-}
-
-// IsTopN returns true if chain with `consumerId` is a Top-N chain (i.e., enforces at least one validator to validate chain `consumerId`)
-func (k Keeper) IsTopN(ctx sdk.Context, consumerId string) bool {
-	return k.GetTopN(ctx, consumerId) > 0
-}
-
-// IsOptIn returns true if chain with `consumerId` is an Opt-In chain (i.e., no validator is forced to validate chain `consumerId`)
-func (k Keeper) IsOptIn(ctx sdk.Context, consumerId string) bool {
-	return k.GetTopN(ctx, consumerId) == 0
 }
 
 func (k Keeper) SetOptedIn(
@@ -863,30 +837,6 @@ func (k Keeper) DeleteConsumerCommissionRate(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerCommissionRateKey(consumerId, providerAddr))
-}
-
-// GetValidatorsPowerCap returns the associated power cap of chain with `consumerId` and 0 if no power cap association is found
-func (k Keeper) GetValidatorsPowerCap(
-	ctx sdk.Context,
-	consumerId string,
-) uint32 {
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
-	}
-	return powerShapingParameters.ValidatorsPowerCap
-}
-
-// GetValidatorSetCap returns the associated validator set cap of chain with `consumerId` and 0 if no set cap association is found
-func (k Keeper) GetValidatorSetCap(
-	ctx sdk.Context,
-	consumerId string,
-) uint32 {
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
-	}
-	return powerShapingParameters.ValidatorSetCap
 }
 
 // SetAllowlist allowlists validator with `providerAddr` address on chain `consumerId`
@@ -1052,32 +1002,6 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MinimumPowerInTopNKey(consumerId))
-}
-
-// GetMinStake returns the minimum stake required for a validator to validate
-// a given consumer chain. Returns 0 if min stake is not found for this consumer id.
-func (k Keeper) GetMinStake(
-	ctx sdk.Context,
-	consumerId string,
-) uint64 {
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
-	}
-	return powerShapingParameters.MinStake
-}
-
-// AllowsInactiveValidators returns whether inactive validators are allowed to validate
-// a given consumer chain. Returns false if flag on inactive validators is not found for this consumer id.
-func (k Keeper) AllowsInactiveValidators(
-	ctx sdk.Context,
-	consumerId string,
-) bool {
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
-	}
-	return powerShapingParameters.AllowInactiveVals
 }
 
 func (k Keeper) UnbondingCanComplete(ctx sdk.Context, id uint64) error {

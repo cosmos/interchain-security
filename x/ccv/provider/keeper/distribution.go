@@ -335,10 +335,10 @@ func (k Keeper) IdentifyConsumerIdFromIBCPacket(ctx sdk.Context, packet channelt
 // HandleSetConsumerCommissionRate sets a per-consumer chain commission rate for the given provider address
 // on the condition that the given consumer chain exists.
 func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, commissionRate math.LegacyDec) error {
-	// check that the consumer chain exists
-	if !k.IsConsumerProposedOrRegistered(ctx, consumerId) {
+	// check that the consumer chain is active -- registered, initialized, or launched
+	if !k.IsConsumerActive(ctx, consumerId) {
 		return errorsmod.Wrapf(
-			types.ErrUnknownConsumerId,
+			types.ErrInvalidPhase,
 			"unknown consumer chain, with id: %s", consumerId)
 	}
 

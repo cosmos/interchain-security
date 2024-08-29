@@ -183,21 +183,13 @@ func (k Keeper) MakeConsumerGenesis(
 ) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
 	initializationRecord, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
-		return gen, nil, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
-			"initialization record for consumer id: %s is missing", consumerId)
-
+		return gen, nil, errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
+			"cannot retrieve initialization parameters: %s", err.Error())
 	}
 	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
-		powerShapingParameters = types.PowerShapingParameters{
-			Top_N:              0,
-			ValidatorsPowerCap: 0,
-			ValidatorSetCap:    0,
-			Allowlist:          []string{},
-			Denylist:           []string{},
-			MinStake:           0,
-			AllowInactiveVals:  false,
-		}
+		return gen, nil, errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
+			"cannot retrieve power shaping parameters: %s", err.Error())
 	}
 
 	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
@@ -256,7 +248,7 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 
 	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
-	nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
+	nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
 	k.SetConsumerValSet(ctx, consumerId, nextValidators)
 
 	// get the initial updates with the latest set consumer public keys
@@ -307,7 +299,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		}
 		// Remove consumer to prevent re-trying launching this chain.
 		// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
-		k.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, consumerId, record.SpawnTime)
+		k.RemoveConsumerToBeLaunched(ctx, consumerId, record.SpawnTime)
 
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.LaunchConsumer(cachedCtx, consumerId)
@@ -334,7 +326,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 
 		stopTime, err := k.GetConsumerStopTime(ctx, consumerId)
 		if err != nil {
-			k.Logger(ctx).Info("chain could not be stopped",
+			k.Logger(ctx).Error("chain could not be stopped",
 				"consumerId", consumerId,
 				"err", err.Error())
 			continue
@@ -349,7 +341,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 		}
 
 		k.SetConsumerPhase(cachedCtx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
-		k.RemoveConsumerToBeStoppedFromStopTime(ctx, consumerId, stopTime)
+		k.RemoveConsumerToBeStopped(ctx, consumerId, stopTime)
 
 		// The cached context is created with a new EventManager so we merge the event into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())

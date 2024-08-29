@@ -164,7 +164,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerKeeper.SetConsumerInitializationParameters(providerChain.GetContext(), consumerId, initializationParameters)
 	providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
 	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
-	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
+	providerKeeper.AppendConsumerToBeLaunched(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
 
 	// opt-in all validators
 	lastVals, err := providerApp.GetProviderKeeper().GetLastBondedValidators(providerChain.GetContext())

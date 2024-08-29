@@ -110,7 +110,10 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	}
 
 	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
-	topN := k.GetTopN(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find power shaping parameters for consumer (%s): %s", consumerId, err.Error())
+	}
 
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
@@ -141,22 +144,19 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		return types.Chain{}, fmt.Errorf("cannot get metadata for consumer (%s): %w", consumerId, err)
 	}
 
-	allowInactiveVals := k.AllowsInactiveValidators(ctx, consumerId)
-	minStake := k.GetMinStake(ctx, consumerId)
-
 	return types.Chain{
 		ChainId:            chainID,
 		ClientId:           clientID,
-		Top_N:              topN,
+		Top_N:              powerShapingParameters.Top_N,
 		MinPowerInTop_N:    minPowerInTopN,
-		ValidatorSetCap:    k.GetValidatorSetCap(ctx, consumerId),
-		ValidatorsPowerCap: k.GetValidatorsPowerCap(ctx, consumerId),
+		ValidatorSetCap:    powerShapingParameters.ValidatorSetCap,
+		ValidatorsPowerCap: powerShapingParameters.ValidatorsPowerCap,
 		Allowlist:          strAllowlist,
 		Denylist:           strDenylist,
 		Phase:              phase,
 		Metadata:           metadata,
-		AllowInactiveVals:  allowInactiveVals,
-		MinStake:           minStake,
+		AllowInactiveVals:  powerShapingParameters.AllowInactiveVals,
+		MinStake:           powerShapingParameters.MinStake,
 	}, nil
 }
 
@@ -314,7 +314,7 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	optedInVals := []string{}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if !k.IsConsumerProposedOrRegistered(ctx, consumerId) {
+	if !k.IsConsumerActive(ctx, consumerId) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerId))
 	}
 
@@ -366,19 +366,23 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		}
 		minPower := int64(0)
 		// for TopN chains, compute the minPower that will be automatically opted in
-		if topN := k.GetTopN(ctx, consumerId); topN > 0 {
+		powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get power shaping params: %s", err))
+		}
+		if powerShapingParameters.Top_N > 0 {
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get active validators: %s", err))
 			}
 
-			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute min power to opt in for chain %s: %s", consumerId, err))
 			}
 		}
 
-		consumerValSet = k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
+		consumerValSet = k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
 
 		// sort the address of the validators by ascending lexical order as they were persisted to the store
 		sort.Slice(consumerValSet, func(i, j int) bool {
@@ -485,10 +489,14 @@ func (k Keeper) hasToValidate(
 
 	minPowerToOptIn := int64(0)
 	// If the consumer is TopN compute the minimum power
-	if topN := k.GetTopN(ctx, consumerId); topN > 0 {
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		return false, err
+	}
+	if powerShapingParameters.Top_N > 0 {
 		// compute the minimum power to opt-in since the one in the state is stale
 		// Note that the effective min power will be computed at the end of the epoch
-		minPowerToOptIn, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+		minPowerToOptIn, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 		if err != nil {
 			return false, err
 		}
@@ -500,7 +508,7 @@ func (k Keeper) hasToValidate(
 	if err != nil {
 		return false, err
 	}
-	nextValidators := k.ComputeNextValidators(ctx, consumerId, lastVals, minPowerToOptIn)
+	nextValidators := k.ComputeNextValidators(ctx, consumerId, lastVals, powerShapingParameters, minPowerToOptIn)
 	for _, v := range nextValidators {
 		consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 		if provAddr.ToSdkConsAddr().Equals(consAddr) {
@@ -532,7 +540,7 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if !k.IsConsumerProposedOrRegistered(ctx, consumerId) {
+	if !k.IsConsumerActive(ctx, consumerId) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerId))
 	}
 

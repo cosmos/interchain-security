@@ -94,11 +94,11 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// mock 2 bonded validators
-	valA := createStakingValidator(ctx, mocks, 1, 1, 1)
+	valA := createStakingValidator(ctx, mocks, 1, 1)
 	valAConsAddr, _ := valA.GetConsAddr()
 	valAPubKey, _ := valA.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
-	valB := createStakingValidator(ctx, mocks, 2, 2, 2)
+	valB := createStakingValidator(ctx, mocks, 2, 2)
 	valBConsAddr, _ := valB.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{valA, valB}, -1)
@@ -119,6 +119,10 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	// Opt in validator B. Note that validator B is not a consumer validator and hence would become a consumer
 	// validator for the first time after the `QueueVSCPackets` call.
 	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valBConsAddr))
+
+	// set power shaping params
+	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{})
+	require.NoError(t, err)
 
 	providerKeeper.QueueVSCPackets(ctx)
 
@@ -596,14 +600,12 @@ func TestEndBlockVSU(t *testing.T) {
 
 	// create 4 sample lastValidators
 	var lastValidators []stakingtypes.Validator
-	var powers []int64
 	for i := 0; i < 4; i++ {
 		validator := cryptotestutil.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
 		lastValidators = append(lastValidators, validator)
 		valAdrr, err := sdk.ValAddressFromBech32(validator.GetOperator())
 		require.NoError(t, err)
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAdrr).Return(int64(i+1), nil).AnyTimes()
-		powers = append(powers, int64(i+1))
 	}
 
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, lastValidators, -1)
@@ -649,14 +651,14 @@ func TestProviderValidatorUpdates(t *testing.T) {
 	// Mocking bonded validators in the staking keeper.
 	// be aware that the powers need to be in descending order
 	validators := []stakingtypes.Validator{
-		createStakingValidator(ctx, mocks, 3, 30, 3),
-		createStakingValidator(ctx, mocks, 2, 20, 2),
-		createStakingValidator(ctx, mocks, 1, 10, 1),
+		createStakingValidator(ctx, mocks, 30, 3),
+		createStakingValidator(ctx, mocks, 20, 2),
+		createStakingValidator(ctx, mocks, 10, 1),
 	}
 	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(ctx).Return(validators, nil).Times(1)
 
 	// set up a validator that we will only use for the last provider consensus validator set
-	removedValidator := createStakingValidator(ctx, mocks, 4, 40, 4)
+	removedValidator := createStakingValidator(ctx, mocks, 40, 4)
 
 	// Set up the last provider consensus validators
 	consensusVals := make([]providertypes.ConsensusValidator, 0, len(validators))
@@ -715,22 +717,22 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 
 	providerKeeper.SetValidatorSetUpdateId(ctx, 1)
 
-	valA := createStakingValidator(ctx, mocks, 1, 1, 1) // 3.125% of the total voting power
+	valA := createStakingValidator(ctx, mocks, 1, 1) // 3.125% of the total voting power
 	valAConsAddr, _ := valA.GetConsAddr()
 	valAPubKey, _ := valA.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
-	valB := createStakingValidator(ctx, mocks, 2, 3, 2) // 9.375% of the total voting power
+	valB := createStakingValidator(ctx, mocks, 3, 2) // 9.375% of the total voting power
 	valBConsAddr, _ := valB.GetConsAddr()
 	valBPubKey, _ := valB.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
-	valC := createStakingValidator(ctx, mocks, 3, 4, 3) // 12.5% of the total voting power
+	valC := createStakingValidator(ctx, mocks, 4, 3) // 12.5% of the total voting power
 	valCConsAddr, _ := valC.GetConsAddr()
 	valCPubKey, _ := valC.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, nil).AnyTimes()
-	valD := createStakingValidator(ctx, mocks, 4, 8, 4) // 25% of the total voting power
+	valD := createStakingValidator(ctx, mocks, 8, 4) // 25% of the total voting power
 	valDConsAddr, _ := valD.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, nil).AnyTimes()
-	valE := createStakingValidator(ctx, mocks, 5, 16, 5) // 50% of the total voting power
+	valE := createStakingValidator(ctx, mocks, 16, 5) // 50% of the total voting power
 	valEConsAddr, _ := valE.GetConsAddr()
 	valEPubKey, _ := valE.TmConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, nil).AnyTimes()

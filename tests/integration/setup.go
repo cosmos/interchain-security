@@ -160,8 +160,9 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.registerPacketSniffer(bundle.Chain)
 
 		// check that TopN is correctly set for the consumer
-		topN := providerKeeper.GetTopN(suite.providerCtx(), bundle.ConsumerId)
-		suite.Require().Equal(bundle.TopN, topN)
+		powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(suite.providerCtx(), bundle.ConsumerId)
+		suite.Require().NoError(err)
+		suite.Require().Equal(bundle.TopN, powerShapingParameters.Top_N)
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
@@ -283,7 +284,7 @@ func initConsumerChain(
 	err = bundle.Path.EndpointA.UpdateClient()
 	s.Require().NoError(err)
 
-	if consumerId == "0" {
+	if consumerId == icstestingutils.FirstConsumerID {
 		// Support tests that were written before multiple consumers were supported.
 		firstBundle := s.getFirstBundle()
 		s.consumerApp = firstBundle.App

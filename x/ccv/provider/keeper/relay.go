@@ -15,7 +15,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -95,7 +94,7 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 		panic(fmt.Errorf("failed to get last provider consensus validator set: %w", err))
 	}
 
-	nextValidators := []types.ConsensusValidator{}
+	nextValidators := []providertypes.ConsensusValidator{}
 	maxValidators := k.GetMaxProviderConsensusValidators(ctx)
 	// avoid out of range errors by bounding the max validators to the number of bonded validators
 	if maxValidators > int64(len(bondedValidators)) {
@@ -195,24 +194,27 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	for _, consumerId := range k.GetAllRegisteredConsumerIds(ctx) {
 		currentValidators, err := k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
-			panic(fmt.Errorf("failed to get consumer validators: %w", err))
+			panic(fmt.Errorf("failed to get consumer validators, consumerId(%s): %w", consumerId, err))
 		}
-		topN := k.GetTopN(ctx, consumerId)
+		powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+		if err != nil {
+			panic(fmt.Errorf("failed to get consumer power shaping parameters: %w", err))
+		}
 
 		minPower := int64(0)
-		if topN > 0 {
+		if powerShapingParameters.Top_N > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			// of the active validators
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
-				panic(fmt.Errorf("failed to get active validators: %w", err))
+				panic(fmt.Errorf("failed to get active validators, consumerId(%s): %w", consumerId, err))
 			}
 
-			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 			if err != nil {
 				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
-				panic(fmt.Errorf("failed to compute min power to opt in for chain %v: %w", consumerId, err))
+				panic(fmt.Errorf("failed to compute min power to opt in, consumerId(%s): %w", consumerId, err))
 			}
 
 			// set the minimal power of validators in the top N in the store
@@ -221,7 +223,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
+		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, consumerId, nextValidators)
