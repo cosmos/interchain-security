@@ -103,6 +103,8 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
 	}
 
+	// TODO (PERMISSIONLESS) -- ValidateBasic is not called automatically for messages from gov proposals
+
 	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
 	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
@@ -364,7 +366,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 				"cannot create a Top N chain using the `MsgCreateConsumer` message; use `MsgUpdateConsumer` instead")
 		}
 
-		// TODO UpdateAllowlist & UpdateDenylist
+		// TODO (PERMISSIONLESS) UpdateAllowlist & UpdateDenylist
 	}
 	if err := k.Keeper.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters); err != nil {
 		return &resp, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
@@ -409,6 +411,8 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	if msg.Signer != ownerAddress {
 		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
 	}
+
+	// TODO (PERMISSIONLESS) -- ValidateBasic is not called automatically for messages from gov proposals
 
 	// The new owner address can be empty, in which case the consumer chain does not change its owner.
 	// However, if the new owner address is not empty, we verify that it's a valid account address.
