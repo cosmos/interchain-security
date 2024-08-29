@@ -111,6 +111,15 @@ func TestQueryConsumerValidators(t *testing.T) {
 	_, err := pk.QueryConsumerValidators(ctx, &req)
 	require.Error(t, err)
 
+	// set the consumer to the "registered" phase
+	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
+
+	// expect empty valset
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1) // -1 to allow the calls "AnyTimes"
+	res, err := pk.QueryConsumerValidators(ctx, &req)
+	require.NoError(t, err)
+	require.Len(t, res.Validators, 0)
+
 	// create bonded validators
 	val1 := createStakingValidator(ctx, mocks, 1, 1, 1)
 	pk1, _ := val1.CmtConsPublicKey()
@@ -150,7 +159,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	pk.SetParams(ctx, params)
 
 	// expect no validator to be returned since the consumer is Opt-In
-	res, err := pk.QueryConsumerValidators(ctx, &req)
+	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Len(t, res.Validators, 0)
 
@@ -204,11 +213,13 @@ func TestQueryConsumerValidators(t *testing.T) {
 		},
 	}
 
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr1).Return(val1, nil).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr2).Return(val2, nil).AnyTimes()
-	mocks.MockStakingKeeper.EXPECT().PowerReduction(ctx).Return(sdk.DefaultPowerReduction).AnyTimes()
-
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{val1, val2}, -1) // -1 to allow the calls "AnyTimes"
+	// sort the address of the validators by ascending lexical order as they were persisted to the store
+	sort.Slice(expRes.Validators, func(i, j int) bool {
+		return bytes.Compare(
+			expRes.Validators[i].ConsumerKey.GetEd25519(),
+			expRes.Validators[j].ConsumerKey.GetEd25519(),
+		) == -1
+	})
 
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
