@@ -292,57 +292,6 @@ func (k Keeper) RemoveOptedInConsumerId(ctx sdk.Context, providerAddr types.Prov
 	return nil
 }
 
-// UpdateAllowlist populates the allowlist store for the consumer chain with this consumer id
-func (k Keeper) UpdateAllowlist(ctx sdk.Context, consumerId string, allowlist []string) {
-	k.DeleteAllowlist(ctx, consumerId)
-	for _, address := range allowlist {
-		consAddr, err := sdk.ConsAddressFromBech32(address)
-		if err != nil {
-			continue
-		}
-
-		k.SetAllowlist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
-	}
-}
-
-// UpdateDenylist populates the denylist store for the consumer chain with this consumer id
-func (k Keeper) UpdateDenylist(ctx sdk.Context, consumerId string, denylist []string) {
-	k.DeleteDenylist(ctx, consumerId)
-	for _, address := range denylist {
-		consAddr, err := sdk.ConsAddressFromBech32(address)
-		if err != nil {
-			continue
-		}
-
-		k.SetDenylist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
-	}
-
-}
-
-// UpdateMinimumPowerInTopN populates the minimum power in Top N for the consumer chain with this consumer id
-func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, oldTopN uint32, newTopN uint32) error {
-	// if the top N changes, we need to update the new minimum power in top N
-	if newTopN != oldTopN {
-		if newTopN > 0 {
-			// if the chain receives a non-zero top N value, store the minimum power in the top N
-			bondedValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
-			if err != nil {
-				return err
-			}
-			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, newTopN)
-			if err != nil {
-				return err
-			}
-			k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
-		} else {
-			// if the chain receives a zero top N value, we delete the min power
-			k.DeleteMinimumPowerInTopN(ctx, consumerId)
-		}
-	}
-
-	return nil
-}
-
 // IsValidatorOptedInToChainId checks if the validator with `providerAddr` is opted into the chain with the specified `chainId`.
 // It returns `found == true` and the corresponding chain's `consumerId` if the validator is opted in. Otherwise, it returns an empty string
 // for `consumerId` and `found == false`.
