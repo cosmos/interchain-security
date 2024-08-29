@@ -1,8 +1,0 @@
-{
-	"chain_id" : "consumer-1",                  
-	"metadata": {
-        "name": "consumer-1-metadata-name",
-        "description":"consumer-1-metadata-description",
-        "metadata": "consumer-1-metadata-metadata"
-    }
-}
