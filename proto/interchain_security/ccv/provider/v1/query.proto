@@ -199,7 +199,14 @@ message QueryConsumerGenesisResponse {
       [ (gogoproto.nullable) = false ];
 }
 
-message QueryConsumerChainsRequest {}
+message QueryConsumerChainsRequest {
+  // The phase of the consumer chains returned (optional)
+  // Registered=1|Initialized=2|Launched=3|Stopped=4
+  ConsumerPhase phase = 1;
+  // The limit of consumer chains returned (optional)
+  // default is 100
+  int32 limit = 2;
+}
 
 message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 
@@ -233,11 +240,14 @@ message Chain {
   repeated string allowlist = 7;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
+  // The phase the consumer chain (Registered=0|Initialized=1|FailedToLaunch=2|Launched=3|Stopped=4)
+  ConsumerPhase phase = 9;
+  // The metadata of the consumer chain
+  ConsumerMetadata metadata = 10  [(gogoproto.nullable) = false ];
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-  uint64 min_stake = 9;
+  uint64 min_stake = 11;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
-  bool allow_inactive_vals = 10;
-  
+  bool allow_inactive_vals = 12;
 }
 
 message QueryValidatorConsumerAddrRequest {
