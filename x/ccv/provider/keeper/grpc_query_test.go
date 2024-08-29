@@ -442,6 +442,8 @@ func TestGetConsumerChain(t *testing.T) {
 			Top_N:              topN,
 			ValidatorSetCap:    validatorSetCaps[i],
 			ValidatorsPowerCap: validatorPowerCaps[i],
+			MinStake:           minStakes[i].Uint64(),
+			AllowInactiveVals:  allowInactiveVals[i],
 		})
 		pk.SetMinimumPowerInTopN(ctx, consumerID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
