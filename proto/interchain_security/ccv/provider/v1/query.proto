@@ -236,6 +236,10 @@ message Chain {
   ConsumerPhase phase = 9;
   // The metadata of the consumer chain
   ConsumerMetadata metadata = 10  [(gogoproto.nullable) = false ];
+  // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+  uint64 min_stake = 11;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 12;
 }
 
 message QueryValidatorConsumerAddrRequest {

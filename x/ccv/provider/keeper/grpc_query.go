@@ -104,19 +104,20 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
 func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chain, error) {
+	chainID, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find chainID for consumer (%s)", consumerId)
+	}
+
+	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
+	topN := k.GetTopN(ctx, consumerId)
+
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
 	if !found {
 		k.Logger(ctx).Error("failed to get minimum power in top N, treating as -1", "chain", consumerId)
 		minPowerInTopN = -1
 	}
-
-	chainID, err := k.GetConsumerChainId(ctx, consumerId)
-	if err != nil {
-		return types.Chain{}, fmt.Errorf("cannot find chain ID for consumer (%s):%s", consumerId, err)
-	}
-
-	clientId, _ := k.GetConsumerClientId(ctx, consumerId)
 
 	phase := k.GetConsumerPhase(ctx, consumerId)
 	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
@@ -140,10 +141,13 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		return types.Chain{}, fmt.Errorf("cannot get metadata for consumer (%s): %w", consumerId, err)
 	}
 
+	allowInactiveVals := k.AllowsInactiveValidators(ctx, consumerId)
+	minStake := k.GetMinStake(ctx, consumerId)
+
 	return types.Chain{
 		ChainId:            chainID,
-		ClientId:           clientId,
-		Top_N:              k.GetTopN(ctx, consumerId),
+		ClientId:           clientID,
+		Top_N:              topN,
 		MinPowerInTop_N:    minPowerInTopN,
 		ValidatorSetCap:    k.GetValidatorSetCap(ctx, consumerId),
 		ValidatorsPowerCap: k.GetValidatorsPowerCap(ctx, consumerId),
@@ -151,6 +155,8 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		Denylist:           strDenylist,
 		Phase:              phase,
 		Metadata:           metadata,
+		AllowInactiveVals:  allowInactiveVals,
+		MinStake:           minStake,
 	}, nil
 }
 
