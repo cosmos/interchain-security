@@ -174,9 +174,9 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// Create clients to consumer chains that are due to be spawned
-	am.keeper.BeginBlockInit(sdkCtx)
+	am.keeper.BeginBlockLaunchConsumers(sdkCtx)
 	// Stop and remove state for any consumer chains that are due to be stopped
-	am.keeper.BeginBlockCCR(sdkCtx)
+	am.keeper.BeginBlockStopConsumers(sdkCtx)
 	// Check for replenishing slash meter before any slash packets are processed for this block
 	am.keeper.BeginBlockCIS(sdkCtx)
 	// BeginBlock logic needed for the  Reward Distribution sub-protocol
