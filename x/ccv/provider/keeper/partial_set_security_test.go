@@ -109,19 +109,26 @@ func TestHandleOptOut(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	consumerId := "consumerId"
+
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 
 	// trying to opt out from a not running chain returns an error
 	require.Error(t, providerKeeper.HandleOptOut(ctx, "unknownChainID", providerAddr))
 
-	// set a consumer client so that the chain is considered running
-	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
+	// set the phase and power shaping params
+	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{})
+	require.NoError(t, err)
 
 	// if validator (`providerAddr`) is already opted in, then an opt-out would remove this validator
-	providerKeeper.SetOptedIn(ctx, "consumerId", providerAddr)
-	require.True(t, providerKeeper.IsOptedIn(ctx, "consumerId", providerAddr))
-	providerKeeper.HandleOptOut(ctx, "consumerId", providerAddr)
-	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", providerAddr))
+	providerKeeper.SetOptedIn(ctx, consumerId, providerAddr)
+	require.True(t, providerKeeper.IsOptedIn(ctx, consumerId, providerAddr))
+	err = providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, consumerId)
+	require.NoError(t, err)
+	err = providerKeeper.HandleOptOut(ctx, consumerId, providerAddr)
+	require.NoError(t, err)
+	require.False(t, providerKeeper.IsOptedIn(ctx, consumerId, providerAddr))
 }
 
 func TestHandleOptOutFromTopNChain(t *testing.T) {
@@ -130,14 +137,15 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 
 	consumerId := "consumerId"
 
-	// set a consumer client so that the chain is considered running
-	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
+	// set the phase
+	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 	// set the chain as Top 50 and create 4 validators with 10%, 20%, 30%, and 40% of the total voting power
 	// respectively
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
+	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
 		Top_N: 50,
 	})
+	require.NoError(t, err)
 	valA := createStakingValidator(ctx, mocks, 1, 1) // 10% of the total voting power (can opt out)
 	valAConsAddr, _ := valA.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
@@ -160,13 +168,17 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 
 	// opt in all validators
 	providerKeeper.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(valAConsAddr))
-	providerKeeper.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(valAConsAddr), consumerId)
+	err = providerKeeper.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(valAConsAddr), consumerId)
+	require.NoError(t, err)
 	providerKeeper.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(valBConsAddr))
-	providerKeeper.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(valBConsAddr), consumerId)
+	err = providerKeeper.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(valBConsAddr), consumerId)
+	require.NoError(t, err)
 	providerKeeper.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(valCConsAddr))
-	providerKeeper.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(valCConsAddr), consumerId)
+	err = providerKeeper.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(valCConsAddr), consumerId)
+	require.NoError(t, err)
 	providerKeeper.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(valDConsAddr))
-	providerKeeper.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(valDConsAddr), consumerId)
+	err = providerKeeper.AppendOptedInConsumerId(ctx, types.NewProviderConsAddress(valDConsAddr), consumerId)
+	require.NoError(t, err)
 
 	// validators A and B can opt out because they belong the bottom 30% of validators
 	require.NoError(t, providerKeeper.HandleOptOut(ctx, consumerId, types.NewProviderConsAddress(valAConsAddr)))
@@ -179,7 +191,8 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 
 	// opting out a validator that cannot be found from a Top N chain should also return an error
 	notFoundValidator := createStakingValidator(ctx, mocks, 5, 5)
-	notFoundValidatorConsAddr, _ := notFoundValidator.GetConsAddr()
+	notFoundValidatorConsAddr, err := notFoundValidator.GetConsAddr()
+	require.NoError(t, err)
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, notFoundValidatorConsAddr).
 		Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound)
 	require.Error(t, providerKeeper.HandleOptOut(ctx, consumerId, types.NewProviderConsAddress(notFoundValidatorConsAddr)))
@@ -391,7 +404,7 @@ func TestCanValidateChain(t *testing.T) {
 
 	// with no allowlist or denylist, the validator has to be opted in, in order to consider it
 	powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerID)
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, powerShapingParameters.Top_N, 0))
 
 	// with TopN chains, the validator can be considered,
@@ -454,7 +467,7 @@ func TestCapValidatorSet(t *testing.T) {
 	validators := []types.ConsensusValidator{validatorA, validatorB, validatorC}
 
 	powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
-	require.NoError(t, err)
+	require.Error(t, err)
 	consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
 	require.Equal(t, validators, consumerValidators)
 
@@ -544,7 +557,7 @@ func TestCapValidatorsPower(t *testing.T) {
 
 	// no capping takes place because validators power-cap is not set
 	powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
-	require.NoError(t, err)
+	require.Error(t, err)
 	cappedValidators := providerKeeper.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, validators)
 	sortValidators(validators)
 	sortValidators(cappedValidators)

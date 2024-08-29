@@ -120,6 +120,10 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	// validator for the first time after the `QueueVSCPackets` call.
 	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valBConsAddr))
 
+	// set power shaping params
+	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{})
+	require.NoError(t, err)
+
 	providerKeeper.QueueVSCPackets(ctx)
 
 	// the height of consumer validator A should not be modified because A was already a consumer validator

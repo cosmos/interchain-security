@@ -117,6 +117,10 @@ func TestQueryConsumerValidators(t *testing.T) {
 	// set the consumer to the "registered" phase
 	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
 
+	// set power shaping params
+	err = pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{})
+	require.NoError(t, err)
+
 	// expect empty valset
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1) // -1 to allow the calls "AnyTimes"
 	res, err := pk.QueryConsumerValidators(ctx, &req)
@@ -300,13 +304,15 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	}
 
 	// set up some consumer chains
-	consumerChains := []string{"chain1", "chain2", "chain3", "chain4"}
-	for _, cc := range consumerChains {
-		pk.SetConsumerClientId(ctx, cc, "clientID")
+	consumerIDs := []string{"1", "23", "456", "6789"}
+	for _, cID := range consumerIDs {
+		pk.SetConsumerClientId(ctx, cID, "clientID")
+		err := pk.SetConsumerPowerShapingParameters(ctx, cID, types.PowerShapingParameters{})
+		require.NoError(t, err)
 	}
 
-	// set `providerAddr` as a consumer validator on "chain1"
-	pk.SetConsumerValidator(ctx, "chain1", types.ConsensusValidator{
+	// set `providerAddr` as a consumer validator on first consumer chain
+	pk.SetConsumerValidator(ctx, consumerIDs[0], types.ConsensusValidator{
 		ProviderConsAddr: providerAddr.ToSdkConsAddr(),
 		Power:            1,
 		PublicKey: &crypto.PublicKey{
@@ -316,17 +322,18 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		},
 	})
 
-	// set `providerAddr` as an opted-in validator on "chain3"
-	pk.SetOptedIn(ctx, "chain3", providerAddr)
+	// set `providerAddr` as an opted-in validator on third consumer chain
+	pk.SetOptedIn(ctx, consumerIDs[2], providerAddr)
 
 	// set max provider consensus vals to include all validators
 	params := pk.GetParams(ctx)
 	params.MaxProviderConsensusValidators = 3
 	pk.SetParams(ctx, params)
 
-	// `providerAddr` has to validate "chain1" because it is a consumer validator in this chain, as well as "chain3"
-	// because it opted in, in "chain3" and `providerAddr` belongs to the bonded validators
-	expectedChains := []string{"chain1", "chain3"}
+	// `providerAddr` has to validate
+	// - first consumer because it is a consumer validator in this chain,
+	// - third consumer because it opted in
+	expectedChains := []string{consumerIDs[0], consumerIDs[2]}
 
 	res, err := pk.QueryConsumerChainsValidatorHasToValidate(ctx, &req)
 	require.NoError(t, err)
@@ -606,7 +613,10 @@ func TestQueryConsumerChains(t *testing.T) {
 			Metadata:           types.ConsumerMetadata{Name: chainID},
 		}
 		pk.SetConsumerPhase(ctx, cID, c.Phase)
-		pk.SetConsumerMetadata(ctx, cID, c.Metadata)
+		err := pk.SetConsumerMetadata(ctx, cID, c.Metadata)
+		require.NoError(t, err)
+		err = pk.SetConsumerPowerShapingParameters(ctx, cID, types.PowerShapingParameters{})
+		require.NoError(t, err)
 		pk.SetConsumerChainId(ctx, cID, chainID)
 
 		consumerIds[i] = cID

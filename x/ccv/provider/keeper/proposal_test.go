@@ -348,6 +348,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	providerKeeper.SetConsumerChainId(ctx, "0", "testchain1")
 	providerKeeper.SetConsumerMetadata(ctx, "0", consumerMetadata)
 	providerKeeper.SetConsumerInitializationParameters(ctx, "0", initializationParameters)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, "0", providertypes.PowerShapingParameters{})
 
 	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, "0")
 	require.NoError(t, err)

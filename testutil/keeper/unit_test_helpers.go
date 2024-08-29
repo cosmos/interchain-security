@@ -262,9 +262,8 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.Empty(t, acks)
 
 	// in case the chain was successfully stopped, it should not contain a Top N associated to it
-	powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
-	require.NoError(t, err)
-	require.Zero(t, powerShapingParameters.Top_N)
+	_, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
+	require.Error(t, err)
 
 	// test key assignment state is cleaned
 	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &consumerId))
