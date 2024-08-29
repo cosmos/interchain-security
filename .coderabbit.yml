@@ -6,8 +6,6 @@ reviews:
     poem: false
     review_status: false
     collapse_walkthrough: true
-    auto_review: 
-        enabled: false
     path_filters:
         - "!api/"
         - "!docs/"
@@ -25,7 +23,7 @@ reviews:
           instructions: |
               "Assess the unit test code assessing sufficient code coverage for the changes associated in the pull request. Only report issues that you have a high degree of confidence in."
     auto_review:
-        enabled: true
+        enabled: false
         ignore_title_keywords:
             - "WIP"
             - "DO NOT MERGE"
