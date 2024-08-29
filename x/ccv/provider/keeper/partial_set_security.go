@@ -81,13 +81,13 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, consumerId string, providerAddr ty
 		)
 	}
 
-	topN, err := k.GetTopN(ctx, consumerId)
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
 		return errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
-			"cannot get consumer TopN value: %s", err.Error(),
+			"cannot get consumer power shaping parameters: %s", err.Error(),
 		)
 	}
-	if topN > 0 {
+	if powerShapingParameters.Top_N > 0 {
 		// a validator cannot opt out from a Top N chain if the validator is in the Top N validators
 		validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 		if err != nil {
@@ -215,16 +215,16 @@ func (k Keeper) ComputeMinPowerInTopN(ctx sdk.Context, bondedValidators []stakin
 // If cap is `k`, `CapValidatorSet` returns the first `k` validators from `validators` with the highest power.
 func (k Keeper) CapValidatorSet(
 	ctx sdk.Context,
-	consumerId string,
-	topN uint32,
+	powerShapingParameters types.PowerShapingParameters,
 	validators []types.ConsensusValidator,
 ) []types.ConsensusValidator {
-	if topN > 0 {
+	if powerShapingParameters.Top_N > 0 {
 		// is a no-op if the chain is a Top N chain
 		return validators
 	}
 
-	if validatorSetCap := k.GetValidatorSetCap(ctx, consumerId); validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
+	validatorSetCap := powerShapingParameters.ValidatorSetCap
+	if validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
 		sort.Slice(validators, func(i, j int) bool {
 			return validators[i].Power > validators[j].Power
 		})
@@ -239,9 +239,13 @@ func (k Keeper) CapValidatorSet(
 // with their new powers. Works on a best-basis effort because there are cases where we cannot guarantee that all validators
 // on the consumer chain have less power than the set validators-power cap. For example, if we have 10 validators and
 // the power cap is set to 5%, we need at least one validator to have more than 10% of the voting power on the consumer chain.
-func (k Keeper) CapValidatorsPower(ctx sdk.Context, consumerId string, validators []types.ConsensusValidator) []types.ConsensusValidator {
-	if p := k.GetValidatorsPowerCap(ctx, consumerId); p > 0 {
-		return NoMoreThanPercentOfTheSum(validators, p)
+func (k Keeper) CapValidatorsPower(
+	ctx sdk.Context,
+	validatorsPowerCap uint32,
+	validators []types.ConsensusValidator,
+) []types.ConsensusValidator {
+	if validatorsPowerCap > 0 {
+		return NoMoreThanPercentOfTheSum(validators, validatorsPowerCap)
 	} else {
 		// is a no-op if power cap is not set for `consumerId`
 		return validators
@@ -377,8 +381,11 @@ func (k Keeper) CanValidateChain(
 
 // FulfillsMinStake returns true if the validator `providerAddr` has enough stake to validate chain with `consumerId`
 // by checking its staked tokens against the minimum stake required to validate the chain.
-func (k Keeper) FulfillsMinStake(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) bool {
-	minStake := k.GetMinStake(ctx, consumerId)
+func (k Keeper) FulfillsMinStake(
+	ctx sdk.Context,
+	minStake uint64,
+	providerAddr types.ProviderConsAddress,
+) bool {
 	if minStake == 0 {
 		return true
 	}
@@ -398,7 +405,7 @@ func (k Keeper) ComputeNextValidators(
 	ctx sdk.Context,
 	consumerId string,
 	bondedValidators []stakingtypes.Validator,
-	topN uint32,
+	powerShapingParameters types.PowerShapingParameters,
 	minPowerToOptIn int64,
 ) []types.ConsensusValidator {
 	// sort the bonded validators by number of staked tokens in descending order
@@ -408,8 +415,7 @@ func (k Keeper) ComputeNextValidators(
 
 	// if inactive validators are not allowed, only consider the first `MaxProviderConsensusValidators` validators
 	// since those are the ones that participate in consensus
-	allowInactiveVals := k.AllowsInactiveValidators(ctx, consumerId)
-	if !allowInactiveVals {
+	if !powerShapingParameters.AllowInactiveVals {
 		// only leave the first MaxProviderConsensusValidators bonded validators
 		maxProviderConsensusVals := k.GetMaxProviderConsensusValidators(ctx)
 		if len(bondedValidators) > int(maxProviderConsensusVals) {
@@ -419,11 +425,12 @@ func (k Keeper) ComputeNextValidators(
 
 	nextValidators := k.FilterValidators(ctx, consumerId, bondedValidators,
 		func(providerAddr types.ProviderConsAddress) bool {
-			return k.CanValidateChain(ctx, consumerId, providerAddr, topN, minPowerToOptIn) && k.FulfillsMinStake(ctx, consumerId, providerAddr)
+			return k.CanValidateChain(ctx, consumerId, providerAddr, powerShapingParameters.Top_N, minPowerToOptIn) &&
+				k.FulfillsMinStake(ctx, powerShapingParameters.MinStake, providerAddr)
 		})
 
-	nextValidators = k.CapValidatorSet(ctx, consumerId, topN, nextValidators)
-	return k.CapValidatorsPower(ctx, consumerId, nextValidators)
+	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, nextValidators)
+	return k.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, nextValidators)
 }
 
 // HasMinPower returns true if the `providerAddr` voting power is GTE than the given minimum power

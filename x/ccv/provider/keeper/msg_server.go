@@ -433,11 +433,13 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 				"an update to a Top N chain can only be done if chain is owner is the gov module")
 		}
 
-		oldTopN, err := k.Keeper.GetTopN(ctx, consumerId)
+		oldPowerShapingParameters, err := k.Keeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 		if err != nil {
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
-				"cannot get consumer TopN value: %s", err.Error())
+				"cannot get consumer previous power shaping parameters: %s", err.Error())
 		}
+		oldTopN := oldPowerShapingParameters.Top_N
+
 		if err = k.Keeper.SetConsumerPowerShapingParameters(ctx, consumerId, *msg.PowerShapingParameters); err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
 				"cannot set power shaping parameters")

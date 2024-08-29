@@ -196,13 +196,13 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		if err != nil {
 			panic(fmt.Errorf("failed to get consumer validators, consumerId(%s): %w", consumerId, err))
 		}
-		topN, err := k.GetTopN(ctx, consumerId)
+		powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 		if err != nil {
-			panic(fmt.Errorf("failed to get consumer topN value: %w", err))
+			panic(fmt.Errorf("failed to get consumer power shaping parameters: %w", err))
 		}
 
 		minPower := int64(0)
-		if topN > 0 {
+		if powerShapingParameters.Top_N > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			// of the active validators
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
@@ -211,7 +211,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 				panic(fmt.Errorf("failed to get active validators, consumerId(%s): %w", consumerId, err))
 			}
 
-			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 			if err != nil {
 				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
 				panic(fmt.Errorf("failed to compute min power to opt in, consumerId(%s): %w", consumerId, err))
@@ -223,7 +223,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, topN, minPower)
+		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, consumerId, nextValidators)

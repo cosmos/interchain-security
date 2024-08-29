@@ -16,15 +16,15 @@ func TestMigrateParams(t *testing.T) {
 	provKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 
 	// initially top N should not exist
-	topN, err := provKeeper.GetTopN(ctx, "chainID")
+	powerShapingParameters, err := provKeeper.GetConsumerPowerShapingParameters(ctx, "chainID")
 	require.NoError(t, err)
-	require.Zero(t, topN)
+	require.Zero(t, powerShapingParameters.Top_N)
 
 	// migrate
 	MigrateTopNForRegisteredChains(ctx, provKeeper)
 
 	// after migration, top N should be 95
-	topN, err = provKeeper.GetTopN(ctx, "chainID")
+	powerShapingParameters, err = provKeeper.GetConsumerPowerShapingParameters(ctx, "chainID")
 	require.NoError(t, err)
-	require.Equal(t, uint32(95), topN)
+	require.Equal(t, uint32(95), powerShapingParameters.Top_N)
 }

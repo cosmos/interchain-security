@@ -160,9 +160,9 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.registerPacketSniffer(bundle.Chain)
 
 		// check that TopN is correctly set for the consumer
-		topN, err := providerKeeper.GetTopN(suite.providerCtx(), bundle.ConsumerId)
+		powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(suite.providerCtx(), bundle.ConsumerId)
 		suite.Require().NoError(err)
-		suite.Require().Equal(bundle.TopN, topN)
+		suite.Require().Equal(bundle.TopN, powerShapingParameters.Top_N)
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
