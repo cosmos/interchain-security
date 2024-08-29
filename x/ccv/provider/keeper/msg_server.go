@@ -458,12 +458,12 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	// remains a Top N chain.
 	currentOwnerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
 	if err != nil {
-		return &resp, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s: %s", ownerAddress, err.Error())
+		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot retrieve owner address %s: %s", ownerAddress, err.Error())
 	}
 
 	currentPowerShapingParameters, err := k.Keeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
-		return &resp, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters, "cannot retrieve power shaping parameters: %s", err.Error())
+		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot retrieve power shaping parameters: %s", err.Error())
 	}
 
 	if currentPowerShapingParameters.Top_N != 0 && currentOwnerAddress != k.GetAuthority() {

@@ -183,21 +183,13 @@ func (k Keeper) MakeConsumerGenesis(
 ) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
 	initializationRecord, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
-		return gen, nil, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
-			"initialization record for consumer id: %s is missing", consumerId)
-
+		return gen, nil, errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
+			"cannot retrieve initialization parameters: %s", err.Error())
 	}
 	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
-		powerShapingParameters = types.PowerShapingParameters{
-			Top_N:              0,
-			ValidatorsPowerCap: 0,
-			ValidatorSetCap:    0,
-			Allowlist:          []string{},
-			Denylist:           []string{},
-			MinStake:           0,
-			AllowInactiveVals:  false,
-		}
+		return gen, nil, errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
+			"cannot retrieve power shaping parameters: %s", err.Error())
 	}
 
 	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
