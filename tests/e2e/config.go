@@ -74,6 +74,7 @@ var hermesTemplates = map[string]string{
 // type aliases for shared types from e2e package
 type (
 	ChainID         = e2e.ChainID
+	ConsumerID      = e2e.ConsumerID
 	ValidatorID     = e2e.ValidatorID
 	ValidatorConfig = e2e.ValidatorConfig
 	ChainConfig     = e2e.ChainConfig
@@ -122,6 +123,7 @@ type TestConfig struct {
 	timeOffset       time.Duration
 	transformGenesis bool
 	name             string
+	Consumer2ChainID map[ConsumerID]ChainID // dynamic mapping of
 }
 
 // Initialize initializes the TestConfig instance by setting the runningChains field to an empty map.

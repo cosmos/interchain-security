@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -246,6 +248,12 @@ var stepChoices = map[string]StepChoice{
 		description: "test minting without inactive validators as a sanity check",
 		testConfig:  MintTestCfg,
 	},
+	"permissionless-ics": {
+		name:        "permissionless-ics",
+		steps:       stepsPermissionlessICS(),
+		description: "test permissionless ics",
+		testConfig:  DefaultTestCfg,
+	},
 	"inactive-vals-outside-max-validators": {
 		name:        "inactive-vals-outside-max-validators",
 		steps:       stepsInactiveValsTopNReproduce(),
@@ -334,27 +342,27 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
-			"changeover",
-			"happy-path",
-			"democracy-reward",
-			"democracy",
-			"slash-throttle",
-			"consumer-double-sign",
-			"consumer-misbehaviour",
-			"consumer-double-downtime",
-			"partial-set-security-opt-in",
-			"partial-set-security-top-n",
-			"partial-set-security-validator-set-cap",
-			"partial-set-security-validators-power-cap",
-			"partial-set-security-validators-allowlisted",
-			"partial-set-security-validators-denylisted",
-			"partial-set-security-modification-proposal",
-			"active-set-changes",
-			"inactive-provider-validators-on-consumer",
-			"inactive-vals-topN",
-			"inactive-provider-validators-governance",
-			"min-stake",
-			"inactive-vals-mint",
+			"changeover",                                  // PASSED
+			"happy-path",                                  // PASSED
+			"democracy-reward",                            // PASSED
+			"democracy",                                   // PASSED
+			"slash-throttle",                              // PASSED
+			"consumer-double-sign",                        // TODO PERMISSIONLESS: failing
+			"consumer-misbehaviour",                       // TODO PERMISSIONLESS: failing
+			"consumer-double-downtime",                    // PASSED
+			"partial-set-security-opt-in",                 // PASSED
+			"partial-set-security-top-n",                  // PASSED
+			"partial-set-security-validator-set-cap",      // PASSED
+			"partial-set-security-validators-power-cap",   // PASSED
+			"partial-set-security-validators-allowlisted", // PASSED
+			"partial-set-security-validators-denylisted",  // PASSED
+			"partial-set-security-modification-proposal",  // TODO PERMISSIONLESS: failing
+			"active-set-changes",                          // PASSED
+			"inactive-provider-validators-on-consumer",    // PASSED
+			"inactive-vals-topN",                          // TODO PERMISSIONLESS: failing
+			"inactive-provider-validators-governance",     // PASSED
+			"min-stake",                                   // PASSED
+			"inactive-vals-mint",                          // PASSED
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")
@@ -483,6 +491,18 @@ func createTestRunners(testCases []testStepsWithConfig) []TestRunner {
 	return runners
 }
 
+func SetupLogger() {
+	opts := &slog.HandlerOptions{
+		AddSource: false,
+		Level:     slog.LevelInfo,
+	}
+	if *verbose {
+		opts.Level = slog.LevelDebug
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+}
+
 func executeTests(runners []TestRunner) error {
 	if parallel != nil && *parallel {
 		fmt.Println("=============== running all tests in parallel ===============")
@@ -596,6 +616,7 @@ func main() {
 		log.Fatalf("Error parsing command arguments %s\n", err)
 	}
 
+	//SetupLogger()
 	testCases := getTestCases(selectedTests, selectedTestfiles, providerVersions, consumerVersions)
 	testRunners := createTestRunners(testCases)
 	defer deleteTargets(testRunners)

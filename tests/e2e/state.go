@@ -12,6 +12,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
@@ -38,7 +39,7 @@ type State map[ChainID]ChainState
 
 type Chain struct {
 	target     e2e.TargetDriver
-	testConfig TestConfig
+	testConfig *TestConfig
 }
 
 func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
@@ -335,7 +336,7 @@ func intPtr(i int) *int {
 }
 
 type Commands struct {
-	containerConfig  ContainerConfig // FIXME only needed for 'Now' time tracking
+	containerConfig  *ContainerConfig
 	validatorConfigs map[ValidatorID]ValidatorConfig
 	chainConfigs     map[ChainID]ChainConfig
 	target           e2e.PlatformDriver
@@ -440,6 +441,10 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		log.Fatal(err, "\n", propRaw)
 	}
 
+	messages := gjson.Get(propRaw, `proposal.messages`)
+	for _, msg := range messages.Array() {
+		fmt.Println("msg val", msg)
+	}
 	// for legacy proposal types submitted using "tx submit-legacyproposal" (cosmos-sdk/v1/MsgExecLegacyContent)
 	propType := gjson.Get(propRaw, `proposal.messages.0.value.content.type`).String()
 	rawContent := gjson.Get(propRaw, `proposal.messages.0.value.content.value`)
@@ -465,6 +470,26 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Title:       title,
 			Description: description,
 		}
+	case "/interchain_security.ccv.provider.v1.MsgUpdateConsumer":
+		spawnTime := rawContent.Get("initialization_parameters.spawn_time").Time().Sub(tr.containerConfig.Now)
+		consumerId := rawContent.Get("consumer_id").String()
+		consumer_chain_id := ChainID("")
+		for _, chainCfg := range tr.chainConfigs {
+			if chainCfg.ConsumerId == e2e.ConsumerID(consumerId) {
+				consumer_chain_id = chainCfg.ChainId
+			}
+		}
+		return e2e.ConsumerAdditionProposal{
+			Deposit:   uint(deposit),
+			Chain:     consumer_chain_id,
+			Status:    status,
+			SpawnTime: int(spawnTime.Milliseconds()),
+			InitialHeight: clienttypes.Height{
+				RevisionNumber: rawContent.Get("initialization_parameters.initial_height.revision_number").Uint(),
+				RevisionHeight: rawContent.Get("initialization_parameters.initial_height.revision_height").Uint(),
+			},
+		}
+
 	case "/interchain_security.ccv.provider.v1.MsgConsumerAddition":
 		chainId := rawContent.Get("chain_id").String()
 		spawnTime := rawContent.Get("spawn_time").Time().Sub(tr.containerConfig.Now)
@@ -498,13 +523,13 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Title:         title,
 			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 		}
-	case "/interchain_security.ccv.provider.v1.MsgConsumerRemoval":
-		chainId := rawContent.Get("chain_id").String()
+	case "/interchain_security.ccv.provider.v1.MsgRemoveConsumer":
+		consumerID := rawContent.Get("consumer_id").String()
 		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {
-			if string(conf.ChainId) == chainId {
+			if string(conf.ConsumerId) == consumerID {
 				chain = i
 				break
 			}
@@ -746,8 +771,13 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	arr := gjson.Get(string(bz), "chains").Array()
 	chains := make(map[ChainID]bool)
 	for _, c := range arr {
-		id := c.Get("chain_id").String()
-		chains[ChainID(id)] = true
+		phase := c.Get("phase").String()
+		if phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)] ||
+			phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)] ||
+			phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)] {
+			id := c.Get("chain_id").String()
+			chains[ChainID(id)] = true
+		}
 	}
 
 	return chains
@@ -755,10 +785,11 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 
 func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	consumer_id := tr.chainConfigs[ChainID(consumerChain)].ConsumerId
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-consumer-key",
-		string(consumerChain), tr.validatorConfigs[validator].ValconsAddress,
+		string(consumer_id), tr.validatorConfigs[validator].ValconsAddress,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
@@ -773,10 +804,12 @@ func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator Validator
 
 func (tr Commands) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	consumer_id := tr.chainConfigs[ChainID(consumerChain)].ConsumerId
+
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-provider-key",
-		string(consumerChain), tr.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
+		string(consumer_id), tr.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
@@ -898,7 +931,11 @@ func (tr Commands) GetHasToValidate(
 	arr := gjson.Get(string(bz), "consumer_chain_ids").Array()
 	chains := []ChainID{}
 	for _, c := range arr {
-		chains = append(chains, ChainID(c.String()))
+		for _, chain := range tr.chainConfigs {
+			if chain.ConsumerId == ConsumerID(c.String()) {
+				chains = append(chains, chain.ChainId)
+			}
+		}
 	}
 
 	return chains
@@ -969,20 +1006,25 @@ func (tr Commands) GetTrustedHeight(
 
 func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	binaryName := tr.chainConfigs[chain].BinaryName
-	bz, err := tr.target.ExecCommand(binaryName,
-		"query", "provider", "list-proposed-consumer-chains",
+	cmd := tr.target.ExecCommand(binaryName,
+		"query", "provider", "list-consumer-chains",
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
-	).CombinedOutput()
+	)
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	arr := gjson.Get(string(bz), "proposedChains").Array()
+	arr := gjson.Get(string(bz), "chains").Array()
 	chains := []string{}
 	for _, c := range arr {
-		cid := c.Get("chainID").String()
-		chains = append(chains, cid)
+		cid := c.Get("chain_id").String()
+		phase := c.Get("phase").String()
+		if phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)] ||
+			phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)] {
+			chains = append(chains, cid)
+		}
 	}
 
 	return chains
@@ -1013,9 +1055,11 @@ func (tr Commands) GetQueryNodeIP(chain ChainID) string {
 // GetConsumerCommissionRate returns the commission rate of the given validator on the given consumerChain
 func (tr Commands) GetConsumerCommissionRate(consumerChain ChainID, validator ValidatorID) float64 {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	consumerID := tr.chainConfigs[consumerChain].ConsumerId
+
 	cmd := tr.target.ExecCommand(binaryName,
 		"query", "provider", "validator-consumer-commission-rate",
-		string(consumerChain), tr.validatorConfigs[validator].ValconsAddress,
+		string(consumerID), tr.validatorConfigs[validator].ValconsAddress,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)

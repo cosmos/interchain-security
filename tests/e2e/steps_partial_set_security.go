@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"time"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -32,6 +33,7 @@ func stepsOptInChain() []Step {
 		{
 			Action: SetConsumerCommissionRateAction{
 				Chain:          ChainID("consu"),
+				ConsumerID:     "99999",
 				Validator:      ValidatorID("bob"),
 				CommissionRate: 0.123,
 				ExpectError:    true,
@@ -40,31 +42,17 @@ func stepsOptInChain() []Step {
 			State: State{},
 		},
 		{
-			Action: SubmitConsumerAdditionProposalAction{
+			Action: InitializeConsumerChainAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
-				Deposit:       10000001,
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0,
+				SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 				TopN:          0,
 			},
 			State: State{
 				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {},
-						ValidatorID("bob"):   {},
-						ValidatorID("carol"): {},
-					},
+					ProposedConsumerChains: &[]string{"consu"},
 				},
 			},
 		},
@@ -127,25 +115,15 @@ func stepsOptInChain() []Step {
 			},
 		},
 		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
-				Vote:       []string{"yes", "yes"},
-				PropNumber: 1,
+			Action: UpdateConsumerChainAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0, // launch now
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			// we start all the validators but only "alice" and "bob" have opted in and hence
@@ -1052,35 +1030,16 @@ func stepsValidatorSetCappedChain() []Step {
 			},
 		},
 		{
-			Action: SubmitConsumerAdditionProposalAction{
-				Chain:         ChainID("provi"),
-				From:          ValidatorID("alice"),
-				Deposit:       10000001,
-				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0,
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
-				// we can have at most 2 validators validating the consumer chain
+			Action: InitializeConsumerChainAction{
+				Chain:           ChainID("provi"),
+				From:            ValidatorID("alice"),
+				ConsumerChain:   ChainID("consu"),
+				SpawnTime:       uint(time.Minute * 10), // set spawn-time far in the future
+				InitialHeight:   clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:            0,
 				ValidatorSetCap: 2,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {},
-						ValidatorID("bob"):   {},
-						ValidatorID("carol"): {},
-					},
-				},
-			},
+			State: State{},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
 		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
@@ -1143,25 +1102,17 @@ func stepsValidatorSetCappedChain() []Step {
 			State: State{},
 		},
 		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
-				Vote:       []string{"yes", "yes"},
-				PropNumber: 1,
+			// Update with SpawnTime 0 will trigger launch of consumer chain
+			Action: UpdateConsumerChainAction{
+				Chain:           ChainID("provi"),
+				From:            ValidatorID("alice"),
+				ConsumerChain:   ChainID("consu"),
+				SpawnTime:       0, // launch now
+				InitialHeight:   clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:            0,
+				ValidatorSetCap: 2,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: StartConsumerChainAction{
@@ -1513,38 +1464,15 @@ func stepsValidatorsAllowlistedChain() []Step {
 			},
 		},
 		{
-			Action: SubmitConsumerAdditionProposalAction{
+			Action: InitializeConsumerChainAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
-				Deposit:       10000001,
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0,
+				SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 				TopN:          0,
-				// only "alice" and "bob" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
-				Allowlist: []string{
-					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-					"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
-				},
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {},
-						ValidatorID("bob"):   {},
-						ValidatorID("carol"): {},
-					},
-				},
-			},
+			State: State{},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
 		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
@@ -1606,25 +1534,21 @@ func stepsValidatorsAllowlistedChain() []Step {
 			State: State{},
 		},
 		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
-				Vote:       []string{"yes", "yes"},
-				PropNumber: 1,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
+			// Update with SpawnTime 0 will trigger launch of consumer chain
+			Action: UpdateConsumerChainAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0, // launch now
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
+				// only "alice" and "bob" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
+				Allowlist: []string{
+					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+					"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
 				},
 			},
+			State: State{},
 		},
 		{
 			Action: StartConsumerChainAction{
@@ -1719,35 +1643,16 @@ func stepsValidatorsDenylistedChain() []Step {
 			},
 		},
 		{
-			Action: SubmitConsumerAdditionProposalAction{
-				Chain:         ChainID("provi"),
-				From:          ValidatorID("alice"),
-				Deposit:       10000001,
-				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0,
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
-				// only "bob" is denylisted (see `getDefaultValidators` in `tests/e2e/config.go`)
-				Denylist: []string{"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"},
+			Action: InitializeConsumerChainAction{
+				Chain:           ChainID("provi"),
+				From:            ValidatorID("alice"),
+				ConsumerChain:   ChainID("consu"),
+				SpawnTime:       uint(time.Minute * 10), // set spawn-time far in the future
+				InitialHeight:   clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:            0,
+				ValidatorSetCap: 2,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {},
-						ValidatorID("bob"):   {},
-						ValidatorID("carol"): {},
-					},
-				},
-			},
+			State: State{},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
 		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
@@ -1809,25 +1714,17 @@ func stepsValidatorsDenylistedChain() []Step {
 			State: State{},
 		},
 		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob")},
-				Vote:       []string{"yes", "yes"},
-				PropNumber: 1,
+			// Update with SpawnTime 0 will trigger launch of consumer chain
+			Action: UpdateConsumerChainAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0, // launch now
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
+				Denylist:      []string{"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"},
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: StartConsumerChainAction{
@@ -1923,33 +1820,15 @@ func stepsModifyChain() []Step {
 			},
 		},
 		{
-			Action: SubmitConsumerAdditionProposalAction{
+			Action: InitializeConsumerChainAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
-				Deposit:       10000001,
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0,
+				SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 				TopN:          0,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-					HasToValidate: &map[ValidatorID][]ChainID{
-						ValidatorID("alice"): {},
-						ValidatorID("bob"):   {},
-						ValidatorID("carol"): {},
-					},
-				},
-			},
+			State: State{},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
 		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
@@ -2011,25 +1890,16 @@ func stepsModifyChain() []Step {
 			State: State{},
 		},
 		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
-				Vote:       []string{"yes", "yes", "yes"},
-				PropNumber: 1,
+			// Update with SpawnTime 0 will trigger launch of consumer chain
+			Action: UpdateConsumerChainAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0, // launch now
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
-							Deposit:       10000001,
-							Chain:         ChainID("consu"),
-							SpawnTime:     0,
-							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: StartConsumerChainAction{
@@ -2105,43 +1975,16 @@ func stepsModifyChain() []Step {
 
 		// 1. set `ValidatorsPowerCap` to 40%
 		{
-			Action: SubmitConsumerModificationProposalAction{
+			Action: UpdateConsumerChainAction{
 				Chain:              ChainID("provi"),
 				From:               ValidatorID("alice"),
-				Deposit:            10000001,
 				ConsumerChain:      ChainID("consu"),
+				SpawnTime:          0,
+				InitialHeight:      clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:               0,
 				ValidatorsPowerCap: 40,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						2: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-				},
-			},
-		},
-		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
-				Vote:       []string{"yes", "yes", "yes"},
-				PropNumber: 2,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						2: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: RelayPacketsAction{
@@ -2171,43 +2014,17 @@ func stepsModifyChain() []Step {
 
 		// 2. set the `ValidatorSetCap` to a maximum of 2 validators
 		{
-			Action: SubmitConsumerModificationProposalAction{
-				Chain:           ChainID("provi"),
-				From:            ValidatorID("alice"),
-				Deposit:         10000001,
-				ConsumerChain:   ChainID("consu"),
-				ValidatorSetCap: 2,
+			Action: UpdateConsumerChainAction{
+				Chain:              ChainID("provi"),
+				From:               ValidatorID("alice"),
+				ConsumerChain:      ChainID("consu"),
+				SpawnTime:          0,
+				InitialHeight:      clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:               0,
+				ValidatorsPowerCap: 40,
+				ValidatorSetCap:    2,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						3: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-				},
-			},
-		},
-		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
-				Vote:       []string{"yes", "yes", "yes"},
-				PropNumber: 3,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						3: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: RelayPacketsAction{
@@ -2238,47 +2055,21 @@ func stepsModifyChain() []Step {
 
 		// 3. set an allowlist with 2 validators
 		{
-			Action: SubmitConsumerModificationProposalAction{
-				Chain:         ChainID("provi"),
-				From:          ValidatorID("alice"),
-				Deposit:       10000001,
-				ConsumerChain: ChainID("consu"),
-				// only "alice" and "carol" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
+			Action: UpdateConsumerChainAction{
+				Chain:              ChainID("provi"),
+				From:               ValidatorID("alice"),
+				ConsumerChain:      ChainID("consu"),
+				SpawnTime:          0,
+				InitialHeight:      clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:               0,
+				ValidatorsPowerCap: 40,
+				ValidatorSetCap:    2,
 				Allowlist: []string{
 					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
 					"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
 				},
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						4: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-				},
-			},
-		},
-		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
-				Vote:       []string{"yes", "yes", "yes"},
-				PropNumber: 4,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						4: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: RelayPacketsAction{
@@ -2307,44 +2098,23 @@ func stepsModifyChain() []Step {
 
 		// 4. set a denylist with 1 validator
 		{
-			Action: SubmitConsumerModificationProposalAction{
-				Chain:         ChainID("provi"),
-				From:          ValidatorID("alice"),
-				Deposit:       10000001,
-				ConsumerChain: ChainID("consu"),
+			Action: UpdateConsumerChainAction{
+				Chain:              ChainID("provi"),
+				From:               ValidatorID("alice"),
+				ConsumerChain:      ChainID("consu"),
+				SpawnTime:          0,
+				InitialHeight:      clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:               0,
+				ValidatorsPowerCap: 40,
+				ValidatorSetCap:    2,
+				Allowlist: []string{
+					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+					"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+				},
 				// only "alice" is denylisted (see `getDefaultValidators` in `tests/e2e/config.go`)
 				Denylist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"},
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						5: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-				},
-			},
-		},
-		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
-				Vote:       []string{"yes", "yes", "yes"},
-				PropNumber: 5,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						5: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: RelayPacketsAction{
@@ -2372,45 +2142,47 @@ func stepsModifyChain() []Step {
 		},
 
 		// 5. modify the chain from Opt In to Top 100%
-		{
-			Action: SubmitConsumerModificationProposalAction{
-				Chain:         ChainID("provi"),
-				From:          ValidatorID("alice"),
-				Deposit:       10000001,
-				ConsumerChain: ChainID("consu"),
-				TopN:          100,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						6: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-						},
-					},
-				},
-			},
-		},
-		{
-			Action: VoteGovProposalAction{
-				Chain:      ChainID("provi"),
-				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
-				Vote:       []string{"yes", "yes", "yes"},
-				PropNumber: 6,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					Proposals: &map[uint]Proposal{
-						6: ConsumerModificationProposal{
-							Deposit: 10000001,
-							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-						},
-					},
-				},
-			},
-		},
+		// PERMISSIONLESS: Opt-In ---> TopN IS NOT SUPPORTED AT THE CURRENT STATE OF WORK !!!
+		/* 		{
+		   			Action: SubmitConsumerModificationProposalAction{
+		   				Chain:         ChainID("provi"),
+		   				From:          ValidatorID("alice"),
+		   				Deposit:       10000001,
+		   				ConsumerChain: ChainID("consu"),
+		   				TopN:          100,
+		   			},
+		   			State: State{
+		   				ChainID("provi"): ChainState{
+		   					Proposals: &map[uint]Proposal{
+		   						6: ConsumerModificationProposal{
+		   							Deposit: 10000001,
+		   							Chain:   ChainID("consu"),
+		   							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+		   						},
+		   					},
+		   				},
+		   			},
+		   		},
+		   		{
+		   			Action: VoteGovProposalAction{
+		   				Chain:      ChainID("provi"),
+		   				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+		   				Vote:       []string{"yes", "yes", "yes"},
+		   				PropNumber: 6,
+		   			},
+		   			State: State{
+		   				ChainID("provi"): ChainState{
+		   					Proposals: &map[uint]Proposal{
+		   						6: ConsumerModificationProposal{
+		   							Deposit: 10000001,
+		   							Chain:   ChainID("consu"),
+		   							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+		   						},
+		   					},
+		   				},
+		   			},
+		   		},
+		*/
 		{
 			Action: OptOutAction{
 				Chain:       ChainID("consu"),
