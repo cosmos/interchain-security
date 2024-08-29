@@ -6,6 +6,7 @@ reviews:
     poem: false
     review_status: false
     collapse_walkthrough: true
+    auto_review: false
     path_filters:
         - "!api/"
         - "!docs/"
