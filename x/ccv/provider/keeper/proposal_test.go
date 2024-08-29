@@ -728,7 +728,7 @@ func TestBeginBlockCCR(t *testing.T) {
 		err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, testkeeper.GetTestPowerShapingParameters())
 		require.NoError(t, err)
 		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
-		providerKeeper.SetClientIdToConsumerId(ctx, "clientID", consumerId)
+		providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
 
 		err = providerKeeper.CreateConsumerClient(ctx, consumerId)
 		require.NoError(t, err)

@@ -578,7 +578,7 @@ func TestQueryConsumerIdFromClientId(t *testing.T) {
 	require.ErrorContains(t, err, "no known consumer chain")
 
 	expectedConsumerId := "consumerId"
-	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", expectedConsumerId)
+	providerKeeper.SetConsumerClientId(ctx, expectedConsumerId, "clientId")
 
 	res, err := providerKeeper.QueryConsumerIdFromClientId(ctx, &types.QueryConsumerIdFromClientIdRequest{ClientId: "clientId"})
 	require.NoError(t, err)

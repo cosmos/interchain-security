@@ -637,9 +637,18 @@ func (k Keeper) DeletePendingVSCPackets(ctx sdk.Context, consumerId string) {
 }
 
 // SetConsumerClientId sets the client id for the given consumer id
-func (k Keeper) SetConsumerClientId(ctx sdk.Context, consumerId, clientID string) {
+func (k Keeper) SetConsumerClientId(ctx sdk.Context, consumerId, clientId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToClientIdKey(consumerId), []byte(clientID))
+
+	if prevClientId, found := k.GetConsumerClientId(ctx, consumerId); found {
+		// delete reverse index
+		store.Delete(types.ClientIdToConsumerIdKey(prevClientId))
+	}
+
+	store.Set(types.ConsumerIdToClientIdKey(consumerId), []byte(clientId))
+
+	// set the reverse index
+	store.Set(types.ClientIdToConsumerIdKey(clientId), []byte(consumerId))
 }
 
 // GetConsumerClientId returns the client id for the given consumer id.
@@ -652,9 +661,25 @@ func (k Keeper) GetConsumerClientId(ctx sdk.Context, consumerId string) (string,
 	return string(clientIdBytes), true
 }
 
+// GetClientIdToConsumerId returns the consumer id associated with this client id
+func (k Keeper) GetClientIdToConsumerId(ctx sdk.Context, clientId string) (string, bool) {
+	store := ctx.KVStore(k.storeKey)
+	consumerIdBytes := store.Get(types.ClientIdToConsumerIdKey(clientId))
+	if consumerIdBytes == nil {
+		return "", false
+	}
+	return string(consumerIdBytes), true
+}
+
 // DeleteConsumerClientId removes from the store the client id for the given consumer id.
 func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
+
+	if clientId, found := k.GetConsumerClientId(ctx, consumerId); found {
+		// delete reverse index
+		store.Delete(types.ClientIdToConsumerIdKey(clientId))
+	}
+
 	store.Delete(types.ConsumerIdToClientIdKey(consumerId))
 }
 

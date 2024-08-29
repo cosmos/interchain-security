@@ -449,31 +449,6 @@ func TestGetOptedInConsumerIds(t *testing.T) {
 	require.Empty(t, consumers)
 }
 
-// TestConsumerChainId tests the getter, setter, and deletion of the client id to consumer id methods
-func TestClientIdToConsumerId(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	_, found := providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
-	require.False(t, found)
-
-	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", "consumerId")
-	consumerId, found := providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
-	require.True(t, found)
-	require.Equal(t, "consumerId", consumerId)
-
-	// assert that overwriting the current consumer id record works
-	providerKeeper.SetClientIdToConsumerId(ctx, "clientId", "consumerId2")
-	consumerId, found = providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
-	require.True(t, found)
-	require.Equal(t, "consumerId2", consumerId)
-
-	providerKeeper.DeleteClientIdToConsumerId(ctx, "clientId")
-	consumerId, found = providerKeeper.GetClientIdToConsumerId(ctx, "clientId")
-	require.False(t, found)
-	require.Equal(t, "", consumerId)
-}
-
 // TestGetInitializedConsumersReadyToLaunch tests that the ready to-be-launched consumer chains are returned
 func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))

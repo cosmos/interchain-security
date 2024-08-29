@@ -436,28 +436,6 @@ func (k Keeper) RemoveOptedInConsumerId(ctx sdk.Context, providerAddr types.Prov
 	return nil
 }
 
-// GetClientIdToConsumerId returns the consumer id associated with this client id
-func (k Keeper) GetClientIdToConsumerId(ctx sdk.Context, clientId string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.ClientIdToConsumerIdKey(clientId))
-	if buf == nil {
-		return "", false
-	}
-	return string(buf), true
-}
-
-// SetClientIdToConsumerId sets the client id associated with this consumer id
-func (k Keeper) SetClientIdToConsumerId(ctx sdk.Context, clientId string, consumerId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ClientIdToConsumerIdKey(clientId), []byte(consumerId))
-}
-
-// DeleteClientIdToConsumerId deletes the client id to consumer id association
-func (k Keeper) DeleteClientIdToConsumerId(ctx sdk.Context, clientId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ClientIdToConsumerIdKey(clientId))
-}
-
 // GetInitializedConsumersReadyToLaunch returns the consumer ids of the pending initialized consumer chains
 // that are ready to launch,  i.e., consumer clients to be created.
 func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint32) []string {

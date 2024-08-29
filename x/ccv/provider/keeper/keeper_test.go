@@ -490,3 +490,48 @@ func TestKeeperConsumerParams(t *testing.T) {
 		})
 	}
 }
+
+// TestConsumerClientId tests the getter, setter, and deletion of the client id <> consumer id mappings
+func TestConsumerClientId(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "123"
+	clientIds := []string{"clientId1", "clientId2"}
+
+	_, found := providerKeeper.GetConsumerClientId(ctx, consumerId)
+	require.False(t, found)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[0])
+	require.False(t, found)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[1])
+	require.False(t, found)
+
+	providerKeeper.SetConsumerClientId(ctx, consumerId, clientIds[0])
+	res, found := providerKeeper.GetConsumerClientId(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, clientIds[0], res)
+	res, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[0])
+	require.True(t, found)
+	require.Equal(t, consumerId, res)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[1])
+	require.False(t, found)
+
+	// overwrite the client ID
+	providerKeeper.SetConsumerClientId(ctx, consumerId, clientIds[1])
+	res, found = providerKeeper.GetConsumerClientId(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, clientIds[1], res)
+	res, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[1])
+	require.True(t, found)
+	require.Equal(t, consumerId, res)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[0])
+	require.False(t, found)
+
+	providerKeeper.DeleteConsumerClientId(ctx, consumerId)
+	_, found = providerKeeper.GetConsumerClientId(ctx, consumerId)
+	require.False(t, found)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[0])
+	require.False(t, found)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[1])
+	require.False(t, found)
+}

@@ -90,7 +90,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 		return err
 	}
 	k.SetConsumerClientId(ctx, consumerId, clientID)
-	k.SetClientIdToConsumerId(ctx, clientID, consumerId)
 
 	k.Logger(ctx).Info("consumer chain launched (client created)",
 		"consumer id", consumerId,

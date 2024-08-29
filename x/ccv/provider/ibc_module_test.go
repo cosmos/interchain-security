@@ -123,7 +123,6 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		providerKeeper.SetPort(ctx, ccv.ProviderPortID)
 		providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientIdToConsumer")
-		providerKeeper.SetClientIdToConsumerId(ctx, "clientIdToConsumer", "consumerId")
 
 		// Instantiate valid params as default. Individual test cases mutate these as needed.
 		params := params{
@@ -313,7 +312,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 			providerKeeper.SetConsumerIdToChannelId(ctx, "consumerChainID", "existingChannelID")
 		}
 
-		providerKeeper.SetClientIdToConsumerId(ctx, "clientID", "consumerChainID")
+		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
 
 		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace, keeperParams.StoreKey)
 
