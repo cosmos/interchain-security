@@ -3,26 +3,27 @@ package keeper_test
 import (
 	"fmt"
 	"testing"
-	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/golang/mock/gomock"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	chainID := consumer
 
-	providerConsAddress, err := sdktypes.ConsAddressFromBech32("cosmosvalcons1wpex7anfv3jhystyv3eq20r35a")
+	providerConsAddress, err := sdk.ConsAddressFromBech32("cosmosvalcons1wpex7anfv3jhystyv3eq20r35a")
 	require.NoError(t, err)
 	providerAddr := types.NewProviderConsAddress(providerConsAddress)
 
@@ -66,49 +67,6 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	require.Equal(t, &expectedResult, response.PairValConAddr[0])
 }
 
-func TestQueryOldestUnconfirmedVsc(t *testing.T) {
-	chainID := consumer
-
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now().UTC()
-	pk.SetVscSendTimestamp(ctx, chainID, 2, now)
-	pk.SetVscSendTimestamp(ctx, chainID, 1, now)
-	pk.SetConsumerClientId(ctx, chainID, "client-1")
-
-	// Request is nil
-	_, err := pk.QueryOldestUnconfirmedVsc(ctx, nil)
-	require.Error(t, err)
-
-	// Request with chainId is empty
-	_, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{})
-	require.Error(t, err)
-
-	// Request with chainId is invalid
-	_, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: "invalidChainId"})
-	require.Error(t, err)
-
-	// Request is valid
-	response, err := pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: chainID})
-	require.NoError(t, err)
-	expectedResult := types.VscSendTimestamp{
-		VscId:     1,
-		Timestamp: now,
-	}
-	require.Equal(t, expectedResult, response.VscSendTimestamp)
-
-	// Make sure that the oldest is queried
-	pk.DeleteVscSendTimestamp(ctx, chainID, 1)
-	response, err = pk.QueryOldestUnconfirmedVsc(ctx, &types.QueryOldestUnconfirmedVscRequest{ChainId: chainID})
-	require.NoError(t, err)
-	expectedResult = types.VscSendTimestamp{
-		VscId:     2,
-		Timestamp: now,
-	}
-	require.Equal(t, expectedResult, response.VscSendTimestamp)
-}
-
 func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 	chainID := "chainID"
 
@@ -141,7 +99,7 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 func TestQueryConsumerValidators(t *testing.T) {
 	chainID := "chainID"
 
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	req := types.QueryConsumerValidatorsRequest{
@@ -154,26 +112,40 @@ func TestQueryConsumerValidators(t *testing.T) {
 
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	consumerKey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	consumerValidator1 := types.ConsumerValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, ConsumerPublicKey: &consumerKey1}
+	consumerValidator1 := types.ConsensusValidator{ProviderConsAddr: providerAddr1.ToSdkConsAddr(), Power: 1, PublicKey: &consumerKey1}
+	expectedCommissionRate1 := math.LegacyMustNewDecFromStr("0.123")
+	pk.SetConsumerCommissionRate(ctx, chainID, providerAddr1, expectedCommissionRate1)
 
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
 	consumerKey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	consumerValidator2 := types.ConsumerValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, ConsumerPublicKey: &consumerKey2}
+	consumerValidator2 := types.ConsensusValidator{ProviderConsAddr: providerAddr2.ToSdkConsAddr(), Power: 2, PublicKey: &consumerKey2}
+	expectedCommissionRate2 := math.LegacyMustNewDecFromStr("0.123")
+	pk.SetConsumerCommissionRate(ctx, chainID, providerAddr2, expectedCommissionRate2)
 
 	expectedResponse := types.QueryConsumerValidatorsResponse{
 		Validators: []*types.QueryConsumerValidatorsValidator{
-			{providerAddr1.String(), &consumerKey1, 1},
-			{providerAddr2.String(), &consumerKey2, 2},
+			{ProviderAddress: providerAddr1.String(), ConsumerKey: &consumerKey1, Power: 1, Rate: expectedCommissionRate1},
+			{ProviderAddress: providerAddr2.String(), ConsumerKey: &consumerKey2, Power: 2, Rate: expectedCommissionRate2},
 		},
 	}
 
 	// set up the client id so the chain looks like it "started"
 	pk.SetConsumerClientId(ctx, chainID, "clientID")
-	pk.SetConsumerValSet(ctx, chainID, []types.ConsumerValidator{consumerValidator1, consumerValidator2})
+	pk.SetConsumerValSet(ctx, chainID, []types.ConsensusValidator{consumerValidator1, consumerValidator2})
 
 	res, err := pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expectedResponse, res)
+
+	// validator with no set consumer commission rate
+	pk.DeleteConsumerCommissionRate(ctx, chainID, providerAddr1)
+	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.456")
+	// because no consumer commission rate is set, the validator's set commission rate on the provider is used
+	val := stakingtypes.Validator{Commission: stakingtypes.Commission{CommissionRates: stakingtypes.CommissionRates{Rate: expectedCommissionRate}}}
+	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
+		ctx, providerAddr1.ToSdkConsAddr()).Return(val, nil).Times(1)
+	res, _ = pk.QueryConsumerValidators(ctx, &req)
+	require.Equal(t, expectedCommissionRate, res.Validators[0].Rate)
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
@@ -184,7 +156,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	valConsAddr, _ := val.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(valConsAddr)
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, nil).AnyTimes()
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{val}, []int64{1}, -1) // -1 to allow the calls "AnyTimes"
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{val}, -1) // -1 to allow the calls "AnyTimes"
 
 	req := types.QueryConsumerChainsValidatorHasToValidateRequest{
 		ProviderAddress: providerAddr.String(),
@@ -197,10 +169,10 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	}
 
 	// set `providerAddr` as a consumer validator on "chain1"
-	pk.SetConsumerValidator(ctx, "chain1", types.ConsumerValidator{
+	pk.SetConsumerValidator(ctx, "chain1", types.ConsensusValidator{
 		ProviderConsAddr: providerAddr.ToSdkConsAddr(),
 		Power:            1,
-		ConsumerPublicKey: &crypto.PublicKey{
+		PublicKey: &crypto.PublicKey{
 			Sum: &crypto.PublicKey_Ed25519{
 				Ed25519: []byte{1},
 			},
@@ -209,6 +181,11 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 
 	// set `providerAddr` as an opted-in validator on "chain3"
 	pk.SetOptedIn(ctx, "chain3", providerAddr)
+
+	// set max provider consensus vals to include all validators
+	params := pk.GetParams(ctx)
+	params.MaxProviderConsensusValidators = 3
+	pk.SetParams(ctx, params)
 
 	// `providerAddr` has to validate "chain1" because it is a consumer validator in this chain, as well as "chain3"
 	// because it opted in, in "chain3" and `providerAddr` belongs to the bonded validators
@@ -270,7 +247,7 @@ func TestGetConsumerChain(t *testing.T) {
 	}
 	powers := []int64{50, 150, 300, 500} // sum = 1000
 	maxValidators := uint32(180)
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, maxValidators, vals, powers, -1) // -1 to allow the calls "AnyTimes"
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, maxValidators, vals, -1) // -1 to allow the calls "AnyTimes"
 
 	for i, val := range vals {
 		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
@@ -303,6 +280,15 @@ func TestGetConsumerChain(t *testing.T) {
 		{},
 	}
 
+	allowInactiveVals := []bool{true, false, true, false}
+
+	minStakes := []math.Int{
+		math.NewInt(0),
+		math.NewInt(100),
+		math.NewInt(200),
+		math.NewInt(300),
+	}
+
 	expectedGetAllOrder := []types.Chain{}
 	for i, chainID := range chainIDs {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
@@ -312,6 +298,8 @@ func TestGetConsumerChain(t *testing.T) {
 		pk.SetValidatorSetCap(ctx, chainID, validatorSetCaps[i])
 		pk.SetValidatorsPowerCap(ctx, chainID, validatorPowerCaps[i])
 		pk.SetMinimumPowerInTopN(ctx, chainID, expectedMinPowerInTopNs[i])
+		pk.SetInactiveValidatorsAllowed(ctx, chainID, allowInactiveVals[i])
+		pk.SetMinStake(ctx, chainID, minStakes[i].Uint64())
 		for _, addr := range allowlists[i] {
 			pk.SetAllowlist(ctx, chainID, addr)
 		}
@@ -338,6 +326,8 @@ func TestGetConsumerChain(t *testing.T) {
 				ValidatorsPowerCap: validatorPowerCaps[i],
 				Allowlist:          strAllowlist,
 				Denylist:           strDenylist,
+				AllowInactiveVals:  allowInactiveVals[i],
+				MinStake:           minStakes[i].Uint64(),
 			})
 	}
 

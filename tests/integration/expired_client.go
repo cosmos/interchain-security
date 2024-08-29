@@ -210,7 +210,7 @@ func expireClient(s *CCVTestSuite, clientTo ChainType) {
 	checkClientExpired(s, clientTo, true)
 }
 
-// checkClientIsExpired checks whether the client to `clientTo` is expired
+// checkClientExpired checks whether the client to `clientTo` is expired
 func checkClientExpired(s *CCVTestSuite, clientTo ChainType, expectedExpired bool) {
 	var hostEndpoint *ibctesting.Endpoint
 	var hostChain *ibctesting.TestChain

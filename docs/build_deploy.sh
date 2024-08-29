@@ -2,6 +2,7 @@
 
 # build versioned docs prepared by sync_versions.sh
 echo "building docusaurus main docs"
+cp supported_versions.json versions.json
 npm ci && npm run build
 
 # copy "legacy" docs directory into the final build directory

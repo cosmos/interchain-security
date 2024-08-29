@@ -51,6 +51,8 @@ func TestProviderProposalHandler(t *testing.T) {
 				0,
 				nil,
 				nil,
+				0,
+				false,
 			),
 			blockTime:                hourFromNow, // ctx blocktime is after proposal's spawn time
 			expValidConsumerAddition: true,
@@ -98,7 +100,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		// Mock expectations depending on expected outcome
 		switch {
 		case tc.expValidConsumerAddition:
-			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, []int64{}, 1)
+			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, 1)
 			gomock.InOrder(testkeeper.GetMocksForCreateConsumerClient(
 				ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3),
 			)...)

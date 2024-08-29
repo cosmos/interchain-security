@@ -7,25 +7,23 @@ sidebar_position: 2
 
 Sending and distributing rewards from consumer chains to the provider chain is handled by the [Reward Distribution sub-protocol](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#reward-distribution).
 
-Consumer chains have the option of sharing (a portion of) their block rewards (inflation tokens and fees) with the provider chain validators and delegators.
-In Interchain Security, block rewards are periodically sent from the consumer to the provider according to consumer chain parameters using an IBC transfer channel.
-This channel is created during consumer chain initialization, unless it is provided via the `ConsumerAdditionProposal` when adding a new consumer chain. 
-For more details, see the [reward distribution parameters](../introduction/params.md#reward-distribution-parameters). 
+Consumer chains have the option of sharing _a portion of_ their block rewards (inflation tokens and fees) with the provider chain as ICS rewards.
+These rewards are periodically sent from the consumer to the provider according to [consumer chain parameters](../introduction/params.md#reward-distribution-parameters) using an IBC transfer channel.
+This channel is created during consumer chain initialization, unless it is provided when creating a new consumer chain (see the [DistributionTransmissionChannel param](../introduction/params.md#distributiontransmissionchannel)). 
 
-:::tip
-Providing an IBC transfer channel (see `DistributionTransmissionChannel`) enables a consumer chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. This will preserve the `ibc denom` that may already be in use. 
+Providing an IBC transfer channel enables a consumer chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. 
+This will preserve the `ibc denom` that may already be in use. 
 This is especially important for standalone chains transitioning to become consumer chains. 
 For more details, see the [changeover procedure](../consumer-development/changeover-procedure.md).
-:::
 
-Reward distribution on the provider is handled by the distribution module.
+Once on the provider, the ICS rewards are distributed to the opted in validators and their delegators. 
+To avoid spam, the provider must whitelist denoms before accepting them as ICS rewards.  
 
 ## Whitelisting Reward Denoms
 
 The ICS distribution system works by allowing consumer chains to send rewards to a module address on the provider called the `ConsumerRewardsPool`.
-To avoid spam, the provider must whitelist denoms before accepting them as ICS rewards. 
-Only whitelisted denoms are transferred from the `ConsumerRewardsPool` to the `FeePoolAddress`, to be distributed to delegators and validators.
-The whitelisted denoms can be adjusted through governance by sending a [`ChangeRewardDenomProposal`](./proposals.md#changerewarddenomproposal). 
+Only whitelisted denoms are transferred from the `ConsumerRewardsPool` to the `FeePoolAddress`, to be distributed to validators and their delegators.
+The whitelisted denoms can be adjusted through governance by sending a [`ChangeRewardDenomProposal`](./proposals.md#changerewarddenomproposal).
 
 To query the list of whitelisted reward denoms on the Cosmos Hub, use the following command:
 ```bash

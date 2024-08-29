@@ -11,22 +11,21 @@ The feature is outlined in this [ADR-001](../adrs/adr-001-key-assignment.md)
 
 By sending an `AssignConsumerKey` transaction, validators are able to indicate which consensus key they will be using to validate a consumer chain. On receiving the transaction, if the key assignment is valid, the provider will use the assigned consensus key when it sends future voting power updates to the consumer that involve the validator.
 
-:::tip
-Key assignment is handled only by the provider chain - the consumer chains are not aware of the fact that different consensus keys represent the same validator entity.
-:::
+Note that key assignment is handled only by the provider chain - the consumer chains are not aware of the fact that different consensus keys represent the same validator entity.
 
 ## Rules
 
-- a key can be assigned as soon as the consumer addition proposal is submitted to the provider
-- validator A cannot assign consumer key K to consumer chain X if there is already a validator B (B!=A) using K on the provider
-- validator A cannot assign consumer key K to consumer chain X if there is already a validator B using K on X
-- a new validator on the provider cannot use a consensus key K if K is already used by any validator on any consumer chain
-
-:::tip
-Validators can use a different key for each consumer chain.
-:::
+- A key can be assigned as soon as the consumer addition proposal is submitted to the provider.
+- Validator `A` cannot assign consumer key `K` to consumer chain `X` if there is already a validator `B` (`B!=A`) using `K` on the provider.
+- Validator `A` cannot assign consumer key `K` to consumer chain `X` if there is already a validator `B` using `K` on `X`.
+- A new validator on the provider cannot use a consensus key `K` if `K` is already used by any validator on any consumer chain.
 
 ## Adding a key
+
+:::warning
+Validators are strongly recommended to assign a separate key for each consumer chain
+and **not** reuse the provider key across consumer chains for security reasons.
+:::
 
 First, create a new node on the consumer chain using the equivalent:
 
@@ -80,11 +79,6 @@ To change your key, simply repeat all of the steps listed above. Take note that 
 ## Removing a key
 
 To remove a key, simply switch it back to the consensus key you have assigned on the provider chain by following steps in the `Adding a key` section and using your provider consensus key.
-
-:::warning
-Validators are strongly recommended to assign a separate key for each consumer chain
-and **not** reuse the provider key across consumer chains for security reasons.
-:::
 
 ## Querying proposed consumer chains
 

@@ -188,7 +188,6 @@ func TestGetLastSovereignValidators(t *testing.T) {
 		mocks.MockStakingKeeper,
 		180,
 		[]stakingtypes.Validator{val},
-		[]int64{1000},
 		1,
 	)
 

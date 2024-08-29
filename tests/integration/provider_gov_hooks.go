@@ -26,15 +26,9 @@ func (s *CCVTestSuite) TestAfterPropSubmissionAndVotingPeriodEnded() {
 	govKeeper := s.providerApp.GetTestGovKeeper()
 	proposer := s.providerChain.SenderAccount
 
-	content := testkeeper.GetTestConsumerAdditionProp()
-	content.ChainId = "newchain-0"
-	legacyPropContent, err := v1.NewLegacyContent(
-		content,
-		authtypes.NewModuleAddress("gov").String(),
-	)
-	s.Require().NoError(err)
+	addConsumerProp := testkeeper.GetTestMsgConsumerAddition()
 
-	proposal, err := v1.NewProposal([]sdk.Msg{legacyPropContent}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", proposer.GetAddress(), false)
+	proposal, err := v1.NewProposal([]sdk.Msg{&addConsumerProp}, 1, time.Now(), time.Now().Add(1*time.Hour), "metadata", "title", "summary", proposer.GetAddress(), false)
 	s.Require().NoError(err)
 
 	err = govKeeper.SetProposal(ctx, proposal)
@@ -46,23 +40,22 @@ func (s *CCVTestSuite) TestAfterPropSubmissionAndVotingPeriodEnded() {
 	proposalIdOnProvider, ok := providerKeeper.GetProposedConsumerChain(ctx, proposal.Id)
 	s.Require().True(ok)
 	s.Require().NotEmpty(proposalIdOnProvider)
-	s.Require().Equal(content.ChainId, proposalIdOnProvider)
+	s.Require().Equal(addConsumerProp.ChainId, proposalIdOnProvider)
 
 	providerKeeper.Hooks().AfterProposalVotingPeriodEnded(ctx, proposal.Id)
 	// verify that the proposal ID is deleted
 	s.Require().Empty(providerKeeper.GetProposedConsumerChain(ctx, proposal.Id))
 }
 
-// TestGetConsumerAdditionLegacyPropFromProp manually calls the GetConsumerAdditionLegacyPropFromProp hook on
+// TestGetConsumerAdditionFromProp manually calls the GetConsumerAdditionLegacyPropFromProp hook on
 // various types of proposals to test the behavior of the hook.
 // @Long Description@
-// The tes case created a provider chain,
-// then submits a Proposal with various different types of content.
+// The test case creates a provider chain, then submits a Proposal with various different types of content.
 // Then, it tries to get the ConsumerAdditionProposal from the proposal using the hook.
 // Test cases include a proposal with no messages; a proposal with a transfer message; a proposal with an unrelated legacy proposal;
 // a proposal with an invalid legacy proposal; and a proposal with a ConsumerAdditionProposal.
 // In the case of a valid ConsumerAdditionProposal, the test verifies that the proposal is found and returned by the hook.
-func (s *CCVTestSuite) TestGetConsumerAdditionLegacyPropFromProp() {
+func (s *CCVTestSuite) TestGetConsumerAdditionFromProp() {
 	ctx := s.providerChain.GetContext()
 	proposer := s.providerChain.SenderAccount
 
@@ -73,13 +66,19 @@ func (s *CCVTestSuite) TestGetConsumerAdditionLegacyPropFromProp() {
 		Amount:      sdk.NewCoins(sdk.NewCoin("stake", math.OneInt())),
 	}
 
+	// create a legacy proposal
 	textProp, err := v1.NewLegacyContent(
 		v1beta1.NewTextProposal("a title", "a legacy text prop"),
 		authtypes.NewModuleAddress("gov").String(),
 	)
 	s.Require().NoError(err)
 
-	addConsumerProp, err := v1.NewLegacyContent(
+	// create a valid consumer addition message
+	msgConsumerAddition := testkeeper.GetTestMsgConsumerAddition()
+
+	// create a legacy consumer addition proposal content
+	// (not supported anymore)
+	addConsumerPropLegacy, err := v1.NewLegacyContent(
 		testkeeper.GetTestConsumerAdditionProp(),
 		authtypes.NewModuleAddress("gov").String(),
 	)
@@ -98,7 +97,7 @@ func (s *CCVTestSuite) TestGetConsumerAdditionLegacyPropFromProp() {
 			expPanic:                false,
 		},
 		{
-			name:                    "msgs in prop contain no legacy props",
+			name:                    "msgs in prop contain no consumer addition props",
 			propMsg:                 dummyMsg,
 			expectConsumerPropFound: false,
 			expPanic:                false,
@@ -112,11 +111,17 @@ func (s *CCVTestSuite) TestGetConsumerAdditionLegacyPropFromProp() {
 			name:                    "msgs contain an invalid legacy prop",
 			propMsg:                 &v1.MsgExecLegacyContent{},
 			expectConsumerPropFound: false,
-			expPanic:                true,
+			expPanic:                false,
 		},
 		{
-			name:                    "msg contains a prop of ConsumerAdditionProposal type - hook should create a new proposed chain",
-			propMsg:                 addConsumerProp,
+			name:                    "msg contains a prop of legacy ConsumerAdditionProposal type - hook should NOT create a new proposed chain",
+			propMsg:                 addConsumerPropLegacy,
+			expectConsumerPropFound: false,
+			expPanic:                false,
+		},
+		{
+			name:                    "msg contains a prop of MsgConsumerAddition type - hook should create a new proposed chain",
+			propMsg:                 &msgConsumerAddition,
 			expectConsumerPropFound: true,
 			expPanic:                false,
 		},
@@ -146,12 +151,12 @@ func (s *CCVTestSuite) TestGetConsumerAdditionLegacyPropFromProp() {
 			if tc.expPanic {
 				s.Require().Panics(func() {
 					// this panics with a nil pointer dereference because the proposal is invalid and cannot be unmarshalled
-					providerKeeper.Hooks().GetConsumerAdditionLegacyPropFromProp(ctx, proposal.Id)
+					providerKeeper.Hooks().GetConsumerAdditionFromProp(ctx, proposal.Id)
 				})
 				return
 			}
 
-			savedProp, found := providerKeeper.Hooks().GetConsumerAdditionLegacyPropFromProp(ctx, proposal.Id)
+			savedProp, found := providerKeeper.Hooks().GetConsumerAdditionFromProp(ctx, proposal.Id)
 			if tc.expectConsumerPropFound {
 				s.Require().True(found)
 				s.Require().NotEmpty(savedProp, savedProp)

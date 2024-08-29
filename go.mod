@@ -8,7 +8,7 @@ require (
 	github.com/cometbft/cometbft v0.38.9
 	github.com/cometbft/cometbft-db v0.12.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.50.8
-	github.com/cosmos/gogoproto v1.5.0
+	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ics23/go v0.10.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
@@ -16,14 +16,14 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/oxyno-zeta/gomock-extra-matcher v1.2.0
-	github.com/spf13/cast v1.6.0
+	github.com/spf13/cast v1.7.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tidwall/gjson v1.17.1
+	github.com/tidwall/gjson v1.17.3
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.1
@@ -147,19 +147,19 @@ require (
 require (
 	cosmossdk.io/client/v2 v2.0.0-beta.1
 	cosmossdk.io/collections v0.4.0
-	cosmossdk.io/log v1.3.1
+	cosmossdk.io/log v1.4.1
 	cosmossdk.io/store v1.1.0
 	cosmossdk.io/tools/confix v0.1.1
 	cosmossdk.io/x/evidence v0.1.0
 	cosmossdk.io/x/feegrant v0.1.0
-	cosmossdk.io/x/tx v0.13.3
+	cosmossdk.io/x/tx v0.13.4
 	cosmossdk.io/x/upgrade v0.1.1
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/ibc-go/modules/capability v1.0.0
-	github.com/cosmos/ibc-go/v8 v8.3.2
+	github.com/cosmos/ibc-go/v8 v8.4.0
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.18.2
-	golang.org/x/mod v0.17.0
+	golang.org/x/mod v0.20.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157
 )
 
@@ -195,7 +195,7 @@ require (
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	github.com/rs/zerolog v1.32.0 // indirect
+	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect

@@ -5,7 +5,6 @@ Integration tests are categorized into files as follows:
 
 - `setup.go` - setup for the integration tests
 - `common.go` - helper functions
-- `channel_init.go` - integration tests for the _Channel Initialization_ sub-protocol
 - `valset_update.go` - integration tests for the _Validator Set Update_ sub-protocol
 - `unbonding.go` - integration tests for the _Completion of Unbonding Operations_
 - `slashing.go` - integration tests for the _Consumer Initiated Slashing_ sub-protocol
@@ -17,6 +16,7 @@ Integration tests are categorized into files as follows:
 - `changeover.go` - integration tests for testing reuse of existing transfer channels
 - `double_vote.go` - integration tests for testing the handling of double voting
 - `misbehavior.go` - integration tests for testing the handling of misbehaviors
+- `partial_set_security_test.go` - integration tests for testing the partial set security
 - `expired_client.go` - integration tests for testing expired clients
 - `key_assignment.go` - integration tests for testing key assignment
 - `instance_test.go` - ties the integration test structure into golang's standard test mechanism, with appropriate definitions for concrete app types and setup callback

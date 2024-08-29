@@ -62,6 +62,8 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				0,
 				nil,
 				nil,
+				0,
+				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
@@ -92,6 +94,8 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 				0,
 				nil,
 				nil,
+				0,
+				false,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
@@ -107,7 +111,7 @@ func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
-			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, []int64{}, 1)
+			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, 1)
 			gomock.InOrder(
 				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
 			)
@@ -282,18 +286,24 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr1")))
 	providerKeeper.SetAllowlist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("allowlistedAddr2")))
 	providerKeeper.SetDenylist(ctx, chainID, providertypes.NewProviderConsAddress([]byte("denylistedAddr1")))
+	providerKeeper.SetMinStake(ctx, chainID, 1000)
+	providerKeeper.SetInactiveValidatorsAllowed(ctx, chainID, true)
 
 	expectedTopN := uint32(75)
 	expectedValidatorsPowerCap := uint32(67)
 	expectedValidatorSetCap := uint32(20)
 	expectedAllowlistedValidator := "cosmosvalcons1wpex7anfv3jhystyv3eq20r35a"
 	expectedDenylistedValidator := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	expectedMinStake := uint64(0)
+	expectedAllowInactiveValidators := false
 	proposal := providertypes.NewConsumerModificationProposal("title", "description", chainID,
 		expectedTopN,
 		expectedValidatorsPowerCap,
 		expectedValidatorSetCap,
 		[]string{expectedAllowlistedValidator},
 		[]string{expectedDenylistedValidator},
+		expectedMinStake,
+		expectedAllowInactiveValidators,
 	).(*providertypes.ConsumerModificationProposal)
 
 	err := providerKeeper.HandleLegacyConsumerModificationProposal(ctx, proposal)
@@ -315,4 +325,10 @@ func TestHandleConsumerModificationProposal(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(providerKeeper.GetDenyList(ctx, chainID)))
 	require.Equal(t, providertypes.NewProviderConsAddress(denylistedValidator), providerKeeper.GetDenyList(ctx, chainID)[0])
+
+	actualMinStake, _ := providerKeeper.GetMinStake(ctx, chainID)
+	require.Equal(t, expectedMinStake, actualMinStake)
+
+	actualAllowInactiveValidators := providerKeeper.AllowsInactiveValidators(ctx, chainID)
+	require.Equal(t, expectedAllowInactiveValidators, actualAllowInactiveValidators)
 }

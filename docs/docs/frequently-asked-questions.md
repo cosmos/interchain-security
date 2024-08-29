@@ -1,137 +1,166 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: "Frequently Asked Questions"
 slug: /faq
 ---
 
-## What is a consumer chain?
+## General
 
-Consumer chain is a blockchain operated by (a subset of) the validators of the provider chain. The ICS protocol ensures that the consumer chain gets information about which validators should run it (informs consumer chain about the current state of the validator set and the opted in validators for this consumer chain on the provider).
+### What is Interchain Security (ICS)?
 
-Consumer chains are run on infrastructure (virtual or physical machines) distinct from the provider, have their own configurations and operating requirements.
+ICS is an IBC protocol that enables a provider chain (e.g., the Cosmos Hub) to provide security to multiple [consumer chains](#what-are-consumer-chains).
+This means that consumer chains will leverage the stake locked on the provider chain for block production (i.e., a cross-chain proof-of-stake system). 
+ICS allows anyone to launch a consumer chain using a subset, or even the entire, validator set from the provider chain.
+Note that validators need to run separate infrastructure for the provider and consumer chains, resulting in different networks that only share (a subset of) the validator set.
 
-## What happens to consumer if provider is down?
+### What is the difference between ICS and Partial Set Security (PSS)?
 
-In case the provider chain halts or experiences difficulties the consumer chain will keep operating - the provider chain and consumer chains represent different networks, which only share the validator set.
+[ICS is a protocol](#what-is-interchain-security-ics). 
+PSS is a feature of ICS that allows a provider chain to share only a subset of its validator set with a consumer chain.
+PSS differentiates between TopN and Opt-In consumer chains. 
+For TopN chains, the validator subset is determined by the top N% provider validators by voting power.
+For Opt-In chains, the validator subset is determined by validators opting in to validate the consumer chains. 
+PSS allows for flexible tradeoffs between security, decentralization, and the budget a consumer chain spends on rewards to validators.
 
-The consumer chain will not halt if the provider halts because they represent distinct networks and distinct infrastructures. Provider chain liveness does not impact consumer chain liveness.
+For more details, see the [PSS feature](./features/partial-set-security.md).
 
-However, if the `trusting_period` (currently 5 days for protocol safety reasons) elapses without receiving any updates from the provider, the consumer chain will essentially transition to a Proof of Authority chain.
-This means that the validator set on the consumer will be the last validator set of the provider that the consumer knows about.
+## Consumer Chains
 
-Steps to recover from this scenario and steps to "release" the validators from their duties will be specified at a later point.
-At the very least, the consumer chain could replace the validator set, remove the ICS module and perform a genesis restart. The impact of this on the IBC clients and connections is currently under careful consideration.
+### What are consumer chains?
 
-## What happens to provider if consumer is down?
+Consumer chains are blockchains operated by (a subset of) the validators of the provider chain. 
+The ICS protocol ensures that consumer chains get information about which validators should validate on them.
+This information consists of the opted in validators and their power on the consumer chains.
+Note that the validators' power on the consumer chains is a function of their stake locked on the provider chain.
 
-Consumer chains do not impact the provider chain.
+Consumer chains are run on infrastructure (virtual or physical machines) distinct from the provider chain, have their own configurations and operating requirements.
+
+Consumer chains are free to choose how they wish to operate and which modules to include. 
+For example, they can choose to use CosmWasm either in a permissioned or a permissionless way.
+Also, consumer chains are free to perform software upgrades at any time without impacting the provider chain.
+
+### How to become a consumer chain?
+
+To become a consumer chain use this [checklist](./consumer-development/onboarding.md) and check the [App integration section](./consumer-development/app-integration.md).
+
+### What happens to consumers if the provider is down?
+
+In case the provider chain halts or experiences difficulties, the consumer chains will keep operating - the provider chain and consumer chains represent different networks that only share (a subset of) the validator set.
+As the validators run separate infrastructure on these networks, **_the provider chain liveness does not impact the liveness of consumer chains_**.
+
+Every consumer chain communicates with the provider chain via a CCV channel -- an IBC ordered channel.
+If any of the packets sent over the CCV channel timeout (see the [CCVTimeoutPeriod param](./introduction/params.md#ccvtimeoutperiod)), then the channel is closed and, consequently, the consumer chain transitions to a Proof of Authority (PoA) chain. 
+This means that the validator set on the consumer will no longer be updated with information from the provider. 
+
+### What happens to provider if any of the consumers are down?
+
+**_Consumer chains do not impact the livness of the provider chain._**
 The ICS protocol is concerned only with validator set management, and the only communication that the provider requires from the consumer is information about validator activity (essentially keeping the provider informed about slash events).
 
-## Can I run the provider and consumer chains on the same machine?
+### Can consumer chains have their own token?
 
-Yes, but you should favor running them in separate environments so failure of one machine does not impact your whole operation.
+As any other Cosmos SDK chains, **_consumer chains can issue their own token_** and manage inflation parameters. 
+Note that the ICS protocol does not impact the transaction fee system on the consumer chains. 
+This means consumer chains can use any token (including their own token) to pay gas fees.
+For more details, see the [democracy modules](./features/democracy-modules.md#tokenomics).
 
-## Can the consumer chain have its own token?
+### Can consumer chains have their own governance?
 
-As any other cosmos-sdk chain the consumer chain can issue its own token, manage inflation parameters and use them to pay gas fees.
+Yes. ICS allows consumer chains to **_separate governance from block production_**.
+Validator operators (with their stake locked on the provider) are responsible for block production, while _representatives_ (aka governators, governors) are responsible for on-chain governance. 
+For more details, see the [democracy modules](./features/democracy-modules.md).
 
-## How are Tx fees paid on consumer?
+### Can a consumer chain modify its power shaping parameters?
 
-The consumer chain operates as any other cosmos-sdk chain. The ICS protocol does not impact the normal chain operations.
+Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
 
-## Are there any restrictions the consumer chains need to abide by?
+### Can a Top N consumer chain become Opt-In or vice versa? 
 
-No. Consumer chains are free to choose how they wish to operate, which modules to include, use CosmWASM in a permissioned or a permissionless way.
-The only thing that separates consumer chains from standalone chains is that they share their validator set with the provider chain.
+Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
 
-## What's in it for the validators and stakers?
+## Validators
 
-The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `ConsumerRedistributionFraction`. The rewards are distributed (sent to the provider) every `BlocksPerDistributionTransmission`.
+### How can validators opt in to validate a consumer chain?
 
-:::note
-  `ConsumerRedistributionFraction` and `BlocksPerDistributionTransmission` are parameters defined in the `ConsumerAdditionProposal` used to create the consumer chain. These parameters can be changed via consumer chain governance.
-:::
+Check the [validator guide to Partial Set Security](./validators/partial-set-security-for-validators.md#how-to-opt-in-to-a-consumer-chain).
 
-## Can the consumer chain have its own governance?
+An important note is that validator the top N% of the provider chain validator set are automatically opted in on Top N consumer chains. 
 
-**Yes.**
+### Can validators opt in to an Opt-in chain after the spawn time if nobody else opted in?
 
-In that case the validators are not necessarily part of the governance structure. Instead, their place in governance is replaced by "representatives" (governors). The representatives do not need to run validators, they simply represent the interests of a particular interest group on the consumer chain.
+No, the consumer chain will be removed if nobody opted in by the spawn time. At least one validator, regardless of its voting power, must opt in before the spawn time in order for the chain can start.
 
-Validators can also be representatives but representatives are not required to run validator nodes.
-
-This feature discerns between validator operators (infrastructure) and governance representatives which further democratizes the ecosystem. This also reduces the pressure on validators to be involved in on-chain governance.
-
-## Can validators opt out of validating a consumer chain?
-
-A validator can always opt out from an Opt-In consumer chain.
-A validator can only opt out from a Top N chain if the validator does not belong to the top N% validators.
-
-## How does Slashing work?
-
-Validators that perform an equivocation or a light-client attack on a consumer chain are slashed on the provider chain.
-We achieve this by submitting the proof of the equivocation or the light-client attack to the provider chain (see [slashing](features/slashing.md)).
-
-## Can Consumer Chains perform Software Upgrades?
-
-Consumer chains are standalone chains, in the sense that they can run arbitrary logic and use any modules they want (ie CosmWASM).
-
-Consumer chain upgrades are unlikely to impact the provider chain, as long as there are no changes to the ICS module.
-
-## How can I connect to the testnets?
-
-Check out the [Joining Interchain Security testnet](./validators/joining-testnet.md) section.
-
-## How do I start using ICS?
-
-To become a consumer chain use this [checklist](./consumer-development/onboarding.md) and check the [App integration section](./consumer-development/app-integration.md)
-
-## Which relayers are supported?
-
-Currently supported versions:
-
-- Hermes 1.8.0
-
-## How does key delegation work in ICS?
-
-You can check the [Key Assignment Guide](./features/key-assignment.md) for specific instructions.
-
-## How does Partial Set Security work?
-
-Partial Set Security allows a provider chain to share only a subset of its validator set with a consumer chain. This subset can be determined by the top N% validators by voting power, or by validators opting in to validate the consumer chain. Partial Set Security allows for flexible tradeoffs between security, decentralization, and the budget a consumer chain spends on rewards to validators.
-
-See the [Partial Set Security](./features/partial-set-security.md) section for more information.
-
-## How does a validator know which consumers chains it has to validate?
+### How does a validator know which consumers chains it has to validate?
 
 In order for a validator to keep track of all the chains it has to validate, the validator can use the
-[`has-to-validate` query](validators/partial-set-security-for-validators.md#which-chains-does-a-validator-have-to-validate).
+[`has-to-validate` query](./validators/partial-set-security-for-validators.md#which-chains-does-a-validator-have-to-validate).
 
-## How many chains can a validator opt in to?
+### How many chains can a validator opt in to?
 
 There is **no** limit in the number of consumers chains a validator can choose to opt in to.
 
-## Can validators assign a consensus keys while a consumer-addition proposal is in voting period?
-Yes, see the [Key Assignment Guide](./features/key-assignment.md) for more information.
+### How can validators assign consumer keys?
 
-## Can validators assign a consensus key during the voting period for a consumer-addition proposal if they are not in the top N?
-Yes.
+Check the [Key Assignment guide](./features/key-assignment.md) for specific instructions.
 
-## Can validators opt in to an Opt-in or Top N chain after its consumer-addition proposal voting period is over but before the spawn time?
-Yes.
+Validators are strongly recommended to assign a separate key for each consumer chain and **not** reuse the provider key across consumer chains for security reasons.
 
-## Can validators opt in to an Opt-in chain after the spawn time if nobody else opted in?
-No, the consumer chain will not be added if nobody opted in by the spawn time. At least one validator, regardless of its voting power, must opt in before the spawn time arrives in order for the chain can start.
+Also note that validators can assign consensus keys before a consumer chain is launched (e.g., during the voting period for Top N consumer chains).
 
-## Can all validators opt out of an Opt-in chain?
-Yes, the consumer chain will halt with an ERR CONSENSUS FAILURE error after the opt-out message for the last validator is received.
+### What are the benefits for validators running consumer chains?
 
-## Can validators set a commission rate for chains they have not opted in to?
-Yes, and this is useful for validators that are not in the top N% of the provider chain, but might move into the top N% in the future.
-By setting the commission rate ahead of time, they can make sure that they immediately have a commission rate of their choosing as soon as they are in the top N%.
+The consumer chains sends a portion of its block rewards (e.g., transaction fees and inflation) to the provider chain as defined by the [ConsumerRedistributionFraction param](./introduction/params.md#consumerredistributionfraction). 
+These rewards are sent periodically to the provider (via IBC transfers), where they are distributed **ONLY** to the _opted in_ validators and their delegators. For more details, see the [Reward Distribution feature](./features/reward-distribution.md).
 
-## Can a consumer chain modify its power shaping parameters?
-Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
+### Can validators set per consumer chain commission rates?
 
-## Can a Top N consumer chain become Opt-In or vice versa? 
-Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
+Yes. See the [validator guide to Partial Set Security](./validators/partial-set-security-for-validators.md#how-to-set-specific-per-consumer-chain-commission-rate).
+
+### What are the risks for validators running consumer chains?
+
+Validators that perform an equivocation or a light-client attack on a consumer chain are slashed on the provider chain. This is done by submitting a proof of the equivocation or the light-client attack to the provider chain.
+
+In addition, consumer chains send IBC packets via the CCV channels informing the provider when opted in validators should be jailed for downtime. 
+It is important to notice that _validators are not slashed for downtime on consumer chains_. 
+The downtime logic is custom to the consumer chain. 
+For example, Cosmos SDK chains can use the [slashing module](https://docs.cosmos.network/v0.50/build/modules/slashing) to configure the downtime window. 
+
+For more details, see the [slashing feature](features/slashing.md).
+
+### Can validators run the provider and consumer chains on the same machine?
+
+In theory yes. 
+In practice, we recommend validators to run the provider and consumer chains in separate environments for fault containment, i.e., failures of one machine do not impact the entire system.
+
+### Can validators opt out of validating a consumer chain?
+
+Validators can always opt out from an Opt-In consumer chain.
+Validators can only opt out from a TopN chain if they do not belong to the top N% validators.
+
+### Can all validators opt out of an Opt-in chain?
+
+Note that if all validators opt out of an Opt-In consumer chain, then the chain will halt with a consensus failure upon receiving the `VSCPacket` with an empty validator set.
+
+### How to connect to the testnets?
+
+Check out the [Joining Interchain Security testnet](./validators/joining-testnet.md) section.
+
+## Integrators 
+
+### Which relayers are supported?
+
+Currently supported versions:
+
+- Hermes `v1.8.0+`
+
+### How to check when the next validator update will be sent to the consumer chains?
+
+Validator updates are sent to consumer chains every `BlocksPerEpoch` blocks.
+Depending on the status of relayers between the Hub and the consumer chains,
+it might take a while for the validator updates to be processed and applied on the consumer chains.
+
+To query how many blocks are left until the next epoch starts,
+run the following command:
+```bash
+interchain-security-pd query provider blocks-until-next-epoch
+```

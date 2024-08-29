@@ -24,12 +24,6 @@ const (
 	// as UnbondingPeriod * TrustingPeriodFraction
 	DefaultTrustingPeriodFraction = "0.66"
 
-	// DefaultInitTimeoutPeriod defines the init timeout period
-	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
-
-	// DefaultVscTimeoutPeriod defines the VSC timeout period
-	DefaultVscTimeoutPeriod = 5 * 7 * 24 * time.Hour
-
 	// DefaultSlashMeterReplenishPeriod defines the default period for which the slash gas meter is replenished
 	DefaultSlashMeterReplenishPeriod = time.Hour
 
@@ -53,6 +47,10 @@ const (
 	// Current default values for blocks per epoch corresponds to about 1 hour, so with 24 being the
 	// minimum amount of epochs, this would imply that a validator has to validate at least for 1 day to receive rewards.
 	DefaultNumberOfEpochsToStartReceivingRewards = int64(24)
+
+	// DefaultMaxProviderConsensusValidators is the default maximum number of validators that will
+	// be passed on from the staking module to the consensus engine on the provider.
+	DefaultMaxProviderConsensusValidators = 180
 )
 
 // Reflection based keys for params subspace
@@ -62,13 +60,12 @@ const (
 var (
 	KeyTemplateClient                        = []byte("TemplateClient")
 	KeyTrustingPeriodFraction                = []byte("TrustingPeriodFraction")
-	KeyInitTimeoutPeriod                     = []byte("InitTimeoutPeriod")
-	KeyVscTimeoutPeriod                      = []byte("VscTimeoutPeriod")
 	KeySlashMeterReplenishPeriod             = []byte("SlashMeterReplenishPeriod")
 	KeySlashMeterReplenishFraction           = []byte("SlashMeterReplenishFraction")
 	KeyConsumerRewardDenomRegistrationFee    = []byte("ConsumerRewardDenomRegistrationFee")
 	KeyBlocksPerEpoch                        = []byte("BlocksPerEpoch")
 	KeyNumberOfEpochsToStartReceivingRewards = []byte("NumberOfEpochsToStartReceivingRewards")
+	KeyMaxProviderConsensusValidators        = []byte("MaxProviderConsensusValidators")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -81,25 +78,23 @@ func NewParams(
 	cs *ibctmtypes.ClientState,
 	trustingPeriodFraction string,
 	ccvTimeoutPeriod time.Duration,
-	initTimeoutPeriod time.Duration,
-	vscTimeoutPeriod time.Duration,
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
 	consumerRewardDenomRegistrationFee sdk.Coin,
 	blocksPerEpoch int64,
 	numberOfEpochsToStartReceivingRewards int64,
+	maxProviderConsensusValidators int64,
 ) Params {
 	return Params{
 		TemplateClient:                        cs,
 		TrustingPeriodFraction:                trustingPeriodFraction,
 		CcvTimeoutPeriod:                      ccvTimeoutPeriod,
-		InitTimeoutPeriod:                     initTimeoutPeriod,
-		VscTimeoutPeriod:                      vscTimeoutPeriod,
 		SlashMeterReplenishPeriod:             slashMeterReplenishPeriod,
 		SlashMeterReplenishFraction:           slashMeterReplenishFraction,
 		ConsumerRewardDenomRegistrationFee:    consumerRewardDenomRegistrationFee,
 		BlocksPerEpoch:                        blocksPerEpoch,
 		NumberOfEpochsToStartReceivingRewards: numberOfEpochsToStartReceivingRewards,
+		MaxProviderConsensusValidators:        maxProviderConsensusValidators,
 	}
 }
 
@@ -120,8 +115,6 @@ func DefaultParams() Params {
 		),
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
-		DefaultInitTimeoutPeriod,
-		DefaultVscTimeoutPeriod,
 		DefaultSlashMeterReplenishPeriod,
 		DefaultSlashMeterReplenishFraction,
 		// Defining this inline because it's not possible to define a constant of type sdk.Coin.
@@ -132,6 +125,7 @@ func DefaultParams() Params {
 		},
 		DefaultBlocksPerEpoch,
 		DefaultNumberOfEpochsToStartReceivingRewards,
+		DefaultMaxProviderConsensusValidators,
 	)
 }
 
@@ -149,12 +143,6 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
 		return fmt.Errorf("ccv timeout period is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateDuration(p.InitTimeoutPeriod); err != nil {
-		return fmt.Errorf("init timeout period is invalid: %s", err)
-	}
-	if err := ccvtypes.ValidateDuration(p.VscTimeoutPeriod); err != nil {
-		return fmt.Errorf("vsc timeout period is invalid: %s", err)
-	}
 	if err := ccvtypes.ValidateDuration(p.SlashMeterReplenishPeriod); err != nil {
 		return fmt.Errorf("slash meter replenish period is invalid: %s", err)
 	}
@@ -170,6 +158,10 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.NumberOfEpochsToStartReceivingRewards); err != nil {
 		return fmt.Errorf("number of epochs to start receiving rewards is invalid: %s", err)
 	}
+
+	if err := ccvtypes.ValidatePositiveInt64(p.MaxProviderConsensusValidators); err != nil {
+		return fmt.Errorf("max provider consensus validators is invalid: %s", err)
+	}
 	return nil
 }
 
@@ -179,13 +171,12 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, ValidateTemplateClient),
 		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
-		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
-		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
 		paramtypes.NewParamSetPair(KeyBlocksPerEpoch, p.BlocksPerEpoch, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyNumberOfEpochsToStartReceivingRewards, p.NumberOfEpochsToStartReceivingRewards, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyMaxProviderConsensusValidators, p.MaxProviderConsensusValidators, ccvtypes.ValidatePositiveInt64),
 	}
 }
 
