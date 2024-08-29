@@ -38,7 +38,8 @@ const (
 )
 
 var (
-	FirstConsumerId      string
+	firstConsumerChainID string
+	FirstConsumerID      string
 	provChainID          string
 	democConsumerChainID string
 	consumerTopNParams   [NumConsumers]uint32
@@ -47,7 +48,8 @@ var (
 func init() {
 	// Disable revision format
 	ibctesting.ChainIDSuffix = ""
-	FirstConsumerId = "2"
+	firstConsumerChainID = ibctesting.GetChainID(2)
+	FirstConsumerID = ""
 	provChainID = ibctesting.GetChainID(1)
 	democConsumerChainID = ibctesting.GetChainID(5000)
 	// TopN parameter values per consumer chain initiated
@@ -153,7 +155,10 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	powerShapingParameters := testkeeper.GetTestPowerShapingParameters()
 	powerShapingParameters.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
 
-	consumerId := fmt.Sprintf("%d", index+2)
+	consumerId := providerKeeper.FetchAndIncrementConsumerId(providerChain.GetContext())
+	if chainID == firstConsumerChainID {
+		FirstConsumerID = consumerId
+	}
 	providerKeeper.SetConsumerChainId(providerChain.GetContext(), consumerId, chainID)
 	providerKeeper.SetConsumerMetadata(providerChain.GetContext(), consumerId, consumerMetadata)
 	providerKeeper.SetConsumerInitializationParameters(providerChain.GetContext(), consumerId, initializationParameters)
@@ -180,14 +185,13 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		providerChain.GetContext(),
 		consumerId,
 	)
+	s.Require().True(found, "consumer genesis not found in AddConsumer")
 
-	foo, found := providerKeeper.GetConsumerClientId(
+	_, found = providerKeeper.GetConsumerClientId(
 		providerChain.GetContext(),
 		consumerId,
 	)
-	_ = foo
-
-	s.Require().True(found, "consumer genesis not found in AddConsumer")
+	s.Require().True(found, "clientID not found in AddConsumer")
 
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator

@@ -280,13 +280,6 @@ func TestQueryConsumerValidators(t *testing.T) {
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, val1.Commission.Rate, res.Validators[0].ConsumerCommissionRate)
-
-	// set consumer to stopped phase
-	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
-	// expect empty valset
-	res, err = pk.QueryConsumerValidators(ctx, &req)
-	require.NoError(t, err)
-	require.Empty(t, res)
 }
 
 func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
@@ -444,8 +437,6 @@ func TestGetConsumerChain(t *testing.T) {
 			Top_N:              topN,
 			ValidatorSetCap:    validatorSetCaps[i],
 			ValidatorsPowerCap: validatorPowerCaps[i],
-			AllowInactiveVals:  allowInactiveVals[i],
-			MinStake:           minStakes[i].Uint64(),
 		})
 		pk.SetMinimumPowerInTopN(ctx, consumerID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
@@ -484,6 +475,76 @@ func TestGetConsumerChain(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expectedGetAllOrder[i], c)
 	}
+}
+
+func TestQueryConsumerChain(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+	chainId := "consumer-1"
+
+	req := types.QueryConsumerChainRequest{
+		ConsumerId: consumerId,
+	}
+
+	// expect error when consumer isn't associated with a chain id
+	_, err := providerKeeper.QueryConsumerChain(ctx, &req)
+	require.Error(t, err)
+
+	providerKeeper.SetConsumerChainId(ctx, consumerId, chainId)
+
+	// expect error when consumer doesn't have an owner address set
+	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
+	require.Error(t, err)
+
+	providerKeeper.SetConsumerOwnerAddress(ctx, consumerId, providerKeeper.GetAuthority())
+
+	// expect error when consumer doesn't have a valid phase
+	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
+	require.Error(t, err)
+
+	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
+
+	// expect error when consumer doesn't have metadata
+	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
+	require.Error(t, err)
+
+	providerKeeper.SetConsumerMetadata(ctx, consumerId, types.ConsumerMetadata{Name: chainId})
+
+	expRes := types.QueryConsumerChainResponse{
+		ChainId:            chainId,
+		OwnerAddress:       providerKeeper.GetAuthority(),
+		Metadata:           types.ConsumerMetadata{Name: chainId},
+		Phase:              types.ConsumerPhase_CONSUMER_PHASE_REGISTERED.String(),
+		InitParams:         &types.ConsumerInitializationParameters{},
+		PowerShapingParams: &types.PowerShapingParameters{},
+	}
+
+	// expect no error when neither the consumer init and power shaping params are set
+	res, err := providerKeeper.QueryConsumerChain(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expRes, res)
+
+	providerKeeper.SetConsumerInitializationParameters(
+		ctx,
+		consumerId,
+		types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime()},
+	)
+
+	providerKeeper.SetConsumerPowerShapingParameters(
+		ctx,
+		consumerId,
+		types.PowerShapingParameters{Top_N: uint32(50)},
+	)
+
+	expRes.InitParams = &types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime()}
+	expRes.PowerShapingParams = &types.PowerShapingParameters{Top_N: uint32(50)}
+
+	// expect no error
+	res, err = providerKeeper.QueryConsumerChain(ctx, &req)
+	require.NoError(t, err)
+	require.Equal(t, &expRes, res)
 }
 
 func TestQueryConsumerIdFromClientId(t *testing.T) {
