@@ -22,6 +22,48 @@ import (
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
+// PrepareConsumerForLaunch prepares to move the launch of a consumer chain from the previous spawn time to spawn time.
+// Previous spawn time can correspond to its zero value if the validator was not previously set for launch.
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime time.Time, spawnTime time.Time) error {
+	if !previousSpawnTime.Equal(time.Time{}) {
+		// if this is not the first initialization and hence `previousSpawnTime` does not contain the zero value of `Time`
+		// remove the consumer id from the previous spawn time
+		err := k.RemoveConsumerToBeLaunched(ctx, consumerId, previousSpawnTime)
+		if err != nil {
+			return err
+		}
+	}
+	return k.AppendConsumerToBeLaunched(ctx, consumerId, spawnTime)
+}
+
+// CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence
+// is ready to launch and at what spawn time
+// TODO (PERMISSIONLESS): could remove, all fields should be there because we validate the initialization parameters
+func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) {
+	// a chain that is already launched or stopped cannot launch again
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED || phase == types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
+		return time.Time{}, false
+	}
+
+	initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+	if err != nil {
+		return time.Time{}, false
+	}
+
+	spawnTimeIsNotZero := !initializationParameters.SpawnTime.Equal(time.Time{})
+
+	genesisHashSet := initializationParameters.GenesisHash != nil
+	binaryHashSet := initializationParameters.BinaryHash != nil
+
+	consumerRedistributionFractionSet := initializationParameters.ConsumerRedistributionFraction != ""
+	blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
+	historicalEntriesSet := initializationParameters.HistoricalEntries > 0
+
+	return initializationParameters.SpawnTime, spawnTimeIsNotZero && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
+		blocksPerDistributionTransmissionSet && historicalEntriesSet
+}
+
 // BeginBlockLaunchConsumers launches initialized consumers that are ready to launch
 func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) {
 	// TODO (PERMISSIONLESS): we can parameterize the limit

@@ -20,7 +20,6 @@ import (
 
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -58,7 +57,7 @@ func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	cases := []types.ValsetUpdateIdToHeight{
+	cases := []providertypes.ValsetUpdateIdToHeight{
 		{
 			ValsetUpdateId: 2,
 			Height:         22,
@@ -291,10 +290,10 @@ func TestGetAllOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	expectedOptedInValidators := []types.ProviderConsAddress{
-		types.NewProviderConsAddress([]byte("providerAddr1")),
-		types.NewProviderConsAddress([]byte("providerAddr2")),
-		types.NewProviderConsAddress([]byte("providerAddr3")),
+	expectedOptedInValidators := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress([]byte("providerAddr1")),
+		providertypes.NewProviderConsAddress([]byte("providerAddr2")),
+		providertypes.NewProviderConsAddress([]byte("providerAddr3")),
 	}
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
@@ -304,7 +303,7 @@ func TestGetAllOptedIn(t *testing.T) {
 	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "consumerId")
 
 	// sort validators first to be able to compare
-	sortOptedInValidators := func(addresses []types.ProviderConsAddress) {
+	sortOptedInValidators := func(addresses []providertypes.ProviderConsAddress) {
 		sort.Slice(addresses, func(i, j int) bool {
 			return bytes.Compare(addresses[i].ToSdkConsAddr(), addresses[j].ToSdkConsAddr()) < 0
 		})
@@ -319,8 +318,8 @@ func TestOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	optedInValidator1 := types.NewProviderConsAddress([]byte("providerAddr1"))
-	optedInValidator2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	optedInValidator1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
+	optedInValidator2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 
 	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
 	providerKeeper.SetOptedIn(ctx, "consumerId", optedInValidator1)
@@ -342,8 +341,8 @@ func TestConsumerCommissionRate(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 
 	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr1)
 	require.False(t, found)
@@ -383,14 +382,14 @@ func TestAllowlist(t *testing.T) {
 	// no validator was allowlisted and hence the allowlist is empty
 	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
 	providerKeeper.SetAllowlist(ctx, chainID, providerAddr1)
 	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
 
 	// allowlist is not empty anymore
 	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
 
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 	providerKeeper.SetAllowlist(ctx, chainID, providerAddr2)
 	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
 	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
@@ -430,14 +429,14 @@ func TestDenylist(t *testing.T) {
 	// no validator was denylisted and hence the denylist is empty
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
 	providerKeeper.SetDenylist(ctx, chainID, providerAddr1)
 	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
 
 	// denylist is not empty anymore
 	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 	providerKeeper.SetDenylist(ctx, chainID, providerAddr2)
 	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
 	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))

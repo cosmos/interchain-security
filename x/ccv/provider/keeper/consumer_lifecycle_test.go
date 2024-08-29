@@ -27,6 +27,72 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
+func TestPrepareConsumerForLaunch(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	spawnTime := time.Now().UTC()
+	err := providerKeeper.PrepareConsumerForLaunch(ctx, "consumerId", time.Time{}, spawnTime)
+	require.NoError(t, err)
+
+	consumers, err := providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
+	require.NoError(t, err)
+	require.Equal(t, providertypes.ConsumerIds{Ids: []string{"consumerId"}}, consumers)
+
+	nextSpawnTime := spawnTime.Add(time.Hour)
+	err = providerKeeper.PrepareConsumerForLaunch(ctx, "consumerId", spawnTime, nextSpawnTime)
+	require.NoError(t, err)
+
+	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
+	require.NoError(t, err)
+	require.Empty(t, consumers)
+
+	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, nextSpawnTime)
+	require.NoError(t, err)
+	require.Equal(t, providertypes.ConsumerIds{Ids: []string{"consumerId"}}, consumers)
+}
+
+func TestCanLaunch(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// cannot launch an unknown chain
+	_, canLaunch := providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// cannot launch a chain without initialization parameters
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// set valid initialization parameters
+	initializationParameters := testkeeper.GetTestInitializationParameters()
+	err := providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", initializationParameters)
+	require.NoError(t, err)
+
+	// cannot launch a launched chain
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// cannot launch a stopped chain
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.False(t, canLaunch)
+
+	// initialized chain can launch
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.True(t, canLaunch)
+
+	// chain cannot launch without a genesis hash
+	initializationParameters.GenesisHash = nil
+	err = providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", initializationParameters)
+	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
+	require.NoError(t, err)
+	require.False(t, canLaunch)
+}
+
 // TestBeginBlockInit directly tests BeginBlockLaunchConsumers against the spec using helpers defined above.
 func TestBeginBlockLaunchConsumers(t *testing.T) {
 	now := time.Now().UTC()
