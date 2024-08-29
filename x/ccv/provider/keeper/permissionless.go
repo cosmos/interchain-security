@@ -371,6 +371,7 @@ func (k Keeper) GetOptedInConsumerIds(ctx sdk.Context, providerAddr types.Provid
 }
 
 // AppendOptedInConsumerId appends given consumer id to the list of consumers that validator has opted in
+// TODO (PERMISSIONLESS) -- combine it with SetOptedIn
 func (k Keeper) AppendOptedInConsumerId(ctx sdk.Context, providerAddr types.ProviderConsAddress, consumerId string) error {
 	store := ctx.KVStore(k.storeKey)
 
@@ -436,9 +437,9 @@ func (k Keeper) RemoveOptedInConsumerId(ctx sdk.Context, providerAddr types.Prov
 	return nil
 }
 
-// GetInitializedConsumersReadyToLaunch returns the consumer ids of the pending initialized consumer chains
+// GetConsumersReadyToLaunch returns the consumer ids of the pending initialized consumer chains
 // that are ready to launch,  i.e., consumer clients to be created.
-func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint32) []string {
+func (k Keeper) GetConsumersReadyToLaunch(ctx sdk.Context, limit uint32) []string {
 	store := ctx.KVStore(k.storeKey)
 
 	spawnTimeToConsumerIdsKeyPrefix := types.SpawnTimeToConsumerIdsKeyPrefix()
@@ -447,7 +448,7 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint
 
 	result := []string{}
 	for ; iterator.Valid(); iterator.Next() {
-		spawnTime, err := types.ParseTime(types.SpawnTimeToConsumerIdsKeyPrefix(), iterator.Key())
+		spawnTime, err := types.ParseTime(spawnTimeToConsumerIdsKeyPrefix, iterator.Key())
 		if err != nil {
 			k.Logger(ctx).Error("failed to parse spawn time",
 				"error", err)
@@ -479,9 +480,9 @@ func (k Keeper) GetInitializedConsumersReadyToLaunch(ctx sdk.Context, limit uint
 	return result
 }
 
-// GetLaunchedConsumersReadyToStop returns the consumer ids of the pending launched consumer chains
+// GetConsumersReadyToStop returns the consumer ids of the pending launched consumer chains
 // that are ready to stop
-func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context, limit uint32) []string {
+func (k Keeper) GetConsumersReadyToStop(ctx sdk.Context, limit uint32) []string {
 	store := ctx.KVStore(k.storeKey)
 
 	stopTimeToConsumerIdsKeyPrefix := types.StopTimeToConsumerIdsKeyPrefix()
@@ -490,7 +491,7 @@ func (k Keeper) GetLaunchedConsumersReadyToStop(ctx sdk.Context, limit uint32) [
 
 	result := []string{}
 	for ; iterator.Valid(); iterator.Next() {
-		stopTime, err := types.ParseTime(types.StopTimeToConsumerIdsKeyPrefix(), iterator.Key())
+		stopTime, err := types.ParseTime(stopTimeToConsumerIdsKeyPrefix, iterator.Key())
 		if err != nil {
 			k.Logger(ctx).Error("failed to parse stop time",
 				"error", err)

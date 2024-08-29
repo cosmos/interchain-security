@@ -449,13 +449,13 @@ func TestGetOptedInConsumerIds(t *testing.T) {
 	require.Empty(t, consumers)
 }
 
-// TestGetInitializedConsumersReadyToLaunch tests that the ready to-be-launched consumer chains are returned
-func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
+// TestGetConsumersReadyToLaunch tests that the ready to-be-launched consumer chains are returned
+func TestGetConsumersReadyToLaunch(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// no chains to-be-launched exist
-	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 5))
+	require.Empty(t, providerKeeper.GetConsumersReadyToLaunch(ctx, 5))
 
 	err := providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId1", time.Unix(10, 0))
 	require.NoError(t, err)
@@ -466,32 +466,32 @@ func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 
 	// time has not yet reached the spawn time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
-	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 3))
+	require.Empty(t, providerKeeper.GetConsumersReadyToLaunch(ctx, 3))
 
 	// time has reached the spawn time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(10, 0))
-	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 3))
+	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 3))
 
 	// time has reached the spawn time of "consumerId1" and "consumerId2"
 	ctx = ctx.WithBlockTime(time.Unix(20, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 3))
+	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 3))
 
 	// time has reached the spawn time of all chains
 	ctx = ctx.WithBlockTime(time.Unix(30, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 3))
+	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 3))
 
 	// limit the number of returned consumer chains
-	require.Equal(t, []string{}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 0))
-	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 1))
-	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 2))
+	require.Equal(t, []string{}, providerKeeper.GetConsumersReadyToLaunch(ctx, 0))
+	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 1))
+	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 2))
 }
 
-func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
+func TestGetConsumersReadyToStop(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// no chains to-be-stopped exist
-	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
+	require.Empty(t, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 
 	err := providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId1", time.Unix(10, 0))
 	require.NoError(t, err)
@@ -502,19 +502,19 @@ func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
 
 	// time has not yet reached the stop time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
-	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
+	require.Empty(t, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 
 	// time has reached the stop time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(10, 0))
-	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
+	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 
 	// time has reached the stop time of "consumerId1" and "consumerId2"
 	ctx = ctx.WithBlockTime(time.Unix(20, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
+	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 
 	// time has reached the stop time of all chains
 	ctx = ctx.WithBlockTime(time.Unix(30, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
+	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 }
 
 func TestUpdateAllowlist(t *testing.T) {

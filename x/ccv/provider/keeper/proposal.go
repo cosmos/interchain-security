@@ -288,7 +288,7 @@ func (k Keeper) MakeConsumerGenesis(
 // in which the spawn time has passed
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	// TODO (PERMISSIONLESS): we can parameterize the limit
-	for _, consumerId := range k.GetInitializedConsumersReadyToLaunch(ctx, 200) {
+	for _, consumerId := range k.GetConsumersReadyToLaunch(ctx, 200) {
 		record, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 		if err != nil {
 			ctx.Logger().Error("could not retrieve initialization record",
@@ -325,7 +325,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 // BeginBlockCCR iterates over the pending consumer proposals and stop/removes the chain if the stop time has passed
 func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	// TODO (PERMISSIONLESS): parameterize the limit
-	for _, consumerId := range k.GetLaunchedConsumersReadyToStop(ctx, 200) {
+	for _, consumerId := range k.GetConsumersReadyToStop(ctx, 200) {
 		// stop consumer chain in a cached context to handle errors
 		cachedCtx, writeFn := ctx.CacheContext()
 
