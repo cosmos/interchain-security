@@ -215,7 +215,7 @@ Example:
 
 func NewCreateConsumerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create-consumer [chain-id] [metadata] [initialization-parameters] [power-shaping-parameters]",
+		Use:   "create-consumer [consumer-parameters]",
 		Short: "create a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Create a consumer chain and get the assigned consumer id of this chain.
@@ -270,7 +270,7 @@ Example:
 
 func NewUpdateConsumerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "update-consumer [consumer-id] [owner-address] [metadata] [initialization-parameters] [power-shaping-parameters]",
+		Use:   "update-consumer [consumer-parameters]",
 		Short: "update a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Update a consumer chain to change its parameters (e.g., spawn time, allow list, etc.).
@@ -474,7 +474,7 @@ func NewSetConsumerCommissionRateCmd() *cobra.Command {
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Note that the "commission-rate" argument is a fraction and should be in the range [0,1].
 			Example:
-			%s set-consumer-commission-rate consumer-1 0.5 --from node0 --home ../node0`,
+			%s set-consumer-commission-rate 123 0.5 --from node0 --home ../node0`,
 				version.AppName),
 		),
 		Args: cobra.ExactArgs(2),
