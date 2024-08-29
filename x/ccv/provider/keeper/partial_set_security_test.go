@@ -138,16 +138,16 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{
 		Top_N: 50,
 	})
-	valA := createStakingValidator(ctx, mocks, 1, 1, 1) // 10% of the total voting power (can opt out)
+	valA := createStakingValidator(ctx, mocks, 1, 1) // 10% of the total voting power (can opt out)
 	valAConsAddr, _ := valA.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
-	valB := createStakingValidator(ctx, mocks, 2, 2, 2) // 20% of the total voting power (can opt out)
+	valB := createStakingValidator(ctx, mocks, 2, 2) // 20% of the total voting power (can opt out)
 	valBConsAddr, _ := valB.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
-	valC := createStakingValidator(ctx, mocks, 3, 3, 3) // 30% of the total voting power (cannot opt out)
+	valC := createStakingValidator(ctx, mocks, 3, 3) // 30% of the total voting power (cannot opt out)
 	valCConsAddr, _ := valC.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, nil).AnyTimes()
-	valD := createStakingValidator(ctx, mocks, 4, 4, 4) // 40% of the total voting power (cannot opt out)
+	valD := createStakingValidator(ctx, mocks, 4, 4) // 40% of the total voting power (cannot opt out)
 	valDConsAddr, _ := valD.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, nil).AnyTimes()
 
@@ -178,7 +178,7 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 	require.Error(t, providerKeeper.HandleOptOut(ctx, consumerId, types.NewProviderConsAddress(valDConsAddr)))
 
 	// opting out a validator that cannot be found from a Top N chain should also return an error
-	notFoundValidator := createStakingValidator(ctx, mocks, 5, 5, 5)
+	notFoundValidator := createStakingValidator(ctx, mocks, 5, 5)
 	notFoundValidatorConsAddr, _ := notFoundValidator.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, notFoundValidatorConsAddr).
 		Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound)
@@ -237,13 +237,13 @@ func TestOptInTopNValidators(t *testing.T) {
 	defer ctrl.Finish()
 
 	// create 4 validators with powers 1, 2, 3, and 1 respectively
-	valA := createStakingValidator(ctx, mocks, 1, 1, 1)
+	valA := createStakingValidator(ctx, mocks, 1, 1)
 	valAConsAddr, _ := valA.GetConsAddr()
-	valB := createStakingValidator(ctx, mocks, 2, 2, 2)
+	valB := createStakingValidator(ctx, mocks, 2, 2)
 	valBConsAddr, _ := valB.GetConsAddr()
-	valC := createStakingValidator(ctx, mocks, 3, 3, 3)
+	valC := createStakingValidator(ctx, mocks, 3, 3)
 	valCConsAddr, _ := valC.GetConsAddr()
-	valD := createStakingValidator(ctx, mocks, 4, 1, 4)
+	valD := createStakingValidator(ctx, mocks, 1, 4)
 	valDConsAddr, _ := valD.GetConsAddr()
 
 	// Start Test 1: opt in all validators with power >= 0
@@ -324,11 +324,11 @@ func TestComputeMinPowerInTopN(t *testing.T) {
 	// 1 => 100%
 
 	bondedValidators := []stakingtypes.Validator{
-		createStakingValidator(ctx, mocks, 1, 5, 1),
-		createStakingValidator(ctx, mocks, 2, 10, 2),
-		createStakingValidator(ctx, mocks, 3, 3, 3),
-		createStakingValidator(ctx, mocks, 4, 1, 4),
-		createStakingValidator(ctx, mocks, 5, 6, 5),
+		createStakingValidator(ctx, mocks, 5, 1),
+		createStakingValidator(ctx, mocks, 10, 2),
+		createStakingValidator(ctx, mocks, 3, 3),
+		createStakingValidator(ctx, mocks, 1, 4),
+		createStakingValidator(ctx, mocks, 6, 5),
 	}
 
 	m, err := providerKeeper.ComputeMinPowerInTopN(ctx, bondedValidators, 100)
@@ -385,7 +385,7 @@ func TestCanValidateChain(t *testing.T) {
 
 	consumerID := "0"
 
-	validator := createStakingValidator(ctx, mocks, 0, 1, 1) // adds GetLastValidatorPower expectation to mocks
+	validator := createStakingValidator(ctx, mocks, 1, 1) // adds GetLastValidatorPower expectation to mocks
 	consAddr, _ := validator.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(consAddr)
 
@@ -409,7 +409,7 @@ func TestCanValidateChain(t *testing.T) {
 	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 2))
 
 	// create an allow list but do not add the validator `providerAddr` to it
-	validatorA := createStakingValidator(ctx, mocks, 1, 1, 2)
+	validatorA := createStakingValidator(ctx, mocks, 1, 2)
 	consAddrA, _ := validatorA.GetConsAddr()
 	providerKeeper.SetAllowlist(ctx, consumerID, types.NewProviderConsAddress(consAddrA))
 	require.False(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, 1))
@@ -737,7 +737,7 @@ func findConsumerValidator(t *testing.T, v types.ConsensusValidator, valsAfter [
 func createStakingValidatorsAndMocks(ctx sdk.Context, mocks testkeeper.MockedKeepers, powers ...int64) ([]stakingtypes.Validator, []types.ProviderConsAddress) {
 	var validators []stakingtypes.Validator
 	for i, power := range powers {
-		val := createStakingValidator(ctx, mocks, i, power, i)
+		val := createStakingValidator(ctx, mocks, power, i)
 		val.Tokens = math.NewInt(power)
 		val.Status = stakingtypes.Bonded
 		validators = append(validators, val)

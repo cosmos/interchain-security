@@ -15,7 +15,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -95,7 +94,7 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 		panic(fmt.Errorf("failed to get last provider consensus validator set: %w", err))
 	}
 
-	nextValidators := []types.ConsensusValidator{}
+	nextValidators := []providertypes.ConsensusValidator{}
 	maxValidators := k.GetMaxProviderConsensusValidators(ctx)
 	// avoid out of range errors by bounding the max validators to the number of bonded validators
 	if maxValidators > int64(len(bondedValidators)) {

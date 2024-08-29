@@ -585,9 +585,9 @@ func TestUpdateMinimumPowerInTopN(t *testing.T) {
 	// test cases where Top N > 0 and for this we mock some validators
 	powers := []int64{10, 20, 30}
 	validators := []stakingtypes.Validator{
-		createStakingValidator(ctx, mocks, 1, powers[0], 1), // this validator has ~16 of the total voting power
-		createStakingValidator(ctx, mocks, 2, powers[1], 2), // this validator has ~33% of the total voting gpower
-		createStakingValidator(ctx, mocks, 3, powers[2], 3), // this validator has 50% of the total voting power
+		createStakingValidator(ctx, mocks, powers[0], 1), // this validator has ~16 of the total voting power
+		createStakingValidator(ctx, mocks, powers[1], 2), // this validator has ~33% of the total voting gpower
+		createStakingValidator(ctx, mocks, powers[2], 3), // this validator has 50% of the total voting power
 	}
 	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(validators, nil).AnyTimes()
 

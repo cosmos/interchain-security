@@ -55,11 +55,11 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	require.Error(t, err)
 
 	// Request with invalid consumer id
-	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: "invalidConsumerId"})
+	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: "invalidConsumerId"})
 	require.Error(t, err)
 
 	// Request is valid
-	response, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: consumerId})
+	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: consumerId})
 	require.NoError(t, err)
 
 	expectedResult := types.PairValConAddrProviderAndConsumer{
@@ -124,7 +124,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Len(t, res.Validators, 0)
 
 	// create bonded validators
-	val1 := createStakingValidator(ctx, mocks, 1, 1, 1)
+	val1 := createStakingValidator(ctx, mocks, 1, 1)
 	pk1, _ := val1.CmtConsPublicKey()
 	valConsAddr1, _ := val1.GetConsAddr()
 	providerAddr1 := types.NewProviderConsAddress(valConsAddr1)
@@ -133,7 +133,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	val1.Description = stakingtypes.Description{Moniker: "ConsumerValidator1"}
 	val1.Commission.Rate = math.LegacyMustNewDecFromStr("0.123")
 
-	val2 := createStakingValidator(ctx, mocks, 1, 2, 2)
+	val2 := createStakingValidator(ctx, mocks, 2, 2)
 	pk2, _ := val2.CmtConsPublicKey()
 	valConsAddr2, _ := val2.GetConsAddr()
 	providerAddr2 := types.NewProviderConsAddress(valConsAddr2)
@@ -142,7 +142,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	val2.Description = stakingtypes.Description{Moniker: "ConsumerValidator2"}
 	val2.Commission.Rate = math.LegacyMustNewDecFromStr("0.456")
 
-	val3 := createStakingValidator(ctx, mocks, 1, 3, 3)
+	val3 := createStakingValidator(ctx, mocks, 3, 3)
 	pk3, _ := val3.CmtConsPublicKey()
 	valConsAddr3, _ := val3.GetConsAddr()
 	providerAddr3 := types.NewProviderConsAddress(valConsAddr3)
@@ -289,7 +289,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	val := createStakingValidator(ctx, mocks, 1, 1, 1)
+	val := createStakingValidator(ctx, mocks, 1, 1)
 	valConsAddr, _ := val.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(valConsAddr)
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, nil).AnyTimes()
