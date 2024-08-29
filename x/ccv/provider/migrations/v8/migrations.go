@@ -289,9 +289,11 @@ func rekeyFromChainIdToConsumerId(
 ) {
 	oldKey := append([]byte{keyPrefix}, []byte(chainId)...)
 	value := store.Get(oldKey)
-	newKey := append([]byte{keyPrefix}, []byte(consumerId)...)
-	store.Set(newKey, value)
-	store.Delete(oldKey)
+	if value != nil {
+		newKey := append([]byte{keyPrefix}, []byte(consumerId)...)
+		store.Set(newKey, value)
+		store.Delete(oldKey)
+	}
 }
 
 // rekeyChainIdAndConsAddrKey migrates store keys
@@ -321,6 +323,10 @@ func rekeyChainIdAndConsAddrKey(
 	for _, addr := range addrs {
 		oldKey := providertypes.StringIdAndConsAddrKey(keyPrefix, chainId, addr)
 		value := store.Get(oldKey)
+		if value == nil {
+			// this should not happen, but just in case as Set will fail if value is nil
+			continue
+		}
 		newKey := providertypes.StringIdAndConsAddrKey(keyPrefix, consumerId, addr)
 		store.Set(newKey, value)
 		store.Delete(oldKey)
@@ -356,6 +362,10 @@ func rekeyChainIdAndTsKey(
 	for _, ts := range timestamps {
 		oldKey := providertypes.StringIdAndTsKey(keyPrefix, chainId, ts)
 		value := store.Get(oldKey)
+		if value == nil {
+			// this should not happen, but just in case as Set will fail if value is nil
+			continue
+		}
 		newKey := providertypes.StringIdAndTsKey(keyPrefix, consumerId, ts)
 		store.Set(newKey, value)
 		store.Delete(oldKey)
