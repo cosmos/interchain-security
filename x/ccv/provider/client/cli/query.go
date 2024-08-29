@@ -46,8 +46,8 @@ func NewQueryCmd() *cobra.Command {
 // parameters managed by the x/params module.
 func CmdConsumerGenesis() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "consumer-genesis [chainid]",
-		Short: "Query for consumer chain genesis state by chain id",
+		Use:   "consumer-genesis [consumer-id]",
+		Short: "Query for consumer chain genesis state by consumer id",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -170,12 +170,12 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 func CmdProviderValidatorKey() *cobra.Command {
 	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	cmd := &cobra.Command{
-		Use:   "validator-provider-key [chainid] [consumer-validator-address]",
+		Use:   "validator-provider-key [consumer-id] [consumer-validator-address]",
 		Short: "Query validator consensus public key for the provider chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Returns the currently assigned validator consensus public key for the provider chain.
 Example:
-$ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+$ %s query provider validator-provider-key 333 %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 `,
 				version.AppName, bech32PrefixConsAddr,
 			),
@@ -188,7 +188,7 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			consumerChainID := args[0]
+			consumerID := args[0]
 
 			addr, err := sdk.ConsAddressFromBech32(args[1])
 			if err != nil {
@@ -196,7 +196,7 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 			}
 
 			req := &types.QueryValidatorProviderAddrRequest{
-				ChainId:         consumerChainID,
+				ConsumerId:      consumerID,
 				ConsumerAddress: addr.String(),
 			}
 			res, err := queryClient.QueryValidatorProviderAddr(cmd.Context(), req)
