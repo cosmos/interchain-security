@@ -704,26 +704,13 @@ func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
 }
 
 // GetTopN returns N if chain `consumerId` has a top N associated, and 0 otherwise.
-func (k Keeper) GetTopN(
-	ctx sdk.Context,
-	consumerId string,
-) uint32 {
+func (k Keeper) GetTopN(ctx sdk.Context, consumerId string) (uint32, error) {
 	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
-		k.Logger(ctx).Error("could not retrieve power shaping parameters", "error", err)
+		return 0, err
 	}
 
-	return powerShapingParameters.Top_N
-}
-
-// IsTopN returns true if chain with `consumerId` is a Top-N chain (i.e., enforces at least one validator to validate chain `consumerId`)
-func (k Keeper) IsTopN(ctx sdk.Context, consumerId string) bool {
-	return k.GetTopN(ctx, consumerId) > 0
-}
-
-// IsOptIn returns true if chain with `consumerId` is an Opt-In chain (i.e., no validator is forced to validate chain `consumerId`)
-func (k Keeper) IsOptIn(ctx sdk.Context, consumerId string) bool {
-	return k.GetTopN(ctx, consumerId) == 0
+	return powerShapingParameters.Top_N, nil
 }
 
 func (k Keeper) SetOptedIn(

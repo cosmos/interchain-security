@@ -292,27 +292,19 @@ func TestTopN(t *testing.T) {
 	tests := []struct {
 		consumerId string
 		N          uint32
-		isOptIn    bool
 	}{
-		{consumerId: "TopNChain1", N: 50, isOptIn: false},
-		{consumerId: "TopNChain2", N: 100, isOptIn: false},
-		{consumerId: "OptInChain", N: 0, isOptIn: true},
+		{consumerId: "TopNChain1", N: 50},
+		{consumerId: "TopNChain2", N: 100},
+		{consumerId: "OptInChain", N: 0},
 	}
 
 	for _, test := range tests {
 		providerKeeper.SetConsumerPowerShapingParameters(ctx, test.consumerId, types.PowerShapingParameters{
 			Top_N: test.N,
 		})
-		topN := providerKeeper.GetTopN(ctx, test.consumerId)
+		topN, err := providerKeeper.GetTopN(ctx, test.consumerId)
+		require.NoError(t, err)
 		require.Equal(t, test.N, topN)
-
-		if test.isOptIn {
-			require.True(t, providerKeeper.IsOptIn(ctx, test.consumerId))
-			require.False(t, providerKeeper.IsTopN(ctx, test.consumerId))
-		} else {
-			require.False(t, providerKeeper.IsOptIn(ctx, test.consumerId))
-			require.True(t, providerKeeper.IsTopN(ctx, test.consumerId))
-		}
 	}
 }
 

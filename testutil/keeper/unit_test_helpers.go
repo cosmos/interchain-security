@@ -262,7 +262,8 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.Empty(t, acks)
 
 	// in case the chain was successfully stopped, it should not contain a Top N associated to it
-	topN := providerKeeper.GetTopN(ctx, consumerId)
+	topN, err := providerKeeper.GetTopN(ctx, consumerId)
+	require.NoError(t, err)
 	require.Zero(t, topN)
 
 	// test key assignment state is cleaned

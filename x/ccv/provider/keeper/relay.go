@@ -194,9 +194,12 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	for _, consumerId := range k.GetAllRegisteredConsumerIds(ctx) {
 		currentValidators, err := k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
-			panic(fmt.Errorf("failed to get consumer validators: %w", err))
+			panic(fmt.Errorf("failed to get consumer validators, consumerId(%s): %w", consumerId, err))
 		}
-		topN := k.GetTopN(ctx, consumerId)
+		topN, err := k.GetTopN(ctx, consumerId)
+		if err != nil {
+			panic(fmt.Errorf("failed to get consumer topN value: %w", err))
+		}
 
 		minPower := int64(0)
 		if topN > 0 {
@@ -205,13 +208,13 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				// something must be broken in the bonded validators, so we have to panic since there is no realistic way to proceed
-				panic(fmt.Errorf("failed to get active validators: %w", err))
+				panic(fmt.Errorf("failed to get active validators, consumerId(%s): %w", consumerId, err))
 			}
 
 			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
 			if err != nil {
 				// we panic, since the only way to proceed would be to opt in all validators, which is not the intended behavior
-				panic(fmt.Errorf("failed to compute min power to opt in for chain %v: %w", consumerId, err))
+				panic(fmt.Errorf("failed to compute min power to opt in, consumerId(%s): %w", consumerId, err))
 			}
 
 			// set the minimal power of validators in the top N in the store
@@ -220,7 +223,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
+		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, topN, minPower)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		k.SetConsumerValSet(ctx, consumerId, nextValidators)

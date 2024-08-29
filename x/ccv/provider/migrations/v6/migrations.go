@@ -23,7 +23,11 @@ func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper
 
 	for _, chain := range registeredConsumerChains {
 		// get the top N
-		topN := providerKeeper.GetTopN(ctx, chain)
+		topN, err := providerKeeper.GetTopN(ctx, chain)
+		if err != nil {
+			providerKeeper.Logger(ctx).Error("failed to get TopN value", "chain", chain, "error", err)
+			continue
+		}
 		if topN == 0 {
 			providerKeeper.Logger(ctx).Info("top N is 0, not setting minimal power", "chain", chain)
 		} else {

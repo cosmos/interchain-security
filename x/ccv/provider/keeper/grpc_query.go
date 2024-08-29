@@ -110,7 +110,10 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	}
 
 	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
-	topN := k.GetTopN(ctx, consumerId)
+	topN, err := k.GetTopN(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find TopN for consumer (%s): %s", consumerId, err.Error())
+	}
 
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
@@ -366,7 +369,11 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		}
 		minPower := int64(0)
 		// for TopN chains, compute the minPower that will be automatically opted in
-		if topN := k.GetTopN(ctx, consumerId); topN > 0 {
+		topN, err := k.GetTopN(ctx, consumerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get topN value: %s", err))
+		}
+		if topN > 0 {
 			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get active validators: %s", err))
@@ -378,7 +385,7 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 			}
 		}
 
-		consumerValSet = k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
+		consumerValSet = k.ComputeNextValidators(ctx, consumerId, bondedValidators, topN, minPower)
 
 		// sort the address of the validators by ascending lexical order as they were persisted to the store
 		sort.Slice(consumerValSet, func(i, j int) bool {
@@ -485,7 +492,11 @@ func (k Keeper) hasToValidate(
 
 	minPowerToOptIn := int64(0)
 	// If the consumer is TopN compute the minimum power
-	if topN := k.GetTopN(ctx, consumerId); topN > 0 {
+	topN, err := k.GetTopN(ctx, consumerId)
+	if err != nil {
+		return false, err
+	}
+	if topN > 0 {
 		// compute the minimum power to opt-in since the one in the state is stale
 		// Note that the effective min power will be computed at the end of the epoch
 		minPowerToOptIn, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
@@ -500,7 +511,7 @@ func (k Keeper) hasToValidate(
 	if err != nil {
 		return false, err
 	}
-	nextValidators := k.ComputeNextValidators(ctx, consumerId, lastVals, minPowerToOptIn)
+	nextValidators := k.ComputeNextValidators(ctx, consumerId, lastVals, topN, minPowerToOptIn)
 	for _, v := range nextValidators {
 		consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 		if provAddr.ToSdkConsAddr().Equals(consAddr) {
