@@ -610,13 +610,16 @@ func TestBeginBlockInit(t *testing.T) {
 		providerKeeper.SetConsumerMetadata(ctx, fmt.Sprintf("%d", i), r)
 	}
 	for i, r := range initializationParameters {
-		providerKeeper.SetConsumerInitializationParameters(ctx, fmt.Sprintf("%d", i), r)
+		err := providerKeeper.SetConsumerInitializationParameters(ctx, fmt.Sprintf("%d", i), r)
+		require.NoError(t, err)
 		// set up the chains in their initialized phase, hence they could launch
 		providerKeeper.SetConsumerPhase(ctx, fmt.Sprintf("%d", i), providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
-		providerKeeper.AppendConsumerToBeLaunched(ctx, fmt.Sprintf("%d", i), r.SpawnTime)
+		err = providerKeeper.AppendConsumerToBeLaunched(ctx, fmt.Sprintf("%d", i), r.SpawnTime)
+		require.NoError(t, err)
 	}
 	for i, r := range powerShapingParameters {
-		providerKeeper.SetConsumerPowerShapingParameters(ctx, fmt.Sprintf("%d", i), r)
+		err := providerKeeper.SetConsumerPowerShapingParameters(ctx, fmt.Sprintf("%d", i), r)
+		require.NoError(t, err)
 	}
 
 	// opt in a sample validator so the chain's proposal can successfully execute
@@ -677,12 +680,18 @@ func TestBeginBlockCCR(t *testing.T) {
 
 	chainIds := []string{"chain1", "chain2", "chain3"}
 	consumerIds := []string{"consumerId1", "consumerId2", "consumerId3"}
-	providerKeeper.SetConsumerStopTime(ctx, consumerIds[0], now.Add(-time.Hour))
-	providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[0], now.Add(-time.Hour))
-	providerKeeper.SetConsumerStopTime(ctx, consumerIds[1], now)
-	providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[1], now)
-	providerKeeper.SetConsumerStopTime(ctx, consumerIds[2], now.Add(time.Hour))
-	providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[2], now.Add(time.Hour))
+	err := providerKeeper.SetConsumerStopTime(ctx, consumerIds[0], now.Add(-time.Hour))
+	require.NoError(t, err)
+	err = providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[0], now.Add(-time.Hour))
+	require.NoError(t, err)
+	err = providerKeeper.SetConsumerStopTime(ctx, consumerIds[1], now)
+	require.NoError(t, err)
+	err = providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[1], now)
+	require.NoError(t, err)
+	err = providerKeeper.SetConsumerStopTime(ctx, consumerIds[2], now.Add(time.Hour))
+	require.NoError(t, err)
+	err = providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[2], now.Add(time.Hour))
+	require.NoError(t, err)
 
 	//
 	// Mock expectations
@@ -712,13 +721,16 @@ func TestBeginBlockCCR(t *testing.T) {
 		registrationRecord := testkeeper.GetTestConsumerMetadata()
 
 		providerKeeper.SetConsumerChainId(ctx, consumerId, chainIds[i])
-		providerKeeper.SetConsumerMetadata(ctx, consumerId, registrationRecord)
-		providerKeeper.SetConsumerInitializationParameters(ctx, consumerId, initializationRecord)
-		providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, testkeeper.GetTestPowerShapingParameters())
+		err = providerKeeper.SetConsumerMetadata(ctx, consumerId, registrationRecord)
+		require.NoError(t, err)
+		err = providerKeeper.SetConsumerInitializationParameters(ctx, consumerId, initializationRecord)
+		require.NoError(t, err)
+		err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, testkeeper.GetTestPowerShapingParameters())
+		require.NoError(t, err)
 		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 		providerKeeper.SetClientIdToConsumerId(ctx, "clientID", consumerId)
 
-		err := providerKeeper.CreateConsumerClient(ctx, consumerId)
+		err = providerKeeper.CreateConsumerClient(ctx, consumerId)
 		require.NoError(t, err)
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")
 		require.NoError(t, err)
