@@ -1,8 +1,10 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"sort"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -63,6 +65,11 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
 func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chain, error) {
+	chainID, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find chainID for consumer (%s)", consumerId)
+	}
+
 	clientID, found := k.GetConsumerClientId(ctx, consumerId)
 	if !found {
 		return types.Chain{}, fmt.Errorf("cannot find clientID for consumer (%s)", consumerId)
@@ -93,8 +100,12 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
+	allowInactiveVals := k.AllowsInactiveValidators(ctx, consumerId)
+
+	minStake := k.GetMinStake(ctx, consumerId)
+
 	return types.Chain{
-		ChainId:            consumerId,
+		ChainId:            chainID,
 		ClientId:           clientID,
 		Top_N:              topN,
 		MinPowerInTop_N:    minPowerInTopN,
@@ -102,6 +113,8 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		ValidatorsPowerCap: validatorsPowerCap,
 		Allowlist:          strAllowlist,
 		Denylist:           strDenylist,
+		AllowInactiveVals:  allowInactiveVals,
+		MinStake:           minStake,
 	}, nil
 }
 
@@ -333,18 +346,55 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, found := k.GetConsumerClientId(ctx, consumerId); !found {
-		// chain has to have started; consumer client id is set for a chain during the chain's spawn time
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("no started consumer chain: %s", consumerId))
+	// get the consumer phase
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot find a phase for consumer: %s", consumerId)
+	}
+
+	// query consumer validator set
+
+	var consumerValSet []types.ConsensusValidator
+	var err error
+
+	// if the consumer launched, the consumer valset has been persisted
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+		consumerValSet, err = k.GetConsumerValSet(ctx, consumerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		//  if the consumer hasn't been launched or stopped, compute the consumer validator set
+	} else if phase != types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
+		bondedValidators, err := k.GetLastBondedValidators(ctx)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get last validators: %s", err))
+		}
+		minPower := int64(0)
+		// for TopN chains, compute the minPower that will be automatically opted in
+		if topN := k.GetTopN(ctx, consumerId); topN > 0 {
+			activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get active validators: %s", err))
+			}
+
+			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute min power to opt in for chain %s: %s", consumerId, err))
+			}
+		}
+
+		consumerValSet = k.ComputeNextValidators(ctx, consumerId, bondedValidators, minPower)
+
+		// sort the address of the validators by ascending lexical order as they were persisted to the store
+		sort.Slice(consumerValSet, func(i, j int) bool {
+			return bytes.Compare(
+				consumerValSet[i].ProviderConsAddr,
+				consumerValSet[j].ProviderConsAddr,
+			) == -1
+		})
 	}
 
 	var validators []*types.QueryConsumerValidatorsValidator
-
-	consumerValSet, err := k.GetConsumerValSet(ctx, consumerId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	for _, consumerVal := range consumerValSet {
 		provAddr := types.ProviderConsAddress{Address: consumerVal.ProviderConsAddr}
 		consAddr := provAddr.ToSdkConsAddr()
@@ -553,8 +603,8 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve owner address for consumer id: %s", consumerId)
 	}
 
-	phase, ok := k.GetConsumerPhase(ctx, consumerId)
-	if !ok {
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
 		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve phase for consumer id: %s", consumerId)
 	}
 
@@ -570,7 +620,7 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 	return &types.QueryConsumerChainResponse{
 		ChainId:            chainId,
 		OwnerAddress:       ownerAddress,
-		Phase:              uint32(phase),
+		Phase:              phase.String(),
 		Metadata:           metadata,
 		InitParams:         &initParams,
 		PowerShapingParams: &powerParams,

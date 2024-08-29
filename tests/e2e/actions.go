@@ -299,7 +299,9 @@ func (tr Chain) submitConsumerAdditionProposal(
    "validator_set_cap": %d,
    "allowlist": %s,
    "denylist": %s,
-   "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+   "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+   "allow_inactive_vals": %t,
+   "min_stake": "%d"
   }
  ],
 "metadata": "ipfs://CID",
@@ -327,6 +329,8 @@ func (tr Chain) submitConsumerAdditionProposal(
 		action.ValidatorSetCap,
 		action.Allowlist,
 		action.Denylist,
+		action.AllowInactiveVals,
+		action.MinStake,
 		action.Deposit)
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
@@ -587,13 +591,14 @@ type SubmitConsumerModificationProposalAction struct {
 	ValidatorSetCap    uint32
 	Allowlist          []string
 	Denylist           []string
+	AllowInactiveVals  bool
+	MinStake           uint64
 }
 
 func (tr Chain) submitConsumerModificationProposal(
 	action SubmitConsumerModificationProposalAction,
 	verbose bool,
 ) {
-
 	template := `
 
 {
@@ -609,8 +614,8 @@ func (tr Chain) submitConsumerModificationProposal(
 	"allowlist": %s,
 	"denylist": %s,
     "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-    "min_stake": "0",
-    "allow_inactive_vals": false
+    "min_stake": %d,
+    "allow_inactive_vals": %t
   }
  ],
 "metadata": "ipfs://CID",
@@ -629,6 +634,8 @@ func (tr Chain) submitConsumerModificationProposal(
 		action.Allowlist,
 		action.Denylist,
 		action.Deposit,
+		action.MinStake,
+		action.AllowInactiveVals,
 	)
 
 	// #nosec G204 -- bypass unsafe quoting warning (no production code)
@@ -2227,8 +2234,8 @@ func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenoms
  "messages": [
   {
    "@type": "/interchain_security.ccv.provider.v1.MsgChangeRewardDenoms",
-   "denoms_to_add": %s,
-   "denoms_to_remove": %s,
+   "denoms_to_add": ["%s"],
+   "denoms_to_remove": ["%s"],
    "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
   }
  ],
@@ -2239,15 +2246,15 @@ func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenoms
  "expedited": false
 }`
 
-	denomsToAdd := []string{action.Denom}
-	denomsToRemove := []string{"stake"}
+	denomsToAdd := action.Denom
+	denomsToRemove := "stake"
 	jsonStr := fmt.Sprintf(template,
 		denomsToAdd,
 		denomsToRemove,
 		action.Deposit)
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/consumer-addition.proposal"
+	proposalFile := "/change-reward.proposal"
 	bz, err := tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
 	).CombinedOutput()

@@ -235,7 +235,7 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper.SetConsumerMetadata(ctx, consumerId, GetTestConsumerMetadata())
 	providerKeeper.SetConsumerInitializationParameters(ctx, consumerId, GetTestInitializationParameters())
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, GetTestPowerShapingParameters())
-	providerKeeper.SetConsumerPhase(ctx, consumerId, providerkeeper.Initialized)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 
 	err := providerKeeper.CreateConsumerClient(ctx, consumerId)
 	require.NoError(t, err)
@@ -282,23 +282,18 @@ func GetTestConsumerMetadata() providertypes.ConsumerMetadata {
 }
 
 func GetTestInitializationParameters() providertypes.ConsumerInitializationParameters {
-	initialHeight := clienttypes.NewHeight(4, 5)
-	spawnTime := time.Now().UTC()
-	ccvTimeoutPeriod := types.DefaultCCVTimeoutPeriod
-	transferTimeoutPeriod := types.DefaultTransferTimeoutPeriod
-	unbondingPeriod := types.DefaultConsumerUnbondingPeriod
 	return providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     initialHeight,
+		InitialHeight:                     clienttypes.NewHeight(4, 5),
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
-		SpawnTime:                         spawnTime,
+		SpawnTime:                         time.Now().UTC(),
 		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
 		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   "",
 		HistoricalEntries:                 types.DefaultHistoricalEntries,
-		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
-		TransferTimeoutPeriod:             transferTimeoutPeriod,
-		UnbondingPeriod:                   unbondingPeriod,
+		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
+		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
+		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
 	}
 }
 
@@ -309,35 +304,9 @@ func GetTestPowerShapingParameters() providertypes.PowerShapingParameters {
 		ValidatorSetCap:    0,
 		Allowlist:          nil,
 		Denylist:           nil,
+		MinStake:           0,
+		AllowInactiveVals:  false,
 	}
-}
-
-func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
-	prop := providertypes.NewConsumerAdditionProposal(
-		"chainID",
-		"description",
-		"chainID",
-		clienttypes.NewHeight(4, 5),
-		[]byte("gen_hash"),
-		[]byte("bin_hash"),
-		time.Now(),
-		types.DefaultConsumerRedistributeFrac,
-		types.DefaultBlocksPerDistributionTransmission,
-		"",
-		types.DefaultHistoricalEntries,
-		types.DefaultCCVTimeoutPeriod,
-		types.DefaultTransferTimeoutPeriod,
-		types.DefaultConsumerUnbondingPeriod,
-		0,
-		0,
-		0,
-		nil,
-		nil,
-		0,
-		false,
-	).(*providertypes.ConsumerAdditionProposal)
-
-	return prop
 }
 
 func GetTestMsgUpdateConsumer() providertypes.MsgUpdateConsumer {

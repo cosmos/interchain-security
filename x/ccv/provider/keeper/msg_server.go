@@ -2,8 +2,11 @@ package keeper
 
 import (
 	"context"
-	errorsmod "cosmossdk.io/errors"
 	"fmt"
+	"strings"
+	"time"
+
+	errorsmod "cosmossdk.io/errors"
 	tmtypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,8 +14,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
-	"strings"
-	"time"
 )
 
 type msgServer struct {
@@ -87,19 +88,21 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 }
 
 // RemoveConsumer defines an RPC handler method for MsgRemoveConsumer
-func (k msgServer) RemoveConsumer(
-	goCtx context.Context,
-	msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
-	if k.GetAuthority() != msg.Authority {
-		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
-	}
-
+func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	consumerId := msg.ConsumerId
+	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
+	if err != nil {
+		return &types.MsgRemoveConsumerResponse{}, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
+	}
 
-	phase, found := k.Keeper.GetConsumerPhase(ctx, consumerId)
-	if !found || phase != Launched {
+	if msg.Signer != ownerAddress {
+		return &types.MsgRemoveConsumerResponse{}, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
+	}
+
+	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
 			"chain with consumer id: %s has to be in its launched phase", consumerId)
 	}
@@ -313,7 +316,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
 	k.Keeper.SetConsumerChainId(ctx, consumerId, msg.ChainId)
-	k.Keeper.SetConsumerPhase(ctx, consumerId, Registered)
+	k.Keeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
 
 	if err := k.Keeper.SetConsumerMetadata(ctx, consumerId, msg.Metadata); err != nil {
 		return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
@@ -341,7 +344,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	}
 
 	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
-		k.Keeper.SetConsumerPhase(ctx, consumerId, Initialized)
+		k.Keeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime); err != nil {
 			return &types.MsgCreateConsumerResponse{}, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
@@ -356,10 +359,12 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	consumerId := msg.ConsumerId
 
-	phase, found := k.Keeper.GetConsumerPhase(ctx, consumerId)
-	if found && phase == Stopped {
+	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
+		phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
+		phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPhase,
-			"cannot update consumer chain that is in the stopped phase: %s", consumerId)
+			"cannot update consumer chain that is not in the registered, initialized, or launched phase: %s", consumerId)
 	}
 
 	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
@@ -444,7 +449,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	}
 
 	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
-		k.Keeper.SetConsumerPhase(ctx, consumerId, Initialized)
+		k.Keeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime); err != nil {
 			return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)

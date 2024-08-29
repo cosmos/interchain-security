@@ -403,12 +403,14 @@ func (k Keeper) AssignConsumerKey(
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
-	phase, found := k.GetConsumerPhase(ctx, consumerId)
-	if !found || phase == Stopped {
-		//check that the consumer chain is either registered, initialized, or launched
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
+		phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
+		phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+		// check that the consumer chain is either registered, initialized, or launched
 		return errorsmod.Wrapf(
-			types.ErrUnknownConsumerId, consumerId,
-		)
+			types.ErrInvalidPhase,
+			"cannot assign a key to a consumer chain that is not in the registered, initialized, or launched phase: %s", consumerId)
 	}
 
 	consAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
@@ -460,7 +462,7 @@ func (k Keeper) AssignConsumerKey(
 		oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
 
 		// check whether the consumer chain has already launched (i.e., a client to the consumer was already created)
-		if phase == Launched {
+		if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 			// mark the old consumer address as prunable once UnbondingPeriod elapses;
 			// note: this state is removed on EndBlock
 			unbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)

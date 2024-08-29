@@ -13,26 +13,6 @@ import (
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 )
 
-// ConsumerPhase captures the phases of a consumer chain according to `docs/docs/adrs/adr-018-permissionless-ics.md`
-type ConsumerPhase byte
-
-const (
-	// Registered phase indicates the phase in which a consumer chain has been assigned a unique consumer id. This consumer
-	// id can be used to interact with the consumer chain (e.g., when a validator opts in to a chain). A chain in this
-	// phase cannot yet launch. It has to be initialized first.
-	Registered ConsumerPhase = iota
-	// Initialized phase indicates the phase in which a consumer chain has set all the needed parameters to launch but
-	// has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
-	Initialized
-	// FailedToLaunch phase indicates that the chain attempted but failed to launch (e.g., due to no validator opting in).
-	FailedToLaunch
-	// Launched phase corresponds to the phase in which a consumer chain is running and consuming a subset of the validator
-	// set of the provider.
-	Launched
-	// Stopped phase corresponds to the phase in which a previously-launched chain has stopped.
-	Stopped
-)
-
 // setConsumerId sets the provided consumerId
 func (k Keeper) setConsumerId(ctx sdk.Context, consumerId uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -94,9 +74,9 @@ func (k Keeper) GetConsumerOwnerAddress(ctx sdk.Context, consumerId string) (str
 }
 
 // SetConsumerOwnerAddress sets the chain id associated with this consumer id
-func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId string, ownerAddr string) {
+func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId string, chainId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(ownerAddr))
+	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(chainId))
 }
 
 // DeleteConsumerOwnerAddress deletes the owner address associated with this consumer id
@@ -199,19 +179,22 @@ func (k Keeper) DeleteConsumerPowerShapingParameters(ctx sdk.Context, consumerId
 }
 
 // GetConsumerPhase returns the phase associated with this consumer id
-func (k Keeper) GetConsumerPhase(ctx sdk.Context, consumerId string) (ConsumerPhase, bool) {
+func (k Keeper) GetConsumerPhase(ctx sdk.Context, consumerId string) types.ConsumerPhase {
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.ConsumerIdToPhaseKey(consumerId))
 	if buf == nil {
-		return ConsumerPhase(0), false
+		return types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED
 	}
-	return ConsumerPhase(buf[0]), true
+	phase := types.ConsumerPhase(binary.BigEndian.Uint32(buf))
+	return phase
 }
 
 // SetConsumerPhase sets the phase associated with this consumer id
-func (k Keeper) SetConsumerPhase(ctx sdk.Context, consumerId string, phase ConsumerPhase) {
+func (k Keeper) SetConsumerPhase(ctx sdk.Context, consumerId string, phase types.ConsumerPhase) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToPhaseKey(consumerId), []byte{byte(phase)})
+	phaseBytes := make([]byte, 8)
+	binary.BigEndian.PutUint32(phaseBytes, uint32(phase))
+	store.Set(types.ConsumerIdToPhaseKey(consumerId), phaseBytes)
 }
 
 // DeleteConsumerPhase deletes the phase associated with this consumer id
@@ -671,8 +654,8 @@ func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, pre
 // TODO (PERMISSIONLESS): could remove, all fields should be there because we validate the initialization parameters
 func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) {
 	// a chain that is already launched or stopped cannot launch again
-	phase, found := k.GetConsumerPhase(ctx, consumerId)
-	if !found || phase == Launched || phase == Stopped {
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED || phase == types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
 		return time.Time{}, false
 	}
 

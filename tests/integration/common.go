@@ -42,7 +42,7 @@ func (s *CCVTestSuite) getFirstBundle() icstestingutils.ConsumerBundle {
 }
 
 func (s *CCVTestSuite) getBundleByIdx(index int) icstestingutils.ConsumerBundle {
-	return *s.consumerBundles[fmt.Sprintf("%d", 2+index)]
+	return *s.consumerBundles[fmt.Sprintf("%d", index)]
 }
 
 func (s *CCVTestSuite) providerCtx() sdk.Context {

@@ -41,7 +41,6 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdValidatorConsumerCommissionRate())
 	cmd.AddCommand(CmdBlocksUntilNextEpoch())
 	cmd.AddCommand(CmdConsumerIdFromClientId())
-	cmd.AddCommand(CmdConsumerChain())
 	return cmd
 }
 
@@ -613,33 +612,6 @@ func CmdConsumerIdFromClientId() *cobra.Command {
 
 			req := &types.QueryConsumerIdFromClientIdRequest{ClientId: args[0]}
 			res, err := queryClient.QueryConsumerIdFromClientId(cmd.Context(), req)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
-
-func CmdConsumerChain() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "consumer-chain [consumer-id]",
-		Short: "Query the consumer chain associated with the consumer id",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-			queryClient := types.NewQueryClient(clientCtx)
-
-			req := &types.QueryConsumerChainRequest{ConsumerId: args[0]}
-			res, err := queryClient.QueryConsumerChain(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

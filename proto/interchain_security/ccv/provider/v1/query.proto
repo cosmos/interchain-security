@@ -233,6 +233,11 @@ message Chain {
   repeated string allowlist = 7;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
+  // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+  uint64 min_stake = 9;
+  // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+  bool allow_inactive_vals = 10;
+  
 }
 
 message QueryValidatorConsumerAddrRequest {
@@ -442,7 +447,7 @@ message QueryConsumerChainRequest {
 message QueryConsumerChainResponse {
   string chain_id = 1;
   string owner_address = 2;
-  uint32 phase = 3;
+  string phase = 3;
   ConsumerMetadata metadata = 4 [ (gogoproto.nullable) = false ];
   ConsumerInitializationParameters init_params = 5;
   PowerShapingParameters power_shaping_params = 6;  
