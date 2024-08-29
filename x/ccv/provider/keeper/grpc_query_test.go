@@ -654,7 +654,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			name: "expect initialized consumers when phase is set to Initialized",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
 				consumers[1].Phase = types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED
-				err := pk.AppendConsumerToBeLaunchedOnSpawnTime(ctx, consumerIds[1], time.Now())
+				err := pk.AppendConsumerToBeLaunched(ctx, consumerIds[1], time.Now())
 				require.NoError(t, err)
 				pk.SetConsumerPhase(ctx, consumerIds[1], types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 			},

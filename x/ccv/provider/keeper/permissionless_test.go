@@ -263,28 +263,28 @@ func TestConsumerStopTime(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestConsumersToBeLaunched tests `AppendConsumerToBeLaunchedOnSpawnTime`, `GetConsumersToBeLaunched`, and `RemoveConsumerToBeLaunchedFromSpawnTime`
+// TestConsumersToBeLaunched tests `AppendConsumerToBeLaunched`, `GetConsumersToBeLaunched`, and `RemoveConsumerToBeLaunched`
 func TestConsumersToBeLaunched(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	spawnTime := time.Now()
-	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, "consumerId1", spawnTime)
+	providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId1", spawnTime)
 	consumers, err := providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1"}, consumers.Ids)
 
-	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, "consumerId2", spawnTime)
+	providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId2", spawnTime)
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1", "consumerId2"}, consumers.Ids)
 
-	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, "consumerId3", spawnTime)
+	providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId3", spawnTime)
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, consumers.Ids)
 
-	err = providerKeeper.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, "consumerId2", spawnTime)
+	err = providerKeeper.RemoveConsumerToBeLaunched(ctx, "consumerId2", spawnTime)
 	require.NoError(t, err)
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
 	require.NoError(t, err)
@@ -292,7 +292,7 @@ func TestConsumersToBeLaunched(t *testing.T) {
 
 	// also add consumer ids under a different spawn time and verify everything under the original spawn time is still there
 	spawnTimePlusOneHour := spawnTime.Add(time.Hour)
-	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, "consumerId4", spawnTimePlusOneHour)
+	providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId4", spawnTimePlusOneHour)
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTimePlusOneHour)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId4"}, consumers.Ids)
@@ -302,51 +302,51 @@ func TestConsumersToBeLaunched(t *testing.T) {
 	require.Equal(t, []string{"consumerId1", "consumerId3"}, consumers.Ids)
 
 	// start removing all consumers from `spawnTime`
-	err = providerKeeper.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, "consumerId3", spawnTime)
+	err = providerKeeper.RemoveConsumerToBeLaunched(ctx, "consumerId3", spawnTime)
 	require.NoError(t, err)
-	err = providerKeeper.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, "consumerId1", spawnTime)
+	err = providerKeeper.RemoveConsumerToBeLaunched(ctx, "consumerId1", spawnTime)
 	require.NoError(t, err)
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
 	require.NoError(t, err)
 	require.Empty(t, consumers.Ids)
 
 	// remove from `spawnTimePlusOneHour`
-	err = providerKeeper.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, "consumerId4", spawnTimePlusOneHour)
+	err = providerKeeper.RemoveConsumerToBeLaunched(ctx, "consumerId4", spawnTimePlusOneHour)
 	require.NoError(t, err)
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTimePlusOneHour)
 	require.NoError(t, err)
 	require.Empty(t, consumers.Ids)
 
 	// add another consumer for `spawnTime`
-	err = providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, "consumerId5", spawnTime)
+	err = providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId5", spawnTime)
 	require.NoError(t, err)
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId5"}, consumers.Ids)
 }
 
-// TestConsumersToBeStopped tests `AppendConsumerToBeLaunchedOnSpawnTime`, `GetConsumersToBeLaunched`, and `RemoveConsumerToBeLaunchedFromSpawnTime`
+// TestConsumersToBeStopped tests `AppendConsumerToBeLaunched`, `GetConsumersToBeLaunched`, and `RemoveConsumerToBeLaunched`
 func TestConsumersToBeStopped(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	stopTime := time.Now()
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, "consumerId1", stopTime)
+	providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId1", stopTime)
 	consumers, err := providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1"}, consumers.Ids)
 
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, "consumerId2", stopTime)
+	providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId2", stopTime)
 	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1", "consumerId2"}, consumers.Ids)
 
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, "consumerId3", stopTime)
+	providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId3", stopTime)
 	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, consumers.Ids)
 
-	err = providerKeeper.RemoveConsumerToBeStoppedFromStopTime(ctx, "consumerId2", stopTime)
+	err = providerKeeper.RemoveConsumerToBeStopped(ctx, "consumerId2", stopTime)
 	require.NoError(t, err)
 	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
 	require.NoError(t, err)
@@ -354,7 +354,7 @@ func TestConsumersToBeStopped(t *testing.T) {
 
 	// also add consumer ids under a different stop time and verify everything under the original stop time is still there
 	stopTimePlusOneHour := stopTime.Add(time.Hour)
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, "consumerId4", stopTimePlusOneHour)
+	providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId4", stopTimePlusOneHour)
 	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTimePlusOneHour)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId4"}, consumers.Ids)
@@ -364,23 +364,23 @@ func TestConsumersToBeStopped(t *testing.T) {
 	require.Equal(t, []string{"consumerId1", "consumerId3"}, consumers.Ids)
 
 	// start removing all consumers from `stopTime`
-	err = providerKeeper.RemoveConsumerToBeStoppedFromStopTime(ctx, "consumerId3", stopTime)
+	err = providerKeeper.RemoveConsumerToBeStopped(ctx, "consumerId3", stopTime)
 	require.NoError(t, err)
-	err = providerKeeper.RemoveConsumerToBeStoppedFromStopTime(ctx, "consumerId1", stopTime)
+	err = providerKeeper.RemoveConsumerToBeStopped(ctx, "consumerId1", stopTime)
 	require.NoError(t, err)
 	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
 	require.NoError(t, err)
 	require.Empty(t, consumers.Ids)
 
 	// remove from `stopTimePlusOneHour`
-	err = providerKeeper.RemoveConsumerToBeStoppedFromStopTime(ctx, "consumerId4", stopTimePlusOneHour)
+	err = providerKeeper.RemoveConsumerToBeStopped(ctx, "consumerId4", stopTimePlusOneHour)
 	require.NoError(t, err)
 	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTimePlusOneHour)
 	require.NoError(t, err)
 	require.Empty(t, consumers.Ids)
 
 	// add another consumer for `stopTime`
-	err = providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, "consumerId5", stopTime)
+	err = providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId5", stopTime)
 	require.NoError(t, err)
 	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
 	require.NoError(t, err)
@@ -474,9 +474,9 @@ func TestGetInitializedConsumersReadyToLaunch(t *testing.T) {
 	// no chains to-be-launched exist
 	require.Empty(t, providerKeeper.GetInitializedConsumersReadyToLaunch(ctx, 5))
 
-	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, "consumerId1", time.Unix(10, 0))
-	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, "consumerId2", time.Unix(20, 0))
-	providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, "consumerId3", time.Unix(30, 0))
+	providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId1", time.Unix(10, 0))
+	providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId2", time.Unix(20, 0))
+	providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId3", time.Unix(30, 0))
 
 	// time has not yet reached the spawn time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
@@ -507,9 +507,9 @@ func TestGetLaunchedConsumersReadyToStop(t *testing.T) {
 	// no chains to-be-stopped exist
 	require.Empty(t, providerKeeper.GetLaunchedConsumersReadyToStop(ctx, 3))
 
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, "consumerId1", time.Unix(10, 0))
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, "consumerId2", time.Unix(20, 0))
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, "consumerId3", time.Unix(30, 0))
+	providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId1", time.Unix(10, 0))
+	providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId2", time.Unix(20, 0))
+	providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId3", time.Unix(30, 0))
 
 	// time has not yet reached the stop time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))

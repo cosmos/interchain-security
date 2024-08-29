@@ -329,13 +329,13 @@ func (k Keeper) GetConsumersToBeLaunched(ctx sdk.Context, spawnTime time.Time) (
 	return k.getConsumerIdsBasedOnTime(ctx, types.SpawnTimeToConsumerIdsKey, spawnTime)
 }
 
-// AppendConsumerToBeLaunchedOnSpawnTime appends the provider consumer id for the given spawn time
-func (k Keeper) AppendConsumerToBeLaunchedOnSpawnTime(ctx sdk.Context, consumerId string, spawnTime time.Time) error {
+// AppendConsumerToBeLaunched appends the provider consumer id for the given spawn time
+func (k Keeper) AppendConsumerToBeLaunched(ctx sdk.Context, consumerId string, spawnTime time.Time) error {
 	return k.appendConsumerIdOnTime(ctx, consumerId, types.SpawnTimeToConsumerIdsKey, spawnTime)
 }
 
-// RemoveConsumerToBeLaunchedFromSpawnTime removes consumer id from if stored for this specific spawn time
-func (k Keeper) RemoveConsumerToBeLaunchedFromSpawnTime(ctx sdk.Context, consumerId string, spawnTime time.Time) error {
+// RemoveConsumerToBeLaunched removes consumer id from if stored for this specific spawn time
+func (k Keeper) RemoveConsumerToBeLaunched(ctx sdk.Context, consumerId string, spawnTime time.Time) error {
 	return k.removeConsumerIdFromTime(ctx, consumerId, types.SpawnTimeToConsumerIdsKey, spawnTime)
 }
 
@@ -344,13 +344,13 @@ func (k Keeper) GetConsumersToBeStopped(ctx sdk.Context, stopTime time.Time) (ty
 	return k.getConsumerIdsBasedOnTime(ctx, types.StopTimeToConsumerIdsKey, stopTime)
 }
 
-// AppendConsumerToBeStoppedOnStopTime appends the provider consumer id for the given stop time
-func (k Keeper) AppendConsumerToBeStoppedOnStopTime(ctx sdk.Context, consumerId string, stopTime time.Time) error {
+// AppendConsumerToBeStopped appends the provider consumer id for the given stop time
+func (k Keeper) AppendConsumerToBeStopped(ctx sdk.Context, consumerId string, stopTime time.Time) error {
 	return k.appendConsumerIdOnTime(ctx, consumerId, types.StopTimeToConsumerIdsKey, stopTime)
 }
 
-// RemoveConsumerToBeStoppedFromStopTime removes consumer id from if stored for this specific stop time
-func (k Keeper) RemoveConsumerToBeStoppedFromStopTime(ctx sdk.Context, consumerId string, stopTime time.Time) error {
+// RemoveConsumerToBeStopped removes consumer id from if stored for this specific stop time
+func (k Keeper) RemoveConsumerToBeStopped(ctx sdk.Context, consumerId string, stopTime time.Time) error {
 	return k.removeConsumerIdFromTime(ctx, consumerId, types.StopTimeToConsumerIdsKey, stopTime)
 }
 
@@ -649,12 +649,12 @@ func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, pre
 	if !previousSpawnTime.Equal(time.Time{}) {
 		// if this is not the first initialization and hence `previousSpawnTime` does not contain the zero value of `Time`
 		// remove the consumer id from the previous spawn time
-		err := k.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, consumerId, previousSpawnTime)
+		err := k.RemoveConsumerToBeLaunched(ctx, consumerId, previousSpawnTime)
 		if err != nil {
 			return err
 		}
 	}
-	return k.AppendConsumerToBeLaunchedOnSpawnTime(ctx, consumerId, spawnTime)
+	return k.AppendConsumerToBeLaunched(ctx, consumerId, spawnTime)
 }
 
 // CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence

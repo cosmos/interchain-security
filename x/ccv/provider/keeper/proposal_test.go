@@ -613,7 +613,7 @@ func TestBeginBlockInit(t *testing.T) {
 		providerKeeper.SetConsumerInitializationParameters(ctx, fmt.Sprintf("%d", i), r)
 		// set up the chains in their initialized phase, hence they could launch
 		providerKeeper.SetConsumerPhase(ctx, fmt.Sprintf("%d", i), providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
-		providerKeeper.AppendConsumerToBeLaunchedOnSpawnTime(ctx, fmt.Sprintf("%d", i), r.SpawnTime)
+		providerKeeper.AppendConsumerToBeLaunched(ctx, fmt.Sprintf("%d", i), r.SpawnTime)
 	}
 	for i, r := range powerShapingParameters {
 		providerKeeper.SetConsumerPowerShapingParameters(ctx, fmt.Sprintf("%d", i), r)
@@ -678,11 +678,11 @@ func TestBeginBlockCCR(t *testing.T) {
 	chainIds := []string{"chain1", "chain2", "chain3"}
 	consumerIds := []string{"consumerId1", "consumerId2", "consumerId3"}
 	providerKeeper.SetConsumerStopTime(ctx, consumerIds[0], now.Add(-time.Hour))
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, consumerIds[0], now.Add(-time.Hour))
+	providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[0], now.Add(-time.Hour))
 	providerKeeper.SetConsumerStopTime(ctx, consumerIds[1], now)
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, consumerIds[1], now)
+	providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[1], now)
 	providerKeeper.SetConsumerStopTime(ctx, consumerIds[2], now.Add(time.Hour))
-	providerKeeper.AppendConsumerToBeStoppedOnStopTime(ctx, consumerIds[2], now.Add(time.Hour))
+	providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[2], now.Add(time.Hour))
 
 	//
 	// Mock expectations

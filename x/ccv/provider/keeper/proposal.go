@@ -299,7 +299,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		}
 		// Remove consumer to prevent re-trying launching this chain.
 		// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
-		k.RemoveConsumerToBeLaunchedFromSpawnTime(ctx, consumerId, record.SpawnTime)
+		k.RemoveConsumerToBeLaunched(ctx, consumerId, record.SpawnTime)
 
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.LaunchConsumer(cachedCtx, consumerId)
@@ -326,7 +326,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 
 		stopTime, err := k.GetConsumerStopTime(ctx, consumerId)
 		if err != nil {
-			k.Logger(ctx).Info("chain could not be stopped",
+			k.Logger(ctx).Error("chain could not be stopped",
 				"consumerId", consumerId,
 				"err", err.Error())
 			continue
@@ -341,7 +341,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 		}
 
 		k.SetConsumerPhase(cachedCtx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
-		k.RemoveConsumerToBeStoppedFromStopTime(ctx, consumerId, stopTime)
+		k.RemoveConsumerToBeStopped(ctx, consumerId, stopTime)
 
 		// The cached context is created with a new EventManager so we merge the event into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
