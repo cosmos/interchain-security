@@ -16,10 +16,7 @@ import (
 // HandleOptIn prepares validator `providerAddr` to opt in to `consumerId` with an optional `consumerKey` consumer public key.
 // Note that the validator only opts in at the end of an epoch.
 func (k Keeper) HandleOptIn(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, consumerKey string) error {
-	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
-		phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
-		phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+	if !k.IsConsumerActive(ctx, consumerId) {
 		return errorsmod.Wrapf(
 			types.ErrInvalidPhase,
 			"cannot opt in to a consumer chain that is not in the registered, initialized, or launched phase: %s", consumerId)

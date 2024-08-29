@@ -314,7 +314,7 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	optedInVals := []string{}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if !k.IsConsumerProposedOrRegistered(ctx, consumerId) {
+	if !k.IsConsumerActive(ctx, consumerId) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerId))
 	}
 
@@ -532,7 +532,7 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if !k.IsConsumerProposedOrRegistered(ctx, consumerId) {
+	if !k.IsConsumerActive(ctx, consumerId) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown consumer chain: %s", consumerId))
 	}
 

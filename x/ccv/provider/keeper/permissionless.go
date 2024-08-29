@@ -203,6 +203,14 @@ func (k Keeper) DeleteConsumerPhase(ctx sdk.Context, consumerId string) {
 	store.Delete(types.ConsumerIdToPhaseKey(consumerId))
 }
 
+// IsConsumerActive checks if a consumer chain is either registered, initialized, or launched.
+func (k Keeper) IsConsumerActive(ctx sdk.Context, consumerId string) bool {
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	return phase == types.ConsumerPhase_CONSUMER_PHASE_REGISTERED ||
+		phase == types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED ||
+		phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED
+}
+
 // GetConsumerStopTime returns the stop time associated with the to-be-stopped chain with consumer id
 func (k Keeper) GetConsumerStopTime(ctx sdk.Context, consumerId string) (time.Time, error) {
 	store := ctx.KVStore(k.storeKey)

@@ -365,10 +365,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	consumerId := msg.ConsumerId
 
-	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
-		phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
-		phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+	if !k.Keeper.IsConsumerActive(ctx, consumerId) {
 		return &types.MsgUpdateConsumerResponse{}, errorsmod.Wrapf(types.ErrInvalidPhase,
 			"cannot update consumer chain that is not in the registered, initialized, or launched phase: %s", consumerId)
 	}

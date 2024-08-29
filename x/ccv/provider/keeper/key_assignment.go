@@ -403,10 +403,7 @@ func (k Keeper) AssignConsumerKey(
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
-	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_REGISTERED &&
-		phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED &&
-		phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+	if !k.IsConsumerActive(ctx, consumerId) {
 		// check that the consumer chain is either registered, initialized, or launched
 		return errorsmod.Wrapf(
 			types.ErrInvalidPhase,
@@ -462,6 +459,7 @@ func (k Keeper) AssignConsumerKey(
 		oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
 
 		// check whether the consumer chain has already launched (i.e., a client to the consumer was already created)
+		phase := k.GetConsumerPhase(ctx, consumerId)
 		if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 			// mark the old consumer address as prunable once UnbondingPeriod elapses;
 			// note: this state is removed on EndBlock
@@ -545,19 +543,6 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, consumerId string) {
 	for _, consumerAddrsToPrune := range k.GetAllConsumerAddrsToPrune(ctx, consumerId) {
 		k.DeleteConsumerAddrsToPrune(ctx, consumerId, consumerAddrsToPrune.PruneTs)
 	}
-}
-
-// IsConsumerProposedOrRegistered checks if a consumer chain is either registered, meaning either already running
-// or will run soon, or proposed its ConsumerAdditionProposal was submitted but the chain was not yet added to ICS yet.
-func (k Keeper) IsConsumerProposedOrRegistered(ctx sdk.Context, consumerId string) bool {
-	allConsumerChains := k.GetAllActiveConsumerIds(ctx)
-	for _, c := range allConsumerChains {
-		if c == consumerId {
-			return true
-		}
-	}
-
-	return false
 }
 
 // ValidatorConsensusKeyInUse checks if the given consensus key is already
