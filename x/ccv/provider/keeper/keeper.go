@@ -636,7 +636,9 @@ func (k Keeper) DeletePendingVSCPackets(ctx sdk.Context, consumerId string) {
 	store.Delete(types.PendingVSCsKey(consumerId))
 }
 
-// SetConsumerClientId sets the client id for the given consumer id
+// SetConsumerClientId sets the client id for the given consumer id.
+// Note that the method also stores a reverse index that can be accessed
+// by calling GetClientIdToConsumerId.
 func (k Keeper) SetConsumerClientId(ctx sdk.Context, consumerId, clientId string) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -672,6 +674,7 @@ func (k Keeper) GetClientIdToConsumerId(ctx sdk.Context, clientId string) (strin
 }
 
 // DeleteConsumerClientId removes from the store the client id for the given consumer id.
+// Note that the method also removes the reverse index.
 func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 

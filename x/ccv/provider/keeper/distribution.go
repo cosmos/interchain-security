@@ -371,7 +371,7 @@ func (k Keeper) ChangeRewardDenoms(ctx sdk.Context, denomsToAdd, denomsToRemove 
 	for _, denomToAdd := range denomsToAdd {
 		// Log error and move on if one of the denoms is already registered
 		if k.ConsumerRewardDenomExists(ctx, denomToAdd) {
-			k.Logger(ctx).Info("ChangeRewardDenoms: denom already registered",
+			k.Logger(ctx).Error("ChangeRewardDenoms: denom already registered",
 				"denomToAdd", denomToAdd,
 			)
 			continue
@@ -385,7 +385,7 @@ func (k Keeper) ChangeRewardDenoms(ctx sdk.Context, denomsToAdd, denomsToRemove 
 	for _, denomToRemove := range denomsToRemove {
 		// Log error and move on if one of the denoms is not registered
 		if !k.ConsumerRewardDenomExists(ctx, denomToRemove) {
-			k.Logger(ctx).Info("ChangeRewardDenoms: denom not registered",
+			k.Logger(ctx).Error("ChangeRewardDenoms: denom not registered",
 				"denomToRemove", denomToRemove,
 			)
 			continue
