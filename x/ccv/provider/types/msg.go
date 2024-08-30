@@ -21,18 +21,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-// provider message types
 const (
-	TypeMsgAssignConsumerKey          = "assign_consumer_key"
-	TypeMsgSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
-	TypeMsgSubmitConsumerDoubleVoting = "submit_consumer_double_vote"
-	TypeMsgCreateConsumer             = "create_consumer"
-	TypeMsgUpdateConsumer             = "update_consumer"
-	TypeMsgRemoveConsumer             = "remove_consumer"
-	TypeMsgOptIn                      = "opt_in"
-	TypeMsgOptOut                     = "opt_out"
-	TypeMsgSetConsumerCommissionRate  = "set_consumer_commission_rate"
-
 	// MaxNameLength defines the maximum consumer name length
 	MaxNameLength = 50
 	// MaxDescriptionLength defines the maximum consumer description length
@@ -80,14 +69,6 @@ func NewMsgAssignConsumerKey(consumerId string, providerValidatorAddress sdk.Val
 		ConsumerKey:  consumerConsensusPubKey,
 		Signer:       signer,
 	}, nil
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgAssignConsumerKey) Route() string { return RouterKey }
-
-// Type implements the sdk.Msg interface.
-func (msg MsgAssignConsumerKey) Type() string {
-	return TypeMsgAssignConsumerKey
 }
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
@@ -160,14 +141,6 @@ func NewMsgSubmitConsumerMisbehaviour(
 	}, nil
 }
 
-// Route implements the sdk.Msg interface.
-func (msg MsgSubmitConsumerMisbehaviour) Route() string { return RouterKey }
-
-// Type implements the sdk.Msg interface.
-func (msg MsgSubmitConsumerMisbehaviour) Type() string {
-	return TypeMsgSubmitConsumerMisbehaviour
-}
-
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
@@ -190,14 +163,6 @@ func NewMsgSubmitConsumerDoubleVoting(
 		DuplicateVoteEvidence: ev,
 		InfractionBlockHeader: header,
 	}, nil
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgSubmitConsumerDoubleVoting) Route() string { return RouterKey }
-
-// Type implements the sdk.Msg interface.
-func (msg MsgSubmitConsumerDoubleVoting) Type() string {
-	return TypeMsgSubmitConsumerDoubleVoting
 }
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
@@ -231,14 +196,6 @@ func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, con
 	}, nil
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgOptIn) Type() string {
-	return TypeMsgOptIn
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgOptIn) Route() string { return RouterKey }
-
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgOptIn) ValidateBasic() error {
 	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
@@ -271,14 +228,6 @@ func NewMsgOptOut(consumerId string, providerValidatorAddress sdk.ValAddress, si
 	}, nil
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgOptOut) Type() string {
-	return TypeMsgOptOut
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgOptOut) Route() string { return RouterKey }
-
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgOptOut) ValidateBasic() error {
 	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
@@ -309,14 +258,6 @@ func NewMsgSetConsumerCommissionRate(
 		ProviderAddr: providerValidatorAddress.String(),
 		Signer:       signer,
 	}
-}
-
-func (msg MsgSetConsumerCommissionRate) Route() string {
-	return RouterKey
-}
-
-func (msg MsgSetConsumerCommissionRate) Type() string {
-	return TypeMsgSetConsumerCommissionRate
 }
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
@@ -352,14 +293,6 @@ func NewMsgCreateConsumer(signer string, chainId string, metadata ConsumerMetada
 		PowerShapingParameters:   powerShapingParameters,
 	}, nil
 }
-
-// Type implements the sdk.Msg interface.
-func (msg MsgCreateConsumer) Type() string {
-	return TypeMsgCreateConsumer
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgCreateConsumer) Route() string { return RouterKey }
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgCreateConsumer) ValidateBasic() error {
@@ -403,14 +336,6 @@ func NewMsgUpdateConsumer(signer string, consumerId string, ownerAddress string,
 	}, nil
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgUpdateConsumer) Type() string {
-	return TypeMsgUpdateConsumer
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgUpdateConsumer) Route() string { return RouterKey }
-
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgUpdateConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
@@ -449,14 +374,6 @@ func NewMsgRemoveConsumer(signer string, consumerId string, stopTime time.Time) 
 	}, nil
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgRemoveConsumer) Type() string {
-	return TypeMsgRemoveConsumer
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgRemoveConsumer) Route() string { return RouterKey }
-
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgRemoveConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
@@ -464,15 +381,6 @@ func (msg MsgRemoveConsumer) ValidateBasic() error {
 	}
 	return nil
 }
-
-// Route implements the sdk.Msg interface.
-func (msg MsgConsumerAddition) Route() string { return RouterKey }
-
-// Route implements the sdk.Msg interface.
-func (msg MsgConsumerModification) Route() string { return RouterKey }
-
-// Route implements the sdk.Msg interface.
-func (msg MsgConsumerRemoval) Route() string { return RouterKey }
 
 //
 // Validation methods
