@@ -137,9 +137,6 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
-	// TODO PERMISSIONLESS: metadata is deleted on chain stop.
-	// just log and error and accept empty content for now
-	// to make e2e test happy
 	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
 	if err != nil && phase != types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
 		k.Logger(ctx).Error("cannot get metadata for consumer (%s): %w", consumerId, err)
