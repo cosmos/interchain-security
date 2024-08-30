@@ -137,10 +137,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
-	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
-	if err != nil {
-		return types.Chain{}, fmt.Errorf("cannot get metadata for consumer (%s): %w", consumerId, err)
-	}
+	metadata, _ := k.GetConsumerMetadata(ctx, consumerId)
 
 	return types.Chain{
 		ChainId:            chainID,

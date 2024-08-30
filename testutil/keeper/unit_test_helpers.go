@@ -247,7 +247,7 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 // TestProviderStateIsCleanedAfterConsumerChainIsStopped executes test assertions for the provider's state being cleaned
 // after a stopped consumer chain.
 func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	consumerId, expectedChannelID string,
+	consumerId, expectedChannelID string, expErr bool,
 ) {
 	t.Helper()
 	_, found := providerKeeper.GetConsumerClientId(ctx, consumerId)
@@ -262,8 +262,13 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.Empty(t, acks)
 
 	// in case the chain was successfully stopped, it should not contain a Top N associated to it
-	_, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
-	require.Error(t, err)
+	ps, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if expErr {
+		require.Error(t, err)
+	} else {
+		require.NoError(t, err)
+	}
+	require.Empty(t, ps)
 
 	// test key assignment state is cleaned
 	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &consumerId))
