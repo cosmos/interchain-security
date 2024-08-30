@@ -15,7 +15,6 @@ import (
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
 
@@ -135,6 +134,10 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	return nil
 }
 
+//
+// Validation methods
+//
+
 // ParseConsumerKeyFromJson parses the consumer key from a JSON string,
 // this replaces deserializing a protobuf any.
 func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
@@ -164,15 +167,12 @@ func (msg MsgSubmitConsumerMisbehaviour) Type() string {
 
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
-	if msg.Submitter == "" {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
-	}
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerMisbehaviour, "ConsumerId: %s", err.Error())
 	}
 
 	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerMisbehaviour, "Misbehaviour: %s", err.Error())
 	}
 	return nil
 }
@@ -207,31 +207,20 @@ func (msg MsgSubmitConsumerDoubleVoting) Type() string {
 
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
-	if msg.Submitter == "" {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
-	}
-	if msg.DuplicateVoteEvidence == nil {
-		return fmt.Errorf("double voting evidence cannot be nil")
-	}
-
-	if msg.InfractionBlockHeader == nil {
-		return fmt.Errorf("infraction block header cannot be nil")
+	if dve, err := cmttypes.DuplicateVoteEvidenceFromProto(msg.DuplicateVoteEvidence); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "DuplicateVoteEvidence: %s", err.Error())
+	} else {
+		if err = dve.ValidateBasic(); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "DuplicateVoteEvidence: %s", err.Error())
+		}
 	}
 
-	if msg.InfractionBlockHeader.SignedHeader == nil {
-		return fmt.Errorf("signed header in infraction block header cannot be nil")
-	}
-
-	if msg.InfractionBlockHeader.SignedHeader.Header == nil {
-		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
-	}
-
-	if msg.InfractionBlockHeader.ValidatorSet == nil {
-		return fmt.Errorf("invalid infraction block header, validator set is nil")
+	if err := ValidateTendermintHeader(msg.InfractionBlockHeader); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "ValidateTendermintHeader: %s", err.Error())
 	}
 
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "ConsumerId: %s", err.Error())
 	}
 
 	return nil
@@ -251,6 +240,27 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 		panic(err)
 	}
 	return []sdk.AccAddress{addr}
+}
+
+// TODO create UT
+func ValidateTendermintHeader(header *ibctmtypes.Header) error {
+	if header == nil {
+		return fmt.Errorf("infraction block header cannot be nil")
+	}
+
+	if header.SignedHeader == nil {
+		return fmt.Errorf("signed header in infraction block header cannot be nil")
+	}
+
+	if header.SignedHeader.Header == nil {
+		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
+	}
+
+	if header.ValidatorSet == nil {
+		return fmt.Errorf("invalid infraction block header, validator set is nil")
+	}
+
+	return nil
 }
 
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
