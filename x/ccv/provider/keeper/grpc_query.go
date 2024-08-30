@@ -138,7 +138,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	}
 
 	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
-	if err != nil && phase != types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
+	if err != nil {
 		k.Logger(ctx).Error("cannot get metadata for consumer (%s): %w", consumerId, err)
 	}
 

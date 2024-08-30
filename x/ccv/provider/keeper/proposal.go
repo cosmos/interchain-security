@@ -160,9 +160,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, consumerId string, closeChan 
 	k.DeleteSlashAcks(ctx, consumerId)
 	k.DeletePendingVSCPackets(ctx, consumerId)
 
-	k.DeleteConsumerMetadata(ctx, consumerId)
-	k.DeleteConsumerPowerShapingParameters(ctx, consumerId)
-	k.DeleteConsumerPowerShapingParameters(ctx, consumerId)
 	k.DeleteAllowlist(ctx, consumerId)
 	k.DeleteDenylist(ctx, consumerId)
 	k.DeleteAllOptedIn(ctx, consumerId)
