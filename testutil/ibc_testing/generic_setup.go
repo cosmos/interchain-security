@@ -160,11 +160,15 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		FirstConsumerID = consumerId
 	}
 	providerKeeper.SetConsumerChainId(providerChain.GetContext(), consumerId, chainID)
-	providerKeeper.SetConsumerMetadata(providerChain.GetContext(), consumerId, consumerMetadata)
-	providerKeeper.SetConsumerInitializationParameters(providerChain.GetContext(), consumerId, initializationParameters)
-	providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
+	err := providerKeeper.SetConsumerMetadata(providerChain.GetContext(), consumerId, consumerMetadata)
+	s.Require().NoError(err)
+	err = providerKeeper.SetConsumerInitializationParameters(providerChain.GetContext(), consumerId, initializationParameters)
+	s.Require().NoError(err)
+	err = providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
+	s.Require().NoError(err)
 	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
-	providerKeeper.AppendConsumerToBeLaunched(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
+	err = providerKeeper.AppendConsumerToBeLaunched(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
+	s.Require().NoError(err)
 
 	// opt-in all validators
 	lastVals, err := providerApp.GetProviderKeeper().GetLastBondedValidators(providerChain.GetContext())
@@ -173,7 +177,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	for _, v := range lastVals {
 		consAddr, _ := v.GetConsAddr()
 		providerKeeper.SetOptedIn(providerChain.GetContext(), consumerId, providertypes.NewProviderConsAddress(consAddr))
-		providerKeeper.AppendOptedInConsumerId(providerChain.GetContext(), providertypes.NewProviderConsAddress(consAddr), consumerId)
+		err = providerKeeper.AppendOptedInConsumerId(providerChain.GetContext(), providertypes.NewProviderConsAddress(consAddr), consumerId)
+		s.Require().NoError(err)
 	}
 
 	// commit the state on the provider chain

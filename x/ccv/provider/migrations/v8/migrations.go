@@ -266,15 +266,20 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		// This is to migrate everything under `ProviderConsAddrToOptedInConsumerIdsKey`
 		// `OptedIn` was already re-keyed earlier (see above) and hence we can use `consumerId` here.
 		for _, providerConsAddr := range pk.GetAllOptedIn(ctx, consumerId) {
-			pk.AppendOptedInConsumerId(ctx, providerConsAddr, consumerId)
+			err := pk.AppendOptedInConsumerId(ctx, providerConsAddr, consumerId)
+			if err != nil {
+				return err
+			}
 		}
 
 		// set clientId -> consumerId mapping
-		clientId, found := pk.GetConsumerClientId(ctx, consumerId) // consumer to client was already re-keyed so we can use `consumerId` here
+		// consumer to client was already re-keyed so we can use `consumerId` here
+		// however, during the rekeying, the reverse index was not set
+		clientId, found := pk.GetConsumerClientId(ctx, consumerId)
 		if !found {
 			return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot find client ID associated with consumer ID: %s", consumerId)
 		}
-		pk.SetClientIdToConsumerId(ctx, clientId, consumerId)
+		pk.SetConsumerClientId(ctx, consumerId, clientId)
 	}
 
 	return nil

@@ -501,10 +501,9 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	gomock.InOrder(mockCalls...)
 
 	// Execute setup
-	providerKeeper.SetClientIdToConsumerId(ctx, "clientID", "consumerChainID")
+	providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
 	err := providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
-	providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
 
 	// No panic should occur, StopConsumerChain should be called
 	providerKeeper.SendVSCPacketsToChain(ctx, "consumerChainID", "CCVChannelID")

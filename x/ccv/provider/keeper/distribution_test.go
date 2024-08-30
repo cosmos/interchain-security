@@ -296,3 +296,35 @@ func TestIsEligibleForConsumerRewards(t *testing.T) {
 	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 1))
 	require.False(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 2))
 }
+
+func TestChangeRewardDenoms(t *testing.T) {
+	keeper, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	// Test adding a new denomination
+	denomsToAdd := []string{"denom1"}
+	denomsToRemove := []string{}
+	attributes := keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
+
+	require.Len(t, attributes, 1)
+	require.Equal(t, providertypes.AttributeAddConsumerRewardDenom, attributes[0].Key)
+	require.Equal(t, "denom1", attributes[0].Value)
+	require.True(t, keeper.ConsumerRewardDenomExists(ctx, "denom1"))
+
+	// Test adding a denomination that is already registered
+	attributes = keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
+	require.Len(t, attributes, 0) // No attributes should be returned since the denom is already registered
+
+	// Test removing a registered denomination
+	denomsToAdd = []string{}
+	denomsToRemove = []string{"denom1"}
+	attributes = keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
+
+	require.Len(t, attributes, 1)
+	require.Equal(t, providertypes.AttributeRemoveConsumerRewardDenom, attributes[0].Key)
+	require.Equal(t, "denom1", attributes[0].Value)
+	require.False(t, keeper.ConsumerRewardDenomExists(ctx, "denom1"))
+
+	// Test removing a denomination that is not registered
+	attributes = keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
+	require.Len(t, attributes, 0) // No attributes should be returned since the denom is not registered
+}

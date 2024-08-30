@@ -128,15 +128,20 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 
 // ChangeRewardDenoms defines a rpc handler method for MsgChangeRewardDenoms
 func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChangeRewardDenoms) (*types.MsgChangeRewardDenomsResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleConsumerRewardDenomProposal(sdkCtx, msg)
-	if err != nil {
-		return nil, errorsmod.Wrapf(err, "failed handling Change Reward Denoms proposal")
-	}
+	eventAttributes := k.Keeper.ChangeRewardDenoms(ctx, msg.DenomsToAdd, msg.DenomsToRemove)
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeChangeConsumerRewardDenom,
+			eventAttributes...,
+		),
+	)
 
 	return &types.MsgChangeRewardDenomsResponse{}, nil
 }
@@ -354,7 +359,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 				"cannot create a Top N chain using the `MsgCreateConsumer` message; use `MsgUpdateConsumer` instead")
 		}
 
-		// TODO UpdateAllowlist & UpdateDenylist
+		// TODO (PERMISSIONLESS) UpdateAllowlist & UpdateDenylist
 	}
 	if err := k.Keeper.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters); err != nil {
 		return &resp, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,

@@ -8,17 +8,19 @@ import (
 
 	"cosmossdk.io/math"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
@@ -55,7 +57,7 @@ func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	cases := []types.ValsetUpdateIdToHeight{
+	cases := []providertypes.ValsetUpdateIdToHeight{
 		{
 			ValsetUpdateId: 2,
 			Height:         22,
@@ -288,10 +290,10 @@ func TestGetAllOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	expectedOptedInValidators := []types.ProviderConsAddress{
-		types.NewProviderConsAddress([]byte("providerAddr1")),
-		types.NewProviderConsAddress([]byte("providerAddr2")),
-		types.NewProviderConsAddress([]byte("providerAddr3")),
+	expectedOptedInValidators := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress([]byte("providerAddr1")),
+		providertypes.NewProviderConsAddress([]byte("providerAddr2")),
+		providertypes.NewProviderConsAddress([]byte("providerAddr3")),
 	}
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
@@ -301,7 +303,7 @@ func TestGetAllOptedIn(t *testing.T) {
 	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "consumerId")
 
 	// sort validators first to be able to compare
-	sortOptedInValidators := func(addresses []types.ProviderConsAddress) {
+	sortOptedInValidators := func(addresses []providertypes.ProviderConsAddress) {
 		sort.Slice(addresses, func(i, j int) bool {
 			return bytes.Compare(addresses[i].ToSdkConsAddr(), addresses[j].ToSdkConsAddr()) < 0
 		})
@@ -316,8 +318,8 @@ func TestOptedIn(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	optedInValidator1 := types.NewProviderConsAddress([]byte("providerAddr1"))
-	optedInValidator2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	optedInValidator1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
+	optedInValidator2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 
 	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
 	providerKeeper.SetOptedIn(ctx, "consumerId", optedInValidator1)
@@ -339,8 +341,8 @@ func TestConsumerCommissionRate(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 
 	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr1)
 	require.False(t, found)
@@ -380,14 +382,14 @@ func TestAllowlist(t *testing.T) {
 	// no validator was allowlisted and hence the allowlist is empty
 	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
 	providerKeeper.SetAllowlist(ctx, chainID, providerAddr1)
 	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
 
 	// allowlist is not empty anymore
 	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
 
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 	providerKeeper.SetAllowlist(ctx, chainID, providerAddr2)
 	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
 	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
@@ -396,6 +398,25 @@ func TestAllowlist(t *testing.T) {
 	require.False(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
 	require.False(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
 	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+}
+
+func TestUpdateAllowlist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
+	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
+
+	providerKeeper.UpdateAllowlist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
+
+	expectedAllowlist := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress(consAddr1),
+		providertypes.NewProviderConsAddress(consAddr2)}
+	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
 }
 
 // TestDenylist tests the `SetDenylist`, `IsDenylisted`, `DeleteDenylist`, and `IsDenylistEmpty` methods
@@ -408,14 +429,14 @@ func TestDenylist(t *testing.T) {
 	// no validator was denylisted and hence the denylist is empty
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 
-	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
+	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
 	providerKeeper.SetDenylist(ctx, chainID, providerAddr1)
 	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
 
 	// denylist is not empty anymore
 	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
 
-	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
+	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 	providerKeeper.SetDenylist(ctx, chainID, providerAddr2)
 	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
 	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
@@ -424,6 +445,25 @@ func TestDenylist(t *testing.T) {
 	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
 	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
 	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+}
+
+func TestUpdateDenylist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
+	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
+
+	providerKeeper.UpdateDenylist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
+
+	expectedDenylist := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress(consAddr1),
+		providertypes.NewProviderConsAddress(consAddr2)}
+	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
 }
 
 // Tests setting, getting and deleting parameters that are stored per-consumer chain.
@@ -489,4 +529,110 @@ func TestKeeperConsumerParams(t *testing.T) {
 			require.Zero(t, res)
 		})
 	}
+}
+
+// TestConsumerClientId tests the getter, setter, and deletion of the client id <> consumer id mappings
+func TestConsumerClientId(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "123"
+	clientIds := []string{"clientId1", "clientId2"}
+
+	_, found := providerKeeper.GetConsumerClientId(ctx, consumerId)
+	require.False(t, found)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[0])
+	require.False(t, found)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[1])
+	require.False(t, found)
+
+	providerKeeper.SetConsumerClientId(ctx, consumerId, clientIds[0])
+	res, found := providerKeeper.GetConsumerClientId(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, clientIds[0], res)
+	res, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[0])
+	require.True(t, found)
+	require.Equal(t, consumerId, res)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[1])
+	require.False(t, found)
+
+	// overwrite the client ID
+	providerKeeper.SetConsumerClientId(ctx, consumerId, clientIds[1])
+	res, found = providerKeeper.GetConsumerClientId(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, clientIds[1], res)
+	res, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[1])
+	require.True(t, found)
+	require.Equal(t, consumerId, res)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[0])
+	require.False(t, found)
+
+	providerKeeper.DeleteConsumerClientId(ctx, consumerId)
+	_, found = providerKeeper.GetConsumerClientId(ctx, consumerId)
+	require.False(t, found)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[0])
+	require.False(t, found)
+	_, found = providerKeeper.GetClientIdToConsumerId(ctx, clientIds[1])
+	require.False(t, found)
+}
+
+func TestUpdateMinimumPowerInTopN(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	// test case where Top N is 0 in which case there's no minimum power in top N
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Top_N: 0,
+	})
+
+	err := providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 0)
+	require.NoError(t, err)
+	_, found := providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
+	require.False(t, found)
+
+	// test cases where Top N > 0 and for this we mock some validators
+	powers := []int64{10, 20, 30}
+	validators := []stakingtypes.Validator{
+		createStakingValidator(ctx, mocks, powers[0], 1), // this validator has ~16 of the total voting power
+		createStakingValidator(ctx, mocks, powers[1], 2), // this validator has ~33% of the total voting gpower
+		createStakingValidator(ctx, mocks, powers[2], 3), // this validator has 50% of the total voting power
+	}
+	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(validators, nil).AnyTimes()
+
+	maxProviderConsensusValidators := int64(3)
+	params := providerKeeper.GetParams(ctx)
+	params.MaxProviderConsensusValidators = maxProviderConsensusValidators
+	providerKeeper.SetParams(ctx, params)
+
+	// when top N is 50, the minimum power is 30 (because top validator has to validate)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Top_N: 50,
+	})
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 50)
+	require.NoError(t, err)
+	minimumPowerInTopN, found := providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, int64(30), minimumPowerInTopN)
+
+	// when top N is 51, the minimum power is 20 (because top 2 validators have to validate)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Top_N: 51,
+	})
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 50, 51)
+	require.NoError(t, err)
+	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, int64(20), minimumPowerInTopN)
+
+	// when top N is 100, the minimum power is 10 (that of the validator with the lowest power)
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+		Top_N: 100,
+	})
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 51, 100)
+	require.NoError(t, err)
+	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
+	require.True(t, found)
+	require.Equal(t, int64(10), minimumPowerInTopN)
 }

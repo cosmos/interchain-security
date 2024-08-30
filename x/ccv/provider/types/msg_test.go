@@ -362,3 +362,77 @@ func TestValidateByteSlice(t *testing.T) {
 		}
 	}
 }
+
+func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
+	consAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	consAddr3 := "cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe"
+
+	testCases := []struct {
+		name                   string
+		powerShapingParameters types.PowerShapingParameters
+		expPass                bool
+	}{
+		{
+			"success",
+			types.PowerShapingParameters{
+				Top_N:              50,
+				ValidatorsPowerCap: 100,
+				ValidatorSetCap:    34,
+				Allowlist:          []string{consAddr1},
+				Denylist:           nil,
+				MinStake:           0,
+				AllowInactiveVals:  false,
+			},
+			true,
+		},
+		{
+			"top N is invalid",
+			types.PowerShapingParameters{
+				Top_N:              10,
+				ValidatorsPowerCap: 0,
+				ValidatorSetCap:    0,
+				Allowlist:          nil,
+				Denylist:           nil,
+			},
+			false,
+		},
+		{
+			"validators power cap is invalid",
+			types.PowerShapingParameters{
+				Top_N:              50,
+				ValidatorsPowerCap: 101,
+				ValidatorSetCap:    0,
+				Allowlist:          nil,
+				Denylist:           nil,
+				MinStake:           0,
+				AllowInactiveVals:  false,
+			},
+			false,
+		},
+		{
+			"valid proposal",
+			types.PowerShapingParameters{
+				Top_N:              54,
+				ValidatorsPowerCap: 92,
+				ValidatorSetCap:    0,
+				Allowlist:          []string{consAddr1},
+				Denylist:           []string{consAddr2, consAddr3},
+				MinStake:           0,
+				AllowInactiveVals:  false,
+			},
+			true,
+		},
+	}
+
+	for _, tc := range testCases {
+		// TODO (PERMISSIONLESS) add more tests
+		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters)
+		err := msg.ValidateBasic()
+		if tc.expPass {
+			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)
+		} else {
+			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
+		}
+	}
+}

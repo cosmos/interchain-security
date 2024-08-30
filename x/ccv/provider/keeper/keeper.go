@@ -636,10 +636,21 @@ func (k Keeper) DeletePendingVSCPackets(ctx sdk.Context, consumerId string) {
 	store.Delete(types.PendingVSCsKey(consumerId))
 }
 
-// SetConsumerClientId sets the client id for the given consumer id
-func (k Keeper) SetConsumerClientId(ctx sdk.Context, consumerId, clientID string) {
+// SetConsumerClientId sets the client id for the given consumer id.
+// Note that the method also stores a reverse index that can be accessed
+// by calling GetClientIdToConsumerId.
+func (k Keeper) SetConsumerClientId(ctx sdk.Context, consumerId, clientId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToClientIdKey(consumerId), []byte(clientID))
+
+	if prevClientId, found := k.GetConsumerClientId(ctx, consumerId); found {
+		// delete reverse index
+		store.Delete(types.ClientIdToConsumerIdKey(prevClientId))
+	}
+
+	store.Set(types.ConsumerIdToClientIdKey(consumerId), []byte(clientId))
+
+	// set the reverse index
+	store.Set(types.ClientIdToConsumerIdKey(clientId), []byte(consumerId))
 }
 
 // GetConsumerClientId returns the client id for the given consumer id.
@@ -652,9 +663,26 @@ func (k Keeper) GetConsumerClientId(ctx sdk.Context, consumerId string) (string,
 	return string(clientIdBytes), true
 }
 
+// GetClientIdToConsumerId returns the consumer id associated with this client id
+func (k Keeper) GetClientIdToConsumerId(ctx sdk.Context, clientId string) (string, bool) {
+	store := ctx.KVStore(k.storeKey)
+	consumerIdBytes := store.Get(types.ClientIdToConsumerIdKey(clientId))
+	if consumerIdBytes == nil {
+		return "", false
+	}
+	return string(consumerIdBytes), true
+}
+
 // DeleteConsumerClientId removes from the store the client id for the given consumer id.
+// Note that the method also removes the reverse index.
 func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
+
+	if clientId, found := k.GetConsumerClientId(ctx, consumerId); found {
+		// delete reverse index
+		store.Delete(types.ClientIdToConsumerIdKey(clientId))
+	}
+
 	store.Delete(types.ConsumerIdToClientIdKey(consumerId))
 }
 
@@ -902,6 +930,19 @@ func (k Keeper) IsAllowlistEmpty(ctx sdk.Context, consumerId string) bool {
 	return !iterator.Valid()
 }
 
+// UpdateAllowlist populates the allowlist store for the consumer chain with this consumer id
+func (k Keeper) UpdateAllowlist(ctx sdk.Context, consumerId string, allowlist []string) {
+	k.DeleteAllowlist(ctx, consumerId)
+	for _, address := range allowlist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetAllowlist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
+	}
+}
+
 // SetDenylist denylists validator with `providerAddr` address on chain `consumerId`
 func (k Keeper) SetDenylist(
 	ctx sdk.Context,
@@ -965,6 +1006,19 @@ func (k Keeper) IsDenylistEmpty(ctx sdk.Context, consumerId string) bool {
 	return !iterator.Valid()
 }
 
+// UpdateDenylist populates the denylist store for the consumer chain with this consumer id
+func (k Keeper) UpdateDenylist(ctx sdk.Context, consumerId string, denylist []string) {
+	k.DeleteDenylist(ctx, consumerId)
+	for _, address := range denylist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetDenylist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
+	}
+}
+
 // SetMinimumPowerInTopN sets the minimum power required for a validator to be in the top N
 // for a given consumer chain.
 func (k Keeper) SetMinimumPowerInTopN(
@@ -1002,6 +1056,30 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MinimumPowerInTopNKey(consumerId))
+}
+
+// UpdateMinimumPowerInTopN populates the minimum power in Top N for the consumer chain with this consumer id
+func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, oldTopN uint32, newTopN uint32) error {
+	// if the top N changes, we need to update the new minimum power in top N
+	if newTopN != oldTopN {
+		if newTopN > 0 {
+			// if the chain receives a non-zero top N value, store the minimum power in the top N
+			bondedValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
+			if err != nil {
+				return err
+			}
+			minPower, err := k.ComputeMinPowerInTopN(ctx, bondedValidators, newTopN)
+			if err != nil {
+				return err
+			}
+			k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
+		} else {
+			// if the chain receives a zero top N value, we delete the min power
+			k.DeleteMinimumPowerInTopN(ctx, consumerId)
+		}
+	}
+
+	return nil
 }
 
 func (k Keeper) UnbondingCanComplete(ctx sdk.Context, id uint64) error {
