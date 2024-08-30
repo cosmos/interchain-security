@@ -49,5 +49,4 @@ var (
 	ErrCannotCreateTopNChain                   = errorsmod.Register(ModuleName, 41, "cannot create Top N chain outside permissionlessly")
 	ErrCannotPrepareForLaunch                  = errorsmod.Register(ModuleName, 42, "cannot prepare chain for launch")
 	ErrInvalidStopTime                         = errorsmod.Register(ModuleName, 43, "invalid stop time")
-	ErrInvalidChangeRewardDenoms               = errorsmod.Register(ModuleName, 44, "invalid change reward denoms message")
 )

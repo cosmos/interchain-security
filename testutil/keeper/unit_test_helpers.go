@@ -239,7 +239,9 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 
 	err := providerKeeper.CreateConsumerClient(ctx, consumerId)
 	require.NoError(t, err)
+	// set the mapping consumer ID <> client ID for the consumer chain
 	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
+	// set the channel ID for the consumer chain
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
 }
