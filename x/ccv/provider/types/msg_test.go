@@ -1,9 +1,10 @@
 package types_test
 
 import (
+	"testing"
+
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestValidateConsumerId(t *testing.T) {
@@ -18,4 +19,41 @@ func TestValidateConsumerId(t *testing.T) {
 	// valid consumer id
 	require.NoError(t, types.ValidateConsumerId("0"))
 	require.NoError(t, types.ValidateConsumerId("18446744073709551615")) // 2^64 - 1
+}
+
+func TestValidateStringField(t *testing.T) {
+	testCases := []struct {
+		name      string
+		field     string
+		maxLength int
+		valid     bool
+	}{
+		{
+			name:      "invalid: empty",
+			field:     "",
+			maxLength: 5,
+			valid:     false,
+		},
+		{
+			name:      "invalid: too long",
+			field:     "this field is too long",
+			maxLength: 5,
+			valid:     false,
+		},
+		{
+			name:      "valid",
+			field:     "valid",
+			maxLength: 5,
+			valid:     true,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := types.ValidateStringField("field", tc.field, tc.maxLength)
+		if tc.valid {
+			require.NoError(t, err, tc.name)
+		} else {
+			require.Error(t, err, tc.name)
+		}
+	}
 }

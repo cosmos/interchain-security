@@ -257,7 +257,7 @@ func (msg MsgCreateConsumer) Route() string { return RouterKey }
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgCreateConsumer) ValidateBasic() error {
-	if err := ValidateField("chain id", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
+	if err := ValidateStringField("chain id", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
 		return err
 	}
 
@@ -736,8 +736,10 @@ func ValidateConsumerId(consumerId string) error {
 	return nil
 }
 
-// ValidateField validates that `field` is not empty and has at most `maxLength` characters
-func ValidateField(nameOfTheField string, field string, maxLength int) error {
+// ValidateStringField validates that a string `field` satisfies the following properties:
+//   - is not empty
+//   - has at most `maxLength` characters
+func ValidateStringField(nameOfTheField string, field string, maxLength int) error {
 	if strings.TrimSpace(field) == "" {
 		return fmt.Errorf("%s cannot be empty", nameOfTheField)
 	} else if len(field) > maxLength {
@@ -752,15 +754,15 @@ func ValidateConsumerMetadata(metadata ConsumerMetadata) error {
 	const maxDescriptionLength = 50000
 	const maxMetadataLength = 1000
 
-	if err := ValidateField("name", metadata.Name, maxNameLength); err != nil {
+	if err := ValidateStringField("name", metadata.Name, maxNameLength); err != nil {
 		return err
 	}
 
-	if err := ValidateField("description", metadata.Description, maxDescriptionLength); err != nil {
+	if err := ValidateStringField("description", metadata.Description, maxDescriptionLength); err != nil {
 		return err
 	}
 
-	if err := ValidateField("metadata", metadata.Metadata, maxMetadataLength); err != nil {
+	if err := ValidateStringField("metadata", metadata.Metadata, maxMetadataLength); err != nil {
 		return err
 	}
 
@@ -822,7 +824,7 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 
 	if err := ccvtypes.ValidateStringFraction(initializationParameters.ConsumerRedistributionFraction); err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "consumer redistribution fraction is invalid: %s", err.Error())
-	} else if err := ValidateField("consumer redistribution fraction", initializationParameters.ConsumerRedistributionFraction, maxConsumerRedistributionFractionLength); err != nil {
+	} else if err := ValidateStringField("consumer redistribution fraction", initializationParameters.ConsumerRedistributionFraction, maxConsumerRedistributionFractionLength); err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "consumer redistribution fraction is invalid: %s", err.Error())
 	}
 
