@@ -610,58 +610,6 @@ func (msg MsgRemoveConsumer) GetSigners() []sdk.AccAddress {
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerAddition) Route() string { return RouterKey }
 
-// ValidateBasic implements the sdk.HasValidateBasic interface.
-func (msg MsgConsumerAddition) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return ErrBlankConsumerChainID
-	}
-
-	if msg.InitialHeight.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
-	}
-
-	if len(msg.GenesisHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "genesis hash cannot be empty")
-	}
-	if len(msg.BinaryHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "binary hash cannot be empty")
-	}
-
-	if msg.SpawnTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateStringFraction(msg.ConsumerRedistributionFraction); err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
-	}
-
-	if err := ccvtypes.ValidatePositiveInt64(msg.BlocksPerDistributionTransmission); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
-	}
-
-	if err := ccvtypes.ValidateDistributionTransmissionChannel(msg.DistributionTransmissionChannel); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "distribution transmission channel")
-	}
-
-	if err := ccvtypes.ValidatePositiveInt64(msg.HistoricalEntries); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
-	}
-
-	if err := ccvtypes.ValidateDuration(msg.CcvTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateDuration(msg.TransferTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateDuration(msg.UnbondingPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
-	}
-
-	return nil
-}
-
 // Type implements the sdk.Msg interface.
 func (msg MsgConsumerAddition) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
@@ -682,20 +630,6 @@ func (msg MsgConsumerAddition) GetSigners() []sdk.AccAddress {
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerModification) Route() string { return RouterKey }
 
-// ValidateBasic implements the sdk.HasValidateBasic interface.
-func (msg MsgConsumerModification) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return ErrBlankConsumerChainID
-	}
-
-	err := ValidatePSSFeatures(msg.Top_N, msg.ValidatorsPowerCap)
-	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
-	}
-
-	return nil
-}
-
 // Type implements the sdk.Msg interface.
 func (msg MsgConsumerModification) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
@@ -715,18 +649,6 @@ func (msg MsgConsumerModification) GetSigners() []sdk.AccAddress {
 
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerRemoval) Route() string { return RouterKey }
-
-// ValidateBasic implements the sdk.HasValidateBasic interface.
-func (msg MsgConsumerRemoval) ValidateBasic() error {
-	if strings.TrimSpace(msg.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
-	}
-
-	if msg.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
-	}
-	return nil
-}
 
 // Type implements the sdk.Msg interface.
 func (msg MsgConsumerRemoval) GetSignBytes() []byte {
