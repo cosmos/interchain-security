@@ -92,8 +92,6 @@ func (msg MsgAssignConsumerKey) Type() string {
 
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
-// If the validator address is not same as delegator's, then the validator must
-// sign the msg as well.
 func (msg MsgAssignConsumerKey) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -134,23 +132,38 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	return nil
 }
 
-//
-// Validation methods
-//
+func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
+	emptyDenomsToAdd := len(msg.DenomsToAdd) == 0
+	emptyDenomsToRemove := len(msg.DenomsToRemove) == 0
+	// Return error if both sets are empty or nil
+	if emptyDenomsToAdd && emptyDenomsToRemove {
+		return fmt.Errorf(
+			"invalid change reward denoms proposal: both denoms to add and denoms to remove are empty")
+	}
 
-// ParseConsumerKeyFromJson parses the consumer key from a JSON string,
-// this replaces deserializing a protobuf any.
-func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
-	type PubKey struct {
-		Type string `json:"@type"`
-		Key  string `json:"key"`
+	// Return error if a denom is in both sets
+	for _, denomToAdd := range msg.DenomsToAdd {
+		for _, denomToRemove := range msg.DenomsToRemove {
+			if denomToAdd == denomToRemove {
+				return fmt.Errorf(
+					"invalid change reward denoms proposal: %s cannot be both added and removed", denomToAdd)
+			}
+		}
 	}
-	var pubKey PubKey
-	err = json.Unmarshal([]byte(jsonStr), &pubKey)
-	if err != nil {
-		return "", "", err
+
+	// Return error if any denom is "invalid"
+	for _, denom := range msg.DenomsToAdd {
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
+			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+		}
 	}
-	return pubKey.Type, pubKey.Key, nil
+	for _, denom := range msg.DenomsToRemove {
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
+			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+		}
+	}
+
+	return nil
 }
 
 func NewMsgSubmitConsumerMisbehaviour(submitter sdk.AccAddress, misbehaviour *ibctmtypes.Misbehaviour) (*MsgSubmitConsumerMisbehaviour, error) {
@@ -242,25 +255,145 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{addr}
 }
 
-// TODO create UT
-func ValidateTendermintHeader(header *ibctmtypes.Header) error {
-	if header == nil {
-		return fmt.Errorf("infraction block header cannot be nil")
+// NewMsgOptIn creates a new NewMsgOptIn instance.
+func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
+	return &MsgOptIn{
+		ConsumerId:   consumerId,
+		ProviderAddr: providerValidatorAddress.String(),
+		ConsumerKey:  consumerConsensusPubKey,
+		Signer:       signer,
+	}, nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgOptIn) Type() string {
+	return TypeMsgOptIn
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgOptIn) Route() string { return RouterKey }
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgOptIn) ValidateBasic() error {
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
+	}
+	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return ErrInvalidProviderAddress
 	}
 
-	if header.SignedHeader == nil {
-		return fmt.Errorf("signed header in infraction block header cannot be nil")
+	if msg.ConsumerKey != "" {
+		if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
+			return ErrInvalidConsumerConsensusPubKey
+		}
+	}
+	return nil
+}
+
+// NewMsgOptOut creates a new NewMsgOptIn instance.
+func NewMsgOptOut(consumerId string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
+	return &MsgOptOut{
+		ConsumerId:   consumerId,
+		ProviderAddr: providerValidatorAddress.String(),
+		Signer:       signer,
+	}, nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgOptOut) Type() string {
+	return TypeMsgOptOut
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgOptOut) Route() string { return RouterKey }
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// GetSignBytes returns the message bytes to sign over.
+func (msg MsgOptOut) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgOptOut) ValidateBasic() error {
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
+	}
+	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return ErrInvalidProviderAddress
+	}
+	return nil
+}
+
+// NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
+func NewMsgSetConsumerCommissionRate(consumerId string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
+	return &MsgSetConsumerCommissionRate{
+		ConsumerId:   consumerId,
+		Rate:         commission,
+		ProviderAddr: providerValidatorAddress.String(),
+		Signer:       signer,
+	}
+}
+
+func (msg MsgSetConsumerCommissionRate) Route() string {
+	return RouterKey
+}
+
+func (msg MsgSetConsumerCommissionRate) Type() string {
+	return TypeMsgSetConsumerCommissionRate
+}
+
+func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
+	}
+	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return ErrInvalidProviderAddress
 	}
 
-	if header.SignedHeader.Header == nil {
-		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
-	}
-
-	if header.ValidatorSet == nil {
-		return fmt.Errorf("invalid infraction block header, validator set is nil")
+	if msg.Rate.IsNegative() || msg.Rate.GT(math.LegacyOneDec()) {
+		return errorsmod.Wrapf(ErrInvalidConsumerCommissionRate, "consumer commission rate should be in the range [0, 1]")
 	}
 
 	return nil
+}
+
+func (msg MsgSetConsumerCommissionRate) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+func (msg MsgSetConsumerCommissionRate) GetSignBytes() []byte {
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
 }
 
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
@@ -576,179 +709,44 @@ func (msg MsgConsumerRemoval) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{valAddr.Bytes()}
 }
 
-// NewMsgOptIn creates a new NewMsgOptIn instance.
-func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
-	return &MsgOptIn{
-		ConsumerId:   consumerId,
-		ProviderAddr: providerValidatorAddress.String(),
-		ConsumerKey:  consumerConsensusPubKey,
-		Signer:       signer,
-	}, nil
-}
+//
+// Validation methods
+//
 
-// Type implements the sdk.Msg interface.
-func (msg MsgOptIn) Type() string {
-	return TypeMsgOptIn
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgOptIn) Route() string { return RouterKey }
-
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+// ParseConsumerKeyFromJson parses the consumer key from a JSON string,
+// this replaces deserializing a protobuf any.
+func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
+	type PubKey struct {
+		Type string `json:"@type"`
+		Key  string `json:"key"`
+	}
+	var pubKey PubKey
+	err = json.Unmarshal([]byte(jsonStr), &pubKey)
 	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
+		return "", "", err
 	}
-	return []sdk.AccAddress{valAddr.Bytes()}
+	return pubKey.Type, pubKey.Key, nil
 }
 
-// ValidateBasic implements the sdk.Msg interface.
-func (msg MsgOptIn) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
-	}
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		return ErrInvalidProviderAddress
+// TODO create UT
+func ValidateTendermintHeader(header *ibctmtypes.Header) error {
+	if header == nil {
+		return fmt.Errorf("infraction block header cannot be nil")
 	}
 
-	if msg.ConsumerKey != "" {
-		if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
-			return ErrInvalidConsumerConsensusPubKey
-		}
-	}
-	return nil
-}
-
-// NewMsgOptOut creates a new NewMsgOptIn instance.
-func NewMsgOptOut(consumerId string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
-	return &MsgOptOut{
-		ConsumerId:   consumerId,
-		ProviderAddr: providerValidatorAddress.String(),
-		Signer:       signer,
-	}, nil
-}
-
-// Type implements the sdk.Msg interface.
-func (msg MsgOptOut) Type() string {
-	return TypeMsgOptOut
-}
-
-// Route implements the sdk.Msg interface.
-func (msg MsgOptOut) Route() string { return RouterKey }
-
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
-// GetSignBytes returns the message bytes to sign over.
-func (msg MsgOptOut) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
-// ValidateBasic implements the sdk.Msg interface.
-func (msg MsgOptOut) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
-	}
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		return ErrInvalidProviderAddress
-	}
-	return nil
-}
-
-// NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
-func NewMsgSetConsumerCommissionRate(consumerId string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
-	return &MsgSetConsumerCommissionRate{
-		ConsumerId:   consumerId,
-		Rate:         commission,
-		ProviderAddr: providerValidatorAddress.String(),
-		Signer:       signer,
-	}
-}
-
-func (msg MsgSetConsumerCommissionRate) Route() string {
-	return RouterKey
-}
-
-func (msg MsgSetConsumerCommissionRate) Type() string {
-	return TypeMsgSetConsumerCommissionRate
-}
-
-func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
-	}
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		return ErrInvalidProviderAddress
+	if header.SignedHeader == nil {
+		return fmt.Errorf("signed header in infraction block header cannot be nil")
 	}
 
-	if msg.Rate.IsNegative() || msg.Rate.GT(math.LegacyOneDec()) {
-		return errorsmod.Wrapf(ErrInvalidConsumerCommissionRate, "consumer commission rate should be in the range [0, 1]")
+	if header.SignedHeader.Header == nil {
+		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
+	}
+
+	if header.ValidatorSet == nil {
+		return fmt.Errorf("invalid infraction block header, validator set is nil")
 	}
 
 	return nil
-}
-
-func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
-	emptyDenomsToAdd := len(msg.DenomsToAdd) == 0
-	emptyDenomsToRemove := len(msg.DenomsToRemove) == 0
-	// Return error if both sets are empty or nil
-	if emptyDenomsToAdd && emptyDenomsToRemove {
-		return fmt.Errorf(
-			"invalid change reward denoms proposal: both denoms to add and denoms to remove are empty")
-	}
-
-	// Return error if a denom is in both sets
-	for _, denomToAdd := range msg.DenomsToAdd {
-		for _, denomToRemove := range msg.DenomsToRemove {
-			if denomToAdd == denomToRemove {
-				return fmt.Errorf(
-					"invalid change reward denoms proposal: %s cannot be both added and removed", denomToAdd)
-			}
-		}
-	}
-
-	// Return error if any denom is "invalid"
-	for _, denom := range msg.DenomsToAdd {
-		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
-			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
-		}
-	}
-	for _, denom := range msg.DenomsToRemove {
-		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
-			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
-		}
-	}
-
-	return nil
-}
-
-func (msg MsgSetConsumerCommissionRate) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
-func (msg MsgSetConsumerCommissionRate) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
 }
 
 // ValidateConsumerId validates the provided consumer id and returns an error if it is not valid
