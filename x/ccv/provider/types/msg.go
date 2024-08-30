@@ -107,7 +107,7 @@ func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ChainId: %s", err.Error())
@@ -132,6 +132,7 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	return nil
 }
 
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
 	emptyDenomsToAdd := len(msg.DenomsToAdd) == 0
 	emptyDenomsToRemove := len(msg.DenomsToRemove) == 0
@@ -166,8 +167,14 @@ func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
 	return nil
 }
 
-func NewMsgSubmitConsumerMisbehaviour(submitter sdk.AccAddress, misbehaviour *ibctmtypes.Misbehaviour) (*MsgSubmitConsumerMisbehaviour, error) {
-	return &MsgSubmitConsumerMisbehaviour{Submitter: submitter.String(), Misbehaviour: misbehaviour}, nil
+func NewMsgSubmitConsumerMisbehaviour(
+	submitter sdk.AccAddress,
+	misbehaviour *ibctmtypes.Misbehaviour,
+) (*MsgSubmitConsumerMisbehaviour, error) {
+	return &MsgSubmitConsumerMisbehaviour{
+		Submitter:    submitter.String(),
+		Misbehaviour: misbehaviour,
+	}, nil
 }
 
 // Route implements the sdk.Msg interface.
@@ -178,7 +185,7 @@ func (msg MsgSubmitConsumerMisbehaviour) Type() string {
 	return TypeMsgSubmitConsumerMisbehaviour
 }
 
-// Type implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerMisbehaviour, "ConsumerId: %s", err.Error())
@@ -206,8 +213,16 @@ func (msg MsgSubmitConsumerMisbehaviour) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{addr}
 }
 
-func NewMsgSubmitConsumerDoubleVoting(submitter sdk.AccAddress, ev *tmtypes.DuplicateVoteEvidence, header *ibctmtypes.Header) (*MsgSubmitConsumerDoubleVoting, error) {
-	return &MsgSubmitConsumerDoubleVoting{Submitter: submitter.String(), DuplicateVoteEvidence: ev, InfractionBlockHeader: header}, nil
+func NewMsgSubmitConsumerDoubleVoting(
+	submitter sdk.AccAddress,
+	ev *tmtypes.DuplicateVoteEvidence,
+	header *ibctmtypes.Header,
+) (*MsgSubmitConsumerDoubleVoting, error) {
+	return &MsgSubmitConsumerDoubleVoting{
+		Submitter:             submitter.String(),
+		DuplicateVoteEvidence: ev,
+		InfractionBlockHeader: header,
+	}, nil
 }
 
 // Route implements the sdk.Msg interface.
@@ -218,7 +233,7 @@ func (msg MsgSubmitConsumerDoubleVoting) Type() string {
 	return TypeMsgSubmitConsumerDoubleVoting
 }
 
-// Type implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 	if dve, err := cmttypes.DuplicateVoteEvidenceFromProto(msg.DuplicateVoteEvidence); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "DuplicateVoteEvidence: %s", err.Error())
@@ -284,19 +299,24 @@ func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{valAddr.Bytes()}
 }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgOptIn) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
+	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ChainId: %s", err.Error())
 	}
+
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ConsumerId: %s", err.Error())
+	}
+
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
-		return ErrInvalidProviderAddress
+		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ProviderAddr: %s", err.Error())
 	}
 
 	if msg.ConsumerKey != "" {
 		if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
-			return ErrInvalidConsumerConsensusPubKey
+			return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ConsumerKey: %s", err.Error())
 		}
 	}
 	return nil
@@ -336,14 +356,19 @@ func (msg MsgOptOut) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgOptOut) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
+	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ChainId: %s", err.Error())
 	}
+
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ConsumerId: %s", err.Error())
+	}
+
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
-		return ErrInvalidProviderAddress
+		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ProviderAddr: %s", err.Error())
 	}
 	return nil
 }
@@ -366,6 +391,7 @@ func (msg MsgSetConsumerCommissionRate) Type() string {
 	return TypeMsgSetConsumerCommissionRate
 }
 
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
 		return err
@@ -416,7 +442,7 @@ func (msg MsgCreateConsumer) Type() string {
 // Route implements the sdk.Msg interface.
 func (msg MsgCreateConsumer) Route() string { return RouterKey }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgCreateConsumer) ValidateBasic() error {
 	if err := ValidateStringField("ChainId", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "ChainId: %s", err.Error())
@@ -483,7 +509,7 @@ func (msg MsgUpdateConsumer) Type() string {
 // Route implements the sdk.Msg interface.
 func (msg MsgUpdateConsumer) Route() string { return RouterKey }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgUpdateConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "ConsumerId: %s", err.Error())
@@ -546,7 +572,7 @@ func (msg MsgRemoveConsumer) Type() string {
 // Route implements the sdk.Msg interface.
 func (msg MsgRemoveConsumer) Route() string { return RouterKey }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgRemoveConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
 		return err
@@ -574,7 +600,7 @@ func (msg MsgRemoveConsumer) GetSigners() []sdk.AccAddress {
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerAddition) Route() string { return RouterKey }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgConsumerAddition) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return ErrBlankConsumerChainID
@@ -646,7 +672,7 @@ func (msg MsgConsumerAddition) GetSigners() []sdk.AccAddress {
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerModification) Route() string { return RouterKey }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgConsumerModification) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return ErrBlankConsumerChainID
@@ -680,7 +706,7 @@ func (msg MsgConsumerModification) GetSigners() []sdk.AccAddress {
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerRemoval) Route() string { return RouterKey }
 
-// ValidateBasic implements the sdk.Msg interface.
+// ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgConsumerRemoval) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
