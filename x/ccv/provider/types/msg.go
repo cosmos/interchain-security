@@ -36,7 +36,7 @@ const (
 
 	// MaxNameLength defines the maximum consumer name length
 	MaxNameLength = 50
-	// MaxDescriptionLength
+	// MaxDescriptionLength defines the maximum consumer description length
 	MaxDescriptionLength = 10000
 	// MaxMetadataLength defines the maximum consumer metadata length
 	MaxMetadataLength = 255
@@ -339,9 +339,7 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "ConsumerId: %s", err.Error())
 	}
 
-	if err := ccvtypes.ValidateAccAddress(msg.NewOwnerAddress); err != nil {
-		return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "NewOwnerAddress: %s", err.Error())
-	}
+	// Note that NewOwnerAddress is validated when handling the message in UpdateConsumer
 
 	if msg.Metadata != nil {
 		if err := ValidateConsumerMetadata(*msg.Metadata); err != nil {
@@ -764,8 +762,8 @@ func ValidateStringField(nameOfTheField string, field string, maxLength int) err
 }
 
 // TruncateString truncates a string to maximum length characters
-func TruncateString(str string, length int) string {
-	if length <= 0 {
+func TruncateString(str string, maxLength int) string {
+	if maxLength <= 0 {
 		return ""
 	}
 
@@ -774,7 +772,7 @@ func TruncateString(str string, length int) string {
 	for _, char := range str {
 		truncated += string(char)
 		count++
-		if count >= length {
+		if count >= maxLength {
 			break
 		}
 	}
@@ -840,11 +838,11 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "InitialHeight cannot be zero")
 	}
 
-	if err := validateHash(initializationParameters.GenesisHash); err != nil {
+	if err := ValidateByteSlice(initializationParameters.GenesisHash, MaxHashLength); err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "GenesisHash: %s", err.Error())
 	}
 
-	if err := validateHash(initializationParameters.BinaryHash); err != nil {
+	if err := ValidateByteSlice(initializationParameters.BinaryHash, MaxHashLength); err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "BinaryHash: %s", err.Error())
 	}
 
@@ -883,12 +881,8 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 	return nil
 }
 
-// validateHash validates a hash
-func validateHash(hash []byte) error {
-	if len(hash) == 0 {
-		return fmt.Errorf("hash cannot be empty")
-	}
-	if len(hash) > MaxHashLength {
+func ValidateByteSlice(hash []byte, maxLength int) error {
+	if len(hash) > maxLength {
 		return fmt.Errorf("hash is too long; got: %d, max: %d", len(hash), MaxHashLength)
 	}
 	return nil

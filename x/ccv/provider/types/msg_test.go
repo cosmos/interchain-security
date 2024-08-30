@@ -95,8 +95,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "valid",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -112,8 +112,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "invalid - zero height",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.ZeroHeight(),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -130,7 +130,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
 				GenesisHash:                       tooLongHash,
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -146,8 +146,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "invalid - zero spawn time",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         time.Time{},
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -163,8 +163,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "invalid - zero duration",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   0,
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -180,8 +180,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "invalid -- ConsumerRedistributionFraction > 1",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -197,8 +197,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "invalid -- ConsumerRedistributionFraction wrong format",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -214,8 +214,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "invalid - BlocksPerDistributionTransmission zero",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -231,8 +231,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "invalid - HistoricalEntries zero",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -248,8 +248,8 @@ func TestValidateInitializationParameters(t *testing.T) {
 			name: "invalid - DistributionTransmissionChannel too long",
 			params: types.ConsumerInitializationParameters{
 				InitialHeight:                     clienttypes.NewHeight(3, 4),
-				GenesisHash:                       []byte{0x01}, // cannot be empty
-				BinaryHash:                        []byte{0x01}, // cannot be empty
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
 				SpawnTime:                         now,
 				UnbondingPeriod:                   time.Duration(100000000000),
 				CcvTimeoutPeriod:                  time.Duration(100000000000),
@@ -318,6 +318,43 @@ func TestValidateConsAddressList(t *testing.T) {
 
 	for _, tc := range testCases {
 		err := types.ValidateConsAddressList(tc.list, tc.maxLength)
+		if tc.valid {
+			require.NoError(t, err, tc.name)
+		} else {
+			require.Error(t, err, tc.name)
+		}
+	}
+}
+
+func TestValidateByteSlice(t *testing.T) {
+	testCases := []struct {
+		name      string
+		slice     []byte
+		maxLength int
+		valid     bool
+	}{
+		{
+			name:      "valid: empty",
+			slice:     []byte{},
+			maxLength: 5,
+			valid:     true,
+		},
+		{
+			name:      "invalid: too long",
+			slice:     []byte{0x01, 0x02},
+			maxLength: 1,
+			valid:     false,
+		},
+		{
+			name:      "valid",
+			slice:     []byte{0x01, 0x02},
+			maxLength: 5,
+			valid:     true,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := types.ValidateByteSlice(tc.slice, tc.maxLength)
 		if tc.valid {
 			require.NoError(t, err, tc.name)
 		} else {
