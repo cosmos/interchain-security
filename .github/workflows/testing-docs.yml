@@ -46,6 +46,10 @@ jobs:
             cp scripts/test_doc/test_documentation.md generated_file.md
             if ! diff -q generated_file.md committed_file.md; then
               echo "Documentation for integration tests is out of date. Updating and pushing changes..."
-              echo "Branch name is: ${GITHUB_REF#refs/heads/}"
+              if [ -n "$GITHUB_HEAD_REF" ]; then
+                branch=$GITHUB_HEAD_REF
+              else
+                branch=${GITHUB_REF#refs/heads/}
+              echo "Branch name is: ${branch}"
               exit 1
             fi
