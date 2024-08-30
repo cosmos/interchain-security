@@ -314,7 +314,7 @@ func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bo
 	tr.UpdateConsumer(action.Chain, action.From, update)
 }
 
-type InitializeConsumerChainAction struct {
+type CreateConsumerChainAction struct {
 	Chain               ChainID
 	From                ValidatorID
 	ConsumerChain       ChainID
@@ -330,8 +330,8 @@ type InitializeConsumerChainAction struct {
 	AllowInactiveVals   bool
 }
 
-// initializeConsumerChain creates and initializes a consumer chain
-func (tr Chain) initializeConsumerChain(action InitializeConsumerChainAction, verbose bool) {
+// createConsumerChain creates and initializes a consumer chain
+func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bool) {
 
 	spawn_time := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	params := ccvtypes.DefaultParams()
@@ -366,14 +366,11 @@ func (tr Chain) initializeConsumerChain(action InitializeConsumerChainAction, ve
 		Metadata:    "no metadata",
 	}
 
-	// create consumer
-	consumerID := tr.CreateConsumer(action.Chain, action.ConsumerChain, action.From, metadata, &initParams, nil)
-
-	update := types.MsgUpdateConsumer{
-		ConsumerId:             consumerID,
-		PowerShapingParameters: &powerShapingParams,
+	// create consumer to get a consumer-id
+	consumerID := tr.CreateConsumer(action.Chain, action.ConsumerChain, action.From, metadata, &initParams, &powerShapingParams)
+	if verbose {
+		fmt.Println("Create consumer chain", string(action.ConsumerChain), " with consumer-id", consumerID)
 	}
-	tr.UpdateConsumer(action.Chain, action.From, update)
 }
 
 type SubmitConsumerAdditionProposalAction struct {
@@ -458,7 +455,7 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 
 	content, err := json.Marshal(rec)
 	if err != nil {
-		log.Fatalf("failed marshalling ConsumerRegistrationRecord", err.Error())
+		log.Fatalf("failed marshalling ConsumerRegistrationRecord: %s", err.Error())
 	}
 	jsonFile := "/create_consumer.json"
 	bz, err := tr.target.ExecCommand(
@@ -505,7 +502,7 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 	// TODO: introduce waitForTx
 	tr.waitBlocks(providerChain, 2, 10*time.Second)
 
-	// Get Consumer ID from tx
+	// Get Consumer ID from transaction
 	cmd = tr.target.ExecCommand(
 		tr.testConfig.chainConfigs[providerChain].BinaryName,
 		"query", "tx", txResponse.TxHash,
@@ -545,13 +542,14 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 		log.Fatal("chain ", chainID, " registered already with a different consumer ID", consumer_id)
 	}
 
-	// Set the new created  consumer-id on the chain's config
+	// Set the new created consumer-id on the chain's config
 	cfg.ConsumerId = e2e.ConsumerID(consumer_id)
 	tr.testConfig.chainConfigs[e2e.ChainID(chainID)] = cfg
 
 	return consumer_id
 }
 
+// submitConsumerAdditionProposal initializes a consumer chain and submits a governance proposal
 func (tr Chain) submitConsumerAdditionProposal(
 	action SubmitConsumerAdditionProposalAction,
 	verbose bool,
@@ -588,7 +586,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 		ConsumerId:      consumer_id,
 		NewOwnerAddress: authority,
 	}
-	// For the MsgUpdateConsumer sen in the proposal
+	// For the MsgUpdateConsumer sent in the proposal
 	PowerShapingParameters := types.PowerShapingParameters{
 		Top_N:              0,
 		ValidatorsPowerCap: action.ValidatorsPowerCap,

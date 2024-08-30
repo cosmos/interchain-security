@@ -42,7 +42,7 @@ func stepsOptInChain() []Step {
 			State: State{},
 		},
 		{
-			Action: InitializeConsumerChainAction{
+			Action: CreateConsumerChainAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
@@ -1030,7 +1030,7 @@ func stepsValidatorSetCappedChain() []Step {
 			},
 		},
 		{
-			Action: InitializeConsumerChainAction{
+			Action: CreateConsumerChainAction{
 				Chain:           ChainID("provi"),
 				From:            ValidatorID("alice"),
 				ConsumerChain:   ChainID("consu"),
@@ -1039,7 +1039,11 @@ func stepsValidatorSetCappedChain() []Step {
 				TopN:            0,
 				ValidatorSetCap: 2,
 			},
-			State: State{},
+			State: State{
+				ChainID("provi"): ChainState{
+					ProposedConsumerChains: &[]string{"consu"},
+				},
+			},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
 		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
@@ -1464,7 +1468,7 @@ func stepsValidatorsAllowlistedChain() []Step {
 			},
 		},
 		{
-			Action: InitializeConsumerChainAction{
+			Action: CreateConsumerChainAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
@@ -1472,7 +1476,11 @@ func stepsValidatorsAllowlistedChain() []Step {
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 				TopN:          0,
 			},
-			State: State{},
+			State: State{
+				ChainID("provi"): ChainState{
+					ProposedConsumerChains: &[]string{"consu"},
+				},
+			},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
 		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
@@ -1643,7 +1651,7 @@ func stepsValidatorsDenylistedChain() []Step {
 			},
 		},
 		{
-			Action: InitializeConsumerChainAction{
+			Action: CreateConsumerChainAction{
 				Chain:           ChainID("provi"),
 				From:            ValidatorID("alice"),
 				ConsumerChain:   ChainID("consu"),
@@ -1652,7 +1660,11 @@ func stepsValidatorsDenylistedChain() []Step {
 				TopN:            0,
 				ValidatorSetCap: 2,
 			},
-			State: State{},
+			State: State{
+				ChainID("provi"): ChainState{
+					ProposedConsumerChains: &[]string{"consu"},
+				},
+			},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
 		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.
@@ -1820,7 +1832,7 @@ func stepsModifyChain() []Step {
 			},
 		},
 		{
-			Action: InitializeConsumerChainAction{
+			Action: CreateConsumerChainAction{
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
@@ -1828,7 +1840,11 @@ func stepsModifyChain() []Step {
 				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 				TopN:          0,
 			},
-			State: State{},
+			State: State{
+				ChainID("provi"): ChainState{
+					ProposedConsumerChains: &[]string{"consu"},
+				},
+			},
 		},
 		// Οpt in "alice", "bob", and "carol." Note, that "alice" and "bob" use the provider's public key
 		// (see `UseConsumerKey` is set to `false` in `getDefaultValidators`) and hence do not need a consumer-key assignment.

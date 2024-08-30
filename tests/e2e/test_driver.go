@@ -227,8 +227,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		} else {
 			target.submitChangeRewardDenomsProposal(action, td.verbose)
 		}
-	case InitializeConsumerChainAction:
-		target.initializeConsumerChain(action, td.verbose)
+	case CreateConsumerChainAction:
+		target.createConsumerChain(action, td.verbose)
 	case UpdateConsumerChainAction:
 		target.updateConsumerChain(action, td.verbose)
 	case OptInAction:
