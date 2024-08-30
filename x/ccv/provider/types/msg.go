@@ -269,16 +269,16 @@ func (msg MsgCreateConsumer) Route() string { return RouterKey }
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgCreateConsumer) ValidateBasic() error {
 	if err := ValidateStringField("ChainId", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "ChainId: %s", err.Error())
 	}
 
 	if err := ValidateConsumerMetadata(msg.Metadata); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "Metadata: %s", err.Error())
 	}
 
 	if msg.InitializationParameters != nil {
 		if err := ValidateInitializationParameters(*msg.InitializationParameters); err != nil {
-			return err
+			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "InitializationParameters: %s", err.Error())
 		}
 	}
 
@@ -288,7 +288,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 				"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
 		}
 		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
-			return err
+			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "PowerShapingParameters: %s", err.Error())
 		}
 	}
 
@@ -336,24 +336,28 @@ func (msg MsgUpdateConsumer) Route() string { return RouterKey }
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgUpdateConsumer) ValidateBasic() error {
 	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "ConsumerId: %s", err.Error())
+	}
+
+	if err := ccvtypes.ValidateAccAddress(msg.NewOwnerAddress); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "NewOwnerAddress: %s", err.Error())
 	}
 
 	if msg.Metadata != nil {
 		if err := ValidateConsumerMetadata(*msg.Metadata); err != nil {
-			return err
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "Metadata: %s", err.Error())
 		}
 	}
 
 	if msg.InitializationParameters != nil {
 		if err := ValidateInitializationParameters(*msg.InitializationParameters); err != nil {
-			return err
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "InitializationParameters: %s", err.Error())
 		}
 	}
 
 	if msg.PowerShapingParameters != nil {
 		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
-			return err
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "PowerShapingParameters: %s", err.Error())
 		}
 	}
 
@@ -780,15 +784,15 @@ func TruncateString(str string, length int) string {
 // ValidateConsumerMetadata validates that all the provided metadata are in the expected range
 func ValidateConsumerMetadata(metadata ConsumerMetadata) error {
 	if err := ValidateStringField("name", metadata.Name, MaxNameLength); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidConsumerMetadata, "Name: %s", err.Error())
 	}
 
 	if err := ValidateStringField("description", metadata.Description, MaxDescriptionLength); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidConsumerMetadata, "Description: %s", err.Error())
 	}
 
 	if err := ValidateStringField("metadata", metadata.Metadata, MaxMetadataLength); err != nil {
-		return err
+		return errorsmod.Wrapf(ErrInvalidConsumerMetadata, "Metadata: %s", err.Error())
 	}
 
 	return nil
