@@ -374,7 +374,12 @@ func (msg MsgOptOut) ValidateBasic() error {
 }
 
 // NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
-func NewMsgSetConsumerCommissionRate(consumerId string, commission math.LegacyDec, providerValidatorAddress sdk.ValAddress, signer string) *MsgSetConsumerCommissionRate {
+func NewMsgSetConsumerCommissionRate(
+	consumerId string,
+	commission math.LegacyDec,
+	providerValidatorAddress sdk.ValAddress,
+	signer string,
+) *MsgSetConsumerCommissionRate {
 	return &MsgSetConsumerCommissionRate{
 		ConsumerId:   consumerId,
 		Rate:         commission,
@@ -393,16 +398,21 @@ func (msg MsgSetConsumerCommissionRate) Type() string {
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
+	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ChainId: %s", err.Error())
 	}
+
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ConsumerId: %s", err.Error())
+	}
+
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
-		return ErrInvalidProviderAddress
+		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ProviderAddr: %s", err.Error())
 	}
 
 	if msg.Rate.IsNegative() || msg.Rate.GT(math.LegacyOneDec()) {
-		return errorsmod.Wrapf(ErrInvalidConsumerCommissionRate, "consumer commission rate should be in the range [0, 1]")
+		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "consumer commission rate should be in the range [0, 1]")
 	}
 
 	return nil
