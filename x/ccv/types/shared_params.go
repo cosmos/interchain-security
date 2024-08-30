@@ -77,7 +77,7 @@ func ValidateChannelIdentifier(i interface{}) error {
 	return ibchost.ChannelIdentifierValidator(value)
 }
 
-func ValidateBech32(i interface{}) error {
+func ValidateAccAddress(i interface{}) error {
 	value, ok := i.(string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
