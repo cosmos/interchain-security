@@ -16,7 +16,7 @@ import (
 
 // TestKeyAssignment tests key assignments relayed from the provider chain to the consumer chain at different times in the protocol lifecycle.
 // @Long Description@
-// Each test scenarios sets up a provider chain and then assigns a key for a validator.
+// Each test scenario sets up a provider chain and then assigns a key for a validator.
 // However, the assignment comes at different times in the protocol lifecycle.
 // The test covers the following scenarios:
 // * successfully assign the key before the CCV channel initialization is complete, then check that a VSCPacket is indeed queued

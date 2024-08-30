@@ -404,7 +404,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 // @Long Description@
 // The test first sets up CCV and transmission channels between the provider and consumer chains.
 // Then it verifies the SendRewardsToProvider() function under various scenarios and checks if the
-// function handles each scenario correctly by ensuring the expected number of token transfers and proper error handling.
+// function handles each scenario correctly by ensuring the expected number of token transfers.
 func (s *CCVTestSuite) TestSendRewardsToProvider() {
 	testCases := []struct {
 		name           string
@@ -549,8 +549,8 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 // TestIBCTransferMiddleware tests the logic of the IBC transfer OnRecvPacket callback.
 // @Long Description@
 // The test first sets up IBC and transfer channels. Then it simulates various scenarios of token transfers from the provider chain to
-// the consumer chain, and evaluates how the middleware processes these transfers. It ensures that token transfers are handled correctly, rewards are allocated as expected,
-// and the appropriate errors are raised when conditions are not met.
+// the consumer chain, and evaluates how the middleware processes these transfers. It ensures that token transfers are handled correctly and
+// rewards are allocated as expected.
 func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 	var (
 		data        transfertypes.FungibleTokenPacketData
