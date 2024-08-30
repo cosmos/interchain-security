@@ -48,8 +48,9 @@ jobs:
               echo "Documentation for integration tests is out of date. Updating and pushing changes..."
               if [ -n "$GITHUB_HEAD_REF" ]; then
                 branch=$GITHUB_HEAD_REF
+                echo "Pull request branch name: $branch"
               else
                 branch=${GITHUB_REF#refs/heads/}
-              echo "Branch name is: ${branch}"
-              exit 1
+                echo "Branch name: $branch"
+              fi
             fi
