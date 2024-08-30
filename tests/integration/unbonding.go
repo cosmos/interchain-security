@@ -6,7 +6,7 @@ import (
 
 // TestUndelegationCompletion tests that undelegations complete after
 // the unbonding period elapses on the provider, regardless of the consumer's state
-// Long Description:
+// @Long Description@
 // It sets up a CCV channel and performs an initial delegation of tokens followed by a partial undelegation
 // (undelegating 1/4 of the tokens). Then it verifies that the staking unbonding operation is created as expected. Block height is then incremented
 // on the provider. After this period elapses, the test checks that the unbonding operation has been completed. Finally, it verifies

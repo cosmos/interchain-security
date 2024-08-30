@@ -468,8 +468,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 // TestValidatorDowntime tests if a slash packet is sent and if the outstanding slashing flag is switched
 // when a validator has downtime on the slashing module
 // @Long Description@
-// It sets up all CCV channel and send an empty VSC packet, then retrives the address of a validator.
-// Validator signins blocks for the duration of the signedBlocksWindow and a slash packet is constructed to be sent and commited.
+// It sets up all CCV channel and send an empty VSC packet, then retrieves the address of a validator.
+// Validator signs blocks for the duration of the signedBlocksWindow and a slash packet is constructed to be sent and committed.
 // The test simulates the validator missing blocks and then verifies that the validator is jailed and the jailed time is correctly updated.
 // Also it ensures that the missed block counters are reset. After it checks that there is a pending slash packet in the queue, the test sends the pending packets.
 // Then checks if slash record is created and verifies that the consumer queue still contains the packet since no acknowledgment has been received from the provider.
@@ -590,7 +590,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 // It sets up all CCV channel and sends an empty VSC packet, then creates a validator public key and address. Then the infraction parameters are set and
 // evidence of double signing is created. Validator signing-info are also added to the store and the slash packet is constructed.
 // The test then simulates double signing and sends the slash packet. It then verifies the handling of slash packet, and after
-// it cheks if slash record was created and if it's waiting for reply. Lastly the test confirms that the queue is not cleared and the slash packet is sent
+// it checks if slash record was created and if it's waiting for reply. Lastly the test confirms that the queue is not cleared and the slash packet is sent
 func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// initial setup
 	suite.SetupCCVChannel(suite.path)

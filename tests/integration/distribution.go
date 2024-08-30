@@ -1015,7 +1015,7 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 	}
 }
 
-// TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights tests `AllocateTokensToConsumerValidators` test with
+// TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights tests AllocateTokensToConsumerValidators test with
 // consumer validators that have different heights.
 // @Long Description@
 // It sets up a context where the consumer validators have different join heights and verifies that rewards are

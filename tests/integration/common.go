@@ -75,7 +75,7 @@ func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingty
 func (s *CCVTestSuite) getValConsAddr(tmVal tmtypes.Validator) sdk.ConsAddress {
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
 	return sdk.GetConsAddress(pubkey)
 }

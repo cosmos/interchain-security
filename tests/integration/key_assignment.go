@@ -19,7 +19,7 @@ import (
 // Each test scenarios sets up a provider chain and then assigns a key for a validator.
 // However, the assignment comes at different times in the protocol lifecycle.
 // The test covers the following scenarios:
-// * successfully assign the key before the CCV channel initialization is complete, then check that a VSCPacket is indeed queud
+// * successfully assign the key before the CCV channel initialization is complete, then check that a VSCPacket is indeed queued
 // * successfully assign the key after the CCV channel initialization is complete
 // * successfully assign the key during an same epoch where the validator power changes
 // * get an error when assigning the same key twice in the same block by different validators

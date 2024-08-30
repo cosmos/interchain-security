@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,8 +25,6 @@ func main() {
 
 	// Write the header for the markdown file
 	fmt.Fprintf(out, "# Test Documentation\n\n")
-	fmt.Fprintf(out, "| File | Function | Short Description |\n")
-	fmt.Fprintf(out, "|------|----------|-------------------|\n")
 
 	errorStatusCode := false
 
@@ -66,7 +63,7 @@ func main() {
 // It returns a list of test functions that are missing docstrings.
 func extractDocstrings(filePath string, out *os.File) []string {
 	// Read the Go source file
-	src, err := ioutil.ReadFile(filePath)
+	src, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Fatalf("Error reading file %s: %v\n", filePath, err)
 	}
@@ -80,14 +77,29 @@ func extractDocstrings(filePath string, out *os.File) []string {
 
 	functionsMissingDocstrings := []string{}
 
+	// Files that do not contain test functions are excluded from the documentation.
+	fileNameWritten := false
+
 	// Traverse the AST
 	for _, f := range node.Decls {
 		if fn, isFn := f.(*ast.FuncDecl); isFn && strings.HasPrefix(fn.Name.Name, "Test") {
 			// Check if the function has a docstring
 			if fn.Doc != nil {
+
+				if !fileNameWritten {
+					relativePath := strings.TrimPrefix(filePath, "../../tests/integration/")
+					doclink := fmt.Sprintf("[%s](%s)", relativePath, filePath)
+					fmt.Fprintf(out, "# %s \n", doclink)
+					fmt.Fprintf(out, "<details><summary> Test Specifications </summary>\n\n")
+
+					// Write table header
+					fmt.Fprintf(out, "| Function | Short Description |\n")
+					fmt.Fprintf(out, "|----------|-------------------|\n")
+					fileNameWritten = true
+				}
+
 				doc := fn.Doc.Text()
-				relativePath := strings.TrimPrefix(filePath, "../../tests/integration/")
-				link := fmt.Sprintf("[%s](%s#L%d)", relativePath, filePath, fset.Position(fn.Pos()).Line)
+				link := fmt.Sprintf("[%s](%s#L%d)", fn.Name.Name, filePath, fset.Position(fn.Pos()).Line)
 
 				// Split the docstring based on the separator "========"
 				parts := strings.Split(doc, "\n@Long Description@\n")
@@ -113,12 +125,15 @@ func extractDocstrings(filePath string, out *os.File) []string {
 					description += fmt.Sprintf("<details><summary>Details</summary>%s</details>", longDescription)
 				}
 
-				fmt.Fprintf(out, "| %s | %s | %s |\n", link, fn.Name.Name, description)
+				fmt.Fprintf(out, " %s | %s |\n", link, description)
 			} else {
 				functionsMissingDocstrings = append(functionsMissingDocstrings, fn.Name.Name)
+
 			}
 		}
 	}
-
+	if fileNameWritten {
+		fmt.Fprintf(out, "</details>\n\n")
+	}
 	return functionsMissingDocstrings
 }

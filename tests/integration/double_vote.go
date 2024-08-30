@@ -15,8 +15,9 @@ import (
 // TestHandleConsumerDoubleVoting tests the handling of double voting evidence from the consumer chain.
 // @Long Description@
 // The test sets up a CCV channel, creates various double voting scenarios, and submits these to the provider chain.
-// It checks if the provider chain correctly processes the evidence, jails and tombstones validators as needed, and applies the correct
-// slashing penalties. Finally, it verifies that invalid evidence is properly rejected and does not result in incorrect penalties.
+// It checks if the provider chain correctly processes the evidence, jails and tombstones validators as needed, and applies the
+// correct slashing penalties. Finally, it verifies that invalid evidence is properly rejected and does not result in
+// incorrect penalties.
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
