@@ -272,3 +272,56 @@ func TestValidateInitializationParameters(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateConsAddressList(t *testing.T) {
+	consAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	invalidConsAddr := "cosmosvalcons1nx7n5uh0ztxsynn4sje6ey"
+
+	testCases := []struct {
+		name      string
+		list      []string
+		maxLength int
+		valid     bool
+	}{
+		{
+			name:      "valid - empty list",
+			list:      []string{},
+			maxLength: 10,
+			valid:     true,
+		},
+		{
+			name:      "valid - non-empty list",
+			list:      []string{consAddr1, consAddr2},
+			maxLength: 10,
+			valid:     true,
+		},
+		{
+			name:      "invalid - address with wrong format",
+			list:      []string{invalidConsAddr},
+			maxLength: 10,
+			valid:     false,
+		},
+		{
+			name:      "invalid - empty address",
+			list:      []string{""},
+			maxLength: 10,
+			valid:     false,
+		},
+		{
+			name:      "invalid - list length",
+			list:      []string{consAddr1, consAddr2},
+			maxLength: 1,
+			valid:     false,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := types.ValidateConsAddressList(tc.list, tc.maxLength)
+		if tc.valid {
+			require.NoError(t, err, tc.name)
+		} else {
+			require.Error(t, err, tc.name)
+		}
+	}
+}

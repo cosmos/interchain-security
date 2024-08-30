@@ -40,9 +40,10 @@ const (
 	MaxDescriptionLength = 10000
 	// MaxMetadataLength defines the maximum consumer metadata length
 	MaxMetadataLength = 255
-
 	// MaxHashLength defines the maximum length of a hash
 	MaxHashLength = 64
+	// MaxValidatorCount defines the maximum number of validators
+	MaxValidatorCount = 1000
 )
 
 var (
@@ -793,27 +794,37 @@ func ValidateConsumerMetadata(metadata ConsumerMetadata) error {
 	return nil
 }
 
+// ValidateConsAddressList validates a list of consensus addresses
+func ValidateConsAddressList(list []string, maxLength int) error {
+	if len(list) > maxLength {
+		return fmt.Errorf("consensus address list too long;  got: %d, max: %d", len(list), maxLength)
+	}
+	for _, address := range list {
+		_, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			return fmt.Errorf("invalid address %s: %s", address, err.Error())
+		}
+	}
+	return nil
+}
+
 // ValidatePowerShapingParameters validates that all the provided power-shaping parameters are in the expected range
 func ValidatePowerShapingParameters(powerShapingParameters PowerShapingParameters) error {
-	const maxAllowlistLength = 500
-	const maxDenylistLength = 500
-
 	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
 	// Opt In chain) or in the range [50, 100] (for a Top N chain).
 	if powerShapingParameters.Top_N != 0 && (powerShapingParameters.Top_N < 50 || powerShapingParameters.Top_N > 100) {
-		return fmt.Errorf("parameter Top N can either be 0 or in the range [50, 100]")
+		return errorsmod.Wrap(ErrInvalidPowerShapingParameters, "Top N can either be 0 or in the range [50, 100]")
 	}
 
-	if powerShapingParameters.ValidatorsPowerCap != 0 && powerShapingParameters.ValidatorsPowerCap > 100 {
-		return fmt.Errorf("validators' power cap has to be in the range [1, 100]")
+	if powerShapingParameters.ValidatorsPowerCap > 100 {
+		return errorsmod.Wrap(ErrInvalidPowerShapingParameters, "ValidatorsPowerCap has to be in the range [0, 100]")
 	}
 
-	if len(powerShapingParameters.Allowlist) > maxAllowlistLength {
-		return fmt.Errorf("allowlist cannot exceed length: %d", maxAllowlistLength)
+	if err := ValidateConsAddressList(powerShapingParameters.Allowlist, MaxValidatorCount); err != nil {
+		return errorsmod.Wrapf(ErrInvalidPowerShapingParameters, "Allowlist: %s", err.Error())
 	}
-
-	if len(powerShapingParameters.Denylist) > maxDenylistLength {
-		return fmt.Errorf("denylist cannot exceed length: %d", maxDenylistLength)
+	if err := ValidateConsAddressList(powerShapingParameters.Denylist, MaxValidatorCount); err != nil {
+		return errorsmod.Wrapf(ErrInvalidPowerShapingParameters, "Denylist: %s", err.Error())
 	}
 
 	return nil
