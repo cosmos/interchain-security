@@ -90,12 +90,6 @@ func (msg MsgAssignConsumerKey) Type() string {
 	return TypeMsgAssignConsumerKey
 }
 
-// GetSignBytes returns the message bytes to sign over.
-func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
@@ -186,12 +180,6 @@ func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 	return nil
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgSubmitConsumerMisbehaviour) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
 func NewMsgSubmitConsumerDoubleVoting(
 	submitter sdk.AccAddress,
 	ev *tmtypes.DuplicateVoteEvidence,
@@ -231,12 +219,6 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 	}
 
 	return nil
-}
-
-// Type implements the sdk.Msg interface.
-func (msg MsgSubmitConsumerDoubleVoting) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
 }
 
 // NewMsgOptIn creates a new NewMsgOptIn instance.
@@ -296,12 +278,6 @@ func (msg MsgOptOut) Type() string {
 
 // Route implements the sdk.Msg interface.
 func (msg MsgOptOut) Route() string { return RouterKey }
-
-// GetSignBytes returns the message bytes to sign over.
-func (msg MsgOptOut) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgOptOut) ValidateBasic() error {
@@ -365,11 +341,6 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 	return nil
 }
 
-func (msg MsgSetConsumerCommissionRate) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
 func NewMsgCreateConsumer(signer string, chainId string, metadata ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgCreateConsumer, error) {
@@ -417,12 +388,6 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 	}
 
 	return nil
-}
-
-// Type implements the sdk.Msg interface.
-func (msg MsgCreateConsumer) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
 }
 
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
@@ -475,12 +440,6 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 	return nil
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgUpdateConsumer) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
 // NewMsgRemoveConsumer creates a new MsgRemoveConsumer instance
 func NewMsgRemoveConsumer(signer string, consumerId string, stopTime time.Time) (*MsgRemoveConsumer, error) {
 	return &MsgRemoveConsumer{
@@ -506,38 +465,14 @@ func (msg MsgRemoveConsumer) ValidateBasic() error {
 	return nil
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgRemoveConsumer) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerAddition) Route() string { return RouterKey }
-
-// Type implements the sdk.Msg interface.
-func (msg MsgConsumerAddition) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
 
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerModification) Route() string { return RouterKey }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgConsumerModification) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerRemoval) Route() string { return RouterKey }
-
-// Type implements the sdk.Msg interface.
-func (msg MsgConsumerRemoval) GetSignBytes() []byte {
-	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
 
 //
 // Validation methods
