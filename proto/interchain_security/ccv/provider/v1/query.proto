@@ -70,7 +70,7 @@ service Query {
     QueryAllPairsValConAddrByConsumerChainIDRequest)
     returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
     option (google.api.http) = {
-      get: "/interchain_security/ccv/provider/{consumer_id}";
+      get: "/interchain_security/ccv/provider/address_pairs/{consumer_id}";
     };
     }
 

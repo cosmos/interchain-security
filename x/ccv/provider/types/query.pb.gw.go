@@ -1421,7 +1421,7 @@ var (
 
 	pattern_Query_QueryRegisteredConsumerRewardDenoms_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "registered_consumer_reward_denoms"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryAllPairsValConAddrByConsumerChainID_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"interchain_security", "ccv", "provider", "consumer_id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryAllPairsValConAddrByConsumerChainID_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "address_pairs", "consumer_id"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_QueryParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
