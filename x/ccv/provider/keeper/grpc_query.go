@@ -25,8 +25,6 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	} else if req.ChainId != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	consumerId := req.ConsumerId
@@ -163,8 +161,6 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	} else if req.ChainId != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -198,8 +194,6 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.QueryValidatorProviderAddrRequest) (*types.QueryValidatorProviderAddrResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	} else if req.ChainId != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -255,8 +249,6 @@ func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *
 func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, req *types.QueryAllPairsValConAddrByConsumerChainIDRequest) (*types.QueryAllPairsValConAddrByConsumerChainIDResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	} else if req.ChainId != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	consumerId := req.ConsumerId
@@ -302,8 +294,6 @@ func (k Keeper) QueryParams(goCtx context.Context, req *types.QueryParamsRequest
 func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *types.QueryConsumerChainOptedInValidatorsRequest) (*types.QueryConsumerChainOptedInValidatorsResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	} else if req.ChainId != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	consumerId := req.ConsumerId
@@ -331,9 +321,8 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryConsumerValidatorsRequest) (*types.QueryConsumerValidatorsResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	} else if req.ChainId != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
+
 	consumerId := req.ConsumerId
 	if err := types.ValidateConsumerId(consumerId); err != nil {
 		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
@@ -524,8 +513,6 @@ func (k Keeper) hasToValidate(
 func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req *types.QueryValidatorConsumerCommissionRateRequest) (*types.QueryValidatorConsumerCommissionRateResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	} else if req.ChainId != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "ChainId has been deprecated. Use ConsumerId instead.")
 	}
 
 	consumerId := req.ConsumerId
