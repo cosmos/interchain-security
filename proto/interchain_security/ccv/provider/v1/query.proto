@@ -153,8 +153,8 @@ service Query {
 
   // QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
   // between provider and consumer chain
-  // Note that this query must come AFTER all other queries using
-  // the "/interchain_security/ccv/provider/" REST API path.
+  // note that this query must come AFTER all other queries using
+  // the "/interchain_security/ccv/provider" REST endpoint
   rpc QueryAllPairsValConAddrByConsumerChainID (
     QueryAllPairsValConAddrByConsumerChainIDRequest)
     returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
