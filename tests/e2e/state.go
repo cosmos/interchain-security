@@ -473,15 +473,15 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 	case "/interchain_security.ccv.provider.v1.MsgUpdateConsumer":
 		spawnTime := rawContent.Get("initialization_parameters.spawn_time").Time().Sub(tr.containerConfig.Now)
 		consumerId := rawContent.Get("consumer_id").String()
-		consumer_chain_id := ChainID("")
+		consumerChainId := ChainID("")
 		for _, chainCfg := range tr.chainConfigs {
 			if chainCfg.ConsumerId == e2e.ConsumerID(consumerId) {
-				consumer_chain_id = chainCfg.ChainId
+				consumerChainId = chainCfg.ChainId
 			}
 		}
 		return e2e.ConsumerAdditionProposal{
 			Deposit:   uint(deposit),
-			Chain:     consumer_chain_id,
+			Chain:     consumerChainId,
 			Status:    status,
 			SpawnTime: int(spawnTime.Milliseconds()),
 			InitialHeight: clienttypes.Height{

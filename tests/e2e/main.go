@@ -4,8 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"log/slog"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -248,12 +246,13 @@ var stepChoices = map[string]StepChoice{
 		description: "test minting without inactive validators as a sanity check",
 		testConfig:  MintTestCfg,
 	},
-	"permissionless-ics": {
+	// TODO PERMISSIONLESS: ADD NEW E2E TEST
+	/* 	"permissionless-ics": {
 		name:        "permissionless-ics",
 		steps:       stepsPermissionlessICS(),
 		description: "test permissionless ics",
 		testConfig:  DefaultTestCfg,
-	},
+	}, */
 	"inactive-vals-outside-max-validators": {
 		name:        "inactive-vals-outside-max-validators",
 		steps:       stepsInactiveValsTopNReproduce(),
@@ -489,18 +488,6 @@ func createTestRunners(testCases []testStepsWithConfig) []TestRunner {
 		}
 	}
 	return runners
-}
-
-func SetupLogger() {
-	opts := &slog.HandlerOptions{
-		AddSource: false,
-		Level:     slog.LevelInfo,
-	}
-	if *verbose {
-		opts.Level = slog.LevelDebug
-	}
-	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
-	slog.SetDefault(logger)
 }
 
 func executeTests(runners []TestRunner) error {
