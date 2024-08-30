@@ -90,17 +90,6 @@ func (msg MsgAssignConsumerKey) Type() string {
 	return TypeMsgAssignConsumerKey
 }
 
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgAssignConsumerKey) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
 // GetSignBytes returns the message bytes to sign over.
 func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
@@ -203,16 +192,6 @@ func (msg MsgSubmitConsumerMisbehaviour) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgSubmitConsumerMisbehaviour) GetSigners() []sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.Submitter)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{addr}
-}
-
 func NewMsgSubmitConsumerDoubleVoting(
 	submitter sdk.AccAddress,
 	ev *tmtypes.DuplicateVoteEvidence,
@@ -260,16 +239,6 @@ func (msg MsgSubmitConsumerDoubleVoting) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// Type implements the sdk.Msg interface.
-func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.Submitter)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{addr}
-}
-
 // NewMsgOptIn creates a new NewMsgOptIn instance.
 func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
 	return &MsgOptIn{
@@ -287,17 +256,6 @@ func (msg MsgOptIn) Type() string {
 
 // Route implements the sdk.Msg interface.
 func (msg MsgOptIn) Route() string { return RouterKey }
-
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgOptIn) ValidateBasic() error {
@@ -338,17 +296,6 @@ func (msg MsgOptOut) Type() string {
 
 // Route implements the sdk.Msg interface.
 func (msg MsgOptOut) Route() string { return RouterKey }
-
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
 
 // GetSignBytes returns the message bytes to sign over.
 func (msg MsgOptOut) GetSignBytes() []byte {
@@ -418,15 +365,6 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 	return nil
 }
 
-func (msg MsgSetConsumerCommissionRate) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
 func (msg MsgSetConsumerCommissionRate) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
@@ -487,17 +425,6 @@ func (msg MsgCreateConsumer) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgCreateConsumer) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
 func NewMsgUpdateConsumer(signer string, consumerId string, ownerAddress string, metadata *ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgUpdateConsumer, error) {
@@ -554,17 +481,6 @@ func (msg MsgUpdateConsumer) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgUpdateConsumer) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
 // NewMsgRemoveConsumer creates a new MsgRemoveConsumer instance
 func NewMsgRemoveConsumer(signer string, consumerId string, stopTime time.Time) (*MsgRemoveConsumer, error) {
 	return &MsgRemoveConsumer{
@@ -596,17 +512,6 @@ func (msg MsgRemoveConsumer) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgRemoveConsumer) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerAddition) Route() string { return RouterKey }
 
@@ -614,17 +519,6 @@ func (msg MsgConsumerAddition) Route() string { return RouterKey }
 func (msg MsgConsumerAddition) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
-}
-
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgConsumerAddition) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
 }
 
 // Route implements the sdk.Msg interface.
@@ -636,17 +530,6 @@ func (msg MsgConsumerModification) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgConsumerModification) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
-}
-
 // Route implements the sdk.Msg interface.
 func (msg MsgConsumerRemoval) Route() string { return RouterKey }
 
@@ -654,17 +537,6 @@ func (msg MsgConsumerRemoval) Route() string { return RouterKey }
 func (msg MsgConsumerRemoval) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
-}
-
-// GetSigners implements the sdk.Msg interface. It returns the address(es) that
-// must sign over msg.GetSignBytes().
-func (msg MsgConsumerRemoval) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
-	if err != nil {
-		// same behavior as in cosmos-sdk
-		panic(err)
-	}
-	return []sdk.AccAddress{valAddr.Bytes()}
 }
 
 //
