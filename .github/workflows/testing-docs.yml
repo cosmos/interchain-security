@@ -47,10 +47,7 @@ jobs:
             if ! diff -q generated_file.md committed_file.md; then
               echo "Documentation for integration tests is out of date. Updating and pushing changes..."
               cp generated_file.md scripts/test_doc/test_documentation.md
-              git config user.name "github-actions"
-              git config user.email "github-actions@github.com"
-              git add scripts/test_doc/test_documentation.md
-              git commit -m "Update testing documentation"
+
               if [ -n "$GITHUB_HEAD_REF" ]; then
                 branch=$GITHUB_HEAD_REF
                 echo "Pull request branch name: $branch"
@@ -58,6 +55,17 @@ jobs:
                 branch=${GITHUB_REF#refs/heads/}
                 echo "Branch name: $branch"
               fi
+              
+              git fetch origin $branch
+              git checkout $branch
+
+              cp generated_file.md scripts/test_doc/test_documentation.md
+              git config user.name "github-actions"
+              git config user.email "github-actions@github.com"
+              git add scripts/test_doc/test_documentation.md
+              git commit -m "Update testing documentation"
+
               git push origin "$branch"
+
               exit 1
             fi
