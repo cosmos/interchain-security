@@ -804,7 +804,7 @@ func TestStopConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, consumerId, "channelID")
+		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, consumerId, "channelID", tc.expErr)
 
 		ctrl.Finish()
 	}

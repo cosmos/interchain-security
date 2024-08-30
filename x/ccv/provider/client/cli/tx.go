@@ -224,6 +224,42 @@ changed by updating the consumer chain.
 
 Example:
 %s tx provider create-consumer [path/to/create_consumer.json] --from node0 --home ../node0 --chain-id $CID
+
+where create_consumer.json content:
+{
+  "chain_id": "consu",
+  "metadata": {
+    "name": "chain consumer",
+    "description": "no description",
+    "metadata": "no metadata"
+  },
+  "initialization_parameters": {
+    "initial_height": {
+     "revision_number": "0",
+     "revision_height": "1"
+    },
+    "genesis_hash": "Z2VuX2hhc2g=",
+    "binary_hash": "YmluX2hhc2g=",
+    "spawn_time": "2024-08-29T12:26:16.529913Z",
+    "unbonding_period": "1209600s",
+    "ccv_timeout_period": "2419200s",
+    "transfer_timeout_period": "3600s",
+    "consumer_redistribution_fraction": "0.75",
+    "blocks_per_distribution_transmission": "1000",
+    "historical_entries": "10000",
+    "distribution_transmission_channel": ""
+  },
+  "power_shaping_parameters": {
+    "top_N": 100,
+    "validators_power_cap": 0,
+    "validator_set_cap": 0,
+    "allowlist": [],
+    "denylist": [],
+    "min_stake": "0",
+    "allow_inactive_vals": false
+  }
+}
+
 `, version.AppName)),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -278,6 +314,43 @@ Note that only the owner of the chain can initialize it.
 
 Example:
 	%s tx provider update-consumer [path/to/consumer-update.json] --from node0 --home ../node0 --chain-id $CID
+
+	where consumer-update.json contains parameters for 'power_shaping', 'initialization' and 'metadata':
+
+{
+   "consumer_id": "0",
+   "new_owner_address": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+   "metadata": {
+    "name": "chain consumer",
+    "description": "no description",
+    "metadata": "no metadata"
+   },
+   "initialization_parameters": {
+    "initial_height": {
+     "revision_number": "0",
+     "revision_height": "1"
+    },
+    "genesis_hash": "Z2VuX2hhc2g=",
+    "binary_hash": "YmluX2hhc2g=",
+    "spawn_time": "2024-08-29T12:26:16.529913Z",
+    "unbonding_period": "1209600s",
+    "ccv_timeout_period": "2419200s",
+    "transfer_timeout_period": "3600s",
+    "consumer_redistribution_fraction": "0.75",
+    "blocks_per_distribution_transmission": "1000",
+    "historical_entries": "10000",
+    "distribution_transmission_channel": ""
+   },
+   "power_shaping_parameters": {
+    "top_N": 100,
+    "validators_power_cap": 0,
+    "validator_set_cap": 0,
+    "allowlist": [],
+    "denylist": [],
+    "min_stake": "0",
+    "allow_inactive_vals": false
+   }
+}
 `, version.AppName)),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
