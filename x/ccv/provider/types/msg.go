@@ -112,19 +112,26 @@ func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgAssignConsumerKey) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
-		return err
+	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ChainId: %s", err.Error())
 	}
+
+	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerId: %s", err.Error())
+	}
+
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
-		return ErrInvalidProviderAddress
+		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ProviderAddr: %s", err.Error())
 	}
+
 	if msg.ConsumerKey == "" {
-		return ErrInvalidConsumerConsensusPubKey
+		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerKey cannot be empty")
 	}
 	if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
-		return ErrInvalidConsumerConsensusPubKey
+		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerKey: %s", err.Error())
 	}
+
 	return nil
 }
 
@@ -885,5 +892,13 @@ func ValidateByteSlice(hash []byte, maxLength int) error {
 	if len(hash) > maxLength {
 		return fmt.Errorf("hash is too long; got: %d, max: %d", len(hash), MaxHashLength)
 	}
+	return nil
+}
+
+func validateDeprecatedChainId(chainId string) error {
+	if strings.TrimSpace(chainId) != "" {
+		return fmt.Errorf("chainId is deprecated; use consumerId instead")
+	}
+
 	return nil
 }

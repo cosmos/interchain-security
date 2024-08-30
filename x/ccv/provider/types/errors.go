@@ -51,4 +51,5 @@ var (
 	ErrInvalidStopTime                         = errorsmod.Register(ModuleName, 43, "invalid stop time")
 	ErrInvalidMsgCreateConsumer                = errorsmod.Register(ModuleName, 44, "invalid create consumer message")
 	ErrInvalidMsgUpdateConsumer                = errorsmod.Register(ModuleName, 45, "invalid update consumer message")
+	ErrInvalidMsgAssignConsumerKey             = errorsmod.Register(ModuleName, 46, "invalid assign consumer keymessage")
 )
