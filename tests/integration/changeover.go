@@ -1,8 +1,6 @@
 package integration
 
 import (
-	"fmt"
-
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 )
@@ -61,12 +59,4 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	// Sanity check, only two channels should exist, one transfer and one ccv
 	channels := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllChannels(suite.consumerCtx())
 	suite.Require().Len(channels, 2)
-}
-
-// TestFoo tests testing-docs test
-// @Long Description@
-// It will be deleted
-func (suite *CCVTestSuite) TestFoo() {
-
-	fmt.Println("Foo test")
 }
