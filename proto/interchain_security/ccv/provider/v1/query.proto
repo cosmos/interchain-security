@@ -68,19 +68,6 @@ service Query {
         "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
 
-  // QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
-  // between provider and consumer chain
-  rpc QueryAllPairsValConAddrByConsumerChainID (
-    QueryAllPairsValConAddrByConsumerChainIDRequest)
-    returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
-    option (google.api.http) = {
-      // [DEPRECATED] use the {consumer_id} endpoint instead.
-      get: "/interchain_security/ccv/provider/{chain_id}";
-      additional_bindings {
-        get: "/interchain_security/ccv/provider/{consumer_id}";
-      }
-    };
-    }
 
   // QueryParams returns all current values of provider parameters
   rpc QueryParams(QueryParamsRequest)
@@ -163,7 +150,24 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_chain/{consumer_id}";
   }
-}
+
+  // QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
+  // between provider and consumer chain
+  // note that this query must come AFTER all other queries using
+  // the "/interchain_security/ccv/provider" REST endpoint
+  rpc QueryAllPairsValConAddrByConsumerChainID (
+    QueryAllPairsValConAddrByConsumerChainIDRequest)
+    returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
+    option (google.api.http) = {
+      // [DEPRECATED] use the {consumer_id} endpoint instead.
+      get: "/interchain_security/ccv/provider/{chain_id}";
+      additional_bindings {
+        get: "/interchain_security/ccv/provider/{consumer_id}";
+      }
+    };
+    }
+  }
+
 
 message QueryConsumerGenesisRequest {
   // [DEPRECATED] use `consumer_id` instead
