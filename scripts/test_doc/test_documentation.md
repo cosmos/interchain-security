@@ -5,7 +5,8 @@
 
 | Function | Short Description |
 |----------|-------------------|
- [TestRecycleTransferChannel](../../tests/integration/changeover.go#L17) | TestRecycleTransferChannel tests that an existing transfer channel can be reused when transitioning from a standalone to a consumer chain.<details><summary>Details</summary>The test case:<br>* sets up a provider chain and a standalone chain<br>* creates a connection between the two chains<br>* creates a transfer channel between the two chains<br>* transitions the standalone chain to a consumer chain<br>* confirms that no extra transfer channel is created, thus only one transfer channel and one CCV channel exist.</details> |
+ [TestRecycleTransferChannel](../../tests/integration/changeover.go#L19) | TestRecycleTransferChannel tests that an existing transfer channel can be reused when transitioning from a standalone to a consumer chain.<details><summary>Details</summary>The test case:<br>* sets up a provider chain and a standalone chain<br>* creates a connection between the two chains<br>* creates a transfer channel between the two chains<br>* transitions the standalone chain to a consumer chain<br>* confirms that no extra transfer channel is created, thus only one transfer channel and one CCV channel exist.</details> |
+ [TestFoo](../../tests/integration/changeover.go#L69) | TestFoo tests testing-docs test<details><summary>Details</summary>It will be deleted</details> |
 </details>
 
 # [democracy.go](../../tests/integration/democracy.go) 
