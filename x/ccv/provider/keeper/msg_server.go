@@ -87,45 +87,6 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
 
-// RemoveConsumer defines an RPC handler method for MsgRemoveConsumer
-func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	resp := types.MsgRemoveConsumerResponse{}
-
-	consumerId := msg.ConsumerId
-	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
-	if err != nil {
-		return &resp, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
-	}
-
-	if msg.Signer != ownerAddress {
-		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
-	}
-
-	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
-		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
-			"chain with consumer id: %s has to be in its launched phase", consumerId)
-	}
-
-	previousStopTime, err := k.Keeper.GetConsumerStopTime(ctx, consumerId)
-	if err == nil {
-		if err := k.Keeper.RemoveConsumerToBeStopped(ctx, consumerId, previousStopTime); err != nil {
-			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot remove previous stop time: %s", err.Error())
-		}
-	}
-
-	if err := k.Keeper.SetConsumerStopTime(ctx, consumerId, msg.StopTime); err != nil {
-		return &resp, errorsmod.Wrapf(types.ErrInvalidStopTime, "cannot set stop time: %s", err.Error())
-	}
-	if err := k.Keeper.AppendConsumerToBeStopped(ctx, consumerId, msg.StopTime); err != nil {
-		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot set consumer to be stop: %s", err.Error())
-	}
-
-	return &resp, nil
-}
-
 // ChangeRewardDenoms defines a rpc handler method for MsgChangeRewardDenoms
 func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChangeRewardDenoms) (*types.MsgChangeRewardDenomsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -490,6 +451,45 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			return &resp, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
 		}
+	}
+
+	return &resp, nil
+}
+
+// RemoveConsumer defines an RPC handler method for MsgRemoveConsumer
+func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveConsumer) (*types.MsgRemoveConsumerResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	resp := types.MsgRemoveConsumerResponse{}
+
+	consumerId := msg.ConsumerId
+	ownerAddress, err := k.Keeper.GetConsumerOwnerAddress(ctx, consumerId)
+	if err != nil {
+		return &resp, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
+	}
+
+	if msg.Signer != ownerAddress {
+		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
+	}
+
+	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
+			"chain with consumer id: %s has to be in its launched phase", consumerId)
+	}
+
+	previousStopTime, err := k.Keeper.GetConsumerStopTime(ctx, consumerId)
+	if err == nil {
+		if err := k.Keeper.RemoveConsumerToBeStopped(ctx, consumerId, previousStopTime); err != nil {
+			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot remove previous stop time: %s", err.Error())
+		}
+	}
+
+	if err := k.Keeper.SetConsumerStopTime(ctx, consumerId, msg.StopTime); err != nil {
+		return &resp, errorsmod.Wrapf(types.ErrInvalidStopTime, "cannot set stop time: %s", err.Error())
+	}
+	if err := k.Keeper.AppendConsumerToBeStopped(ctx, consumerId, msg.StopTime); err != nil {
+		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot set consumer to be stop: %s", err.Error())
 	}
 
 	return &resp, nil
