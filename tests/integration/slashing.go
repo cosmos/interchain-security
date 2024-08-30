@@ -60,7 +60,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	tmVal := s.consumerChain.Vals.Validators[0]
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
 	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.GetConsAddress(pubkey))
 	// map consumer consensus address to provider consensus address
@@ -317,7 +317,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 
 // TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with integration tests.
 // @Long Description@
-// It retrives a validator from provider chain's validators and cheks if it's bonded.
+// It retrieves a validator from provider chain's validators and checks if it's bonded.
 // The signing information for the validator is then set. The provider processes the downtime slashing packet from the consumer.
 // The test then checks that the validator has been jailed as a result of the downtime slashing packet being processed.
 // It also verifies that the validator’s signing information is updated and that the jailing duration is set correctly.

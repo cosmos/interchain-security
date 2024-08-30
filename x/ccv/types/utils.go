@@ -54,7 +54,7 @@ func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci
 // TMCryptoPublicKeyToConsAddr converts a TM public key to an SDK public key
 // and returns the associated consensus address
 func TMCryptoPublicKeyToConsAddr(k tmprotocrypto.PublicKey) (sdk.ConsAddress, error) {
-	sdkK, err := cryptocodec.FromTmProtoPublicKey(k)
+	sdkK, err := cryptocodec.FromCmtProtoPublicKey(k)
 	if err != nil {
 		return nil, err
 	}
