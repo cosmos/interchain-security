@@ -2,7 +2,9 @@ package types_test
 
 import (
 	"testing"
+	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +51,220 @@ func TestValidateStringField(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		err := types.ValidateStringField("field", tc.field, tc.maxLength)
+		err := types.ValidateStringField(tc.name, tc.field, tc.maxLength)
+		if tc.valid {
+			require.NoError(t, err, tc.name)
+		} else {
+			require.Error(t, err, tc.name)
+		}
+	}
+}
+
+func TestTruncateString(t *testing.T) {
+	testCases := []struct {
+		str       string
+		maxLength int
+		expStr    string
+	}{
+		{"drink", 3, "dri"},
+		{"drink", 6, "drink"},
+		{"drink", 0, ""},
+		{"drink", -1, ""},
+		{"drink", 100, "drink"},
+		{"pub", 100, "pub"},
+		{"こんにちは", 3, "こんに"},
+	}
+
+	for _, tc := range testCases {
+		truncated := types.TruncateString(tc.str, tc.maxLength)
+		require.Equal(t, tc.expStr, truncated)
+	}
+}
+
+func TestValidateInitializationParameters(t *testing.T) {
+	now := time.Now().UTC()
+	coolStr := "Cosmos Hub is the best place to launch a chain. Interchain Security is awesome."
+	tooLongHash := []byte(coolStr)
+
+	testCases := []struct {
+		name   string
+		params types.ConsumerInitializationParameters
+		valid  bool
+	}{
+		{
+			name: "valid",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: true,
+		},
+		{
+			name: "invalid - zero height",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.ZeroHeight(),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid - hash too long",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       tooLongHash,
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid - zero spawn time",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         time.Time{},
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid - zero duration",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   0,
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid -- ConsumerRedistributionFraction > 1",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "1.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid -- ConsumerRedistributionFraction wrong format",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    coolStr,
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid - BlocksPerDistributionTransmission zero",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 0,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid - HistoricalEntries zero",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 0,
+				DistributionTransmissionChannel:   "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid - DistributionTransmissionChannel too long",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01}, // cannot be empty
+				BinaryHash:                        []byte{0x01}, // cannot be empty
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   coolStr,
+			},
+			valid: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := types.ValidateInitializationParameters(tc.params)
 		if tc.valid {
 			require.NoError(t, err, tc.name)
 		} else {

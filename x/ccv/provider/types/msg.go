@@ -33,6 +33,16 @@ const (
 	TypeMsgOptIn                      = "opt_in"
 	TypeMsgOptOut                     = "opt_out"
 	TypeMsgSetConsumerCommissionRate  = "set_consumer_commission_rate"
+
+	// MaxNameLength defines the maximum consumer name length
+	MaxNameLength = 50
+	// MaxDescriptionLength
+	MaxDescriptionLength = 10000
+	// MaxMetadataLength defines the maximum consumer metadata length
+	MaxMetadataLength = 255
+
+	// MaxHashLength defines the maximum length of a hash
+	MaxHashLength = 64
 )
 
 var (
@@ -257,7 +267,7 @@ func (msg MsgCreateConsumer) Route() string { return RouterKey }
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgCreateConsumer) ValidateBasic() error {
-	if err := ValidateStringField("chain id", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
+	if err := ValidateStringField("ChainId", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
 		return err
 	}
 
@@ -748,21 +758,35 @@ func ValidateStringField(nameOfTheField string, field string, maxLength int) err
 	return nil
 }
 
+// TruncateString truncates a string to maximum length characters
+func TruncateString(str string, length int) string {
+	if length <= 0 {
+		return ""
+	}
+
+	truncated := ""
+	count := 0
+	for _, char := range str {
+		truncated += string(char)
+		count++
+		if count >= length {
+			break
+		}
+	}
+	return truncated
+}
+
 // ValidateConsumerMetadata validates that all the provided metadata are in the expected range
 func ValidateConsumerMetadata(metadata ConsumerMetadata) error {
-	const maxNameLength = 100
-	const maxDescriptionLength = 50000
-	const maxMetadataLength = 1000
-
-	if err := ValidateStringField("name", metadata.Name, maxNameLength); err != nil {
+	if err := ValidateStringField("name", metadata.Name, MaxNameLength); err != nil {
 		return err
 	}
 
-	if err := ValidateStringField("description", metadata.Description, maxDescriptionLength); err != nil {
+	if err := ValidateStringField("description", metadata.Description, MaxDescriptionLength); err != nil {
 		return err
 	}
 
-	if err := ValidateStringField("metadata", metadata.Metadata, maxMetadataLength); err != nil {
+	if err := ValidateStringField("metadata", metadata.Metadata, MaxMetadataLength); err != nil {
 		return err
 	}
 
@@ -797,63 +821,60 @@ func ValidatePowerShapingParameters(powerShapingParameters PowerShapingParameter
 
 // ValidateInitializationParameters validates that all the provided parameters are in the expected range
 func ValidateInitializationParameters(initializationParameters ConsumerInitializationParameters) error {
-	const maxGenesisHashLength = 1000
-	const maxBinaryHashLength = 1000
-	const maxConsumerRedistributionFractionLength = 50
-	const maxDistributionTransmissionChannelLength = 1000
-
 	if initializationParameters.InitialHeight.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "initial height cannot be zero")
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "InitialHeight cannot be zero")
 	}
 
-	if len(initializationParameters.GenesisHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "genesis hash cannot be empty")
-	} else if len(initializationParameters.GenesisHash) > maxGenesisHashLength {
-		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "genesis hash cannot exceed %d bytes", maxGenesisHashLength)
+	if err := validateHash(initializationParameters.GenesisHash); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "GenesisHash: %s", err.Error())
 	}
 
-	if len(initializationParameters.BinaryHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "binary hash cannot be empty")
-	} else if len(initializationParameters.BinaryHash) > maxBinaryHashLength {
-		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "binary hash cannot exceed %d bytes", maxBinaryHashLength)
+	if err := validateHash(initializationParameters.BinaryHash); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "BinaryHash: %s", err.Error())
 	}
 
 	if initializationParameters.SpawnTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "spawn time cannot be zero")
+		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "SpawnTime cannot be zero")
 	}
 
 	if err := ccvtypes.ValidateStringFraction(initializationParameters.ConsumerRedistributionFraction); err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "consumer redistribution fraction is invalid: %s", err.Error())
-	} else if err := ValidateStringField("consumer redistribution fraction", initializationParameters.ConsumerRedistributionFraction, maxConsumerRedistributionFractionLength); err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "consumer redistribution fraction is invalid: %s", err.Error())
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "ConsumerRedistributionFraction: %s", err.Error())
 	}
 
 	if err := ccvtypes.ValidatePositiveInt64(initializationParameters.BlocksPerDistributionTransmission); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "blocks per distribution transmission has to be positive")
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "BlocksPerDistributionTransmission: %s", err.Error())
 	}
 
 	if err := ccvtypes.ValidateDistributionTransmissionChannel(initializationParameters.DistributionTransmissionChannel); err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "distribution transmission channel is invalid: %s", err.Error())
-	} else if len(initializationParameters.DistributionTransmissionChannel) > maxDistributionTransmissionChannelLength {
-		// note that the distribution transmission channel can be the empty string (i.e., "") and hence we only check its max length here
-		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "distribution transmission channel exceeds %d length", maxDistributionTransmissionChannelLength)
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "DistributionTransmissionChannel: %s", err.Error())
 	}
 
 	if err := ccvtypes.ValidatePositiveInt64(initializationParameters.HistoricalEntries); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "historical entries has to be positive")
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "HistoricalEntries: %s", err.Error())
 	}
 
 	if err := ccvtypes.ValidateDuration(initializationParameters.CcvTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "ccv timeout period cannot be zero")
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "CcvTimeoutPeriod: %s", err.Error())
 	}
 
 	if err := ccvtypes.ValidateDuration(initializationParameters.TransferTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "transfer timeout period cannot be zero")
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "TransferTimeoutPeriod: %s", err.Error())
 	}
 
 	if err := ccvtypes.ValidateDuration(initializationParameters.UnbondingPeriod); err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "invalid unbonding period: %s", err.Error())
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "UnbondingPeriod: %s", err.Error())
 	}
 
+	return nil
+}
+
+// validateHash validates a hash
+func validateHash(hash []byte) error {
+	if len(hash) == 0 {
+		return fmt.Errorf("hash cannot be empty")
+	}
+	if len(hash) > MaxHashLength {
+		return fmt.Errorf("hash is too long; got: %d, max: %d", len(hash), MaxHashLength)
+	}
 	return nil
 }
