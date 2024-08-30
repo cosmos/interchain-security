@@ -103,8 +103,6 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
 	}
 
-	// TODO (PERMISSIONLESS) -- ValidateBasic is not called automatically for messages from gov proposals
-
 	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
 	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
@@ -134,11 +132,6 @@ func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChang
 
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
-	}
-
-	// ValidateBasic is not called automatically for messages from gov proposals
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, errorsmod.Wrapf(types.ErrInvalidChangeRewardDenoms, "error: %s", err.Error())
 	}
 
 	eventAttributes := k.Keeper.ChangeRewardDenoms(ctx, msg.DenomsToAdd, msg.DenomsToRemove)
@@ -411,8 +404,6 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	if msg.Signer != ownerAddress {
 		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
 	}
-
-	// TODO (PERMISSIONLESS) -- ValidateBasic is not called automatically for messages from gov proposals
 
 	// The new owner address can be empty, in which case the consumer chain does not change its owner.
 	// However, if the new owner address is not empty, we verify that it's a valid account address.
