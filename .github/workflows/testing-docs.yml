@@ -50,10 +50,8 @@ jobs:
 
               if [ -n "$GITHUB_HEAD_REF" ]; then
                 branch=$GITHUB_HEAD_REF
-                echo "Pull request branch name: $branch"
               else
                 branch=${GITHUB_REF#refs/heads/}
-                echo "Branch name: $branch"
               fi
               
               git fetch origin $branch
