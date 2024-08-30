@@ -262,6 +262,7 @@ type UpdateConsumerChainAction struct {
 	Chain               ChainID
 	From                ValidatorID
 	ConsumerChain       ChainID
+	NewOwner            string
 	SpawnTime           uint
 	InitialHeight       clienttypes.Height
 	DistributionChannel string
@@ -272,18 +273,17 @@ type UpdateConsumerChainAction struct {
 	Denylist            []string
 	MinStake            uint64
 	AllowInactiveVals   bool
-	NewOwner            string
 }
 
 func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bool) {
 
-	spawn_time := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
+	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	params := ccvtypes.DefaultParams()
 	initParams := types.ConsumerInitializationParameters{
 		InitialHeight: action.InitialHeight,
 		GenesisHash:   []byte("gen_hash"),
 		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     spawn_time,
+		SpawnTime:     spawnTime,
 
 		UnbondingPeriod:                   params.UnbondingPeriod,
 		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
@@ -304,9 +304,9 @@ func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bo
 		AllowInactiveVals:  action.AllowInactiveVals,
 	}
 
-	consumerID := tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId
+	consumerId := tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId
 	update := types.MsgUpdateConsumer{
-		ConsumerId:               string(consumerID),
+		ConsumerId:               string(consumerId),
 		NewOwnerAddress:          action.NewOwner,
 		InitializationParameters: &initParams,
 		PowerShapingParameters:   &powerShapingParams,
@@ -318,8 +318,8 @@ type CreateConsumerChainAction struct {
 	Chain               ChainID
 	From                ValidatorID
 	ConsumerChain       ChainID
-	SpawnTime           uint
 	InitialHeight       clienttypes.Height
+	SpawnTime           uint
 	DistributionChannel string
 	TopN                uint32
 	ValidatorsPowerCap  uint32
@@ -392,8 +392,6 @@ type SubmitConsumerAdditionProposalAction struct {
 }
 
 func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, update types.MsgUpdateConsumer) {
-
-	fmt.Println("Update proposal for consumer_id=", update.ConsumerId)
 	content, err := json.Marshal(update)
 	if err != nil {
 		log.Fatalf("failed marshalling MsgUpdate", err.Error())
@@ -420,14 +418,10 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 		`-y`,
 	)
 
-	fmt.Println("Update Consumer", "cmd:", cmd.String(), "content:\n", string(content))
-
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal("update consumer failed ", "error: ", err, "output: ", string(bz))
 	}
-
-	fmt.Println("update consumer", "output", string(bz))
 
 	// Check transaction
 	txResponse := &TxResponse{}
