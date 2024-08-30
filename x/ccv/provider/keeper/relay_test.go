@@ -542,7 +542,7 @@ func TestOnTimeoutPacketStopsChain(t *testing.T) {
 	}
 	err := providerKeeper.OnTimeoutPacket(ctx, packet)
 
-	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "consumerId", "channelID")
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "consumerId", "channelID", false)
 	require.NoError(t, err)
 }
 
@@ -578,7 +578,7 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 
 	err = providerKeeper.OnAcknowledgementPacket(ctx, packet, ackError)
 
-	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "consumerId", "channelID")
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "consumerId", "channelID", false)
 	require.NoError(t, err)
 }
 
