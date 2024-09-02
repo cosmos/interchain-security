@@ -341,27 +341,27 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
-			"changeover",                                  // PASSED
-			"happy-path",                                  // PASSED
-			"democracy-reward",                            // PASSED
-			"democracy",                                   // PASSED
-			"slash-throttle",                              // PASSED
-			"consumer-double-sign",                        // TODO PERMISSIONLESS: failing
-			"consumer-misbehaviour",                       // TODO PERMISSIONLESS: failing
-			"consumer-double-downtime",                    // PASSED
-			"partial-set-security-opt-in",                 // PASSED
-			"partial-set-security-top-n",                  // PASSED
-			"partial-set-security-validator-set-cap",      // PASSED
-			"partial-set-security-validators-power-cap",   // PASSED
-			"partial-set-security-validators-allowlisted", // PASSED
-			"partial-set-security-validators-denylisted",  // PASSED
-			"partial-set-security-modification-proposal",  // TODO PERMISSIONLESS: failing
-			"active-set-changes",                          // PASSED
-			"inactive-provider-validators-on-consumer",    // PASSED
-			"inactive-vals-topN",                          // TODO PERMISSIONLESS: failing
-			"inactive-provider-validators-governance",     // PASSED
-			"min-stake",                                   // PASSED
-			"inactive-vals-mint",                          // PASSED
+			"changeover",
+			"happy-path",
+			"democracy-reward",
+			"democracy",
+			"slash-throttle",
+			"consumer-double-sign",
+			"consumer-misbehaviour",
+			"consumer-double-downtime",
+			"partial-set-security-opt-in",
+			"partial-set-security-top-n",
+			"partial-set-security-validator-set-cap",
+			"partial-set-security-validators-power-cap",
+			"partial-set-security-validators-allowlisted",
+			"partial-set-security-validators-denylisted",
+			"partial-set-security-modification-proposal",
+			"active-set-changes",
+			"inactive-provider-validators-on-consumer",
+			"inactive-vals-topN",
+			"inactive-provider-validators-governance",
+			"min-stake",
+			"inactive-vals-mint",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

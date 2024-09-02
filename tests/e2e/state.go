@@ -441,10 +441,6 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		log.Fatal(err, "\n", propRaw)
 	}
 
-	messages := gjson.Get(propRaw, `proposal.messages`)
-	for _, msg := range messages.Array() {
-		fmt.Println("msg val", msg)
-	}
 	// for legacy proposal types submitted using "tx submit-legacyproposal" (cosmos-sdk/v1/MsgExecLegacyContent)
 	propType := gjson.Get(propRaw, `proposal.messages.0.value.content.type`).String()
 	rawContent := gjson.Get(propRaw, `proposal.messages.0.value.content.value`)

@@ -394,7 +394,7 @@ type SubmitConsumerAdditionProposalAction struct {
 func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, update types.MsgUpdateConsumer) {
 	content, err := json.Marshal(update)
 	if err != nil {
-		log.Fatalf("failed marshalling MsgUpdate", err.Error())
+		log.Fatal("failed marshalling MsgUpdate: ", err.Error())
 	}
 	jsonFile := "/update_consumer.json"
 	bz, err := tr.target.ExecCommand(
