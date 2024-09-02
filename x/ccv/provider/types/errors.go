@@ -45,4 +45,5 @@ var (
 	ErrInvalidMsgOptIn                         = errorsmod.Register(ModuleName, 49, "invalid opt in message")
 	ErrInvalidMsgOptOut                        = errorsmod.Register(ModuleName, 50, "invalid opt out message")
 	ErrInvalidMsgSetConsumerCommissionRate     = errorsmod.Register(ModuleName, 51, "invalid set consumer commission rate message")
+	ErrInvalidMsgChangeRewardDenoms            = errorsmod.Register(ModuleName, 52, "invalid change reward denoms message")
 )

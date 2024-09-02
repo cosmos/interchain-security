@@ -81,8 +81,7 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerId: %s", err.Error())
 	}
 
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ProviderAddr: %s", err.Error())
 	}
 
@@ -102,29 +101,26 @@ func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
 	emptyDenomsToRemove := len(msg.DenomsToRemove) == 0
 	// Return error if both sets are empty or nil
 	if emptyDenomsToAdd && emptyDenomsToRemove {
-		return fmt.Errorf(
-			"invalid change reward denoms proposal: both denoms to add and denoms to remove are empty")
+		return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "both DenomsToAdd and DenomsToRemove are empty")
 	}
 
-	// Return error if a denom is in both sets
-	for _, denomToAdd := range msg.DenomsToAdd {
-		for _, denomToRemove := range msg.DenomsToRemove {
-			if denomToAdd == denomToRemove {
-				return fmt.Errorf(
-					"invalid change reward denoms proposal: %s cannot be both added and removed", denomToAdd)
-			}
-		}
-	}
-
-	// Return error if any denom is "invalid"
+	denomMap := map[string]struct{}{}
 	for _, denom := range msg.DenomsToAdd {
+		// validate the denom
 		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
-			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "DenomsToAdd: invalid denom(%s)", denom)
 		}
+		denomMap[denom] = struct{}{}
 	}
 	for _, denom := range msg.DenomsToRemove {
+		// validate the denom
 		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
-			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "DenomsToRemove: invalid denom(%s)", denom)
+		}
+		// denom cannot be in both sets
+		if _, found := denomMap[denom]; found {
+			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms,
+				"denom(%s) cannot be both added and removed", denom)
 		}
 	}
 
@@ -206,8 +202,7 @@ func (msg MsgOptIn) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ConsumerId: %s", err.Error())
 	}
 
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ProviderAddr: %s", err.Error())
 	}
 
@@ -238,10 +233,10 @@ func (msg MsgOptOut) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ConsumerId: %s", err.Error())
 	}
 
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ProviderAddr: %s", err.Error())
 	}
+
 	return nil
 }
 
@@ -270,8 +265,7 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ConsumerId: %s", err.Error())
 	}
 
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ProviderAddr: %s", err.Error())
 	}
 
@@ -578,8 +572,17 @@ func ValidateByteSlice(hash []byte, maxLength int) error {
 
 func validateDeprecatedChainId(chainId string) error {
 	if strings.TrimSpace(chainId) != "" {
-		return fmt.Errorf("chainId is deprecated; use consumerId instead")
+		return fmt.Errorf("found non-empty chainId(%s); chainId is deprecated, use consumerId instead", chainId)
 	}
 
+	return nil
+}
+
+// validateProviderAddress validates that the address is a sdk.ValAddress in Bech32 string format
+func validateProviderAddress(addr string) error {
+	_, err := sdk.ValAddressFromBech32(addr)
+	if err != nil {
+		return fmt.Errorf("invalid provider address(%s)", addr)
+	}
 	return nil
 }
