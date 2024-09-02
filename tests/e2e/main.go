@@ -603,7 +603,6 @@ func main() {
 		log.Fatalf("Error parsing command arguments %s\n", err)
 	}
 
-	//SetupLogger()
 	testCases := getTestCases(selectedTests, selectedTestfiles, providerVersions, consumerVersions)
 	testRunners := createTestRunners(testCases)
 	defer deleteTargets(testRunners)

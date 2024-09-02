@@ -305,13 +305,13 @@ func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bo
 	}
 
 	consumerId := tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId
-	update := types.MsgUpdateConsumer{
+	msg := types.MsgUpdateConsumer{
 		ConsumerId:               string(consumerId),
 		NewOwnerAddress:          action.NewOwner,
 		InitializationParameters: &initParams,
 		PowerShapingParameters:   &powerShapingParams,
 	}
-	tr.UpdateConsumer(action.Chain, action.From, update)
+	tr.UpdateConsumer(action.Chain, action.From, msg)
 }
 
 type CreateConsumerChainAction struct {
@@ -396,7 +396,7 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 	if err != nil {
 		log.Fatal("failed marshalling MsgUpdateConsumer: ", err.Error())
 	}
-	jsonFile := "/update_consumer.json"
+	jsonFile := "/update-consumer.json"
 	bz, err := tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, content, jsonFile),
 	).CombinedOutput()
@@ -440,18 +440,18 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID, metadata types.ConsumerMetadata, initParams *types.ConsumerInitializationParameters, powerShapingParams *types.PowerShapingParameters) ConsumerID {
 
 	chainID := string(tr.testConfig.chainConfigs[consumerChain].ChainId)
-	rec := types.MsgCreateConsumer{
+	msg := types.MsgCreateConsumer{
 		ChainId:                  chainID,
 		Metadata:                 metadata,
 		InitializationParameters: initParams,
 		PowerShapingParameters:   powerShapingParams,
 	}
 
-	content, err := json.Marshal(rec)
+	content, err := json.Marshal(msg)
 	if err != nil {
 		log.Fatalf("failed marshalling MsgCreateConsumer: %s", err.Error())
 	}
-	jsonFile := "/create_consumer.json"
+	jsonFile := "/create-consumer.json"
 	bz, err := tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, content, jsonFile),
 	).CombinedOutput()
@@ -500,7 +500,8 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 	)
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("not able to query tx containing creation-consumer: cmd:", cmd, "err:", err.Error(), "out:", string(bz))
+		log.Fatalf("not able to query tx containing creation-consumer: tx: %s, err: %s, out: %s",
+			txResponse.TxHash, err.Error(), string(bz))
 	}
 
 	err = json.Unmarshal(bz, txResponse)
@@ -528,7 +529,7 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 		log.Fatal("no chain config found for consumer chain", chainID)
 	}
 	if cfg.ConsumerId != "" && cfg.ConsumerId != e2e.ConsumerID(consumerId) {
-		log.Fatal("chain ", chainID, " registered already with a different consumer ID", consumerId)
+		log.Fatalf("chain '%s'registered already with a different consumer ID '%s'", chainID, consumerId)
 	}
 
 	// Set the new created consumer-id on the chain's config
@@ -605,7 +606,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, update)
 
 	// #nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/consumer-addition.proposal"
+	proposalFile := "/update-consumer-proposal.json"
 	bz, err := tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
 	).CombinedOutput()
@@ -749,7 +750,7 @@ func (tr Chain) submitConsumerRemovalProposal(
 	action SubmitConsumerRemovalProposalAction,
 	verbose bool,
 ) {
-	consumerID := string(tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId)
+	consumerId := string(tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId)
 	title := fmt.Sprintf("Stop the %v chain", action.ConsumerChain)
 	description := "stop consumer chain"
 	summary := "It was a great chain"
@@ -758,16 +759,16 @@ func (tr Chain) submitConsumerRemovalProposal(
 	deposit := fmt.Sprintf("%dstake", action.Deposit)
 	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
-	msgRemoveConsumer := types.MsgRemoveConsumer{
-		ConsumerId: consumerID,
+	msg := types.MsgRemoveConsumer{
+		ConsumerId: consumerId,
 		StopTime:   tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset),
 		Signer:     authority,
 	}
 
-	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &msgRemoveConsumer)
+	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &msg)
 
 	// #nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/consumer-removal.proposal"
+	proposalFile := "/remove-consumer-proposal.json"
 	bz, err := tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
 	).CombinedOutput()
@@ -882,7 +883,7 @@ func (tr Chain) submitConsumerModificationProposal(
 	deposit := fmt.Sprintf("%dstake", action.Deposit)
 	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
-	msgConsMod := types.MsgUpdateConsumer{
+	msg := types.MsgUpdateConsumer{
 		Signer:     authority,
 		ConsumerId: consumerId,
 		PowerShapingParameters: &types.PowerShapingParameters{
@@ -894,9 +895,9 @@ func (tr Chain) submitConsumerModificationProposal(
 		},
 	}
 
-	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &msgConsMod)
+	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &msg)
 	// #nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/consumer-mod.proposal"
+	proposalFile := "/update-consumer-proposal.json"
 	bz, err := tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
 	).CombinedOutput()
@@ -1132,7 +1133,7 @@ func (tr *Chain) startConsumerChain(
 func (tr *Chain) getConsumerGenesis(providerChain, consumerChain ChainID) string {
 	fmt.Println("Exporting consumer genesis from provider")
 	providerBinaryName := tr.testConfig.chainConfigs[providerChain].BinaryName
-	consumerID := string(tr.testConfig.chainConfigs[consumerChain].ConsumerId)
+	consumerId := string(tr.testConfig.chainConfigs[consumerChain].ConsumerId)
 
 	now := time.Now()
 	timeout := now.Add(30 * time.Second)
@@ -1142,7 +1143,7 @@ func (tr *Chain) getConsumerGenesis(providerChain, consumerChain ChainID) string
 		cmd := tr.target.ExecCommand(
 			providerBinaryName,
 
-			"query", "provider", "consumer-genesis", consumerID,
+			"query", "provider", "consumer-genesis", consumerId,
 
 			`--node`, tr.target.GetQueryNode(providerChain),
 			`-o`, `json`,
@@ -2490,7 +2491,7 @@ func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenoms
 	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &changeRewMsg)
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/change-rewards.proposal"
+	proposalFile := "/change-rewards-proposal.json"
 	bz, err := tr.target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
 	).CombinedOutput()
@@ -3013,16 +3014,16 @@ func (tr Chain) setConsumerCommissionRate(action SetConsumerCommissionRateAction
 		gas = "9000000"
 	}
 
-	consumerID := string(tr.testConfig.chainConfigs[action.Chain].ConsumerId)
+	consumerId := string(tr.testConfig.chainConfigs[action.Chain].ConsumerId)
 	if action.ConsumerID != "" {
-		consumerID = string(action.ConsumerID)
+		consumerId = string(action.ConsumerID)
 	}
 
 	// Use: "set-consumer-commission-rate [consumer-chain-id] [commission-rate]"
 	setCommissionRate := fmt.Sprintf(
 		`%s tx provider set-consumer-commission-rate %s %f --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
 		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
-		consumerID,
+		consumerId,
 		action.CommissionRate,
 		action.Validator,
 		tr.testConfig.chainConfigs[ChainID("provi")].ChainId,

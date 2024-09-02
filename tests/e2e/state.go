@@ -473,6 +473,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		for _, chainCfg := range tr.chainConfigs {
 			if chainCfg.ConsumerId == e2e.ConsumerID(consumerId) {
 				consumerChainId = chainCfg.ChainId
+				break
 			}
 		}
 
@@ -481,7 +482,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Chain:   consumerChainId,
 			Status:  status,
 		}
-		if rawContent.Get("initialization_parameter").Exists() {
+		if rawContent.Get("initialization_parameters").Exists() {
 			spawnTime := rawContent.Get("initialization_parameters.spawn_time").Time().Sub(tr.containerConfig.Now)
 			updateProposal.SpawnTime = int(spawnTime.Milliseconds())
 			updateProposal.InitialHeight = clienttypes.Height{
@@ -524,12 +525,12 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 		}
 	case "/interchain_security.ccv.provider.v1.MsgRemoveConsumer":
-		consumerID := rawContent.Get("consumer_id").String()
+		consumerId := rawContent.Get("consumer_id").String()
 		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {
-			if string(conf.ConsumerId) == consumerID {
+			if string(conf.ConsumerId) == consumerId {
 				chain = i
 				break
 			}
@@ -785,11 +786,11 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 
 func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
-	consumer_id := tr.chainConfigs[ChainID(consumerChain)].ConsumerId
+	consumerId := tr.chainConfigs[ChainID(consumerChain)].ConsumerId
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-consumer-key",
-		string(consumer_id), tr.validatorConfigs[validator].ValconsAddress,
+		string(consumerId), tr.validatorConfigs[validator].ValconsAddress,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
@@ -804,12 +805,12 @@ func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator Validator
 
 func (tr Commands) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
-	consumer_id := tr.chainConfigs[ChainID(consumerChain)].ConsumerId
+	consumerId := tr.chainConfigs[ChainID(consumerChain)].ConsumerId
 
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-provider-key",
-		string(consumer_id), tr.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
+		string(consumerId), tr.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
@@ -934,6 +935,7 @@ func (tr Commands) GetHasToValidate(
 		for _, chain := range tr.chainConfigs {
 			if chain.ConsumerId == ConsumerID(c.String()) {
 				chains = append(chains, chain.ChainId)
+				break
 			}
 		}
 	}
@@ -1055,11 +1057,11 @@ func (tr Commands) GetQueryNodeIP(chain ChainID) string {
 // GetConsumerCommissionRate returns the commission rate of the given validator on the given consumerChain
 func (tr Commands) GetConsumerCommissionRate(consumerChain ChainID, validator ValidatorID) float64 {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
-	consumerID := tr.chainConfigs[consumerChain].ConsumerId
+	consumerId := tr.chainConfigs[consumerChain].ConsumerId
 
 	cmd := tr.target.ExecCommand(binaryName,
 		"query", "provider", "validator-consumer-commission-rate",
-		string(consumerID), tr.validatorConfigs[validator].ValconsAddress,
+		string(consumerId), tr.validatorConfigs[validator].ValconsAddress,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
