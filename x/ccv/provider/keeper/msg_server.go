@@ -489,7 +489,7 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 		return &resp, errorsmod.Wrapf(types.ErrInvalidStopTime, "cannot set stop time: %s", err.Error())
 	}
 	if err := k.Keeper.AppendConsumerToBeStopped(ctx, consumerId, msg.StopTime); err != nil {
-		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot set consumer to be stop: %s", err.Error())
+		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot set consumer to be stopped: %s", err.Error())
 	}
 
 	return &resp, nil
