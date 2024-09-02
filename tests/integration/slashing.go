@@ -175,7 +175,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().NoError(err)
 }
 
-// TestRelayAndApplyDoubleSignPacket tests correct processing of double sign slashing packets.
+// TestRelayAndApplyDoubleSignPacket tests correct processing of double sign slashing packets,
 // handled by provider, with a VSC and jailing eventually effective on consumer and provider.
 // @Long Description@
 // It sets up CCV channels and retrieves consumer validators. A validator is selected and its consensus address is created.
@@ -363,9 +363,9 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	suite.Require().Equal(suite.providerCtx().BlockTime().Add(jailDuration), signingInfo.JailedUntil)
 }
 
-// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting
+// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting.
 // @Long Description@
-// It sets up all CCV channels and expects panic if ccv channel is not established via dest channel of packet.
+// It sets up all CCV channels and expects panic if the channel is not established via dest channel of packet.
 // After the correct channelID is added to the packet, a panic shouldn't occur anymore.
 // The test creates an instance of SlashPacketData and then verifies correct processing and error handling
 // for slashing packets received by the provider chain.
@@ -466,14 +466,15 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 }
 
 // TestValidatorDowntime tests if a slash packet is sent and if the outstanding slashing flag is switched
-// when a validator has downtime on the slashing module
+// when a validator has downtime on the slashing module.
 // @Long Description@
 // It sets up all CCV channel and send an empty VSC packet, then retrieves the address of a validator.
 // Validator signs blocks for the duration of the signedBlocksWindow and a slash packet is constructed to be sent and committed.
 // The test simulates the validator missing blocks and then verifies that the validator is jailed and the jailed time is correctly updated.
-// Also it ensures that the missed block counters are reset. After it checks that there is a pending slash packet in the queue, the test sends the pending packets.
-// Then checks if slash record is created and verifies that the consumer queue still contains the packet since no acknowledgment has been received from the provider.
-// It verifies that the slash packet was sent and check that the outstanding slashing flag prevents the jailed validator to keep missing block.
+// Also it ensures that the missed block counters are reset. After it checks that there is a pending slash packet in the queue, the test sends
+// the pending packets. Then checks if slash record is created and verifies that the consumer queue still contains the packet since no
+// acknowledgment has been received from the provider. It verifies that the slash packet was sent and check that the outstanding
+// slashing flag prevents the jailed validator to keep missing block.
 func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// initial setup
 	suite.SetupCCVChannel(suite.path)
@@ -585,7 +586,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	})
 }
 
-// TestValidatorDoubleSigning tests if a slash packet is sent when a double-signing evidence is handled by the evidence module
+// TestValidatorDoubleSigning tests if a slash packet is sent when a double-signing evidence is handled by the evidence module.
 // @Long Description@
 // It sets up all CCV channel and sends an empty VSC packet, then creates a validator public key and address. Then the infraction parameters are set and
 // evidence of double signing is created. Validator signing-info are also added to the store and the slash packet is constructed.

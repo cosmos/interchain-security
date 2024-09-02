@@ -203,12 +203,14 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 // TestMultiConsumerSlashPacketThrottling tests slash packet throttling in the context of multiple
 // consumers sending slash packets to the provider, with VSC matured packets sprinkled around.
 // @Long Description@
-// It sets up all CCV channels and validator powers. It then chooses three consumer bundles from the available bundles. Next, the slash packets are sent from each of the chosen
-// consumer bundles to the provider chain. They will each slash a different validator. The test then confirms that the slash packet for the first consumer was handled first,
-// and afterward, the slash packets for the second and third consumers were bounced. It then checks the total power of validators in the provider
-// chain to ensure it reflects the expected state after the first validator has been jailed. The slash meter is then replenished, and one of the two queued
-// The slash meter is then replenished, and one of the two queued slash packet entries is handled when both are retried. The total power is then updated and verified again.
-// Then, the slash meter is replenished one more time, and the final slash packet is handled. Lastly, the test confirms that all validators are jailed.
+// It sets up all CCV channels and validator powers. It then chooses three consumer bundles from the available bundles. Next, the slash
+// packets are sent from each of the chosen consumer bundles to the provider chain. They will each slash a different validator. The test
+// then confirms that the slash packet for the first consumer was handled first, and afterward, the slash packets for the second and
+// third consumers were bounced. It then checks the total power of validators in the provider chain to ensure it reflects the expected
+// state after the first validator has been jailed. The slash meter is then replenished, and one of the two queued. The slash meter
+// is then replenished, and one of the two queued slash packet entries is handled when both are retried. The total power is then updated
+// and verified again. Then, the slash meter is replenished one more time, and the final slash packet is handled. Lastly, the test
+// confirms that all validators are jailed.
 func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	// Setup test
 	s.SetupAllCCVChannels()
@@ -332,9 +334,10 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 // TestPacketSpam confirms that the provider can handle a large number of incoming slash packets in a single block.
 // @Long Description@
 // It sets up all CCV channels and validator powers. Then the parameters related to the handling of slash packets are set.
-// The slash packets for the first three validators are then prepared, and 500 slash packets are created, alternating between downtime and double-sign infractions.
-// The test then simulates the reception of the 500 packets by the provider chain within the same block. Lastly, it verifies that the first three validators
-// have been jailed as expected. This confirms that the system correctly processed the slash packets and applied the penalties.
+// The slash packets for the first three validators are then prepared, and 500 slash packets are created, alternating between
+// downtime and double-sign infractions. The test then simulates the reception of the 500 packets by the provider chain within
+// the same block. Lastly, it verifies that the first three validators have been jailed as expected. This confirms that the
+// system correctly processed the slash packets and applied the penalties.
 func (s *CCVTestSuite) TestPacketSpam() {
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
@@ -486,7 +489,8 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	}
 }
 
-// TestSlashingSmallValidators tests that multiple slash packets from validators with small power can be handled by the provider chain in a non-throttled manner.
+// TestSlashingSmallValidators tests that multiple slash packets from validators with small power can be handled by the provider chain
+// in a non-throttled manner.
 // @Long Description@
 // It sets up all CCV channels and delegates tokens to four validators, giving the first validator a larger amount of power.
 // The slash meter is then initialized, and the test verifies that none of the validators are jailed before the slash packets are processed.
