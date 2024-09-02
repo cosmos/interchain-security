@@ -25,6 +25,7 @@ type (
 	Rewards                      = e2e.Rewards
 	TextProposal                 = e2e.TextProposal
 	UpgradeProposal              = e2e.UpgradeProposal
+	ConsumerUpdateProposal       = e2e.ConsumerUpdateProposal
 	ConsumerAdditionProposal     = e2e.ConsumerAdditionProposal
 	ConsumerRemovalProposal      = e2e.ConsumerRemovalProposal
 	ConsumerModificationProposal = e2e.ConsumerModificationProposal
@@ -467,7 +468,6 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Description: description,
 		}
 	case "/interchain_security.ccv.provider.v1.MsgUpdateConsumer":
-		spawnTime := rawContent.Get("initialization_parameters.spawn_time").Time().Sub(tr.containerConfig.Now)
 		consumerId := rawContent.Get("consumer_id").String()
 		consumerChainId := ChainID("")
 		for _, chainCfg := range tr.chainConfigs {
@@ -475,17 +475,21 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 				consumerChainId = chainCfg.ChainId
 			}
 		}
-		return e2e.ConsumerAdditionProposal{
-			Deposit:   uint(deposit),
-			Chain:     consumerChainId,
-			Status:    status,
-			SpawnTime: int(spawnTime.Milliseconds()),
-			InitialHeight: clienttypes.Height{
+
+		updateProposal := e2e.ConsumerUpdateProposal{
+			Deposit: uint(deposit),
+			Chain:   consumerChainId,
+			Status:  status,
+		}
+		if rawContent.Get("initialization_parameter").Exists() {
+			spawnTime := rawContent.Get("initialization_parameters.spawn_time").Time().Sub(tr.containerConfig.Now)
+			updateProposal.SpawnTime = int(spawnTime.Milliseconds())
+			updateProposal.InitialHeight = clienttypes.Height{
 				RevisionNumber: rawContent.Get("initialization_parameters.initial_height.revision_number").Uint(),
 				RevisionHeight: rawContent.Get("initialization_parameters.initial_height.revision_height").Uint(),
-			},
+			}
 		}
-
+		return updateProposal
 	case "/interchain_security.ccv.provider.v1.MsgConsumerAddition":
 		chainId := rawContent.Get("chain_id").String()
 		spawnTime := rawContent.Get("spawn_time").Time().Sub(tr.containerConfig.Now)

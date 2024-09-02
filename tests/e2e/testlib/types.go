@@ -292,6 +292,14 @@ type ConsumerAdditionProposal struct {
 	Status        string
 }
 
+type ConsumerUpdateProposal struct {
+	Deposit       uint
+	Chain         ChainID
+	SpawnTime     int
+	InitialHeight clienttypes.Height
+	Status        string
+}
+
 type UpgradeProposal struct {
 	Title         string
 	Description   string
@@ -304,6 +312,8 @@ type UpgradeProposal struct {
 func (p UpgradeProposal) isProposal() {}
 
 func (p ConsumerAdditionProposal) isProposal() {}
+
+func (p ConsumerUpdateProposal) isProposal() {}
 
 type ConsumerRemovalProposal struct {
 	Deposit  uint

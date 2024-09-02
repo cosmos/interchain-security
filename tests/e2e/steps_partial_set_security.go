@@ -2031,14 +2031,13 @@ func stepsModifyChain() []Step {
 		// 2. set the `ValidatorSetCap` to a maximum of 2 validators
 		{
 			Action: UpdateConsumerChainAction{
-				Chain:              ChainID("provi"),
-				From:               ValidatorID("alice"),
-				ConsumerChain:      ChainID("consu"),
-				SpawnTime:          0,
-				InitialHeight:      clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:               0,
-				ValidatorsPowerCap: 40,
-				ValidatorSetCap:    2,
+				Chain:           ChainID("provi"),
+				From:            ValidatorID("alice"),
+				ConsumerChain:   ChainID("consu"),
+				SpawnTime:       0,
+				InitialHeight:   clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:            0,
+				ValidatorSetCap: 2,
 			},
 			State: State{},
 		},
@@ -2068,18 +2067,15 @@ func stepsModifyChain() []Step {
 				},
 			},
 		},
-
 		// 3. set an allowlist with 2 validators
 		{
 			Action: UpdateConsumerChainAction{
-				Chain:              ChainID("provi"),
-				From:               ValidatorID("alice"),
-				ConsumerChain:      ChainID("consu"),
-				SpawnTime:          0,
-				InitialHeight:      clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:               0,
-				ValidatorsPowerCap: 40,
-				ValidatorSetCap:    2,
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0,
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
 				Allowlist: []string{
 					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
 					"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
@@ -2111,22 +2107,15 @@ func stepsModifyChain() []Step {
 				},
 			},
 		},
-
 		// 4. set a denylist with 1 validator
 		{
 			Action: UpdateConsumerChainAction{
-				Chain:              ChainID("provi"),
-				From:               ValidatorID("alice"),
-				ConsumerChain:      ChainID("consu"),
-				SpawnTime:          0,
-				InitialHeight:      clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:               0,
-				ValidatorsPowerCap: 40,
-				ValidatorSetCap:    2,
-				Allowlist: []string{
-					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-					"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
-				},
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				SpawnTime:     0,
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
 				// only "alice" is denylisted (see `getDefaultValidators` in `tests/e2e/config.go`)
 				Denylist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"},
 			},
@@ -2156,49 +2145,59 @@ func stepsModifyChain() []Step {
 				},
 			},
 		},
-
 		// 5. modify the chain from Opt In to Top 100%
-		// PERMISSIONLESS: Opt-In ---> TopN IS NOT SUPPORTED AT THE CURRENT STATE OF WORK !!!
-		/* 		{
-		   			Action: SubmitConsumerModificationProposalAction{
-		   				Chain:         ChainID("provi"),
-		   				From:          ValidatorID("alice"),
-		   				Deposit:       10000001,
-		   				ConsumerChain: ChainID("consu"),
-		   				TopN:          100,
-		   			},
-		   			State: State{
-		   				ChainID("provi"): ChainState{
-		   					Proposals: &map[uint]Proposal{
-		   						6: ConsumerModificationProposal{
-		   							Deposit: 10000001,
-		   							Chain:   ChainID("consu"),
-		   							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-		   						},
-		   					},
-		   				},
-		   			},
-		   		},
-		   		{
-		   			Action: VoteGovProposalAction{
-		   				Chain:      ChainID("provi"),
-		   				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
-		   				Vote:       []string{"yes", "yes", "yes"},
-		   				PropNumber: 6,
-		   			},
-		   			State: State{
-		   				ChainID("provi"): ChainState{
-		   					Proposals: &map[uint]Proposal{
-		   						6: ConsumerModificationProposal{
-		   							Deposit: 10000001,
-		   							Chain:   ChainID("consu"),
-		   							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
-		   						},
-		   					},
-		   				},
-		   			},
-		   		},
-		*/
+		// -- Change the owner to governance authority
+		{
+			Action: UpdateConsumerChainAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				NewOwner:      "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				SpawnTime:     0,
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				TopN:          0,
+			},
+			State: State{},
+		},
+		{
+			Action: SubmitConsumerModificationProposalAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				Deposit:       10000001,
+				ConsumerChain: ChainID("consu"),
+				TopN:          100,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerUpdateProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+						},
+					},
+				},
+			},
+		},
+		{
+			Action: VoteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: 1,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerUpdateProposal{
+							Deposit: 10000001,
+							Chain:   ChainID("consu"),
+							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+						},
+					},
+				},
+			},
+		},
 		{
 			Action: OptOutAction{
 				Chain:       ChainID("consu"),
