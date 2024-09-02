@@ -171,7 +171,7 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 		}
 	}
 
-	if err := ValidateTendermintHeader(msg.InfractionBlockHeader); err != nil {
+	if err := ValidateHeaderForConsumerDoubleVoting(msg.InfractionBlockHeader); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "ValidateTendermintHeader: %s", err.Error())
 	}
 
@@ -395,8 +395,11 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 	return pubKey.Type, pubKey.Key, nil
 }
 
-// TODO create UT
-func ValidateTendermintHeader(header *ibctmtypes.Header) error {
+// ValidateHeaderForConsumerDoubleVoting validates Tendermint light client header
+// for consumer double voting evidence.
+//
+// TODO create unit test
+func ValidateHeaderForConsumerDoubleVoting(header *ibctmtypes.Header) error {
 	if header == nil {
 		return fmt.Errorf("infraction block header cannot be nil")
 	}
