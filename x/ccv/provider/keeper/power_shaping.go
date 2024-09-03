@@ -20,12 +20,12 @@ func (k Keeper) GetConsumerPowerShapingParameters(ctx sdk.Context, consumerId st
 		return types.PowerShapingParameters{}, errorsmod.Wrapf(ccvtypes.ErrStoreKeyNotFound,
 			"GetConsumerPowerShapingParameters, consumerId(%s)", consumerId)
 	}
-	var record types.PowerShapingParameters
-	if err := record.Unmarshal(bz); err != nil {
+	var parameters types.PowerShapingParameters
+	if err := parameters.Unmarshal(bz); err != nil {
 		return types.PowerShapingParameters{}, errorsmod.Wrapf(ccvtypes.ErrStoreUnmarshal,
 			"GetConsumerPowerShapingParameters, consumerId(%s): %s", consumerId, err.Error())
 	}
-	return record, nil
+	return parameters, nil
 }
 
 // SetConsumerPowerShapingParameters sets the power-shaping parameters associated with this consumer id.
