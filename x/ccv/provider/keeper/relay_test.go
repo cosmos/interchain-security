@@ -127,7 +127,7 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{})
 	require.NoError(t, err)
 
-	err := providerKeeper.QueueVSCPackets(ctx)
+	err = providerKeeper.QueueVSCPackets(ctx)
 	require.NoError(t, err)
 
 	// the height of consumer validator A should not be modified because A was already a consumer validator
@@ -626,7 +626,7 @@ func TestEndBlockVSU(t *testing.T) {
 
 	// with block height of 1 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(1)
-	_, err := providerKeeper.EndBlockVSU(ctx)
+	_, err = providerKeeper.EndBlockVSU(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
 
@@ -772,7 +772,7 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	params.MaxProviderConsensusValidators = 180
 	providerKeeper.SetParams(ctx, params)
 
-	err := providerKeeper.QueueVSCPackets(ctx)
+	err = providerKeeper.QueueVSCPackets(ctx)
 	require.NoError(t, err)
 
 	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, "consumerId")

@@ -183,7 +183,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 			// If this happens, most likely the consumer is malicious; remove it
 			err := k.StopConsumerChain(ctx, consumerId, true)
 			if err != nil {
-				return fmt.Errorf("stopping consumer, chainID(%s): %w", chainID, err)
+				return fmt.Errorf("stopping consumer, consumerId(%s): %w", consumerId, err)
 			}
 			return nil
 		}
