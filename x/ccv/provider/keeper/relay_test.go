@@ -68,6 +68,8 @@ func TestQueueVSCPackets(t *testing.T) {
 		mocks := testkeeper.NewMockedKeepers(ctrl)
 		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1)
 
+		mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return([]stakingtypes.Validator{}, nil).AnyTimes()
+
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
 		pk.AppendPendingVSCPackets(ctx, chainID, tc.packets...)
