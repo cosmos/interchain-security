@@ -424,14 +424,14 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	// get all the consumer chains for which the validator is either already
 	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
 	consumersToValidate := []string{}
-	for _, consumerChainID := range k.GetAllRegisteredConsumerIds(ctx) {
-		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerChainID); err == nil && hasToValidate {
-			consumersToValidate = append(consumersToValidate, consumerChainID)
+	for _, consumerId := range k.GetAllLaunchedConsumerIds(ctx) {
+		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerId); err == nil && hasToValidate {
+			consumersToValidate = append(consumersToValidate, consumerId)
 		}
 	}
 
 	return &types.QueryConsumerChainsValidatorHasToValidateResponse{
-		ConsumerChainIds: consumersToValidate,
+		ConsumerIds: consumersToValidate,
 	}, nil
 }
 

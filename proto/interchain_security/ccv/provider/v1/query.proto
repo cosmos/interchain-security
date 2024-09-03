@@ -332,7 +332,7 @@ message QueryConsumerChainsValidatorHasToValidateRequest {
 }
 
 message QueryConsumerChainsValidatorHasToValidateResponse {
-  repeated string consumer_chain_ids = 1;
+  repeated string consumer_ids = 1;
 }
 
 message QueryValidatorConsumerCommissionRateRequest {

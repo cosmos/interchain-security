@@ -712,25 +712,6 @@ func (k Keeper) BondDenom(ctx sdk.Context) (string, error) {
 	return k.stakingKeeper.BondDenom(ctx)
 }
 
-// GetAllActiveConsumerIds returns all the consumer ids of chains that are registered, initialized, or launched
-func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
-	latestConsumerId, found := k.GetConsumerId(ctx)
-	if !found {
-		return []string{}
-	}
-
-	consumerIds := []string{}
-	for i := uint64(0); i < latestConsumerId; i++ {
-		consumerId := fmt.Sprintf("%d", i)
-		if !k.IsConsumerActive(ctx, consumerId) {
-			continue
-		}
-		consumerIds = append(consumerIds, consumerId)
-	}
-
-	return consumerIds
-}
-
 // GetAllConsumerIds returns all the existing consumer ids
 func (k Keeper) GetAllConsumerIds(ctx sdk.Context) []string {
 	latestConsumerId, found := k.GetConsumerId(ctx)
@@ -744,6 +725,31 @@ func (k Keeper) GetAllConsumerIds(ctx sdk.Context) []string {
 		consumerIds = append(consumerIds, consumerId)
 	}
 
+	return consumerIds
+}
+
+// GetAllActiveConsumerIds returns all the consumer ids of chains that are registered, initialized, or launched
+func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
+	consumerIds := []string{}
+	for _, consumerId := range k.GetAllConsumerIds(ctx) {
+		if !k.IsConsumerActive(ctx, consumerId) {
+			continue
+		}
+		consumerIds = append(consumerIds, consumerId)
+	}
+	return consumerIds
+}
+
+// GetAllLaunchedConsumerIds returns all the consumer ids of chains that are launched
+func (k Keeper) GetAllLaunchedConsumerIds(ctx sdk.Context) []string {
+	consumerIds := []string{}
+	for _, consumerId := range k.GetAllConsumerIds(ctx) {
+		if phase := k.GetConsumerPhase(ctx, consumerId); phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+			continue
+		}
+		consumerIds = append(consumerIds, consumerId)
+	}
+	fmt.Println("consumerIds", consumerIds)
 	return consumerIds
 }
 

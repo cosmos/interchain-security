@@ -303,16 +303,28 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		ProviderAddress: providerAddr.String(),
 	}
 
+	consumerNum := 4
+	consumerIds := make([]string, consumerNum)
+
+	msgServer := keeper.NewMsgServerImpl(&pk)
+
 	// set up some consumer chains
-	consumerIDs := []string{"1", "23", "456", "6789"}
-	for _, cID := range consumerIDs {
-		pk.SetConsumerClientId(ctx, cID, "clientID")
-		err := pk.SetConsumerPowerShapingParameters(ctx, cID, types.PowerShapingParameters{})
+	for i := 0; i < consumerNum; i++ {
+		chainID := "consumer-" + strconv.Itoa(i)
+		metadata := types.ConsumerMetadata{Name: chainID}
+		msg := types.MsgCreateConsumer{
+			ChainId:  chainID,
+			Metadata: metadata,
+		}
+		resp, err := msgServer.CreateConsumer(ctx, &msg)
 		require.NoError(t, err)
+		consumerId := resp.ConsumerId
+		pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+		consumerIds[i] = consumerId
 	}
 
 	// set `providerAddr` as a consumer validator on first consumer chain
-	pk.SetConsumerValidator(ctx, consumerIDs[0], types.ConsensusValidator{
+	pk.SetConsumerValidator(ctx, consumerIds[0], types.ConsensusValidator{
 		ProviderConsAddr: providerAddr.ToSdkConsAddr(),
 		Power:            1,
 		PublicKey: &crypto.PublicKey{
@@ -323,7 +335,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	})
 
 	// set `providerAddr` as an opted-in validator on third consumer chain
-	pk.SetOptedIn(ctx, consumerIDs[2], providerAddr)
+	pk.SetOptedIn(ctx, consumerIds[2], providerAddr)
 
 	// set max provider consensus vals to include all validators
 	params := pk.GetParams(ctx)
@@ -333,11 +345,11 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	// `providerAddr` has to validate
 	// - first consumer because it is a consumer validator in this chain,
 	// - third consumer because it opted in
-	expectedChains := []string{consumerIDs[0], consumerIDs[2]}
+	expectedChains := []string{consumerIds[0], consumerIds[2]}
 
 	res, err := pk.QueryConsumerChainsValidatorHasToValidate(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, expectedChains, res.ConsumerChainIds)
+	require.Equal(t, expectedChains, res.ConsumerIds)
 }
 
 func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
