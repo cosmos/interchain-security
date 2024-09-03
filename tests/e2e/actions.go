@@ -488,7 +488,7 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 		log.Fatalf("sending transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
 	}
 
-	// TODO: introduce waitForTx
+	// TODO: introduce waitForTx (see issue #2198)
 	tr.waitBlocks(providerChain, 2, 10*time.Second)
 
 	// Get Consumer ID from transaction
@@ -503,7 +503,6 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 		log.Fatalf("not able to query tx containing creation-consumer: tx: %s, err: %s, out: %s",
 			txResponse.TxHash, err.Error(), string(bz))
 	}
-	fmt.Println("@@@@ created consumer chain tx=", txResponse.TxHash)
 
 	err = json.Unmarshal(bz, txResponse)
 	if err != nil {
@@ -554,7 +553,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 		Metadata:    "no metadata",
 	}
 
-	InitializationParameters := types.ConsumerInitializationParameters{
+	initializationParameters := types.ConsumerInitializationParameters{
 		InitialHeight: action.InitialHeight,
 		GenesisHash:   []byte("gen_hash"),
 		BinaryHash:    []byte("bin_hash"),
@@ -578,7 +577,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 		NewOwnerAddress: authority,
 	}
 	// For the MsgUpdateConsumer sent in the proposal
-	PowerShapingParameters := types.PowerShapingParameters{
+	powerShapingParameters := types.PowerShapingParameters{
 		Top_N:              0,
 		ValidatorsPowerCap: action.ValidatorsPowerCap,
 		ValidatorSetCap:    action.ValidatorSetCap,
@@ -587,14 +586,14 @@ func (tr Chain) submitConsumerAdditionProposal(
 		MinStake:           action.MinStake,
 		AllowInactiveVals:  action.AllowInactiveVals,
 	}
-	update.PowerShapingParameters = &PowerShapingParameters
+	update.PowerShapingParameters = &powerShapingParameters
 	tr.UpdateConsumer(action.Chain, action.From, *update)
 
 	// - set PowerShaping params TopN > 0 for consumer chain
 	update.PowerShapingParameters.Top_N = action.TopN
 	update.Signer = authority
 	update.NewOwnerAddress = ""
-	update.InitializationParameters = &InitializationParameters
+	update.InitializationParameters = &initializationParameters
 	update.InitializationParameters.SpawnTime = spawnTime
 	update.Metadata = &Metadata
 
