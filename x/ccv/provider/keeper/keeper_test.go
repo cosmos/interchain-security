@@ -223,22 +223,28 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
-func TestGetAllRegisteredConsumerChainIDs(t *testing.T) {
+func TestGetAllLaunchedConsumerIds(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
-	// GetAllRegisteredConsumerIds iterates over consumerId in lexicographical order
-	expectedChainIDs := []string{"chain-1", "chain-2", "chain-3", "chain-4"}
-
-	for i, chainID := range chainIDs {
-		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
-		pk.SetConsumerClientId(ctx, chainID, clientID)
+	consumerIds := []string{"2", "1", "4", "3"}
+	for i, consumerId := range consumerIds {
+		clientId := fmt.Sprintf("client-%d", len(consumerIds)-i)
+		pk.SetConsumerClientId(ctx, consumerId, clientId)
+		pk.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 	}
 
-	result := pk.GetAllRegisteredConsumerIds(ctx)
-	require.Len(t, result, len(chainIDs))
-	require.Equal(t, expectedChainIDs, result)
+	actualConsumerIds := pk.GetAllLaunchedConsumerIds(ctx)
+	require.Len(t, actualConsumerIds, len(consumerIds))
+
+	// sort the consumer ids before comparing they are equal
+	sort.Slice(consumerIds, func(i, j int) bool {
+		return consumerIds[i] < consumerIds[j]
+	})
+	sort.Slice(actualConsumerIds, func(i, j int) bool {
+		return actualConsumerIds[i] < actualConsumerIds[j]
+	})
+	require.Equal(t, consumerIds, actualConsumerIds)
 }
 
 // TestGetAllChannelToChains tests GetAllChannelToConsumers behaviour correctness

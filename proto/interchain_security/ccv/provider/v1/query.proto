@@ -156,7 +156,7 @@ message QueryConsumerGenesisResponse {
 
 message QueryConsumerChainsRequest {
   // The phase of the consumer chains returned (optional)
-  // Registered=1|Initialized=2|Launched=3|Stopped=4
+  // Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5
   ConsumerPhase phase = 1;
   // The limit of consumer chains returned (optional)
   // default is 100

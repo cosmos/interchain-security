@@ -211,15 +211,12 @@ func (k Keeper) DeleteConsumerIdToChannelId(ctx sdk.Context, consumerId string) 
 	store.Delete(types.ConsumerIdToChannelIdKey(consumerId))
 }
 
-// GetAllRegisteredConsumerIds gets all of the consumer chain IDs, for which the provider module
-// created IBC clients. Consumer chains with created clients are also referred to as registered.
-//
-// Note that the registered consumer chains are stored under keys with the following format:
-// ConsumerIdToClientIdKeyPrefix | consumerId
-// Thus, the returned array is in ascending order of chainIDs.
-func (k Keeper) GetAllRegisteredConsumerIds(ctx sdk.Context) []string {
+// GetAllLaunchedConsumerIds returns all consumer ids of chains that are currently launched.
+func (k Keeper) GetAllLaunchedConsumerIds(ctx sdk.Context) []string {
 	consumerIds := []string{}
 
+	// All launched chains have created an IBC client when they launched (see `LaunchConsumer`), so we traverse over
+	// `ConsumerIdToClientIdKeyPrefix` to retrieve the launched chains.
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToClientIdKeyPrefix())
 	defer iterator.Close()
@@ -227,7 +224,12 @@ func (k Keeper) GetAllRegisteredConsumerIds(ctx sdk.Context) []string {
 	for ; iterator.Valid(); iterator.Next() {
 		// remove 1 byte prefix from key to retrieve consumerId
 		consumerId := string(iterator.Key()[1:])
-		consumerIds = append(consumerIds, consumerId)
+
+		// A chain might have stopped, but we might not yet have its consumer id to client id association deleted.
+		// To avoid returning stopped chains, we check the phase of the consumer chain and only return launched chains.
+		if k.GetConsumerPhase(ctx, consumerId) == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+			consumerIds = append(consumerIds, consumerId)
+		}
 	}
 
 	return consumerIds

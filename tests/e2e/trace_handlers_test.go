@@ -27,10 +27,9 @@ var proposalInStateSteps = []Step{
 			ChainID("provi"): ChainState{
 				Proposals: &map[uint]Proposal{
 					1: ConsumerRemovalProposal{
-						Deposit:  10000001,
-						Chain:    ChainID("foo"),
-						StopTime: 0,
-						Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+						Deposit: 10000001,
+						Chain:   ChainID("foo"),
+						Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
 					},
 				},
 			},
@@ -136,10 +135,9 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 		"consumer removal proposal": {ChainState{
 			Proposals: &map[uint]Proposal{
 				5: ConsumerRemovalProposal{
-					Deposit:  10000001,
-					Chain:    ChainID("test123"),
-					StopTime: 5000000000,
-					Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+					Deposit: 10000001,
+					Chain:   ChainID("test123"),
+					Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
 				},
 			},
 			ValBalances: &map[ValidatorID]uint{

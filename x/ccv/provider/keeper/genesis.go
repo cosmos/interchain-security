@@ -36,6 +36,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 	for _, cs := range genState.ConsumerStates {
 		chainID := cs.ChainId
 		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
+		k.SetConsumerPhase(ctx, chainID, cs.Phase)
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
 			// An error here would indicate something is very wrong,
 			// the ConsumerGenesis validated in ConsumerState.Validate().
@@ -118,14 +119,13 @@ func (k Keeper) InitGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 
 // ExportGenesis returns the CCV provider module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	// get a list of all registered consumer chains
-	registeredConsumerIds := k.GetAllRegisteredConsumerIds(ctx)
+	launchedConsumerIds := k.GetAllLaunchedConsumerIds(ctx)
 
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
-	for _, consumerId := range registeredConsumerIds {
+	for _, consumerId := range launchedConsumerIds {
 		// no need for the second return value of GetConsumerClientId
-		// as GetAllRegisteredConsumerIds already iterated through
+		// as GetAllLaunchedConsumerIds already iterated through
 		// the entire prefix range
 		clientId, _ := k.GetConsumerClientId(ctx, consumerId)
 		gen, found := k.GetConsumerGenesis(ctx, consumerId)
@@ -138,6 +138,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			ChainId:         consumerId,
 			ClientId:        clientId,
 			ConsumerGenesis: gen,
+			Phase:           k.GetConsumerPhase(ctx, consumerId),
 		}
 
 		// try to find channel id for the current consumer chain
@@ -157,7 +158,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
 	consumerAddrsToPrune := []types.ConsumerAddrsToPruneV2{}
-	for _, chainID := range registeredConsumerIds {
+	for _, chainID := range launchedConsumerIds {
 		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chainID)...)
 	}
 

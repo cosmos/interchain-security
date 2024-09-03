@@ -306,10 +306,9 @@ func (p UpgradeProposal) isProposal() {}
 func (p ConsumerAdditionProposal) isProposal() {}
 
 type ConsumerRemovalProposal struct {
-	Deposit  uint
-	Chain    ChainID
-	StopTime int
-	Status   string
+	Deposit uint
+	Chain   ChainID
+	Status  string
 }
 
 func (p ConsumerRemovalProposal) isProposal() {}

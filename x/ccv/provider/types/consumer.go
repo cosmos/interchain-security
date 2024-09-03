@@ -12,6 +12,7 @@ func NewConsumerStates(
 	genesis ccv.ConsumerGenesisState,
 	pendingValsetChanges []ccv.ValidatorSetChangePacketData,
 	slashDowntimeAck []string,
+	phase ConsumerPhase,
 ) ConsumerState {
 	return ConsumerState{
 		ChainId:              chainID,
@@ -21,5 +22,6 @@ func NewConsumerStates(
 		PendingValsetChanges: pendingValsetChanges,
 		ConsumerGenesis:      genesis,
 		SlashDowntimeAck:     slashDowntimeAck,
+		Phase:                phase,
 	}
 }

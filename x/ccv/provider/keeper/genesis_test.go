@@ -51,6 +51,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				*ccv.DefaultConsumerGenesisState(),
 				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
+				providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED,
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],
@@ -60,6 +61,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				*ccv.DefaultConsumerGenesisState(),
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
+				providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED,
 			),
 		},
 		params,

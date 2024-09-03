@@ -480,4 +480,6 @@ enum ConsumerPhase {
   CONSUMER_PHASE_LAUNCHED = 3;
   // STOPPED defines the phase in which a previously-launched chain has stopped.
   CONSUMER_PHASE_STOPPED = 4;
+  // DELETED defines the phase in which the state of a stopped chain has been deleted.
+  CONSUMER_PHASE_DELETED = 5;
 }

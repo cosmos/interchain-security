@@ -674,8 +674,8 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, chainId)...)
 	}
 	// Only first two consumer chains should be stopped
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForDeleteConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForDeleteConsumerChain(ctx, &mocks)...)
 
 	gomock.InOrder(expectations...)
 
@@ -703,8 +703,8 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")
 		require.NoError(t, err)
 
-		// after we have created the consumer client, the chain is considered launched and hence we could later stop the chain
-		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+		// the chain is considered to be stopped and ready for deletion (i.e., `StopAndPrepareForConsumerDeletion` is called)
+		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 	}
 
 	//
@@ -715,12 +715,12 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 
 	// Only the 3rd (final) proposal is still stored as pending
 	phase := providerKeeper.GetConsumerPhase(ctx, consumerIds[0])
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED, phase)
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_DELETED, phase)
 	phase = providerKeeper.GetConsumerPhase(ctx, consumerIds[1])
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED, phase)
-	// third chain had a stopTime in the future and hence did not stop
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_DELETED, phase)
+	// third chain had a stopTime in the future and hence did not get deleted
 	phase = providerKeeper.GetConsumerPhase(ctx, consumerIds[2])
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED, phase)
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED, phase)
 }
 
 func TestGetConsumersReadyToStop(t *testing.T) {
@@ -754,7 +754,7 @@ func TestGetConsumersReadyToStop(t *testing.T) {
 	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 }
 
-// Tests the StopConsumerChain method against the spec,
+// Tests the DeleteConsumerChain method against the spec,
 // with more granularity than what's covered in TestHandleLegacyConsumerRemovalProposal, or integration tests.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
 // Spec tag: [CCV-PCF-STCC.1]
@@ -780,13 +780,13 @@ func TestStopConsumerChain(t *testing.T) {
 		{
 			description: "valid stop of consumer chain, all mock calls hit",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks, consumerId)
+				testkeeper.SetupForDeleteConsumerChain(t, ctx, providerKeeper, mocks, consumerId)
 
 				// set consumer minimum equivocation height
 				providerKeeper.SetEquivocationEvidenceMinHeight(ctx, consumerId, 1)
 
-				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
-				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
+				// assert mocks for expected calls to `DeleteConsumerChain` when closing the underlying channel
+				gomock.InOrder(testkeeper.GetMocksForDeleteConsumerChain(ctx, &mocks)...)
 			},
 			expErr: false,
 		},
@@ -802,7 +802,7 @@ func TestStopConsumerChain(t *testing.T) {
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
 
-		err := providerKeeper.StopConsumerChain(ctx, consumerId, true)
+		err := providerKeeper.DeleteConsumerChain(ctx, consumerId)
 
 		if tc.expErr {
 			require.Error(t, err, t)
@@ -810,7 +810,7 @@ func TestStopConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, consumerId, "channelID", tc.expErr)
+		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t, ctx, providerKeeper, consumerId, "channelID", tc.expErr)
 
 		ctrl.Finish()
 	}

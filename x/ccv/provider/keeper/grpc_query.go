@@ -55,8 +55,8 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	// if the phase filter is set Launched get consumer from the state directly
 	if phaseFilter == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
-		consumerIds = append(consumerIds, k.GetAllRegisteredConsumerIds(ctx)...)
-		// otherwise iterate over all the consumer using the last unused consumer Id
+		consumerIds = append(consumerIds, k.GetAllLaunchedConsumerIds(ctx)...)
+		// otherwise iterate over all the consumer using the last unused consumer id
 	} else {
 		firstUnusedConsumerId, ok := k.GetConsumerId(ctx)
 		if !ok {
@@ -65,7 +65,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 		for i := uint64(0); i < firstUnusedConsumerId; i++ {
 			// if the phase filter is set, verify that the consumer has the same phase
 			if phaseFilter != types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
-				p := k.GetConsumerPhase(ctx, strconv.FormatInt(int64(i), 10))
+				p := k.GetConsumerPhase(ctx, strconv.FormatUint(i, 10))
 				if p == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
 					return nil, status.Error(codes.Internal, fmt.Sprintf("cannot retrieve phase for consumer id: %d", i))
 				}
@@ -74,7 +74,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 				}
 			}
 
-			consumerIds = append(consumerIds, strconv.FormatInt(int64(i), 10))
+			consumerIds = append(consumerIds, strconv.FormatUint(i, 10))
 		}
 	}
 
@@ -445,9 +445,9 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	// get all the consumer chains for which the validator is either already
 	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
 	consumersToValidate := []string{}
-	for _, consumerChainID := range k.GetAllRegisteredConsumerIds(ctx) {
-		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerChainID); err == nil && hasToValidate {
-			consumersToValidate = append(consumersToValidate, consumerChainID)
+	for _, consumerId := range k.GetAllLaunchedConsumerIds(ctx) {
+		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerId); err == nil && hasToValidate {
+			consumersToValidate = append(consumersToValidate, consumerId)
 		}
 	}
 

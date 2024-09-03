@@ -1,13 +1,11 @@
 package cli
 
 import (
+	"cosmossdk.io/math"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
-	"time"
-
-	"cosmossdk.io/math"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/spf13/cobra"
@@ -402,16 +400,14 @@ Example:
 
 func NewRemoveConsumerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "remove-consumer [consumer-id] [stop-time-layout] [stop-time-value]",
+		Use:   "remove-consumer [consumer-id]",
 		Short: "remove a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Removes (and stops) a consumer chain. Note that only the owner of the chain can remove it.
-Stop time is parsed by using the layout and the value (see https://pkg.go.dev/time#Parse).
-
 Example:
-%s tx provider remove-consumer [consumer-id] [stop-time-layout] [stop-time-value] --from node0 --home ../node0 --chain-id $CID
+%s tx provider remove-consumer [consumer-id] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
-		Args: cobra.ExactArgs(3),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -426,15 +422,12 @@ Example:
 
 			signer := clientCtx.GetFromAddress().String()
 			consumerId := args[0]
-			stopTimeLayout := args[1]
-			stopTimeValue := args[2]
 
-			stopTime, err := time.Parse(stopTimeLayout, stopTimeValue)
 			if err != nil {
 				return err
 			}
 
-			msg, err := types.NewMsgRemoveConsumer(signer, consumerId, stopTime)
+			msg, err := types.NewMsgRemoveConsumer(signer, consumerId)
 			if err != nil {
 				return err
 			}

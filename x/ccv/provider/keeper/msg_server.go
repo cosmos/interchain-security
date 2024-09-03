@@ -469,25 +469,12 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 
 	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
 	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
-		return nil, errorsmod.Wrapf(types.ErrInvalidPhase,
+		return &resp, errorsmod.Wrapf(types.ErrInvalidPhase,
 			"chain with consumer id: %s has to be in its launched phase", consumerId)
 	}
 
-	previousStopTime, err := k.Keeper.GetConsumerStopTime(ctx, consumerId)
-	if err == nil {
-		if err := k.Keeper.RemoveConsumerToBeStopped(ctx, consumerId, previousStopTime); err != nil {
-			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot remove previous stop time: %s", err.Error())
-		}
-	}
-
-	if err := k.Keeper.SetConsumerStopTime(ctx, consumerId, msg.StopTime); err != nil {
-		return &resp, errorsmod.Wrapf(types.ErrInvalidStopTime, "cannot set stop time: %s", err.Error())
-	}
-	if err := k.Keeper.AppendConsumerToBeStopped(ctx, consumerId, msg.StopTime); err != nil {
-		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot set consumer to be stopped: %s", err.Error())
-	}
-
-	return &resp, nil
+	err = k.Keeper.StopAndPrepareForConsumerDeletion(ctx, consumerId)
+	return &resp, err
 }
 
 func (k msgServer) ConsumerAddition(_ context.Context, _ *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {

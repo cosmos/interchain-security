@@ -212,12 +212,12 @@ func GetNewSlashPacketData() types.SlashPacketData {
 	}
 }
 
-// SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
-// which assert that a consumer chain was properly setup to be later stopped from `StopConsumerChain`.
-// Note: This function only setups and tests that we correctly setup a consumer chain that we could later stop when
-// calling `StopConsumerChain` -- this does NOT necessarily mean that the consumer chain is stopped.
-// Also see `TestProviderStateIsCleanedAfterConsumerChainIsStopped`.
-func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
+// SetupForDeleteConsumerChain registers expected mock calls and corresponding state setup
+// which assert that a consumer chain was properly setup to be later deleted with `DeleteConsumerChain`.
+// Note: This function only setups and tests that we correctly setup a consumer chain that we could later delete when
+// calling `DeleteConsumerChain` -- this does NOT necessarily mean that the consumer chain is deleted.
+// Also see `TestProviderStateIsCleanedAfterConsumerChainIsDeleted`.
+func SetupForDeleteConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
 	consumerId string,
 ) {
@@ -238,6 +238,8 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	require.NoError(t, err)
 	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, GetTestPowerShapingParameters())
 	require.NoError(t, err)
+
+	// set the chain to initialized so that we can create a consumer client
 	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 
 	err = providerKeeper.CreateConsumerClient(ctx, consumerId)
@@ -247,11 +249,14 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	// set the channel ID for the consumer chain
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
+
+	// set the chain to stopped sto the chain can be deleted
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 }
 
-// TestProviderStateIsCleanedAfterConsumerChainIsStopped executes test assertions for the provider's state being cleaned
-// after a stopped consumer chain.
-func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+// TestProviderStateIsCleanedAfterConsumerChainIsDeleted executes test assertions for the provider's state being cleaned
+// after a deleted consumer chain.
+func TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
 	consumerId, expectedChannelID string, expErr bool,
 ) {
 	t.Helper()
@@ -265,15 +270,6 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.False(t, found)
 	acks := providerKeeper.GetSlashAcks(ctx, consumerId)
 	require.Empty(t, acks)
-
-	// in case the chain was successfully stopped, it should not contain a Top N associated to it
-	ps, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if expErr {
-		require.Error(t, err)
-	} else {
-		require.NoError(t, err)
-	}
-	require.Empty(t, ps)
 
 	// test key assignment state is cleaned
 	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &consumerId))

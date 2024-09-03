@@ -136,7 +136,6 @@ func NewConsumerRemovalProposal(title, description, chainID string, stopTime tim
 		Title:       title,
 		Description: description,
 		ChainId:     chainID,
-		StopTime:    stopTime,
 	}
 }
 

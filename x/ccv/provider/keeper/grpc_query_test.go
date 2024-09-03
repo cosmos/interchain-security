@@ -304,10 +304,11 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		ProviderAddress: providerAddr.String(),
 	}
 
-	// set up some consumer chains
+	// set up some launched consumer chains
 	consumerIDs := []string{"1", "23", "456", "6789"}
 	for _, cID := range consumerIDs {
 		pk.SetConsumerClientId(ctx, cID, "clientID")
+		pk.SetConsumerPhase(ctx, cID, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 		err := pk.SetConsumerPowerShapingParameters(ctx, cID, types.PowerShapingParameters{})
 		require.NoError(t, err)
 	}

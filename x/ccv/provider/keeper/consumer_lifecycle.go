@@ -68,7 +68,7 @@ func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) 
 func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) {
 	// TODO (PERMISSIONLESS): we can parameterize the limit
 	for _, consumerId := range k.GetConsumersReadyToLaunch(ctx, 200) {
-		record, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+		initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 		if err != nil {
 			ctx.Logger().Error("could not retrieve initialization record",
 				"consumerId", consumerId,
@@ -77,7 +77,7 @@ func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) {
 		}
 		// Remove consumer to prevent re-trying launching this chain.
 		// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
-		err = k.RemoveConsumerToBeLaunched(ctx, consumerId, record.SpawnTime)
+		err = k.RemoveConsumerToBeLaunched(ctx, consumerId, initializationParameters.SpawnTime)
 		if err != nil {
 			ctx.Logger().Error("could not remove consumer from to-be-launched queue",
 				"consumerId", consumerId,
@@ -93,7 +93,6 @@ func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) {
 				"error", err)
 			continue
 		}
-		k.SetConsumerPhase(cachedCtx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 		// the cached context is created with a new EventManager, so we merge the events into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
@@ -160,6 +159,8 @@ func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
 	if len(consumerGenesis.Provider.InitialValSet) == 0 {
 		return errorsmod.Wrapf(types.ErrInvalidConsumerGenesis, "consumer genesis initial validator set is empty - no validators opted in consumer id: %s", consumerId)
 	}
+
+	k.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 	return nil
 }
@@ -353,31 +354,43 @@ func (k Keeper) MakeConsumerGenesis(
 	return gen, hash, nil
 }
 
+// StopAndPrepareForConsumerDeletion sets the phase of the chain to stopped and prepares to get the state of the
+// chain deleted after unbonding period elapses
+func (k Keeper) StopAndPrepareForConsumerDeletion(ctx sdk.Context, consumerId string) error {
+	// The phase of the chain is immediately set to stopped, albeit its state is removed later (see below).
+	// Setting the phase here helps in not considering this chain when we look at launched chains (e.g., in `QueueVSCPackets)
+	k.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+
+	// state of this chain is removed once UnbondingPeriod elapses
+	unbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
+	if err != nil {
+		return err
+	}
+	stopTime := ctx.BlockTime().Add(unbondingPeriod)
+
+	if err := k.SetConsumerStopTime(ctx, consumerId, stopTime); err != nil {
+		return errorsmod.Wrapf(types.ErrInvalidStopTime, "cannot set stop time: %s", err.Error())
+	}
+	if err := k.AppendConsumerToBeStopped(ctx, consumerId, stopTime); err != nil {
+		return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot set consumer to be stopped: %s", err.Error())
+	}
+
+	return nil
+}
+
 // BeginBlockStopConsumers iterates over the pending consumer proposals and stop/removes the chain if the stop time has passed
 func (k Keeper) BeginBlockStopConsumers(ctx sdk.Context) {
 	// TODO (PERMISSIONLESS): parameterize the limit
 	for _, consumerId := range k.GetConsumersReadyToStop(ctx, 200) {
-		// stop consumer chain in a cached context to handle errors
-		cachedCtx, writeFn := ctx.CacheContext()
-
 		stopTime, err := k.GetConsumerStopTime(ctx, consumerId)
 		if err != nil {
 			k.Logger(ctx).Error("chain could not be stopped",
 				"consumerId", consumerId,
-				"err", err.Error())
+				"error", err.Error())
 			continue
 		}
 
-		err = k.StopConsumerChain(cachedCtx, consumerId, true)
-		if err != nil {
-			k.Logger(ctx).Error("consumer chain could not be stopped",
-				"consumerId", consumerId,
-				"err", err.Error())
-			continue
-		}
-
-		k.SetConsumerPhase(cachedCtx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
-
+		// Remove consumer to prevent re-trying stopping this chain.
 		err = k.RemoveConsumerToBeStopped(ctx, consumerId, stopTime)
 		if err != nil {
 			ctx.Logger().Error("could not remove consumer from to-be-stopped queue",
@@ -386,12 +399,22 @@ func (k Keeper) BeginBlockStopConsumers(ctx sdk.Context) {
 			continue
 		}
 
+		// delete consumer chain in a cached context to abort deletion in case of errors
+		cachedCtx, writeFn := ctx.CacheContext()
+		err = k.DeleteConsumerChain(cachedCtx, consumerId)
+		if err != nil {
+			k.Logger(ctx).Error("consumer chain could not be stopped",
+				"consumerId", consumerId,
+				"error", err.Error())
+			continue
+		}
+
 		// The cached context is created with a new EventManager so we merge the event into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 
 		writeFn()
 
-		k.Logger(ctx).Info("executed consumer removal",
+		k.Logger(ctx).Info("executed consumer deletion",
 			"consumer id", consumerId,
 			"stop time", stopTime,
 		)
@@ -440,13 +463,11 @@ func (k Keeper) GetConsumersReadyToStop(ctx sdk.Context, limit uint32) []string 
 	return result
 }
 
-// StopConsumerChain cleans up the states for the given consumer id
-func (k Keeper) StopConsumerChain(ctx sdk.Context, consumerId string, closeChan bool) (err error) {
-	// check that a client for consumerId exists
-	// TODO (PERMISSIONLESS): change to use phases instead
-	if _, found := k.GetConsumerClientId(ctx, consumerId); !found {
-		return errorsmod.Wrap(types.ErrConsumerChainNotFound,
-			fmt.Sprintf("cannot stop non-existent consumer chain: %s", consumerId))
+// DeleteConsumerChain cleans up the state of the given consumer chain
+func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err error) {
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	if phase != types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
+		return fmt.Errorf("cannot delete non-stopped chain: %s", consumerId)
 	}
 
 	// clean up states
@@ -459,19 +480,17 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, consumerId string, closeChan 
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetConsumerIdToChannelId(ctx, consumerId); found {
-		if closeChan {
-			// Close the channel for the given channel ID on the condition
-			// that the channel exists and isn't already in the CLOSED state
-			channel, found := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
-			if found && channel.State != channeltypes.CLOSED {
-				err := k.chanCloseInit(ctx, channelID)
-				if err != nil {
-					k.Logger(ctx).Error("channel to consumer chain could not be closed",
-						"consumerId", consumerId,
-						"channelID", channelID,
-						"error", err.Error(),
-					)
-				}
+		// Close the channel for the given channel ID on the condition
+		// that the channel exists and isn't already in the CLOSED state
+		channel, found := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
+		if found && channel.State != channeltypes.CLOSED {
+			err := k.chanCloseInit(ctx, channelID)
+			if err != nil {
+				k.Logger(ctx).Error("channel to consumer chain could not be closed",
+					"consumerId", consumerId,
+					"channelID", channelID,
+					"error", err.Error(),
+				)
 			}
 		}
 		k.DeleteConsumerIdToChannelId(ctx, consumerId)
@@ -493,9 +512,16 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, consumerId string, closeChan 
 	k.DeleteAllOptedIn(ctx, consumerId)
 	k.DeleteConsumerValSet(ctx, consumerId)
 
-	// TODO (PERMISSIONLESS) add newly-added state to be deleted
+	k.DeleteConsumerRewardsAllocation(ctx, consumerId)
+	k.DeleteConsumerOwnerAddress(ctx, consumerId)
+	k.DeleteConsumerStopTime(ctx, consumerId)
 
-	k.Logger(ctx).Info("consumer chain removed from provider", "consumerId", consumerId)
+	// TODO (PERMISSIONLESS) add newly-added state to be deleted
+	// Note that we do not delete ConsumerIdToChainIdKey and ConsumerIdToPhase, as well
+	// as consumer metadata, initialization and power-shaping parameters.
+
+	k.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_DELETED)
+	k.Logger(ctx).Info("consumer chain deleted from provider", "consumerId", consumerId)
 
 	return nil
 }
@@ -642,7 +668,7 @@ func (k Keeper) AppendConsumerToBeStopped(ctx sdk.Context, consumerId string, st
 	return k.appendConsumerIdOnTime(ctx, consumerId, types.StopTimeToConsumerIdsKey, stopTime)
 }
 
-// RemoveConsumerToBeStopped removes consumer id from if stored for this specific stop time
+// RemoveConsumerToBeStopped removes consumer id from the given stop time
 func (k Keeper) RemoveConsumerToBeStopped(ctx sdk.Context, consumerId string, stopTime time.Time) error {
 	return k.removeConsumerIdFromTime(ctx, consumerId, types.StopTimeToConsumerIdsKey, stopTime)
 }

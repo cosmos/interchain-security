@@ -128,7 +128,7 @@ func (m *QueryConsumerGenesisResponse) GetGenesisState() types.ConsumerGenesisSt
 
 type QueryConsumerChainsRequest struct {
 	// The phase of the consumer chains returned (optional)
-	// Registered=1|Initialized=2|Launched=3|Stopped=4
+	// Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5
 	Phase ConsumerPhase `protobuf:"varint,1,opt,name=phase,proto3,enum=interchain_security.ccv.provider.v1.ConsumerPhase" json:"phase,omitempty"`
 	// The limit of consumer chains returned (optional)
 	// default is 100
