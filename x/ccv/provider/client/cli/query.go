@@ -78,7 +78,7 @@ func CmdConsumerChains() *cobra.Command {
 		Short: "Query consumer chains for provider chain.",
 		Long: `Query consumer chains for provider chain. An optional
 		integer parameter can be passed for phase filtering of consumer chains,
-		(Registered=1|Initialized=2|Launched=3|Stopped=4).`,
+		(All=0|Registered=1|Initialized=2|Launched=3|Stopped=4).`,
 		Args: cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -129,7 +129,7 @@ func CmdConsumerValidatorKeyAssignment() *cobra.Command {
 			fmt.Sprintf(`Returns the currently assigned validator consensus public key for a
 consumer chain, if one has been assigned.
 Example:
-$ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+$ %s query provider validator-consumer-key 3 %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 `,
 				version.AppName, bech32PrefixConsAddr,
 			),
@@ -346,15 +346,15 @@ $ %s query provider params
 	return cmd
 }
 
-// Command to query opted-in validators by consumer chain ID
+// Command to query opted-in validators by consumer ID
 func CmdConsumerChainOptedInValidators() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "consumer-opted-in-validators [chainid]",
+		Use:   "consumer-opted-in-validators [consumer-id]",
 		Short: "Query opted-in validators for a given consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query opted-in validators for a given consumer chain.
 Example:
-$ %s consumer-opted-in-validators foochain
+$ %s consumer-opted-in-validators 3
 		`, version.AppName),
 		),
 		Args: cobra.ExactArgs(1),
@@ -380,16 +380,16 @@ $ %s consumer-opted-in-validators foochain
 	return cmd
 }
 
-// Command to query the consumer validators by consumer chain ID
+// Command to query the consumer validators by consumer ID
 func CmdConsumerValidators() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "consumer-validators [chainid]",
+		Use:   "consumer-validators [consumer-id]",
 		Short: "Query the last set consumer-validator set for a given consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query the last set consumer-validator set for a given consumer chain.
 Note that this does not necessarily mean that the consumer chain is currently using this validator set because a VSCPacket could be delayed, etc.
 Example:
-$ %s consumer-validators foochain
+$ %s consumer-validators 3
 		`, version.AppName),
 		),
 		Args: cobra.ExactArgs(1),
@@ -462,12 +462,12 @@ $ %s has-to-validate %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 func CmdValidatorConsumerCommissionRate() *cobra.Command {
 	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	cmd := &cobra.Command{
-		Use:   "validator-consumer-commission-rate [chainid] [provider-validator-address]",
+		Use:   "validator-consumer-commission-rate [consumer-id] [provider-validator-address]",
 		Short: "Query the consumer commission rate a validator charges on a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query the consumer commission rate a validator charges on a consumer chain.
 Example:
-$ %s validator-consumer-commission-rate foochain %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+$ %s validator-consumer-commission-rate 3 %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 		`, version.AppName, bech32PrefixConsAddr),
 		),
 		Args: cobra.ExactArgs(2),

@@ -110,7 +110,7 @@ service Query {
       };
     }
 
-  // QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
+  // QueryConsumerValidators returns the latest set consumer-validator set for a given consumer ID
   // Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
   // because a VSCPacket could be delayed to be delivered on the consumer chain.
   rpc QueryConsumerValidators(QueryConsumerValidatorsRequest)
@@ -168,7 +168,6 @@ message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 message Chain {
   string chain_id = 1;
   string client_id = 2;
-  // If chain with `chainID` is a Top-N chain, i.e., enforces at least one validator to validate chain `chainID`
   uint32 top_N = 3;
   // If the chain is a Top-N chain, this is the minimum power required to be in the top N.
   // Otherwise, this is -1.
@@ -184,13 +183,14 @@ message Chain {
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
   // The phase the consumer chain (Registered=0|Initialized=1|FailedToLaunch=2|Launched=3|Stopped=4)
-  ConsumerPhase phase = 9;
+  string phase = 9;
   // The metadata of the consumer chain
   ConsumerMetadata metadata = 10  [(gogoproto.nullable) = false ];
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
   uint64 min_stake = 11;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
   bool allow_inactive_vals = 12;
+  string consumer_id = 13;
 }
 
 message QueryValidatorConsumerAddrRequest {

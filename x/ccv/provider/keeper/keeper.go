@@ -731,6 +731,22 @@ func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
 	return consumerIds
 }
 
+// GetAllConsumerIds returns all the existing consumer ids
+func (k Keeper) GetAllConsumerIds(ctx sdk.Context) []string {
+	latestConsumerId, found := k.GetConsumerId(ctx)
+	if !found {
+		return []string{}
+	}
+
+	consumerIds := []string{}
+	for i := uint64(0); i < latestConsumerId; i++ {
+		consumerId := fmt.Sprintf("%d", i)
+		consumerIds = append(consumerIds, consumerId)
+	}
+
+	return consumerIds
+}
+
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	consumerId string,
