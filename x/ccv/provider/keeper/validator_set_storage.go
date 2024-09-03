@@ -112,7 +112,7 @@ func (k Keeper) getTotalPower(ctx sdk.Context, prefix []byte) (math.Int, error) 
 	totalPower := math.ZeroInt()
 	validators, err := k.getValSet(ctx, prefix)
 	if err != nil {
-		panic(fmt.Errorf("retrieving validator set: %w", err))
+		return totalPower, err
 	}
 	for _, val := range validators {
 		totalPower = totalPower.Add(math.NewInt(val.Power))
