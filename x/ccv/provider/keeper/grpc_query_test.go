@@ -184,7 +184,8 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Equal(t, res.Validators[0].ProviderAddress, providerAddr1.String())
 
 	// update consumer TopN param
-	pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{Top_N: 50})
+	err = pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{Top_N: 50})
+	require.NoError(t, err)
 
 	// expect both opted-in and topN validator
 	expRes := types.QueryConsumerValidatorsResponse{
@@ -445,13 +446,14 @@ func TestGetConsumerChain(t *testing.T) {
 		clientID := fmt.Sprintf("client-%d", len(consumerID)-i)
 		topN := topNs[i]
 		pk.SetConsumerClientId(ctx, consumerID, clientID)
-		pk.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{
+		err := pk.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{
 			Top_N:              topN,
 			ValidatorSetCap:    validatorSetCaps[i],
 			ValidatorsPowerCap: validatorPowerCaps[i],
 			MinStake:           minStakes[i].Uint64(),
 			AllowInactiveVals:  allowInactiveVals[i],
 		})
+		require.NoError(t, err)
 		pk.SetMinimumPowerInTopN(ctx, consumerID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
 			pk.SetAllowlist(ctx, consumerID, addr)
@@ -532,7 +534,8 @@ func TestQueryConsumerChain(t *testing.T) {
 	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
 	require.Error(t, err)
 
-	providerKeeper.SetConsumerMetadata(ctx, consumerId, types.ConsumerMetadata{Name: chainId})
+	err = providerKeeper.SetConsumerMetadata(ctx, consumerId, types.ConsumerMetadata{Name: chainId})
+	require.NoError(t, err)
 
 	expRes := types.QueryConsumerChainResponse{
 		ChainId:            chainId,
@@ -548,17 +551,19 @@ func TestQueryConsumerChain(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, &expRes, res)
 
-	providerKeeper.SetConsumerInitializationParameters(
+	err = providerKeeper.SetConsumerInitializationParameters(
 		ctx,
 		consumerId,
 		types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime()},
 	)
+	require.NoError(t, err)
 
-	providerKeeper.SetConsumerPowerShapingParameters(
+	err = providerKeeper.SetConsumerPowerShapingParameters(
 		ctx,
 		consumerId,
 		types.PowerShapingParameters{Top_N: uint32(50)},
 	)
+	require.NoError(t, err)
 
 	expRes.InitParams = &types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime()}
 	expRes.PowerShapingParams = &types.PowerShapingParameters{Top_N: uint32(50)}

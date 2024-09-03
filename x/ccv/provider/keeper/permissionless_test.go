@@ -1,12 +1,17 @@
 package keeper_test
 
 import (
+	"bytes"
+	"errors"
+	"sort"
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -179,47 +184,77 @@ func TestConsumerInitializationParameters(t *testing.T) {
 	require.Equal(t, providertypes.ConsumerInitializationParameters{}, actualInitializationParameters)
 }
 
-// TestConsumerPowerShapingParameters tests the getter, setter, and deletion of the consumer id to power-shaping parameters methods
+// TestConsumerPowerShapingParameters tests the getter and setter of the consumer id to power-shaping parameters methods
 func TestConsumerPowerShapingParameters(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
+	consumerId := "consumerId"
+	consAddrs := []string{
+		"cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+		"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+		"cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe",
+		"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+		"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+		"cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
+	}
+	providerConsAddr := []providertypes.ProviderConsAddress{}
+	for _, addr := range consAddrs {
+		ca, _ := sdk.ConsAddressFromBech32(addr)
+		providerConsAddr = append(providerConsAddr, providertypes.NewProviderConsAddress(ca))
+	}
+	sortProviderConsAddr := func(consAddrs []providertypes.ProviderConsAddress) {
+		sort.Slice(consAddrs, func(i, j int) bool {
+			return bytes.Compare(consAddrs[i].Address, consAddrs[j].Address) < 0
+		})
+	}
+
+	_, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 	require.Error(t, err)
+	require.True(t, errors.Is(err, ccvtypes.ErrStoreKeyNotFound))
 
 	expectedPowerShapingParameters := providertypes.PowerShapingParameters{
 		Top_N:              10,
 		ValidatorsPowerCap: 34,
 		ValidatorSetCap:    10,
-		Allowlist:          []string{"allowlist1", "allowlist2"},
-		Denylist:           []string{"denylist1", "denylist2"},
+		Allowlist:          []string{consAddrs[0], consAddrs[1]},
+		Denylist:           []string{consAddrs[2], consAddrs[3]},
 		MinStake:           234,
 		AllowInactiveVals:  true,
 	}
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", expectedPowerShapingParameters)
-	actualPowerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
+	expectedAllowlist := []providertypes.ProviderConsAddress{providerConsAddr[0], providerConsAddr[1]}
+	sortProviderConsAddr(expectedAllowlist)
+	expectedDenylist := []providertypes.ProviderConsAddress{providerConsAddr[2], providerConsAddr[3]}
+	sortProviderConsAddr(expectedDenylist)
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, expectedPowerShapingParameters)
+	require.NoError(t, err)
+	actualPowerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 	require.NoError(t, err)
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
+	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
+	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
 
 	// assert that overwriting the current initialization record works
 	expectedPowerShapingParameters = providertypes.PowerShapingParameters{
 		Top_N:              12,
 		ValidatorsPowerCap: 67,
 		ValidatorSetCap:    20,
-		Allowlist:          []string{"allowlist3", "allowlist4"},
-		Denylist:           []string{"denylist3", "denylist4"},
+		Allowlist:          []string{consAddrs[4], consAddrs[5]},
+		Denylist:           []string{consAddrs[2], consAddrs[3]},
 		MinStake:           567,
 		AllowInactiveVals:  false,
 	}
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", expectedPowerShapingParameters)
-	actualPowerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
+	expectedAllowlist = []providertypes.ProviderConsAddress{providerConsAddr[4], providerConsAddr[5]}
+	sortProviderConsAddr(expectedAllowlist)
+	expectedDenylist = []providertypes.ProviderConsAddress{providerConsAddr[2], providerConsAddr[3]}
+	sortProviderConsAddr(expectedDenylist)
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, expectedPowerShapingParameters)
+	require.NoError(t, err)
+	actualPowerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 	require.NoError(t, err)
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
-
-	providerKeeper.DeleteConsumerPowerShapingParameters(ctx, "consumerId")
-	actualPowerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
-	require.Error(t, err)
-	require.Equal(t, providertypes.PowerShapingParameters{}, actualPowerShapingParameters)
+	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
+	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
 }
 
 // TestConsumerPhase tests the getter, setter, and deletion of the consumer id to phase methods

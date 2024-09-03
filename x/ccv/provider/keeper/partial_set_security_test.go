@@ -409,7 +409,8 @@ func TestCanValidateChain(t *testing.T) {
 
 	// with TopN chains, the validator can be considered,
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), providerAddr.Address).Return(validator, nil).Times(2)
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 50})
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 50})
+	require.NoError(t, err)
 	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerID)
 	require.NoError(t, err)
 	// validator's power is LT the min power
@@ -422,7 +423,8 @@ func TestCanValidateChain(t *testing.T) {
 	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, powerShapingParameters.Top_N, 2))
 
 	// With OptIn chains, validator can validate only if it has already opted-in
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 0})
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerID, types.PowerShapingParameters{Top_N: 0})
+	require.NoError(t, err)
 	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerID)
 	require.NoError(t, err)
 	require.True(t, providerKeeper.CanValidateChain(ctx, consumerID, providerAddr, powerShapingParameters.Top_N, 2))
@@ -471,41 +473,46 @@ func TestCapValidatorSet(t *testing.T) {
 	consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
 	require.Equal(t, validators, consumerValidators)
 
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
 		ValidatorSetCap: 0,
 	})
+	require.NoError(t, err)
 	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
 	require.NoError(t, err)
 	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
 	require.Equal(t, validators, consumerValidators)
 
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
 		ValidatorSetCap: 100,
 	})
+	require.NoError(t, err)
 	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
 	require.NoError(t, err)
 	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
 	require.Equal(t, validators, consumerValidators)
 
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
 		ValidatorSetCap: 1,
 	})
+	require.NoError(t, err)
 	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
 	require.NoError(t, err)
 	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
 	require.Equal(t, []types.ConsensusValidator{validatorC}, consumerValidators)
 
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
 		ValidatorSetCap: 2,
 	})
+	require.NoError(t, err)
 	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
 	require.NoError(t, err)
 	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
 	require.Equal(t, []types.ConsensusValidator{validatorC, validatorB}, consumerValidators)
 
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
 		ValidatorSetCap: 3,
 	})
+	require.NoError(t, err)
 	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
 	require.NoError(t, err)
 	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
@@ -563,9 +570,10 @@ func TestCapValidatorsPower(t *testing.T) {
 	sortValidators(cappedValidators)
 	require.Equal(t, validators, cappedValidators)
 
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
 		ValidatorsPowerCap: 33,
 	})
+	require.NoError(t, err)
 	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
 	require.NoError(t, err)
 	cappedValidators = providerKeeper.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, validators)
@@ -858,10 +866,11 @@ func TestIfInactiveValsDisallowedProperty(t *testing.T) {
 		// Set up the parameters in the provider keeper
 
 		// do not allow inactive validators
-		providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
+		err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", types.PowerShapingParameters{
 			MinStake:          minStake,
 			AllowInactiveVals: false,
 		})
+		require.NoError(t, err)
 		params := providerKeeper.GetParams(ctx)
 		params.MaxProviderConsensusValidators = int64(maxProviderConsensusVals)
 		providerKeeper.SetParams(ctx, params)

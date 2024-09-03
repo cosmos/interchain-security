@@ -583,11 +583,12 @@ func TestUpdateMinimumPowerInTopN(t *testing.T) {
 	consumerId := "0"
 
 	// test case where Top N is 0 in which case there's no minimum power in top N
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
 		Top_N: 0,
 	})
+	require.NoError(t, err)
 
-	err := providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 0)
+	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 0)
 	require.NoError(t, err)
 	_, found := providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
 	require.False(t, found)
@@ -607,9 +608,10 @@ func TestUpdateMinimumPowerInTopN(t *testing.T) {
 	providerKeeper.SetParams(ctx, params)
 
 	// when top N is 50, the minimum power is 30 (because top validator has to validate)
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
 		Top_N: 50,
 	})
+	require.NoError(t, err)
 	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 0, 50)
 	require.NoError(t, err)
 	minimumPowerInTopN, found := providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
@@ -617,9 +619,10 @@ func TestUpdateMinimumPowerInTopN(t *testing.T) {
 	require.Equal(t, int64(30), minimumPowerInTopN)
 
 	// when top N is 51, the minimum power is 20 (because top 2 validators have to validate)
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
 		Top_N: 51,
 	})
+	require.NoError(t, err)
 	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 50, 51)
 	require.NoError(t, err)
 	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
@@ -627,9 +630,10 @@ func TestUpdateMinimumPowerInTopN(t *testing.T) {
 	require.Equal(t, int64(20), minimumPowerInTopN)
 
 	// when top N is 100, the minimum power is 10 (that of the validator with the lowest power)
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{
 		Top_N: 100,
 	})
+	require.NoError(t, err)
 	err = providerKeeper.UpdateMinimumPowerInTopN(ctx, consumerId, 51, 100)
 	require.NoError(t, err)
 	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)

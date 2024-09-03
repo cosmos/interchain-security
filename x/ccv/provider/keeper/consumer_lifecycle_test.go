@@ -398,11 +398,14 @@ func TestCreateConsumerClient(t *testing.T) {
 
 		// Call method with same arbitrary values as defined above in mock expectations.
 		providerKeeper.SetConsumerChainId(ctx, "0", "chainID")
-		providerKeeper.SetConsumerMetadata(ctx, "0", testkeeper.GetTestConsumerMetadata())
-		providerKeeper.SetConsumerInitializationParameters(ctx, "0", testkeeper.GetTestInitializationParameters())
-		providerKeeper.SetConsumerPowerShapingParameters(ctx, "0", testkeeper.GetTestPowerShapingParameters())
-		err := providerKeeper.CreateConsumerClient(ctx, "0")
+		err := providerKeeper.SetConsumerMetadata(ctx, "0", testkeeper.GetTestConsumerMetadata())
+		require.NoError(t, err)
+		err = providerKeeper.SetConsumerInitializationParameters(ctx, "0", testkeeper.GetTestInitializationParameters())
+		require.NoError(t, err)
+		err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "0", testkeeper.GetTestPowerShapingParameters())
+		require.NoError(t, err)
 
+		err = providerKeeper.CreateConsumerClient(ctx, "0")
 		if tc.expClientCreated {
 			require.NoError(t, err)
 			testCreatedConsumerClient(t, ctx, providerKeeper, "0", "clientID")
@@ -526,9 +529,12 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		UnbondingPeriod:                   unbondingPeriod,
 	}
 	providerKeeper.SetConsumerChainId(ctx, "0", "testchain1")
-	providerKeeper.SetConsumerMetadata(ctx, "0", consumerMetadata)
-	providerKeeper.SetConsumerInitializationParameters(ctx, "0", initializationParameters)
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "0", providertypes.PowerShapingParameters{})
+	err := providerKeeper.SetConsumerMetadata(ctx, "0", consumerMetadata)
+	require.NoError(t, err)
+	err = providerKeeper.SetConsumerInitializationParameters(ctx, "0", initializationParameters)
+	require.NoError(t, err)
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "0", providertypes.PowerShapingParameters{})
+	require.NoError(t, err)
 
 	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, "0")
 	require.NoError(t, err)
