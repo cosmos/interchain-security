@@ -119,11 +119,11 @@ func (k Keeper) GetConsumerInitializationParameters(ctx sdk.Context, consumerId 
 	if bz == nil {
 		return types.ConsumerInitializationParameters{}, fmt.Errorf("failed to retrieve initialization parameters for consumer id (%s)", consumerId)
 	}
-	var record types.ConsumerInitializationParameters
-	if err := record.Unmarshal(bz); err != nil {
-		return types.ConsumerInitializationParameters{}, fmt.Errorf("failed to unmarshal stop time for consumer id (%s): %w", consumerId, err)
+	var initializationParameters types.ConsumerInitializationParameters
+	if err := initializationParameters.Unmarshal(bz); err != nil {
+		return types.ConsumerInitializationParameters{}, fmt.Errorf("failed to unmarshal initialization parameters for consumer id (%s): %w", consumerId, err)
 	}
-	return record, nil
+	return initializationParameters, nil
 }
 
 // SetConsumerInitializationParameters sets the initialization parameters associated with this consumer id

@@ -30,7 +30,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			"error", err,
 		)
 		if consumerId, ok := k.GetChannelIdToConsumerId(ctx, packet.SourceChannel); ok {
-			return k.StopAndPrepareForConsumerDeletion(ctx, consumerId)
+			return k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 		}
 		return errorsmod.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
@@ -50,7 +50,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 		)
 	}
 	k.Logger(ctx).Info("packet timeout, deleting the consumer:", "consumerId", consumerId)
-	return k.StopAndPrepareForConsumerDeletion(ctx, consumerId)
+	return k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 }
 
 // EndBlockVSU contains the EndBlock logic needed for
@@ -166,7 +166,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 			// Not able to send packet over IBC!
 			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "consumerId", consumerId, "vscid", data.ValsetUpdateId, "err", err.Error())
 
-			err := k.StopAndPrepareForConsumerDeletion(ctx, consumerId)
+			err := k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 			if err != nil {
 				k.Logger(ctx).Info("consumer chain failed to stop:", "consumerId", consumerId, "error", err.Error())
 			}

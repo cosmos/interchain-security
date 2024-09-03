@@ -354,9 +354,9 @@ func (k Keeper) MakeConsumerGenesis(
 	return gen, hash, nil
 }
 
-// StopAndPrepareForConsumerDeletion sets the phase of the chain to stopped and prepares to get the state of the
-// chain deleted after unbonding period elapses
-func (k Keeper) StopAndPrepareForConsumerDeletion(ctx sdk.Context, consumerId string) error {
+// StopAndPrepareForConsumerRemoval sets the phase of the chain to stopped and prepares to get the state of the
+// chain removed after unbonding period elapses
+func (k Keeper) StopAndPrepareForConsumerRemoval(ctx sdk.Context, consumerId string) error {
 	// The phase of the chain is immediately set to stopped, albeit its state is removed later (see below).
 	// Setting the phase here helps in not considering this chain when we look at launched chains (e.g., in `QueueVSCPackets)
 	k.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
@@ -366,23 +366,23 @@ func (k Keeper) StopAndPrepareForConsumerDeletion(ctx sdk.Context, consumerId st
 	if err != nil {
 		return err
 	}
-	stopTime := ctx.BlockTime().Add(unbondingPeriod)
+	removalTime := ctx.BlockTime().Add(unbondingPeriod)
 
-	if err := k.SetConsumerStopTime(ctx, consumerId, stopTime); err != nil {
-		return errorsmod.Wrapf(types.ErrInvalidStopTime, "cannot set stop time: %s", err.Error())
+	if err := k.SetConsumerRemovalTime(ctx, consumerId, removalTime); err != nil {
+		return errorsmod.Wrapf(types.ErrInvalidRemovalTime, "cannot set removal time: %s", err.Error())
 	}
-	if err := k.AppendConsumerToBeStopped(ctx, consumerId, stopTime); err != nil {
-		return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot set consumer to be stopped: %s", err.Error())
+	if err := k.AppendConsumerToBeRemoved(ctx, consumerId, removalTime); err != nil {
+		return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot set consumer to be removed: %s", err.Error())
 	}
 
 	return nil
 }
 
-// BeginBlockStopConsumers iterates over the pending consumer proposals and stop/removes the chain if the stop time has passed
-func (k Keeper) BeginBlockStopConsumers(ctx sdk.Context) {
+// BeginBlockRemoveConsumers iterates over the pending consumer proposals and stop/removes the chain if the removal time has passed
+func (k Keeper) BeginBlockRemoveConsumers(ctx sdk.Context) {
 	// TODO (PERMISSIONLESS): parameterize the limit
 	for _, consumerId := range k.GetConsumersReadyToStop(ctx, 200) {
-		stopTime, err := k.GetConsumerStopTime(ctx, consumerId)
+		removalTime, err := k.GetConsumerRemovalTime(ctx, consumerId)
 		if err != nil {
 			k.Logger(ctx).Error("chain could not be stopped",
 				"consumerId", consumerId,
@@ -390,8 +390,8 @@ func (k Keeper) BeginBlockStopConsumers(ctx sdk.Context) {
 			continue
 		}
 
-		// Remove consumer to prevent re-trying stopping this chain.
-		err = k.RemoveConsumerToBeStopped(ctx, consumerId, stopTime)
+		// Remove consumer to prevent re-trying removing this chain.
+		err = k.RemoveConsumerToBeRemoved(ctx, consumerId, removalTime)
 		if err != nil {
 			ctx.Logger().Error("could not remove consumer from to-be-stopped queue",
 				"consumerId", consumerId,
@@ -416,7 +416,7 @@ func (k Keeper) BeginBlockStopConsumers(ctx sdk.Context) {
 
 		k.Logger(ctx).Info("executed consumer deletion",
 			"consumer id", consumerId,
-			"stop time", stopTime,
+			"removal time", removalTime,
 		)
 	}
 }
@@ -426,26 +426,26 @@ func (k Keeper) BeginBlockStopConsumers(ctx sdk.Context) {
 func (k Keeper) GetConsumersReadyToStop(ctx sdk.Context, limit uint32) []string {
 	store := ctx.KVStore(k.storeKey)
 
-	stopTimeToConsumerIdsKeyPrefix := types.StopTimeToConsumerIdsKeyPrefix()
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{stopTimeToConsumerIdsKeyPrefix})
+	removalTimeToConsumerIdsKeyPrefix := types.RemovalTimeToConsumerIdsKeyPrefix()
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{removalTimeToConsumerIdsKeyPrefix})
 	defer iterator.Close()
 
 	result := []string{}
 	for ; iterator.Valid(); iterator.Next() {
-		stopTime, err := types.ParseTime(stopTimeToConsumerIdsKeyPrefix, iterator.Key())
+		removalTime, err := types.ParseTime(removalTimeToConsumerIdsKeyPrefix, iterator.Key())
 		if err != nil {
-			k.Logger(ctx).Error("failed to parse stop time",
+			k.Logger(ctx).Error("failed to parse removal time",
 				"error", err)
 			continue
 		}
-		if stopTime.After(ctx.BlockTime()) {
+		if removalTime.After(ctx.BlockTime()) {
 			return result
 		}
 
-		consumers, err := k.GetConsumersToBeStopped(ctx, stopTime)
+		consumers, err := k.GetConsumersToBeRemoved(ctx, removalTime)
 		if err != nil {
 			k.Logger(ctx).Error("failed to retrieve consumers to stop",
-				"stop time", stopTime,
+				"removal time", removalTime,
 				"error", err)
 			continue
 		}
@@ -514,7 +514,7 @@ func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err err
 
 	k.DeleteConsumerRewardsAllocation(ctx, consumerId)
 	k.DeleteConsumerOwnerAddress(ctx, consumerId)
-	k.DeleteConsumerStopTime(ctx, consumerId)
+	k.DeleteConsumerRemovalTime(ctx, consumerId)
 
 	// TODO (PERMISSIONLESS) add newly-added state to be deleted
 	// Note that we do not delete ConsumerIdToChainIdKey and ConsumerIdToPhase, as well
@@ -530,35 +530,35 @@ func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err err
 // Setters and Getters
 //
 
-// GetConsumerStopTime returns the stop time associated with the to-be-stopped chain with consumer id
-func (k Keeper) GetConsumerStopTime(ctx sdk.Context, consumerId string) (time.Time, error) {
+// GetConsumerRemovalTime returns the removal time associated with the to-be-removed chain with consumer id
+func (k Keeper) GetConsumerRemovalTime(ctx sdk.Context, consumerId string) (time.Time, error) {
 	store := ctx.KVStore(k.storeKey)
-	buf := store.Get(types.ConsumerIdToStopTimeKey(consumerId))
+	buf := store.Get(types.ConsumerIdToRemovalTimeKey(consumerId))
 	if buf == nil {
-		return time.Time{}, fmt.Errorf("failed to retrieve stop time for consumer id (%s)", consumerId)
+		return time.Time{}, fmt.Errorf("failed to retrieve removal time for consumer id (%s)", consumerId)
 	}
 	var time time.Time
 	if err := time.UnmarshalBinary(buf); err != nil {
-		return time, fmt.Errorf("failed to unmarshal stop time for consumer id (%s): %w", consumerId, err)
+		return time, fmt.Errorf("failed to unmarshal removal time for consumer id (%s): %w", consumerId, err)
 	}
 	return time, nil
 }
 
-// SetConsumerStopTime sets the stop time associated with this consumer id
-func (k Keeper) SetConsumerStopTime(ctx sdk.Context, consumerId string, stopTime time.Time) error {
+// SetConsumerRemovalTime sets the removal time associated with this consumer id
+func (k Keeper) SetConsumerRemovalTime(ctx sdk.Context, consumerId string, removalTime time.Time) error {
 	store := ctx.KVStore(k.storeKey)
-	buf, err := stopTime.MarshalBinary()
+	buf, err := removalTime.MarshalBinary()
 	if err != nil {
-		return fmt.Errorf("failed to marshal stop time (%+v) for consumer id (%s): %w", stopTime, consumerId, err)
+		return fmt.Errorf("failed to marshal removal time (%+v) for consumer id (%s): %w", removalTime, consumerId, err)
 	}
-	store.Set(types.ConsumerIdToStopTimeKey(consumerId), buf)
+	store.Set(types.ConsumerIdToRemovalTimeKey(consumerId), buf)
 	return nil
 }
 
-// DeleteConsumerStopTime deletes the stop time associated with this consumer id
-func (k Keeper) DeleteConsumerStopTime(ctx sdk.Context, consumerId string) {
+// DeleteConsumerRemovalTime deletes the removal time associated with this consumer id
+func (k Keeper) DeleteConsumerRemovalTime(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToStopTimeKey(consumerId))
+	store.Delete(types.ConsumerIdToRemovalTimeKey(consumerId))
 }
 
 // getConsumerIdsBasedOnTime returns all the consumer ids stored under this specific `key(time)`
@@ -658,17 +658,17 @@ func (k Keeper) RemoveConsumerToBeLaunched(ctx sdk.Context, consumerId string, s
 	return k.removeConsumerIdFromTime(ctx, consumerId, types.SpawnTimeToConsumerIdsKey, spawnTime)
 }
 
-// GetConsumersToBeStopped returns all the consumer ids of chains stored under this stop time
-func (k Keeper) GetConsumersToBeStopped(ctx sdk.Context, stopTime time.Time) (types.ConsumerIds, error) {
-	return k.getConsumerIdsBasedOnTime(ctx, types.StopTimeToConsumerIdsKey, stopTime)
+// GetConsumersToBeRemoved returns all the consumer ids of chains stored under this removal time
+func (k Keeper) GetConsumersToBeRemoved(ctx sdk.Context, removalTime time.Time) (types.ConsumerIds, error) {
+	return k.getConsumerIdsBasedOnTime(ctx, types.RemovalTimeToConsumerIdsKey, removalTime)
 }
 
-// AppendConsumerToBeStopped appends the provider consumer id for the given stop time
-func (k Keeper) AppendConsumerToBeStopped(ctx sdk.Context, consumerId string, stopTime time.Time) error {
-	return k.appendConsumerIdOnTime(ctx, consumerId, types.StopTimeToConsumerIdsKey, stopTime)
+// AppendConsumerToBeRemoved appends the provider consumer id for the given removal time
+func (k Keeper) AppendConsumerToBeRemoved(ctx sdk.Context, consumerId string, removalTime time.Time) error {
+	return k.appendConsumerIdOnTime(ctx, consumerId, types.RemovalTimeToConsumerIdsKey, removalTime)
 }
 
-// RemoveConsumerToBeStopped removes consumer id from the given stop time
-func (k Keeper) RemoveConsumerToBeStopped(ctx sdk.Context, consumerId string, stopTime time.Time) error {
-	return k.removeConsumerIdFromTime(ctx, consumerId, types.StopTimeToConsumerIdsKey, stopTime)
+// RemoveConsumerToBeRemoved removes consumer id from the given removal time
+func (k Keeper) RemoveConsumerToBeRemoved(ctx sdk.Context, consumerId string, removalTime time.Time) error {
+	return k.removeConsumerIdFromTime(ctx, consumerId, types.RemovalTimeToConsumerIdsKey, removalTime)
 }

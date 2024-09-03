@@ -648,17 +648,17 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 
 	chainIds := []string{"chain1", "chain2", "chain3"}
 	consumerIds := []string{"consumerId1", "consumerId2", "consumerId3"}
-	err := providerKeeper.SetConsumerStopTime(ctx, consumerIds[0], now.Add(-time.Hour))
+	err := providerKeeper.SetConsumerRemovalTime(ctx, consumerIds[0], now.Add(-time.Hour))
 	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[0], now.Add(-time.Hour))
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, consumerIds[0], now.Add(-time.Hour))
 	require.NoError(t, err)
-	err = providerKeeper.SetConsumerStopTime(ctx, consumerIds[1], now)
+	err = providerKeeper.SetConsumerRemovalTime(ctx, consumerIds[1], now)
 	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[1], now)
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, consumerIds[1], now)
 	require.NoError(t, err)
-	err = providerKeeper.SetConsumerStopTime(ctx, consumerIds[2], now.Add(time.Hour))
+	err = providerKeeper.SetConsumerRemovalTime(ctx, consumerIds[2], now.Add(time.Hour))
 	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, consumerIds[2], now.Add(time.Hour))
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, consumerIds[2], now.Add(time.Hour))
 	require.NoError(t, err)
 
 	//
@@ -703,7 +703,7 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")
 		require.NoError(t, err)
 
-		// the chain is considered to be stopped and ready for deletion (i.e., `StopAndPrepareForConsumerDeletion` is called)
+		// the chain is considered to be stopped and ready for deletion (i.e., `StopAndPrepareForConsumerRemoval` is called)
 		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 	}
 
@@ -711,14 +711,14 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 	// Test execution
 	//
 
-	providerKeeper.BeginBlockStopConsumers(ctx)
+	providerKeeper.BeginBlockRemoveConsumers(ctx)
 
 	// Only the 3rd (final) proposal is still stored as pending
 	phase := providerKeeper.GetConsumerPhase(ctx, consumerIds[0])
 	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_DELETED, phase)
 	phase = providerKeeper.GetConsumerPhase(ctx, consumerIds[1])
 	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_DELETED, phase)
-	// third chain had a stopTime in the future and hence did not get deleted
+	// third chain had a removal time in the future and hence did not get deleted
 	phase = providerKeeper.GetConsumerPhase(ctx, consumerIds[2])
 	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED, phase)
 }
@@ -730,26 +730,26 @@ func TestGetConsumersReadyToStop(t *testing.T) {
 	// no chains to-be-stopped exist
 	require.Empty(t, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 
-	err := providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId1", time.Unix(10, 0))
+	err := providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId1", time.Unix(10, 0))
 	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId2", time.Unix(20, 0))
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId2", time.Unix(20, 0))
 	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId3", time.Unix(30, 0))
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId3", time.Unix(30, 0))
 	require.NoError(t, err)
 
-	// time has not yet reached the stop time of "consumerId1"
+	// time has not yet reached the removal time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
 	require.Empty(t, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 
-	// time has reached the stop time of "consumerId1"
+	// time has reached the removal time of "consumerId1"
 	ctx = ctx.WithBlockTime(time.Unix(10, 0))
 	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 
-	// time has reached the stop time of "consumerId1" and "consumerId2"
+	// time has reached the removal time of "consumerId1" and "consumerId2"
 	ctx = ctx.WithBlockTime(time.Unix(20, 0))
 	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 
-	// time has reached the stop time of all chains
+	// time has reached the removal time of all chains
 	ctx = ctx.WithBlockTime(time.Unix(30, 0))
 	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 }
@@ -820,22 +820,22 @@ func TestStopConsumerChain(t *testing.T) {
 // Setters and Getters
 //
 
-// TestConsumerStopTime tests the getter, setter, and deletion of the consumer id to stop times methods
-func TestConsumerStopTime(t *testing.T) {
+// TestConsumerRemovalTime tests the getter, setter, and deletion of the consumer id to removal times methods
+func TestConsumerRemovalTime(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, err := providerKeeper.GetConsumerStopTime(ctx, "consumerId")
+	_, err := providerKeeper.GetConsumerRemovalTime(ctx, "consumerId")
 	require.Error(t, err)
 
-	expectedStopTime := time.Unix(1234, 56789)
-	providerKeeper.SetConsumerStopTime(ctx, "consumerId", expectedStopTime)
-	actualStopTime, err := providerKeeper.GetConsumerStopTime(ctx, "consumerId")
+	expectedRemovalTime := time.Unix(1234, 56789)
+	providerKeeper.SetConsumerRemovalTime(ctx, "consumerId", expectedRemovalTime)
+	actualRemovalTime, err := providerKeeper.GetConsumerRemovalTime(ctx, "consumerId")
 	require.NoError(t, err)
-	require.Equal(t, actualStopTime, expectedStopTime)
+	require.Equal(t, actualRemovalTime, expectedRemovalTime)
 
-	providerKeeper.DeleteConsumerStopTime(ctx, "consumerId")
-	_, err = providerKeeper.GetConsumerStopTime(ctx, "consumerId")
+	providerKeeper.DeleteConsumerRemovalTime(ctx, "consumerId")
+	_, err = providerKeeper.GetConsumerRemovalTime(ctx, "consumerId")
 	require.Error(t, err)
 }
 
@@ -905,68 +905,68 @@ func TestConsumersToBeLaunched(t *testing.T) {
 	require.Equal(t, []string{"consumerId5"}, consumers.Ids)
 }
 
-// TestConsumersToBeStopped tests `AppendConsumerToBeLaunched`, `GetConsumersToBeLaunched`, and `RemoveConsumerToBeLaunched`
-func TestConsumersToBeStopped(t *testing.T) {
+// TestConsumersToBeRemoved tests `AppendConsumerToBeRemoved`, `GetConsumersToBeRemoved`, and `RemoveConsumerToBeRemoved`
+func TestConsumersToBeRemoved(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	stopTime := time.Now()
-	err := providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId1", stopTime)
+	removalTime := time.Now()
+	err := providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId1", removalTime)
 	require.NoError(t, err)
-	consumers, err := providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
+	consumers, err := providerKeeper.GetConsumersToBeRemoved(ctx, removalTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1"}, consumers.Ids)
 
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId2", stopTime)
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId2", removalTime)
 	require.NoError(t, err)
-	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
+	consumers, err = providerKeeper.GetConsumersToBeRemoved(ctx, removalTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1", "consumerId2"}, consumers.Ids)
 
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId3", stopTime)
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId3", removalTime)
 	require.NoError(t, err)
-	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
+	consumers, err = providerKeeper.GetConsumersToBeRemoved(ctx, removalTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, consumers.Ids)
 
-	err = providerKeeper.RemoveConsumerToBeStopped(ctx, "consumerId2", stopTime)
+	err = providerKeeper.RemoveConsumerToBeRemoved(ctx, "consumerId2", removalTime)
 	require.NoError(t, err)
-	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
+	consumers, err = providerKeeper.GetConsumersToBeRemoved(ctx, removalTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1", "consumerId3"}, consumers.Ids)
 
-	// also add consumer ids under a different stop time and verify everything under the original stop time is still there
-	stopTimePlusOneHour := stopTime.Add(time.Hour)
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId4", stopTimePlusOneHour)
+	// also add consumer ids under a different removal time and verify everything under the original removal time is still there
+	removalTimePlusOneHour := removalTime.Add(time.Hour)
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId4", removalTimePlusOneHour)
 	require.NoError(t, err)
-	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTimePlusOneHour)
+	consumers, err = providerKeeper.GetConsumersToBeRemoved(ctx, removalTimePlusOneHour)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId4"}, consumers.Ids)
 
-	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
+	consumers, err = providerKeeper.GetConsumersToBeRemoved(ctx, removalTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId1", "consumerId3"}, consumers.Ids)
 
-	// start removing all consumers from `stopTime`
-	err = providerKeeper.RemoveConsumerToBeStopped(ctx, "consumerId3", stopTime)
+	// start removing all consumers from `removalTime`
+	err = providerKeeper.RemoveConsumerToBeRemoved(ctx, "consumerId3", removalTime)
 	require.NoError(t, err)
-	err = providerKeeper.RemoveConsumerToBeStopped(ctx, "consumerId1", stopTime)
+	err = providerKeeper.RemoveConsumerToBeRemoved(ctx, "consumerId1", removalTime)
 	require.NoError(t, err)
-	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
-	require.NoError(t, err)
-	require.Empty(t, consumers.Ids)
-
-	// remove from `stopTimePlusOneHour`
-	err = providerKeeper.RemoveConsumerToBeStopped(ctx, "consumerId4", stopTimePlusOneHour)
-	require.NoError(t, err)
-	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTimePlusOneHour)
+	consumers, err = providerKeeper.GetConsumersToBeRemoved(ctx, removalTime)
 	require.NoError(t, err)
 	require.Empty(t, consumers.Ids)
 
-	// add another consumer for `stopTime`
-	err = providerKeeper.AppendConsumerToBeStopped(ctx, "consumerId5", stopTime)
+	// remove from `removalTimePlusOneHour`
+	err = providerKeeper.RemoveConsumerToBeRemoved(ctx, "consumerId4", removalTimePlusOneHour)
 	require.NoError(t, err)
-	consumers, err = providerKeeper.GetConsumersToBeStopped(ctx, stopTime)
+	consumers, err = providerKeeper.GetConsumersToBeRemoved(ctx, removalTimePlusOneHour)
+	require.NoError(t, err)
+	require.Empty(t, consumers.Ids)
+
+	// add another consumer for `removalTime`
+	err = providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId5", removalTime)
+	require.NoError(t, err)
+	consumers, err = providerKeeper.GetConsumersToBeRemoved(ctx, removalTime)
 	require.NoError(t, err)
 	require.Equal(t, []string{"consumerId5"}, consumers.Ids)
 }

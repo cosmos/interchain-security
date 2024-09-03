@@ -36,7 +36,7 @@ var (
 	ErrInvalidTransformToOptIn                 = errorsmod.Register(ModuleName, 40, "invalid transform to Opt In chain")
 	ErrCannotCreateTopNChain                   = errorsmod.Register(ModuleName, 41, "cannot create Top N chain outside permissionlessly")
 	ErrCannotPrepareForLaunch                  = errorsmod.Register(ModuleName, 42, "cannot prepare chain for launch")
-	ErrInvalidStopTime                         = errorsmod.Register(ModuleName, 43, "invalid stop time")
+	ErrInvalidRemovalTime                      = errorsmod.Register(ModuleName, 43, "invalid removal time")
 	ErrInvalidMsgCreateConsumer                = errorsmod.Register(ModuleName, 44, "invalid create consumer message")
 	ErrInvalidMsgUpdateConsumer                = errorsmod.Register(ModuleName, 45, "invalid update consumer message")
 	ErrInvalidMsgAssignConsumerKey             = errorsmod.Register(ModuleName, 46, "invalid assign consumer key message")

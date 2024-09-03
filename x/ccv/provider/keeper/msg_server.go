@@ -343,7 +343,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	return &resp, nil
 }
 
-// UpdateConsumer updates the record of a consumer chain
+// UpdateConsumer updates the metadata, power-shaping or initialization parameters of a consumer chain
 func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateConsumer) (*types.MsgUpdateConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	resp := types.MsgUpdateConsumerResponse{}
@@ -473,7 +473,7 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 			"chain with consumer id: %s has to be in its launched phase", consumerId)
 	}
 
-	err = k.Keeper.StopAndPrepareForConsumerDeletion(ctx, consumerId)
+	err = k.Keeper.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 	return &resp, err
 }
 
