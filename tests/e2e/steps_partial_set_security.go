@@ -2170,7 +2170,7 @@ func stepsModifyChain() []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
-						1: ConsumerUpdateProposal{
+						1: ConsumerAdditionProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
 							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
@@ -2189,7 +2189,7 @@ func stepsModifyChain() []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
-						1: ConsumerUpdateProposal{
+						1: ConsumerAdditionProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
 							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),

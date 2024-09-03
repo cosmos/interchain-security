@@ -123,7 +123,6 @@ type TestConfig struct {
 	timeOffset       time.Duration
 	transformGenesis bool
 	name             string
-	Consumer2ChainID map[ConsumerID]ChainID // dynamic mapping of
 }
 
 // Initialize initializes the TestConfig instance by setting the runningChains field to an empty map.

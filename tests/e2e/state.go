@@ -25,7 +25,6 @@ type (
 	Rewards                      = e2e.Rewards
 	TextProposal                 = e2e.TextProposal
 	UpgradeProposal              = e2e.UpgradeProposal
-	ConsumerUpdateProposal       = e2e.ConsumerUpdateProposal
 	ConsumerAdditionProposal     = e2e.ConsumerAdditionProposal
 	ConsumerRemovalProposal      = e2e.ConsumerRemovalProposal
 	ConsumerModificationProposal = e2e.ConsumerModificationProposal
@@ -477,7 +476,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			}
 		}
 
-		updateProposal := e2e.ConsumerUpdateProposal{
+		updateProposal := ConsumerAdditionProposal{
 			Deposit: uint(deposit),
 			Chain:   consumerChainId,
 			Status:  status,

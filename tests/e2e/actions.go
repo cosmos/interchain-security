@@ -433,7 +433,7 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 	if txResponse.Code != 0 {
 		log.Fatalf("sending update-consumer transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
 	}
-	tr.waitBlocks(ChainID("provi"), 2, 10*time.Second)
+	tr.waitBlocks(providerChain, 2, 10*time.Second)
 }
 
 // CreateConsumer creates a consumer chain and returns its consumer-id
@@ -503,6 +503,7 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 		log.Fatalf("not able to query tx containing creation-consumer: tx: %s, err: %s, out: %s",
 			txResponse.TxHash, err.Error(), string(bz))
 	}
+	fmt.Println("@@@@ created consumer chain tx=", txResponse.TxHash)
 
 	err = json.Unmarshal(bz, txResponse)
 	if err != nil {
@@ -592,6 +593,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 	// - set PowerShaping params TopN > 0 for consumer chain
 	update.PowerShapingParameters.Top_N = action.TopN
 	update.Signer = authority
+	update.NewOwnerAddress = ""
 	update.InitializationParameters = &InitializationParameters
 	update.InitializationParameters.SpawnTime = spawnTime
 	update.Metadata = &Metadata
