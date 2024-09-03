@@ -179,49 +179,6 @@ func TestConsumerInitializationParameters(t *testing.T) {
 	require.Equal(t, providertypes.ConsumerInitializationParameters{}, actualInitializationParameters)
 }
 
-// TestConsumerPowerShapingParameters tests the getter, setter, and deletion of the consumer id to power-shaping parameters methods
-func TestConsumerPowerShapingParameters(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	_, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
-	require.Error(t, err)
-
-	expectedPowerShapingParameters := providertypes.PowerShapingParameters{
-		Top_N:              10,
-		ValidatorsPowerCap: 34,
-		ValidatorSetCap:    10,
-		Allowlist:          []string{"allowlist1", "allowlist2"},
-		Denylist:           []string{"denylist1", "denylist2"},
-		MinStake:           234,
-		AllowInactiveVals:  true,
-	}
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", expectedPowerShapingParameters)
-	actualPowerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
-	require.NoError(t, err)
-	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
-
-	// assert that overwriting the current initialization record works
-	expectedPowerShapingParameters = providertypes.PowerShapingParameters{
-		Top_N:              12,
-		ValidatorsPowerCap: 67,
-		ValidatorSetCap:    20,
-		Allowlist:          []string{"allowlist3", "allowlist4"},
-		Denylist:           []string{"denylist3", "denylist4"},
-		MinStake:           567,
-		AllowInactiveVals:  false,
-	}
-	providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", expectedPowerShapingParameters)
-	actualPowerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
-	require.NoError(t, err)
-	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
-
-	providerKeeper.DeleteConsumerPowerShapingParameters(ctx, "consumerId")
-	actualPowerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, "consumerId")
-	require.Error(t, err)
-	require.Equal(t, providertypes.PowerShapingParameters{}, actualPowerShapingParameters)
-}
-
 // TestConsumerPhase tests the getter, setter, and deletion of the consumer id to phase methods
 func TestConsumerPhase(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))

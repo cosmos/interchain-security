@@ -143,37 +143,6 @@ func (k Keeper) DeleteConsumerInitializationParameters(ctx sdk.Context, consumer
 	store.Delete(types.ConsumerIdToInitializationParametersKey(consumerId))
 }
 
-// GetConsumerPowerShapingParameters returns the power-shaping parameters associated with this consumer id
-func (k Keeper) GetConsumerPowerShapingParameters(ctx sdk.Context, consumerId string) (types.PowerShapingParameters, error) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerIdToPowerShapingParametersKey(consumerId))
-	if bz == nil {
-		return types.PowerShapingParameters{}, fmt.Errorf("failed to retrieve power-shaping parameters for consumer id (%s)", consumerId)
-	}
-	var record types.PowerShapingParameters
-	if err := record.Unmarshal(bz); err != nil {
-		return types.PowerShapingParameters{}, fmt.Errorf("failed to unmarshal power-shaping parameters for consumer id (%s): %w", consumerId, err)
-	}
-	return record, nil
-}
-
-// SetConsumerPowerShapingParameters sets the power-shaping parameters associated with this consumer id
-func (k Keeper) SetConsumerPowerShapingParameters(ctx sdk.Context, consumerId string, parameters types.PowerShapingParameters) error {
-	store := ctx.KVStore(k.storeKey)
-	bz, err := parameters.Marshal()
-	if err != nil {
-		return fmt.Errorf("failed to marshal power-shaping parameters (%+v) for consumer id (%s): %w", parameters, consumerId, err)
-	}
-	store.Set(types.ConsumerIdToPowerShapingParametersKey(consumerId), bz)
-	return nil
-}
-
-// DeleteConsumerPowerShapingParameters deletes the power-shaping parameters associated with this consumer id
-func (k Keeper) DeleteConsumerPowerShapingParameters(ctx sdk.Context, consumerId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToPowerShapingParametersKey(consumerId))
-}
-
 // GetConsumerPhase returns the phase associated with this consumer id
 func (k Keeper) GetConsumerPhase(ctx sdk.Context, consumerId string) types.ConsumerPhase {
 	store := ctx.KVStore(k.storeKey)

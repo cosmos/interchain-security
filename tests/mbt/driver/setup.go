@@ -389,9 +389,10 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
 
 	// set the top N percentage to 100 to simulate a full consumer
-	s.providerKeeper().SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerChain.ChainID, types.PowerShapingParameters{
+	err = s.providerKeeper().SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerChain.ChainID, types.PowerShapingParameters{
 		Top_N: 100,
 	})
+	require.NoError(s.t, err, "Error setting consumer top N for chain %v", consumerChain.ChainID)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.
