@@ -1,6 +1,11 @@
 package keeper_test
 
 import (
+	"sort"
+	"strings"
+	"testing"
+	"time"
+
 	"cosmossdk.io/math"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -8,10 +13,6 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"sort"
-	"strings"
-	"testing"
-	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -69,11 +70,14 @@ func TestQueueVSCPackets(t *testing.T) {
 		mocks := testkeeper.NewMockedKeepers(ctrl)
 		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1)
 
+		mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return([]stakingtypes.Validator{}, nil).AnyTimes()
+
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
 		pk.AppendPendingVSCPackets(ctx, chainID, tc.packets...)
 
-		pk.QueueVSCPackets(ctx)
+		err := pk.QueueVSCPackets(ctx)
+		require.NoError(t, err)
 		pending := pk.GetPendingVSCPackets(ctx, chainID)
 		require.Len(t, pending, tc.expectedQueueSize, "pending vsc queue mismatch (%v != %v) in case: '%s'", tc.expectedQueueSize, len(pending), tc.name)
 
@@ -126,7 +130,8 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{})
 	require.NoError(t, err)
 
-	providerKeeper.QueueVSCPackets(ctx)
+	err := providerKeeper.QueueVSCPackets(ctx)
+	require.NoError(t, err)
 
 	// the height of consumer validator A should not be modified because A was already a consumer validator
 	cv, _ := providerKeeper.GetConsumerValidator(ctx, "consumerId", providertypes.NewProviderConsAddress(valAConsAddr))
@@ -510,8 +515,9 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	unbondingTime := 123 * time.Second
 	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
 
-	// No panic should occur, DeleteConsumerChain should be called
-	providerKeeper.SendVSCPacketsToChain(ctx, "consumerId", "CCVChannelID")
+	// No error should occur, DeleteConsumerChain should be called
+	err = providerKeeper.SendVSCPacketsToChain(ctx, "consumerId", "CCVChannelID")
+	require.NoError(t, err)
 
 	// Verify the chain is about to be deleted
 	removalTime, err := providerKeeper.GetConsumerRemovalTime(ctx, "consumerId")
@@ -668,24 +674,28 @@ func TestEndBlockVSU(t *testing.T) {
 
 	// with block height of 1 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(1)
-	providerKeeper.EndBlockVSU(ctx)
+	_, err := providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
 	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// with block height of 5 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(5)
-	providerKeeper.EndBlockVSU(ctx)
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
 	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// with block height of 10 we expect the queueing of one VSC packet
 	ctx = ctx.WithBlockHeight(10)
-	providerKeeper.EndBlockVSU(ctx)
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// With block height of 15 we expect no additional queueing of a VSC packet.
 	// Note that the pending VSC packet is still there because `SendVSCPackets` does not send the packet. We
 	// need to mock channels, etc. for this to work, and it's out of scope for this test.
 	ctx = ctx.WithBlockHeight(15)
-	providerKeeper.EndBlockVSU(ctx)
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 }
 
@@ -751,7 +761,8 @@ func TestProviderValidatorUpdates(t *testing.T) {
 	}
 
 	// Execute the function
-	updates := providerKeeper.ProviderValidatorUpdates(ctx)
+	updates, err := providerKeeper.ProviderValidatorUpdates(ctx)
+	require.NoError(t, err)
 
 	// Assertions
 	require.ElementsMatch(t, expectedUpdates, updates, "The validator updates should match the expected updates")
@@ -810,7 +821,8 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	params.MaxProviderConsensusValidators = 180
 	providerKeeper.SetParams(ctx, params)
 
-	providerKeeper.QueueVSCPackets(ctx)
+	err := providerKeeper.QueueVSCPackets(ctx)
+	require.NoError(t, err)
 
 	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, "consumerId")
 	expectedQueuedVSCPackets := []ccv.ValidatorSetChangePacketData{
