@@ -62,7 +62,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
 	// logic to update the provider consensus validator set.
 	valUpdates, err := k.ProviderValidatorUpdates(ctx)
 	if err != nil {
-		return []abci.ValidatorUpdate{}, fmt.Errorf("updating the provider consensus validator set: %w", err)
+		return []abci.ValidatorUpdate{}, fmt.Errorf("computing the provider consensus validator set: %w", err)
 	}
 
 	if k.BlocksUntilNextEpoch(ctx) == 0 {
