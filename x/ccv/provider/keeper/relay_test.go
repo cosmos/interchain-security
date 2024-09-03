@@ -72,7 +72,8 @@ func TestQueueVSCPackets(t *testing.T) {
 		// no-op if tc.packets is empty
 		pk.AppendPendingVSCPackets(ctx, chainID, tc.packets...)
 
-		pk.QueueVSCPackets(ctx)
+		err := pk.QueueVSCPackets(ctx)
+		require.NoError(t, err)
 		pending := pk.GetPendingVSCPackets(ctx, chainID)
 		require.Len(t, pending, tc.expectedQueueSize, "pending vsc queue mismatch (%v != %v) in case: '%s'", tc.expectedQueueSize, len(pending), tc.name)
 
@@ -120,7 +121,8 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	// validator for the first time after the `QueueVSCPackets` call.
 	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
 
-	providerKeeper.QueueVSCPackets(ctx)
+	err := providerKeeper.QueueVSCPackets(ctx)
+	require.NoError(t, err)
 
 	// the height of consumer validator A should not be modified because A was already a consumer validator
 	cv, _ := providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
@@ -501,8 +503,9 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	require.NoError(t, err)
 	providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
 
-	// No panic should occur, StopConsumerChain should be called
-	providerKeeper.SendVSCPacketsToChain(ctx, "consumerChainID", "CCVChannelID")
+	// No error should occur, StopConsumerChain should be called
+	err = providerKeeper.SendVSCPacketsToChain(ctx, "consumerChainID", "CCVChannelID")
+	require.NoError(t, err)
 
 	// Pending VSC packets should be deleted in StopConsumerChain
 	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, "consumerChainID"))
@@ -616,24 +619,28 @@ func TestEndBlockVSU(t *testing.T) {
 
 	// with block height of 1 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(1)
-	providerKeeper.EndBlockVSU(ctx)
+	_, err := providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
 	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
 
 	// with block height of 5 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(5)
-	providerKeeper.EndBlockVSU(ctx)
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
 	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
 
 	// with block height of 10 we expect the queueing of one VSC packet
 	ctx = ctx.WithBlockHeight(10)
-	providerKeeper.EndBlockVSU(ctx)
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
 
 	// With block height of 15 we expect no additional queueing of a VSC packet.
 	// Note that the pending VSC packet is still there because `SendVSCPackets` does not send the packet. We
 	// need to mock channels, etc. for this to work, and it's out of scope for this test.
 	ctx = ctx.WithBlockHeight(15)
-	providerKeeper.EndBlockVSU(ctx)
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
 }
 
@@ -699,7 +706,8 @@ func TestProviderValidatorUpdates(t *testing.T) {
 	}
 
 	// Execute the function
-	updates := providerKeeper.ProviderValidatorUpdates(ctx)
+	updates, err := providerKeeper.ProviderValidatorUpdates(ctx)
+	require.NoError(t, err)
 
 	// Assertions
 	require.ElementsMatch(t, expectedUpdates, updates, "The validator updates should match the expected updates")
@@ -756,7 +764,8 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	params.MaxProviderConsensusValidators = 180
 	providerKeeper.SetParams(ctx, params)
 
-	providerKeeper.QueueVSCPackets(ctx)
+	err := providerKeeper.QueueVSCPackets(ctx)
+	require.NoError(t, err)
 
 	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, "chainID")
 	expectedQueuedVSCPackets := []ccv.ValidatorSetChangePacketData{
