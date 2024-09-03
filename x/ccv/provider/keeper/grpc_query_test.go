@@ -502,6 +502,7 @@ func TestGetConsumerChain(t *testing.T) {
 				Metadata:           metadataLists[i],
 				AllowInactiveVals:  allowInactiveVals[i],
 				MinStake:           minStakes[i].Uint64(),
+				ConsumerId:         consumerIDs[i],
 			})
 	}
 
