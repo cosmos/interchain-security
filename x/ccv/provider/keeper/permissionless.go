@@ -2,11 +2,14 @@ package keeper
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strconv"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 // setConsumerId sets the provided consumerId
@@ -148,30 +151,57 @@ func (k Keeper) GetConsumerPowerShapingParameters(ctx sdk.Context, consumerId st
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerIdToPowerShapingParametersKey(consumerId))
 	if bz == nil {
-		return types.PowerShapingParameters{}, fmt.Errorf("failed to retrieve power-shaping parameters for consumer id (%s)", consumerId)
+		return types.PowerShapingParameters{}, errorsmod.Wrapf(ccvtypes.ErrStoreKeyNotFound,
+			"GetConsumerPowerShapingParameters, consumerId(%s)", consumerId)
 	}
 	var record types.PowerShapingParameters
 	if err := record.Unmarshal(bz); err != nil {
-		return types.PowerShapingParameters{}, fmt.Errorf("failed to unmarshal power-shaping parameters for consumer id (%s): %w", consumerId, err)
+		return types.PowerShapingParameters{}, errorsmod.Wrapf(ccvtypes.ErrStoreUnmarshal,
+			"GetConsumerPowerShapingParameters, consumerId(%s): %s", consumerId, err.Error())
 	}
 	return record, nil
 }
 
-// SetConsumerPowerShapingParameters sets the power-shaping parameters associated with this consumer id
+// SetConsumerPowerShapingParameters sets the power-shaping parameters associated with this consumer id.
+// Note that it also updates the allowlist and denylist indexes if they are different
 func (k Keeper) SetConsumerPowerShapingParameters(ctx sdk.Context, consumerId string, parameters types.PowerShapingParameters) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := parameters.Marshal()
 	if err != nil {
 		return fmt.Errorf("failed to marshal power-shaping parameters (%+v) for consumer id (%s): %w", parameters, consumerId, err)
 	}
+
+	// get old power shaping params
+	oldParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	// ignore ErrStoreKeyNotFound errors as this might be the first time the power shaping params are set
+	if errors.Is(err, ccvtypes.ErrStoreUnmarshal) {
+		return fmt.Errorf("cannot get consumer previous power shaping parameters: %w", err)
+	}
+
 	store.Set(types.ConsumerIdToPowerShapingParametersKey(consumerId), bz)
+
+	// update allowlist and denylist indexes if needed
+	if !equalStringSlices(oldParameters.Allowlist, parameters.Allowlist) {
+		k.UpdateAllowlist(ctx, consumerId, parameters.Allowlist)
+	}
+	if !equalStringSlices(oldParameters.Denylist, parameters.Denylist) {
+		k.UpdateDenylist(ctx, consumerId, parameters.Denylist)
+	}
+
 	return nil
 }
 
-// DeleteConsumerPowerShapingParameters deletes the power-shaping parameters associated with this consumer id
-func (k Keeper) DeleteConsumerPowerShapingParameters(ctx sdk.Context, consumerId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToPowerShapingParametersKey(consumerId))
+// equalStringSlices returns true if two string slices are equal
+func equalStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // GetConsumerPhase returns the phase associated with this consumer id

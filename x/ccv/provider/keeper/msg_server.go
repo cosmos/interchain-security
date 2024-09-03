@@ -319,8 +319,6 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 			return &resp, errorsmod.Wrap(types.ErrCannotCreateTopNChain,
 				"cannot create a Top N chain using the `MsgCreateConsumer` message; use `MsgUpdateConsumer` instead")
 		}
-
-		// TODO (PERMISSIONLESS) UpdateAllowlist & UpdateDenylist
 	}
 	if err := k.Keeper.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters); err != nil {
 		return &resp, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
@@ -418,9 +416,6 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			return &resp, errorsmod.Wrapf(types.ErrInvalidPowerShapingParameters,
 				"cannot set power shaping parameters")
 		}
-
-		k.Keeper.UpdateAllowlist(ctx, consumerId, msg.PowerShapingParameters.Allowlist)
-		k.Keeper.UpdateDenylist(ctx, consumerId, msg.PowerShapingParameters.Denylist)
 		err = k.Keeper.UpdateMinimumPowerInTopN(ctx, consumerId, oldTopN, msg.PowerShapingParameters.Top_N)
 		if err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrCannotUpdateMinimumPowerInTopN,
