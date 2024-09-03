@@ -243,7 +243,10 @@ func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *
 	}, nil
 }
 
-func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, req *types.QueryAllPairsValConAddrByConsumerChainIDRequest) (*types.QueryAllPairsValConAddrByConsumerChainIDResponse, error) {
+func (k Keeper) QueryAllPairsValConsAddrByConsumer(
+	goCtx context.Context,
+	req *types.QueryAllPairsValConsAddrByConsumerRequest,
+) (*types.QueryAllPairsValConsAddrByConsumerResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -270,7 +273,7 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 		})
 	}
 
-	return &types.QueryAllPairsValConAddrByConsumerChainIDResponse{
+	return &types.QueryAllPairsValConsAddrByConsumerResponse{
 		PairValConAddr: pairValConAddrs,
 	}, nil
 }

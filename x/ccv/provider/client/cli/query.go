@@ -31,7 +31,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdProviderValidatorKey())
 	cmd.AddCommand(CmdThrottleState())
 	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
-	cmd.AddCommand(CmdAllPairsValConAddrByConsumerChainID())
+	cmd.AddCommand(CmdAllPairsValConsAddrByConsumer())
 	cmd.AddCommand(CmdProviderParameters())
 	cmd.AddCommand(CmdConsumerChainOptedInValidators())
 	cmd.AddCommand(CmdConsumerValidators())
@@ -123,7 +123,7 @@ func CmdConsumerChains() *cobra.Command {
 func CmdConsumerValidatorKeyAssignment() *cobra.Command {
 	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	cmd := &cobra.Command{
-		Use:   "validator-consumer-key [chainid] [provider-validator-address]",
+		Use:   "validator-consumer-key [consumerId] [provider-validator-address]",
 		Short: "Query assigned validator consensus public key for a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Returns the currently assigned validator consensus public key for a
@@ -285,10 +285,10 @@ $ %s query provider registered-consumer-reward-denoms
 	return cmd
 }
 
-func CmdAllPairsValConAddrByConsumerChainID() *cobra.Command {
+func CmdAllPairsValConsAddrByConsumer() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "all-pairs-valconsensus-address [consumer-chain-id]",
-		Short: "Query all pairs of valconsensus address by consumer chainId.",
+		Use:   "all-pairs-valconsensus-address [consumer-id]",
+		Short: "Query all pairs of valconsensus address by consumer ID.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -297,8 +297,8 @@ func CmdAllPairsValConAddrByConsumerChainID() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: args[0]}
-			res, err := queryClient.QueryAllPairsValConAddrByConsumerChainID(cmd.Context(), &req)
+			req := types.QueryAllPairsValConsAddrByConsumerRequest{ConsumerId: args[0]}
+			res, err := queryClient.QueryAllPairsValConsAddrByConsumer(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}

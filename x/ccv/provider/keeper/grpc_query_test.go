@@ -25,7 +25,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
+func TestQueryAllPairsValConsAddrByConsumer(t *testing.T) {
 	consumerId := "0"
 
 	providerConsAddress, err := sdk.ConsAddressFromBech32("cosmosvalcons1wpex7anfv3jhystyv3eq20r35a")
@@ -47,19 +47,19 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	require.Equal(t, consumerPubKey, consumerKey)
 
 	// Request is nil
-	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, nil)
+	_, err = pk.QueryAllPairsValConsAddrByConsumer(ctx, nil)
 	require.Error(t, err)
 
 	// Request with empty consumer id
-	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{})
+	_, err = pk.QueryAllPairsValConsAddrByConsumer(ctx, &types.QueryAllPairsValConsAddrByConsumerRequest{})
 	require.Error(t, err)
 
 	// Request with invalid consumer id
-	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: "invalidConsumerId"})
+	_, err = pk.QueryAllPairsValConsAddrByConsumer(ctx, &types.QueryAllPairsValConsAddrByConsumerRequest{ConsumerId: "invalidConsumerId"})
 	require.Error(t, err)
 
 	// Request is valid
-	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: consumerId})
+	response, err := pk.QueryAllPairsValConsAddrByConsumer(ctx, &types.QueryAllPairsValConsAddrByConsumerRequest{ConsumerId: consumerId})
 	require.NoError(t, err)
 
 	expectedResult := types.PairValConAddrProviderAndConsumer{

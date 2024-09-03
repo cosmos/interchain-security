@@ -64,11 +64,11 @@ service Query {
         "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
 
-  // QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
+  // QueryAllPairsValConsAddrByConsumer returns a list of pair valconsensus address
   // between provider and consumer chain
-  rpc QueryAllPairsValConAddrByConsumerChainID (
-    QueryAllPairsValConAddrByConsumerChainIDRequest)
-    returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
+  rpc QueryAllPairsValConsAddrByConsumer (
+    QueryAllPairsValConsAddrByConsumerRequest)
+    returns (QueryAllPairsValConsAddrByConsumerResponse) {
     option (google.api.http) = {
       get: "/interchain_security/ccv/provider/address_pairs/{consumer_id}";
     };
@@ -241,12 +241,12 @@ message QueryRegisteredConsumerRewardDenomsResponse {
   repeated string denoms = 1;
 }
 
-message QueryAllPairsValConAddrByConsumerChainIDRequest {
+message QueryAllPairsValConsAddrByConsumerRequest {
   // The id of the consumer chain
   string consumer_id = 1;
 }
 
-message QueryAllPairsValConAddrByConsumerChainIDResponse {
+message QueryAllPairsValConsAddrByConsumerResponse {
   repeated PairValConAddrProviderAndConsumer pair_val_con_addr = 1;
 }
 
