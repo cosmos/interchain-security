@@ -78,7 +78,7 @@ func CmdConsumerChains() *cobra.Command {
 		Short: "Query consumer chains for provider chain.",
 		Long: `Query consumer chains for provider chain. An optional
 		integer parameter can be passed for phase filtering of consumer chains,
-		(All=0|Registered=1|Initialized=2|Launched=3|Stopped=4).`,
+		(Registered=1|Initialized=2|Launched=3|Stopped=4).`,
 		Args: cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)

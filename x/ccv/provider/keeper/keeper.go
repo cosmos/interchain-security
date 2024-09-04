@@ -749,7 +749,6 @@ func (k Keeper) GetAllLaunchedConsumerIds(ctx sdk.Context) []string {
 		}
 		consumerIds = append(consumerIds, consumerId)
 	}
-	fmt.Println("consumerIds", consumerIds)
 	return consumerIds
 }
 
