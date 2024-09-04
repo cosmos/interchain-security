@@ -211,12 +211,12 @@ func (k Keeper) DeleteConsumerIdToChannelId(ctx sdk.Context, consumerId string) 
 	store.Delete(types.ConsumerIdToChannelIdKey(consumerId))
 }
 
-// GetAllConsumersWithIBCClients returns all ids of consumer chains that with IBC clients created.
+// GetAllConsumersWithIBCClients returns the ids of all consumer chains that with IBC clients created.
+// This is equivalent to getting the ids of all launched consumer chains:
+// All launched chains have created an IBC client when they launched (see `LaunchConsumer`).
 func (k Keeper) GetAllConsumersWithIBCClients(ctx sdk.Context) []string {
 	consumerIds := []string{}
 
-	// All launched chains have created an IBC client when they launched (see `LaunchConsumer`), so we traverse over
-	// `ConsumerIdToClientIdKeyPrefix` to retrieve the launched chains.
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ConsumerIdToClientIdKeyPrefix())
 	defer iterator.Close()
