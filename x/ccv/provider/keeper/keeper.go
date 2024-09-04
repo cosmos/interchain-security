@@ -212,8 +212,6 @@ func (k Keeper) DeleteConsumerIdToChannelId(ctx sdk.Context, consumerId string) 
 }
 
 // GetAllConsumersWithIBCClients returns the ids of all consumer chains that with IBC clients created.
-// This is equivalent to getting the ids of all launched consumer chains:
-// All launched chains have created an IBC client when they launched (see `LaunchConsumer`).
 func (k Keeper) GetAllConsumersWithIBCClients(ctx sdk.Context) []string {
 	consumerIds := []string{}
 
@@ -224,12 +222,7 @@ func (k Keeper) GetAllConsumersWithIBCClients(ctx sdk.Context) []string {
 	for ; iterator.Valid(); iterator.Next() {
 		// remove 1 byte prefix from key to retrieve consumerId
 		consumerId := string(iterator.Key()[1:])
-
-		// A chain might have stopped, but we might not yet have its consumer id to client id association deleted.
-		// To avoid returning stopped chains, we check the phase of the consumer chain and only return launched chains.
-		if k.GetConsumerPhase(ctx, consumerId) == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
-			consumerIds = append(consumerIds, consumerId)
-		}
+		consumerIds = append(consumerIds, consumerId)
 	}
 
 	return consumerIds

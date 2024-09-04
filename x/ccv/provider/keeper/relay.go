@@ -143,6 +143,11 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 // TODO (mpoke): iterate only over consumers with established channel
 func (k Keeper) SendVSCPackets(ctx sdk.Context) error {
 	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
+		if k.GetConsumerPhase(ctx, consumerId) != providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+			// only send VSCPackets to launched chains
+			continue
+		}
+
 		// check if CCV channel is established and send
 		if channelID, found := k.GetConsumerIdToChannelId(ctx, consumerId); found {
 			if err := k.SendVSCPacketsToChain(ctx, consumerId, channelID); err != nil {
@@ -214,6 +219,11 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 	}
 
 	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
+		if k.GetConsumerPhase(ctx, consumerId) != providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+			// only queue VSCPackets to launched chains
+			continue
+		}
+
 		currentValidators, err := k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
 			return fmt.Errorf("getting consumer validators, consumerId(%s): %w", consumerId, err)
