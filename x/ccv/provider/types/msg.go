@@ -3,9 +3,10 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	cmttypes "github.com/cometbft/cometbft/types"
 	"strconv"
 	"strings"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
@@ -126,12 +127,14 @@ func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
 }
 
 func NewMsgSubmitConsumerMisbehaviour(
+	consumerId string,
 	submitter sdk.AccAddress,
 	misbehaviour *ibctmtypes.Misbehaviour,
 ) (*MsgSubmitConsumerMisbehaviour, error) {
 	return &MsgSubmitConsumerMisbehaviour{
 		Submitter:    submitter.String(),
 		Misbehaviour: misbehaviour,
+		ConsumerId:   consumerId,
 	}, nil
 }
 
@@ -148,6 +151,7 @@ func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 }
 
 func NewMsgSubmitConsumerDoubleVoting(
+	consumerId string,
 	submitter sdk.AccAddress,
 	ev *tmtypes.DuplicateVoteEvidence,
 	header *ibctmtypes.Header,
@@ -156,6 +160,7 @@ func NewMsgSubmitConsumerDoubleVoting(
 		Submitter:             submitter.String(),
 		DuplicateVoteEvidence: ev,
 		InfractionBlockHeader: header,
+		ConsumerId:            consumerId,
 	}, nil
 }
 

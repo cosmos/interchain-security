@@ -128,7 +128,7 @@ func (m *QueryConsumerGenesisResponse) GetGenesisState() types.ConsumerGenesisSt
 
 type QueryConsumerChainsRequest struct {
 	// The phase of the consumer chains returned (optional)
-	// Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5
+	// All=0|Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5
 	Phase ConsumerPhase `protobuf:"varint,1,opt,name=phase,proto3,enum=interchain_security.ccv.provider.v1.ConsumerPhase" json:"phase,omitempty"`
 	// The limit of consumer chains returned (optional)
 	// default is 100
@@ -243,7 +243,7 @@ type Chain struct {
 	Allowlist []string `protobuf:"bytes,7,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
 	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,8,rep,name=denylist,proto3" json:"denylist,omitempty"`
-	// The phase the consumer chain (Registered=0|Initialized=1|FailedToLaunch=2|Launched=3|Stopped=4)
+	// The phase the consumer chain (Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5)
 	Phase string `protobuf:"bytes,9,opt,name=phase,proto3" json:"phase,omitempty"`
 	// The metadata of the consumer chain
 	Metadata ConsumerMetadata `protobuf:"bytes,10,opt,name=metadata,proto3" json:"metadata"`
