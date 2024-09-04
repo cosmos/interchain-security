@@ -320,7 +320,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		require.NoError(t, err)
 		consumerId := resp.ConsumerId
 
-		// set a consumer client id, so that `GetAllConsumerWithIBCClients` is non-empty
+		// set a consumer client id, so that `GetAllConsumersWithIBCClients` is non-empty
 		clientID := "client-" + strconv.Itoa(i)
 		pk.SetConsumerClientId(ctx, consumerId, clientID)
 

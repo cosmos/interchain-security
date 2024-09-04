@@ -142,7 +142,7 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 //
 // TODO (mpoke): iterate only over consumers with established channel
 func (k Keeper) SendVSCPackets(ctx sdk.Context) error {
-	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
 		// check if CCV channel is established and send
 		if channelID, found := k.GetConsumerIdToChannelId(ctx, consumerId); found {
 			if err := k.SendVSCPacketsToChain(ctx, consumerId, channelID); err != nil {
@@ -213,7 +213,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 		return fmt.Errorf("getting provider active validators: %w", err)
 	}
 
-	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
 		currentValidators, err := k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
 			return fmt.Errorf("getting consumer validators, consumerId(%s): %w", consumerId, err)
@@ -286,7 +286,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
 
 	// prune previous consumer validator addresses that are no longer needed
-	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
 		k.PruneKeyAssignments(ctx, consumerId)
 	}
 }

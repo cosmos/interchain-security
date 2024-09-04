@@ -426,7 +426,7 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	consumersToValidate := []string{}
 	// To avoid large iterations over all the consumer IDs, iterate only over
 	// chains with an IBC client created.
-	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
 		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerId); err == nil && hasToValidate {
 			consumersToValidate = append(consumersToValidate, consumerId)
 		}
