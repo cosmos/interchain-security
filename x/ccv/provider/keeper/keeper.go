@@ -742,18 +742,6 @@ func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
 	return consumerIds
 }
 
-// GetAllLaunchedConsumerIds returns all the consumer ids of chains that are launched
-func (k Keeper) GetAllLaunchedConsumerIds(ctx sdk.Context) []string {
-	consumerIds := []string{}
-	for _, consumerId := range k.GetAllConsumerIds(ctx) {
-		if phase := k.GetConsumerPhase(ctx, consumerId); phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
-			continue
-		}
-		consumerIds = append(consumerIds, consumerId)
-	}
-	return consumerIds
-}
-
 func (k Keeper) SetOptedIn(
 	ctx sdk.Context,
 	consumerId string,
