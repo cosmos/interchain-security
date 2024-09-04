@@ -78,6 +78,8 @@ message ConsumerState {
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData
       pending_valset_changes = 6 [ (gogoproto.nullable) = false ];
   repeated string slash_downtime_ack = 7;
+  // the phase of the consumer chain
+  ConsumerPhase phase = 9;
 }
 
 // ValsetUpdateIdToHeight defines the genesis information for the mapping

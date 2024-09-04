@@ -30,8 +30,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			"error", err,
 		)
 		if consumerId, ok := k.GetChannelIdToConsumerId(ctx, packet.SourceChannel); ok {
-			// stop consumer chain and release unbonding
-			return k.StopConsumerChain(ctx, consumerId, false)
+			return k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 		}
 		return errorsmod.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
@@ -50,9 +49,8 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 			packet.SourceChannel,
 		)
 	}
-	k.Logger(ctx).Info("packet timeout, removing the consumer:", "consumerId", consumerId)
-	// stop consumer chain and release unbondings
-	return k.StopConsumerChain(ctx, consumerId, false)
+	k.Logger(ctx).Info("packet timeout, deleting the consumer:", "consumerId", consumerId)
+	return k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 }
 
 // EndBlockVSU contains the EndBlock logic needed for
@@ -137,12 +135,19 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 	}
 }
 
-// SendVSCPackets iterates over all registered consumers and sends pending
-// VSC packets to the chains with established CCV channels.
+// SendVSCPackets iterates over all consumers chains with created IBC clients
+// and sends pending VSC packets to the chains with established CCV channels.
 // If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
+//
+// TODO (mpoke): iterate only over consumers with established channel
 func (k Keeper) SendVSCPackets(ctx sdk.Context) error {
-	for _, consumerId := range k.GetAllRegisteredConsumerIds(ctx) {
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
+		if k.GetConsumerPhase(ctx, consumerId) != providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+			// only send VSCPackets to launched chains
+			continue
+		}
+
 		// check if CCV channel is established and send
 		if channelID, found := k.GetConsumerIdToChannelId(ctx, consumerId); found {
 			if err := k.SendVSCPacketsToChain(ctx, consumerId, channelID); err != nil {
@@ -180,10 +185,11 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 			}
 			// Not able to send packet over IBC!
 			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "consumerId", consumerId, "vscid", data.ValsetUpdateId, "err", err.Error())
-			// If this happens, most likely the consumer is malicious; remove it
-			err := k.StopConsumerChain(ctx, consumerId, true)
+
+			err := k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 			if err != nil {
-				return fmt.Errorf("stopping consumer, consumerId(%s): %w", consumerId, err)
+				k.Logger(ctx).Info("consumer chain failed to stop:", "consumerId", consumerId, "error", err.Error())
+				// return fmt.Errorf("stopping consumer, consumerId(%s): %w", consumerId, err)
 			}
 			return nil
 		}
@@ -193,7 +199,10 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 	return nil
 }
 
-// QueueVSCPackets queues latest validator updates for every registered consumer chain
+// QueueVSCPackets queues latest validator updates for every consumer chain
+// with the IBC client created.
+//
+// TODO (mpoke): iterate only over consumers with established channel
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
@@ -209,7 +218,12 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 		return fmt.Errorf("getting provider active validators: %w", err)
 	}
 
-	for _, consumerId := range k.GetAllRegisteredConsumerIds(ctx) {
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
+		if k.GetConsumerPhase(ctx, consumerId) != providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+			// only queue VSCPackets to launched chains
+			continue
+		}
+
 		currentValidators, err := k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
 			return fmt.Errorf("getting consumer validators, consumerId(%s): %w", consumerId, err)
@@ -282,7 +296,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
 
 	// prune previous consumer validator addresses that are no longer needed
-	for _, consumerId := range k.GetAllRegisteredConsumerIds(ctx) {
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
 		k.PruneKeyAssignments(ctx, consumerId)
 	}
 }

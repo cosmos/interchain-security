@@ -134,11 +134,11 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(49), providertypes.ConsumerIdToPhaseKey("13")[0])
 	i++
-	require.Equal(t, byte(50), providertypes.ConsumerIdToStopTimeKeyPrefix())
+	require.Equal(t, byte(50), providertypes.ConsumerIdToRemovalTimeKeyPrefix())
 	i++
 	require.Equal(t, byte(51), providertypes.SpawnTimeToConsumerIdsKeyPrefix())
 	i++
-	require.Equal(t, byte(52), providertypes.StopTimeToConsumerIdsKeyPrefix())
+	require.Equal(t, byte(52), providertypes.RemovalTimeToConsumerIdsKeyPrefix())
 	i++
 	require.Equal(t, byte(53), providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05}))[0])
 	i++
@@ -208,9 +208,9 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerIdToInitializationParametersKey("13"),
 		providertypes.ConsumerIdToPowerShapingParametersKey("13"),
 		providertypes.ConsumerIdToPhaseKey("13"),
-		providertypes.ConsumerIdToStopTimeKey("13"),
+		providertypes.ConsumerIdToRemovalTimeKey("13"),
 		providertypes.SpawnTimeToConsumerIdsKey(time.Time{}),
-		providertypes.StopTimeToConsumerIdsKey(time.Time{}),
+		providertypes.RemovalTimeToConsumerIdsKey(time.Time{}),
 		providertypes.ProviderConsAddrToOptedInConsumerIdsKey(providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ClientIdToConsumerIdKey("clientId"),
 	}

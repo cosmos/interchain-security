@@ -525,7 +525,6 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		}
 	case "/interchain_security.ccv.provider.v1.MsgRemoveConsumer":
 		consumerId := rawContent.Get("consumer_id").String()
-		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {
@@ -536,10 +535,9 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		}
 
 		return ConsumerRemovalProposal{
-			Deposit:  uint(deposit),
-			Status:   status,
-			Chain:    chain,
-			StopTime: int(stopTime.Milliseconds()),
+			Deposit: uint(deposit),
+			Status:  status,
+			Chain:   chain,
 		}
 	case "/ibc.applications.transfer.v1.MsgUpdateParams":
 		var params IBCTransferParams
@@ -757,7 +755,6 @@ func (tr Commands) GetIBCTransferParams(chain ChainID) IBCTransferParams {
 func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
-
 		"query", "provider", "list-consumer-chains",
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,

@@ -74,8 +74,10 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		return
 	}
 
-	// Iterate over all launched consumer chains
-	for _, consumerId := range k.GetAllRegisteredConsumerIds(ctx) {
+	// Iterate over all launched consumer chains.
+	// To avoid large iterations over all the consumer IDs, iterate only over
+	// chains with an IBC client created.
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
 
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
@@ -267,6 +269,12 @@ func (k Keeper) SetConsumerRewardsAllocation(ctx sdk.Context, consumerId string,
 	store := ctx.KVStore(k.storeKey)
 	b := k.cdc.MustMarshal(&pool)
 	store.Set(types.ConsumerRewardsAllocationKey(consumerId), b)
+}
+
+// DeleteConsumerRewardsAllocation deletes the consumer rewards allocation for the given consumer id
+func (k Keeper) DeleteConsumerRewardsAllocation(ctx sdk.Context, consumerId string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerRewardsAllocationKey(consumerId))
 }
 
 // GetConsumerRewardsPool returns the balance
