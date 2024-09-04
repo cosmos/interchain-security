@@ -103,9 +103,13 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if 128 < len(msg.ChainId) {
 		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
 	}
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return ErrInvalidProviderAddress
+	}
+	// Check that the provider validator address and the signer address are the same
+	if sdk.AccAddress(valAddr.Bytes()).String() != msg.Signer {
+		return errorsmod.Wrapf(ErrInvalidProviderAddress, "provider validator address must be the same as the signer address")
 	}
 	if msg.ConsumerKey == "" {
 		return ErrInvalidConsumerConsensusPubKey
@@ -358,11 +362,14 @@ func (msg MsgOptIn) ValidateBasic() error {
 	if 128 < len(msg.ChainId) {
 		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
 	}
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return ErrInvalidProviderAddress
 	}
-
+	// Check that the provider validator address and the signer address are the same
+	if sdk.AccAddress(valAddr.Bytes()).String() != msg.Signer {
+		return errorsmod.Wrapf(ErrInvalidProviderAddress, "provider validator address must be the same as the signer address")
+	}
 	if msg.ConsumerKey != "" {
 		if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
 			return ErrInvalidConsumerConsensusPubKey
@@ -416,10 +423,15 @@ func (msg MsgOptOut) ValidateBasic() error {
 	if 128 < len(msg.ChainId) {
 		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
 	}
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return ErrInvalidProviderAddress
 	}
+	// Check that the provider validator address and the signer address are the same
+	if sdk.AccAddress(valAddr.Bytes()).String() != msg.Signer {
+		return errorsmod.Wrapf(ErrInvalidProviderAddress, "provider validator address must be the same as the signer address")
+	}
+
 	return nil
 }
 
@@ -445,15 +457,17 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
 	}
-
 	if 128 < len(msg.ChainId) {
 		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
 	}
-	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return ErrInvalidProviderAddress
 	}
-
+	// Check that the provider validator address and the signer address are the same
+	if sdk.AccAddress(valAddr.Bytes()).String() != msg.Signer {
+		return errorsmod.Wrapf(ErrInvalidProviderAddress, "provider validator address must be the same as the signer address")
+	}
 	if msg.Rate.IsNegative() || msg.Rate.GT(math.LegacyOneDec()) {
 		return errorsmod.Wrapf(ErrInvalidConsumerCommissionRate, "consumer commission rate should be in the range [0, 1]")
 	}
