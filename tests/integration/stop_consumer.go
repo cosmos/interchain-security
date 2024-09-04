@@ -105,6 +105,11 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	s.checkConsumerChainIsRemoved(firstBundle.Chain.ChainID, true)
 }
 
+// TestStopConsumerOnChannelClosed tests stopping a consumer chain correctly.
+// @Long Description@
+// This test sets up CCV channel and transfer channel, and sends empty VSC packet.
+// Then it stops the consumer chain and verifies that the provider chain's channel end is closed
+//
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
 func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	// init the CCV channel states
