@@ -1,11 +1,12 @@
 package cli
 
 import (
-	"cosmossdk.io/math"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+
+	"cosmossdk.io/math"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/spf13/cobra"
@@ -422,10 +423,6 @@ Example:
 
 			signer := clientCtx.GetFromAddress().String()
 			consumerId := args[0]
-
-			if err != nil {
-				return err
-			}
 
 			msg, err := types.NewMsgRemoveConsumer(signer, consumerId)
 			if err != nil {
