@@ -205,8 +205,6 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 			store.Delete(oldKey)
 		}
 
-		rekeyFromChainIdToConsumerId(store, MinimumPowerInTopNKeyPrefix, chainId, consumerId)
-
 		// chainId -> ConsumerAddrsToPruneV2
 		rekeyChainIdAndTsKey(store, providertypes.ConsumerAddrsToPruneV2KeyPrefix(), chainId, consumerId)
 
