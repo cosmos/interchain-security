@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -25,7 +24,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
-func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
+func TestQueryAllPairsValConsAddrByConsumer(t *testing.T) {
 	consumerId := "0"
 
 	providerConsAddress, err := sdk.ConsAddressFromBech32("cosmosvalcons1wpex7anfv3jhystyv3eq20r35a")
@@ -47,19 +46,19 @@ func TestQueryAllPairsValConAddrByConsumerChainID(t *testing.T) {
 	require.Equal(t, consumerPubKey, consumerKey)
 
 	// Request is nil
-	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, nil)
+	_, err = pk.QueryAllPairsValConsAddrByConsumer(ctx, nil)
 	require.Error(t, err)
 
 	// Request with empty consumer id
-	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{})
+	_, err = pk.QueryAllPairsValConsAddrByConsumer(ctx, &types.QueryAllPairsValConsAddrByConsumerRequest{})
 	require.Error(t, err)
 
 	// Request with invalid consumer id
-	_, err = pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: "invalidConsumerId"})
+	_, err = pk.QueryAllPairsValConsAddrByConsumer(ctx, &types.QueryAllPairsValConsAddrByConsumerRequest{ConsumerId: "invalidConsumerId"})
 	require.Error(t, err)
 
 	// Request is valid
-	response, err := pk.QueryAllPairsValConAddrByConsumerChainID(ctx, &types.QueryAllPairsValConAddrByConsumerChainIDRequest{ConsumerId: consumerId})
+	response, err := pk.QueryAllPairsValConsAddrByConsumer(ctx, &types.QueryAllPairsValConsAddrByConsumerRequest{ConsumerId: consumerId})
 	require.NoError(t, err)
 
 	expectedResult := types.PairValConAddrProviderAndConsumer{
@@ -304,17 +303,29 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		ProviderAddress: providerAddr.String(),
 	}
 
-	// set up some launched consumer chains
-	consumerIDs := []string{"1", "23", "456", "6789"}
-	for _, cID := range consumerIDs {
-		pk.SetConsumerClientId(ctx, cID, "clientID")
-		pk.SetConsumerPhase(ctx, cID, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
-		err := pk.SetConsumerPowerShapingParameters(ctx, cID, types.PowerShapingParameters{})
+
+	consumerNum := 4
+	consumerIds := make([]string, consumerNum)
+
+	msgServer := keeper.NewMsgServerImpl(&pk)
+
+	// set up some consumer chains
+	for i := 0; i < consumerNum; i++ {
+		chainID := "consumer-" + strconv.Itoa(i)
+		metadata := types.ConsumerMetadata{Name: chainID}
+		msg := types.MsgCreateConsumer{
+			ChainId:  chainID,
+			Metadata: metadata,
+		}
+		resp, err := msgServer.CreateConsumer(ctx, &msg)
 		require.NoError(t, err)
+		consumerId := resp.ConsumerId
+		pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+		consumerIds[i] = consumerId
 	}
 
 	// set `providerAddr` as a consumer validator on first consumer chain
-	pk.SetConsumerValidator(ctx, consumerIDs[0], types.ConsensusValidator{
+	pk.SetConsumerValidator(ctx, consumerIds[0], types.ConsensusValidator{
 		ProviderConsAddr: providerAddr.ToSdkConsAddr(),
 		Power:            1,
 		PublicKey: &crypto.PublicKey{
@@ -325,7 +336,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	})
 
 	// set `providerAddr` as an opted-in validator on third consumer chain
-	pk.SetOptedIn(ctx, consumerIDs[2], providerAddr)
+	pk.SetOptedIn(ctx, consumerIds[2], providerAddr)
 
 	// set max provider consensus vals to include all validators
 	params := pk.GetParams(ctx)
@@ -335,11 +346,11 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	// `providerAddr` has to validate
 	// - first consumer because it is a consumer validator in this chain,
 	// - third consumer because it opted in
-	expectedChains := []string{consumerIDs[0], consumerIDs[2]}
+	expectedChains := []string{consumerIds[0], consumerIds[2]}
 
 	res, err := pk.QueryConsumerChainsValidatorHasToValidate(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, expectedChains, res.ConsumerChainIds)
+	require.Equal(t, expectedChains, res.ConsumerIds)
 }
 
 func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
@@ -488,10 +499,11 @@ func TestGetConsumerChain(t *testing.T) {
 				ValidatorsPowerCap: validatorPowerCaps[i],
 				Allowlist:          strAllowlist,
 				Denylist:           strDenylist,
-				Phase:              phase,
+				Phase:              phase.String(),
 				Metadata:           metadataLists[i],
 				AllowInactiveVals:  allowInactiveVals[i],
 				MinStake:           minStakes[i].Uint64(),
+				ConsumerId:         consumerIDs[i],
 			})
 	}
 
@@ -604,10 +616,28 @@ func TestQueryConsumerChains(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Chains, 0)
 
+	msgServer := keeper.NewMsgServerImpl(&pk)
+
+	phases := []types.ConsumerPhase{
+		types.ConsumerPhase_CONSUMER_PHASE_REGISTERED,
+		types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED,
+		types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED,
+		types.ConsumerPhase_CONSUMER_PHASE_STOPPED,
+	}
+
 	// create four consumer chains in different phase
 	for i := 0; i < consumerNum; i++ {
-		cID := pk.FetchAndIncrementConsumerId(ctx)
 		chainID := "consumer-" + strconv.Itoa(i)
+		metadata := types.ConsumerMetadata{Name: chainID}
+		msg := types.MsgCreateConsumer{
+			ChainId:  chainID,
+			Metadata: metadata,
+		}
+		resp, err := msgServer.CreateConsumer(ctx, &msg)
+		require.NoError(t, err)
+		consumerId := resp.ConsumerId
+
+		pk.SetConsumerPhase(ctx, consumerId, phases[i])
 		c := types.Chain{
 			ChainId:            chainID,
 			MinPowerInTop_N:    -1,
@@ -615,17 +645,11 @@ func TestQueryConsumerChains(t *testing.T) {
 			ValidatorSetCap:    0,
 			Allowlist:          []string{},
 			Denylist:           []string{},
-			Phase:              types.ConsumerPhase(i + 1),
-			Metadata:           types.ConsumerMetadata{Name: chainID},
+			Phase:              phases[i].String(),
+			Metadata:           metadata,
+			ConsumerId:         consumerId,
 		}
-		pk.SetConsumerPhase(ctx, cID, c.Phase)
-		err := pk.SetConsumerMetadata(ctx, cID, c.Metadata)
-		require.NoError(t, err)
-		err = pk.SetConsumerPowerShapingParameters(ctx, cID, types.PowerShapingParameters{})
-		require.NoError(t, err)
-		pk.SetConsumerChainId(ctx, cID, chainID)
-
-		consumerIds[i] = cID
+		consumerIds[i] = consumerId
 		consumers[i] = &c
 	}
 
@@ -650,7 +674,7 @@ func TestQueryConsumerChains(t *testing.T) {
 		{
 			name: "expect registered consumers when phase filter is set to Registered",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[0].Phase = types.ConsumerPhase_CONSUMER_PHASE_REGISTERED
+				consumers[0].Phase = types.ConsumerPhase_CONSUMER_PHASE_REGISTERED.String()
 				pk.SetConsumerPhase(ctx, consumerIds[0], types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
 			},
 			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_REGISTERED,
@@ -659,9 +683,7 @@ func TestQueryConsumerChains(t *testing.T) {
 		{
 			name: "expect initialized consumers when phase is set to Initialized",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[1].Phase = types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED
-				err := pk.AppendConsumerToBeLaunched(ctx, consumerIds[1], time.Now())
-				require.NoError(t, err)
+				consumers[1].Phase = types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED.String()
 				pk.SetConsumerPhase(ctx, consumerIds[1], types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
 			},
 			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED,
@@ -670,9 +692,7 @@ func TestQueryConsumerChains(t *testing.T) {
 		{
 			name: "expect launched consumers when phase is set to Launched",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[2].Phase = types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED
-				consumers[2].ClientId = "ClientID"
-				pk.SetConsumerClientId(ctx, consumerIds[2], consumers[2].ClientId)
+				consumers[2].Phase = types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED.String()
 				pk.SetConsumerPhase(ctx, consumerIds[2], types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 			},
 			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED,
@@ -681,7 +701,7 @@ func TestQueryConsumerChains(t *testing.T) {
 		{
 			name: "expect stopped consumers when phase is set to Stopped",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[3].Phase = types.ConsumerPhase_CONSUMER_PHASE_STOPPED
+				consumers[3].Phase = types.ConsumerPhase_CONSUMER_PHASE_STOPPED.String()
 				pk.SetConsumerPhase(ctx, consumerIds[3], types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
 			},
 			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_STOPPED,
@@ -701,7 +721,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			}
 			res, err := pk.QueryConsumerChains(ctx, &req)
 			require.NoError(t, err)
-			require.Equal(t, &expectedResponse, res)
+			require.Equal(t, &expectedResponse, res, tc.name)
 		})
 	}
 }

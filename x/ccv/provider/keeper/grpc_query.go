@@ -5,14 +5,12 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strconv"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	errorsmod "cosmossdk.io/errors"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
@@ -51,31 +49,13 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	consumerIds := []string{}
-	phaseFilter := req.Phase
-
-	// if the phase filter is set Launched get consumer from the state directly
-	if phaseFilter == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
-		consumerIds = append(consumerIds, k.GetAllLaunchedConsumerIds(ctx)...)
-		// otherwise iterate over all the consumer using the last unused consumer id
-	} else {
-		firstUnusedConsumerId, ok := k.GetConsumerId(ctx)
-		if !ok {
-			return &types.QueryConsumerChainsResponse{}, nil
+	for _, consumerID := range k.GetAllConsumerIds(ctx) {
+		phase := k.GetConsumerPhase(ctx, consumerID)
+		if req.Phase != types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED && req.Phase != phase {
+			// ignore consumer chain
+			continue
 		}
-		for i := uint64(0); i < firstUnusedConsumerId; i++ {
-			// if the phase filter is set, verify that the consumer has the same phase
-			if phaseFilter != types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
-				p := k.GetConsumerPhase(ctx, strconv.FormatUint(i, 10))
-				if p == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
-					return nil, status.Error(codes.Internal, fmt.Sprintf("cannot retrieve phase for consumer id: %d", i))
-				}
-				if p != phaseFilter {
-					continue
-				}
-			}
-
-			consumerIds = append(consumerIds, strconv.FormatUint(i, 10))
-		}
+		consumerIds = append(consumerIds, consumerID)
 	}
 
 	// set limit to default value
@@ -84,12 +64,12 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 		// update limit if specified
 		limit = int(req.Limit)
 	}
+	if len(consumerIds) > limit {
+		consumerIds = consumerIds[:limit]
+	}
 
-	chains := make([]*types.Chain, math.Min(len(consumerIds), limit))
+	chains := make([]*types.Chain, len(consumerIds))
 	for i, cID := range consumerIds {
-		if i == limit {
-			break
-		}
 		c, err := k.GetConsumerChain(ctx, cID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -108,6 +88,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	}
 
 	clientID, _ := k.GetConsumerClientId(ctx, consumerId)
+
 	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 	if err != nil {
 		return types.Chain{}, fmt.Errorf("cannot find power shaping parameters for consumer (%s): %s", consumerId, err.Error())
@@ -116,13 +97,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
 	if !found {
-		k.Logger(ctx).Error("failed to get minimum power in top N, treating as -1", "chain", consumerId)
 		minPowerInTopN = -1
-	}
-
-	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
-		return types.Chain{}, fmt.Errorf("cannot find phase for consumer (%s)", consumerId)
 	}
 
 	allowlist := k.GetAllowList(ctx, consumerId)
@@ -148,10 +123,11 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		ValidatorsPowerCap: powerShapingParameters.ValidatorsPowerCap,
 		Allowlist:          strAllowlist,
 		Denylist:           strDenylist,
-		Phase:              phase,
+		Phase:              k.GetConsumerPhase(ctx, consumerId).String(),
 		Metadata:           metadata,
 		AllowInactiveVals:  powerShapingParameters.AllowInactiveVals,
 		MinStake:           powerShapingParameters.MinStake,
+		ConsumerId:         consumerId,
 	}, nil
 }
 
@@ -243,7 +219,10 @@ func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *
 	}, nil
 }
 
-func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, req *types.QueryAllPairsValConAddrByConsumerChainIDRequest) (*types.QueryAllPairsValConAddrByConsumerChainIDResponse, error) {
+func (k Keeper) QueryAllPairsValConsAddrByConsumer(
+	goCtx context.Context,
+	req *types.QueryAllPairsValConsAddrByConsumerRequest,
+) (*types.QueryAllPairsValConsAddrByConsumerResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -270,7 +249,7 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 		})
 	}
 
-	return &types.QueryAllPairsValConAddrByConsumerChainIDResponse{
+	return &types.QueryAllPairsValConsAddrByConsumerResponse{
 		PairValConAddr: pairValConAddrs,
 	}, nil
 }
@@ -452,7 +431,7 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	}
 
 	return &types.QueryConsumerChainsValidatorHasToValidateResponse{
-		ConsumerChainIds: consumersToValidate,
+		ConsumerIds: consumersToValidate,
 	}, nil
 }
 
