@@ -197,6 +197,14 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerCommissionRateKeyPrefix(), chainId, consumerId)
 
 		// chainId -> MinimumPowerInTopN
+		oldKey := providertypes.StringIdWithLenKey(MinimumPowerInTopNKeyPrefix, chainId)
+		value := store.Get(oldKey)
+		if value != nil {
+			newKey := providertypes.StringIdWithLenKey(MinimumPowerInTopNKeyPrefix, consumerId)
+			store.Set(newKey, value)
+			store.Delete(oldKey)
+		}
+
 		rekeyFromChainIdToConsumerId(store, MinimumPowerInTopNKeyPrefix, chainId, consumerId)
 
 		// chainId -> ConsumerAddrsToPruneV2
@@ -211,21 +219,21 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		// Note: InitializationParameters is not needed since the chain is already launched
 
 		// migrate power shaping params
-		topNKey := append([]byte{LegacyTopNKeyPrefix}, []byte(chainId)...)
+		topNKey := providertypes.StringIdWithLenKey(LegacyTopNKeyPrefix, chainId)
 		var topN uint32 = 0
 		buf := store.Get(topNKey)
 		if buf != nil {
 			topN = binary.BigEndian.Uint32(buf)
 		}
 
-		validatorsPowerCapKey := append([]byte{LegacyValidatorsPowerCapKeyPrefix}, []byte(chainId)...)
+		validatorsPowerCapKey := providertypes.StringIdWithLenKey(LegacyValidatorsPowerCapKeyPrefix, chainId)
 		var validatorsPowerCap uint32 = 0
 		buf = store.Get(validatorsPowerCapKey)
 		if buf != nil {
 			validatorsPowerCap = binary.BigEndian.Uint32(buf)
 		}
 
-		validatorSetCapKey := append([]byte{LegacyValidatorSetCapKeyPrefix}, []byte(chainId)...)
+		validatorSetCapKey := providertypes.StringIdWithLenKey(LegacyValidatorSetCapKeyPrefix, chainId)
 		var validatorSetCap uint32 = 0
 		buf = store.Get(validatorSetCapKey)
 		if buf != nil {
@@ -235,14 +243,14 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 		var allowlist []string
 		for _, addr := range pk.GetAllowList(ctx, consumerId) {
-			foo, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
-			allowlist = append(allowlist, foo)
+			bech32Addr, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
+			allowlist = append(allowlist, bech32Addr)
 		}
 
 		var denylist []string
 		for _, addr := range pk.GetDenyList(ctx, consumerId) {
-			foo, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
-			allowlist = append(allowlist, foo)
+			bech32Addr, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
+			allowlist = append(allowlist, bech32Addr)
 		}
 
 		powerShapingParameters := providertypes.PowerShapingParameters{
