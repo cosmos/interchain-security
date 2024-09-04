@@ -369,7 +369,7 @@ func (k Keeper) StopAndPrepareForConsumerRemoval(ctx sdk.Context, consumerId str
 	removalTime := ctx.BlockTime().Add(unbondingPeriod)
 
 	if err := k.SetConsumerRemovalTime(ctx, consumerId, removalTime); err != nil {
-		return errorsmod.Wrapf(types.ErrInvalidRemovalTime, "cannot set removal time: %s", err.Error())
+		return fmt.Errorf("cannot set removal time (%s): %s", removalTime.String(), err.Error())
 	}
 	if err := k.AppendConsumerToBeRemoved(ctx, consumerId, removalTime); err != nil {
 		return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot set consumer to be removed: %s", err.Error())
@@ -393,7 +393,7 @@ func (k Keeper) BeginBlockRemoveConsumers(ctx sdk.Context) {
 		// Remove consumer to prevent re-trying removing this chain.
 		err = k.RemoveConsumerToBeRemoved(ctx, consumerId, removalTime)
 		if err != nil {
-			ctx.Logger().Error("could not remove consumer from to-be-stopped queue",
+			ctx.Logger().Error("could not remove consumer from to-be-removed queue",
 				"consumerId", consumerId,
 				"error", err)
 			continue
@@ -403,7 +403,7 @@ func (k Keeper) BeginBlockRemoveConsumers(ctx sdk.Context) {
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.DeleteConsumerChain(cachedCtx, consumerId)
 		if err != nil {
-			k.Logger(ctx).Error("consumer chain could not be stopped",
+			k.Logger(ctx).Error("consumer chain could not be removed",
 				"consumerId", consumerId,
 				"error", err.Error())
 			continue
@@ -444,7 +444,7 @@ func (k Keeper) GetConsumersReadyToStop(ctx sdk.Context, limit uint32) []string 
 
 		consumers, err := k.GetConsumersToBeRemoved(ctx, removalTime)
 		if err != nil {
-			k.Logger(ctx).Error("failed to retrieve consumers to stop",
+			k.Logger(ctx).Error("failed to retrieve consumers to remove",
 				"removal time", removalTime,
 				"error", err)
 			continue
