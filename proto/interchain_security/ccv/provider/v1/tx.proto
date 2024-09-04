@@ -109,7 +109,7 @@ message MsgSubmitConsumerDoubleVotingResponse {}
 message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
 
-  // signer is the address of the governance account.
+  // authority is the address of the governance account.
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // params defines the x/provider parameters to update.
@@ -224,11 +224,12 @@ message MsgConsumerRemovalResponse {}
 // MsgRemoveConsumer defines the message used to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is eventually removed from the provider chain.
 message MsgRemoveConsumer {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "owner";
 
   // the consumer id of the consumer chain to be stopped
   string consumer_id = 1;
-  string signer = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the address of the owner of the consumer chain to be stopped
+  string owner = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgRemoveConsumerResponse defines response type for MsgRemoveConsumer messages
@@ -245,7 +246,7 @@ message MsgChangeRewardDenoms {
   repeated string denoms_to_add = 1;
   // the list of consumer reward denoms to remove
   repeated string denoms_to_remove = 2;
-  // signer address
+  // authority is the address of the governance account
   string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
 }
@@ -358,10 +359,11 @@ message MsgConsumerModificationResponse {}
 
 // MsgCreateConsumer defines the message that creates a consumer chain
 message MsgCreateConsumer {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "submitter";
 
-  // signer address
-  string signer = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Submitter address. If the message is successfully handled, the ownership of 
+  // the consumer chain will given to this address.
+  string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // the chain id of the new consumer chain
   string chain_id = 2;
@@ -380,10 +382,10 @@ message MsgCreateConsumerResponse {
 
 // MsgUpdateConsumer defines the message used to modify a consumer chain.
 message MsgUpdateConsumer {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "owner";
 
-  // signer address
-  string signer = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the address of the owner of the consumer chain to be updated
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // the consumer id of the consumer chain to be updated
   string consumer_id = 2;

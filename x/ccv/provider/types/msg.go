@@ -3,9 +3,10 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	cmttypes "github.com/cometbft/cometbft/types"
 	"strconv"
 	"strings"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
@@ -275,10 +276,10 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 }
 
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
-func NewMsgCreateConsumer(signer string, chainId string, metadata ConsumerMetadata,
+func NewMsgCreateConsumer(submitter string, chainId string, metadata ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgCreateConsumer, error) {
 	return &MsgCreateConsumer{
-		Signer:                   signer,
+		Submitter:                submitter,
 		ChainId:                  chainId,
 		Metadata:                 metadata,
 		InitializationParameters: initializationParameters,
@@ -316,10 +317,10 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 }
 
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
-func NewMsgUpdateConsumer(signer string, consumerId string, ownerAddress string, metadata *ConsumerMetadata,
+func NewMsgUpdateConsumer(owner string, consumerId string, ownerAddress string, metadata *ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
-		Signer:                   signer,
+		Owner:                    owner,
 		ConsumerId:               consumerId,
 		NewOwnerAddress:          ownerAddress,
 		Metadata:                 metadata,
@@ -358,9 +359,9 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 }
 
 // NewMsgRemoveConsumer creates a new MsgRemoveConsumer instance
-func NewMsgRemoveConsumer(signer string, consumerId string) (*MsgRemoveConsumer, error) {
+func NewMsgRemoveConsumer(owner string, consumerId string) (*MsgRemoveConsumer, error) {
 	return &MsgRemoveConsumer{
-		Signer:     signer,
+		Owner:      owner,
 		ConsumerId: consumerId,
 	}, nil
 }
