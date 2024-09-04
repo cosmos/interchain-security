@@ -139,11 +139,11 @@ const (
 
 	ConsumerIdToPhaseKeyName = "ConsumerIdToPhaseKey"
 
-	ConsumerIdToStopTimeKeyName = "ConsumerIdToStopTimeKey"
+	ConsumerIdToRemovalTimeKeyName = "ConsumerIdToRemovalTimeKey"
 
 	SpawnTimeToConsumerIdsKeyName = "SpawnTimeToConsumerIdsKeyName"
 
-	StopTimeToConsumerIdsKeyName = "StopTimeToConsumerIdsKeyName"
+	RemovalTimeToConsumerIdsKeyName = "RemovalTimeToConsumerIdsKeyName"
 
 	ProviderConsAddrToOptedInConsumerIdsKeyName = "ProviderConsAddrToOptedInConsumerIdsKeyName"
 
@@ -364,16 +364,16 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerIdToPhaseKeyName is the key for storing the phase of a consumer chain with the given consumer id
 		ConsumerIdToPhaseKeyName: 49,
 
-		// ConsumerIdToStopTimeKeyName is the key for storing the stop time of a consumer chain that is to be removed
-		ConsumerIdToStopTimeKeyName: 50,
+		// ConsumerIdToRemovalTimeKeyName is the key for storing the removal time of a consumer chain that is to be removed
+		ConsumerIdToRemovalTimeKeyName: 50,
 
 		// SpawnTimeToConsumerIdKeyName is the key for storing pending initialized consumers that are to be launched.
 		// For a specific spawn time, it might store multiple consumer chain ids for chains that are to be launched.
 		SpawnTimeToConsumerIdsKeyName: 51,
 
-		// StopTimeToConsumerIdKeyName is the key for storing pending launched consumers that are to be stopped.
-		// For a specific stop time, it might store multiple consumer chain ids for chains that are to be stopped.
-		StopTimeToConsumerIdsKeyName: 52,
+		// RemovalTimeToConsumerIdsKeyName is the key for storing pending launched consumers that are to be removed.
+		// For a specific removal time, it might store multiple consumer chain ids for chains that are to be removed.
+		RemovalTimeToConsumerIdsKeyName: 52,
 
 		// ProviderConsAddrToOptedInConsumerIdsKeyName is the key for storing all the consumer ids that a validator
 		// is currently opted in to.
@@ -665,17 +665,17 @@ func ConsumerIdToMetadataKey(consumerId string) []byte {
 	return StringIdWithLenKey(ConsumerIdToMetadataKeyPrefix(), consumerId)
 }
 
-// ConsumerIdToInitializationParametersKeyPrefix returns the key prefix for storing consumer initialization records
+// ConsumerIdToInitializationParametersKeyPrefix returns the key prefix for storing consumer initialization parameters
 func ConsumerIdToInitializationParametersKeyPrefix() byte {
 	return mustGetKeyPrefix(ConsumerIdToInitializationParametersKeyName)
 }
 
-// ConsumerIdToInitializationParametersKey returns the key used to store the initialization record that corresponds to this consumer id
+// ConsumerIdToInitializationParametersKey returns the key used to store the initialization parameters that corresponds to this consumer id
 func ConsumerIdToInitializationParametersKey(consumerId string) []byte {
 	return StringIdWithLenKey(ConsumerIdToInitializationParametersKeyPrefix(), consumerId)
 }
 
-// ConsumerIdToPowerShapingParametersKey returns the key used to store the update record that corresponds to this consumer id
+// ConsumerIdToPowerShapingParametersKey returns the key used to store the power-shaping parameters that corresponds to this consumer id
 func ConsumerIdToPowerShapingParametersKey(consumerId string) []byte {
 	return StringIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPowerShapingParameters), consumerId)
 }
@@ -685,15 +685,15 @@ func ConsumerIdToPhaseKey(consumerId string) []byte {
 	return StringIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPhaseKeyName), consumerId)
 }
 
-// ConsumerIdToStopTimeKeyPrefix returns the key prefix for storing the stop times of consumer chains
-// that are about to be stopped
-func ConsumerIdToStopTimeKeyPrefix() byte {
-	return mustGetKeyPrefix(ConsumerIdToStopTimeKeyName)
+// ConsumerIdToRemovalTimeKeyPrefix returns the key prefix for storing the removal times of consumer chains
+// that are about to be removed
+func ConsumerIdToRemovalTimeKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToRemovalTimeKeyName)
 }
 
-// ConsumerIdToStopTimeKey returns the key used to store the stop time that corresponds to a to-be-stopped chain with consumer id
-func ConsumerIdToStopTimeKey(consumerId string) []byte {
-	return StringIdWithLenKey(ConsumerIdToStopTimeKeyPrefix(), consumerId)
+// ConsumerIdToRemovalTimeKey returns the key used to store the removal time that corresponds to a to-be-removed chain with consumer id
+func ConsumerIdToRemovalTimeKey(consumerId string) []byte {
+	return StringIdWithLenKey(ConsumerIdToRemovalTimeKeyPrefix(), consumerId)
 }
 
 // SpawnTimeToConsumerIdsKeyPrefix returns the key prefix for storing pending chains that are to be launched
@@ -712,17 +712,17 @@ func SpawnTimeToConsumerIdsKey(spawnTime time.Time) []byte {
 	)
 }
 
-// StopTimeToConsumerIdsKeyPrefix returns the key prefix for storing pending chains that are to be stopped
-func StopTimeToConsumerIdsKeyPrefix() byte {
-	return mustGetKeyPrefix(StopTimeToConsumerIdsKeyName)
+// RemovalTimeToConsumerIdsKeyPrefix returns the key prefix for storing pending chains that are to be removed
+func RemovalTimeToConsumerIdsKeyPrefix() byte {
+	return mustGetKeyPrefix(RemovalTimeToConsumerIdsKeyName)
 }
 
-// StopTimeToConsumerIdsKey returns the key prefix for storing the stop times of consumer chains
-// that are about to be stopped
-func StopTimeToConsumerIdsKey(spawnTime time.Time) []byte {
+// RemovalTimeToConsumerIdsKey returns the key prefix for storing the removal times of consumer chains
+// that are about to be removed
+func RemovalTimeToConsumerIdsKey(spawnTime time.Time) []byte {
 	return ccvtypes.AppendMany(
 		// append the prefix
-		[]byte{StopTimeToConsumerIdsKeyPrefix()},
+		[]byte{RemovalTimeToConsumerIdsKeyPrefix()},
 		// append the time
 		sdk.FormatTimeBytes(spawnTime),
 	)

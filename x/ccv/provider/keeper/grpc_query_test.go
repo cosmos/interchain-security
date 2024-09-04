@@ -319,6 +319,11 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		resp, err := msgServer.CreateConsumer(ctx, &msg)
 		require.NoError(t, err)
 		consumerId := resp.ConsumerId
+
+		// set a consumer client id, so that `GetAllConsumersWithIBCClients` is non-empty
+		clientID := "client-" + strconv.Itoa(i)
+		pk.SetConsumerClientId(ctx, consumerId, clientID)
+
 		pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 		consumerIds[i] = consumerId
 	}

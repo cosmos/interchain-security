@@ -3,11 +3,9 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	cmttypes "github.com/cometbft/cometbft/types"
 	"strconv"
 	"strings"
-	"time"
-
-	cmttypes "github.com/cometbft/cometbft/types"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
@@ -360,11 +358,10 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 }
 
 // NewMsgRemoveConsumer creates a new MsgRemoveConsumer instance
-func NewMsgRemoveConsumer(signer string, consumerId string, stopTime time.Time) (*MsgRemoveConsumer, error) {
+func NewMsgRemoveConsumer(signer string, consumerId string) (*MsgRemoveConsumer, error) {
 	return &MsgRemoveConsumer{
 		Signer:     signer,
 		ConsumerId: consumerId,
-		StopTime:   stopTime,
 	}, nil
 }
 

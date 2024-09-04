@@ -3,6 +3,7 @@ package integration
 import (
 	"cosmossdk.io/math"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -88,7 +89,8 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}
 
 	// stop the consumer chain
-	err = providerKeeper.StopConsumerChain(s.providerCtx(), firstBundle.ConsumerId, true)
+	providerKeeper.SetConsumerPhase(s.providerCtx(), firstBundle.ConsumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	err = providerKeeper.DeleteConsumerChain(s.providerCtx(), firstBundle.ConsumerId)
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
@@ -105,7 +107,8 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// stop the consumer chain
-	err := providerKeeper.StopConsumerChain(s.providerCtx(), s.getFirstBundle().ConsumerId, true)
+	providerKeeper.SetConsumerPhase(s.providerCtx(), s.getFirstBundle().ConsumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	err := providerKeeper.DeleteConsumerChain(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NoError(err)
 
 	err = s.path.EndpointA.UpdateClient()

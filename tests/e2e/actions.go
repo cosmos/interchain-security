@@ -740,11 +740,10 @@ func (tr Chain) submitConsumerAdditionLegacyProposal(
 }
 
 type SubmitConsumerRemovalProposalAction struct {
-	Chain          ChainID
-	From           ValidatorID
-	Deposit        uint
-	ConsumerChain  ChainID
-	StopTimeOffset time.Duration // offset from time.Now()
+	Chain         ChainID
+	From          ValidatorID
+	Deposit       uint
+	ConsumerChain ChainID
 }
 
 func (tr Chain) submitConsumerRemovalProposal(
@@ -762,7 +761,6 @@ func (tr Chain) submitConsumerRemovalProposal(
 
 	msg := types.MsgRemoveConsumer{
 		ConsumerId: consumerId,
-		StopTime:   tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset),
 		Signer:     authority,
 	}
 
@@ -811,13 +809,11 @@ func (tr Chain) submitConsumerRemovalLegacyProposal(
 	action SubmitConsumerRemovalProposalAction,
 	verbose bool,
 ) {
-	stopTime := tr.testConfig.containerConfig.Now.Add(action.StopTimeOffset)
 	prop := client.ConsumerRemovalProposalJSON{
-		Title:    fmt.Sprintf("Stop the %v chain", action.ConsumerChain),
-		Summary:  "It was a great chain",
-		ChainId:  string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
-		StopTime: stopTime,
-		Deposit:  fmt.Sprint(action.Deposit) + `stake`,
+		Title:   fmt.Sprintf("Stop the %v chain", action.ConsumerChain),
+		Summary: "It was a great chain",
+		ChainId: string(tr.testConfig.chainConfigs[action.ConsumerChain].ChainId),
+		Deposit: fmt.Sprint(action.Deposit) + `stake`,
 	}
 
 	bz, err := json.Marshal(prop)

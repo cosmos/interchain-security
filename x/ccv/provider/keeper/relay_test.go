@@ -4,8 +4,10 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
@@ -106,8 +108,9 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{valA, valB}, -1)
 
-	// set a consumer client, so we have a consumer chain (i.e., `k.GetAllConsumerChains(ctx)` is non empty)
+	// set a consumer client id and its phase, so we have a consumer chain (i.e., `GetAllConsumersWithIBCClients` is non-empty)
 	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 	// opt in validator A and set as a consumer validator
 	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valAConsAddr))
@@ -487,10 +490,10 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Append mocks for full consumer setup
-	mockCalls := testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+	mockCalls := testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerId")
 
 	// Set 3 pending vsc packets
-	providerKeeper.AppendPendingVSCPackets(ctx, "consumerChainID", []ccv.ValidatorSetChangePacketData{{}, {}, {}}...)
+	providerKeeper.AppendPendingVSCPackets(ctx, "consumerId", []ccv.ValidatorSetChangePacketData{{}, {}, {}}...)
 
 	// append mocks for the channel keeper to return an error
 	mockCalls = append(mockCalls,
@@ -498,23 +501,36 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 			"CCVChannelID").Return(channeltypes.Channel{}, false).Times(1),
 	)
 
-	// Append mocks for expected call to StopConsumerChain
-	mockCalls = append(mockCalls, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
+	// Append mocks for expected call to DeleteConsumerChain
+	mockCalls = append(mockCalls, testkeeper.GetMocksForDeleteConsumerChain(ctx, &mocks)...)
 
 	// Assert mock calls hit
 	gomock.InOrder(mockCalls...)
 
 	// Execute setup
-	providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
+	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
 	err := providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
 
-	// No error should occur, StopConsumerChain should be called
-	err = providerKeeper.SendVSCPacketsToChain(ctx, "consumerChainID", "CCVChannelID")
+	unbondingTime := 123 * time.Second
+	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
+
+	// No error should occur, DeleteConsumerChain should be called
+	err = providerKeeper.SendVSCPacketsToChain(ctx, "consumerId", "CCVChannelID")
 	require.NoError(t, err)
 
-	// Pending VSC packets should be deleted in StopConsumerChain
-	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, "consumerChainID"))
+	// Verify the chain is about to be deleted
+	removalTime, err := providerKeeper.GetConsumerRemovalTime(ctx, "consumerId")
+	require.NoError(t, err)
+	require.Equal(t, ctx.BlockTime().Add(unbondingTime), removalTime)
+
+	// Increase the block time by `unbondingTime` so the chain actually gets deleted
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
+	providerKeeper.BeginBlockRemoveConsumers(ctx)
+
+	// Pending VSC packets should be deleted in DeleteConsumerChain
+	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, "consumerId"))
+	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_DELETED, providerKeeper.GetConsumerPhase(ctx, "consumerId"))
 }
 
 // TestOnTimeoutPacketWithNoChainFound tests the `OnTimeoutPacket` method fails when no chain is found
@@ -539,15 +555,30 @@ func TestOnTimeoutPacketStopsChain(t *testing.T) {
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
-	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks, "consumerId")
+	testkeeper.SetupForDeleteConsumerChain(t, ctx, &providerKeeper, mocks, "consumerId")
+	mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ccv.ProviderPortID, "channelID").Return(
+		channeltypes.Channel{State: channeltypes.OPEN,
+			ConnectionHops: []string{"connectionID"},
+		}, true,
+	).Times(1)
+	dummyCap := &capabilitytypes.Capability{}
+	mocks.MockScopedKeeper.EXPECT().GetCapability(gomock.Any(), gomock.Any()).Return(dummyCap, true).Times(1)
+	mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), ccv.ProviderPortID, "channelID", dummyCap).Times(1)
+
+	unbondingTime := 123 * time.Second
+	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
 
 	packet := channeltypes.Packet{
 		SourceChannel: "channelID",
 	}
 	err := providerKeeper.OnTimeoutPacket(ctx, packet)
-
-	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "consumerId", "channelID", false)
 	require.NoError(t, err)
+
+	// increase the block time by `unbondingTime` so the chain actually gets deleted
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
+	providerKeeper.BeginBlockRemoveConsumers(ctx)
+
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t, ctx, providerKeeper, "consumerId", "channelID", false)
 }
 
 // TestOnAcknowledgementPacketWithNoAckError tests `OnAcknowledgementPacket` when the underlying ack contains no error
@@ -575,15 +606,30 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 	require.True(t, strings.Contains(err.Error(), providertypes.ErrUnknownConsumerChannelId.Error()))
 
 	// test that we stop the consumer chain when `OnAcknowledgementPacket` returns an error and the chain is found
-	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks, "consumerId")
+	testkeeper.SetupForDeleteConsumerChain(t, ctx, &providerKeeper, mocks, "consumerId")
 	packet := channeltypes.Packet{
 		SourceChannel: "channelID",
 	}
 
-	err = providerKeeper.OnAcknowledgementPacket(ctx, packet, ackError)
+	unbondingTime := 123 * time.Second
+	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
+	mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ccv.ProviderPortID, "channelID").Return(
+		channeltypes.Channel{State: channeltypes.OPEN,
+			ConnectionHops: []string{"connectionID"},
+		}, true,
+	).Times(1)
+	dummyCap := &capabilitytypes.Capability{}
+	mocks.MockScopedKeeper.EXPECT().GetCapability(gomock.Any(), gomock.Any()).Return(dummyCap, true).Times(1)
+	mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), ccv.ProviderPortID, "channelID", dummyCap).Times(1)
 
-	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "consumerId", "channelID", false)
+	err = providerKeeper.OnAcknowledgementPacket(ctx, packet, ackError)
 	require.NoError(t, err)
+
+	// increase the block time by `unbondingTime` so the chain actually gets deleted
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
+	providerKeeper.BeginBlockRemoveConsumers(ctx)
+
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t, ctx, providerKeeper, "consumerId", "channelID", false)
 }
 
 // TestEndBlockVSU tests that during `EndBlockVSU`, we only queue VSC packets at the boundaries of an epoch
@@ -591,7 +637,7 @@ func TestEndBlockVSU(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "consumerId"
+	consumerId := "0"
 
 	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{
 		Top_N: 100,
@@ -621,26 +667,28 @@ func TestEndBlockVSU(t *testing.T) {
 	})
 	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(lastValidators, nil).AnyTimes()
 
-	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
-	providerKeeper.SetConsumerClientId(ctx, chainID, "clientID")
+	// set a sample client for a launched consumer chain so that `GetAllConsumersWithIBCClients` in `QueueVSCPackets` iterates at least once
+	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientId")
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{Top_N: 100})
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 	// with block height of 1 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(1)
 	_, err = providerKeeper.EndBlockVSU(ctx)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// with block height of 5 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(5)
 	_, err = providerKeeper.EndBlockVSU(ctx)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// with block height of 10 we expect the queueing of one VSC packet
 	ctx = ctx.WithBlockHeight(10)
 	_, err = providerKeeper.EndBlockVSU(ctx)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// With block height of 15 we expect no additional queueing of a VSC packet.
 	// Note that the pending VSC packet is still there because `SendVSCPackets` does not send the packet. We
@@ -648,7 +696,7 @@ func TestEndBlockVSU(t *testing.T) {
 	ctx = ctx.WithBlockHeight(15)
 	_, err = providerKeeper.EndBlockVSU(ctx)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 }
 
 // TestProviderValidatorUpdates tests that the provider validator updates are correctly calculated,
@@ -750,7 +798,8 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, []stakingtypes.Validator{valA, valB, valC, valD, valE}, -1)
 
 	// add a consumer chain
-	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
+	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientId")
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
 	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{
 		Top_N:              50, // would opt in E
