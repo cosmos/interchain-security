@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v5.2.0
+
+*September 4, 2024*
+
+### BUG FIXES
+
+- [Provider](x/ccv/provider)
+  - Improve provider message validation.
+    ([1dd3885](https://github.com/cosmos/interchain-security/commit/1dd38851dbb9e0d98c61bd11375ee7e140527833))
+
+### STATE BREAKING
+
+- [Provider](x/ccv/provider)
+  - Improve provider message validation.
+    ([1dd3885](https://github.com/cosmos/interchain-security/commit/1dd38851dbb9e0d98c61bd11375ee7e140527833))
+
 ## v5.1.1
 
 *July 26, 2024*

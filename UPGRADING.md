@@ -1,5 +1,15 @@
 # Upgrading Replicated Security
 
+## v5.2.x
+
+### Provider
+
+Providers using versions `v5.1.x` can upgrade to `v5.2.x`.
+
+### Consumer
+
+***This release does not affect the consumer chains.***
+
 ## [v5.1.x](https://github.com/cosmos/interchain-security/releases/tag/v5.1.1)
 
 ### Provider
