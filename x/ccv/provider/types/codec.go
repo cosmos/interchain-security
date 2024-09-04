@@ -19,13 +19,15 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*govv1beta1.Content)(nil),
 		&ConsumerAdditionProposal{},
-	)
-	registry.RegisterImplementations(
-		(*govv1beta1.Content)(nil),
 		&ConsumerRemovalProposal{},
+		&ConsumerModificationProposal{},
+		&ChangeRewardDenomsProposal{},
 	)
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
+		&MsgConsumerAddition{},
+		&MsgConsumerRemoval{},
+		&MsgConsumerModification{},
 		&MsgAssignConsumerKey{},
 		&MsgCreateConsumer{},
 		&MsgUpdateConsumer{},
@@ -37,10 +39,6 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*govv1beta1.Content)(nil),
 		&EquivocationProposal{},
-	)
-	registry.RegisterImplementations(
-		(*govv1beta1.Content)(nil),
-		&ChangeRewardDenomsProposal{},
 	)
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
