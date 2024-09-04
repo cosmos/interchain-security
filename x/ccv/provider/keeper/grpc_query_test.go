@@ -303,7 +303,6 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		ProviderAddress: providerAddr.String(),
 	}
 
-
 	consumerNum := 4
 	consumerIds := make([]string, consumerNum)
 

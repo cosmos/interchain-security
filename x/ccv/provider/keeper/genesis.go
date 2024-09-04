@@ -119,13 +119,13 @@ func (k Keeper) InitGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 
 // ExportGenesis returns the CCV provider module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	launchedConsumerIds := k.GetAllLaunchedConsumerIds(ctx)
+	launchedConsumerIds := k.GetAllConsumerWithIBCClients(ctx)
 
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
 	for _, consumerId := range launchedConsumerIds {
 		// no need for the second return value of GetConsumerClientId
-		// as GetAllLaunchedConsumerIds already iterated through
+		// as GetAllConsumerWithIBCClients already iterated through
 		// the entire prefix range
 		clientId, _ := k.GetConsumerClientId(ctx, consumerId)
 		gen, found := k.GetConsumerGenesis(ctx, consumerId)

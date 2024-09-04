@@ -139,6 +139,8 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 // VSC packets to the chains with established CCV channels.
 // If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
+//
+// TODO (mpoke): iterate only over consumers with established channel
 func (k Keeper) SendVSCPackets(ctx sdk.Context) error {
 	for _, consumerId := range k.GetAllLaunchedConsumerIds(ctx) {
 		// check if CCV channel is established and send
@@ -193,6 +195,8 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 }
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
+//
+// TODO (mpoke): iterate only over consumers with established channel
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 

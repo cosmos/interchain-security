@@ -223,7 +223,7 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
-func TestGetAllLaunchedConsumerIds(t *testing.T) {
+func TestGetAllConsumerWithIBCClients(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -234,7 +234,7 @@ func TestGetAllLaunchedConsumerIds(t *testing.T) {
 		pk.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 	}
 
-	actualConsumerIds := pk.GetAllLaunchedConsumerIds(ctx)
+	actualConsumerIds := pk.GetAllConsumerWithIBCClients(ctx)
 	require.Len(t, actualConsumerIds, len(consumerIds))
 
 	// sort the consumer ids before comparing they are equal

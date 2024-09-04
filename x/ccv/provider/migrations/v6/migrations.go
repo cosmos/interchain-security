@@ -16,6 +16,7 @@ func MigrateParams(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
 	paramsSubspace.Set(ctx, providertypes.KeyNumberOfEpochsToStartReceivingRewards, providertypes.DefaultNumberOfEpochsToStartReceivingRewards)
 }
 
+// TODO (PERMISSIONLESS): this migration needs to be fix or removed
 func MigrateMinPowerInTopN(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
 	// we only get the registered consumer chains and not also the proposed consumer chains because
 	// the minimal power is first set when the consumer chain addition proposal passes
