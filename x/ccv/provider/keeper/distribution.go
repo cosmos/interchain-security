@@ -74,8 +74,10 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		return
 	}
 
-	// Iterate over all launched consumer chains
-	for _, consumerId := range k.GetAllLaunchedConsumerIds(ctx) {
+	// Iterate over all launched consumer chains.
+	// To avoid large iterations over all the consumer IDs, iterate only over
+	// chains with an IBC client created.
+	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
 
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens

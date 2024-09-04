@@ -135,14 +135,14 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 	}
 }
 
-// SendVSCPackets iterates over all registered consumers and sends pending
-// VSC packets to the chains with established CCV channels.
+// SendVSCPackets iterates over all consumers chains with created IBC clients
+// and sends pending VSC packets to the chains with established CCV channels.
 // If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
 //
 // TODO (mpoke): iterate only over consumers with established channel
 func (k Keeper) SendVSCPackets(ctx sdk.Context) error {
-	for _, consumerId := range k.GetAllLaunchedConsumerIds(ctx) {
+	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
 		// check if CCV channel is established and send
 		if channelID, found := k.GetConsumerIdToChannelId(ctx, consumerId); found {
 			if err := k.SendVSCPacketsToChain(ctx, consumerId, channelID); err != nil {
@@ -194,7 +194,8 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 	return nil
 }
 
-// QueueVSCPackets queues latest validator updates for every registered consumer chain
+// QueueVSCPackets queues latest validator updates for every consumer chain
+// with the IBC client created.
 //
 // TODO (mpoke): iterate only over consumers with established channel
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
@@ -212,7 +213,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 		return fmt.Errorf("getting provider active validators: %w", err)
 	}
 
-	for _, consumerId := range k.GetAllLaunchedConsumerIds(ctx) {
+	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
 		currentValidators, err := k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
 			return fmt.Errorf("getting consumer validators, consumerId(%s): %w", consumerId, err)
@@ -285,7 +286,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
 
 	// prune previous consumer validator addresses that are no longer needed
-	for _, consumerId := range k.GetAllLaunchedConsumerIds(ctx) {
+	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
 		k.PruneKeyAssignments(ctx, consumerId)
 	}
 }

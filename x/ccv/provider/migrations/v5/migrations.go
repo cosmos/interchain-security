@@ -10,6 +10,8 @@ import (
 // This migration only takes already registered chains into account.
 // If a chain is in voting while the upgrade happens, this is not sufficient,
 // and a migration to rewrite the proposal is needed.
+//
+// TODO (PERMISSIONLESS): this migration needs to be fix or removed
 func MigrateTopNForRegisteredChains(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
 	// Set the topN of each chain to 95
 	for _, consumerId := range providerKeeper.GetAllLaunchedConsumerIds(ctx) {

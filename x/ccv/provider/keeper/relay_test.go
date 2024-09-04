@@ -108,7 +108,7 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{valA, valB}, -1)
 
-	// set a consumer client id and its phase, so we have a consumer chain (i.e., `GetAllLaunchedConsumerIds` is non-empty)
+	// set a consumer client id and its phase, so we have a consumer chain (i.e., `GetAllConsumerWithIBCClients` is non-empty)
 	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
 	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
 
@@ -667,7 +667,7 @@ func TestEndBlockVSU(t *testing.T) {
 	})
 	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(lastValidators, nil).AnyTimes()
 
-	// set a sample client for a launched consumer chain so that `GetAllLaunchedConsumerIds` in `QueueVSCPackets` iterates at least once
+	// set a sample client for a launched consumer chain so that `GetAllConsumerWithIBCClients` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientId")
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{Top_N: 100})
 	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)

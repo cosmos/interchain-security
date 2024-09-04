@@ -424,7 +424,9 @@ func (k Keeper) QueryConsumerChainsValidatorHasToValidate(goCtx context.Context,
 	// get all the consumer chains for which the validator is either already
 	// opted-in, currently a consumer validator or if its voting power is within the TopN validators
 	consumersToValidate := []string{}
-	for _, consumerId := range k.GetAllLaunchedConsumerIds(ctx) {
+	// To avoid large iterations over all the consumer IDs, iterate only over
+	// chains with an IBC client created.
+	for _, consumerId := range k.GetAllConsumerWithIBCClients(ctx) {
 		if hasToValidate, err := k.hasToValidate(ctx, provAddr, consumerId); err == nil && hasToValidate {
 			consumersToValidate = append(consumersToValidate, consumerId)
 		}
