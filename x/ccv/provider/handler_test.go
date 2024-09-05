@@ -175,6 +175,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 			tc.setup(ctx, k, mocks)
+			k.SetConsumerChainId(ctx, tc.consumerId, tc.name)
 
 			msg, err := providertypes.NewMsgAssignConsumerKey(tc.consumerId,
 				providerCryptoId.SDKValOpAddress(), consumerKey,
