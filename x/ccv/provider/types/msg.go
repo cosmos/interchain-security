@@ -80,7 +80,7 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerId: %s", err.Error())
 	}
 
-	if err := validateProviderAddress(msg.ProviderAddr); err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ProviderAddr: %s", err.Error())
 	}
 
@@ -205,7 +205,7 @@ func (msg MsgOptIn) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ConsumerId: %s", err.Error())
 	}
 
-	if err := validateProviderAddress(msg.ProviderAddr); err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ProviderAddr: %s", err.Error())
 	}
 
@@ -236,7 +236,7 @@ func (msg MsgOptOut) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ConsumerId: %s", err.Error())
 	}
 
-	if err := validateProviderAddress(msg.ProviderAddr); err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ProviderAddr: %s", err.Error())
 	}
 
@@ -268,7 +268,7 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ConsumerId: %s", err.Error())
 	}
 
-	if err := validateProviderAddress(msg.ProviderAddr); err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ProviderAddr: %s", err.Error())
 	}
 
@@ -584,10 +584,17 @@ func validateDeprecatedChainId(chainId string) error {
 }
 
 // validateProviderAddress validates that the address is a sdk.ValAddress in Bech32 string format
-func validateProviderAddress(addr string) error {
-	_, err := sdk.ValAddressFromBech32(addr)
+func validateProviderAddress(addr, signer string) error {
+	valAddr, err := sdk.ValAddressFromBech32(addr)
 	if err != nil {
-		return fmt.Errorf("invalid provider address(%s)", addr)
+		return fmt.Errorf("invalid ValAddress (%s)", addr)
 	}
+
+	// Check that the provider validator address and the signer address are the same
+	accAddr := sdk.AccAddress(valAddr.Bytes()).String()
+	if accAddr != signer {
+		return fmt.Errorf("ValAddress converted to AccAddress (%s) must match the signer address (%s)", accAddr, signer)
+	}
+
 	return nil
 }
