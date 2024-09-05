@@ -44,7 +44,7 @@ service Query {
   rpc QueryValidatorProviderAddr(QueryValidatorProviderAddrRequest)
       returns (QueryValidatorProviderAddrResponse) {
     option (google.api.http).get =
-        "/interchain_security/ccv/provider/{consumer_id}/{consumer_address}";
+        "/interchain_security/ccv/provider/validator_provider_addr/{consumer_id}/{consumer_address}";
   }
 
   // QueryThrottleState returns the main on-chain state relevant to currently
