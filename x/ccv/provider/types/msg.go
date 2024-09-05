@@ -60,13 +60,13 @@ var (
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
 func NewMsgAssignConsumerKey(consumerId string, providerValidatorAddress sdk.ValAddress,
-	consumerConsensusPubKey, signer string,
+	consumerConsensusPubKey, submitter string,
 ) (*MsgAssignConsumerKey, error) {
 	return &MsgAssignConsumerKey{
 		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
-		Signer:       signer,
+		Submitter:    submitter,
 	}, nil
 }
 
@@ -80,7 +80,7 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerId: %s", err.Error())
 	}
 
-	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Submitter); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ProviderAddr: %s", err.Error())
 	}
 
@@ -186,12 +186,12 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 }
 
 // NewMsgOptIn creates a new NewMsgOptIn instance.
-func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
+func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, submitter string) (*MsgOptIn, error) {
 	return &MsgOptIn{
 		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
-		Signer:       signer,
+		Submitter:    submitter,
 	}, nil
 }
 
@@ -205,7 +205,7 @@ func (msg MsgOptIn) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ConsumerId: %s", err.Error())
 	}
 
-	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Submitter); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ProviderAddr: %s", err.Error())
 	}
 
@@ -218,11 +218,11 @@ func (msg MsgOptIn) ValidateBasic() error {
 }
 
 // NewMsgOptOut creates a new NewMsgOptIn instance.
-func NewMsgOptOut(consumerId string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
+func NewMsgOptOut(consumerId string, providerValidatorAddress sdk.ValAddress, submitter string) (*MsgOptOut, error) {
 	return &MsgOptOut{
 		ConsumerId:   consumerId,
 		ProviderAddr: providerValidatorAddress.String(),
-		Signer:       signer,
+		Submitter:    submitter,
 	}, nil
 }
 
@@ -236,7 +236,7 @@ func (msg MsgOptOut) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ConsumerId: %s", err.Error())
 	}
 
-	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Submitter); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ProviderAddr: %s", err.Error())
 	}
 
@@ -248,13 +248,13 @@ func NewMsgSetConsumerCommissionRate(
 	consumerId string,
 	commission math.LegacyDec,
 	providerValidatorAddress sdk.ValAddress,
-	signer string,
+	submitter string,
 ) *MsgSetConsumerCommissionRate {
 	return &MsgSetConsumerCommissionRate{
 		ConsumerId:   consumerId,
 		Rate:         commission,
 		ProviderAddr: providerValidatorAddress.String(),
-		Signer:       signer,
+		Submitter:    submitter,
 	}
 }
 
@@ -268,7 +268,7 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ConsumerId: %s", err.Error())
 	}
 
-	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Submitter); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ProviderAddr: %s", err.Error())
 	}
 
