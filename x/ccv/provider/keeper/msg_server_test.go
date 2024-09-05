@@ -32,7 +32,7 @@ func TestCreateConsumer(t *testing.T) {
 	require.Equal(t, consumerMetadata, actualMetadata)
 	ownerAddress, err := providerKeeper.GetConsumerOwnerAddress(ctx, "0")
 	require.NoError(t, err)
-	require.Equal(t, "signer", ownerAddress)
+	require.Equal(t, "submitter", ownerAddress)
 	phase := providerKeeper.GetConsumerPhase(ctx, "0")
 	require.Equal(t, providertypes.CONSUMER_PHASE_REGISTERED, phase)
 
@@ -52,7 +52,7 @@ func TestCreateConsumer(t *testing.T) {
 	require.Equal(t, consumerMetadata, actualMetadata)
 	ownerAddress, err = providerKeeper.GetConsumerOwnerAddress(ctx, "1")
 	require.NoError(t, err)
-	require.Equal(t, "signer2", ownerAddress)
+	require.Equal(t, "submitter2", ownerAddress)
 	phase = providerKeeper.GetConsumerPhase(ctx, "1")
 	require.Equal(t, providertypes.CONSUMER_PHASE_REGISTERED, phase)
 }
@@ -106,7 +106,7 @@ func TestUpdateConsumer(t *testing.T) {
 
 	expectedOwnerAddress := "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la"
 	_, err = msgServer.UpdateConsumer(ctx,
-		&providertypes.MsgUpdateConsumer{Owner: "owner", ConsumerId: consumerId, NewOwnerAddress: expectedOwnerAddress,
+		&providertypes.MsgUpdateConsumer{Owner: "submitter", ConsumerId: consumerId, NewOwnerAddress: expectedOwnerAddress,
 			Metadata:                 &expectedConsumerMetadata,
 			InitializationParameters: &expectedInitializationParameters,
 			PowerShapingParameters:   &expectedPowerShapingParameters})
