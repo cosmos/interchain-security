@@ -37,10 +37,10 @@ func TestHandleOptIn(t *testing.T) {
 	require.Error(t, providerKeeper.HandleOptIn(ctx, "unknownConsumerId", providerAddr, ""))
 
 	// trying to opt in to a stopped consumer chain
-	providerKeeper.SetConsumerPhase(ctx, "stoppedConsumerId", types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	providerKeeper.SetConsumerPhase(ctx, "stoppedConsumerId", types.CONSUMER_PHASE_STOPPED)
 	require.Error(t, providerKeeper.HandleOptIn(ctx, "stoppedConsumerId", providerAddr, ""))
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", types.CONSUMER_PHASE_INITIALIZED)
 	providerKeeper.SetConsumerChainId(ctx, "consumerId", "chainId")
 	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", providerAddr))
 	err := providerKeeper.HandleOptIn(ctx, "consumerId", providerAddr, "")
@@ -49,7 +49,7 @@ func TestHandleOptIn(t *testing.T) {
 
 	// validator tries to opt in to another chain with chain id ("chainId") while it is already opted in to
 	// a different chain with the same chain id
-	providerKeeper.SetConsumerPhase(ctx, "consumerId2", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId2", types.CONSUMER_PHASE_INITIALIZED)
 	providerKeeper.SetConsumerChainId(ctx, "consumerId2", "chainId")
 	err = providerKeeper.HandleOptIn(ctx, "consumerId2", providerAddr, "")
 	require.ErrorContains(t, err, "validator is already opted in to a chain")
@@ -88,7 +88,7 @@ func TestHandleOptInWithConsumerKey(t *testing.T) {
 	expectedConsumerPubKey, err := providerKeeper.ParseConsumerKey(consumerKey)
 	require.NoError(t, err)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", types.CONSUMER_PHASE_INITIALIZED)
 	providerKeeper.SetConsumerChainId(ctx, "consumerId", "consumerId")
 	err = providerKeeper.HandleOptIn(ctx, "consumerId", providerAddr, consumerKey)
 	require.NoError(t, err)
@@ -117,7 +117,7 @@ func TestHandleOptOut(t *testing.T) {
 	require.Error(t, providerKeeper.HandleOptOut(ctx, "unknownChainID", providerAddr))
 
 	// set the phase and power shaping params
-	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_LAUNCHED)
 	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{})
 	require.NoError(t, err)
 
@@ -138,7 +138,7 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 	consumerId := "consumerId"
 
 	// set the phase
-	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_LAUNCHED)
 
 	// set the chain as Top 50 and create 4 validators with 10%, 20%, 30%, and 40% of the total voting power
 	// respectively
@@ -210,7 +210,7 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	// setup a pending consumer chain
 	consumerId := "0"
 	providerKeeper.FetchAndIncrementConsumerId(ctx)
-	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
 
 	// check that there's no commission rate set for the validator yet
 	_, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)

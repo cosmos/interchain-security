@@ -467,6 +467,8 @@ message ConsumerIds { repeated string ids = 1; }
 
 // ConsumerPhase indicates the phases of a consumer chain according to ADR 019
 enum ConsumerPhase {
+  option (gogoproto.goproto_enum_prefix) = false;
+
   // UNSPECIFIED defines an empty phase.
   CONSUMER_PHASE_UNSPECIFIED = 0;
   // REGISTERED defines the phase in which a consumer chain has been assigned a unique consumer id.

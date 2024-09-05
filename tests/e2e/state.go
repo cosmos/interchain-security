@@ -769,9 +769,9 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	chains := make(map[ChainID]bool)
 	for _, c := range arr {
 		phase := c.Get("phase").String()
-		if phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)] ||
-			phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)] ||
-			phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)] {
+		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
+			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] ||
+			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_LAUNCHED)] {
 			id := c.Get("chain_id").String()
 			chains[ChainID(id)] = true
 		}
@@ -1019,8 +1019,8 @@ func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	for _, c := range arr {
 		cid := c.Get("chain_id").String()
 		phase := c.Get("phase").String()
-		if phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)] ||
-			phase == types.ConsumerPhase_name[int32(types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)] {
+		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
+			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] {
 			chains = append(chains, cid)
 		}
 	}

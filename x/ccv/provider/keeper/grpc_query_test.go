@@ -85,7 +85,7 @@ func TestQueryConsumerChainOptedInValidators(t *testing.T) {
 	require.Error(t, err)
 
 	pk.FetchAndIncrementConsumerId(ctx)
-	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	pk.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
 
 	providerAddr1 := types.NewProviderConsAddress([]byte("providerAddr1"))
 	providerAddr2 := types.NewProviderConsAddress([]byte("providerAddr2"))
@@ -114,7 +114,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Error(t, err)
 
 	// set the consumer to the "registered" phase
-	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
+	pk.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
 
 	// set power shaping params
 	err = pk.SetConsumerPowerShapingParameters(ctx, consumerId, types.PowerShapingParameters{})
@@ -233,13 +233,13 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Equal(t, &expRes, res)
 
 	// expect same result when consumer is in "initialized" phase
-	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	pk.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
 	require.Equal(t, &expRes, res)
 
 	// set consumer to the "launched" phase
-	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	pk.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_LAUNCHED)
 
 	// expect an empty consumer valset
 	// since neither QueueVSCPackets or MakeConsumerGenesis was called at this point
@@ -324,7 +324,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 		clientID := "client-" + strconv.Itoa(i)
 		pk.SetConsumerClientId(ctx, consumerId, clientID)
 
-		pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+		pk.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_LAUNCHED)
 		consumerIds[i] = consumerId
 	}
 
@@ -374,7 +374,7 @@ func TestQueryValidatorConsumerCommissionRate(t *testing.T) {
 	require.Error(t, err)
 
 	pk.FetchAndIncrementConsumerId(ctx)
-	pk.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	pk.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
 
 	// validator with set consumer commission rate
 	expectedCommissionRate := math.LegacyMustNewDecFromStr("0.123")
@@ -545,7 +545,7 @@ func TestQueryConsumerChain(t *testing.T) {
 	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
 	require.Error(t, err)
 
-	providerKeeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
 
 	// expect error when consumer doesn't have metadata
 	_, err = providerKeeper.QueryConsumerChain(ctx, &req)
@@ -558,7 +558,7 @@ func TestQueryConsumerChain(t *testing.T) {
 		ChainId:            chainId,
 		OwnerAddress:       providerKeeper.GetAuthority(),
 		Metadata:           types.ConsumerMetadata{Name: chainId},
-		Phase:              types.ConsumerPhase_CONSUMER_PHASE_REGISTERED.String(),
+		Phase:              types.CONSUMER_PHASE_REGISTERED.String(),
 		InitParams:         &types.ConsumerInitializationParameters{},
 		PowerShapingParams: &types.PowerShapingParameters{},
 	}
@@ -623,10 +623,10 @@ func TestQueryConsumerChains(t *testing.T) {
 	msgServer := keeper.NewMsgServerImpl(&pk)
 
 	phases := []types.ConsumerPhase{
-		types.ConsumerPhase_CONSUMER_PHASE_REGISTERED,
-		types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED,
-		types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED,
-		types.ConsumerPhase_CONSUMER_PHASE_STOPPED,
+		types.CONSUMER_PHASE_REGISTERED,
+		types.CONSUMER_PHASE_INITIALIZED,
+		types.CONSUMER_PHASE_LAUNCHED,
+		types.CONSUMER_PHASE_STOPPED,
 	}
 
 	// create four consumer chains in different phase
@@ -678,37 +678,37 @@ func TestQueryConsumerChains(t *testing.T) {
 		{
 			name: "expect registered consumers when phase filter is set to Registered",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[0].Phase = types.ConsumerPhase_CONSUMER_PHASE_REGISTERED.String()
-				pk.SetConsumerPhase(ctx, consumerIds[0], types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
+				consumers[0].Phase = types.CONSUMER_PHASE_REGISTERED.String()
+				pk.SetConsumerPhase(ctx, consumerIds[0], types.CONSUMER_PHASE_REGISTERED)
 			},
-			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_REGISTERED,
+			phase_filter: types.CONSUMER_PHASE_REGISTERED,
 			expConsumers: consumers[0:1],
 		},
 		{
 			name: "expect initialized consumers when phase is set to Initialized",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[1].Phase = types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED.String()
-				pk.SetConsumerPhase(ctx, consumerIds[1], types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				consumers[1].Phase = types.CONSUMER_PHASE_INITIALIZED.String()
+				pk.SetConsumerPhase(ctx, consumerIds[1], types.CONSUMER_PHASE_INITIALIZED)
 			},
-			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED,
+			phase_filter: types.CONSUMER_PHASE_INITIALIZED,
 			expConsumers: consumers[1:2],
 		},
 		{
 			name: "expect launched consumers when phase is set to Launched",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[2].Phase = types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED.String()
-				pk.SetConsumerPhase(ctx, consumerIds[2], types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+				consumers[2].Phase = types.CONSUMER_PHASE_LAUNCHED.String()
+				pk.SetConsumerPhase(ctx, consumerIds[2], types.CONSUMER_PHASE_LAUNCHED)
 			},
-			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED,
+			phase_filter: types.CONSUMER_PHASE_LAUNCHED,
 			expConsumers: consumers[2:3],
 		},
 		{
 			name: "expect stopped consumers when phase is set to Stopped",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
-				consumers[3].Phase = types.ConsumerPhase_CONSUMER_PHASE_STOPPED.String()
-				pk.SetConsumerPhase(ctx, consumerIds[3], types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+				consumers[3].Phase = types.CONSUMER_PHASE_STOPPED.String()
+				pk.SetConsumerPhase(ctx, consumerIds[3], types.CONSUMER_PHASE_STOPPED)
 			},
-			phase_filter: types.ConsumerPhase_CONSUMER_PHASE_STOPPED,
+			phase_filter: types.CONSUMER_PHASE_STOPPED,
 			expConsumers: consumers[3:],
 		},
 	}

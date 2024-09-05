@@ -32,7 +32,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 			name: "in use by another validator",
 			setup: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				k.FetchAndIncrementConsumerId(ctx)
-				k.SetConsumerPhase(ctx, "0", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				k.SetConsumerPhase(ctx, "0", types.CONSUMER_PHASE_INITIALIZED)
 
 				// We are trying to add a new validator, but its address has already been used
 				// by another validator
@@ -49,8 +49,8 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 			setup: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				k.FetchAndIncrementConsumerId(ctx)
 				k.FetchAndIncrementConsumerId(ctx)
-				k.SetConsumerPhase(ctx, "0", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
-				k.SetConsumerPhase(ctx, "1", types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				k.SetConsumerPhase(ctx, "0", types.CONSUMER_PHASE_INITIALIZED)
+				k.SetConsumerPhase(ctx, "1", types.CONSUMER_PHASE_INITIALIZED)
 
 				// We are trying to add a new validator, but its address has already been used
 				// by another validator, of which there are several, across potentially several chains

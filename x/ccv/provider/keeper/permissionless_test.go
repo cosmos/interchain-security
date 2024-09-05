@@ -185,15 +185,15 @@ func TestConsumerPhase(t *testing.T) {
 	defer ctrl.Finish()
 
 	phase := providerKeeper.GetConsumerPhase(ctx, "consumerId")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_UNSPECIFIED, phase)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
 	phase = providerKeeper.GetConsumerPhase(ctx, "consumerId")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_INITIALIZED, phase)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_LAUNCHED)
 	phase = providerKeeper.GetConsumerPhase(ctx, "consumerId")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_LAUNCHED, phase)
 }
 
 // TestOptedInConsumerIds tests the `GetOptedInConsumerIds`, `AppendOptedInConsumerId`, and `RemoveOptedInConsumerId` methods

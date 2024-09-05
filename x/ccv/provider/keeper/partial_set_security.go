@@ -67,13 +67,13 @@ func (k Keeper) HandleOptIn(ctx sdk.Context, consumerId string, providerAddr typ
 // Note that the validator only opts out at the end of an epoch.
 func (k Keeper) HandleOptOut(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) error {
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
+	if phase == types.CONSUMER_PHASE_UNSPECIFIED {
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerId,
 			"opting out of an unknown consumer chain, consumerId(%s)", consumerId,
 		)
 	}
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+	if phase != types.CONSUMER_PHASE_LAUNCHED {
 		// A validator can only opt out from a running chain
 		return errorsmod.Wrapf(
 			types.ErrInvalidPhase,

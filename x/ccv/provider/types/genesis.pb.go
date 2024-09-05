@@ -231,7 +231,7 @@ func (m *ConsumerState) GetPhase() ConsumerPhase {
 	if m != nil {
 		return m.Phase
 	}
-	return ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED
+	return CONSUMER_PHASE_UNSPECIFIED
 }
 
 // ValsetUpdateIdToHeight defines the genesis information for the mapping
