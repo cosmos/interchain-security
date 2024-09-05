@@ -28,7 +28,6 @@ const (
 	AttributeUnbondingPeriod          = "unbonding_period"
 	AttributeProviderValidatorAddress = "provider_validator_address"
 	AttributeConsumerConsensusPubKey  = "consumer_consensus_pub_key"
-	AttributeSubmitterAddress         = "submitter_address"
 	AttributeConsumerMisbehaviour     = "consumer_misbehaviour"
 	AttributeMisbehaviourClientId     = "misbehaviour_client_id"
 	AttributeMisbehaviourHeight1      = "misbehaviour_height_1"
