@@ -533,10 +533,6 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "BinaryHash: %s", err.Error())
 	}
 
-	if initializationParameters.SpawnTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerInitializationParameters, "SpawnTime cannot be zero")
-	}
-
 	if err := ccvtypes.ValidateStringFraction(initializationParameters.ConsumerRedistributionFraction); err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "ConsumerRedistributionFraction: %s", err.Error())
 	}

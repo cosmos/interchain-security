@@ -405,10 +405,9 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 			"cannot set power shaping parameters")
 	}
 
-	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
-		k.Keeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
+	if spawnTime, initialized := k.Keeper.InitializeConsumer(ctx, consumerId); initialized {
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime); err != nil {
-			return &resp, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
+			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
 		}
 	}
@@ -562,10 +561,9 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			"a move to a new owner address that is not the gov module can only be done if `Top N` is set to 0")
 	}
 
-	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
-		k.Keeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
+	if spawnTime, initialized := k.Keeper.InitializeConsumer(ctx, consumerId); initialized {
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime); err != nil {
-			return &resp, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
+			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
 		}
 	}
