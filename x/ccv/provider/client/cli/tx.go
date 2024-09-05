@@ -372,7 +372,7 @@ If one of the fields is missing, it will be set to its zero value.
 			}
 			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
-			signer := clientCtx.GetFromAddress().String()
+			owner := clientCtx.GetFromAddress().String()
 
 			consUpdateJson, err := os.ReadFile(args[0])
 			if err != nil {
@@ -388,7 +388,7 @@ If one of the fields is missing, it will be set to its zero value.
 				return fmt.Errorf("consumer_id can't be empty")
 			}
 
-			msg, err := types.NewMsgUpdateConsumer(signer, consUpdate.ConsumerId, consUpdate.NewOwnerAddress, consUpdate.Metadata, consUpdate.InitializationParameters, consUpdate.PowerShapingParameters)
+			msg, err := types.NewMsgUpdateConsumer(owner, consUpdate.ConsumerId, consUpdate.NewOwnerAddress, consUpdate.Metadata, consUpdate.InitializationParameters, consUpdate.PowerShapingParameters)
 			if err != nil {
 				return err
 			}
