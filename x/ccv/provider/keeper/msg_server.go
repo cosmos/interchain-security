@@ -70,19 +70,30 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	if err := k.Keeper.AssignConsumerKey(ctx, msg.ConsumerId, validator, consumerTMPublicKey); err != nil {
 		return nil, err
 	}
-	k.Logger(ctx).Info("assigned consumer key",
+
+	chainId, err := k.GetConsumerChainId(ctx, msg.ConsumerId)
+	if err != nil {
+		return nil, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot get consumer chain ID: %s", err.Error())
+	}
+
+	k.Logger(ctx).Info("validator assigned consumer key",
 		"consumer id", msg.ConsumerId,
+		"chain id", chainId,
 		"validator operator addr", msg.ProviderAddr,
 		"consumer public key", msg.ConsumerKey,
 	)
 
-	ctx.EventManager().EmitEvents(sdk.Events{
+	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeAssignConsumerKey,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
-	})
+	)
 
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
@@ -113,16 +124,19 @@ func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.
 		return nil, err
 	}
 
-	ctx.EventManager().EmitEvents(sdk.Events{
+	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccvtypes.EventTypeSubmitConsumerMisbehaviour,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, msg.Misbehaviour.Header1.Header.ChainID),
 			sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
-			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourClientId, msg.Misbehaviour.ClientId),
 			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourHeight1, msg.Misbehaviour.Header1.GetHeight().String()),
 			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourHeight2, msg.Misbehaviour.Header2.GetHeight().String()),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
-	})
+	)
 
 	return &types.MsgSubmitConsumerMisbehaviourResponse{}, nil
 }
@@ -164,15 +178,16 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		return nil, err
 	}
 
-	ctx.EventManager().EmitEvents(sdk.Events{
+	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccvtypes.EventTypeSubmitConsumerDoubleVoting,
-			sdk.NewAttribute(ccvtypes.AttributeConsumerDoubleVoting, msg.DuplicateVoteEvidence.String()),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
 			sdk.NewAttribute(types.AttributeConsumerChainID, msg.InfractionBlockHeader.Header.ChainID),
+			sdk.NewAttribute(ccvtypes.AttributeConsumerDoubleVoting, msg.DuplicateVoteEvidence.String()),
 			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
-	})
+	)
 
 	return &types.MsgSubmitConsumerDoubleVotingResponse{}, nil
 }
@@ -202,13 +217,29 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 		return nil, err
 	}
 
-	ctx.EventManager().EmitEvents(sdk.Events{
+	chainId, err := k.GetConsumerChainId(ctx, msg.ConsumerId)
+	if err != nil {
+		return nil, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot get consumer chain ID: %s", err.Error())
+	}
+
+	k.Logger(ctx).Info("validator opted in",
+		"consumer id", msg.ConsumerId,
+		"chain id", chainId,
+		"validator operator addr", msg.ProviderAddr,
+		"consumer public key", msg.ConsumerKey,
+	)
+
+	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeOptIn,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
-	})
+	)
 
 	return &types.MsgOptInResponse{}, nil
 }
@@ -238,12 +269,27 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 		return nil, err
 	}
 
-	ctx.EventManager().EmitEvents(sdk.Events{
+	chainId, err := k.GetConsumerChainId(ctx, msg.ConsumerId)
+	if err != nil {
+		return nil, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot get consumer chain ID: %s", err.Error())
+	}
+
+	k.Logger(ctx).Info("validator opted out",
+		"consumer id", msg.ConsumerId,
+		"chain id", chainId,
+		"validator operator addr", msg.ProviderAddr,
+	)
+
+	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeOptOut,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
-	})
+	)
 
 	return &types.MsgOptOutResponse{}, nil
 }
@@ -271,14 +317,29 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 		return nil, err
 	}
 
-	ctx.EventManager().EmitEvents(sdk.Events{
+	chainId, err := k.GetConsumerChainId(ctx, msg.ConsumerId)
+	if err != nil {
+		return nil, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot get consumer chain ID: %s", err.Error())
+	}
+
+	k.Logger(ctx).Info("validator set commission rate on consumer",
+		"consumer id", msg.ConsumerId,
+		"chain id", chainId,
+		"validator operator addr", msg.ProviderAddr,
+		"rate", msg.Rate,
+	)
+
+	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeSetConsumerCommissionRate,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
-	})
+	)
 
 	return &types.MsgSetConsumerCommissionRateResponse{}, nil
 }
@@ -353,8 +414,16 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	}
 
 	// add Phase event attribute
-	eventAttributes = append(eventAttributes,
-		sdk.NewAttribute(types.AttributeConsumerSpawnTime, k.GetConsumerPhase(ctx, consumerId).String()))
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerSpawnTime, phase.String()))
+
+	k.Logger(ctx).Info("created consumer",
+		"consumer id", consumerId,
+		"chain id", msg.ChainId,
+		"owner", msg.Submitter,
+		"phase", phase,
+		"spawn time", initializationParameters.SpawnTime,
+	)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -412,10 +481,6 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		}
 
 		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
-
-		// add Owner event attribute
-		eventAttributes = append(eventAttributes,
-			sdk.NewAttribute(types.AttributeConsumerOwner, msg.NewOwnerAddress))
 	}
 
 	if msg.Metadata != nil {
@@ -505,9 +570,20 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		}
 	}
 
+	// add Owner event attribute
+	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerOwner, currentOwnerAddress))
+
 	// add Phase event attribute
-	eventAttributes = append(eventAttributes,
-		sdk.NewAttribute(types.AttributeConsumerSpawnTime, k.GetConsumerPhase(ctx, consumerId).String()))
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerSpawnTime, phase.String()))
+
+	k.Logger(ctx).Info("updated consumer",
+		"consumer id", consumerId,
+		"chain id", chainId,
+		"owner", currentOwnerAddress,
+		"phase", phase,
+		"topN", currentPowerShapingParameters.Top_N,
+	)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -547,6 +623,12 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 	}
 
 	err = k.Keeper.StopAndPrepareForConsumerRemoval(ctx, consumerId)
+
+	k.Logger(ctx).Info("stopped consumer",
+		"consumer id", consumerId,
+		"chain id", chainId,
+		"phase", phase,
+	)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
