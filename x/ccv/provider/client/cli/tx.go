@@ -57,7 +57,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 				return err
 			}
 
-			signer := clientCtx.GetFromAddress().String()
+			submitter := clientCtx.GetFromAddress().String()
 			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
@@ -66,7 +66,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 
 			providerValAddr := clientCtx.GetFromAddress()
 
-			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1], signer)
+			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1], submitter)
 			if err != nil {
 				return err
 			}
@@ -224,7 +224,7 @@ changed by updating the consumer chain.
 Example:
 %s tx provider create-consumer [path/to/create_consumer.json] --from node0 --home ../node0 --chain-id $CID
 
-where create_consumer.json content:
+where create_consumer.json has the following structure:
 {
   "chain_id": "consu",
   "metadata": {
@@ -259,6 +259,9 @@ where create_consumer.json content:
   }
 }
 
+Note that both 'chain_id' and 'metadata' are mandatory;
+and both 'initialization_parameters' and 'power_shaping_parameters' are optional. 
+The parameters not provided are set to their zero value. 
 `, version.AppName)),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -273,7 +276,7 @@ where create_consumer.json content:
 			}
 			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
-			signer := clientCtx.GetFromAddress().String()
+			submitter := clientCtx.GetFromAddress().String()
 
 			consCreateJson, err := os.ReadFile(args[0])
 			if err != nil {
@@ -284,7 +287,7 @@ where create_consumer.json content:
 				return fmt.Errorf("consumer data unmarshalling failed: %w", err)
 			}
 
-			msg, err := types.NewMsgCreateConsumer(signer, consCreate.ChainId, consCreate.Metadata, consCreate.InitializationParameters, consCreate.PowerShapingParameters)
+			msg, err := types.NewMsgCreateConsumer(submitter, consCreate.ChainId, consCreate.Metadata, consCreate.InitializationParameters, consCreate.PowerShapingParameters)
 			if err != nil {
 				return err
 			}
@@ -312,10 +315,9 @@ func NewUpdateConsumerCmd() *cobra.Command {
 Note that only the owner of the chain can initialize it.
 
 Example:
-	%s tx provider update-consumer [path/to/consumer-update.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider update-consumer [path/to/consumer-update.json] --from node0 --home ../node0 --chain-id $CID
 
-	where consumer-update.json contains parameters for 'power_shaping', 'initialization' and 'metadata':
-
+where create_consumer.json has the following structure:
 {
    "consumer_id": "0",
    "new_owner_address": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
@@ -350,6 +352,12 @@ Example:
     "allow_inactive_vals": false
    }
 }
+
+Note that only 'consumer_id' is mandatory. The others are optional.
+Not providing one of them will leave the existing values unchanged. 
+Providing one of 'metadata', 'initialization_parameters' or 'power_shaping_parameters', 
+will update all the containing fields. 
+If one of the fields is missing, it will be set to its zero value.
 `, version.AppName)),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -421,10 +429,10 @@ Example:
 			}
 			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
-			signer := clientCtx.GetFromAddress().String()
+			owner := clientCtx.GetFromAddress().String()
 			consumerId := args[0]
 
-			msg, err := types.NewMsgRemoveConsumer(signer, consumerId)
+			msg, err := types.NewMsgRemoveConsumer(owner, consumerId)
 			if err != nil {
 				return err
 			}
@@ -471,8 +479,8 @@ func NewOptInCmd() *cobra.Command {
 				consumerPubKey = ""
 			}
 
-			signer := clientCtx.GetFromAddress().String()
-			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey, signer)
+			submitter := clientCtx.GetFromAddress().String()
+			msg, err := types.NewMsgOptIn(args[0], sdk.ValAddress(providerValAddr), consumerPubKey, submitter)
 			if err != nil {
 				return err
 			}
@@ -510,8 +518,8 @@ func NewOptOutCmd() *cobra.Command {
 
 			providerValAddr := clientCtx.GetFromAddress()
 
-			signer := clientCtx.GetFromAddress().String()
-			msg, err := types.NewMsgOptOut(args[0], sdk.ValAddress(providerValAddr), signer)
+			submitter := clientCtx.GetFromAddress().String()
+			msg, err := types.NewMsgOptOut(args[0], sdk.ValAddress(providerValAddr), submitter)
 			if err != nil {
 				return err
 			}
@@ -559,8 +567,8 @@ func NewSetConsumerCommissionRateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			signer := clientCtx.GetFromAddress().String()
-			msg := types.NewMsgSetConsumerCommissionRate(args[0], commission, sdk.ValAddress(providerValAddr), signer)
+			submitter := clientCtx.GetFromAddress().String()
+			msg := types.NewMsgSetConsumerCommissionRate(args[0], commission, sdk.ValAddress(providerValAddr), submitter)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
