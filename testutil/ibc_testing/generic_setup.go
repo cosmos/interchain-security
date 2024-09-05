@@ -166,7 +166,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	s.Require().NoError(err)
 	err = providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
 	s.Require().NoError(err)
-	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
 	err = providerKeeper.AppendConsumerToBeLaunched(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
 	s.Require().NoError(err)
 

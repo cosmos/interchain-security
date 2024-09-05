@@ -51,7 +51,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	consumerIds := []string{}
 	for _, consumerID := range k.GetAllConsumerIds(ctx) {
 		phase := k.GetConsumerPhase(ctx, consumerID)
-		if req.Phase != types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED && req.Phase != phase {
+		if req.Phase != types.CONSUMER_PHASE_UNSPECIFIED && req.Phase != phase {
 			// ignore consumer chain
 			continue
 		}
@@ -308,7 +308,7 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 
 	// get the consumer phase
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
+	if phase == types.CONSUMER_PHASE_UNSPECIFIED {
 		return nil, status.Errorf(codes.InvalidArgument, "cannot find a phase for consumer: %s", consumerId)
 	}
 
@@ -318,13 +318,13 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	var err error
 
 	// if the consumer launched, the consumer valset has been persisted
-	if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+	if phase == types.CONSUMER_PHASE_LAUNCHED {
 		consumerValSet, err = k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		//  if the consumer hasn't been launched or stopped, compute the consumer validator set
-	} else if phase != types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
+	} else if phase != types.CONSUMER_PHASE_STOPPED {
 		bondedValidators, err := k.GetLastBondedValidators(ctx)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get last validators: %s", err))
@@ -572,7 +572,7 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 	}
 
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase == types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED {
+	if phase == types.CONSUMER_PHASE_UNSPECIFIED {
 		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve phase for consumer id: %s", consumerId)
 	}
 

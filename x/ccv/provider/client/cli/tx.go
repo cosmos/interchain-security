@@ -48,7 +48,7 @@ func GetTxCmd() *cobra.Command {
 
 func NewAssignConsumerKeyCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "assign-consensus-key [consumer-chain-id] [consumer-pubkey]",
+		Use:   "assign-consensus-key [consumer-id] [consumer-pubkey]",
 		Short: "assign a consensus public key to use for a consumer chain",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -87,7 +87,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 
 func NewSubmitConsumerMisbehaviourCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "submit-consumer-misbehaviour [misbehaviour]",
+		Use:   "submit-consumer-misbehaviour [consumer-id] [misbehaviour]",
 		Short: "submit an IBC misbehaviour for a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Submit an IBC misbehaviour detected on a consumer chain.
@@ -95,9 +95,9 @@ An IBC misbehaviour contains two conflicting IBC client headers, which are used 
 The misbehaviour type definition can be found in the IBC client messages, see ibc-go/proto/ibc/core/client/v1/tx.proto.
 
 Example:
-%s tx provider submit-consumer-misbehaviour [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider submit-consumer-misbehaviour [consumer-id] [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
 			`, version.AppName)),
-		Args: cobra.ExactArgs(1),
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -123,7 +123,7 @@ Example:
 				return fmt.Errorf("misbehaviour unmarshalling failed: %s", err)
 			}
 
-			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehaviour)
+			msg, err := types.NewMsgSubmitConsumerMisbehaviour(args[0], submitter, &misbehaviour)
 			if err != nil {
 				return err
 			}
@@ -144,7 +144,7 @@ Example:
 
 func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "submit-consumer-double-voting [evidence] [infraction_header]",
+		Use:   "submit-consumer-double-voting [consumer-id] [evidence] [infraction_header]",
 		Short: "submit a double voting evidence for a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Submit a Tendermint duplicate vote evidence detected on a consumer chain with
@@ -154,9 +154,9 @@ func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
  definition can be found in the IBC messages, see ibc-go/proto/ibc/lightclients/tendermint/v1/tendermint.proto.
 
 Example:
-%s tx provider submit-consumer-double-voting [path/to/evidence.json] [path/to/infraction_header.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider submit-consumer-double-voting [consumer-id] [path/to/evidence.json] [path/to/infraction_header.json] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
-		Args: cobra.ExactArgs(2),
+		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -193,7 +193,7 @@ Example:
 				return fmt.Errorf("infraction IBC header unmarshalling failed: %s", err)
 			}
 
-			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, &ev, &header)
+			msg, err := types.NewMsgSubmitConsumerDoubleVoting(args[0], submitter, &ev, &header)
 			if err != nil {
 				return err
 			}

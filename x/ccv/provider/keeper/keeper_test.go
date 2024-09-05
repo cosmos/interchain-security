@@ -231,7 +231,7 @@ func TestGetAllConsumersWithIBCClients(t *testing.T) {
 	for i, consumerId := range consumerIds {
 		clientId := fmt.Sprintf("client-%d", len(consumerIds)-i)
 		pk.SetConsumerClientId(ctx, consumerId, clientId)
-		pk.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+		pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
 	}
 
 	actualConsumerIds := pk.GetAllConsumersWithIBCClients(ctx)

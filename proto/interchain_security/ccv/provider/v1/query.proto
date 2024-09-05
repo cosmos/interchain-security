@@ -182,7 +182,7 @@ message Chain {
   repeated string allowlist = 7;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
-  // The phase the consumer chain (Registered=0|Initialized=1|FailedToLaunch=2|Launched=3|Stopped=4)
+  // The phase the consumer chain
   string phase = 9;
   // The metadata of the consumer chain
   ConsumerMetadata metadata = 10  [(gogoproto.nullable) = false ];

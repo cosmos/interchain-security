@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	cryptoutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
@@ -434,5 +436,98 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 		} else {
 			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
 		}
+	}
+}
+
+func TestMsgAssignConsumerKeyValidateBasic(t *testing.T) {
+	cId1 := cryptoutil.NewCryptoIdentityFromIntSeed(35443543534)
+	cId2 := cryptoutil.NewCryptoIdentityFromIntSeed(65465464564)
+
+	valOpAddr1 := cId1.SDKValOpAddress()
+	acc1 := sdk.AccAddress(valOpAddr1.Bytes()).String()
+	acc2 := sdk.AccAddress(cId2.SDKValOpAddress().Bytes()).String()
+
+	longChainId := "abcdefghijklmnopqrstuvwxyz"
+	for i := 0; i < 3; i++ {
+		longChainId += longChainId
+	}
+
+	testCases := []struct {
+		name         string
+		chainId      string
+		providerAddr string
+		signer       string
+		consumerKey  string
+		consumerId   string
+		expErr       bool
+	}{
+		{
+			name:    "invalid: chainId non-empty",
+			chainId: "chainId",
+			expErr:  true,
+		},
+		{
+			name:       "invalid: consumerId empty",
+			consumerId: "",
+			expErr:     true,
+		},
+		{
+			name:       "invalid: consumerId is not a number",
+			consumerId: "consumerId",
+			expErr:     true,
+		},
+		{
+			name:       "invalid: provider address is empty",
+			consumerId: "1",
+			expErr:     true,
+		},
+		{
+			name:         "invalid: provider address is invalid",
+			consumerId:   "1",
+			providerAddr: "some address",
+			expErr:       true,
+		},
+		{
+			name:         "invalid: provider address != signer address",
+			consumerId:   "1",
+			providerAddr: valOpAddr1.String(),
+			signer:       acc2,
+			expErr:       true,
+		},
+		{
+			name:         "invalid: consumer pubkey empty",
+			consumerId:   "1",
+			providerAddr: valOpAddr1.String(),
+			signer:       acc1,
+			expErr:       true,
+		},
+		{
+			name:         "valid",
+			consumerId:   "1",
+			providerAddr: valOpAddr1.String(),
+			signer:       acc1,
+			consumerKey:  "{\"@type\": \"/cosmos.crypto.ed25519.PubKey\", \"key\": \"e3BehnEIlGUAnJYn9V8gBXuMh4tXO8xxlxyXD1APGyk=\"}",
+			expErr:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			msg := types.MsgAssignConsumerKey{
+				ChainId:      tc.chainId,
+				ConsumerKey:  tc.consumerKey,
+				ProviderAddr: tc.providerAddr,
+				Signer:       tc.signer,
+				ConsumerId:   tc.consumerId,
+			}
+
+			err := msg.ValidateBasic()
+			if tc.expErr {
+				require.Error(t, err, tc.name)
+			} else {
+				require.NoError(t, err, tc.name)
+			}
+		})
 	}
 }
