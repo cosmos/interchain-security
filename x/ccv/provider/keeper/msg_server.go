@@ -415,7 +415,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	// add Phase event attribute
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerSpawnTime, phase.String()))
+	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerPhase, phase.String()))
 
 	k.Logger(ctx).Info("created consumer",
 		"consumerId", consumerId,
@@ -575,7 +575,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	// add Phase event attribute
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerSpawnTime, phase.String()))
+	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerPhase, phase.String()))
 
 	k.Logger(ctx).Info("updated consumer",
 		"consumerId", consumerId,
