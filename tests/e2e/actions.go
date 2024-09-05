@@ -591,7 +591,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 
 	// - set PowerShaping params TopN > 0 for consumer chain
 	update.PowerShapingParameters.Top_N = action.TopN
-	update.Signer = authority
+	update.Owner = authority
 	update.NewOwnerAddress = ""
 	update.InitializationParameters = &initializationParameters
 	update.InitializationParameters.SpawnTime = spawnTime
@@ -761,7 +761,7 @@ func (tr Chain) submitConsumerRemovalProposal(
 
 	msg := types.MsgRemoveConsumer{
 		ConsumerId: consumerId,
-		Signer:     authority,
+		Owner:      authority,
 	}
 
 	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &msg)
@@ -881,7 +881,7 @@ func (tr Chain) submitConsumerModificationProposal(
 	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
 	msg := types.MsgUpdateConsumer{
-		Signer:     authority,
+		Owner:      authority,
 		ConsumerId: consumerId,
 		PowerShapingParameters: &types.PowerShapingParameters{
 			Top_N:              action.TopN,

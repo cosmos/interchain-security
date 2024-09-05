@@ -44,7 +44,7 @@ service Msg {
 
 
 message MsgAssignConsumerKey {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "submitter";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
@@ -58,8 +58,7 @@ message MsgAssignConsumerKey {
   // `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`
   string consumer_key = 3;
 
-  // Tx signer address
-  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string submitter = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // the consumer id of the consumer chain to assign a consensus public key to
   string consumer_id = 5;
@@ -109,7 +108,7 @@ message MsgSubmitConsumerDoubleVotingResponse {}
 message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
 
-  // signer is the address of the governance account.
+  // authority is the address of the governance account.
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // params defines the x/provider parameters to update.
@@ -224,11 +223,12 @@ message MsgConsumerRemovalResponse {}
 // MsgRemoveConsumer defines the message used to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is eventually removed from the provider chain.
 message MsgRemoveConsumer {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "owner";
 
   // the consumer id of the consumer chain to be stopped
   string consumer_id = 1;
-  string signer = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the address of the owner of the consumer chain to be stopped
+  string owner = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgRemoveConsumerResponse defines response type for MsgRemoveConsumer messages
@@ -245,7 +245,7 @@ message MsgChangeRewardDenoms {
   repeated string denoms_to_add = 1;
   // the list of consumer reward denoms to remove
   repeated string denoms_to_remove = 2;
-  // signer address
+  // authority is the address of the governance account
   string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
 }
@@ -256,7 +256,7 @@ message MsgChangeRewardDenomsResponse {}
 message MsgOptIn {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "submitter";
   // [DEPRECATED] use `consumer_id` instead
   string chain_id = 1 [deprecated = true];
   // the validator address on the provider
@@ -266,8 +266,8 @@ message MsgOptIn {
   // This field is optional and can remain empty (i.e., `consumer_key = ""`). A validator can always change the
   // consumer public key at a later stage by issuing a `MsgAssignConsumerKey` message.
   string consumer_key = 3;
-  // signer address
-  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // submitter address
+  string submitter = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // the consumer id of the consumer chain to opt in to
   string consumer_id = 5;
 }
@@ -277,13 +277,13 @@ message MsgOptInResponse {}
 message MsgOptOut {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "submitter";
   // [DEPRECATED] use `consumer_id` instead
   string chain_id = 1 [deprecated = true];
   // the validator address on the provider
   string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
-  // signer address
-  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // submitter address
+  string submitter = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // the consumer id of the consumer chain to opt out from
   string consumer_id = 4;
 }
@@ -295,7 +295,7 @@ message MsgOptOutResponse {}
 message MsgSetConsumerCommissionRate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "submitter";
 
   // The validator address on the provider
   string provider_addr = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
@@ -308,8 +308,8 @@ message MsgSetConsumerCommissionRate {
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
-  // signer address
-  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // submitter address
+  string submitter = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // the consumer id of the consumer chain to set the commission rate
   string consumer_id = 5;
 }
@@ -358,10 +358,11 @@ message MsgConsumerModificationResponse {}
 
 // MsgCreateConsumer defines the message that creates a consumer chain
 message MsgCreateConsumer {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "submitter";
 
-  // signer address
-  string signer = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Submitter address. If the message is successfully handled, the ownership of 
+  // the consumer chain will given to this address.
+  string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // the chain id of the new consumer chain
   string chain_id = 2;
@@ -380,10 +381,10 @@ message MsgCreateConsumerResponse {
 
 // MsgUpdateConsumer defines the message used to modify a consumer chain.
 message MsgUpdateConsumer {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "owner";
 
-  // signer address
-  string signer = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the address of the owner of the consumer chain to be updated
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // the consumer id of the consumer chain to be updated
   string consumer_id = 2;

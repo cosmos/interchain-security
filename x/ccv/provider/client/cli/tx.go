@@ -424,10 +424,6 @@ Example:
 			signer := clientCtx.GetFromAddress().String()
 			consumerId := args[0]
 
-			if err != nil {
-				return err
-			}
-
 			msg, err := types.NewMsgRemoveConsumer(signer, consumerId)
 			if err != nil {
 				return err

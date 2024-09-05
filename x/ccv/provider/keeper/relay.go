@@ -140,7 +140,7 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 // If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
 //
-// TODO (mpoke): iterate only over consumers with established channel
+// TODO (mpoke): iterate only over consumers with established channel -- GetAllChannelToConsumers
 func (k Keeper) SendVSCPackets(ctx sdk.Context) error {
 	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
 		if k.GetConsumerPhase(ctx, consumerId) != providertypes.CONSUMER_PHASE_LAUNCHED {
@@ -202,7 +202,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 // QueueVSCPackets queues latest validator updates for every consumer chain
 // with the IBC client created.
 //
-// TODO (mpoke): iterate only over consumers with established channel
+// TODO (mpoke): iterate only over consumers with established channel -- GetAllChannelToConsumers
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 

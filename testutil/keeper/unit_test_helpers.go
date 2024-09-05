@@ -317,7 +317,7 @@ func GetTestPowerShapingParameters() providertypes.PowerShapingParameters {
 
 func GetTestMsgUpdateConsumer() providertypes.MsgUpdateConsumer {
 	return providertypes.MsgUpdateConsumer{
-		Signer:          "signer",
+		Owner:           "owner",
 		ConsumerId:      "consumerId",
 		NewOwnerAddress: "newOwnerAddress",
 	}

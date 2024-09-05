@@ -289,7 +289,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	consumerId := k.Keeper.FetchAndIncrementConsumerId(ctx)
 
-	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
+	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.Submitter)
 	k.Keeper.SetConsumerChainId(ctx, consumerId, msg.ChainId)
 	k.Keeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
 
@@ -360,8 +360,8 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		return &resp, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
 	}
 
-	if msg.Signer != ownerAddress {
-		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
+	if msg.Owner != ownerAddress {
+		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Owner)
 	}
 
 	// The new owner address can be empty, in which case the consumer chain does not change its owner.
@@ -463,8 +463,8 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 		return &resp, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
 	}
 
-	if msg.Signer != ownerAddress {
-		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Signer)
+	if msg.Owner != ownerAddress {
+		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Owner)
 	}
 
 	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
