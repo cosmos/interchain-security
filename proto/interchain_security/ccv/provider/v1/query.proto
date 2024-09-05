@@ -36,7 +36,7 @@ service Query {
   rpc QueryValidatorConsumerAddr(QueryValidatorConsumerAddrRequest)
       returns (QueryValidatorConsumerAddrResponse) {
     option (google.api.http).get =
-        "/interchain_security/ccv/provider/{consumer_id}/{provider_address}";
+        "/interchain_security/ccv/provider/validator_consumer_addr/{consumer_id}/{provider_address}";
   }
 
   // QueryProviderAddr returns the provider chain validator
