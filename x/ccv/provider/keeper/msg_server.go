@@ -393,8 +393,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
-		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
-			"cannot get consumer chain ID: %s", err.Error())
+		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot get consumer chain ID: %s", err.Error())
 	}
 
 	// add event attributes
@@ -532,6 +531,11 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 		return &resp, errorsmod.Wrapf(types.ErrNoOwnerAddress, "cannot retrieve owner address %s", ownerAddress)
 	}
 
+	chainId, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot get consumer chain ID: %s", err.Error())
+	}
+
 	if msg.Owner != ownerAddress {
 		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Owner)
 	}
@@ -543,6 +547,17 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 	}
 
 	err = k.Keeper.StopAndPrepareForConsumerRemoval(ctx, consumerId)
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeRemoveConsumer,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(types.AttributeConsumerID, consumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Owner),
+		),
+	)
+
 	return &resp, err
 }
 

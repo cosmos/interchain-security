@@ -11,6 +11,7 @@ const (
 	EventTypeOptOut                    = "opt_out"
 	EventTypeCreateConsumer            = "create_consumer"
 	EventTypeUpdateConsumer            = "update_consumer"
+	EventTypeRemoveConsumer            = "remove_consumer"
 
 	AttributeInfractionHeight          = "infraction_height"
 	AttributeInitialHeight             = "initial_height"
