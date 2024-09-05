@@ -36,6 +36,8 @@ TENDERMINT_CONFIG_TRANSFORM=$7
 # whether to use CometMock
 USE_COMETMOCK=$8
 
+CHAIN_HOME=$9
+
 # stores a comma separated list of nodes addresses
 # needed for CometMock - these are the addresses that the ABCI servers of the apps are listening on
 NODE_LISTEN_ADDR_STR="" # example value: 7.7.8.6:26655,7.7.8.4:26655,7.7.8.5:26655
@@ -55,18 +57,18 @@ NODES=$(echo "$VALIDATORS" | jq '. | length')
 # SETUP NETWORK NAMESPACES, see: https://adil.medium.com/container-networking-under-the-hood-network-namespaces-6b2b8fe8dc2a
 
 # Create virtual bridge device (acts like a switch)
-ip link add name virtual-bridge type bridge || true 
+ip link add name virtual-bridge type bridge || true
 
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
-    IP_ADDR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/24" 
+    IP_ADDR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/24"
 
-    # Create network namespace 
+    # Create network namespace
     ip netns add $NET_NAMESPACE_NAME
-    # Create virtual ethernet device to connect with bridge 
+    # Create virtual ethernet device to connect with bridge
     ip link add $NET_NAMESPACE_NAME-in type veth peer name $NET_NAMESPACE_NAME-out
     # Connect input end of virtual ethernet device to namespace
     ip link set $NET_NAMESPACE_NAME-in netns $NET_NAMESPACE_NAME
@@ -84,14 +86,14 @@ do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
-    # Enable in/out interfaces for the namespace 
+    # Enable in/out interfaces for the namespace
     ip link set $NET_NAMESPACE_NAME-out up
     ip netns exec $NET_NAMESPACE_NAME ip link set dev $NET_NAMESPACE_NAME-in up
     # Enable loopback device
     ip netns exec $NET_NAMESPACE_NAME ip link set dev lo up
 done
 
-# Assign IP for bridge, to route between default network namespace and bridge 
+# Assign IP for bridge, to route between default network namespace and bridge
 BRIDGE_IP="$CHAIN_IP_PREFIX.254/24"
 ip addr add $BRIDGE_IP dev virtual-bridge
 
@@ -99,11 +101,11 @@ ip addr add $BRIDGE_IP dev virtual-bridge
 # the first validator will also collect the gentx's once generated
 FIRST_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[0].val_id")
 FIRST_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[0].ip_suffix")
-echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /$CHAIN_ID/validator$FIRST_VAL_ID --chain-id=$CHAIN_ID validator$FIRST_VAL_ID --recover > /dev/null
+echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /$CHAIN_HOME/validator$FIRST_VAL_ID --chain-id=$CHAIN_ID validator$FIRST_VAL_ID --recover > /dev/null
 
 # Apply jq transformations to genesis file
-jq "$GENESIS_TRANSFORM" /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json > /$CHAIN_ID/edited-genesis.json
-mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
+jq "$GENESIS_TRANSFORM" /$CHAIN_HOME/validator$FIRST_VAL_ID/config/genesis.json > /$CHAIN_HOME/edited-genesis.json
+mv /$CHAIN_HOME/edited-genesis.json /$CHAIN_HOME/genesis.json
 
 
 
@@ -120,28 +122,28 @@ do
     # optionally start validator with a key different from provider chain key
     if [[ "$CHAIN_ID" != "provi" && "$START_WITH_CONSUMER_KEY" = "true" ]]; then
         echo "$VALIDATORS" | jq -r ".[$i].consumer_mnemonic" | $BIN keys add validator$VAL_ID \
-            --home /$CHAIN_ID/validator$VAL_ID \
+            --home /$CHAIN_HOME/validator$VAL_ID \
             --keyring-backend test \
             --recover > /dev/null
     else
         echo "$VALIDATORS" | jq -r ".[$i].mnemonic" | $BIN keys add validator$VAL_ID \
-        --home /$CHAIN_ID/validator$VAL_ID \
+        --home /$CHAIN_HOME/validator$VAL_ID \
         --keyring-backend test \
         --recover > /dev/null
     fi
-    
+
     # Give validators their initial token allocations
     # move the genesis in
-    mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
-    
+    mv /$CHAIN_HOME/genesis.json /$CHAIN_HOME/validator$VAL_ID/config/genesis.json
+
     # give this validator some money
     ALLOCATION=$(echo "$VALIDATORS" | jq -r ".[$i].allocation")
     $BIN genesis add-genesis-account validator$VAL_ID $ALLOCATION \
-        --home /$CHAIN_ID/validator$VAL_ID \
+        --home /$CHAIN_HOME/validator$VAL_ID \
         --keyring-backend test
 
     # move the genesis back out
-    mv /$CHAIN_ID/validator$VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
+    mv /$CHAIN_HOME/validator$VAL_ID/config/genesis.json /$CHAIN_HOME/genesis.json
 done
 
 
@@ -153,50 +155,50 @@ do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
 
     # Copy in the genesis.json
-    cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
+    cp /$CHAIN_HOME/genesis.json /$CHAIN_HOME/validator$VAL_ID/config/genesis.json
 
     # Copy in validator state file
-    echo '{"height": "0","round": 0,"step": 0}' > /$CHAIN_ID/validator$VAL_ID/data/priv_validator_state.json
+    echo '{"height": "0","round": 0,"step": 0}' > /$CHAIN_HOME/validator$VAL_ID/data/priv_validator_state.json
 
     START_WITH_CONSUMER_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].start_with_consumer_key")
     if [[ "$CHAIN_ID" != "provi" && "$START_WITH_CONSUMER_KEY" = "true" ]]; then
         # start with assigned consumer key
         PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].consumer_priv_validator_key")
         if [[ "$PRIV_VALIDATOR_KEY" ]]; then
-            echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+            echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_HOME/validator$VAL_ID/config/priv_validator_key.json
         fi
     else
         PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].priv_validator_key")
         if [[ "$PRIV_VALIDATOR_KEY" ]]; then
-            echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+            echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_HOME/validator$VAL_ID/config/priv_validator_key.json
         fi
     fi
 
     NODE_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].node_key")
     if [[ "$NODE_KEY" ]]; then
-        echo "$NODE_KEY" > /$CHAIN_ID/validator$VAL_ID/config/node_key.json
+        echo "$NODE_KEY" > /$CHAIN_HOME/validator$VAL_ID/config/node_key.json
     fi
 
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
-    if [ "$SKIP_GENTX" = "false" ] ; then 
+    if [ "$SKIP_GENTX" = "false" ] ; then
         STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
         $BIN genesis gentx validator$VAL_ID "$STAKE_AMOUNT" \
-            --home /$CHAIN_ID/validator$VAL_ID \
+            --home /$CHAIN_HOME/validator$VAL_ID \
             --keyring-backend test \
             --moniker validator$VAL_ID \
             --chain-id=$CHAIN_ID
 
-        # Copy gentxs to the first validator for possible future collection. 
+        # Copy gentxs to the first validator for possible future collection.
         # Obviously we don't need to copy the first validator's gentx to itself
         if [ $VAL_ID != $FIRST_VAL_ID ]; then
-            cp /$CHAIN_ID/validator$VAL_ID/config/gentx/* /$CHAIN_ID/validator$FIRST_VAL_ID/config/gentx/
+            cp /$CHAIN_HOME/validator$VAL_ID/config/gentx/* /$CHAIN_HOME/validator$FIRST_VAL_ID/config/gentx/
         fi
     fi
 
     # Modify tendermint configs of validator
-    if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then 
+    if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then
         #'s/foo/bar/;s/abc/def/'
-        sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
+        sed -i "$TENDERMINT_CONFIG_TRANSFORM" /$CHAIN_HOME/validator$VAL_ID/config/config.toml
     fi
 done
 
@@ -207,16 +209,16 @@ done
 
 if [ "$SKIP_GENTX" = "false" ] ; then
     # make the final genesis.json
-    $BIN genesis collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
+    $BIN genesis collect-gentxs --home /$CHAIN_HOME/validator$FIRST_VAL_ID
 
-    # and copy it to the root 
-    cp /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
+    # and copy it to the root
+    cp /$CHAIN_HOME/validator$FIRST_VAL_ID/config/genesis.json /$CHAIN_HOME/genesis.json
 
     # put the now final genesis.json into the correct folders
     for i in $(seq 1 $(($NODES - 1)));
     do
         VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
-        cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
+        cp /$CHAIN_HOME/genesis.json /$CHAIN_HOME/validator$VAL_ID/config/genesis.json
     done
 fi
 
@@ -231,7 +233,7 @@ do
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
-    NODE_HOME="/$CHAIN_ID/validator$VAL_ID"
+    NODE_HOME="/$CHAIN_HOME/validator$VAL_ID"
     GAIA_HOME="--home $NODE_HOME"
     NODE_HOMES="$NODE_HOME,$NODE_HOMES"
     RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658"
@@ -249,27 +251,27 @@ do
     do
         if [ $i -ne $j ]; then
             PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].val_id")
-            PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")  
-            NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
+            PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")
+            NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_HOME/validator$PEER_VAL_ID)
             ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_IP_SUFFIX:26656"
-            # (jq -r '.body.memo' /$CHAIN_ID/validator$j/config/gentx/*) # Getting the address from the gentx should also work
+            # (jq -r '.body.memo' /$CHAIN_HOME/validator$j/config/gentx/*) # Getting the address from the gentx should also work
             PERSISTENT_PEERS="$PERSISTENT_PEERS,$ADDRESS"
         fi
     done
 
-    
+
     if [ "$PERSISTENT_PEERS" != "" ]; then
         # Remove leading comma and concat to flag
         PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
     fi
-   
+
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     if [[ "$USE_COMETMOCK" == "true" ]]; then
         # to start with CometMock, ensure ABCI server  uses grpc (--transport=grpc) and the app is started without in-process CometBFT (--with-tendermint=false)
-        ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start --transport=grpc --with-tendermint=false &> /$CHAIN_ID/validator$VAL_ID/logs &
+        ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start --transport=grpc --with-tendermint=false &> /$CHAIN_HOME/validator$VAL_ID/logs &
     else
-        ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
+        ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_HOME/validator$VAL_ID/logs &
     fi
 
 done
@@ -314,13 +316,13 @@ ip netns exec $QUERY_NET_NAMESPACE_NAME ip link set dev lo up
 ## DONE QUERY NODE ENABLE DEVICE
 
 ## INIT QUERY NODE
-$BIN init --home /$CHAIN_ID/$QUERY_NODE_ID --chain-id=$CHAIN_ID $QUERY_NODE_ID > /dev/null
-cp /$CHAIN_ID/genesis.json /$CHAIN_ID/$QUERY_NODE_ID/config/genesis.json
+$BIN init --home /$CHAIN_HOME/$QUERY_NODE_ID --chain-id=$CHAIN_ID $QUERY_NODE_ID > /dev/null
+cp /$CHAIN_HOME/genesis.json /$CHAIN_HOME/$QUERY_NODE_ID/config/genesis.json
 ## DONE INIT QUERY NODE
 
 
 ## START QUERY NODE
-QUERY_GAIA_HOME="--home /$CHAIN_ID/$QUERY_NODE_ID"
+QUERY_GAIA_HOME="--home /$CHAIN_HOME/$QUERY_NODE_ID"
 QUERY_RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"
 QUERY_GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:9091"
 QUERY_LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26655"
@@ -336,7 +338,7 @@ for j in $(seq 0 $(($NODES - 1)));
 do
     PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].val_id")
     PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")
-    NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
+    NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_HOME/validator$PEER_VAL_ID)
     ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_IP_SUFFIX:26656"
     QUERY_PERSISTENT_PEERS="$QUERY_PERSISTENT_PEERS,$ADDRESS"
 done
@@ -349,7 +351,7 @@ ARGS="$QUERY_GAIA_HOME $QUERY_LISTEN_ADDRESS $QUERY_RPC_ADDRESS $QUERY_GRPC_ADDR
 
 # Query node is only started if CometMock is not used - with CometMock, it takes the role of the query node
 if [[ "$USE_COMETMOCK" != "true" ]]; then
-    ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
+    ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_HOME/$QUERY_NODE_ID/logs &
 fi
 ## DONE START NODE
 
@@ -366,7 +368,7 @@ NODE_HOMES=${NODE_HOMES%?}
 # CometMock takes the role of the query node
 if [[ "$USE_COMETMOCK" == "true" ]]; then
     sleep 2
-    ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES grpc &> cometmock_${CHAIN_ID}_out.log &
+    ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_HOME/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES grpc &> cometmock_${CHAIN_ID}_out.log &
     sleep 3
 fi
 
@@ -377,7 +379,7 @@ fi
 # poll for chain start
 if [[ "$USE_COMETMOCK" == "true" ]]; then
     set +e
-    until $BIN query block --type=height 1--node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"; do sleep 0.3 ; done
+    until $BIN query block --type=height 1 --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"; do sleep 0.3 ; done
     set -e
 else
     set +e

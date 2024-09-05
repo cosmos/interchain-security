@@ -1752,7 +1752,7 @@ func stepsValidatorsDenylistedChain() []Step {
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100,
-						// "bob" is denylisted and hence does not valiate the consumer chain
+						// "bob" is denylisted and hence does not validate the consumer chain
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 300,
 					},

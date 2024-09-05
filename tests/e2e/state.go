@@ -316,7 +316,7 @@ func (tr Chain) getValidatorIP(chain ChainID, validator ValidatorID) string {
 }
 
 func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
-	return `/` + string(tr.testConfig.chainConfigs[chain].ChainId) + `/validator` + fmt.Sprint(validator)
+	return `/` + string(chain) + `/validator` + fmt.Sprint(validator)
 }
 
 func (tr Chain) curlJsonRPCRequest(method, params, address string) {
@@ -926,7 +926,7 @@ func (tr Commands) GetHasToValidate(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	arr := gjson.Get(string(bz), "consumer_chain_ids").Array()
+	arr := gjson.Get(string(bz), "consumer_ids").Array()
 	chains := []ChainID{}
 	for _, c := range arr {
 		for _, chain := range tr.chainConfigs {

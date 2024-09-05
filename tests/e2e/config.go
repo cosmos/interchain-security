@@ -101,6 +101,7 @@ const (
 	InactiveValsMintTestCfg      TestConfigType = "inactive-vals-mint"
 	MintTestCfg                  TestConfigType = "mint"
 	InactiveValsExtraValsTestCfg TestConfigType = "inactive-vals-extra-vals"
+	PermissionlessTestCfg        TestConfigType = "permissionless-ics"
 )
 
 type TestConfig struct {
@@ -109,6 +110,7 @@ type TestConfig struct {
 	containerConfig  ContainerConfig
 	validatorConfigs map[ValidatorID]ValidatorConfig
 	chainConfigs     map[ChainID]ChainConfig
+	consumerChains   map[ConsumerID]ChainConfig
 	providerVersion  string
 	consumerVersion  string
 	// override config.toml parameters
@@ -210,6 +212,8 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 		testCfg = MintTestConfig()
 	case InactiveValsExtraValsTestCfg:
 		testCfg = InactiveValsExtraValsTestConfig()
+	case PermissionlessTestCfg:
+		testCfg = PermissionlessTestConfig()
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
@@ -594,6 +598,68 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 	return tr
 }
 
+// PermissionlessTestConfig contains a provider chain and 2 cosumer chains with the same chain identifier
+func PermissionlessTestConfig() TestConfig {
+	tr := TestConfig{
+		name: string(PermissionlessTestCfg),
+		containerConfig: e2e.ContainerConfig{
+			ContainerName: "interchain-security-container",
+			InstanceName:  "interchain-security-instance",
+			CcvVersion:    "1",
+			Now:           time.Now(),
+		},
+		validatorConfigs: getDefaultValidators(),
+		chainConfigs: map[ChainID]e2e.ChainConfig{
+			"provi": {
+				ChainId:        ChainID("provi"),
+				AccountPrefix:  ProviderAccountPrefix,
+				BinaryName:     "interchain-security-pd",
+				IpPrefix:       "7.7.7",
+				VotingWaitTime: 20,
+				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+					".app_state.provider.params.slash_meter_replenish_period = \"3s\" | " +
+					".app_state.provider.params.blocks_per_epoch = 3",
+			},
+			"cons1": {
+				ChainId:        ChainID("consu"),
+				AccountPrefix:  ConsumerAccountPrefix,
+				BinaryName:     "interchain-security-cd",
+				IpPrefix:       "7.7.8",
+				VotingWaitTime: 20,
+				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+			// ChainID needs to be "consu" as previous consumer chain
+			"cons2": {
+				ChainId:        ChainID("consu"),
+				AccountPrefix:  ConsumerAccountPrefix,
+				BinaryName:     "interchain-security-cd",
+				IpPrefix:       "7.7.9",
+				VotingWaitTime: 20,
+				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
+	}
+	tr.Initialize()
+	return tr
+}
 func InactiveProviderValsTestConfig() TestConfig {
 	tr := DefaultTestConfig()
 	tr.name = "InactiveValsConfig"
@@ -958,11 +1024,11 @@ func (s *TestConfig) validateStringLiterals() {
 
 	for chainID, chainConfig := range s.chainConfigs {
 		if len(chainID) > 5 {
-			panic("chain id string literal must be 5 char or less")
+			panic(fmt.Sprintf("chain id string literal must be 5 char or less: %s", chainID))
 		}
 
 		if chainID != chainConfig.ChainId {
-			panic("chain config is mapped to a chain id that is different than what's stored in the config")
+			log.Println("chain config is mapped to a chain id that is different than what's stored in the config")
 		}
 	}
 }
@@ -1266,6 +1332,7 @@ func getValidatorConfigFromVersion(providerVersion, consumerVersion string) map[
 // If provided version is before v1.6.0 then a configuration based on template for v1.4.x is returned
 // otherwise the returned configuration is based on template v1.4.
 func GetHermesConfig(hermesVersion, queryNodeIP string, chainCfg ChainConfig, isConsumer bool) string {
+
 	ChainId := chainCfg.ChainId
 	keyName := "query"
 	rpcAddr := "http://" + queryNodeIP + ":26658"
