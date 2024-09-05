@@ -77,8 +77,8 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	}
 
 	k.Logger(ctx).Info("validator assigned consumer key",
-		"consumer id", msg.ConsumerId,
-		"chain id", chainId,
+		"consumerId", msg.ConsumerId,
+		"chainId", chainId,
 		"validator operator addr", msg.ProviderAddr,
 		"consumer public key", msg.ConsumerKey,
 	)
@@ -223,8 +223,8 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 	}
 
 	k.Logger(ctx).Info("validator opted in",
-		"consumer id", msg.ConsumerId,
-		"chain id", chainId,
+		"consumerId", msg.ConsumerId,
+		"chainId", chainId,
 		"validator operator addr", msg.ProviderAddr,
 		"consumer public key", msg.ConsumerKey,
 	)
@@ -275,8 +275,8 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 	}
 
 	k.Logger(ctx).Info("validator opted out",
-		"consumer id", msg.ConsumerId,
-		"chain id", chainId,
+		"consumerId", msg.ConsumerId,
+		"chainId", chainId,
 		"validator operator addr", msg.ProviderAddr,
 	)
 
@@ -323,8 +323,8 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 	}
 
 	k.Logger(ctx).Info("validator set commission rate on consumer",
-		"consumer id", msg.ConsumerId,
-		"chain id", chainId,
+		"consumerId", msg.ConsumerId,
+		"chainId", chainId,
 		"validator operator addr", msg.ProviderAddr,
 		"rate", msg.Rate,
 	)
@@ -418,8 +418,8 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerSpawnTime, phase.String()))
 
 	k.Logger(ctx).Info("created consumer",
-		"consumer id", consumerId,
-		"chain id", msg.ChainId,
+		"consumerId", consumerId,
+		"chainId", msg.ChainId,
 		"owner", msg.Submitter,
 		"phase", phase,
 		"spawn time", initializationParameters.SpawnTime,
@@ -578,8 +578,8 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerSpawnTime, phase.String()))
 
 	k.Logger(ctx).Info("updated consumer",
-		"consumer id", consumerId,
-		"chain id", chainId,
+		"consumerId", consumerId,
+		"chainId", chainId,
 		"owner", currentOwnerAddress,
 		"phase", phase,
 		"topN", currentPowerShapingParameters.Top_N,
@@ -625,8 +625,8 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 	err = k.Keeper.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 
 	k.Logger(ctx).Info("stopped consumer",
-		"consumer id", consumerId,
-		"chain id", chainId,
+		"consumerId", consumerId,
+		"chainId", chainId,
 		"phase", phase,
 	)
 
