@@ -87,8 +87,8 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		sdk.NewEvent(
 			types.EventTypeAssignConsumerKey,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
-			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
 			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
@@ -128,8 +128,8 @@ func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.
 		sdk.NewEvent(
 			ccvtypes.EventTypeSubmitConsumerMisbehaviour,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
-			sdk.NewAttribute(types.AttributeConsumerChainID, msg.Misbehaviour.Header1.Header.ChainID),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainId, msg.Misbehaviour.Header1.Header.ChainID),
 			sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
 			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourClientId, msg.Misbehaviour.ClientId),
 			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourHeight1, msg.Misbehaviour.Header1.GetHeight().String()),
@@ -182,8 +182,8 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		sdk.NewEvent(
 			ccvtypes.EventTypeSubmitConsumerDoubleVoting,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
-			sdk.NewAttribute(types.AttributeConsumerChainID, msg.InfractionBlockHeader.Header.ChainID),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainId, msg.InfractionBlockHeader.Header.ChainID),
 			sdk.NewAttribute(ccvtypes.AttributeConsumerDoubleVoting, msg.DuplicateVoteEvidence.String()),
 			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
@@ -233,8 +233,8 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 		sdk.NewEvent(
 			types.EventTypeOptIn,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
-			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
 			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
@@ -284,8 +284,8 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 		sdk.NewEvent(
 			types.EventTypeOptOut,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
-			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
@@ -333,8 +333,8 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 		sdk.NewEvent(
 			types.EventTypeSetConsumerCommissionRate,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
-			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
+			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
 			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
@@ -366,8 +366,8 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	// add event attributes
 	eventAttributes = append(eventAttributes, []sdk.Attribute{
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-		sdk.NewAttribute(types.AttributeConsumerID, consumerId),
-		sdk.NewAttribute(types.AttributeConsumerChainID, msg.ChainId),
+		sdk.NewAttribute(types.AttributeConsumerId, consumerId),
+		sdk.NewAttribute(types.AttributeConsumerChainId, msg.ChainId),
 		sdk.NewAttribute(types.AttributeConsumerName, msg.Metadata.Name),
 		sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		sdk.NewAttribute(types.AttributeConsumerOwner, msg.Submitter),
@@ -468,8 +468,8 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	// add event attributes
 	eventAttributes = append(eventAttributes, []sdk.Attribute{
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-		sdk.NewAttribute(types.AttributeConsumerID, consumerId),
-		sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
+		sdk.NewAttribute(types.AttributeConsumerId, consumerId),
+		sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 		sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Owner),
 	}...)
 
@@ -634,8 +634,8 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 		sdk.NewEvent(
 			types.EventTypeRemoveConsumer,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeConsumerID, consumerId),
-			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
+			sdk.NewAttribute(types.AttributeConsumerId, consumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Owner),
 		),
 	)
