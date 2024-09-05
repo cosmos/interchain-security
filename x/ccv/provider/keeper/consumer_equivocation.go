@@ -84,6 +84,8 @@ func (k Keeper) HandleConsumerDoubleVoting(
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",
+		"consumerId", consumerId,
+		"chainId", chainId,
 		"byzantine validator address", providerAddr.String(),
 	)
 
@@ -214,6 +216,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, consumerId string, m
 
 	logger.Info(
 		"confirmed equivocation light client attack",
+		"consumerId", consumerId,
 		"byzantine validators slashed, jailed and tombstoned", provAddrs,
 	)
 
