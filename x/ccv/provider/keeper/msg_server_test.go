@@ -34,7 +34,7 @@ func TestCreateConsumer(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "signer", ownerAddress)
 	phase := providerKeeper.GetConsumerPhase(ctx, "0")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_REGISTERED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_REGISTERED, phase)
 
 	consumerMetadata = providertypes.ConsumerMetadata{
 		Name:        "chain name",
@@ -54,7 +54,7 @@ func TestCreateConsumer(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "signer2", ownerAddress)
 	phase = providerKeeper.GetConsumerPhase(ctx, "1")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_REGISTERED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_REGISTERED, phase)
 }
 
 func TestUpdateConsumer(t *testing.T) {
@@ -134,7 +134,7 @@ func TestUpdateConsumer(t *testing.T) {
 
 	// assert phase
 	phase := providerKeeper.GetConsumerPhase(ctx, consumerId)
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_INITIALIZED, phase)
 
 	// assert that chain is set to launch
 	consumerIds, err := providerKeeper.GetConsumersToBeLaunched(ctx, expectedInitializationParameters.SpawnTime)

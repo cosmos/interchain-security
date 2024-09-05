@@ -55,7 +55,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				k.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
@@ -88,7 +88,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				k.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
@@ -103,7 +103,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				k.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
 
 				// Use the consumer key already used by some other validator
 				k.SetValidatorByConsumerAddr(ctx, "consumerId", consumerConsAddr, providerConsAddr2)
@@ -127,7 +127,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				k.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
 
 				// Use the consumer key already
 				k.SetValidatorByConsumerAddr(ctx, "consumerId", consumerConsAddr, providerConsAddr)
@@ -149,7 +149,7 @@ func TestAssignConsensusKeyMsgHandling(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
-				k.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				k.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
 
 				// Use the consumer key already used by some other validator
 				k.SetValidatorByConsumerAddr(ctx, "consumerId", consumerConsAddr, providerConsAddr2)

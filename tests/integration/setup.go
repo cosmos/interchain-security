@@ -149,7 +149,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	//  1. the consumer chain is added to the coordinator
 	//  2. MakeGenesis is called on the provider chain
 	//  3. ibc/testing sets the tendermint header for the consumer chain app
-	providerKeeper.SetConsumerPhase(suite.providerCtx(), icstestingutils.FirstConsumerID, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(suite.providerCtx(), icstestingutils.FirstConsumerID, providertypes.CONSUMER_PHASE_INITIALIZED)
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerID)
 
 	// start consumer chains

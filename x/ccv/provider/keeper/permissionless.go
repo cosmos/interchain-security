@@ -148,7 +148,7 @@ func (k Keeper) GetConsumerPhase(ctx sdk.Context, consumerId string) types.Consu
 	store := ctx.KVStore(k.storeKey)
 	buf := store.Get(types.ConsumerIdToPhaseKey(consumerId))
 	if buf == nil {
-		return types.ConsumerPhase_CONSUMER_PHASE_UNSPECIFIED
+		return types.CONSUMER_PHASE_UNSPECIFIED
 	}
 	phase := types.ConsumerPhase(binary.BigEndian.Uint32(buf))
 	return phase
@@ -171,9 +171,9 @@ func (k Keeper) DeleteConsumerPhase(ctx sdk.Context, consumerId string) {
 // IsConsumerActive checks if a consumer chain is either registered, initialized, or launched.
 func (k Keeper) IsConsumerActive(ctx sdk.Context, consumerId string) bool {
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	return phase == types.ConsumerPhase_CONSUMER_PHASE_REGISTERED ||
-		phase == types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED ||
-		phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED
+	return phase == types.CONSUMER_PHASE_REGISTERED ||
+		phase == types.CONSUMER_PHASE_INITIALIZED ||
+		phase == types.CONSUMER_PHASE_LAUNCHED
 }
 
 // GetOptedInConsumerIds returns all the consumer ids where the given validator is opted in

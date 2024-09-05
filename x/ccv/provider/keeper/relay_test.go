@@ -110,7 +110,7 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 
 	// set a consumer client id and its phase, so we have a consumer chain (i.e., `GetAllConsumersWithIBCClients` is non-empty)
 	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientID")
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_LAUNCHED)
 
 	// opt in validator A and set as a consumer validator
 	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valAConsAddr))
@@ -530,7 +530,7 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 
 	// Pending VSC packets should be deleted in DeleteConsumerChain
 	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, "consumerId"))
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_DELETED, providerKeeper.GetConsumerPhase(ctx, "consumerId"))
+	require.Equal(t, providertypes.CONSUMER_PHASE_DELETED, providerKeeper.GetConsumerPhase(ctx, "consumerId"))
 }
 
 // TestOnTimeoutPacketWithNoChainFound tests the `OnTimeoutPacket` method fails when no chain is found
@@ -670,7 +670,7 @@ func TestEndBlockVSU(t *testing.T) {
 	// set a sample client for a launched consumer chain so that `GetAllConsumersWithIBCClients` in `QueueVSCPackets` iterates at least once
 	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientId")
 	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{Top_N: 100})
-	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
 
 	// with block height of 1 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(1)
@@ -799,7 +799,7 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 
 	// add a consumer chain
 	providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientId")
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_LAUNCHED)
 
 	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{
 		Top_N:              50, // would opt in E

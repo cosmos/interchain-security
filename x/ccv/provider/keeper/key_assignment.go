@@ -460,7 +460,7 @@ func (k Keeper) AssignConsumerKey(
 
 		// check whether the consumer chain has already launched (i.e., a client to the consumer was already created)
 		phase := k.GetConsumerPhase(ctx, consumerId)
-		if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+		if phase == types.CONSUMER_PHASE_LAUNCHED {
 			// mark the old consumer address as prunable once UnbondingPeriod elapses;
 			// note: this state is removed on EndBlock
 			unbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)

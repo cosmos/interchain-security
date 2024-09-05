@@ -61,7 +61,7 @@ func TestCanLaunch(t *testing.T) {
 	require.False(t, canLaunch)
 
 	// cannot launch a chain without initialization parameters
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.False(t, canLaunch)
 
@@ -71,17 +71,17 @@ func TestCanLaunch(t *testing.T) {
 	require.NoError(t, err)
 
 	// cannot launch a launched chain
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_LAUNCHED)
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.False(t, canLaunch)
 
 	// cannot launch a stopped chain
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_STOPPED)
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.False(t, canLaunch)
 
 	// initialized chain can launch
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
 	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
 	require.True(t, canLaunch)
 
@@ -255,7 +255,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 		err := providerKeeper.SetConsumerInitializationParameters(ctx, fmt.Sprintf("%d", i), r)
 		require.NoError(t, err)
 		// set up the chains in their initialized phase, hence they could launch
-		providerKeeper.SetConsumerPhase(ctx, fmt.Sprintf("%d", i), providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+		providerKeeper.SetConsumerPhase(ctx, fmt.Sprintf("%d", i), providertypes.CONSUMER_PHASE_INITIALIZED)
 		err = providerKeeper.AppendConsumerToBeLaunched(ctx, fmt.Sprintf("%d", i), r.SpawnTime)
 		require.NoError(t, err)
 	}
@@ -280,33 +280,33 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 
 	// first chain was successfully launched
 	phase := providerKeeper.GetConsumerPhase(ctx, "0")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_LAUNCHED, phase)
 	_, found := providerKeeper.GetConsumerGenesis(ctx, "0")
 	require.True(t, found)
 
 	// second chain was successfully launched
 	phase = providerKeeper.GetConsumerPhase(ctx, "1")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_LAUNCHED, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "1")
 	require.True(t, found)
 
 	// third chain was not launched because its spawn time has not passed
 	phase = providerKeeper.GetConsumerPhase(ctx, "2")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_INITIALIZED, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "2")
 	require.False(t, found)
 
 	// fourth chain corresponds to an Opt-In chain with one opted-in validator and hence the chain gets
 	// successfully executed
 	phase = providerKeeper.GetConsumerPhase(ctx, "3")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_LAUNCHED, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "3")
 	require.True(t, found)
 
 	// fifth chain corresponds to an Opt-In chain with no opted-in validators and hence the
 	// chain launch is NOT successful
 	phase = providerKeeper.GetConsumerPhase(ctx, "4")
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_INITIALIZED, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "4")
 	require.False(t, found)
 }
@@ -362,7 +362,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "No state mutation, new client should be created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-				providerKeeper.SetConsumerPhase(ctx, "0", providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+				providerKeeper.SetConsumerPhase(ctx, "0", providertypes.CONSUMER_PHASE_INITIALIZED)
 
 				// Valid client creation is asserted with mock expectations here
 				testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1) // returns empty validator set
@@ -375,7 +375,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "chain for this consumer id has already launched, and hence client was created, NO new one is created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-				providerKeeper.SetConsumerPhase(ctx, "0", providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+				providerKeeper.SetConsumerPhase(ctx, "0", providertypes.CONSUMER_PHASE_LAUNCHED)
 
 				// Expect none of the client creation related calls to happen
 				mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
@@ -695,7 +695,7 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 		require.NoError(t, err)
 		err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, testkeeper.GetTestPowerShapingParameters())
 		require.NoError(t, err)
-		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
 		providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
 
 		err = providerKeeper.CreateConsumerClient(ctx, consumerId)
@@ -704,7 +704,7 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 		require.NoError(t, err)
 
 		// the chain is considered to be stopped and ready for deletion (i.e., `StopAndPrepareForConsumerRemoval` is called)
-		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_STOPPED)
 	}
 
 	//
@@ -715,12 +715,12 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 
 	// Only the 3rd (final) proposal is still stored as pending
 	phase := providerKeeper.GetConsumerPhase(ctx, consumerIds[0])
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_DELETED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_DELETED, phase)
 	phase = providerKeeper.GetConsumerPhase(ctx, consumerIds[1])
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_DELETED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_DELETED, phase)
 	// third chain had a removal time in the future and hence did not get deleted
 	phase = providerKeeper.GetConsumerPhase(ctx, consumerIds[2])
-	require.Equal(t, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_STOPPED, phase)
 }
 
 func TestGetConsumersReadyToStop(t *testing.T) {

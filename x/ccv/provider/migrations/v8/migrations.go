@@ -267,7 +267,7 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		}
 
 		// set phase to launched
-		pk.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+		pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
 
 		// This is to migrate everything under `ProviderConsAddrToOptedInConsumerIdsKey`
 		// `OptedIn` was already re-keyed earlier (see above) and hence we can use `consumerId` here.

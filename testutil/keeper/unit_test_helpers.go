@@ -240,7 +240,7 @@ func SetupForDeleteConsumerChain(t *testing.T, ctx sdk.Context,
 	require.NoError(t, err)
 
 	// set the chain to initialized so that we can create a consumer client
-	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
 
 	err = providerKeeper.CreateConsumerClient(ctx, consumerId)
 	require.NoError(t, err)
@@ -251,7 +251,7 @@ func SetupForDeleteConsumerChain(t *testing.T, ctx sdk.Context,
 	require.NoError(t, err)
 
 	// set the chain to stopped sto the chain can be deleted
-	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_STOPPED)
 }
 
 // TestProviderStateIsCleanedAfterConsumerChainIsDeleted executes test assertions for the provider's state being cleaned

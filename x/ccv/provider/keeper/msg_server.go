@@ -291,7 +291,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.Signer)
 	k.Keeper.SetConsumerChainId(ctx, consumerId, msg.ChainId)
-	k.Keeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_REGISTERED)
+	k.Keeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
 
 	if err := k.Keeper.SetConsumerMetadata(ctx, consumerId, msg.Metadata); err != nil {
 		return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
@@ -326,7 +326,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	}
 
 	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
-		k.Keeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+		k.Keeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime); err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
@@ -441,7 +441,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	}
 
 	if spawnTime, canLaunch := k.Keeper.CanLaunch(ctx, consumerId); canLaunch {
-		k.Keeper.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED)
+		k.Keeper.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime); err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrCannotPrepareForLaunch,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
@@ -468,7 +468,7 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 	}
 
 	phase := k.Keeper.GetConsumerPhase(ctx, consumerId)
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED {
+	if phase != types.CONSUMER_PHASE_LAUNCHED {
 		return &resp, errorsmod.Wrapf(types.ErrInvalidPhase,
 			"chain with consumer id: %s has to be in its launched phase", consumerId)
 	}

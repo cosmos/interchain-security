@@ -89,7 +89,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}
 
 	// stop the consumer chain
-	providerKeeper.SetConsumerPhase(s.providerCtx(), firstBundle.ConsumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	providerKeeper.SetConsumerPhase(s.providerCtx(), firstBundle.ConsumerId, types.CONSUMER_PHASE_STOPPED)
 	err = providerKeeper.DeleteConsumerChain(s.providerCtx(), firstBundle.ConsumerId)
 	s.Require().NoError(err)
 
@@ -107,7 +107,7 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// stop the consumer chain
-	providerKeeper.SetConsumerPhase(s.providerCtx(), s.getFirstBundle().ConsumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	providerKeeper.SetConsumerPhase(s.providerCtx(), s.getFirstBundle().ConsumerId, types.CONSUMER_PHASE_STOPPED)
 	err := providerKeeper.DeleteConsumerChain(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NoError(err)
 

@@ -42,7 +42,7 @@ func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, pre
 func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) {
 	// a chain that is already launched or stopped cannot launch again
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase == types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED || phase == types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
+	if phase == types.CONSUMER_PHASE_LAUNCHED || phase == types.CONSUMER_PHASE_STOPPED {
 		return time.Time{}, false
 	}
 
@@ -160,7 +160,7 @@ func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
 		return errorsmod.Wrapf(types.ErrInvalidConsumerGenesis, "consumer genesis initial validator set is empty - no validators opted in consumer id: %s", consumerId)
 	}
 
-	k.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_LAUNCHED)
+	k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_LAUNCHED)
 
 	return nil
 }
@@ -174,7 +174,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	}
 
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_INITIALIZED {
+	if phase != types.CONSUMER_PHASE_INITIALIZED {
 		return errorsmod.Wrapf(types.ErrInvalidPhase,
 			"cannot create client for consumer chain that is not in the Initialized phase but in phase %d: %s", phase, consumerId)
 	}
@@ -359,7 +359,7 @@ func (k Keeper) MakeConsumerGenesis(
 func (k Keeper) StopAndPrepareForConsumerRemoval(ctx sdk.Context, consumerId string) error {
 	// The phase of the chain is immediately set to stopped, albeit its state is removed later (see below).
 	// Setting the phase here helps in not considering this chain when we look at launched chains (e.g., in `QueueVSCPackets)
-	k.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_STOPPED)
+	k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_STOPPED)
 
 	// state of this chain is removed once UnbondingPeriod elapses
 	unbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
@@ -466,7 +466,7 @@ func (k Keeper) GetConsumersReadyToStop(ctx sdk.Context, limit uint32) []string 
 // DeleteConsumerChain cleans up the state of the given consumer chain
 func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err error) {
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase != types.ConsumerPhase_CONSUMER_PHASE_STOPPED {
+	if phase != types.CONSUMER_PHASE_STOPPED {
 		return fmt.Errorf("cannot delete non-stopped chain: %s", consumerId)
 	}
 
@@ -519,7 +519,7 @@ func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err err
 	// Note that we do not delete ConsumerIdToChainIdKey and ConsumerIdToPhase, as well
 	// as consumer metadata, initialization and power-shaping parameters.
 
-	k.SetConsumerPhase(ctx, consumerId, types.ConsumerPhase_CONSUMER_PHASE_DELETED)
+	k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_DELETED)
 	k.Logger(ctx).Info("consumer chain deleted from provider", "consumerId", consumerId)
 
 	return nil
