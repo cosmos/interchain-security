@@ -117,7 +117,7 @@ func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.
 		sdk.NewEvent(
 			ccvtypes.EventTypeSubmitConsumerMisbehaviour,
 			sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
-			sdk.NewAttribute(ccvtypes.AttributeSubmitterAddress, msg.Submitter),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourClientId, msg.Misbehaviour.ClientId),
 			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourHeight1, msg.Misbehaviour.Header1.GetHeight().String()),
 			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourHeight2, msg.Misbehaviour.Header2.GetHeight().String()),
@@ -170,7 +170,7 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 			sdk.NewAttribute(ccvtypes.AttributeConsumerDoubleVoting, msg.DuplicateVoteEvidence.String()),
 			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
 			sdk.NewAttribute(types.AttributeConsumerChainID, msg.InfractionBlockHeader.Header.ChainID),
-			sdk.NewAttribute(ccvtypes.AttributeSubmitterAddress, msg.Submitter),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		),
 	})
 
@@ -308,6 +308,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 		sdk.NewAttribute(types.AttributeConsumerID, consumerId),
 		sdk.NewAttribute(types.AttributeConsumerChainID, msg.ChainId),
 		sdk.NewAttribute(types.AttributeConsumerName, msg.Metadata.Name),
+		sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
 		sdk.NewAttribute(types.AttributeConsumerOwner, msg.Submitter),
 	}...)
 
@@ -351,6 +352,10 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 		}
 	}
 
+	// add Phase event attribute
+	eventAttributes = append(eventAttributes,
+		sdk.NewAttribute(types.AttributeConsumerSpawnTime, k.GetConsumerPhase(ctx, consumerId).String()))
+
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeCreateConsumer,
@@ -366,6 +371,9 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateConsumer) (*types.MsgUpdateConsumerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	resp := types.MsgUpdateConsumerResponse{}
+
+	// initialize an empty slice to store event attributes
+	eventAttributes := []sdk.Attribute{}
 
 	consumerId := msg.ConsumerId
 
@@ -383,6 +391,20 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		return &resp, errorsmod.Wrapf(types.ErrUnauthorized, "expected owner address %s, got %s", ownerAddress, msg.Owner)
 	}
 
+	chainId, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
+			"cannot get consumer chain ID: %s", err.Error())
+	}
+
+	// add event attributes
+	eventAttributes = append(eventAttributes, []sdk.Attribute{
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		sdk.NewAttribute(types.AttributeConsumerID, consumerId),
+		sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
+		sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Owner),
+	}...)
+
 	// The new owner address can be empty, in which case the consumer chain does not change its owner.
 	// However, if the new owner address is not empty, we verify that it's a valid account address.
 	if strings.TrimSpace(msg.NewOwnerAddress) != "" {
@@ -391,6 +413,10 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		}
 
 		k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.NewOwnerAddress)
+
+		// add Owner event attribute
+		eventAttributes = append(eventAttributes,
+			sdk.NewAttribute(types.AttributeConsumerOwner, msg.NewOwnerAddress))
 	}
 
 	if msg.Metadata != nil {
@@ -398,6 +424,9 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerMetadata,
 				"cannot set consumer metadata: %s", err.Error())
 		}
+
+		// add Name event attribute
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerName, msg.Metadata.Name))
 	}
 
 	// get the previous spawn time so that we can use it in `PrepareConsumerForLaunch`
@@ -412,6 +441,12 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		if err = k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters); err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
 				"cannot set consumer initialization parameters: %s", err.Error())
+		}
+
+		if !msg.InitializationParameters.SpawnTime.IsZero() {
+			// add SpawnTime event attribute
+			eventAttributes = append(eventAttributes,
+				sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
 		}
 	}
 
@@ -440,6 +475,10 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			return &resp, errorsmod.Wrapf(types.ErrCannotUpdateMinimumPowerInTopN,
 				"could not update minimum power in top N, oldTopN: %d, newTopN: %d, error: %s", oldTopN, msg.PowerShapingParameters.Top_N, err.Error())
 		}
+
+		// add TopN event attribute
+		eventAttributes = append(eventAttributes,
+			sdk.NewAttribute(types.AttributeConsumerTopN, fmt.Sprintf("%v", msg.PowerShapingParameters.Top_N)))
 	}
 
 	// A Top N cannot change its owner address to something different from the gov module if the chain
@@ -466,6 +505,17 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
 		}
 	}
+
+	// add Phase event attribute
+	eventAttributes = append(eventAttributes,
+		sdk.NewAttribute(types.AttributeConsumerSpawnTime, k.GetConsumerPhase(ctx, consumerId).String()))
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeUpdateConsumer,
+			eventAttributes...,
+		),
+	)
 
 	return &resp, nil
 }
