@@ -233,7 +233,8 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 		sdk.NewEvent(
 			types.EventTypeConsumerClientCreated,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeChainID, consumerId),
+			sdk.NewAttribute(types.AttributeConsumerID, consumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, chainId),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
 			sdk.NewAttribute(types.AttributeInitialHeight, initializationRecord.InitialHeight.String()),
 			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),

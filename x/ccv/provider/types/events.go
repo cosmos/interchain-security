@@ -9,6 +9,8 @@ const (
 	EventTypeSetConsumerCommissionRate = "set_consumer_commission_rate"
 	EventTypeOptIn                     = "opt_in"
 	EventTypeOptOut                    = "opt_out"
+	EventTypeCreateConsumer            = "create_consumer"
+
 	AttributeInfractionHeight          = "infraction_height"
 	AttributeInitialHeight             = "initial_height"
 	AttributeTrustingPeriod            = "trusting_period"
@@ -18,5 +20,9 @@ const (
 	AttributeAddConsumerRewardDenom    = "add_consumer_reward_denom"
 	AttributeRemoveConsumerRewardDenom = "remove_consumer_reward_denom"
 	AttributeConsumerCommissionRate    = "consumer_commission_rate"
-	AttributeConsumerId                = "consumer_chain_id"
+	AttributeConsumerID                = "consumer_id"
+	AttributeConsumerChainID           = "consumer_chain_id"
+	AttributeConsumerName              = "consumer_name"
+	AttributeConsumerOwner             = "consumer_owner"
+	AttributeConsumerSpawnTime         = "consumer_spawn_time"
 )

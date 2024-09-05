@@ -168,7 +168,8 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		sdk.NewEvent(
 			ccvtypes.EventTypeSubmitConsumerDoubleVoting,
 			sdk.NewAttribute(ccvtypes.AttributeConsumerDoubleVoting, msg.DuplicateVoteEvidence.String()),
-			sdk.NewAttribute(ccvtypes.AttributeChainID, msg.InfractionBlockHeader.Header.ChainID),
+			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, msg.InfractionBlockHeader.Header.ChainID),
 			sdk.NewAttribute(ccvtypes.AttributeSubmitterAddress, msg.Submitter),
 		),
 	})
@@ -273,7 +274,7 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeSetConsumerCommissionRate,
-			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
+			sdk.NewAttribute(types.AttributeConsumerID, msg.ConsumerId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
 		),
@@ -287,6 +288,9 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	resp := types.MsgCreateConsumerResponse{}
 
+	// initialize an empty slice to store event attributes
+	eventAttributes := []sdk.Attribute{}
+
 	consumerId := k.Keeper.FetchAndIncrementConsumerId(ctx)
 
 	k.Keeper.SetConsumerOwnerAddress(ctx, consumerId, msg.Submitter)
@@ -298,6 +302,15 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 			"cannot set consumer metadata: %s", err.Error())
 	}
 
+	// add event attributes
+	eventAttributes = append(eventAttributes, []sdk.Attribute{
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		sdk.NewAttribute(types.AttributeConsumerID, consumerId),
+		sdk.NewAttribute(types.AttributeConsumerChainID, msg.ChainId),
+		sdk.NewAttribute(types.AttributeConsumerName, msg.Metadata.Name),
+		sdk.NewAttribute(types.AttributeConsumerOwner, msg.Submitter),
+	}...)
+
 	// initialization parameters are optional and hence could be nil;
 	// in that case, set the default
 	initializationParameters := types.ConsumerInitializationParameters{} // default params
@@ -307,6 +320,11 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	if err := k.Keeper.SetConsumerInitializationParameters(ctx, consumerId, initializationParameters); err != nil {
 		return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
 			"cannot set consumer initialization parameters: %s", err.Error())
+	}
+	if !initializationParameters.SpawnTime.IsZero() {
+		// add SpawnTime event attribute
+		eventAttributes = append(eventAttributes,
+			sdk.NewAttribute(types.AttributeConsumerSpawnTime, initializationParameters.SpawnTime.String()))
 	}
 
 	// power-shaping parameters are optional and hence could be nil;
@@ -333,11 +351,12 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 		}
 	}
 
-	ctx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(ccvtypes.EventTypeConsumerCreation,
-			sdk.NewAttribute(ccvtypes.AttributeConsumerID, consumerId),
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeCreateConsumer,
+			eventAttributes...,
 		),
-	})
+	)
 
 	resp.ConsumerId = consumerId
 	return &resp, nil

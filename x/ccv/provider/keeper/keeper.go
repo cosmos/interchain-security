@@ -387,7 +387,8 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 		sdk.NewEvent(
 			ccv.EventTypeChannelEstablished,
 			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
-			sdk.NewAttribute(ccv.AttributeChainID, chainID),
+			sdk.NewAttribute(types.AttributeConsumerID, consumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainID, chainID),
 			sdk.NewAttribute(conntypes.AttributeKeyClientID, clientID),
 			sdk.NewAttribute(channeltypes.AttributeKeyChannelID, channelID),
 			sdk.NewAttribute(conntypes.AttributeKeyConnectionID, connectionID),
