@@ -115,7 +115,10 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) ([]abci.ValidatorUpdat
 	}
 
 	// store the validator set we will send to consensus
-	k.SetLastProviderConsensusValSet(ctx, nextValidators)
+	err = k.SetLastProviderConsensusValSet(ctx, nextValidators)
+	if err != nil {
+		return []abci.ValidatorUpdate{}, fmt.Errorf("setting the last provider consensus validator set: %w", err)
+	}
 
 	valUpdates := DiffValidators(currentValidators, nextValidators)
 
@@ -251,7 +254,10 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
-		k.SetConsumerValSet(ctx, consumerId, nextValidators)
+		err = k.SetConsumerValSet(ctx, consumerId, nextValidators)
+		if err != nil {
+			return fmt.Errorf("setting consumer validator set, consumerId(%s): %w", consumerId, err)
+		}
 
 		// check whether there are changes in the validator set
 		if len(valUpdates) != 0 {

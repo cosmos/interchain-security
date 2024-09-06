@@ -33,7 +33,8 @@ func TestConsumerValidator(t *testing.T) {
 	}
 
 	require.False(t, providerKeeper.IsConsumerValidator(ctx, "consumerId", types.NewProviderConsAddress(validator.ProviderConsAddr)))
-	providerKeeper.SetConsumerValidator(ctx, "consumerId", validator)
+	err := providerKeeper.SetConsumerValidator(ctx, "consumerId", validator)
+	require.NoError(t, err)
 	require.True(t, providerKeeper.IsConsumerValidator(ctx, "consumerId", types.NewProviderConsAddress(validator.ProviderConsAddr)))
 	providerKeeper.DeleteConsumerValidator(ctx, "consumerId", types.NewProviderConsAddress(validator.ProviderConsAddr))
 	require.False(t, providerKeeper.IsConsumerValidator(ctx, "consumerId", types.NewProviderConsAddress(validator.ProviderConsAddr)))
@@ -75,12 +76,13 @@ func TestGetConsumerValSet(t *testing.T) {
 	}
 
 	for _, expectedValidator := range expectedValidators {
-		providerKeeper.SetConsumerValidator(ctx, "consumerId",
+		err := providerKeeper.SetConsumerValidator(ctx, "consumerId",
 			types.ConsensusValidator{
 				ProviderConsAddr: expectedValidator.ProviderConsAddr,
 				Power:            expectedValidator.Power,
 				PublicKey:        expectedValidator.PublicKey,
 			})
+		require.NoError(t, err)
 	}
 
 	actualValidators, err := providerKeeper.GetConsumerValSet(ctx, "consumerId")
@@ -312,14 +314,16 @@ func TestSetConsumerValSet(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, valSet)
 	for _, validator := range currentValidators {
-		providerKeeper.SetConsumerValidator(ctx, chainID, validator)
+		err := providerKeeper.SetConsumerValidator(ctx, chainID, validator)
+		require.NoError(t, err)
 	}
 
 	valSet, err = providerKeeper.GetConsumerValSet(ctx, chainID)
 	require.NoError(t, err)
 	require.NotEmpty(t, valSet)
 
-	providerKeeper.SetConsumerValSet(ctx, chainID, nextValidators)
+	err = providerKeeper.SetConsumerValSet(ctx, chainID, nextValidators)
+	require.NoError(t, err)
 	nextCurrentValidators, err := providerKeeper.GetConsumerValSet(ctx, chainID)
 	require.NoError(t, err)
 

@@ -397,12 +397,12 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// Expect no error if validator does not exist
 	_, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
+	suite.Require().NoError(err)
 
 	// Check expected behavior for handling SlashPackets for double signing infractions
 	slashPacketData.Infraction = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	ackResult, err := providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
+	suite.Require().NoError(err)
 	suite.Require().Equal(ccv.V1Result, ackResult, "expected successful ack")
 
 	// Check expected behavior for handling SlashPackets for downtime infractions
@@ -410,23 +410,24 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// Expect packet to be handled if the validator didn't opt in
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
+	suite.Require().NoError(err)
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 
-	providerKeeper.SetConsumerValidator(ctx, firstBundle.ConsumerId, providertypes.ConsensusValidator{
+	err = providerKeeper.SetConsumerValidator(ctx, firstBundle.ConsumerId, providertypes.ConsensusValidator{
 		ProviderConsAddr: validAddress,
 	})
+	suite.Require().NoError(err)
 
 	// Expect the packet to bounce if the slash meter is negative
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(-1))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
+	suite.Require().NoError(err)
 	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected successful ack")
 
 	// Expect the packet to be handled if the slash meter is positive
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(0))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
+	suite.Require().NoError(err)
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 }
 

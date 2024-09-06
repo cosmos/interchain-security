@@ -248,11 +248,12 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.Empty(t, res)
 
 	// set consumer valset
-	pk.SetConsumerValSet(ctx, consumerId, []types.ConsensusValidator{
+	err = pk.SetConsumerValSet(ctx, consumerId, []types.ConsensusValidator{
 		consumerValidator1,
 		consumerValidator2,
 		consumerValidator3,
 	})
+	require.NoError(t, err)
 
 	expRes.Validators = append(expRes.Validators, &types.QueryConsumerValidatorsValidator{
 		ProviderAddress:         providerAddr3.String(),
@@ -329,7 +330,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	}
 
 	// set `providerAddr` as a consumer validator on first consumer chain
-	pk.SetConsumerValidator(ctx, consumerIds[0], types.ConsensusValidator{
+	err := pk.SetConsumerValidator(ctx, consumerIds[0], types.ConsensusValidator{
 		ProviderConsAddr: providerAddr.ToSdkConsAddr(),
 		Power:            1,
 		PublicKey: &crypto.PublicKey{
@@ -338,6 +339,7 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	// set `providerAddr` as an opted-in validator on third consumer chain
 	pk.SetOptedIn(ctx, consumerIds[2], providerAddr)

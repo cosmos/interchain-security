@@ -170,31 +170,52 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		rekeyFromChainIdToConsumerId(store, PendingVSCsKeyPrefix, chainId, consumerId)
 
 		// chainId -> ConsumerValidators
-		rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerValidatorsKeyPrefix(), chainId, consumerId)
+		err := rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerValidatorsKeyPrefix(), chainId, consumerId)
+		if err != nil {
+			return err
+		}
 
 		// chainId -> ValidatorsByConsumerAddr
-		rekeyChainIdAndConsAddrKey(store, providertypes.ValidatorsByConsumerAddrKeyPrefix(), chainId, consumerId)
+		err = rekeyChainIdAndConsAddrKey(store, providertypes.ValidatorsByConsumerAddrKeyPrefix(), chainId, consumerId)
+		if err != nil {
+			return err
+		}
 
 		// chainId -> EquivocationEvidenceMinHeight
 		rekeyFromChainIdToConsumerId(store, EquivocationEvidenceMinHeightKeyPrefix, chainId, consumerId)
 
 		// chainId -> ConsumerValidator
-		rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerValidatorKeyPrefix(), chainId, consumerId)
+		err = rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerValidatorKeyPrefix(), chainId, consumerId)
+		if err != nil {
+			return err
+		}
 
 		// chainId -> OptedIn
-		rekeyChainIdAndConsAddrKey(store, providertypes.OptedInKeyPrefix(), chainId, consumerId)
+		err = rekeyChainIdAndConsAddrKey(store, providertypes.OptedInKeyPrefix(), chainId, consumerId)
+		if err != nil {
+			return err
+		}
 
 		// chainId -> Allowlist
-		rekeyChainIdAndConsAddrKey(store, providertypes.AllowlistKeyPrefix(), chainId, consumerId)
+		err = rekeyChainIdAndConsAddrKey(store, providertypes.AllowlistKeyPrefix(), chainId, consumerId)
+		if err != nil {
+			return err
+		}
 
 		// chainId -> Denylist
-		rekeyChainIdAndConsAddrKey(store, providertypes.DenylistKeyPrefix(), chainId, consumerId)
+		err = rekeyChainIdAndConsAddrKey(store, providertypes.DenylistKeyPrefix(), chainId, consumerId)
+		if err != nil {
+			return err
+		}
 
 		// chainId -> ConsumerRewardsAllocations
 		rekeyFromChainIdToConsumerId(store, ConsumerRewardsAllocationKeyPrefix, chainId, consumerId)
 
 		// chainId -> ConsumerCommissionRate
-		rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerCommissionRateKeyPrefix(), chainId, consumerId)
+		err = rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerCommissionRateKeyPrefix(), chainId, consumerId)
+		if err != nil {
+			return err
+		}
 
 		// chainId -> MinimumPowerInTopN
 		oldKey := providertypes.StringIdWithLenKey(MinimumPowerInTopNKeyPrefix, chainId)
@@ -206,7 +227,10 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		}
 
 		// chainId -> ConsumerAddrsToPruneV2
-		rekeyChainIdAndTsKey(store, providertypes.ConsumerAddrsToPruneV2KeyPrefix(), chainId, consumerId)
+		err = rekeyChainIdAndTsKey(store, providertypes.ConsumerAddrsToPruneV2KeyPrefix(), chainId, consumerId)
+		if err != nil {
+			return err
+		}
 
 		pk.SetConsumerChainId(ctx, consumerId, chainId)
 
@@ -261,7 +285,7 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 			MinStake:          0,
 			AllowInactiveVals: false,
 		}
-		err := pk.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
+		err = pk.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
 		if err != nil {
 			return err
 		}

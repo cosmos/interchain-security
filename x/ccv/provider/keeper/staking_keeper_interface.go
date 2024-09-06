@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,11 +35,14 @@ func (k Keeper) TotalBondedTokens(ctx context.Context) (math.Int, error) {
 	// iterate through the bonded validators
 	totalBondedTokens := math.ZeroInt()
 
-	k.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) (stop bool) {
+	err := k.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) (stop bool) {
 		tokens := validator.GetBondedTokens()
 		totalBondedTokens = totalBondedTokens.Add(tokens)
 		return false
 	})
+	if err != nil {
+		return math.Int{}, fmt.Errorf("iteration inside TotalBondedTokens failed: %w", err)
+	}
 
 	return totalBondedTokens, nil
 }
