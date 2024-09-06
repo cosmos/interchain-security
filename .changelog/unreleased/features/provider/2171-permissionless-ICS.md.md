@@ -3,21 +3,20 @@
   which entails the following CLI and API enhancements on the provider.
   ([\#2171](https://github.com/cosmos/interchain-security/pull/2171))
 
-  - Introduce new CLI commands and gRPC endpoints to manage consumer chains. All commands listed below assume the prefix  `interchain-security-pd tx|q provider`.
+  - Introduce new CLI commands and gRPC endpoints to manage consumer chains. All commands listed below assume the prefix `interchain-security-pd tx|q provider`.
 
     - **Transactions:**
       - `create-consumer [consumer-parameters]`
         -- submit a [MsgCreateConsumer](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L360)
-        -- replaces [ConsumerAdditionProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L31)
+        -- replace [ConsumerAdditionProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L31)
 
       - `update-consumer [consumer-parameters]`
         -- submit a [MsgUpdateConsumer](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L382)
-        -- replaces [ConsumerModificationProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L140)
+        -- replace [ConsumerModificationProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L140)
 
       - `remove-consumer [consumer-id]`
         -- submit a [MsgRemoveConsumer](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L226)
-        -- replaces [ConsumerRemovalProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L122)
-
+        -- replace [ConsumerRemovalProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L122)
 
       > These new TX commands should be used instead of their corresponding deprecated proposals. To update consumer chains owned by the  governance module, a proposal containing a `MsgUpdateConsumer` message must be submitted.
 

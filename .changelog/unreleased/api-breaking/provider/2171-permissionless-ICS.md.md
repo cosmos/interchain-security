@@ -1,4 +1,3 @@
-
 - Add the  Permissionless ICS feature on the provider (as per 
   [ADR-019](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics)),
   which entails the following api-breaking changes on the provider.
