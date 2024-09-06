@@ -1,6 +1,12 @@
 
-- Deprecate the `chain-id` parameter in favour of `consumer-id` for all transactions(TXs) and queries targeting a unique consumer chain. Below is a list highlighting the changes in the CLI commands. All commands assume the prefix `interchain-security-pd tx|q provider`.
-  - **TXs:**
+- Add the  Permissionless ICS feature on the provider (as per 
+  [ADR-019](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics)),
+  which entails the following api-breaking changes on the provider.
+  ([\#2171](https://github.com/cosmos/interchain-security/pull/2171))
+  
+  - Deprecate the `chain-id` parameter in favour of `consumer-id` for all transactions and queries targeting a unique consumer chain. Below is a list highlighting the changes in the CLI commands. All commands assume the prefix `interchain-security-pd tx/q provider`.
+    
+    - **Transactions**
     | Command                                 | Message                             |
     |-----------------------------------------|-------------------------------------|
     | `assign-consensus-key [consumer-id] [consumer-pubkey]`  | [MsgAssignConsensusKey](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L256)             |
