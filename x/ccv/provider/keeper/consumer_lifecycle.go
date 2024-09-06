@@ -37,7 +37,7 @@ func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, pre
 }
 
 // InitializeConsumer tries to move a consumer with `consumerId` to the initialized phase.
-// If successfull, it returns the spawn time and true.
+// If successful, it returns the spawn time and true.
 func (k Keeper) InitializeConsumer(ctx sdk.Context, consumerId string) (time.Time, bool) {
 	// a chain needs to be in the registered or initialized phase
 	phase := k.GetConsumerPhase(ctx, consumerId)
