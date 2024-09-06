@@ -1,13 +1,14 @@
 package integration
 
 import (
-	"cosmossdk.io/math"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 

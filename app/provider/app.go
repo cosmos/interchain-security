@@ -1078,8 +1078,3 @@ func MakeTestEncodingConfig() appencoding.EncodingConfig {
 	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	return encodingConfig
 }
-
-func makeEncodingConfig() appencoding.EncodingConfig {
-	encodingConfig := appencoding.MakeTestEncodingConfig()
-	return encodingConfig
-}

@@ -6,13 +6,15 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 )
 
 // TestConsumerPowerShapingParameters tests the getter and setter of the consumer id to power-shaping parameters methods
@@ -20,7 +22,7 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	consumerId := "consumerId"
+	consumerId := CONSUMER_ID
 	consAddrs := []string{
 		"cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
 		"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
@@ -93,27 +95,27 @@ func TestAllowlist(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "consumerId"
+	consumerID := CONSUMER_ID
 
 	// no validator was allowlisted and hence the allowlist is empty
-	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, consumerID))
 
 	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
-	providerKeeper.SetAllowlist(ctx, chainID, providerAddr1)
-	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
+	providerKeeper.SetAllowlist(ctx, consumerID, providerAddr1)
+	require.True(t, providerKeeper.IsAllowlisted(ctx, consumerID, providerAddr1))
 
 	// allowlist is not empty anymore
-	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, consumerID))
 
 	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
-	providerKeeper.SetAllowlist(ctx, chainID, providerAddr2)
-	require.True(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
-	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+	providerKeeper.SetAllowlist(ctx, consumerID, providerAddr2)
+	require.True(t, providerKeeper.IsAllowlisted(ctx, consumerID, providerAddr2))
+	require.False(t, providerKeeper.IsAllowlistEmpty(ctx, consumerID))
 
-	providerKeeper.DeleteAllowlist(ctx, chainID)
-	require.False(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr1))
-	require.False(t, providerKeeper.IsAllowlisted(ctx, chainID, providerAddr2))
-	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, chainID))
+	providerKeeper.DeleteAllowlist(ctx, consumerID)
+	require.False(t, providerKeeper.IsAllowlisted(ctx, consumerID, providerAddr1))
+	require.False(t, providerKeeper.IsAllowlisted(ctx, consumerID, providerAddr2))
+	require.True(t, providerKeeper.IsAllowlistEmpty(ctx, consumerID))
 }
 
 func TestUpdateAllowlist(t *testing.T) {
@@ -131,7 +133,8 @@ func TestUpdateAllowlist(t *testing.T) {
 
 	expectedAllowlist := []providertypes.ProviderConsAddress{
 		providertypes.NewProviderConsAddress(consAddr1),
-		providertypes.NewProviderConsAddress(consAddr2)}
+		providertypes.NewProviderConsAddress(consAddr2),
+	}
 	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
 }
 
@@ -140,27 +143,27 @@ func TestDenylist(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "consumerId"
+	consumerID := CONSUMER_ID
 
 	// no validator was denylisted and hence the denylist is empty
-	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+	require.True(t, providerKeeper.IsDenylistEmpty(ctx, consumerID))
 
 	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
-	providerKeeper.SetDenylist(ctx, chainID, providerAddr1)
-	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
+	providerKeeper.SetDenylist(ctx, consumerID, providerAddr1)
+	require.True(t, providerKeeper.IsDenylisted(ctx, consumerID, providerAddr1))
 
 	// denylist is not empty anymore
-	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+	require.False(t, providerKeeper.IsDenylistEmpty(ctx, consumerID))
 
 	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
-	providerKeeper.SetDenylist(ctx, chainID, providerAddr2)
-	require.True(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
-	require.False(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+	providerKeeper.SetDenylist(ctx, consumerID, providerAddr2)
+	require.True(t, providerKeeper.IsDenylisted(ctx, consumerID, providerAddr2))
+	require.False(t, providerKeeper.IsDenylistEmpty(ctx, consumerID))
 
-	providerKeeper.DeleteDenylist(ctx, chainID)
-	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr1))
-	require.False(t, providerKeeper.IsDenylisted(ctx, chainID, providerAddr2))
-	require.True(t, providerKeeper.IsDenylistEmpty(ctx, chainID))
+	providerKeeper.DeleteDenylist(ctx, consumerID)
+	require.False(t, providerKeeper.IsDenylisted(ctx, consumerID, providerAddr1))
+	require.False(t, providerKeeper.IsDenylisted(ctx, consumerID, providerAddr2))
+	require.True(t, providerKeeper.IsDenylistEmpty(ctx, consumerID))
 }
 
 func TestUpdateDenylist(t *testing.T) {
@@ -178,7 +181,8 @@ func TestUpdateDenylist(t *testing.T) {
 
 	expectedDenylist := []providertypes.ProviderConsAddress{
 		providertypes.NewProviderConsAddress(consAddr1),
-		providertypes.NewProviderConsAddress(consAddr2)}
+		providertypes.NewProviderConsAddress(consAddr2),
+	}
 	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
 }
 
@@ -211,19 +215,19 @@ func TestKeeperConsumerParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			chainID := "consumerId"
+			consumerID := CONSUMER_ID
 			// Set initial value
-			tt.settingFunc(ctx, chainID, int64(tt.initialValue))
+			tt.settingFunc(ctx, consumerID, tt.initialValue)
 
 			// Retrieve and check initial value
-			actualValue := tt.getFunc(ctx, chainID)
+			actualValue := tt.getFunc(ctx, consumerID)
 			require.EqualValues(t, tt.initialValue, actualValue)
 
 			// Update value
-			tt.settingFunc(ctx, chainID, int64(tt.updatedValue))
+			tt.settingFunc(ctx, consumerID, tt.updatedValue)
 
 			// Retrieve and check updated value
-			newActualValue := tt.getFunc(ctx, chainID)
+			newActualValue := tt.getFunc(ctx, consumerID)
 			require.EqualValues(t, tt.updatedValue, newActualValue)
 
 			// Check non-existent consumer id
@@ -231,17 +235,17 @@ func TestKeeperConsumerParams(t *testing.T) {
 			require.Zero(t, res)
 
 			// Delete value
-			tt.deleteFunc(ctx, chainID)
+			tt.deleteFunc(ctx, consumerID)
 
 			// Check that value was deleted
-			res = tt.getFunc(ctx, chainID)
+			res = tt.getFunc(ctx, consumerID)
 			require.Zero(t, res)
 
 			// Try deleting again
-			tt.deleteFunc(ctx, chainID)
+			tt.deleteFunc(ctx, consumerID)
 
 			// Check that the value is still deleted
-			res = tt.getFunc(ctx, chainID)
+			res = tt.getFunc(ctx, consumerID)
 			require.Zero(t, res)
 		})
 	}

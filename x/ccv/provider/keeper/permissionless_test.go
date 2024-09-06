@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/stretchr/testify/require"
+
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 // TestConsumerId tests setters and getters of consumer id (i.e., `FetchAndIncrementConsumerId` and `GetConsumerId`)
@@ -69,8 +70,8 @@ func TestConsumerOwnerAddress(t *testing.T) {
 	_, err := providerKeeper.GetConsumerOwnerAddress(ctx, "ownerAddress")
 	require.Error(t, err, "failed to retrieve owner address")
 
-	providerKeeper.SetConsumerOwnerAddress(ctx, "consumerId", "owner address")
-	ownerAddress, err := providerKeeper.GetConsumerOwnerAddress(ctx, "consumerId")
+	providerKeeper.SetConsumerOwnerAddress(ctx, CONSUMER_ID, "owner address")
+	ownerAddress, err := providerKeeper.GetConsumerOwnerAddress(ctx, CONSUMER_ID)
 	require.NoError(t, err)
 	require.Equal(t, "owner address", ownerAddress)
 
@@ -81,13 +82,13 @@ func TestConsumerOwnerAddress(t *testing.T) {
 	require.Equal(t, "owner address", ownerAddress)
 
 	// assert that overwriting the current key works
-	providerKeeper.SetConsumerOwnerAddress(ctx, "consumerId", "owner address2")
-	ownerAddress, err = providerKeeper.GetConsumerOwnerAddress(ctx, "consumerId")
+	providerKeeper.SetConsumerOwnerAddress(ctx, CONSUMER_ID, "owner address2")
+	ownerAddress, err = providerKeeper.GetConsumerOwnerAddress(ctx, CONSUMER_ID)
 	require.NoError(t, err)
 	require.Equal(t, "owner address2", ownerAddress)
 
-	providerKeeper.DeleteConsumerOwnerAddress(ctx, "consumerId")
-	_, err = providerKeeper.GetConsumerChainId(ctx, "consumerId")
+	providerKeeper.DeleteConsumerOwnerAddress(ctx, CONSUMER_ID)
+	_, err = providerKeeper.GetConsumerChainId(ctx, CONSUMER_ID)
 	require.Error(t, err, "failed to retrieve owner address")
 }
 
@@ -96,17 +97,17 @@ func TestConsumerMetadata(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, err := providerKeeper.GetConsumerMetadata(ctx, "consumerId")
+	_, err := providerKeeper.GetConsumerMetadata(ctx, CONSUMER_ID)
 	require.Error(t, err)
 
 	expectedMetadata := providertypes.ConsumerMetadata{
 		Name:        "name",
 		Description: "description",
 		Metadata:    "metadata",
-		//ChainId:     "chain_id",
+		// ChainId:     "chain_id",
 	}
-	providerKeeper.SetConsumerMetadata(ctx, "consumerId", expectedMetadata)
-	actualMetadata, err := providerKeeper.GetConsumerMetadata(ctx, "consumerId")
+	providerKeeper.SetConsumerMetadata(ctx, CONSUMER_ID, expectedMetadata)
+	actualMetadata, err := providerKeeper.GetConsumerMetadata(ctx, CONSUMER_ID)
 	require.NoError(t, err)
 	require.Equal(t, expectedMetadata, actualMetadata)
 
@@ -115,15 +116,15 @@ func TestConsumerMetadata(t *testing.T) {
 		Name:        "name 2",
 		Description: "description 2",
 		Metadata:    "metadata 2",
-		//ChainId:     "chain_id2",
+		// ChainId:     "chain_id2",
 	}
-	providerKeeper.SetConsumerMetadata(ctx, "consumerId", expectedMetadata)
-	actualMetadata, err = providerKeeper.GetConsumerMetadata(ctx, "consumerId")
+	providerKeeper.SetConsumerMetadata(ctx, CONSUMER_ID, expectedMetadata)
+	actualMetadata, err = providerKeeper.GetConsumerMetadata(ctx, CONSUMER_ID)
 	require.NoError(t, err)
 	require.Equal(t, expectedMetadata, actualMetadata)
 
-	providerKeeper.DeleteConsumerMetadata(ctx, "consumerId")
-	actualMetadata, err = providerKeeper.GetConsumerMetadata(ctx, "consumerId")
+	providerKeeper.DeleteConsumerMetadata(ctx, CONSUMER_ID)
+	actualMetadata, err = providerKeeper.GetConsumerMetadata(ctx, CONSUMER_ID)
 	require.Error(t, err)
 	require.Equal(t, providertypes.ConsumerMetadata{}, actualMetadata)
 }
@@ -133,7 +134,7 @@ func TestConsumerInitializationParameters(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, err := providerKeeper.GetConsumerInitializationParameters(ctx, "consumerId")
+	_, err := providerKeeper.GetConsumerInitializationParameters(ctx, CONSUMER_ID)
 	require.Error(t, err)
 
 	expectedInitializationParameters := providertypes.ConsumerInitializationParameters{
@@ -149,8 +150,8 @@ func TestConsumerInitializationParameters(t *testing.T) {
 		HistoricalEntries:                 456,
 		DistributionTransmissionChannel:   "distribution_transmission_channel",
 	}
-	providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", expectedInitializationParameters)
-	actualInitializationParameters, err := providerKeeper.GetConsumerInitializationParameters(ctx, "consumerId")
+	providerKeeper.SetConsumerInitializationParameters(ctx, CONSUMER_ID, expectedInitializationParameters)
+	actualInitializationParameters, err := providerKeeper.GetConsumerInitializationParameters(ctx, CONSUMER_ID)
 	require.NoError(t, err)
 	require.Equal(t, expectedInitializationParameters, actualInitializationParameters)
 
@@ -168,13 +169,13 @@ func TestConsumerInitializationParameters(t *testing.T) {
 		HistoricalEntries:                 789,
 		DistributionTransmissionChannel:   "distribution_transmission_channel2",
 	}
-	providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", expectedInitializationParameters)
-	actualInitializationParameters, err = providerKeeper.GetConsumerInitializationParameters(ctx, "consumerId")
+	providerKeeper.SetConsumerInitializationParameters(ctx, CONSUMER_ID, expectedInitializationParameters)
+	actualInitializationParameters, err = providerKeeper.GetConsumerInitializationParameters(ctx, CONSUMER_ID)
 	require.NoError(t, err)
 	require.Equal(t, expectedInitializationParameters, actualInitializationParameters)
 
-	providerKeeper.DeleteConsumerInitializationParameters(ctx, "consumerId")
-	actualInitializationParameters, err = providerKeeper.GetConsumerInitializationParameters(ctx, "consumerId")
+	providerKeeper.DeleteConsumerInitializationParameters(ctx, CONSUMER_ID)
+	actualInitializationParameters, err = providerKeeper.GetConsumerInitializationParameters(ctx, CONSUMER_ID)
 	require.Error(t, err)
 	require.Equal(t, providertypes.ConsumerInitializationParameters{}, actualInitializationParameters)
 }
@@ -184,15 +185,15 @@ func TestConsumerPhase(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	phase := providerKeeper.GetConsumerPhase(ctx, "consumerId")
+	phase := providerKeeper.GetConsumerPhase(ctx, CONSUMER_ID)
 	require.Equal(t, providertypes.CONSUMER_PHASE_UNSPECIFIED, phase)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
-	phase = providerKeeper.GetConsumerPhase(ctx, "consumerId")
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_INITIALIZED)
+	phase = providerKeeper.GetConsumerPhase(ctx, CONSUMER_ID)
 	require.Equal(t, providertypes.CONSUMER_PHASE_INITIALIZED, phase)
 
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_LAUNCHED)
-	phase = providerKeeper.GetConsumerPhase(ctx, "consumerId")
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_LAUNCHED)
+	phase = providerKeeper.GetConsumerPhase(ctx, CONSUMER_ID)
 	require.Equal(t, providertypes.CONSUMER_PHASE_LAUNCHED, phase)
 }
 
@@ -259,7 +260,7 @@ func TestIsValidatorOptedInToChain(t *testing.T) {
 	_, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
 	require.False(t, found)
 
-	expectedConsumerId := "consumerId"
+	expectedConsumerId := CONSUMER_ID
 	providerKeeper.SetConsumerChainId(ctx, expectedConsumerId, chainId)
 	providerKeeper.SetOptedIn(ctx, expectedConsumerId, providerAddr)
 	providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, expectedConsumerId)

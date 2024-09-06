@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -32,7 +33,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	providerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7896)
 	provAddr := providerCryptoId.ProviderConsAddress()
 	provVal := providerCryptoId.SDKStakingValidator()
-	provPubKey, err := provVal.TmConsPublicKey()
+	provPubKey, err := provVal.CmtConsPublicKey()
 	require.NoError(t, err)
 
 	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)

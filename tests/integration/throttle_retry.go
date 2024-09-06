@@ -158,6 +158,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	stakingVal2Addr, err := providerKeeper.ValidatorAddressCodec().StringToBytes(stakingVal2.GetOperator())
 	s.Require().NoError(err)
 	stakingVal2LastPower, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2Addr)
+	s.Require().NoError(err)
 	s.Require().Equal(int64(1000), stakingVal2LastPower)
 
 	// Apply ack on consumer
@@ -212,6 +213,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	stakingVal2Addr, err = providerKeeper.ValidatorAddressCodec().StringToBytes(stakingVal2.GetOperator())
 	s.Require().NoError(err)
 	stakingVal2LastPower, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2Addr)
+	s.Require().NoError(err)
 	s.Require().Equal(int64(0), stakingVal2LastPower)
 
 	// Apply ack on consumer

@@ -1,10 +1,10 @@
 package v3
 
 import (
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	storetypes "cosmossdk.io/store/types"
 
 	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"

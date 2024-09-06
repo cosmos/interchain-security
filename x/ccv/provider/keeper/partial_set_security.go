@@ -256,7 +256,7 @@ func (k Keeper) CapValidatorsPower(
 func sum(validators []types.ConsensusValidator) int64 {
 	s := int64(0)
 	for _, v := range validators {
-		s = s + v.Power
+		s += v.Power
 	}
 	return s
 }
@@ -313,7 +313,7 @@ func NoMoreThanPercentOfTheSum(validators []types.ConsensusValidator, percent ui
 	validatorsWithPowerLessThanMaxPower := 0
 	for _, v := range validators {
 		if v.Power >= maxPower {
-			remainingPower = remainingPower + (v.Power - maxPower)
+			remainingPower += (v.Power - maxPower)
 		} else {
 			validatorsWithPowerLessThanMaxPower++
 		}
@@ -335,12 +335,12 @@ func NoMoreThanPercentOfTheSum(validators []types.ConsensusValidator, percent ui
 		} else if v.Power+powerPerValidator >= maxPower {
 			updatedValidators[i] = validators[i]
 			updatedValidators[i].Power = maxPower
-			remainingPower = remainingPower - (maxPower - v.Power)
+			remainingPower -= (maxPower - v.Power)
 			remainingValidators--
 		} else {
 			updatedValidators[i] = validators[i]
 			updatedValidators[i].Power = v.Power + powerPerValidator
-			remainingPower = remainingPower - (updatedValidators[i].Power - validators[i].Power)
+			remainingPower -= (updatedValidators[i].Power - validators[i].Power)
 			remainingValidators--
 		}
 		if remainingValidators == 0 {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"

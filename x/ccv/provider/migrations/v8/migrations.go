@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 
 	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
@@ -121,6 +121,16 @@ func MigrateConsumerAddrsToPrune(ctx sdk.Context, store storetypes.KVStore, pk p
 	}
 
 	return nil
+}
+
+func TransformConsAddressesToBech32Addresses(addresses []providertypes.ProviderConsAddress) []string {
+	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
+	var bech32Addresses []string
+	for _, addr := range addresses {
+		bech32Addr, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
+		bech32Addresses = append(bech32Addresses, bech32Addr)
+	}
+	return bech32Addresses
 }
 
 // MigrateLaunchedConsumerChains migrates all the state for consumer chains with an existing client
@@ -262,18 +272,8 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 			validatorSetCap = binary.BigEndian.Uint32(buf)
 		}
 
-		bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
-		var allowlist []string
-		for _, addr := range pk.GetAllowList(ctx, consumerId) {
-			bech32Addr, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
-			allowlist = append(allowlist, bech32Addr)
-		}
-
-		var denylist []string
-		for _, addr := range pk.GetDenyList(ctx, consumerId) {
-			bech32Addr, _ := bech32.ConvertAndEncode(bech32PrefixConsAddr, addr.ToSdkConsAddr().Bytes())
-			allowlist = append(allowlist, bech32Addr)
-		}
+		allowlist := TransformConsAddressesToBech32Addresses(pk.GetAllowList(ctx, consumerId))
+		denylist := TransformConsAddressesToBech32Addresses(pk.GetDenyList(ctx, consumerId))
 
 		powerShapingParameters := providertypes.PowerShapingParameters{
 			Top_N:              topN,

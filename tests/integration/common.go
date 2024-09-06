@@ -67,7 +67,7 @@ func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator,
 }
 
 func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
-	validator, err := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	validator, err := s.providerApp.GetTestStakingKeeper().GetValidator(ctx, valAddr)
 	s.Require().NoError(err)
 	return validator
 }
@@ -75,7 +75,7 @@ func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingty
 func (s *CCVTestSuite) getValConsAddr(tmVal tmtypes.Validator) sdk.ConsAddress {
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
 	return sdk.GetConsAddress(pubkey)
 }
@@ -111,41 +111,6 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	return initBalance, valsetUpdateId
-}
-
-// Delegates "amount" to a source validator, then redelegates that same amount to a dest validator,
-// with related state assertions along the way.
-//
-// Note: This function advances blocks in-between operations, where validator powers are
-// not checked, since they are checked in integration tests.
-func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
-	srcValAddr, dstValAddr sdk.ValAddress, amount math.Int,
-) {
-	// Delegate to src validator
-	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
-	_, sharesDelegated, _ := delegate(s, delAddr, amount)
-
-	// Assert expected amount was bonded to src validator
-	srcValTokensAfter := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
-	s.Require().Equal(srcValTokensAfter.Sub(srcValTokensBefore), amount)
-
-	s.nextEpoch()
-
-	dstValTokensBefore := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
-
-	// redelegate shares from src to dst validators
-	redelegate(s, delAddr,
-		srcValAddr,
-		dstValAddr,
-		sharesDelegated,
-	)
-
-	// Assert expected amount was delegated to dst val
-	dstValTokensAfter := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
-	s.Require().Equal(dstValTokensAfter.Sub(dstValTokensBefore), amount)
-
-	// Assert delegated tokens amount returned to original value for src validator
-	s.Require().Equal(srcValTokensBefore, s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens())
 }
 
 // delegate delegates bondAmt to the first validator

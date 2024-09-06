@@ -4,11 +4,13 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	cryptoutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestValidateConsumerId(t *testing.T) {
@@ -513,7 +515,6 @@ func TestMsgAssignConsumerKeyValidateBasic(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			msg := types.MsgAssignConsumerKey{
 				ChainId:      tc.chainId,
 				ConsumerKey:  tc.consumerKey,

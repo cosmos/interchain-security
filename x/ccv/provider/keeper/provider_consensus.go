@@ -65,7 +65,7 @@ func (k Keeper) CreateProviderConsensusValidator(ctx sdk.Context, val stakingtyp
 	if err != nil {
 		return types.ConsensusValidator{}, fmt.Errorf("getting consensus address: %w", err)
 	}
-	pubKey, err := val.TmConsPublicKey()
+	pubKey, err := val.CmtConsPublicKey()
 	if err != nil {
 		return types.ConsensusValidator{}, fmt.Errorf("getting consensus public key: %w", err)
 	}

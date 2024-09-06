@@ -25,7 +25,6 @@ type GovernanceProposal struct {
 
 // GenerateGovProposalContent creates proposal content ready to be used by `gov submit-proposal` command
 func GenerateGovProposalContent(title, summary, metadata, deposit, description string, expedited bool, msgs ...sdk.Msg) string {
-
 	// Register the messages. Needed for correct type annotation in the resulting json
 	modcodec := codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
 	modcodec.InterfaceRegistry().RegisterImplementations(
