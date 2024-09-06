@@ -52,45 +52,85 @@ func TestPrepareConsumerForLaunch(t *testing.T) {
 	require.Equal(t, providertypes.ConsumerIds{Ids: []string{"consumerId"}}, consumers)
 }
 
-func TestCanLaunch(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
+func TestInitializeConsumer(t *testing.T) {
+	now := time.Now().UTC()
+	consumerId := "13"
 
-	// cannot launch an unknown chain
-	_, canLaunch := providerKeeper.CanLaunch(ctx, "consumerId")
-	require.False(t, canLaunch)
+	testCases := []struct {
+		name           string
+		spawnTime      time.Time
+		setup          func(*providerkeeper.Keeper, sdk.Context, time.Time)
+		expInitialized bool
+	}{
+		{
+			name:      "valid",
+			spawnTime: now,
+			setup: func(pk *providerkeeper.Keeper, ctx sdk.Context, spawnTime time.Time) {
+				pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_REGISTERED)
+				err := pk.SetConsumerInitializationParameters(ctx, consumerId,
+					providertypes.ConsumerInitializationParameters{
+						SpawnTime: spawnTime,
+					})
+				require.NoError(t, err)
+			},
+			expInitialized: true,
+		},
+		{
+			name:      "invalid: no phase",
+			spawnTime: now,
+			setup: func(pk *providerkeeper.Keeper, ctx sdk.Context, spawnTime time.Time) {
+			},
+			expInitialized: false,
+		},
+		{
+			name:      "invalid: wrong phase",
+			spawnTime: now,
+			setup: func(pk *providerkeeper.Keeper, ctx sdk.Context, spawnTime time.Time) {
+				pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
+				err := pk.SetConsumerInitializationParameters(ctx, consumerId,
+					providertypes.ConsumerInitializationParameters{
+						SpawnTime: spawnTime,
+					})
+				require.NoError(t, err)
+			},
+			expInitialized: false,
+		},
+		{
+			name:      "invalid: no init params",
+			spawnTime: now,
+			setup: func(pk *providerkeeper.Keeper, ctx sdk.Context, spawnTime time.Time) {
+				pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_REGISTERED)
+			},
+			expInitialized: false,
+		},
+		{
+			name:      "invalid: zero spawn time",
+			spawnTime: now,
+			setup: func(pk *providerkeeper.Keeper, ctx sdk.Context, spawnTime time.Time) {
+				pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_REGISTERED)
+				err := pk.SetConsumerInitializationParameters(ctx, consumerId,
+					providertypes.ConsumerInitializationParameters{
+						SpawnTime: time.Time{},
+					})
+				require.NoError(t, err)
+			},
+			expInitialized: false,
+		},
+	}
 
-	// cannot launch a chain without initialization parameters
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
-	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
-	require.False(t, canLaunch)
+	for _, tc := range testCases {
+		pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
 
-	// set valid initialization parameters
-	initializationParameters := testkeeper.GetTestInitializationParameters()
-	err := providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", initializationParameters)
-	require.NoError(t, err)
+		tc.setup(&pk, ctx, tc.spawnTime)
 
-	// cannot launch a launched chain
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_LAUNCHED)
-	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
-	require.False(t, canLaunch)
-
-	// cannot launch a stopped chain
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_STOPPED)
-	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
-	require.False(t, canLaunch)
-
-	// initialized chain can launch
-	providerKeeper.SetConsumerPhase(ctx, "consumerId", providertypes.CONSUMER_PHASE_INITIALIZED)
-	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
-	require.True(t, canLaunch)
-
-	// chain cannot launch without a genesis hash
-	initializationParameters.GenesisHash = nil
-	err = providerKeeper.SetConsumerInitializationParameters(ctx, "consumerId", initializationParameters)
-	_, canLaunch = providerKeeper.CanLaunch(ctx, "consumerId")
-	require.NoError(t, err)
-	require.False(t, canLaunch)
+		spawnTime, initialized := pk.InitializeConsumer(ctx, consumerId)
+		require.Equal(t, tc.expInitialized, initialized, tc.name)
+		if initialized {
+			require.Equal(t, tc.spawnTime, spawnTime, tc.name)
+			require.Equal(t, providertypes.CONSUMER_PHASE_INITIALIZED, pk.GetConsumerPhase(ctx, consumerId))
+		}
+	}
 }
 
 // TestBeginBlockInit directly tests BeginBlockLaunchConsumers against the spec using helpers defined above.

@@ -159,7 +159,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
 			},
-			valid: false,
+			valid: true,
 		},
 		{
 			name: "invalid - zero duration",

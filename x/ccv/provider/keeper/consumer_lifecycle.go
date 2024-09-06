@@ -36,13 +36,12 @@ func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, pre
 	return k.AppendConsumerToBeLaunched(ctx, consumerId, spawnTime)
 }
 
-// CanLaunch checks on whether the consumer with `consumerId` has set all the initialization parameters set and hence
-// is ready to launch and at what spawn time
-// TODO (PERMISSIONLESS): could remove, all fields should be there because we validate the initialization parameters
-func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) {
-	// a chain that is already launched or stopped cannot launch again
+// InitializeConsumer tries to move a consumer with `consumerId` to the initialized phase.
+// If successfull, it returns the spawn time and true.
+func (k Keeper) InitializeConsumer(ctx sdk.Context, consumerId string) (time.Time, bool) {
+	// a chain needs to be in the registered or initialized phase
 	phase := k.GetConsumerPhase(ctx, consumerId)
-	if phase == types.CONSUMER_PHASE_LAUNCHED || phase == types.CONSUMER_PHASE_STOPPED {
+	if phase != types.CONSUMER_PHASE_REGISTERED && phase != types.CONSUMER_PHASE_INITIALIZED {
 		return time.Time{}, false
 	}
 
@@ -51,17 +50,14 @@ func (k Keeper) CanLaunch(ctx sdk.Context, consumerId string) (time.Time, bool) 
 		return time.Time{}, false
 	}
 
-	spawnTimeIsNotZero := !initializationParameters.SpawnTime.Equal(time.Time{})
+	// the spawn time needs to be positive
+	if initializationParameters.SpawnTime.IsZero() {
+		return time.Time{}, false
+	}
 
-	genesisHashSet := initializationParameters.GenesisHash != nil
-	binaryHashSet := initializationParameters.BinaryHash != nil
+	k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
 
-	consumerRedistributionFractionSet := initializationParameters.ConsumerRedistributionFraction != ""
-	blocksPerDistributionTransmissionSet := initializationParameters.BlocksPerDistributionTransmission > 0
-	historicalEntriesSet := initializationParameters.HistoricalEntries > 0
-
-	return initializationParameters.SpawnTime, spawnTimeIsNotZero && genesisHashSet && binaryHashSet && consumerRedistributionFractionSet &&
-		blocksPerDistributionTransmissionSet && historicalEntriesSet
+	return initializationParameters.SpawnTime, true
 }
 
 // BeginBlockLaunchConsumers launches initialized consumers that are ready to launch
