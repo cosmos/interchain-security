@@ -98,13 +98,13 @@ func TestPreserveBytePrefix(t *testing.T) {
 	require.Equal(t, byte(32), providertypes.OptedInKeyPrefix())
 	i++
 	// DEPRECATED
-	//require.Equal(t, byte(33), providertypes.TopNKey("13")[0])
+	// require.Equal(t, byte(33), providertypes.TopNKey("13")[0])
 	i++
 	// DEPRECATED
-	//require.Equal(t, byte(34), providertypes.ValidatorsPowerCapKey("13")[0])
+	// require.Equal(t, byte(34), providertypes.ValidatorsPowerCapKey("13")[0])
 	i++
 	// DEPRECATED
-	//require.Equal(t, byte(35), providertypes.ValidatorSetCapKey("13")[0])
+	// require.Equal(t, byte(35), providertypes.ValidatorSetCapKey("13")[0])
 	i++
 	require.Equal(t, byte(36), providertypes.AllowlistKeyPrefix())
 	i++

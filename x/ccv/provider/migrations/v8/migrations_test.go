@@ -1,22 +1,25 @@
 package v8
 
 import (
-	"cosmossdk.io/math"
 	"encoding/binary"
 	"fmt"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	testutil "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 func legacyConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
@@ -368,9 +371,11 @@ func TestMigrateLaunchedConsumerChains(t *testing.T) {
 	providerAddr := chainData1.ProviderAddr
 	consumerAddr := chainData2.ConsumerAddr
 	oldChainData1, err := GetChainDataUsingStringId(ctx, providerKeeper, chainId1, providerAddr, consumerAddr, false)
+	require.NoError(t, err)
 	require.Equal(t, oldChainData1, ChainData{})
 
 	oldChainData2, err := GetChainDataUsingStringId(ctx, providerKeeper, chainId2, providerAddr, consumerAddr, false)
+	require.NoError(t, err)
 	require.Equal(t, oldChainData2, ChainData{})
 
 	// assert that the launched chains have been transferred to reside under a `consumerId`-key

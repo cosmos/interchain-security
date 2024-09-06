@@ -4,7 +4,6 @@ import (
 	context "context"
 	"time"
 
-	addresscodec "cosmossdk.io/core/address"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -12,6 +11,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
+	addresscodec "cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 

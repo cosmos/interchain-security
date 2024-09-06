@@ -280,7 +280,7 @@ func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 ) {
 	tb.Helper()
 	for _, v := range validators {
-		publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
+		publicKey, err := cryptocodec.FromCmtPubKeyInterface(v.PubKey)
 		require.NoError(tb, err)
 
 		ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)

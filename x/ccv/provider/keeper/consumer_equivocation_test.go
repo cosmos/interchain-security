@@ -27,7 +27,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "consumer"
+	chainID := CONSUMER_CHAIN_ID
 
 	signer1 := tmtypes.NewMockPV()
 	signer2 := tmtypes.NewMockPV()
@@ -42,10 +42,10 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 
 	ctx = ctx.WithBlockTime(time.Now())
 
-	valPubkey1, err := cryptocodec.FromTmPubKeyInterface(val1.PubKey)
+	valPubkey1, err := cryptocodec.FromCmtPubKeyInterface(val1.PubKey)
 	require.NoError(t, err)
 
-	valPubkey2, err := cryptocodec.FromTmPubKeyInterface(val2.PubKey)
+	valPubkey2, err := cryptocodec.FromCmtPubKeyInterface(val2.PubKey)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -596,7 +596,7 @@ func TestComputePowerToSlash(t *testing.T) {
 		},
 	}
 
-	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
+	pubKey, _ := cryptocodec.FromCmtPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 	validator, _ := stakingtypes.NewValidator(pubKey.Address().String(), pubKey, stakingtypes.Description{})
 
 	for _, tc := range testCases {
@@ -649,7 +649,7 @@ func TestSlashValidator(t *testing.T) {
 	// undelegation or redelegation entries with completion time one hour in the future have not yet matured
 	nowPlus1Hour := now.Add(time.Hour)
 
-	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
+	pubKey, _ := cryptocodec.FromCmtPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	validator, err := stakingtypes.NewValidator(
 		sdk.ValAddress(pubKey.Address()).String(),
@@ -753,7 +753,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
-	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
+	pubKey, _ := cryptocodec.FromCmtPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
 
 	// validator is initially unbonded
 	validator, _ := stakingtypes.NewValidator(pubKey.Address().String(), pubKey, stakingtypes.Description{})
@@ -772,7 +772,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 }
 
 func TestEquivocationEvidenceMinHeightCRUD(t *testing.T) {
-	chainID := consumer
+	chainID := CONSUMER_CHAIN_ID
 	expMinHeight := uint64(12)
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()

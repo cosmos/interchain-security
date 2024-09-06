@@ -1,8 +1,9 @@
 package integration
 
 import (
-	"cosmossdk.io/math"
 	"github.com/cosmos/ibc-go/v8/testing/mock"
+
+	"cosmossdk.io/math"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 

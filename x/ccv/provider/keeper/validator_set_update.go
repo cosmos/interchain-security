@@ -140,7 +140,7 @@ func (k Keeper) CreateConsumerValidator(ctx sdk.Context, consumerId string, vali
 
 	consumerPublicKey, found := k.GetValidatorConsumerPubKey(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 	if !found {
-		consumerPublicKey, err = validator.TmConsPublicKey()
+		consumerPublicKey, err = validator.CmtConsPublicKey()
 		if err != nil {
 			return types.ConsensusValidator{}, fmt.Errorf("could not retrieve validator's (%+v) public key: %w", validator, err)
 		}

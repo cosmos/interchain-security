@@ -1,8 +1,9 @@
 package main
 
 import (
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"strconv"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
 // start relayer so that all messages are relayed

@@ -4,11 +4,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/cosmos/cosmos-sdk/codec/address"
+
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCreateConsumer(t *testing.T) {
@@ -22,9 +24,11 @@ func TestCreateConsumer(t *testing.T) {
 		Description: "description",
 	}
 	response, err := msgServer.CreateConsumer(ctx,
-		&providertypes.MsgCreateConsumer{Submitter: "submitter", ChainId: "chainId", Metadata: consumerMetadata,
+		&providertypes.MsgCreateConsumer{
+			Submitter: "submitter", ChainId: "chainId", Metadata: consumerMetadata,
 			InitializationParameters: &providertypes.ConsumerInitializationParameters{},
-			PowerShapingParameters:   &providertypes.PowerShapingParameters{}})
+			PowerShapingParameters:   &providertypes.PowerShapingParameters{},
+		})
 	require.NoError(t, err)
 	require.Equal(t, "0", response.ConsumerId)
 	actualMetadata, err := providerKeeper.GetConsumerMetadata(ctx, "0")
@@ -41,9 +45,11 @@ func TestCreateConsumer(t *testing.T) {
 		Description: "description2",
 	}
 	response, err = msgServer.CreateConsumer(ctx,
-		&providertypes.MsgCreateConsumer{Submitter: "submitter2", ChainId: "chainId", Metadata: consumerMetadata,
+		&providertypes.MsgCreateConsumer{
+			Submitter: "submitter2", ChainId: "chainId", Metadata: consumerMetadata,
 			InitializationParameters: &providertypes.ConsumerInitializationParameters{},
-			PowerShapingParameters:   &providertypes.PowerShapingParameters{}})
+			PowerShapingParameters:   &providertypes.PowerShapingParameters{},
+		})
 	require.NoError(t, err)
 	// assert that the consumer id is different from the previously registered chain
 	require.Equal(t, "1", response.ConsumerId)
@@ -65,7 +71,8 @@ func TestUpdateConsumer(t *testing.T) {
 
 	// try to update a non-existing (i.e., no consumer id exists)
 	_, err := msgServer.UpdateConsumer(ctx,
-		&providertypes.MsgUpdateConsumer{Owner: "owner", ConsumerId: "0", NewOwnerAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
+		&providertypes.MsgUpdateConsumer{
+			Owner: "owner", ConsumerId: "0", NewOwnerAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
 			Metadata:                 nil,
 			InitializationParameters: nil,
 			PowerShapingParameters:   nil,
@@ -74,7 +81,8 @@ func TestUpdateConsumer(t *testing.T) {
 
 	// create a chain before updating it
 	createConsumerResponse, err := msgServer.CreateConsumer(ctx,
-		&providertypes.MsgCreateConsumer{Submitter: "submitter", ChainId: "chainId",
+		&providertypes.MsgCreateConsumer{
+			Submitter: "submitter", ChainId: "chainId",
 			Metadata: providertypes.ConsumerMetadata{
 				Name:        "name",
 				Description: "description",
@@ -88,7 +96,8 @@ func TestUpdateConsumer(t *testing.T) {
 
 	mocks.MockAccountKeeper.EXPECT().AddressCodec().Return(address.NewBech32Codec("cosmos")).AnyTimes()
 	_, err = msgServer.UpdateConsumer(ctx,
-		&providertypes.MsgUpdateConsumer{Owner: "wrong owner", ConsumerId: consumerId, NewOwnerAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
+		&providertypes.MsgUpdateConsumer{
+			Owner: "wrong owner", ConsumerId: consumerId, NewOwnerAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
 			Metadata:                 nil,
 			InitializationParameters: nil,
 			PowerShapingParameters:   nil,
@@ -106,10 +115,12 @@ func TestUpdateConsumer(t *testing.T) {
 
 	expectedOwnerAddress := "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la"
 	_, err = msgServer.UpdateConsumer(ctx,
-		&providertypes.MsgUpdateConsumer{Owner: "submitter", ConsumerId: consumerId, NewOwnerAddress: expectedOwnerAddress,
+		&providertypes.MsgUpdateConsumer{
+			Owner: "submitter", ConsumerId: consumerId, NewOwnerAddress: expectedOwnerAddress,
 			Metadata:                 &expectedConsumerMetadata,
 			InitializationParameters: &expectedInitializationParameters,
-			PowerShapingParameters:   &expectedPowerShapingParameters})
+			PowerShapingParameters:   &expectedPowerShapingParameters,
+		})
 	require.NoError(t, err)
 
 	// assert that owner address was updated
@@ -148,10 +159,12 @@ func TestUpdateConsumer(t *testing.T) {
 	updatedSpawnTime := expectedInitializationParameters.SpawnTime.Add(time.Hour)
 	expectedInitializationParameters.SpawnTime = updatedSpawnTime
 	_, err = msgServer.UpdateConsumer(ctx,
-		&providertypes.MsgUpdateConsumer{Owner: expectedOwnerAddress, ConsumerId: consumerId,
+		&providertypes.MsgUpdateConsumer{
+			Owner: expectedOwnerAddress, ConsumerId: consumerId,
 			Metadata:                 &expectedConsumerMetadata,
 			InitializationParameters: &expectedInitializationParameters,
-			PowerShapingParameters:   &expectedPowerShapingParameters})
+			PowerShapingParameters:   &expectedPowerShapingParameters,
+		})
 	require.NoError(t, err)
 
 	consumerIds, err = providerKeeper.GetConsumersToBeLaunched(ctx, previousSpawnTime)

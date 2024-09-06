@@ -6,21 +6,20 @@ import (
 	"os"
 	"testing"
 
-	"cosmossdk.io/store"
+	spew "github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/store"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-
 	providerapp "github.com/cosmos/interchain-security/v6/app/provider"
-
-	spew "github.com/davecgh/go-spew/spew"
 )
 
 func init() {

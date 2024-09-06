@@ -7,13 +7,16 @@ import (
 	"testing"
 	"time"
 
+	dbm "github.com/cosmos/cosmos-db"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -22,23 +25,19 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-
 	"github.com/cosmos/interchain-security/v6/x/ccv/types"
-
-	dbm "github.com/cosmos/cosmos-db"
 )
 
 // Parameters needed to instantiate an in-memory keeper

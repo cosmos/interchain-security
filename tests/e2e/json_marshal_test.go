@@ -7,10 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 	"github.com/davecgh/go-spew/spew"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 )
 
 func TestProposalUnmarshal(t *testing.T) {

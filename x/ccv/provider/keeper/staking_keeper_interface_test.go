@@ -4,12 +4,15 @@ import (
 	"sort"
 	"testing"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 )
 
 // TestStakingKeeperInterface tests

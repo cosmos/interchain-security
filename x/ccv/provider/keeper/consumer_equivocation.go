@@ -11,8 +11,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-
 	evidencetypes "cosmossdk.io/x/evidence/types"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -424,7 +424,7 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 	}
 
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-		return errorsmod.Wrapf(slashingtypes.ErrValidatorTombstoned, providerAddr.String())
+		return errorsmod.Wrapf(slashingtypes.ErrValidatorTombstoned, "provider consensus address: %s", providerAddr.String())
 	}
 
 	// jail validator if not already

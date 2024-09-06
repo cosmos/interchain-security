@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
@@ -48,7 +49,7 @@ func (k Keeper) GetConsumerChainId(ctx sdk.Context, consumerId string) (string, 
 }
 
 // SetConsumerChainId sets the chain id associated with this consumer id
-func (k Keeper) SetConsumerChainId(ctx sdk.Context, consumerId string, chainId string) {
+func (k Keeper) SetConsumerChainId(ctx sdk.Context, consumerId, chainId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ConsumerIdToChainIdKey(consumerId), []byte(chainId))
 }
@@ -70,7 +71,7 @@ func (k Keeper) GetConsumerOwnerAddress(ctx sdk.Context, consumerId string) (str
 }
 
 // SetConsumerOwnerAddress sets the chain id associated with this consumer id
-func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId string, chainId string) {
+func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId, chainId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(chainId))
 }
@@ -230,7 +231,7 @@ func (k Keeper) RemoveOptedInConsumerId(ctx sdk.Context, providerAddr types.Prov
 
 	// find the index of the consumer we want to remove
 	index := -1
-	for i := 0; i < len(consumers.Ids); i = i + 1 {
+	for i := 0; i < len(consumers.Ids); i++ {
 		if consumers.Ids[i] == consumerId {
 			index = i
 			break

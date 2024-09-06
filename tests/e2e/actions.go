@@ -15,12 +15,13 @@ import (
 	"sync"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 	"golang.org/x/mod/semver"
 
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
@@ -276,7 +277,6 @@ type UpdateConsumerChainAction struct {
 }
 
 func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bool) {
-
 	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	params := ccvtypes.DefaultParams()
 	initParams := types.ConsumerInitializationParameters{
@@ -332,7 +332,6 @@ type CreateConsumerChainAction struct {
 
 // createConsumerChain creates and initializes a consumer chain
 func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bool) {
-
 	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	params := ccvtypes.DefaultParams()
 	initParams := types.ConsumerInitializationParameters{
@@ -438,7 +437,6 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 
 // CreateConsumer creates a consumer chain and returns its consumer-id
 func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID, metadata types.ConsumerMetadata, initParams *types.ConsumerInitializationParameters, powerShapingParams *types.PowerShapingParameters) ConsumerID {
-
 	chainID := string(tr.testConfig.chainConfigs[consumerChain].ChainId)
 	msg := types.MsgCreateConsumer{
 		ChainId:                  chainID,
@@ -870,7 +868,6 @@ func (tr Chain) submitConsumerModificationProposal(
 	action SubmitConsumerModificationProposalAction,
 	verbose bool,
 ) {
-
 	consumerId := string(tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId)
 	title := "Propose the modification of the PSS parameters of a chain"
 	description := "description of the consumer modification proposal"
@@ -1332,7 +1329,6 @@ func (tr Chain) changeoverChain(
 	action ChangeoverChainAction,
 	verbose bool,
 ) {
-
 	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.SovereignChain)
 
 	consumerGenesisChanges := tr.testConfig.chainConfigs[action.SovereignChain].GenesisChanges
@@ -2278,7 +2274,7 @@ func (tr Chain) invokeDowntimeSlash(action DowntimeSlashAction, verbose bool) {
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down bool, verbose bool) {
+func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -2471,7 +2467,6 @@ type SubmitChangeRewardDenomsProposalAction struct {
 }
 
 func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
-
 	changeRewMsg := types.MsgChangeRewardDenoms{
 		DenomsToAdd:    []string{action.Denom},
 		DenomsToRemove: []string{"stake"},

@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	cmttypes "github.com/cometbft/cometbft/types"
-
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
@@ -16,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
@@ -280,8 +279,9 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 }
 
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
-func NewMsgCreateConsumer(submitter string, chainId string, metadata ConsumerMetadata,
-	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgCreateConsumer, error) {
+func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
+	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
+) (*MsgCreateConsumer, error) {
 	return &MsgCreateConsumer{
 		Submitter:                submitter,
 		ChainId:                  chainId,
@@ -321,8 +321,9 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 }
 
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
-func NewMsgUpdateConsumer(owner string, consumerId string, ownerAddress string, metadata *ConsumerMetadata,
-	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters) (*MsgUpdateConsumer, error) {
+func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *ConsumerMetadata,
+	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
+) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
 		Owner:                    owner,
 		ConsumerId:               consumerId,
@@ -363,7 +364,7 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 }
 
 // NewMsgRemoveConsumer creates a new MsgRemoveConsumer instance
-func NewMsgRemoveConsumer(owner string, consumerId string) (*MsgRemoveConsumer, error) {
+func NewMsgRemoveConsumer(owner, consumerId string) (*MsgRemoveConsumer, error) {
 	return &MsgRemoveConsumer{
 		Owner:      owner,
 		ConsumerId: consumerId,
@@ -439,7 +440,7 @@ func ValidateConsumerId(consumerId string) error {
 // ValidateStringField validates that a string `field` satisfies the following properties:
 //   - is not empty
 //   - has at most `maxLength` characters
-func ValidateStringField(nameOfTheField string, field string, maxLength int) error {
+func ValidateStringField(nameOfTheField, field string, maxLength int) error {
 	if strings.TrimSpace(field) == "" {
 		return fmt.Errorf("%s cannot be empty", nameOfTheField)
 	} else if len(field) > maxLength {

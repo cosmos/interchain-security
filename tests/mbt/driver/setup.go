@@ -12,8 +12,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -36,6 +34,7 @@ import (
 	"github.com/cosmos/interchain-security/v6/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v6/testutil/simibc"
 	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
@@ -157,7 +156,7 @@ func getAppBytesAndSenders(
 
 		sumBonded = sumBonded.Add(tokens)
 
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(val.PubKey)
 		if err != nil {
 			log.Panicf("error getting pubkey for val %v", val)
 		}
@@ -390,7 +389,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
 
 	// set the top N percentage to 100 to simulate a full consumer
-	err = s.providerKeeper().SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerChain.ChainID, types.PowerShapingParameters{
+	err = s.providerKeeper().SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerChain.ChainID, providertypes.PowerShapingParameters{
 		Top_N: 100,
 	})
 	require.NoError(s.t, err, "Error setting consumer top N for chain %v", consumerChain.ChainID)

@@ -349,7 +349,7 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 		store.Delete(delKey)
 	}
 
-	return
+	return consumerAddrsToPrune
 }
 
 // GetAllConsumerAddrsToPrune gets all consumer addresses that can be eventually pruned for a given consumerId.
