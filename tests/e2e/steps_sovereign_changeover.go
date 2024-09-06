@@ -1,11 +1,8 @@
 package main
 
 import (
-	"strconv"
-
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
 
 // this creates new clients on both chains and a connection (connection-0) between them
@@ -68,7 +65,7 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 111},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 				},
@@ -89,7 +86,7 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 111},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{
@@ -213,7 +210,7 @@ func stepsUpgradeChain() []Step {
 							UpgradeHeight: 110,
 							Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 							Deposit:       10000000,
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 				},
@@ -234,7 +231,7 @@ func stepsUpgradeChain() []Step {
 							UpgradeHeight: 110,
 							Title:         "sovereign-changeover",
 							Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 				},

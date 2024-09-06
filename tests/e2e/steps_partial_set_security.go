@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strconv"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -576,7 +575,7 @@ func stepsTopNChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 				},
@@ -609,7 +608,7 @@ func stepsTopNChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 				},
@@ -1258,7 +1257,7 @@ func stepsValidatorsPowerCappedChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
@@ -1343,7 +1342,7 @@ func stepsValidatorsPowerCappedChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 				},
@@ -2174,7 +2173,7 @@ func stepsModifyChain() []Step {
 						1: ConsumerAdditionProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 				},
@@ -2193,7 +2192,7 @@ func stepsModifyChain() []Step {
 						1: ConsumerAdditionProposal{
 							Deposit: 10000001,
 							Chain:   ChainID("consu"),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:  gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 				},
