@@ -7,16 +7,16 @@
 
     - **Transactions:**
       - `create-consumer [consumer-parameters]`
-        -- submit a [MsgCreateConsumer](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L360)
-        -- replace [ConsumerAdditionProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L31)
+        -- submit a [MsgCreateConsumer](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L360)
+        -- replace [ConsumerAdditionProposal](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/provider.proto#L31)
 
       - `update-consumer [consumer-parameters]`
-        -- submit a [MsgUpdateConsumer](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L382)
-        -- replace [ConsumerModificationProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L140)
+        -- submit a [MsgUpdateConsumer](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L382)
+        -- replace [ConsumerModificationProposal](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/provider.proto#L140)
 
       - `remove-consumer [consumer-id]`
-        -- submit a [MsgRemoveConsumer](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L226)
-        -- replace [ConsumerRemovalProposal](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/provider.proto#L122)
+        -- submit a [MsgRemoveConsumer](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L226)
+        -- replace [ConsumerRemovalProposal](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/provider.proto#L122)
 
       > These new TX commands should be used instead of their corresponding deprecated proposals. To update consumer chains owned by the  governance module, a proposal containing a `MsgUpdateConsumer` message must be submitted.
 
