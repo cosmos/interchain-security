@@ -120,14 +120,15 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 		PublicKey:        &valAPubKey,
 		JoinHeight:       123456789,
 	}
-	providerKeeper.SetConsumerValidator(ctx, "consumerId", consumerValidatorA)
+	err := providerKeeper.SetConsumerValidator(ctx, "consumerId", consumerValidatorA)
+	require.NoError(t, err)
 
 	// Opt in validator B. Note that validator B is not a consumer validator and hence would become a consumer
 	// validator for the first time after the `QueueVSCPackets` call.
 	providerKeeper.SetOptedIn(ctx, "consumerId", providertypes.NewProviderConsAddress(valBConsAddr))
 
 	// set power shaping params
-	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{})
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "consumerId", providertypes.PowerShapingParameters{})
 	require.NoError(t, err)
 
 	err = providerKeeper.QueueVSCPackets(ctx)
@@ -161,9 +162,10 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
 	// Set consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{
+	err := providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{
 		ProviderConsAddr: packetData.Validator.Address,
 	})
+	require.NoError(t, err)
 
 	// Set slash meter to negative value and assert a bounce ack is returned
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(-5))
@@ -172,9 +174,10 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-2", providertypes.ConsensusValidator{
+	err = providerKeeper.SetConsumerValidator(ctx, "chain-2", providertypes.ConsensusValidator{
 		ProviderConsAddr: packetData.Validator.Address,
 	})
+	require.NoError(t, err)
 
 	// Also bounced for chain-2
 	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
@@ -185,7 +188,8 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
 
 	// Set the consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{ProviderConsAddr: packetData.Validator.Address})
+	err = providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{ProviderConsAddr: packetData.Validator.Address})
+	require.NoError(t, err)
 
 	// Mock call to GetEffectiveValPower, so that it returns 2.
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
@@ -463,7 +467,8 @@ func TestHandleSlashPacket(t *testing.T) {
 			// Setup consumer address to provider address mapping.
 			require.NotEmpty(t, tc.packetData.Validator.Address)
 			providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, consumerConsAddr, providerConsAddr)
-			providerKeeper.SetConsumerValidator(ctx, chainId, providertypes.ConsensusValidator{ProviderConsAddr: providerConsAddr.Address.Bytes()})
+			err := providerKeeper.SetConsumerValidator(ctx, chainId, providertypes.ConsensusValidator{ProviderConsAddr: providerConsAddr.Address.Bytes()})
+			require.NoError(t, err)
 
 			// Execute method and assert expected mock calls.
 			providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
@@ -731,7 +736,8 @@ func TestProviderValidatorUpdates(t *testing.T) {
 	// consensusVals is now [removedValidator, validator 2, validator 1]
 
 	// Set the last provider consensus validator set
-	providerKeeper.SetLastProviderConsensusValSet(ctx, consensusVals)
+	err = providerKeeper.SetLastProviderConsensusValSet(ctx, consensusVals)
+	require.NoError(t, err)
 
 	// Set the max number of validators
 	maxProviderConsensusValidators := int64(2)

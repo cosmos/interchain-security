@@ -798,7 +798,8 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			valSet, error := k.GetConsumerValSet(ctx, CHAINID)
 			require.NoError(t, error)
 			updates = providerkeeper.DiffValidators(valSet, nextValidators)
-			k.SetConsumerValSet(ctx, CHAINID, nextValidators)
+			err := k.SetConsumerValSet(ctx, CHAINID, nextValidators)
+			require.NoError(t, err)
 
 			consumerValset.apply(updates)
 			// Simulate the VSCID update in EndBlock

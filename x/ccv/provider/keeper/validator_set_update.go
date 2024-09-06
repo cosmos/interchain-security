@@ -22,14 +22,14 @@ func (k Keeper) SetConsumerValidator(
 	ctx sdk.Context,
 	consumerId string,
 	validator types.ConsensusValidator,
-) {
-	k.setValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId), validator)
+) error {
+	return k.setValidator(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId), validator)
 }
 
 // SetConsumerValSet resets the current consumer validators with the `nextValidators` computed by
 // `FilterValidators` and hence this method should only be called after `FilterValidators` has completed.
-func (k Keeper) SetConsumerValSet(ctx sdk.Context, consumerId string, nextValidators []types.ConsensusValidator) {
-	k.setValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId), nextValidators)
+func (k Keeper) SetConsumerValSet(ctx sdk.Context, consumerId string, nextValidators []types.ConsensusValidator) error {
+	return k.setValSet(ctx, k.GetConsumerChainConsensusValidatorsKey(ctx, consumerId), nextValidators)
 }
 
 // DeleteConsumerValidator removes consumer validator with `providerAddr` address

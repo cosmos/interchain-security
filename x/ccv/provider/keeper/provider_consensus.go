@@ -16,14 +16,14 @@ import (
 func (k Keeper) SetLastProviderConsensusValidator(
 	ctx sdk.Context,
 	validator types.ConsensusValidator,
-) {
-	k.setValidator(ctx, types.LastProviderConsensusValsPrefix(), validator)
+) error {
+	return k.setValidator(ctx, types.LastProviderConsensusValsPrefix(), validator)
 }
 
 // SetLastProviderConsensusValSet resets the stored last validator set sent to the consensus engine on the provider
 // to the provided `nextValidators`.
-func (k Keeper) SetLastProviderConsensusValSet(ctx sdk.Context, nextValidators []types.ConsensusValidator) {
-	k.setValSet(ctx, types.LastProviderConsensusValsPrefix(), nextValidators)
+func (k Keeper) SetLastProviderConsensusValSet(ctx sdk.Context, nextValidators []types.ConsensusValidator) error {
+	return k.setValSet(ctx, types.LastProviderConsensusValsPrefix(), nextValidators)
 }
 
 // DeleteLastProviderConsensusValidator removes the validator with `providerConsAddr` address

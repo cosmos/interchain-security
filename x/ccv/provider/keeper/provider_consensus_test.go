@@ -21,7 +21,8 @@ func TestSetLastProviderConsensusValidator(t *testing.T) {
 		PublicKey:        &crypto.PublicKey{},
 	}
 
-	providerKeeper.SetLastProviderConsensusValidator(ctx, validator)
+	err := providerKeeper.SetLastProviderConsensusValidator(ctx, validator)
+	require.NoError(t, err)
 
 	// Retrieve the stored validator
 	vals, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
@@ -49,7 +50,8 @@ func TestSetLastProviderConsensusValSet(t *testing.T) {
 
 	nextValidators := []types.ConsensusValidator{validator1, validator2}
 
-	providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
+	err := providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
+	require.NoError(t, err)
 
 	// Retrieve the stored validator set
 	storedValidators, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
@@ -67,7 +69,8 @@ func TestDeleteLastProviderConsensusValidator(t *testing.T) {
 		PublicKey:        &crypto.PublicKey{},
 	}
 
-	providerKeeper.SetLastProviderConsensusValidator(ctx, validator)
+	err := providerKeeper.SetLastProviderConsensusValidator(ctx, validator)
+	require.NoError(t, err)
 
 	// Delete the stored validator
 	providerKeeper.DeleteLastProviderConsensusValidator(ctx, types.NewProviderConsAddress(validator.ProviderConsAddr))
@@ -96,7 +99,8 @@ func TestDeleteLastProviderConsensusValSet(t *testing.T) {
 
 	nextValidators := []types.ConsensusValidator{validator1, validator2}
 
-	providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
+	err := providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
+	require.NoError(t, err)
 
 	// check that the set is not empty
 	storedValidators, err := providerKeeper.GetLastProviderConsensusValSet(ctx)
@@ -126,7 +130,8 @@ func TestGetLastTotalProviderConsensusPower(t *testing.T) {
 		PublicKey:        &crypto.PublicKey{},
 	}
 	nextValidators := []types.ConsensusValidator{validator1, validator2}
-	providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
+	err := providerKeeper.SetLastProviderConsensusValSet(ctx, nextValidators)
+	require.NoError(t, err)
 	// Get the total power of the last stored validator set
 	totalPower, err := providerKeeper.GetLastTotalProviderConsensusPower(ctx)
 	require.NoError(t, err, "failed to get total power")

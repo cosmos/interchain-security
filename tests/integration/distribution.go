@@ -892,7 +892,8 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 			consuVals, err := providerKeeper.GetConsumerValSet(ctx, consumerId)
 			s.Require().NoError(err)
 			providerKeeper.DeleteConsumerValSet(ctx, consumerId)
-			providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals[0:tc.consuValLen])
+			err = providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals[0:tc.consuValLen])
+			s.Require().NoError(err)
 			consuVals, err = providerKeeper.GetConsumerValSet(ctx, consumerId)
 			s.Require().NoError(err)
 
@@ -1003,10 +1004,12 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	// have not been consumer validators for `GetNumberOfEpochsToStartReceivingRewards * GetBlocksPerEpoch` blocks
 	consuVals[2].JoinHeight = 2
 	consuVals[3].JoinHeight = 2
-	providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals)
+	err = providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals)
+	s.Require().NoError(err)
 
 	providerKeeper.DeleteConsumerValSet(ctx, consumerId)
-	providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals)
+	err = providerKeeper.SetConsumerValSet(ctx, consumerId, consuVals)
+	s.Require().NoError(err)
 	consuVals, err = providerKeeper.GetConsumerValSet(ctx, consumerId)
 	s.Require().NoError(err)
 

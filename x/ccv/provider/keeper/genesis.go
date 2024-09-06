@@ -105,7 +105,10 @@ func (k Keeper) InitGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 		reducedValSet[i] = consensusVal
 	}
 
-	k.SetLastProviderConsensusValSet(ctx, reducedValSet)
+	err = k.SetLastProviderConsensusValSet(ctx, reducedValSet)
+	if err != nil {
+		panic(fmt.Errorf("setting the provider consensus validator set: %w", err))
+	}
 
 	valUpdates := make([]abci.ValidatorUpdate, len(reducedValSet))
 	for i, val := range reducedValSet {
