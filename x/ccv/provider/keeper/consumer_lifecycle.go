@@ -62,11 +62,17 @@ func (k Keeper) InitializeConsumer(ctx sdk.Context, consumerId string) (time.Tim
 
 // BeginBlockLaunchConsumers launches initialized consumers that are ready to launch
 func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
-	consumerIds, err := k.ConsumeConsumersReadyToLaunch(ctx, 200)
+	consumerIds, err := k.ConsumeIdsFromTimeQueue(
+		ctx,
+		types.SpawnTimeToConsumerIdsKeyPrefix(),
+		k.GetConsumersToBeLaunched,
+		k.DeleteAllConsumersToBeLaunched,
+		k.AppendConsumerToBeLaunched,
+		200,
+	)
 	if err != nil {
 		return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "getting consumers ready to laumch: %s", err.Error())
 	}
-
 	for _, consumerId := range consumerIds {
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.LaunchConsumer(cachedCtx, consumerId)
@@ -84,65 +90,68 @@ func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
 	return nil
 }
 
-// ConsumeConsumersReadyToLaunch returns the consumer ids of the pending initialized consumer chains
-// that are ready to launch. The consumer ids returns are removed from the pending list.
-func (k Keeper) ConsumeConsumersReadyToLaunch(ctx sdk.Context, limit int) ([]string, error) {
+// ConsumeIdsFromTimeQueue returns from a time queue the consumer ids for which the associated time passed.
+// The number of ids return is limited to 'limit'. The ids returns are removed from the time queue.
+func (k Keeper) ConsumeIdsFromTimeQueue(
+	ctx sdk.Context,
+	timeQueueKeyPrefix byte,
+	getIds func(sdk.Context, time.Time) (types.ConsumerIds, error),
+	deleteAllIds func(sdk.Context, time.Time),
+	appendId func(sdk.Context, string, time.Time) error,
+	limit int,
+) ([]string, error) {
 	store := ctx.KVStore(k.storeKey)
 
-	spawnTimeToConsumerIdsKeyPrefix := types.SpawnTimeToConsumerIdsKeyPrefix()
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{spawnTimeToConsumerIdsKeyPrefix})
-	defer iterator.Close()
-
 	result := []string{}
-	launchNextTime := []string{}
-	spawnTimesToDelete := []time.Time{}
+	nextTime := []string{}
+	timestampsToDelete := []time.Time{}
+
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{timeQueueKeyPrefix})
+	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		if len(result) >= limit {
 			break
 		}
-		spawnTime, err := types.ParseTime(spawnTimeToConsumerIdsKeyPrefix, iterator.Key())
+		ts, err := types.ParseTime(timeQueueKeyPrefix, iterator.Key())
 		if err != nil {
-			return result, fmt.Errorf("failed to parse spawn time: %w", err)
+			return result, fmt.Errorf("parsing removal time: %w", err)
 		}
-		if spawnTime.After(ctx.BlockTime()) {
-			return result, nil
+		if ts.After(ctx.BlockTime()) {
+			break
 		}
 
-		// if current block time is equal to or after spawnTime, and the chain is initialized, we can launch the chain
-		consumerIds, err := k.GetConsumersToBeLaunched(ctx, spawnTime)
+		consumerIds, err := getIds(ctx, ts)
 		if err != nil {
-			k.Logger(ctx).Error("failed to retrieve consumers to launch",
-				"spawn time", spawnTime,
-				"error", err)
-			continue
+			return result,
+				fmt.Errorf("getting consumers ids, ts(%s): %w", ts.String(), err)
 		}
 
-		spawnTimesToDelete = append(spawnTimesToDelete, spawnTime)
+		timestampsToDelete = append(timestampsToDelete, ts)
 
 		availableSlots := limit - len(result)
 		if availableSlots >= len(consumerIds.Ids) {
-			// can take all the consumer IDs
+			// consumer all the ids
 			result = append(result, consumerIds.Ids...)
 		} else {
-			// take only availableSlots
+			// consume only availableSlots
 			result = append(result, consumerIds.Ids[:availableSlots]...)
 			// and leave the others for next time
-			launchNextTime = consumerIds.Ids[availableSlots:]
+			nextTime = consumerIds.Ids[availableSlots:]
 			break
 		}
 	}
 
-	// Remove consumer to prevent re-trying launching this chain.
-	// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
-	for i, spawnTime := range spawnTimesToDelete {
-		k.DeleteAllConsumerToBeLaunched(ctx, spawnTime)
-		if i == len(spawnTimesToDelete)-1 {
-			// for the last spawn time consumed, store back the IDs of the consumers
-			// that will be launched later
-			for _, consumerId := range launchNextTime {
-				err := k.AppendConsumerToBeLaunched(ctx, consumerId, spawnTime)
+	// remove consumers to prevent handling them twice
+	for i, ts := range timestampsToDelete {
+		deleteAllIds(ctx, ts)
+		if i == len(timestampsToDelete)-1 {
+			// for the last ts consumed, store back the ids for later
+			for _, consumerId := range nextTime {
+				err := appendId(ctx, consumerId, ts)
 				if err != nil {
-					return result, fmt.Errorf("failed to append consumer to be launched, consumerId(%s): %w", consumerId, err)
+					return result,
+						fmt.Errorf("failed to append consumer id, consumerId(%s), ts(%s): %w",
+							consumerId, ts.String(), err)
 				}
 			}
 		}
@@ -391,26 +400,19 @@ func (k Keeper) StopAndPrepareForConsumerRemoval(ctx sdk.Context, consumerId str
 }
 
 // BeginBlockRemoveConsumers iterates over the pending consumer proposals and stop/removes the chain if the removal time has passed
-func (k Keeper) BeginBlockRemoveConsumers(ctx sdk.Context) {
-	// TODO (PERMISSIONLESS): parameterize the limit
-	for _, consumerId := range k.GetConsumersReadyToStop(ctx, 200) {
-		removalTime, err := k.GetConsumerRemovalTime(ctx, consumerId)
-		if err != nil {
-			k.Logger(ctx).Error("chain could not be stopped",
-				"consumerId", consumerId,
-				"error", err.Error())
-			continue
-		}
-
-		// Remove consumer to prevent re-trying removing this chain.
-		err = k.RemoveConsumerToBeRemoved(ctx, consumerId, removalTime)
-		if err != nil {
-			ctx.Logger().Error("could not remove consumer from to-be-removed queue",
-				"consumerId", consumerId,
-				"error", err)
-			continue
-		}
-
+func (k Keeper) BeginBlockRemoveConsumers(ctx sdk.Context) error {
+	consumerIds, err := k.ConsumeIdsFromTimeQueue(
+		ctx,
+		types.RemovalTimeToConsumerIdsKeyPrefix(),
+		k.GetConsumersToBeRemoved,
+		k.DeleteAllConsumersToBeRemoved,
+		k.AppendConsumerToBeRemoved,
+		200,
+	)
+	if err != nil {
+		return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "getting consumers ready to stop: %s", err.Error())
+	}
+	for _, consumerId := range consumerIds {
 		// delete consumer chain in a cached context to abort deletion in case of errors
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.DeleteConsumerChain(cachedCtx, consumerId)
@@ -421,58 +423,11 @@ func (k Keeper) BeginBlockRemoveConsumers(ctx sdk.Context) {
 			continue
 		}
 
-		// The cached context is created with a new EventManager so we merge the event into the original context
+		// the cached context is created with a new EventManager so we merge the event into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
-
 		writeFn()
-
-		k.Logger(ctx).Info("executed consumer deletion",
-			"consumer id", consumerId,
-			"removal time", removalTime,
-		)
 	}
-}
-
-// GetConsumersReadyToStop returns the consumer ids of the pending launched consumer chains
-// that are ready to stop
-func (k Keeper) GetConsumersReadyToStop(ctx sdk.Context, limit uint32) []string {
-	store := ctx.KVStore(k.storeKey)
-
-	removalTimeToConsumerIdsKeyPrefix := types.RemovalTimeToConsumerIdsKeyPrefix()
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{removalTimeToConsumerIdsKeyPrefix})
-	defer iterator.Close()
-
-	result := []string{}
-	for ; iterator.Valid(); iterator.Next() {
-		removalTime, err := types.ParseTime(removalTimeToConsumerIdsKeyPrefix, iterator.Key())
-		if err != nil {
-			k.Logger(ctx).Error("failed to parse removal time",
-				"error", err)
-			continue
-		}
-		if removalTime.After(ctx.BlockTime()) {
-			return result
-		}
-
-		consumers, err := k.GetConsumersToBeRemoved(ctx, removalTime)
-		if err != nil {
-			k.Logger(ctx).Error("failed to retrieve consumers to remove",
-				"removal time", removalTime,
-				"error", err)
-			continue
-		}
-		if len(result)+len(consumers.Ids) >= int(limit) {
-			remainingConsumerIds := len(result) + len(consumers.Ids) - int(limit)
-			if len(consumers.Ids[:len(consumers.Ids)-remainingConsumerIds]) == 0 {
-				return result
-			}
-			return append(result, consumers.Ids[:len(consumers.Ids)-remainingConsumerIds]...)
-		} else {
-			result = append(result, consumers.Ids...)
-		}
-	}
-
-	return result
+	return nil
 }
 
 // DeleteConsumerChain cleans up the state of the given consumer chain
@@ -669,8 +624,8 @@ func (k Keeper) RemoveConsumerToBeLaunched(ctx sdk.Context, consumerId string, s
 	return k.removeConsumerIdFromTime(ctx, consumerId, types.SpawnTimeToConsumerIdsKey, spawnTime)
 }
 
-// DeleteAllConsumerToBeLaunched deletes all consumer to be launched at this specific spawn time
-func (k Keeper) DeleteAllConsumerToBeLaunched(ctx sdk.Context, spawnTime time.Time) {
+// DeleteAllConsumersToBeLaunched deletes all consumer to be launched at this specific spawn time
+func (k Keeper) DeleteAllConsumersToBeLaunched(ctx sdk.Context, spawnTime time.Time) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.SpawnTimeToConsumerIdsKey(spawnTime))
 }
@@ -690,8 +645,8 @@ func (k Keeper) RemoveConsumerToBeRemoved(ctx sdk.Context, consumerId string, re
 	return k.removeConsumerIdFromTime(ctx, consumerId, types.RemovalTimeToConsumerIdsKey, removalTime)
 }
 
-// DeleteConsumerToBeRemoved deletes all consumer to be removed at this specific removal time
-func (k Keeper) DeleteConsumerToBeRemoved(ctx sdk.Context, removalTime time.Time) {
+// DeleteAllConsumersToBeRemoved deletes all consumer to be removed at this specific removal time
+func (k Keeper) DeleteAllConsumersToBeRemoved(ctx sdk.Context, removalTime time.Time) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.RemovalTimeToConsumerIdsKey(removalTime))
 }
