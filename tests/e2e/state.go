@@ -209,7 +209,7 @@ func (tr Chain) GetBalances(chain ChainID, modelState map[ValidatorID]uint) map[
 
 func (tr Chain) GetClientFrozenHeight(chain ChainID, clientID string) clienttypes.Height {
 	revNumber, revHeight := tr.target.GetClientFrozenHeight(chain, clientID)
-	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+	return clienttypes.Height{RevisionHeight: revHeight, RevisionNumber: revNumber}
 }
 
 func (tr Chain) GetProposedConsumerChains(chain ChainID) []string {
@@ -783,7 +783,7 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 
 func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
-	consumerId := tr.chainConfigs[ChainID(consumerChain)].ConsumerId
+	consumerId := tr.chainConfigs[consumerChain].ConsumerId
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-consumer-key",
@@ -802,7 +802,7 @@ func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator Validator
 
 func (tr Commands) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
-	consumerId := tr.chainConfigs[ChainID(consumerChain)].ConsumerId
+	consumerId := tr.chainConfigs[consumerChain].ConsumerId
 
 	cmd := tr.target.ExecCommand(binaryName,
 

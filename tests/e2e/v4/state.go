@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
-	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/kylelemons/godebug/pretty"
@@ -79,20 +78,6 @@ func (tr Commands) GetBlockHeight(chain ChainID) uint {
 	}
 
 	return uint(blockHeight)
-}
-
-func (tr Commands) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
-	start := time.Now()
-	for {
-		thisBlock := tr.GetBlockHeight(chain)
-		if thisBlock >= block {
-			return
-		}
-		if time.Since(start) > timeout {
-			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
 }
 
 type ValPubKey struct {
@@ -532,14 +517,6 @@ func (tr Commands) GetQueryNodeIP(chain ChainID) string {
 	return fmt.Sprintf("%s.253", tr.ChainConfigs[chain].IpPrefix)
 }
 
-func (tr Commands) curlJsonRPCRequest(method, params, address string) {
-	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
-	cmd := tr.Target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
-
-	verbosity := false
-	e2e.ExecuteCommand(cmd, "curlJsonRPCRequest", verbosity)
-}
-
 // GetClientFrozenHeight returns the frozen height for a client with the given client ID
 // by querying the hosting chain with the given chainID
 func (tr Commands) GetClientFrozenHeight(chain ChainID, clientID string) (uint64, uint64) {
@@ -654,10 +631,6 @@ func (tr Commands) GetHasToValidate(validator ValidatorID) []ChainID {
 
 func (tr Commands) GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64 {
 	panic("'GetConsumerCommissionRate' is not implemented in this version")
-}
-
-func uintPtr(i uint) *uint {
-	return &i
 }
 
 func (tr Commands) GetInflationRate(

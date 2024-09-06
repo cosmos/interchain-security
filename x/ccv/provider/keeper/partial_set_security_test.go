@@ -633,7 +633,7 @@ func createConsumerValidators(powers []int64) []types.ConsensusValidator {
 func noMoreThanPercent(validators []types.ConsensusValidator, percent uint32) bool {
 	sum := int64(0)
 	for _, v := range validators {
-		sum = sum + v.Power
+		sum += v.Power
 	}
 
 	for _, v := range validators {
@@ -763,17 +763,19 @@ func TestNoMoreThanPercentOfTheSumProps(t *testing.T) {
 }
 
 func findConsumerValidator(t *testing.T, v types.ConsensusValidator, valsAfter []types.ConsensusValidator) *types.ConsensusValidator {
-	var vAfter *types.ConsensusValidator
-	for _, vA := range valsAfter {
+	t.Helper()
+
+	index := -1
+	for i, vA := range valsAfter {
 		if bytes.Equal(v.ProviderConsAddr, vA.ProviderConsAddr) {
-			vAfter = &vA
+			index = i
 			break
 		}
 	}
-	if vAfter == nil {
+	if index == -1 {
 		t.Fatalf("could not find validator with address %v in validators after \n validators after capping: %v", v.ProviderConsAddr, valsAfter)
 	}
-	return vAfter
+	return &valsAfter[index]
 }
 
 func createStakingValidatorsAndMocks(ctx sdk.Context, mocks testkeeper.MockedKeepers, powers ...int64) ([]stakingtypes.Validator, []types.ProviderConsAddress) {

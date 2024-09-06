@@ -407,8 +407,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		},
 		{
 			name: "2",
-			mockSetup: func(sdkCtx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-				ctx := sdk.WrapSDKContext(sdkCtx)
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKValConsAddress(),

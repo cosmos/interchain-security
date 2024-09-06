@@ -12,7 +12,6 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
 
-	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -165,11 +164,11 @@ func (s *Driver) consumerValidatorSet(chain ChainId) []consumertypes.CrossChainV
 func (s *Driver) delegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(amt))
 	d := s.delegator().String()
 	v := s.validator(val).String()
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
-	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Delegate(s.ctx(PROVIDER), msg)
 	if err != nil {
 		log.Println("error when delegating (is this expected?): ", err)
 	}
@@ -179,11 +178,11 @@ func (s *Driver) delegate(val, amt int64) {
 func (s *Driver) undelegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(amt))
 	d := s.delegator().String()
 	v := s.validator(val).String()
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
-	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Undelegate(s.ctx(PROVIDER), msg)
 	if err != nil {
 		log.Println("error when undelegating (is this expected?): ", err)
 	}
@@ -438,7 +437,7 @@ func (s *Driver) RequestSlash(
 }
 
 // DeliverAcks delivers, for each path,
-// all possible acks (up to math.MaxInt many per path).
+// all possible acks (up to sdkmath.MaxInt many per path).
 func (s *Driver) DeliverAcks() {
 	for _, chainID := range s.runningConsumerChainIDs() {
 		path := s.path(chainID)

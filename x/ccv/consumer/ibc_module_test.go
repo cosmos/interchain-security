@@ -239,7 +239,7 @@ func TestOnChanOpenAck(t *testing.T) {
 						ConnectionHops: []string{"connectionID"},
 					}, true).Times(1),
 					mocks.MockIBCCoreKeeper.EXPECT().ChannelOpenInit(
-						sdk.WrapSDKContext(params.ctx), distrTransferMsg).Return(
+						params.ctx, distrTransferMsg).Return(
 						&channeltypes.MsgChannelOpenInitResponse{}, nil,
 					).Times(1),
 				)

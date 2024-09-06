@@ -33,7 +33,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	providerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7896)
 	provAddr := providerCryptoId.ProviderConsAddress()
 	provVal := providerCryptoId.SDKStakingValidator()
-	provPubKey, err := provVal.TmConsPublicKey()
+	provPubKey, err := provVal.CmtConsPublicKey()
 	require.NoError(t, err)
 
 	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)

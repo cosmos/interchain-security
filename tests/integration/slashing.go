@@ -10,7 +10,6 @@ import (
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
-	"cosmossdk.io/x/evidence/types"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -52,7 +51,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	tmVal := s.consumerChain.Vals.Validators[0]
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
 	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.GetConsAddress(pubkey))
 	// map consumer consensus address to provider consensus address
@@ -761,7 +760,7 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 // copy of the function from slashing/keeper.go
 // in cosmos-sdk v0.50.x the function HandleEquivocationEvidence is not exposed (it was exposed for versions <= v0.47.x)
 // https://github.com/cosmos/cosmos-sdk/blob/v0.50.4/x/evidence/keeper/infraction.go#L27
-func handleEquivocationEvidence(ctx context.Context, k integration.ConsumerApp, evidence *types.Equivocation) error {
+func handleEquivocationEvidence(ctx context.Context, k integration.ConsumerApp, evidence *evidencetypes.Equivocation) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	slashingKeeper := k.GetTestSlashingKeeper().(slashingkeeper.Keeper)
 	evidenceKeeper := k.GetTestEvidenceKeeper()
@@ -832,7 +831,7 @@ func handleEquivocationEvidence(ctx context.Context, k integration.ConsumerApp, 
 		}
 	}
 
-	err = slashingKeeper.JailUntil(ctx, consAddr, types.DoubleSignJailEndTime)
+	err = slashingKeeper.JailUntil(ctx, consAddr, evidencetypes.DoubleSignJailEndTime)
 	if err != nil {
 		return err
 	}

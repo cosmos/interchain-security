@@ -129,7 +129,10 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				1: IBCTransferParamsProposal{
 					Deposit: 10000001,
 					Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
-					Params:  IBCTransferParams{true, true},
+					Params: IBCTransferParams{
+						SendEnabled:    true,
+						ReceiveEnabled: true,
+					},
 				},
 			},
 		}},
@@ -166,7 +169,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			err := MarshalAndUnmarshalChainState(tc.chainState)
 			if err != nil {
-				t.Fatalf(err.Error())
+				t.Fatalf("MarshalAndUnmarshalChainState: %s", err.Error())
 			}
 		})
 	}
@@ -187,7 +190,7 @@ func MarshalAndUnmarshalChainState(chainState ChainState) error {
 	diff := cmp.Diff(chainState, *got)
 	if diff != "" {
 		log.Print(string(jsonobj))
-		return fmt.Errorf(diff)
+		return fmt.Errorf("marshaled and unmarshaled ChainState don't match, diff=%s", diff)
 	}
 
 	return nil

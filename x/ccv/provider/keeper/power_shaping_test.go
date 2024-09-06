@@ -217,14 +217,14 @@ func TestKeeperConsumerParams(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			chainID := "consumerId"
 			// Set initial value
-			tt.settingFunc(ctx, chainID, int64(tt.initialValue))
+			tt.settingFunc(ctx, chainID, tt.initialValue)
 
 			// Retrieve and check initial value
 			actualValue := tt.getFunc(ctx, chainID)
 			require.EqualValues(t, tt.initialValue, actualValue)
 
 			// Update value
-			tt.settingFunc(ctx, chainID, int64(tt.updatedValue))
+			tt.settingFunc(ctx, chainID, tt.updatedValue)
 
 			// Retrieve and check updated value
 			newActualValue := tt.getFunc(ctx, chainID)

@@ -231,7 +231,7 @@ func (k Keeper) RemoveOptedInConsumerId(ctx sdk.Context, providerAddr types.Prov
 
 	// find the index of the consumer we want to remove
 	index := -1
-	for i := 0; i < len(consumers.Ids); i = i + 1 {
+	for i := 0; i < len(consumers.Ids); i++ {
 		if consumers.Ids[i] == consumerId {
 			index = i
 			break

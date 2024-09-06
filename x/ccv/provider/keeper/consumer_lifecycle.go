@@ -613,7 +613,7 @@ func (k Keeper) removeConsumerIdFromTime(ctx sdk.Context, consumerId string, key
 
 	// find the index of the consumer we want to remove
 	index := -1
-	for i := 0; i < len(consumers.Ids); i = i + 1 {
+	for i := 0; i < len(consumers.Ids); i++ {
 		if consumers.Ids[i] == consumerId {
 			index = i
 			break

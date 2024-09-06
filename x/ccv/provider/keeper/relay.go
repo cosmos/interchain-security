@@ -134,7 +134,7 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 	if blocksSinceEpochStart == 0 {
 		return 0
 	} else {
-		return int64(k.GetBlocksPerEpoch(ctx) - blocksSinceEpochStart)
+		return k.GetBlocksPerEpoch(ctx) - blocksSinceEpochStart
 	}
 }
 

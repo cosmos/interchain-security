@@ -102,7 +102,7 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	// mock 2 bonded validators
 	valA := createStakingValidator(ctx, mocks, 1, 1)
 	valAConsAddr, _ := valA.GetConsAddr()
-	valAPubKey, _ := valA.TmConsPublicKey()
+	valAPubKey, _ := valA.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
 	valB := createStakingValidator(ctx, mocks, 2, 2)
 	valBConsAddr, _ := valB.GetConsAddr()
@@ -786,22 +786,22 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 
 	valA := createStakingValidator(ctx, mocks, 1, 1) // 3.125% of the total voting power
 	valAConsAddr, _ := valA.GetConsAddr()
-	valAPubKey, _ := valA.TmConsPublicKey()
+	valAPubKey, _ := valA.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
 	valB := createStakingValidator(ctx, mocks, 3, 2) // 9.375% of the total voting power
 	valBConsAddr, _ := valB.GetConsAddr()
-	valBPubKey, _ := valB.TmConsPublicKey()
+	valBPubKey, _ := valB.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
 	valC := createStakingValidator(ctx, mocks, 4, 3) // 12.5% of the total voting power
 	valCConsAddr, _ := valC.GetConsAddr()
-	valCPubKey, _ := valC.TmConsPublicKey()
+	valCPubKey, _ := valC.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, nil).AnyTimes()
 	valD := createStakingValidator(ctx, mocks, 8, 4) // 25% of the total voting power
 	valDConsAddr, _ := valD.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, nil).AnyTimes()
 	valE := createStakingValidator(ctx, mocks, 16, 5) // 50% of the total voting power
 	valEConsAddr, _ := valE.GetConsAddr()
-	valEPubKey, _ := valE.TmConsPublicKey()
+	valEPubKey, _ := valE.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, nil).AnyTimes()
 
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, []stakingtypes.Validator{valA, valB, valC, valD, valE}, -1)

@@ -355,7 +355,7 @@ func TestFilterValidatorsConsiderAll(t *testing.T) {
 	valA := createStakingValidator(ctx, mocks, 1, 1)
 	// because validator A has no consumer key set, the `PublicKey` we expect is the key on the provider chain
 	valAConsAddr, _ := valA.GetConsAddr()
-	valAPublicKey, _ := valA.TmConsPublicKey()
+	valAPublicKey, _ := valA.CmtConsPublicKey()
 	expectedValidators = append(expectedValidators, types.ConsensusValidator{
 		ProviderConsAddr: types.NewProviderConsAddress(valAConsAddr).Address.Bytes(),
 		Power:            1,
@@ -397,7 +397,7 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	valA := createStakingValidator(ctx, mocks, 1, 1)
 	// because validator A has no consumer key set, the `PublicKey` we expect is the key on the provider chain
 	valAConsAddr, _ := valA.GetConsAddr()
-	valAPublicKey, _ := valA.TmConsPublicKey()
+	valAPublicKey, _ := valA.CmtConsPublicKey()
 	expectedValAConsumerValidator := types.ConsensusValidator{
 		ProviderConsAddr: types.NewProviderConsAddress(valAConsAddr).Address.Bytes(),
 		Power:            1,
@@ -478,7 +478,7 @@ func TestCreateConsumerValidator(t *testing.T) {
 	valB := createStakingValidator(ctx, mocks, 2, 2)
 	valBConsAddr, _ := valB.GetConsAddr()
 	valBProviderConsAddr := types.NewProviderConsAddress(valBConsAddr)
-	valBPublicKey, _ := valB.TmConsPublicKey()
+	valBPublicKey, _ := valB.CmtConsPublicKey()
 	actualConsumerValidatorB, err := providerKeeper.CreateConsumerValidator(ctx, chainID, valB)
 	expectedConsumerValidatorB := types.ConsensusValidator{
 		ProviderConsAddr: valBProviderConsAddr.ToSdkConsAddr(),

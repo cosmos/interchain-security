@@ -170,7 +170,7 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 			evidence.VoteA.ValidatorAddress)
 	}
 
-	pubkey, err := cryptocodec.FromTmPubKeyInterface(validator.PubKey)
+	pubkey, err := cryptocodec.FromCmtPubKeyInterface(validator.PubKey)
 	if err != nil {
 		return nil, err
 	}

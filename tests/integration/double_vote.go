@@ -233,7 +233,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			}
 
 			// convert validator public key
-			pk, err := cryptocodec.FromTmPubKeyInterface(tc.pubkey)
+			pk, err := cryptocodec.FromCmtPubKeyInterface(tc.pubkey)
 			s.Require().NoError(err)
 
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
@@ -337,7 +337,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 
 	s.Run("slash undelegations and redelegations when getting double voting evidence", func() {
 		// convert validator public key
-		pk, err := cryptocodec.FromTmPubKeyInterface(pubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(pubKey)
 		s.Require().NoError(err)
 
 		// perform a delegation and an undelegation of the whole amount

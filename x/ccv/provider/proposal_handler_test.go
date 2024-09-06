@@ -64,12 +64,6 @@ func TestProviderProposalHandler(t *testing.T) {
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
-		// Mock expectations depending on expected outcome
-		switch {
-		case tc.expValidChangeRewardDenom:
-			// Nothing to mock
-		}
-
 		// Execution
 		proposalHandler := provider.NewProviderProposalHandler(providerKeeper)
 		err := proposalHandler(ctx, tc.content)
