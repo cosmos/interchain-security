@@ -32,20 +32,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 		k.SetValsetUpdateBlockHeight(ctx, v2h.ValsetUpdateId, v2h.Height)
 	}
 
-	for _, prop := range genState.ConsumerAdditionProposals {
-		// prevent implicit memory aliasing
-		p := prop
-		k.SetPendingConsumerAdditionProp(ctx, &p)
-	}
-	for _, prop := range genState.ConsumerRemovalProposals {
-		p := prop
-		k.SetPendingConsumerRemovalProp(ctx, &p)
-	}
-
 	// Set initial state for each consumer chain
 	for _, cs := range genState.ConsumerStates {
 		chainID := cs.ChainId
 		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
+		k.SetConsumerPhase(ctx, chainID, cs.Phase)
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
 			// An error here would indicate something is very wrong,
 			// the ConsumerGenesis validated in ConsumerState.Validate().
@@ -53,8 +44,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abc
 		}
 		// check if the CCV channel was established
 		if cs.ChannelId != "" {
-			k.SetChannelToChain(ctx, cs.ChannelId, chainID)
-			k.SetChainToChannel(ctx, chainID, cs.ChannelId)
+			k.SetChannelToConsumerId(ctx, cs.ChannelId, chainID)
+			k.SetConsumerIdToChannelId(ctx, chainID, cs.ChannelId)
 			k.SetInitChainHeight(ctx, chainID, cs.InitialHeight)
 			k.SetSlashAcks(ctx, cs.ChainId, cs.SlashDowntimeAck)
 		} else {
@@ -128,57 +119,56 @@ func (k Keeper) InitGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 
 // ExportGenesis returns the CCV provider module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	// get a list of all registered consumer chains
-	registeredChainIDs := k.GetAllRegisteredConsumerChainIDs(ctx)
+	launchedConsumerIds := k.GetAllConsumersWithIBCClients(ctx)
 
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
-	for _, chainID := range registeredChainIDs {
+	for _, consumerId := range launchedConsumerIds {
 		// no need for the second return value of GetConsumerClientId
-		// as GetAllRegisteredConsumerChainIDs already iterated through
+		// as GetAllConsumersWithIBCClients already iterated through
 		// the entire prefix range
-		clientID, _ := k.GetConsumerClientId(ctx, chainID)
-		gen, found := k.GetConsumerGenesis(ctx, chainID)
+		clientId, _ := k.GetConsumerClientId(ctx, consumerId)
+		gen, found := k.GetConsumerGenesis(ctx, consumerId)
 		if !found {
-			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
+			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", consumerId, clientId))
 		}
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:         chainID,
-			ClientId:        clientID,
+			ChainId:         consumerId,
+			ClientId:        clientId,
 			ConsumerGenesis: gen,
+			Phase:           k.GetConsumerPhase(ctx, consumerId),
 		}
 
 		// try to find channel id for the current consumer chain
-		channelId, found := k.GetChainToChannel(ctx, chainID)
+		channelId, found := k.GetConsumerIdToChannelId(ctx, consumerId)
 		if found {
 			cs.ChannelId = channelId
-			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chainID)
+			cs.InitialHeight, found = k.GetInitChainHeight(ctx, consumerId)
 			if !found {
-				panic(fmt.Errorf("cannot find init height for consumer chain %s", chainID))
+				panic(fmt.Errorf("cannot find init height for consumer chain %s", consumerId))
 			}
-			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
+			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, consumerId)
 		}
 
-		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chainID)
+		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, consumerId)
 		consumerStates = append(consumerStates, cs)
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
 	consumerAddrsToPrune := []types.ConsumerAddrsToPruneV2{}
-	for _, chainID := range registeredChainIDs {
+	for _, chainID := range launchedConsumerIds {
 		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chainID)...)
 	}
 
 	params := k.GetParams(ctx)
 
+	// TODO (PERMISSIONLESS)
 	return types.NewGenesisState(
 		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
-		k.GetAllPendingConsumerAdditionProps(ctx),
-		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,
 		k.GetAllValidatorConsumerPubKeys(ctx, nil),
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),

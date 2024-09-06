@@ -212,13 +212,14 @@ func GetNewSlashPacketData() types.SlashPacketData {
 	}
 }
 
-// SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
-// which assert that a consumer chain was properly setup to be later stopped from `StopConsumerChain`.
-// Note: This function only setups and tests that we correctly setup a consumer chain that we could later stop when
-// calling `StopConsumerChain` -- this does NOT necessarily mean that the consumer chain is stopped.
-// Also see `TestProviderStateIsCleanedAfterConsumerChainIsStopped`.
-func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
+// SetupForDeleteConsumerChain registers expected mock calls and corresponding state setup
+// which assert that a consumer chain was properly setup to be later deleted with `DeleteConsumerChain`.
+// Note: This function only setups and tests that we correctly setup a consumer chain that we could later delete when
+// calling `DeleteConsumerChain` -- this does NOT necessarily mean that the consumer chain is deleted.
+// Also see `TestProviderStateIsCleanedAfterConsumerChainIsDeleted`.
+func SetupForDeleteConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
+	consumerId string,
 ) {
 	t.Helper()
 
@@ -230,73 +231,101 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 
 	gomock.InOrder(expectations...)
 
-	prop := GetTestConsumerAdditionProp()
-	err := providerKeeper.CreateConsumerClient(ctx, prop)
+	providerKeeper.SetConsumerChainId(ctx, consumerId, "chainID")
+	err := providerKeeper.SetConsumerMetadata(ctx, consumerId, GetTestConsumerMetadata())
 	require.NoError(t, err)
+	err = providerKeeper.SetConsumerInitializationParameters(ctx, consumerId, GetTestInitializationParameters())
+	require.NoError(t, err)
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, GetTestPowerShapingParameters())
+	require.NoError(t, err)
+
+	// set the chain to initialized so that we can create a consumer client
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
+
+	err = providerKeeper.CreateConsumerClient(ctx, consumerId)
+	require.NoError(t, err)
+	// set the mapping consumer ID <> client ID for the consumer chain
+	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
+	// set the channel ID for the consumer chain
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
+
+	// set the chain to stopped sto the chain can be deleted
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_STOPPED)
 }
 
-// TestProviderStateIsCleanedAfterConsumerChainIsStopped executes test assertions for the provider's state being cleaned
-// after a stopped consumer chain.
-func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	expectedChainID, expectedChannelID string,
+// TestProviderStateIsCleanedAfterConsumerChainIsDeleted executes test assertions for the provider's state being cleaned
+// after a deleted consumer chain.
+func TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+	consumerId, expectedChannelID string, expErr bool,
 ) {
 	t.Helper()
-	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	_, found := providerKeeper.GetConsumerClientId(ctx, consumerId)
 	require.False(t, found)
-	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
+	_, found = providerKeeper.GetConsumerIdToChannelId(ctx, consumerId)
 	require.False(t, found)
-	_, found = providerKeeper.GetChannelToChain(ctx, expectedChannelID)
+	_, found = providerKeeper.GetChannelIdToConsumerId(ctx, expectedChannelID)
 	require.False(t, found)
-	_, found = providerKeeper.GetInitChainHeight(ctx, expectedChainID)
+	_, found = providerKeeper.GetInitChainHeight(ctx, consumerId)
 	require.False(t, found)
-	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
+	acks := providerKeeper.GetSlashAcks(ctx, consumerId)
 	require.Empty(t, acks)
 
-	// in case the chain was successfully stopped, it should not contain a Top N associated to it
-	_, found = providerKeeper.GetTopN(ctx, expectedChainID)
-	require.False(t, found)
-
 	// test key assignment state is cleaned
-	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID))
-	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
-	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
-	require.Empty(t, providerKeeper.GetAllCommissionRateValidators(ctx, expectedChainID))
-	require.Zero(t, providerKeeper.GetEquivocationEvidenceMinHeight(ctx, expectedChainID))
+	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &consumerId))
+	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &consumerId))
+	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, consumerId))
+	require.Empty(t, providerKeeper.GetAllCommissionRateValidators(ctx, consumerId))
+	require.Zero(t, providerKeeper.GetEquivocationEvidenceMinHeight(ctx, consumerId))
 }
 
-func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
-	prop := providertypes.NewConsumerAdditionProposal(
-		"chainID",
-		"description",
-		"chainID",
-		clienttypes.NewHeight(4, 5),
-		[]byte("gen_hash"),
-		[]byte("bin_hash"),
-		time.Now(),
-		types.DefaultConsumerRedistributeFrac,
-		types.DefaultBlocksPerDistributionTransmission,
-		"",
-		types.DefaultHistoricalEntries,
-		types.DefaultCCVTimeoutPeriod,
-		types.DefaultTransferTimeoutPeriod,
-		types.DefaultConsumerUnbondingPeriod,
-		0,
-		0,
-		0,
-		nil,
-		nil,
-		0,
-		false,
-	).(*providertypes.ConsumerAdditionProposal)
+func GetTestConsumerMetadata() providertypes.ConsumerMetadata {
+	return providertypes.ConsumerMetadata{
+		Name:        "chain name",
+		Description: "description",
+		Metadata:    "metadata",
+	}
+}
 
-	return prop
+func GetTestInitializationParameters() providertypes.ConsumerInitializationParameters {
+	return providertypes.ConsumerInitializationParameters{
+		InitialHeight:                     clienttypes.NewHeight(4, 5),
+		GenesisHash:                       []byte("gen_hash"),
+		BinaryHash:                        []byte("bin_hash"),
+		SpawnTime:                         time.Now().UTC(),
+		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
+		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
+		DistributionTransmissionChannel:   "",
+		HistoricalEntries:                 types.DefaultHistoricalEntries,
+		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
+		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
+		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
+	}
+}
+
+func GetTestPowerShapingParameters() providertypes.PowerShapingParameters {
+	return providertypes.PowerShapingParameters{
+		Top_N:              0,
+		ValidatorsPowerCap: 0,
+		ValidatorSetCap:    0,
+		Allowlist:          nil,
+		Denylist:           nil,
+		MinStake:           0,
+		AllowInactiveVals:  false,
+	}
+}
+
+func GetTestMsgUpdateConsumer() providertypes.MsgUpdateConsumer {
+	return providertypes.MsgUpdateConsumer{
+		Owner:           "owner",
+		ConsumerId:      "consumerId",
+		NewOwnerAddress: "newOwnerAddress",
+	}
 }
 
 func GetTestMsgConsumerAddition() providertypes.MsgConsumerAddition {
 	return providertypes.MsgConsumerAddition{
-		ChainId:                           "a ChainID",
+		ChainId:                           "a ChainId",
 		InitialHeight:                     clienttypes.NewHeight(4, 5),
 		GenesisHash:                       []byte(base64.StdEncoding.EncodeToString([]byte("gen_hash"))),
 		BinaryHash:                        []byte(base64.StdEncoding.EncodeToString([]byte("bin_hash"))),

@@ -67,11 +67,11 @@ func (k Keeper) ParseConsumerKey(consumerKey string) (tmprotocrypto.PublicKey, e
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
 func (k Keeper) GetValidatorConsumerPubKey(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	providerAddr types.ProviderConsAddress,
 ) (consumerKey tmprotocrypto.PublicKey, found bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerValidatorsKey(chainID, providerAddr))
+	bz := store.Get(types.ConsumerValidatorsKey(consumerId, providerAddr))
 	if bz == nil {
 		return consumerKey, false
 	}
@@ -87,7 +87,7 @@ func (k Keeper) GetValidatorConsumerPubKey(
 // SetValidatorConsumerPubKey sets a validator's public key assigned for a consumer chain
 func (k Keeper) SetValidatorConsumerPubKey(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	providerAddr types.ProviderConsAddress,
 	consumerKey tmprotocrypto.PublicKey,
 ) {
@@ -98,33 +98,33 @@ func (k Keeper) SetValidatorConsumerPubKey(
 		// the consumer key is obtained from GetValidatorConsumerPubKey, called from
 		panic(fmt.Sprintf("failed to marshal consumer key: %v", err))
 	}
-	store.Set(types.ConsumerValidatorsKey(chainID, providerAddr), bz)
+	store.Set(types.ConsumerValidatorsKey(consumerId, providerAddr), bz)
 }
 
 // GetAllValidatorConsumerPubKeys gets all the validators public keys assigned for a consumer chain
-// If chainID is nil, it returns all the validators public keys assigned for all consumer chains
+// If consumerId is nil, it returns all the validators public keys assigned for all consumer chains
 //
 // Note that the validators public keys assigned for a consumer chain are stored under keys
-// with the following format: ConsumerValidatorsBytePrefix | len(chainID) | chainID | providerAddress
+// with the following format: ConsumerValidatorsBytePrefix | len(consumerId) | consumerId | providerAddress
 // Thus, the returned array is
-//   - in ascending order of providerAddresses, if chainID is not nil;
-//   - in undetermined order, if chainID is nil.
-func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
+//   - in ascending order of providerAddresses, if consumerId is not nil;
+//   - in undetermined order, if consumerId is nil.
+func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, consumerId *string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
 	consumerValidatorsKeyPrefix := types.ConsumerValidatorsKeyPrefix()
-	if chainID == nil {
+	if consumerId == nil {
 		// iterate over the validators public keys assigned for all consumer chains
 		prefix = []byte{consumerValidatorsKeyPrefix}
 	} else {
-		// iterate over the validators public keys assigned for chainID
-		prefix = types.ChainIdWithLenKey(consumerValidatorsKeyPrefix, *chainID)
+		// iterate over the validators public keys assigned for consumerId
+		prefix = types.StringIdWithLenKey(consumerValidatorsKeyPrefix, *consumerId)
 	}
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		// TODO: store chainID and provider cons address in value bytes, marshaled as protobuf type
-		chainID, providerAddrTmp, err := types.ParseChainIdAndConsAddrKey(consumerValidatorsKeyPrefix, iterator.Key())
+		// TODO: store consumerId and provider cons address in value bytes, marshaled as protobuf type
+		consumerId, providerAddrTmp, err := types.ParseStringIdAndConsAddrKey(consumerValidatorsKeyPrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// the store key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
@@ -140,7 +140,7 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 		}
 
 		validatorConsumerPubKeys = append(validatorConsumerPubKeys, types.ValidatorConsumerPubKey{
-			ChainId:      chainID,
+			ChainId:      consumerId,
 			ProviderAddr: providerAddr.ToSdkConsAddr(),
 			ConsumerKey:  &consumerKey,
 		})
@@ -150,20 +150,20 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 }
 
 // DeleteValidatorConsumerPubKey deletes a validator's public key assigned for a consumer chain
-func (k Keeper) DeleteValidatorConsumerPubKey(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) {
+func (k Keeper) DeleteValidatorConsumerPubKey(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerValidatorsKey(chainID, providerAddr))
+	store.Delete(types.ConsumerValidatorsKey(consumerId, providerAddr))
 }
 
 // GetValidatorByConsumerAddr returns a validator's consensus address on the provider
 // given the validator's consensus address on a consumer
 func (k Keeper) GetValidatorByConsumerAddr(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	consumerAddr types.ConsumerConsAddress,
 ) (providerAddr types.ProviderConsAddress, found bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr))
+	bz := store.Get(types.ValidatorsByConsumerAddrKey(consumerId, consumerAddr))
 	if bz == nil {
 		return providerAddr, false
 	}
@@ -175,45 +175,45 @@ func (k Keeper) GetValidatorByConsumerAddr(
 // to the validator's consensus address on the provider
 func (k Keeper) SetValidatorByConsumerAddr(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	consumerAddr types.ConsumerConsAddress,
 	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
 	// Cons address is a type alias for a byte string, no marshaling needed
 	bz := providerAddr.ToSdkConsAddr()
-	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
+	store.Set(types.ValidatorsByConsumerAddrKey(consumerId, consumerAddr), bz)
 }
 
 // GetValidatorsByConsumerAddrs gets all the mappings from consensus addresses
 // on a given consumer chain to consensus addresses on the provider chain.
-// If chainID is nil, it returns all the mappings from consensus addresses on all consumer chains.
+// If consumerId is nil, it returns all the mappings from consensus addresses on all consumer chains.
 //
 // Note that the mappings for a consumer chain are stored under keys with the following format:
-// ValidatorsByConsumerAddrKeyPrefix | len(chainID) | chainID | consumerAddress
+// ValidatorsByConsumerAddrKeyPrefix | len(consumerId) | consumerId | consumerAddress
 // Thus, the returned array is
-//   - in ascending order of consumerAddresses, if chainID is not nil;
-//   - in undetermined order, if chainID is nil.
-func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
+//   - in ascending order of consumerAddresses, if consumerId is not nil;
+//   - in undetermined order, if consumerId is nil.
+func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, consumerId *string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
 	validatorsByConsumerAddrKeyPrefix := types.ValidatorsByConsumerAddrKeyPrefix()
-	if chainID == nil {
+	if consumerId == nil {
 		// iterate over the mappings from consensus addresses on all consumer chains
 		prefix = []byte{validatorsByConsumerAddrKeyPrefix}
 	} else {
-		// iterate over the mappings from consensus addresses on chainID
-		prefix = types.ChainIdWithLenKey(validatorsByConsumerAddrKeyPrefix, *chainID)
+		// iterate over the mappings from consensus addresses on consumerId
+		prefix = types.StringIdWithLenKey(validatorsByConsumerAddrKeyPrefix, *consumerId)
 	}
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		// TODO: store chainID and consumer cons address in value bytes, marshaled as protobuf type
-		chainID, consumerAddrTmp, err := types.ParseChainIdAndConsAddrKey(validatorsByConsumerAddrKeyPrefix, iterator.Key())
+		// TODO: store consumerId and consumer cons address in value bytes, marshaled as protobuf type
+		consumerId, consumerAddrTmp, err := types.ParseStringIdAndConsAddrKey(validatorsByConsumerAddrKeyPrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in SetValidatorByConsumerAddr.
-			panic(fmt.Sprintf("failed to parse chainID and consumer address: %v", err))
+			panic(fmt.Sprintf("failed to parse consumerId and consumer address: %v", err))
 		}
 		consumerAddr := types.NewConsumerConsAddress(consumerAddrTmp)
 		providerAddr := types.NewProviderConsAddress(iterator.Value())
@@ -221,7 +221,7 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 		validatorConsumerAddrs = append(validatorConsumerAddrs, types.ValidatorByConsumerAddr{
 			ConsumerAddr: consumerAddr.ToSdkConsAddr(),
 			ProviderAddr: providerAddr.ToSdkConsAddr(),
-			ChainId:      chainID,
+			ChainId:      consumerId,
 		})
 	}
 
@@ -230,9 +230,9 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 
 // DeleteValidatorByConsumerAddr deletes the mapping from a validator's consensus address on a consumer
 // to the validator's consensus address on the provider
-func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, chainID string, consumerAddr types.ConsumerConsAddress) {
+func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, consumerId string, consumerAddr types.ConsumerConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr))
+	store.Delete(types.ValidatorsByConsumerAddrKey(consumerId, consumerAddr))
 }
 
 // AppendConsumerAddrsToPrune appends a consumer validator address to the list of consumer addresses
@@ -245,12 +245,12 @@ func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, chainID string, c
 //   - or there exists a timestamp in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(timestamp)
 func (k Keeper) AppendConsumerAddrsToPrune(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	pruneTs time.Time,
 	consumerAddr types.ConsumerConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	storeKey := types.ConsumerAddrsToPruneV2Key(chainID, pruneTs)
+	storeKey := types.ConsumerAddrsToPruneV2Key(consumerId, pruneTs)
 	bz := store.Get(storeKey)
 	var consumerAddrsToPrune types.AddressList
 	if bz != nil {
@@ -275,12 +275,12 @@ func (k Keeper) AppendConsumerAddrsToPrune(
 // Note that this method is only used in testing.
 func (k Keeper) GetConsumerAddrsToPrune(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	ts time.Time,
 ) (consumerAddrsToPrune types.AddressList) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.ConsumerAddrsToPruneV2Key(chainID, ts))
+	bz := store.Get(types.ConsumerAddrsToPruneV2Key(consumerId, ts))
 	if bz == nil {
 		return
 	}
@@ -297,28 +297,28 @@ func (k Keeper) GetConsumerAddrsToPrune(
 // The returned addresses are removed from the store.
 //
 // Note that the list of all consumer addresses is stored under keys with the following format:
-// ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | timestamp
+// ConsumerAddrsToPruneV2BytePrefix | len(consumerId) | consumerId | timestamp
 // Thus, this method returns all the consumer addresses stored under keys in the following range:
-// (ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | ts') where ts' <= ts
+// (ConsumerAddrsToPruneV2BytePrefix | len(consumerId) | consumerId | ts') where ts' <= ts
 func (k Keeper) ConsumeConsumerAddrsToPrune(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	ts time.Time,
 ) (consumerAddrsToPrune types.AddressList) {
 	store := ctx.KVStore(k.storeKey)
 	consumerAddrsToPruneKeyPrefix := types.ConsumerAddrsToPruneV2KeyPrefix()
-	startPrefix := types.ChainIdWithLenKey(consumerAddrsToPruneKeyPrefix, chainID)
+	startPrefix := types.StringIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
 	iterator := store.Iterator(startPrefix,
-		storetypes.InclusiveEndBytes(types.ConsumerAddrsToPruneV2Key(chainID, ts)))
+		storetypes.InclusiveEndBytes(types.ConsumerAddrsToPruneV2Key(consumerId, ts)))
 	defer iterator.Close()
 
 	var keysToDel [][]byte
 	for ; iterator.Valid(); iterator.Next() {
 		// Sanity check
-		if _, pruneTs, err := types.ParseChainIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key()); err != nil {
+		if _, pruneTs, err := types.ParseStringIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key()); err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
-			k.Logger(ctx).Error("ParseChainIdAndTsKey failed",
+			k.Logger(ctx).Error("ParseStringIdAndTsKey failed",
 				"key", string(iterator.Key()),
 				"error", err.Error(),
 			)
@@ -352,19 +352,19 @@ func (k Keeper) ConsumeConsumerAddrsToPrune(
 	return
 }
 
-// GetAllConsumerAddrsToPrune gets all consumer addresses that can be eventually pruned for a given chainID.
+// GetAllConsumerAddrsToPrune gets all consumer addresses that can be eventually pruned for a given consumerId.
 //
 // Note that the list of all consumer addresses is stored under keys with the following format:
-// ConsumerAddrsToPruneV2BytePrefix | len(chainID) | chainID | timestamp
+// ConsumerAddrsToPruneV2BytePrefix | len(consumerId) | consumerId | timestamp
 // Thus, the returned array is in ascending order of timestamps.
-func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPruneV2) {
+func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, consumerId string) (consumerAddrsToPrune []types.ConsumerAddrsToPruneV2) {
 	store := ctx.KVStore(k.storeKey)
 	consumerAddrsToPruneKeyPrefix := types.ConsumerAddrsToPruneV2KeyPrefix()
-	iteratorPrefix := types.ChainIdWithLenKey(consumerAddrsToPruneKeyPrefix, chainID)
+	iteratorPrefix := types.StringIdWithLenKey(consumerAddrsToPruneKeyPrefix, consumerId)
 	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		_, ts, err := types.ParseChainIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key())
+		_, ts, err := types.ParseStringIdAndTsKey(consumerAddrsToPruneKeyPrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
@@ -381,7 +381,7 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (con
 		consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPruneV2{
 			PruneTs:       ts,
 			ConsumerAddrs: &addrs,
-			ChainId:       chainID,
+			ChainId:       consumerId,
 		})
 	}
 
@@ -389,26 +389,25 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (con
 }
 
 // DeleteConsumerAddrsToPruneV2 deletes the list of consumer addresses mapped to a timestamp
-func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, pruneTs time.Time) {
+func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, consumerId string, pruneTs time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerAddrsToPruneV2Key(chainID, pruneTs))
+	store.Delete(types.ConsumerAddrsToPruneV2Key(consumerId, pruneTs))
 }
 
 // AssignConsumerKey assigns the consumerKey to the validator with providerAddr
-// on the consumer chain with ID chainID, if it is either registered or currently
+// on the consumer chain with the given `consumerId`, if it is either registered or currently
 // voted on in a ConsumerAddition governance proposal
 func (k Keeper) AssignConsumerKey(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
-	// check that the consumer chain is either registered or that
-	// a ConsumerAdditionProposal was submitted.
-	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
+	if !k.IsConsumerActive(ctx, consumerId) {
+		// check that the consumer chain is either registered, initialized, or launched
 		return errorsmod.Wrapf(
-			types.ErrUnknownConsumerChainId, chainID,
-		)
+			types.ErrInvalidPhase,
+			"cannot assign a key to a consumer chain that is not in the registered, initialized, or launched phase: %s", consumerId)
 	}
 
 	consAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
@@ -433,7 +432,7 @@ func (k Keeper) AssignConsumerKey(
 		}
 		// We prevent a validator from assigning the default provider key as a consumer key
 		// if it has not already assigned a different consumer key
-		_, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+		_, found := k.GetValidatorConsumerPubKey(ctx, consumerId, providerAddr)
 		if !found {
 			return errorsmod.Wrapf(
 				types.ErrCannotAssignDefaultKeyAssignment,
@@ -442,7 +441,7 @@ func (k Keeper) AssignConsumerKey(
 		}
 	}
 
-	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
+	if _, found := k.GetValidatorByConsumerAddr(ctx, consumerId, consumerAddr); found {
 		// This consumer key is already in use, or it is to be pruned. With this check we prevent another validator
 		// from assigning the same consumer key as some other validator. Additionally, we prevent a validator from
 		// reusing a consumer key that it used in the past and is now to be pruned.
@@ -452,16 +451,16 @@ func (k Keeper) AssignConsumerKey(
 	}
 
 	// get the previous key assigned for this validator on this consumer chain
-	if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
+	if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, consumerId, providerAddr); found {
 		oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
 		if err != nil {
 			return err
 		}
 		oldConsumerAddr := types.NewConsumerConsAddress(oldConsumerAddrTmp)
 
-		// check whether the consumer chain is already registered,
-		// i.e., a client to the consumer was already created
-		if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
+		// check whether the consumer chain has already launched (i.e., a client to the consumer was already created)
+		phase := k.GetConsumerPhase(ctx, consumerId)
+		if phase == types.CONSUMER_PHASE_LAUNCHED {
 			// mark the old consumer address as prunable once UnbondingPeriod elapses;
 			// note: this state is removed on EndBlock
 			unbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
@@ -470,26 +469,26 @@ func (k Keeper) AssignConsumerKey(
 			}
 			k.AppendConsumerAddrsToPrune(
 				ctx,
-				chainID,
+				consumerId,
 				ctx.BlockTime().Add(unbondingPeriod),
 				oldConsumerAddr,
 			)
 		} else {
 			// if the consumer chain is not registered, then remove the mapping
 			// from the old consumer address to the provider address
-			k.DeleteValidatorByConsumerAddr(ctx, chainID, oldConsumerAddr)
+			k.DeleteValidatorByConsumerAddr(ctx, consumerId, oldConsumerAddr)
 		}
 	}
 
 	// set the mapping from this validator's provider address to the new consumer key;
 	// overwrite if already exists
 	// note: this state is deleted when the validator is removed from the staking module
-	k.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
+	k.SetValidatorConsumerPubKey(ctx, consumerId, providerAddr, consumerKey)
 
 	// set the mapping from this validator's new consensus address on the consumer
 	// to its consensus address on the provider;
 	// note: this state must be deleted through the pruning mechanism
-	k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
+	k.SetValidatorByConsumerAddr(ctx, consumerId, consumerAddr, providerAddr)
 
 	return nil
 }
@@ -498,11 +497,11 @@ func (k Keeper) AssignConsumerKey(
 // consAddr set as the consensus address on a consumer chain
 func (k Keeper) GetProviderAddrFromConsumerAddr(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	consumerAddr types.ConsumerConsAddress,
 ) types.ProviderConsAddress {
 	// check if this address is known only to the consumer chain
-	if providerConsAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
+	if providerConsAddr, found := k.GetValidatorByConsumerAddr(ctx, consumerId, consumerAddr); found {
 		return providerConsAddr
 	}
 	// If mapping from consumer -> provider addr is not found, there is no assigned key,
@@ -512,51 +511,38 @@ func (k Keeper) GetProviderAddrFromConsumerAddr(
 
 // PruneKeyAssignments prunes the consumer addresses no longer needed
 // as they cannot be referenced in slash requests (by a correct consumer)
-func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string) {
+func (k Keeper) PruneKeyAssignments(ctx sdk.Context, consumerId string) {
 	now := ctx.BlockTime()
 
-	consumerAddrs := k.ConsumeConsumerAddrsToPrune(ctx, chainID, now)
+	consumerAddrs := k.ConsumeConsumerAddrsToPrune(ctx, consumerId, now)
 	for _, addrBz := range consumerAddrs.Addresses {
 		consumerAddr := types.NewConsumerConsAddress(addrBz)
-		k.DeleteValidatorByConsumerAddr(ctx, chainID, consumerAddr)
+		k.DeleteValidatorByConsumerAddr(ctx, consumerId, consumerAddr)
 		k.Logger(ctx).Info("consumer address was pruned",
-			"consumer chainID", chainID,
+			"consumer consumerId", consumerId,
 			"consumer consensus addr", consumerAddr.String(),
 		)
 	}
 }
 
 // DeleteKeyAssignments deletes all the state needed for key assignments on a consumer chain
-func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
+func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, consumerId string) {
 	// delete ValidatorConsumerPubKey
-	for _, validatorConsumerAddr := range k.GetAllValidatorConsumerPubKeys(ctx, &chainID) {
+	for _, validatorConsumerAddr := range k.GetAllValidatorConsumerPubKeys(ctx, &consumerId) {
 		providerAddr := types.NewProviderConsAddress(validatorConsumerAddr.ProviderAddr)
-		k.DeleteValidatorConsumerPubKey(ctx, chainID, providerAddr)
+		k.DeleteValidatorConsumerPubKey(ctx, consumerId, providerAddr)
 	}
 
 	// delete ValidatorsByConsumerAddr
-	for _, validatorConsumerAddr := range k.GetAllValidatorsByConsumerAddr(ctx, &chainID) {
+	for _, validatorConsumerAddr := range k.GetAllValidatorsByConsumerAddr(ctx, &consumerId) {
 		consumerAddr := types.NewConsumerConsAddress(validatorConsumerAddr.ConsumerAddr)
-		k.DeleteValidatorByConsumerAddr(ctx, chainID, consumerAddr)
+		k.DeleteValidatorByConsumerAddr(ctx, consumerId, consumerAddr)
 	}
 
 	// delete ValidatorConsumerPubKey
-	for _, consumerAddrsToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
-		k.DeleteConsumerAddrsToPrune(ctx, chainID, consumerAddrsToPrune.PruneTs)
+	for _, consumerAddrsToPrune := range k.GetAllConsumerAddrsToPrune(ctx, consumerId) {
+		k.DeleteConsumerAddrsToPrune(ctx, consumerId, consumerAddrsToPrune.PruneTs)
 	}
-}
-
-// IsConsumerProposedOrRegistered checks if a consumer chain is either registered, meaning either already running
-// or will run soon, or proposed its ConsumerAdditionProposal was submitted but the chain was not yet added to ICS yet.
-func (k Keeper) IsConsumerProposedOrRegistered(ctx sdk.Context, chainID string) bool {
-	allConsumerChains := k.GetAllRegisteredAndProposedChainIDs(ctx)
-	for _, c := range allConsumerChains {
-		if c == chainID {
-			return true
-		}
-	}
-
-	return false
 }
 
 // ValidatorConsensusKeyInUse checks if the given consensus key is already
@@ -578,8 +564,8 @@ func (k Keeper) ValidatorConsensusKeyInUse(ctx sdk.Context, valAddr sdk.ValAddre
 		panic("could not get validator cons addr ")
 	}
 
-	allConsumerChains := k.GetAllRegisteredAndProposedChainIDs(ctx)
-	for _, c := range allConsumerChains {
+	allConsumerIds := k.GetAllActiveConsumerIds(ctx)
+	for _, c := range allConsumerIds {
 		if _, exist := k.GetValidatorByConsumerAddr(ctx,
 			c,
 			types.NewConsumerConsAddress(consensusAddr),

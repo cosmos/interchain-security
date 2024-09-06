@@ -74,6 +74,7 @@ var hermesTemplates = map[string]string{
 // type aliases for shared types from e2e package
 type (
 	ChainID         = e2e.ChainID
+	ConsumerID      = e2e.ConsumerID
 	ValidatorID     = e2e.ValidatorID
 	ValidatorConfig = e2e.ValidatorConfig
 	ChainConfig     = e2e.ChainConfig

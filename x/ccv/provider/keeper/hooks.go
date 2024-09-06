@@ -105,27 +105,11 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 // gov hooks
 //
 
-// AfterProposalSubmission - call hook if registered
-// After a consumerAddition proposal submission, a record is created
-// that maps the proposal ID to the consumer chain ID.
-func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64) error {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	if p, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
-		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
-	}
+func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64) error {
 	return nil
 }
 
-// AfterProposalVotingPeriodEnded - call hook if registered
-// After proposal voting ends, the consumer chainID in store is deleted.
-// When a consumerAddition proposal passes, the consumer chainID is available in providerKeeper.GetAllPendingConsumerAdditionProps
-// or providerKeeper.GetAllConsumerChains(ctx).
-func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalID uint64) error {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	if _, ok := h.GetConsumerAdditionFromProp(ctx, proposalID); ok {
-		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
-	}
+func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalId uint64) error {
 	return nil
 }
 
@@ -139,51 +123,4 @@ func (h Hooks) AfterProposalVote(ctx context.Context, proposalID uint64, voterAd
 
 func (h Hooks) AfterProposalFailedMinDeposit(ctx context.Context, proposalID uint64) error {
 	return nil
-}
-
-// GetConsumerAdditionFromProp extracts a consumer addition proposal from
-// the proposal with the given ID
-func (h Hooks) GetConsumerAdditionFromProp(
-	ctx sdk.Context,
-	proposalID uint64,
-) (providertypes.ConsumerAdditionProposal, bool) {
-	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalID)
-	if err != nil {
-		return providertypes.ConsumerAdditionProposal{}, false
-	}
-
-	// Iterate over the messages in the proposal
-	// Note that it's assumed that at most ONE message can contain a consumer addition proposal
-	for _, msg := range p.GetMessages() {
-		sdkMsg, isConsumerAddition := msg.GetCachedValue().(*providertypes.MsgConsumerAddition)
-		if !isConsumerAddition {
-			continue
-		}
-
-		proposal := providertypes.ConsumerAdditionProposal{
-			Title:                             p.Title,
-			Description:                       p.Summary,
-			ChainId:                           sdkMsg.ChainId,
-			InitialHeight:                     sdkMsg.InitialHeight,
-			GenesisHash:                       sdkMsg.GenesisHash,
-			BinaryHash:                        sdkMsg.BinaryHash,
-			SpawnTime:                         sdkMsg.SpawnTime,
-			UnbondingPeriod:                   sdkMsg.UnbondingPeriod,
-			CcvTimeoutPeriod:                  sdkMsg.CcvTimeoutPeriod,
-			TransferTimeoutPeriod:             sdkMsg.TransferTimeoutPeriod,
-			ConsumerRedistributionFraction:    sdkMsg.ConsumerRedistributionFraction,
-			BlocksPerDistributionTransmission: sdkMsg.BlocksPerDistributionTransmission,
-			HistoricalEntries:                 sdkMsg.HistoricalEntries,
-			DistributionTransmissionChannel:   sdkMsg.DistributionTransmissionChannel,
-			Top_N:                             sdkMsg.Top_N,
-			ValidatorsPowerCap:                sdkMsg.ValidatorsPowerCap,
-			ValidatorSetCap:                   sdkMsg.ValidatorSetCap,
-			Allowlist:                         sdkMsg.Allowlist,
-			Denylist:                          sdkMsg.Denylist,
-			MinStake:                          sdkMsg.MinStake,
-			AllowInactiveVals:                 sdkMsg.AllowInactiveVals,
-		}
-		return proposal, true
-	}
-	return providertypes.ConsumerAdditionProposal{}, false
 }

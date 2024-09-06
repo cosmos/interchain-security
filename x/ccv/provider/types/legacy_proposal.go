@@ -1,21 +1,13 @@
 package types
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 	time "time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
-	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
-
 	evidencetypes "cosmossdk.io/x/evidence/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const (
@@ -100,79 +92,9 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 	return ProposalTypeConsumerAddition
 }
 
-// ValidatePSSFeatures returns an error if the `topN` and `validatorsPowerCap` parameters are no in the correct ranges
-func ValidatePSSFeatures(topN, validatorsPowerCap uint32) error {
-	// Top N corresponds to the top N% of validators that have to validate the consumer chain and can only be 0 (for an
-	// Opt In chain) or in the range [50, 100] (for a Top N chain).
-	if topN != 0 && (topN < 50 || topN > 100) {
-		return fmt.Errorf("Top N can either be 0 or in the range [50, 100]")
-	}
-
-	if validatorsPowerCap != 0 && validatorsPowerCap > 100 {
-		return fmt.Errorf("validators' power cap has to be in the range [1, 100]")
-	}
-
-	return nil
-}
-
 // ValidateBasic runs basic stateless validity checks
 func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
-	if err := govv1beta1.ValidateAbstract(cccp); err != nil {
-		return err
-	}
-
-	if strings.TrimSpace(cccp.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "consumer chain id must not be blank")
-	}
-
-	if cccp.InitialHeight.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
-	}
-
-	if len(cccp.GenesisHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "genesis hash cannot be empty")
-	}
-	if len(cccp.BinaryHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "binary hash cannot be empty")
-	}
-
-	if cccp.SpawnTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateStringFraction(cccp.ConsumerRedistributionFraction); err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
-	}
-
-	if err := ccvtypes.ValidatePositiveInt64(cccp.BlocksPerDistributionTransmission); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
-	}
-
-	if err := ccvtypes.ValidateDistributionTransmissionChannel(cccp.DistributionTransmissionChannel); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "distribution transmission channel")
-	}
-
-	if err := ccvtypes.ValidatePositiveInt64(cccp.HistoricalEntries); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
-	}
-
-	if err := ccvtypes.ValidateDuration(cccp.CcvTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateDuration(cccp.TransferTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
-	}
-
-	if err := ccvtypes.ValidateDuration(cccp.UnbondingPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
-	}
-
-	err := ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap)
-	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "invalid PSS features: %s", err.Error())
-	}
-	return nil
+	return fmt.Errorf("ConsumerAdditionProposal is deprecated")
 }
 
 // String returns the string representation of the ConsumerAdditionProposal.
@@ -226,18 +148,7 @@ func (sccp *ConsumerRemovalProposal) ProposalType() string { return ProposalType
 
 // ValidateBasic runs basic stateless validity checks
 func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
-	if err := govv1beta1.ValidateAbstract(sccp); err != nil {
-		return err
-	}
-
-	if strings.TrimSpace(sccp.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
-	}
-
-	if sccp.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
-	}
-	return nil
+	return fmt.Errorf("ConsumerRemovalProposal is deprecated")
 }
 
 // NewConsumerModificationProposal creates a new consumer modification proposal.
@@ -274,19 +185,7 @@ func (cccp *ConsumerModificationProposal) ProposalType() string {
 
 // ValidateBasic runs basic stateless validity checks
 func (cccp *ConsumerModificationProposal) ValidateBasic() error {
-	if err := govv1beta1.ValidateAbstract(cccp); err != nil {
-		return err
-	}
-
-	if strings.TrimSpace(cccp.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerModificationProposal, "consumer chain id must not be blank")
-	}
-
-	err := ValidatePSSFeatures(cccp.Top_N, cccp.ValidatorsPowerCap)
-	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerModificationProposal, "invalid PSS features: %s", err.Error())
-	}
-	return nil
+	return fmt.Errorf("ConsumerModificationProposal is deprecated")
 }
 
 // NewEquivocationProposal creates a new equivocation proposal.
@@ -310,18 +209,7 @@ func (sp *EquivocationProposal) ProposalType() string {
 
 // ValidateBasic runs basic stateless validity checks
 func (sp *EquivocationProposal) ValidateBasic() error {
-	if err := govv1beta1.ValidateAbstract(sp); err != nil {
-		return err
-	}
-	if len(sp.Equivocations) == 0 {
-		return errors.New("invalid equivocation proposal: empty equivocations")
-	}
-	for i := 0; i < len(sp.Equivocations); i++ {
-		if err := sp.Equivocations[i].ValidateBasic(); err != nil {
-			return err
-		}
-	}
-	return nil
+	return fmt.Errorf("EquivocationProposal is deprecated")
 }
 
 func NewChangeRewardDenomsProposal(title, description string,
@@ -345,35 +233,5 @@ func (crdp *ChangeRewardDenomsProposal) ProposalType() string {
 
 // ValidateBasic runs basic stateless validity checks on a ChangeRewardDenomsProposal.
 func (crdp *ChangeRewardDenomsProposal) ValidateBasic() error {
-	emptyDenomsToAdd := len(crdp.DenomsToAdd) == 0
-	emptyDenomsToRemove := len(crdp.DenomsToRemove) == 0
-	// Return error if both sets are empty or nil
-	if emptyDenomsToAdd && emptyDenomsToRemove {
-		return fmt.Errorf(
-			"invalid change reward denoms proposal: both denoms to add and denoms to remove are empty")
-	}
-
-	// Return error if a denom is in both sets
-	for _, denomToAdd := range crdp.DenomsToAdd {
-		for _, denomToRemove := range crdp.DenomsToRemove {
-			if denomToAdd == denomToRemove {
-				return fmt.Errorf(
-					"invalid change reward denoms proposal: %s cannot be both added and removed", denomToAdd)
-			}
-		}
-	}
-
-	// Return error if any denom is "invalid"
-	for _, denom := range crdp.DenomsToAdd {
-		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
-			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
-		}
-	}
-	for _, denom := range crdp.DenomsToRemove {
-		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
-			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
-		}
-	}
-
-	return nil
+	return fmt.Errorf("ChangeRewardDenomsProposal is deprecated")
 }

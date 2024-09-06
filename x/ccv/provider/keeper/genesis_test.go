@@ -51,6 +51,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				*ccv.DefaultConsumerGenesisState(),
 				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
+				providertypes.CONSUMER_PHASE_LAUNCHED,
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],
@@ -60,16 +61,9 @@ func TestInitAndExportGenesis(t *testing.T) {
 				*ccv.DefaultConsumerGenesisState(),
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
+				providertypes.CONSUMER_PHASE_LAUNCHED,
 			),
 		},
-		[]providertypes.ConsumerAdditionProposal{{
-			ChainId:   cChainIDs[0],
-			SpawnTime: oneHourFromNow,
-		}},
-		[]providertypes.ConsumerRemovalProposal{{
-			ChainId:  cChainIDs[0],
-			StopTime: oneHourFromNow,
-		}},
 		params,
 		[]providertypes.ValidatorConsumerPubKey{
 			{
@@ -132,17 +126,13 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, expectedCandidate, pk.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// check local provider chain states
-	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
+	chainID, found := pk.GetChannelIdToConsumerId(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)
 	require.Equal(t, cChainIDs[0], chainID)
 	require.Equal(t, vscID, pk.GetValidatorSetUpdateId(ctx))
 	height, found := pk.GetValsetUpdateBlockHeight(ctx, vscID)
 	require.True(t, found)
 	require.Equal(t, initHeight, height)
-	addProp, found := pk.GetPendingConsumerAdditionProp(ctx, oneHourFromNow, cChainIDs[0])
-	require.True(t, found)
-	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
-	require.True(t, pk.PendingConsumerRemovalPropExists(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
 
 	providerConsensusValSet, err := pk.GetLastProviderConsensusValSet(ctx)
@@ -189,7 +179,7 @@ func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, 
 		require.Equal(t, cs.ClientId, clientID)
 
 		if expChan := cs.ChannelId; expChan != "" {
-			gotChan, found := pk.GetChainToChannel(ctx, chainID)
+			gotChan, found := pk.GetConsumerIdToChannelId(ctx, chainID)
 			require.True(t, found)
 			require.Equal(t, expChan, gotChan)
 		}

@@ -14,7 +14,7 @@ import (
 )
 
 func legacyConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
-	return providertypes.ChainIdAndUintIdKey(LegacyConsumerAddrsToPruneBytePrefix, chainID, vscID)
+	return providertypes.StringIdAndUintIdKey(LegacyConsumerAddrsToPruneBytePrefix, chainID, vscID)
 }
 
 func legacyAppendConsumerAddrsToPrune(
@@ -44,7 +44,7 @@ func legacyAppendConsumerAddrsToPrune(
 }
 
 func legacyVscSendingTimestampKey(chainID string, vscID uint64) []byte {
-	return providertypes.ChainIdAndUintIdKey(LegacyVscSendTimestampBytePrefix, chainID, vscID)
+	return providertypes.StringIdAndUintIdKey(LegacyVscSendTimestampBytePrefix, chainID, vscID)
 }
 
 func legacySetVscSendTimestamp(

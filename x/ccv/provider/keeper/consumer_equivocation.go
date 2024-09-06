@@ -28,56 +28,64 @@ import (
 // Double Voting section
 //
 
-// HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain ID
+// HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer id
 // and a public key and, if successful, executes the slashing, jailing, and tombstoning of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(
 	ctx sdk.Context,
+	consumerId string,
 	evidence *tmtypes.DuplicateVoteEvidence,
-	chainID string,
 	pubkey cryptotypes.PubKey,
 ) error {
 	// check that the evidence is for an ICS consumer chain
-	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+	if _, found := k.GetConsumerClientId(ctx, consumerId); !found {
 		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"cannot find consumer chain %s",
-			chainID,
+			consumerId,
 		)
 	}
 
 	// check that the evidence is not too old
-	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, chainID)
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerId)
 	if uint64(evidence.VoteA.Height) < minHeight {
 		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
-			chainID,
+			consumerId,
 			evidence.VoteA.Height,
 			minHeight,
 		)
 	}
 
+	// get the chainId of this consumer chain to verify the double-voting evidence
+	chainId, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return err
+	}
+
 	// verifies the double voting evidence using the consumer chain public key
-	if err := k.VerifyDoubleVotingEvidence(*evidence, chainID, pubkey); err != nil {
+	if err = k.VerifyDoubleVotingEvidence(*evidence, chainId, pubkey); err != nil {
 		return err
 	}
 
 	// get the validator's consensus address on the provider
 	providerAddr := k.GetProviderAddrFromConsumerAddr(
 		ctx,
-		chainID,
+		consumerId,
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	if err := k.SlashValidator(ctx, providerAddr); err != nil {
+	if err = k.SlashValidator(ctx, providerAddr); err != nil {
 		return err
 	}
-	if err := k.JailAndTombstoneValidator(ctx, providerAddr); err != nil {
+	if err = k.JailAndTombstoneValidator(ctx, providerAddr); err != nil {
 		return err
 	}
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",
+		"consumerId", consumerId,
+		"chainId", chainId,
 		"byzantine validator address", providerAddr.String(),
 	)
 
@@ -88,7 +96,7 @@ func (k Keeper) HandleConsumerDoubleVoting(
 // for a given chain id and a validator public key
 func (k Keeper) VerifyDoubleVotingEvidence(
 	evidence tmtypes.DuplicateVoteEvidence,
-	chainID string,
+	chainId string,
 	pubkey cryptotypes.PubKey,
 ) error {
 	if pubkey == nil {
@@ -140,10 +148,10 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	vb := evidence.VoteB.ToProto()
 
 	// signatures must be valid
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, va), evidence.VoteA.Signature) {
+	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainId, va), evidence.VoteA.Signature) {
 		return fmt.Errorf("verifying VoteA: %w", tmtypes.ErrVoteInvalidSignature)
 	}
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, vb), evidence.VoteB.Signature) {
+	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainId, vb), evidence.VoteB.Signature) {
 		return fmt.Errorf("verifying VoteB: %w", tmtypes.ErrVoteInvalidSignature)
 	}
 
@@ -156,11 +164,11 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 
 // HandleConsumerMisbehaviour checks if the given IBC misbehaviour corresponds to an equivocation light client attack,
 // and in this case, slashes, jails, and tombstones
-func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, consumerId string, misbehaviour ibctmtypes.Misbehaviour) error {
 	logger := k.Logger(ctx)
 
 	// Check that the misbehaviour is valid and that the client consensus states at trusted heights are within trusting period
-	if err := k.CheckMisbehaviour(ctx, misbehaviour); err != nil {
+	if err := k.CheckMisbehaviour(ctx, consumerId, misbehaviour); err != nil {
 		logger.Info("Misbehaviour rejected", err.Error())
 
 		return err
@@ -182,7 +190,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
 			ctx,
-			misbehaviour.Header1.Header.ChainID,
+			consumerId,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
 		err := k.SlashValidator(ctx, providerAddr)
@@ -208,6 +216,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	logger.Info(
 		"confirmed equivocation light client attack",
+		"consumerId", consumerId,
 		"byzantine validators slashed, jailed and tombstoned", provAddrs,
 	)
 
@@ -292,16 +301,26 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
 // a valid light client attack from an ICS consumer chain and that the light client isn't expired
-func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-	consumerChainID := misbehaviour.Header1.Header.ChainID
+func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehaviour ibctmtypes.Misbehaviour) error {
+	chainId := misbehaviour.Header1.Header.ChainID
+
+	consumerChainId, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return err
+	} else if consumerChainId != chainId {
+		return fmt.Errorf("incorrect misbehaviour for a different chain id (%s) than that of the consumer chain %s (consumerId: %s)",
+			chainId,
+			consumerChainId,
+			consumerId)
+	}
 
 	// check that the misbehaviour is for an ICS consumer chain
-	clientId, found := k.GetConsumerClientId(ctx, consumerChainID)
+	clientId, found := k.GetConsumerClientId(ctx, consumerId)
 	if !found {
-		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", consumerChainID)
+		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain (consumerId: %s)", consumerId)
 	} else if misbehaviour.ClientId != clientId {
-		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain %s is %s got %s",
-			consumerChainID,
+		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain with id %s is %s got %s",
+			consumerId,
 			clientId,
 			misbehaviour.ClientId,
 		)
@@ -315,7 +334,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	}
 
 	// Check that the evidence is not too old
-	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerChainID)
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerId)
 	evidenceHeight := misbehaviour.Header1.GetHeight().GetRevisionHeight()
 	// Note that the revision number is not relevant for checking the age of evidence
 	// as it's already part of the chain ID and the minimum height is mapped to chain IDs
@@ -323,7 +342,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
-			consumerChainID,
+			consumerId,
 			evidenceHeight,
 			minHeight,
 		)
@@ -517,20 +536,20 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 //
 
 // SetEquivocationEvidenceMinHeight sets the minimum height
-// of a valid consumer equivocation evidence for a given consumer chain ID
-func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string, height uint64) {
+// of a valid consumer equivocation evidence for a given consumer id
+func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, consumerId string, height uint64) {
 	store := ctx.KVStore(k.storeKey)
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, height)
 
-	store.Set(types.EquivocationEvidenceMinHeightKey(chainID), heightBytes)
+	store.Set(types.EquivocationEvidenceMinHeightKey(consumerId), heightBytes)
 }
 
 // GetEquivocationEvidenceMinHeight returns the minimum height
-// of a valid consumer equivocation evidence for a given consumer chain ID
-func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) uint64 {
+// of a valid consumer equivocation evidence for a given consumer id
+func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, consumerId string) uint64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.EquivocationEvidenceMinHeightKey(chainID))
+	bz := store.Get(types.EquivocationEvidenceMinHeightKey(consumerId))
 	if bz == nil {
 		return 0
 	}
@@ -539,8 +558,8 @@ func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string
 }
 
 // DeleteEquivocationEvidenceMinHeight deletes the minimum height
-// of a valid consumer equivocation evidence for a given consumer chain ID
-func (k Keeper) DeleteEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) {
+// of a valid consumer equivocation evidence for a given consumer id
+func (k Keeper) DeleteEquivocationEvidenceMinHeight(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.EquivocationEvidenceMinHeightKey(chainID))
+	store.Delete(types.EquivocationEvidenceMinHeightKey(consumerId))
 }

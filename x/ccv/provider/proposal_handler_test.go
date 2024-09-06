@@ -6,14 +6,10 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
@@ -30,40 +26,9 @@ func TestProviderProposalHandler(t *testing.T) {
 		name                      string
 		content                   govv1beta1.Content
 		blockTime                 time.Time
-		expValidConsumerAddition  bool
 		expValidConsumerRemoval   bool
 		expValidChangeRewardDenom bool
 	}{
-		{
-			name: "valid consumer addition proposal",
-			content: providertypes.NewConsumerAdditionProposal(
-				"title", "description", "chainID",
-				clienttypes.NewHeight(2, 3), []byte("gen_hash"), []byte("bin_hash"), now,
-				"0.75",
-				10,
-				"",
-				10000,
-				100000000000,
-				100000000000,
-				100000000000,
-				0,
-				0,
-				0,
-				nil,
-				nil,
-				0,
-				false,
-			),
-			blockTime:                hourFromNow, // ctx blocktime is after proposal's spawn time
-			expValidConsumerAddition: true,
-		},
-		{
-			name: "valid consumer removal proposal",
-			content: providertypes.NewConsumerRemovalProposal(
-				"title", "description", "chainID", now),
-			blockTime:               hourFromNow,
-			expValidConsumerRemoval: true,
-		},
 		{
 			name: "valid change reward denoms proposal",
 			content: providertypes.NewChangeRewardDenomsProposal(
@@ -93,23 +58,12 @@ func TestProviderProposalHandler(t *testing.T) {
 
 		// Setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations depending on expected outcome
 		switch {
-		case tc.expValidConsumerAddition:
-			testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, 1)
-			gomock.InOrder(testkeeper.GetMocksForCreateConsumerClient(
-				ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3),
-			)...)
-
-		case tc.expValidConsumerRemoval:
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
-
-			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
-			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		case tc.expValidChangeRewardDenom:
 			// Nothing to mock
 		}
@@ -117,9 +71,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		// Execution
 		proposalHandler := provider.NewProviderProposalHandler(providerKeeper)
 		err := proposalHandler(ctx, tc.content)
-
-		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
-			tc.expValidChangeRewardDenom {
+		if tc.expValidChangeRewardDenom {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)

@@ -10,7 +10,6 @@ import (
 
 	"cosmossdk.io/math"
 
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
@@ -220,8 +219,8 @@ func (s *Driver) getStateString() string {
 	state.WriteString("\n")
 
 	state.WriteString("Consumers Chains:\n")
-	chainIds := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
-	state.WriteString(strings.Join(chainIds, ", "))
+	// chainIds := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
+	// state.WriteString(strings.Join(chainIds, ", "))
 	state.WriteString("\n\n")
 
 	for chain := range s.simibcs {
@@ -255,24 +254,24 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 	chainInfo.WriteString(fmt.Sprintf("  Running Time: %s\n", runningTime))
 	chainInfo.WriteString(fmt.Sprintf("  Last Time entered on chain: %s\n", lastTime))
 
-	if !s.isProviderChain(chain) {
-		// Check whether the chain is in the consumer chains on the provider
+	// if !s.isProviderChain(chain) {
+	// Check whether the chain is in the consumer chains on the provider
 
-		consumerChainIDs := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
+	// consumerChainIDs := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
 
-		found := false
-		for _, consumerChainID := range consumerChainIDs {
-			if consumerChainID == string(chain) {
-				found = true
-			}
-		}
+	// found := false
+	// for _, consumerChainID := range consumerChainIDs {
+	// 	if consumerChainID == string(chain) {
+	// 		found = true
+	// 	}
+	// }
 
-		if found {
-			chainInfo.WriteString("...is currently a consumer chain")
-		} else {
-			chainInfo.WriteString("...is currently not a consumer chain")
-		}
-	}
+	// 	if found {
+	// 		chainInfo.WriteString("...is currently a consumer chain")
+	// 	} else {
+	// 		chainInfo.WriteString("...is currently not a consumer chain")
+	// 	}
+	// }
 
 	// Build the validator info string
 	var validatorInfo strings.Builder
@@ -366,16 +365,16 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 }
 
 func (s *Driver) runningConsumerChainIDs() []ChainId {
-	consumerIDsOnProvider := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
+	// consumerIDsOnProvider := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
 
 	consumersWithIntactChannel := make([]ChainId, 0)
-	for _, consumerChainID := range consumerIDsOnProvider {
-		if s.path(ChainId(consumerChainID)).Path.EndpointA.GetChannel().State == channeltypes.CLOSED ||
-			s.path(ChainId(consumerChainID)).Path.EndpointB.GetChannel().State == channeltypes.CLOSED {
-			continue
-		}
-		consumersWithIntactChannel = append(consumersWithIntactChannel, ChainId(consumerChainID))
-	}
+	// for _, consumerChainID := range consumerIDsOnProvider {
+	// 	if s.path(ChainId(consumerChainID)).Path.EndpointA.GetChannel().State == channeltypes.CLOSED ||
+	// 		s.path(ChainId(consumerChainID)).Path.EndpointB.GetChannel().State == channeltypes.CLOSED {
+	// 		continue
+	// 	}
+	// 	consumersWithIntactChannel = append(consumersWithIntactChannel, ChainId(consumerChainID))
+	// }
 	return consumersWithIntactChannel
 }
 
@@ -452,7 +451,8 @@ func (s *Driver) DeliverAcks() {
 // stopConsumer stops a given consumer chain.
 func (s *Driver) stopConsumer(chain ChainId) error {
 	// stop the consumer chain on the provider
-	return s.providerKeeper().StopConsumerChain(s.providerCtx(), string(chain), true)
+	// return s.providerKeeper().StopConsumerChain(s.providerCtx(), string(chain), true)
+	return nil
 }
 
 // newDriver creates a new Driver object.

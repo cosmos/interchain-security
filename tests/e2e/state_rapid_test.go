@@ -203,10 +203,9 @@ func GetConsumerAdditionProposalGen() *rapid.Generator[ConsumerAdditionProposal]
 func GetConsumerRemovalProposalGen() *rapid.Generator[ConsumerRemovalProposal] {
 	return rapid.Custom(func(t *rapid.T) ConsumerRemovalProposal {
 		return ConsumerRemovalProposal{
-			Deposit:  rapid.Uint().Draw(t, "Deposit"),
-			Chain:    GetChainIDGen().Draw(t, "Chain"),
-			StopTime: rapid.Int().Draw(t, "StopTime"),
-			Status:   rapid.String().Draw(t, "Status"),
+			Deposit: rapid.Uint().Draw(t, "Deposit"),
+			Chain:   GetChainIDGen().Draw(t, "Chain"),
+			Status:  rapid.String().Draw(t, "Status"),
 		}
 	})
 }

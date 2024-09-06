@@ -171,11 +171,12 @@ func (AppModule) ConsensusVersion() uint64 { return 8 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx context.Context) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx) // Create clients to consumer chains that are due to be spawned via pending consumer addition proposals
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	am.keeper.BeginBlockInit(sdkCtx)
-	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
-	am.keeper.BeginBlockCCR(sdkCtx)
+	// Create clients to consumer chains that are due to be spawned
+	am.keeper.BeginBlockLaunchConsumers(sdkCtx)
+	// Stop and remove state for any consumer chains that are due to be stopped
+	am.keeper.BeginBlockRemoveConsumers(sdkCtx)
 	// Check for replenishing slash meter before any slash packets are processed for this block
 	am.keeper.BeginBlockCIS(sdkCtx)
 	// BeginBlock logic needed for the  Reward Distribution sub-protocol

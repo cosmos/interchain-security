@@ -246,6 +246,13 @@ var stepChoices = map[string]StepChoice{
 		description: "test minting without inactive validators as a sanity check",
 		testConfig:  MintTestCfg,
 	},
+	// TODO PERMISSIONLESS: ADD NEW E2E TEST
+	/* 	"permissionless-ics": {
+		name:        "permissionless-ics",
+		steps:       stepsPermissionlessICS(),
+		description: "test permissionless ics",
+		testConfig:  DefaultTestCfg,
+	}, */
 	"inactive-vals-outside-max-validators": {
 		name:        "inactive-vals-outside-max-validators",
 		steps:       stepsInactiveValsTopNReproduce(),

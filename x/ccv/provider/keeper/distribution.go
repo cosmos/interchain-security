@@ -74,33 +74,35 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		return
 	}
 
-	// Iterate over all registered consumer chains
-	for _, consumerChainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+	// Iterate over all launched consumer chains.
+	// To avoid large iterations over all the consumer IDs, iterate only over
+	// chains with an IBC client created.
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
 
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
 		// of non-whitelisted denominations.
-		alloc := k.GetConsumerRewardsAllocation(ctx, consumerChainID)
+		alloc := k.GetConsumerRewardsAllocation(ctx, consumerId)
 		if alloc.Rewards.IsZero() {
 			continue
 		}
 
 		// temporary workaround to keep CanWithdrawInvariant happy
 		// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
-		if k.ComputeConsumerTotalVotingPower(ctx, consumerChainID) == 0 {
+		if k.ComputeConsumerTotalVotingPower(ctx, consumerId) == 0 {
 			rewardsToSend, rewardsChange := alloc.Rewards.TruncateDecimal()
 			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsToSend, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 			if err != nil {
 				k.Logger(ctx).Error(
 					"fail to allocate rewards from consumer chain %s to community pool: %s",
-					consumerChainID,
+					consumerId,
 					err,
 				)
 			}
 
 			// set the consumer allocation to the remaining reward decimals
 			alloc.Rewards = rewardsChange
-			k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
+			k.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
 
 			return
 		}
@@ -112,7 +114,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if err != nil {
 			k.Logger(ctx).Error(
 				"cannot get community tax while allocating rewards from consumer chain %s: %s",
-				consumerChainID,
+				consumerId,
 				err,
 			)
 			continue
@@ -132,7 +134,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if err != nil {
 			k.Logger(ctx).Error(
 				"cannot send rewards to distribution module account %s: %s",
-				consumerChainID,
+				consumerId,
 				err,
 			)
 			continue
@@ -141,7 +143,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		// allocate tokens to consumer validators
 		k.AllocateTokensToConsumerValidators(
 			ctx,
-			consumerChainID,
+			consumerId,
 			sdk.NewDecCoinsFromCoins(validatorsRewardsTrunc...),
 		)
 
@@ -151,7 +153,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		if err != nil {
 			k.Logger(ctx).Error(
 				"fail to allocate rewards from consumer chain %s to community pool: %s",
-				consumerChainID,
+				consumerId,
 				err,
 			)
 			continue
@@ -159,7 +161,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 
 		// set consumer allocations to the remaining rewards decimals
 		alloc.Rewards = validatorsRewardsChange.Add(remainingChanges...)
-		k.SetConsumerRewardsAllocation(ctx, consumerChainID, alloc)
+		k.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
 	}
 }
 
@@ -176,7 +178,7 @@ func (k Keeper) IsEligibleForConsumerRewards(ctx sdk.Context, consumerValidatorH
 // to the given consumer chain's validator set
 func (k Keeper) AllocateTokensToConsumerValidators(
 	ctx sdk.Context,
-	chainID string,
+	consumerId string,
 	tokens sdk.DecCoins,
 ) (allocated sdk.DecCoins) {
 	// return early if the tokens are empty
@@ -185,17 +187,17 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	}
 
 	// get the total voting power of the consumer valset
-	totalPower := math.LegacyNewDec(k.ComputeConsumerTotalVotingPower(ctx, chainID))
+	totalPower := math.LegacyNewDec(k.ComputeConsumerTotalVotingPower(ctx, consumerId))
 	if totalPower.IsZero() {
 		return allocated
 	}
 
 	// Allocate tokens by iterating over the consumer validators
-	consumerVals, err := k.GetConsumerValSet(ctx, chainID)
+	consumerVals, err := k.GetConsumerValSet(ctx, consumerId)
 	if err != nil {
 		k.Logger(ctx).Error(
 			"cannot get consumer validator set while allocating rewards from consumer chain",
-			chainID,
+			consumerId,
 			"error",
 			err,
 		)
@@ -220,7 +222,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 				"cannot find validator by consensus address",
 				consAddr,
 				"while allocating rewards from consumer chain",
-				chainID,
+				consumerId,
 				"error",
 				err,
 			)
@@ -228,7 +230,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		}
 
 		// check if the validator set a custom commission rate for the consumer chain
-		if cr, found := k.GetConsumerCommissionRate(ctx, chainID, types.NewProviderConsAddress(consAddr)); found {
+		if cr, found := k.GetConsumerCommissionRate(ctx, consumerId, types.NewProviderConsAddress(consAddr)); found {
 			// set the validator commission rate
 			val.Commission.CommissionRates.Rate = cr
 		}
@@ -241,7 +243,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		)
 		if err != nil {
 			k.Logger(ctx).Error("fail to allocate tokens to validator :%s while allocating rewards from consumer chain: %s",
-				consAddr, chainID)
+				consAddr, consumerId)
 			continue
 		}
 
@@ -254,19 +256,25 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 // consumer reward pools getter and setter
 
-// GetConsumerRewardsAllocation returns the consumer rewards allocation for the given chain ID
-func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, chainID string) (pool types.ConsumerRewardsAllocation) {
+// GetConsumerRewardsAllocation returns the consumer rewards allocation for the given consumer id
+func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, consumerId string) (pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
-	b := store.Get(types.ConsumerRewardsAllocationKey(chainID))
+	b := store.Get(types.ConsumerRewardsAllocationKey(consumerId))
 	k.cdc.MustUnmarshal(b, &pool)
 	return
 }
 
-// SetConsumerRewardsAllocation sets the consumer rewards allocation for the given chain ID
-func (k Keeper) SetConsumerRewardsAllocation(ctx sdk.Context, chainID string, pool types.ConsumerRewardsAllocation) {
+// SetConsumerRewardsAllocation sets the consumer rewards allocation for the given consumer id
+func (k Keeper) SetConsumerRewardsAllocation(ctx sdk.Context, consumerId string, pool types.ConsumerRewardsAllocation) {
 	store := ctx.KVStore(k.storeKey)
 	b := k.cdc.MustMarshal(&pool)
-	store.Set(types.ConsumerRewardsAllocationKey(chainID), b)
+	store.Set(types.ConsumerRewardsAllocationKey(consumerId), b)
+}
+
+// DeleteConsumerRewardsAllocation deletes the consumer rewards allocation for the given consumer id
+func (k Keeper) DeleteConsumerRewardsAllocation(ctx sdk.Context, consumerId string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerRewardsAllocationKey(consumerId))
 }
 
 // GetConsumerRewardsPool returns the balance
@@ -280,20 +288,19 @@ func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {
 
 // ComputeConsumerTotalVotingPower returns the validator set total voting power
 // for the given consumer chain
-func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string) (totalPower int64) {
+func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, consumerId string) (totalPower int64) {
 	// sum the consumer validators set voting powers
-	vals, err := k.GetConsumerValSet(ctx, chainID)
+	vals, err := k.GetConsumerValSet(ctx, consumerId)
 	if err != nil {
 		k.Logger(ctx).Error(
 			"cannot get consumer validator set while computing total voting power for consumer chain",
-			chainID,
+			consumerId,
 			"error",
 			err,
 		)
 		return
 	}
 	for _, v := range vals {
-
 		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
 		if !k.IsEligibleForConsumerRewards(ctx, v.JoinHeight) {
 			continue
@@ -305,9 +312,9 @@ func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, chainID string)
 	return
 }
 
-// IdentifyConsumerChainIDFromIBCPacket checks if the packet destination matches a registered consumer chain.
+// IdentifyConsumerIdFromIBCPacket checks if the packet destination matches a registered consumer chain.
 // If so, it returns the consumer chain ID, otherwise an error.
-func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet channeltypes.Packet) (string, error) {
+func (k Keeper) IdentifyConsumerIdFromIBCPacket(ctx sdk.Context, packet channeltypes.Packet) (string, error) {
 	channel, ok := k.channelKeeper.GetChannel(ctx, packet.DestinationPort, packet.DestinationChannel)
 	if !ok {
 		return "", errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", packet.DestinationChannel)
@@ -316,27 +323,31 @@ func (k Keeper) IdentifyConsumerChainIDFromIBCPacket(ctx sdk.Context, packet cha
 		return "", errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
 	}
 	connectionID := channel.ConnectionHops[0]
-	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	clientId, _, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return "", err
 	}
 
-	chainID := tmClient.ChainId
-	if _, ok := k.GetChainToChannel(ctx, chainID); !ok {
-		return "", errorsmod.Wrapf(types.ErrUnknownConsumerChannelId, "no CCV channel found for chain with ID: %s", chainID)
+	consumerId, found := k.GetClientIdToConsumerId(ctx, clientId)
+	if !found {
+		return "", errorsmod.Wrapf(types.ErrUnknownConsumerId, "no consumer id for client with id: %s", clientId)
 	}
 
-	return chainID, nil
+	if _, ok := k.GetConsumerIdToChannelId(ctx, consumerId); !ok {
+		return "", errorsmod.Wrapf(types.ErrUnknownConsumerChannelId, "no CCV channel found for chain with ID: %s", consumerId)
+	}
+
+	return consumerId, nil
 }
 
 // HandleSetConsumerCommissionRate sets a per-consumer chain commission rate for the given provider address
 // on the condition that the given consumer chain exists.
-func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress, commissionRate math.LegacyDec) error {
-	// check that the consumer chain exists
-	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
+func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress, commissionRate math.LegacyDec) error {
+	// check that the consumer chain is active -- registered, initialized, or launched
+	if !k.IsConsumerActive(ctx, consumerId) {
 		return errorsmod.Wrapf(
-			types.ErrUnknownConsumerChainId,
-			"unknown consumer chain, with id: %s", chainID)
+			types.ErrInvalidPhase,
+			"unknown consumer chain, with id: %s", consumerId)
 	}
 
 	// validate against the minimum commission rate
@@ -353,8 +364,45 @@ func (k Keeper) HandleSetConsumerCommissionRate(ctx sdk.Context, chainID string,
 	// set per-consumer chain commission rate for the validator address
 	return k.SetConsumerCommissionRate(
 		ctx,
-		chainID,
+		consumerId,
 		providerAddr,
 		commissionRate,
 	)
+}
+
+// TODO: this method needs to be tested
+func (k Keeper) ChangeRewardDenoms(ctx sdk.Context, denomsToAdd, denomsToRemove []string) []sdk.Attribute {
+	// initialize an empty slice to store event attributes
+	eventAttributes := []sdk.Attribute{}
+
+	// loop through denomsToAdd and add each denomination if it is not already registered
+	for _, denomToAdd := range denomsToAdd {
+		// Log error and move on if one of the denoms is already registered
+		if k.ConsumerRewardDenomExists(ctx, denomToAdd) {
+			k.Logger(ctx).Error("ChangeRewardDenoms: denom already registered",
+				"denomToAdd", denomToAdd,
+			)
+			continue
+		}
+		k.SetConsumerRewardDenom(ctx, denomToAdd)
+
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeAddConsumerRewardDenom, denomToAdd))
+	}
+
+	// loop through denomsToRemove and remove each denomination if it is registered
+	for _, denomToRemove := range denomsToRemove {
+		// Log error and move on if one of the denoms is not registered
+		if !k.ConsumerRewardDenomExists(ctx, denomToRemove) {
+			k.Logger(ctx).Error("ChangeRewardDenoms: denom not registered",
+				"denomToRemove", denomToRemove,
+			)
+			continue
+		}
+		k.DeleteConsumerRewardDenom(ctx, denomToRemove)
+
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeRemoveConsumerRewardDenom, denomToRemove))
+	}
+
+	// return the slice of event attributes
+	return eventAttributes
 }

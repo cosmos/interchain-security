@@ -5,6 +5,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+
 	"cosmossdk.io/math"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 	"github.com/stretchr/testify/require"
@@ -151,7 +153,14 @@ func TestMinStake(t *testing.T) {
 			// adjust parameters
 
 			// set the minStake according to the test case
-			providerKeeper.SetMinStake(s.providerChain.GetContext(), s.consumerChain.ChainID, tc.minStake)
+			err = providerKeeper.SetConsumerPowerShapingParameters(
+				s.providerChain.GetContext(),
+				s.getFirstBundle().ConsumerId,
+				types.PowerShapingParameters{
+					MinStake: tc.minStake,
+				},
+			)
+			s.Require().NoError(err)
 
 			// delegate and undelegate to trigger a vscupdate
 

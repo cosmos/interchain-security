@@ -12,6 +12,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 
@@ -388,7 +389,10 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
 
 	// set the top N percentage to 100 to simulate a full consumer
-	s.providerKeeper().SetTopN(providerChain.GetContext(), consumerChain.ChainID, 100)
+	err = s.providerKeeper().SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerChain.ChainID, types.PowerShapingParameters{
+		Top_N: 100,
+	})
+	require.NoError(s.t, err, "Error setting consumer top N for chain %v", consumerChain.ChainID)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.

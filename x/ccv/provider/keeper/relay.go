@@ -15,7 +15,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
@@ -30,9 +29,8 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			"channelID", packet.SourceChannel,
 			"error", err,
 		)
-		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
-			// stop consumer chain and release unbonding
-			return k.StopConsumerChain(ctx, chainID, false)
+		if consumerId, ok := k.GetChannelIdToConsumerId(ctx, packet.SourceChannel); ok {
+			return k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 		}
 		return errorsmod.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
@@ -42,7 +40,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 // OnTimeoutPacket aborts the transaction if no chain exists for the destination channel,
 // otherwise it stops the chain
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
-	chainID, found := k.GetChannelToChain(ctx, packet.SourceChannel)
+	consumerId, found := k.GetChannelIdToConsumerId(ctx, packet.SourceChannel)
 	if !found {
 		k.Logger(ctx).Error("packet timeout, unknown channel:", "channelID", packet.SourceChannel)
 		// abort transaction
@@ -51,9 +49,8 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 			packet.SourceChannel,
 		)
 	}
-	k.Logger(ctx).Info("packet timeout, removing the consumer:", "chainID", chainID)
-	// stop consumer chain and release unbondings
-	return k.StopConsumerChain(ctx, chainID, false)
+	k.Logger(ctx).Info("packet timeout, deleting the consumer:", "consumerId", consumerId)
+	return k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 }
 
 // EndBlockVSU contains the EndBlock logic needed for
@@ -102,7 +99,7 @@ func (k Keeper) ProviderValidatorUpdates(ctx sdk.Context) ([]abci.ValidatorUpdat
 		return []abci.ValidatorUpdate{}, fmt.Errorf("getting last provider consensus validator set: %w", err)
 	}
 
-	nextValidators := []types.ConsensusValidator{}
+	nextValidators := []providertypes.ConsensusValidator{}
 	maxValidators := k.GetMaxProviderConsensusValidators(ctx)
 	// avoid out of range errors by bounding the max validators to the number of bonded validators
 	if maxValidators > int64(len(bondedValidators)) {
@@ -138,16 +135,23 @@ func (k Keeper) BlocksUntilNextEpoch(ctx sdk.Context) int64 {
 	}
 }
 
-// SendVSCPackets iterates over all registered consumers and sends pending
-// VSC packets to the chains with established CCV channels.
+// SendVSCPackets iterates over all consumers chains with created IBC clients
+// and sends pending VSC packets to the chains with established CCV channels.
 // If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
+//
+// TODO (mpoke): iterate only over consumers with established channel -- GetAllChannelToConsumers
 func (k Keeper) SendVSCPackets(ctx sdk.Context) error {
-	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
+		if k.GetConsumerPhase(ctx, consumerId) != providertypes.CONSUMER_PHASE_LAUNCHED {
+			// only send VSCPackets to launched chains
+			continue
+		}
+
 		// check if CCV channel is established and send
-		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			if err := k.SendVSCPacketsToChain(ctx, chainID, channelID); err != nil {
-				return fmt.Errorf("sending VSCPacket to consumer, chainID(%s): %w", chainID, err)
+		if channelID, found := k.GetConsumerIdToChannelId(ctx, consumerId); found {
+			if err := k.SendVSCPacketsToChain(ctx, consumerId, channelID); err != nil {
+				return fmt.Errorf("sending VSCPacket to consumer, consumerId(%s): %w", consumerId, err)
 			}
 		}
 	}
@@ -155,15 +159,15 @@ func (k Keeper) SendVSCPackets(ctx sdk.Context) error {
 }
 
 // SendVSCPacketsToChain sends all queued VSC packets to the specified chain
-func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) error {
-	pendingPackets := k.GetPendingVSCPackets(ctx, chainID)
+func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId string) error {
+	pendingPackets := k.GetPendingVSCPackets(ctx, consumerId)
 	for _, data := range pendingPackets {
 		// send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,
-			channelID,          // source channel id
+			channelId,          // source channel id
 			ccv.ProviderPortID, // source port id
 			data.GetBytes(),
 			k.GetCCVTimeoutPeriod(ctx),
@@ -173,25 +177,32 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				// the client cannot expire during iteration (in the middle of a block)
-				k.Logger(ctx).Info("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
+				k.Logger(ctx).Info("IBC client is expired, cannot send VSC, leaving packet data stored:",
+					"consumerId", consumerId,
+					"vscid", data.ValsetUpdateId,
+				)
 				return nil
 			}
 			// Not able to send packet over IBC!
-			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "chainID", chainID, "vscid", data.ValsetUpdateId, "err", err.Error())
-			// If this happens, most likely the consumer is malicious; remove it
-			err := k.StopConsumerChain(ctx, chainID, true)
+			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "consumerId", consumerId, "vscid", data.ValsetUpdateId, "err", err.Error())
+
+			err := k.StopAndPrepareForConsumerRemoval(ctx, consumerId)
 			if err != nil {
-				return fmt.Errorf("stopping consumer, chainID(%s): %w", chainID, err)
+				k.Logger(ctx).Info("consumer chain failed to stop:", "consumerId", consumerId, "error", err.Error())
+				// return fmt.Errorf("stopping consumer, consumerId(%s): %w", consumerId, err)
 			}
 			return nil
 		}
 	}
-	k.DeletePendingVSCPackets(ctx, chainID)
+	k.DeletePendingVSCPackets(ctx, consumerId)
 
 	return nil
 }
 
-// QueueVSCPackets queues latest validator updates for every registered consumer chain
+// QueueVSCPackets queues latest validator updates for every consumer chain
+// with the IBC client created.
+//
+// TODO (mpoke): iterate only over consumers with established channel -- GetAllChannelToConsumers
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 
@@ -207,39 +218,48 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 		return fmt.Errorf("getting provider active validators: %w", err)
 	}
 
-	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
-		currentValidators, err := k.GetConsumerValSet(ctx, chainID)
-		if err != nil {
-			return fmt.Errorf("getting consumer validators, chainID(%s): %w", chainID, err)
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
+		if k.GetConsumerPhase(ctx, consumerId) != providertypes.CONSUMER_PHASE_LAUNCHED {
+			// only queue VSCPackets to launched chains
+			continue
 		}
-		topN, _ := k.GetTopN(ctx, chainID)
 
-		if topN > 0 {
+		currentValidators, err := k.GetConsumerValSet(ctx, consumerId)
+		if err != nil {
+			return fmt.Errorf("getting consumer validators, consumerId(%s): %w", consumerId, err)
+		}
+		powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+		if err != nil {
+			return fmt.Errorf("getting consumer power shaping parameters, consumerId(%s): %w", consumerId, err)
+		}
+
+		minPower := int64(0)
+		if powerShapingParameters.Top_N > 0 {
 			// in a Top-N chain, we automatically opt in all validators that belong to the top N
 			// of the active validators
-			minPower, err := k.ComputeMinPowerInTopN(ctx, activeValidators, topN)
+			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
 			if err != nil {
-				return fmt.Errorf("computing min power to opt in, chainID(%s): %w", chainID, err)
+				return fmt.Errorf("computing min power to opt in, consumerId(%s): %w", consumerId, err)
 			}
 
 			// set the minimal power of validators in the top N in the store
-			k.SetMinimumPowerInTopN(ctx, chainID, minPower)
+			k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
 
-			k.OptInTopNValidators(ctx, chainID, activeValidators, minPower)
+			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, chainID, bondedValidators)
+		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
-		k.SetConsumerValSet(ctx, chainID, nextValidators)
+		k.SetConsumerValSet(ctx, consumerId, nextValidators)
 
 		// check whether there are changes in the validator set
 		if len(valUpdates) != 0 {
 			// construct validator set change packet data
-			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
-			k.AppendPendingVSCPackets(ctx, chainID, packet)
+			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, consumerId))
+			k.AppendPendingVSCPackets(ctx, consumerId, packet)
 			k.Logger(ctx).Info("VSCPacket enqueued:",
-				"chainID", chainID,
+				"consumerId", consumerId,
 				"vscID", valUpdateID,
 				"len updates", len(valUpdates),
 			)
@@ -276,8 +296,8 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
 
 	// prune previous consumer validator addresses that are no longer needed
-	for _, chainID := range k.GetAllRegisteredConsumerChainIDs(ctx) {
-		k.PruneKeyAssignments(ctx, chainID)
+	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
+		k.PruneKeyAssignments(ctx, consumerId)
 	}
 }
 
@@ -289,7 +309,7 @@ func (k Keeper) OnRecvSlashPacket(
 	data ccv.SlashPacketData,
 ) (ccv.PacketAckResult, error) {
 	// check that the channel is established, panic if not
-	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
+	consumerId, found := k.GetChannelIdToConsumerId(ctx, packet.DestinationChannel)
 	if !found {
 		// SlashPacket packet was sent on a channel different than any of the established CCV channels;
 		// this should never happen
@@ -304,10 +324,10 @@ func (k Keeper) OnRecvSlashPacket(
 		return nil, errorsmod.Wrapf(err, "error validating SlashPacket data")
 	}
 
-	if err := k.ValidateSlashPacket(ctx, chainID, packet, data); err != nil {
+	if err := k.ValidateSlashPacket(ctx, consumerId, packet, data); err != nil {
 		k.Logger(ctx).Error("invalid slash packet",
 			"error", err.Error(),
-			"chainID", chainID,
+			"consumerId", consumerId,
 			"consumer cons addr", sdk.ConsAddress(data.Validator.Address).String(),
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
@@ -318,15 +338,15 @@ func (k Keeper) OnRecvSlashPacket(
 	// The slash packet validator address may be known only on the consumer chain,
 	// in this case, it must be mapped back to the consensus address on the provider chain
 	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
-	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
+	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, consumerId, consumerConsAddr)
 
 	if data.Infraction == stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN {
 		// getMappedInfractionHeight is already checked in ValidateSlashPacket
-		infractionHeight, _ := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+		infractionHeight, _ := k.getMappedInfractionHeight(ctx, consumerId, data.ValsetUpdateId)
 
 		k.SetSlashLog(ctx, providerConsAddr)
 		k.Logger(ctx).Info("SlashPacket received for double-signing",
-			"chainID", chainID,
+			"consumerId", consumerId,
 			"consumer cons addr", consumerConsAddr.String(),
 			"provider cons addr", providerConsAddr.String(),
 			"vscID", data.ValsetUpdateId,
@@ -339,11 +359,11 @@ func (k Keeper) OnRecvSlashPacket(
 	}
 
 	// Check that the validator belongs to the consumer chain valset
-	if !k.IsConsumerValidator(ctx, chainID, providerConsAddr) {
+	if !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
 		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
-			providerConsAddr.String(), chainID)
+			providerConsAddr.String(), consumerId)
 		// drop packet but return a slash ack so that the consumer can send another slash packet
-		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+		k.AppendSlashAck(ctx, consumerId, consumerConsAddr.String())
 
 		return ccv.SlashPacketHandledResult, nil
 	}
@@ -352,7 +372,7 @@ func (k Keeper) OnRecvSlashPacket(
 	// Return bounce ack if meter is negative in value
 	if meter.IsNegative() {
 		k.Logger(ctx).Info("SlashPacket received, but meter is negative. Packet will be bounced",
-			"chainID", chainID,
+			"consumerId", consumerId,
 			"consumer cons addr", consumerConsAddr.String(),
 			"provider cons addr", providerConsAddr.String(),
 			"vscID", data.ValsetUpdateId,
@@ -366,10 +386,10 @@ func (k Keeper) OnRecvSlashPacket(
 	meter = meter.Sub(k.GetEffectiveValPower(ctx, providerConsAddr))
 	k.SetSlashMeter(ctx, meter)
 
-	k.HandleSlashPacket(ctx, chainID, data)
+	k.HandleSlashPacket(ctx, consumerId, data)
 
 	k.Logger(ctx).Info("slash packet received and handled",
-		"chainID", chainID,
+		"consumerId", consumerId,
 		"consumer cons addr", consumerConsAddr.String(),
 		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,
@@ -383,14 +403,14 @@ func (k Keeper) OnRecvSlashPacket(
 // ValidateSlashPacket validates a recv slash packet before it is
 // handled or persisted in store. An error is returned if the packet is invalid,
 // and an error ack should be relayed to the sender.
-func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
+func (k Keeper) ValidateSlashPacket(ctx sdk.Context, consumerId string,
 	packet channeltypes.Packet, data ccv.SlashPacketData,
 ) error {
-	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+	_, found := k.getMappedInfractionHeight(ctx, consumerId, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id
 	if !found {
 		return fmt.Errorf("cannot find infraction height matching "+
-			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
+			"the validator update id %d for chain %s", data.ValsetUpdateId, consumerId)
 	}
 
 	return nil
@@ -398,13 +418,13 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 
 // HandleSlashPacket potentially jails a misbehaving validator for a downtime infraction.
 // This method should NEVER be called with a double-sign infraction.
-func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
+func (k Keeper) HandleSlashPacket(ctx sdk.Context, consumerId string, data ccv.SlashPacketData) {
 	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	// Obtain provider chain consensus address using the consumer chain consensus address
-	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
+	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, consumerId, consumerConsAddr)
 
 	k.Logger(ctx).Debug("HandleSlashPacket",
-		"chainID", chainID,
+		"consumerId", consumerId,
 		"consumer cons addr", consumerConsAddr.String(),
 		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,
@@ -439,7 +459,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return
 	}
 
-	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+	infractionHeight, found := k.getMappedInfractionHeight(ctx, consumerId, data.ValsetUpdateId)
 	if !found {
 		k.Logger(ctx).Error(
 			"HandleSlashPacket - infraction height not found. But was found during slash packet validation",
@@ -452,9 +472,9 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// Note: the SlashPacket is for downtime infraction, as SlashPackets
 	// for double-signing infractions are already dropped when received
 
-	// append the validator address to the slash ack for its chain id
+	// append the validator address to the slash ack for its consumer id
 	// TODO: consumer cons address should be accepted here
-	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+	k.AppendSlashAck(ctx, consumerId, consumerConsAddr.String())
 
 	// jail validator
 	if !validator.IsJailed() {
@@ -489,12 +509,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	)
 }
 
-// getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
+// getMappedInfractionHeight gets the infraction height mapped from val set ID for the given consumer id
 func (k Keeper) getMappedInfractionHeight(ctx sdk.Context,
-	chainID string, valsetUpdateID uint64,
+	consumerId string, valsetUpdateID uint64,
 ) (height uint64, found bool) {
 	if valsetUpdateID == 0 {
-		return k.GetInitChainHeight(ctx, chainID)
+		return k.GetInitChainHeight(ctx, consumerId)
 	} else {
 		return k.GetValsetUpdateBlockHeight(ctx, valsetUpdateID)
 	}

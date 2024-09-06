@@ -317,7 +317,6 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
 		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		stopTime := gjson.Get(string(bz), `messages.0.content.stop_time`).Time().Sub(containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range chainConfigs {
@@ -328,10 +327,9 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		}
 
 		return ConsumerRemovalProposal{
-			Deposit:  uint(deposit),
-			Status:   status,
-			Chain:    chain,
-			StopTime: int(stopTime.Milliseconds()),
+			Deposit: uint(deposit),
+			Status:  status,
+			Chain:   chain,
 		}
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
 		return ParamsProposal{
@@ -391,7 +389,6 @@ func (tr Commands) GetParam(chain ChainID, param Param) string {
 func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
-
 		"query", "provider", "list-consumer-chains",
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,

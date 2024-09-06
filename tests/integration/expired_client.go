@@ -36,7 +36,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packet was added to the list of pending VSC packets
-	packets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	packets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(1, len(packets), "unexpected number of pending VSC packets")
 
@@ -44,7 +44,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packet is still in the list of pending VSC packets
-	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(1, len(packets), "unexpected number of pending VSC packets")
 
@@ -55,7 +55,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packets are still in the list of pending VSC packets
-	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(2, len(packets), "unexpected number of pending VSC packets")
 
@@ -66,7 +66,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packets are not in the list of pending VSC packets
-	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().Empty(packets, "unexpected pending VSC packets found")
 
 	// check that validator updates work
@@ -105,7 +105,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packets are not in the list of pending VSC packets
-	providerPackets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	providerPackets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().Empty(providerPackets, "pending VSC packets found")
 
 	// relay all VSC packet from provider to consumer
