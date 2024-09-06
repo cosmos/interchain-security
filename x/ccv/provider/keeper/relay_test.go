@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -562,7 +563,8 @@ func TestOnTimeoutPacketStopsChain(t *testing.T) {
 
 	testkeeper.SetupForDeleteConsumerChain(t, ctx, &providerKeeper, mocks, "consumerId")
 	mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ccv.ProviderPortID, "channelID").Return(
-		channeltypes.Channel{State: channeltypes.OPEN,
+		channeltypes.Channel{
+			State:          channeltypes.OPEN,
 			ConnectionHops: []string{"connectionID"},
 		}, true,
 	).Times(1)
@@ -619,7 +621,8 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 	unbondingTime := 123 * time.Second
 	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
 	mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ccv.ProviderPortID, "channelID").Return(
-		channeltypes.Channel{State: channeltypes.OPEN,
+		channeltypes.Channel{
+			State:          channeltypes.OPEN,
 			ConnectionHops: []string{"connectionID"},
 		}, true,
 	).Times(1)

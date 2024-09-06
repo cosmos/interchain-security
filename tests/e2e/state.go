@@ -11,11 +11,12 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
+
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 // type aliases

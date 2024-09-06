@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/types/module"
+
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 

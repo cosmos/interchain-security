@@ -3,8 +3,9 @@ package main
 import (
 	"strconv"
 
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
 func stepStartProviderChain() []Step {

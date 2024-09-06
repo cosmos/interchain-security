@@ -5,11 +5,14 @@ import (
 	"io"
 	"os"
 
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -32,9 +35,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 
-	"cosmossdk.io/log"
 	cmtcfg "github.com/cometbft/cometbft/config"
-	dbm "github.com/cosmos/cosmos-db"
 
 	appEncoding "github.com/cosmos/interchain-security/v6/app/encoding"
 	providerApp "github.com/cosmos/interchain-security/v6/app/provider"

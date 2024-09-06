@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
@@ -13,10 +16,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
@@ -24,7 +24,7 @@ import (
 
 // PrepareConsumerForLaunch prepares to move the launch of a consumer chain from the previous spawn time to spawn time.
 // Previous spawn time can correspond to its zero value if the validator was not previously set for launch.
-func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime time.Time, spawnTime time.Time) error {
+func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime, spawnTime time.Time) error {
 	if !previousSpawnTime.Equal(time.Time{}) {
 		// if this is not the first initialization and hence `previousSpawnTime` does not contain the zero value of `Time`
 		// remove the consumer id from the previous spawn time

@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 
 	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"

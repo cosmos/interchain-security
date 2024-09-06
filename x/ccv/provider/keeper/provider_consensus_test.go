@@ -3,9 +3,11 @@ package keeper_test
 import (
 	"testing"
 
-	"cosmossdk.io/math"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"

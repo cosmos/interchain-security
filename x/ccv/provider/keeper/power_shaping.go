@@ -7,7 +7,9 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
@@ -262,7 +264,7 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 }
 
 // UpdateMinimumPowerInTopN populates the minimum power in Top N for the consumer chain with this consumer id
-func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, oldTopN uint32, newTopN uint32) error {
+func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, oldTopN, newTopN uint32) error {
 	// if the top N changes, we need to update the new minimum power in top N
 	if newTopN != oldTopN {
 		if newTopN > 0 {

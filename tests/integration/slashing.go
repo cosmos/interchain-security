@@ -12,6 +12,7 @@ import (
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/evidence/types"
 	evidencetypes "cosmossdk.io/x/evidence/types"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"

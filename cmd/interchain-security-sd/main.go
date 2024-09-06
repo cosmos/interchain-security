@@ -8,7 +8,6 @@ import (
 
 	appparams "github.com/cosmos/interchain-security/v6/app/params"
 	app "github.com/cosmos/interchain-security/v6/app/sovereign"
-
 	"github.com/cosmos/interchain-security/v6/cmd/interchain-security-sd/cmd"
 )
 

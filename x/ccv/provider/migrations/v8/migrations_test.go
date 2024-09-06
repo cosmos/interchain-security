@@ -5,12 +5,14 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	testutil "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 func legacyConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
@@ -136,5 +138,4 @@ func TestMigrateConsumerAddrsToPrune(t *testing.T) {
 	require.Len(t, consumerAddrs[0].ConsumerAddrs.Addresses, 1)
 	consumerAddr = providertypes.NewConsumerConsAddress(consumerAddrs[0].ConsumerAddrs.Addresses[0])
 	require.Equal(t, consumerAddrsToPrune[2].address, consumerAddr)
-
 }

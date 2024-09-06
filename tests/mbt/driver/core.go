@@ -8,23 +8,22 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-
 	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
 
+	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
-	abcitypes "github.com/cometbft/cometbft/abci/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
 	simibc "github.com/cosmos/interchain-security/v6/testutil/simibc"

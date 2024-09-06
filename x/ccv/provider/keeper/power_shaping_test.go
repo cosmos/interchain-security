@@ -6,13 +6,15 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 )
 
 // TestConsumerPowerShapingParameters tests the getter and setter of the consumer id to power-shaping parameters methods
@@ -131,7 +133,8 @@ func TestUpdateAllowlist(t *testing.T) {
 
 	expectedAllowlist := []providertypes.ProviderConsAddress{
 		providertypes.NewProviderConsAddress(consAddr1),
-		providertypes.NewProviderConsAddress(consAddr2)}
+		providertypes.NewProviderConsAddress(consAddr2),
+	}
 	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
 }
 
@@ -178,7 +181,8 @@ func TestUpdateDenylist(t *testing.T) {
 
 	expectedDenylist := []providertypes.ProviderConsAddress{
 		providertypes.NewProviderConsAddress(consAddr1),
-		providertypes.NewProviderConsAddress(consAddr2)}
+		providertypes.NewProviderConsAddress(consAddr2),
+	}
 	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
 }
 

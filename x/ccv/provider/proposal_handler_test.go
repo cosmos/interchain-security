@@ -4,12 +4,14 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
+	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"

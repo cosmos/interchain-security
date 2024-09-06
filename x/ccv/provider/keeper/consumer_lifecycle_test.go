@@ -6,19 +6,18 @@ import (
 	"testing"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	_go "github.com/cosmos/ics23/go"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-
-	abci "github.com/cometbft/cometbft/abci/types"
 
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	_go "github.com/cosmos/ics23/go"
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
@@ -270,7 +269,8 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			ValidatorSetCap:    0,
 			Allowlist:          []string{},
 			Denylist:           []string{},
-		}}
+		},
+	}
 
 	// Expect client creation for only the first, second, and fifth proposals (spawn time already passed and valid)
 	expectedCalls := testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain0", clienttypes.NewHeight(3, 4))

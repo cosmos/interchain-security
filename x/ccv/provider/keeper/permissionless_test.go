@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/stretchr/testify/require"
+
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 // TestConsumerId tests setters and getters of consumer id (i.e., `FetchAndIncrementConsumerId` and `GetConsumerId`)
@@ -103,7 +104,7 @@ func TestConsumerMetadata(t *testing.T) {
 		Name:        "name",
 		Description: "description",
 		Metadata:    "metadata",
-		//ChainId:     "chain_id",
+		// ChainId:     "chain_id",
 	}
 	providerKeeper.SetConsumerMetadata(ctx, "consumerId", expectedMetadata)
 	actualMetadata, err := providerKeeper.GetConsumerMetadata(ctx, "consumerId")
@@ -115,7 +116,7 @@ func TestConsumerMetadata(t *testing.T) {
 		Name:        "name 2",
 		Description: "description 2",
 		Metadata:    "metadata 2",
-		//ChainId:     "chain_id2",
+		// ChainId:     "chain_id2",
 	}
 	providerKeeper.SetConsumerMetadata(ctx, "consumerId", expectedMetadata)
 	actualMetadata, err = providerKeeper.GetConsumerMetadata(ctx, "consumerId")
