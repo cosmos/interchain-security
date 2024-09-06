@@ -7,7 +7,7 @@
   - Deprecate the `chain-id` parameter in favour of `consumer-id` for all transactions and queries targeting a unique consumer chain. Below is a list highlighting the changes in the CLI commands. All commands assume the prefix `interchain-security-pd tx|q provider`.
     - **Transactions:**
       - `assign-consensus-key [consumer-id] [consumer-pubkey]`
-        -- submit a [MsgAssignConsensusKey](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L256)
+        -- submit a [MsgAssignConsensusKey](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L46)
       - `opt-in [consumer-id] [consumer-pubkey]`
         -- submit a [MsgOptIn](https://github.com/cosmos/interchain-security/blob/feat/permissionless/proto/interchain_security/ccv/provider/v1/tx.proto#L256)
       - `opt-out [consumer-id]`
