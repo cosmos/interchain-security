@@ -3,12 +3,12 @@ package integration
 import (
 	"cosmossdk.io/math"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // Tests the functionality of stopping a consumer chain at a higher level than unit tests

@@ -3,9 +3,9 @@ package v7
 import (
 	"testing"
 
-	testutil "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	testutil "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 

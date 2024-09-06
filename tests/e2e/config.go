@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 	"golang.org/x/mod/semver"
 )
 

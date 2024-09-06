@@ -21,10 +21,10 @@ import (
 	"golang.org/x/mod/semver"
 
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 const (

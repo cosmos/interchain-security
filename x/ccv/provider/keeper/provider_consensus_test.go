@@ -7,8 +7,8 @@ import (
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	"github.com/stretchr/testify/require"
 
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 func TestSetLastProviderConsensusValidator(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
 

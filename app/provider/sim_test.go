@@ -18,7 +18,7 @@ import (
 
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
-	providerapp "github.com/cosmos/interchain-security/v5/app/provider"
+	providerapp "github.com/cosmos/interchain-security/v6/app/provider"
 
 	spew "github.com/davecgh/go-spew/spew"
 )

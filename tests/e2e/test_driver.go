@@ -5,7 +5,7 @@ import (
 	"log"
 	"reflect"
 
-	v4 "github.com/cosmos/interchain-security/v5/tests/e2e/v4"
+	v4 "github.com/cosmos/interchain-security/v6/tests/e2e/v4"
 	"github.com/kylelemons/godebug/pretty"
 	"golang.org/x/mod/semver"
 )

@@ -8,9 +8,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )

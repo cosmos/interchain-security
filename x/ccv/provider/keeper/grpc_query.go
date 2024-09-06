@@ -12,8 +12,8 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 var _ types.QueryServer = Keeper{}

@@ -13,10 +13,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/consumer"
-	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // TestOnChanOpenInit validates the consumer's OnChanOpenInit implementation against the spec.

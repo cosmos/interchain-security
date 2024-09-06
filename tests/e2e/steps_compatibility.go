@@ -8,7 +8,7 @@ import (
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 func compstepStartProviderChain() []Step {
