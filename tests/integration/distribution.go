@@ -12,12 +12,12 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/integration"
-	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/integration"
+	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // This test is valid for minimal viable consumer chain

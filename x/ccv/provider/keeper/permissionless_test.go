@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -5,16 +5,16 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 
 	"cosmossdk.io/math"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 	"github.com/stretchr/testify/require"
 
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
 
-	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v5/app/provider"
+	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
 )
 
 // we need a stake multiplier because tokens do not directly correspond to voting power
