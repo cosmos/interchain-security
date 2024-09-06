@@ -94,7 +94,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
-			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Signer),
 		),
 	)
 
@@ -240,7 +240,7 @@ func (k msgServer) OptIn(goCtx context.Context, msg *types.MsgOptIn) (*types.Msg
 			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, msg.ConsumerKey),
-			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Signer),
 		),
 	)
 
@@ -290,7 +290,7 @@ func (k msgServer) OptOut(goCtx context.Context, msg *types.MsgOptOut) (*types.M
 			sdk.NewAttribute(types.AttributeConsumerId, msg.ConsumerId),
 			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
-			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Signer),
 		),
 	)
 
@@ -340,7 +340,7 @@ func (k msgServer) SetConsumerCommissionRate(goCtx context.Context, msg *types.M
 			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
 			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerCommissionRate, msg.Rate.String()),
-			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Submitter),
+			sdk.NewAttribute(types.AttributeSubmitterAddress, msg.Signer),
 		),
 	)
 
@@ -642,16 +642,4 @@ func (k msgServer) RemoveConsumer(goCtx context.Context, msg *types.MsgRemoveCon
 	)
 
 	return &resp, err
-}
-
-func (k msgServer) ConsumerAddition(_ context.Context, _ *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {
-	return nil, fmt.Errorf("`MsgConsumerAddition` is deprecated. Use `MsgCreateConsumer`")
-}
-
-func (k msgServer) ConsumerModification(_ context.Context, _ *types.MsgConsumerModification) (*types.MsgConsumerModificationResponse, error) {
-	return nil, fmt.Errorf("`MsgConsumerModification` is deprecated. Use `MsgUpdateConsumer` instead")
-}
-
-func (k msgServer) ConsumerRemoval(_ context.Context, _ *types.MsgConsumerRemoval) (*types.MsgConsumerRemovalResponse, error) {
-	return nil, fmt.Errorf("`MsgConsumerRemoval` is deprecated. Use `MsgRemoveConsumer` instead")
 }
