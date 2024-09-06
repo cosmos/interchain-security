@@ -175,7 +175,10 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// Create clients to consumer chains that are due to be spawned
-	am.keeper.BeginBlockLaunchConsumers(sdkCtx)
+	err := am.keeper.BeginBlockLaunchConsumers(sdkCtx)
+	if err != nil {
+		return err
+	}
 	// Stop and remove state for any consumer chains that are due to be stopped
 	am.keeper.BeginBlockRemoveConsumers(sdkCtx)
 	// Check for replenishing slash meter before any slash packets are processed for this block

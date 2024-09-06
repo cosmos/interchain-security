@@ -61,26 +61,13 @@ func (k Keeper) InitializeConsumer(ctx sdk.Context, consumerId string) (time.Tim
 }
 
 // BeginBlockLaunchConsumers launches initialized consumers that are ready to launch
-func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) {
-	// TODO (PERMISSIONLESS): we can parameterize the limit
-	for _, consumerId := range k.GetConsumersReadyToLaunch(ctx, 200) {
-		initializationParameters, err := k.GetConsumerInitializationParameters(ctx, consumerId)
-		if err != nil {
-			ctx.Logger().Error("could not retrieve initialization record",
-				"consumerId", consumerId,
-				"error", err)
-			continue
-		}
-		// Remove consumer to prevent re-trying launching this chain.
-		// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
-		err = k.RemoveConsumerToBeLaunched(ctx, consumerId, initializationParameters.SpawnTime)
-		if err != nil {
-			ctx.Logger().Error("could not remove consumer from to-be-launched queue",
-				"consumerId", consumerId,
-				"error", err)
-			continue
-		}
+func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
+	consumerIds, err := k.ConsumeConsumersReadyToLaunch(ctx, 200)
+	if err != nil {
+		return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "getting consumers ready to laumch: %s", err.Error())
+	}
 
+	for _, consumerId := range consumerIds {
 		cachedCtx, writeFn := ctx.CacheContext()
 		err = k.LaunchConsumer(cachedCtx, consumerId)
 		if err != nil {
@@ -94,11 +81,12 @@ func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) {
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		writeFn()
 	}
+	return nil
 }
 
-// GetConsumersReadyToLaunch returns the consumer ids of the pending initialized consumer chains
-// that are ready to launch,  i.e., consumer clients to be created.
-func (k Keeper) GetConsumersReadyToLaunch(ctx sdk.Context, limit uint32) []string {
+// ConsumeConsumersReadyToLaunch returns the consumer ids of the pending initialized consumer chains
+// that are ready to launch. The consumer ids returns are removed from the pending list.
+func (k Keeper) ConsumeConsumersReadyToLaunch(ctx sdk.Context, limit int) ([]string, error) {
 	store := ctx.KVStore(k.storeKey)
 
 	spawnTimeToConsumerIdsKeyPrefix := types.SpawnTimeToConsumerIdsKeyPrefix()
@@ -106,15 +94,18 @@ func (k Keeper) GetConsumersReadyToLaunch(ctx sdk.Context, limit uint32) []strin
 	defer iterator.Close()
 
 	result := []string{}
+	launchNextTime := []string{}
+	spawnTimesToDelete := []time.Time{}
 	for ; iterator.Valid(); iterator.Next() {
+		if len(result) >= limit {
+			break
+		}
 		spawnTime, err := types.ParseTime(spawnTimeToConsumerIdsKeyPrefix, iterator.Key())
 		if err != nil {
-			k.Logger(ctx).Error("failed to parse spawn time",
-				"error", err)
-			continue
+			return result, fmt.Errorf("failed to parse spawn time: %w", err)
 		}
 		if spawnTime.After(ctx.BlockTime()) {
-			return result
+			return result, nil
 		}
 
 		// if current block time is equal to or after spawnTime, and the chain is initialized, we can launch the chain
@@ -125,18 +116,39 @@ func (k Keeper) GetConsumersReadyToLaunch(ctx sdk.Context, limit uint32) []strin
 				"error", err)
 			continue
 		}
-		if len(result)+len(consumerIds.Ids) >= int(limit) {
-			remainingConsumerIds := len(result) + len(consumerIds.Ids) - int(limit)
-			if len(consumerIds.Ids[:len(consumerIds.Ids)-remainingConsumerIds]) == 0 {
-				return result
-			}
-			return append(result, consumerIds.Ids[:len(consumerIds.Ids)-remainingConsumerIds]...)
-		} else {
+
+		spawnTimesToDelete = append(spawnTimesToDelete, spawnTime)
+
+		availableSlots := limit - len(result)
+		if availableSlots >= len(consumerIds.Ids) {
+			// can take all the consumer IDs
 			result = append(result, consumerIds.Ids...)
+		} else {
+			// take only availableSlots
+			result = append(result, consumerIds.Ids[:availableSlots]...)
+			// and leave the others for next time
+			launchNextTime = consumerIds.Ids[availableSlots:]
+			break
 		}
 	}
 
-	return result
+	// Remove consumer to prevent re-trying launching this chain.
+	// We would only try to re-launch this chain if a new `MsgUpdateConsumer` message is sent.
+	for i, spawnTime := range spawnTimesToDelete {
+		k.DeleteAllConsumerToBeLaunched(ctx, spawnTime)
+		if i == len(spawnTimesToDelete)-1 {
+			// for the last spawn time consumed, store back the IDs of the consumers
+			// that will be launched later
+			for _, consumerId := range launchNextTime {
+				err := k.AppendConsumerToBeLaunched(ctx, consumerId, spawnTime)
+				if err != nil {
+					return result, fmt.Errorf("failed to append consumer to be launched, consumerId(%s): %w", consumerId, err)
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // LaunchConsumer launches the chain with the provided consumer id by creating the consumer client and the respective
@@ -657,6 +669,12 @@ func (k Keeper) RemoveConsumerToBeLaunched(ctx sdk.Context, consumerId string, s
 	return k.removeConsumerIdFromTime(ctx, consumerId, types.SpawnTimeToConsumerIdsKey, spawnTime)
 }
 
+// DeleteAllConsumerToBeLaunched deletes all consumer to be launched at this specific spawn time
+func (k Keeper) DeleteAllConsumerToBeLaunched(ctx sdk.Context, spawnTime time.Time) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.SpawnTimeToConsumerIdsKey(spawnTime))
+}
+
 // GetConsumersToBeRemoved returns all the consumer ids of chains stored under this removal time
 func (k Keeper) GetConsumersToBeRemoved(ctx sdk.Context, removalTime time.Time) (types.ConsumerIds, error) {
 	return k.getConsumerIdsBasedOnTime(ctx, types.RemovalTimeToConsumerIdsKey, removalTime)
@@ -670,4 +688,10 @@ func (k Keeper) AppendConsumerToBeRemoved(ctx sdk.Context, consumerId string, re
 // RemoveConsumerToBeRemoved removes consumer id from the given removal time
 func (k Keeper) RemoveConsumerToBeRemoved(ctx sdk.Context, consumerId string, removalTime time.Time) error {
 	return k.removeConsumerIdFromTime(ctx, consumerId, types.RemovalTimeToConsumerIdsKey, removalTime)
+}
+
+// DeleteConsumerToBeRemoved deletes all consumer to be removed at this specific removal time
+func (k Keeper) DeleteConsumerToBeRemoved(ctx sdk.Context, removalTime time.Time) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.RemovalTimeToConsumerIdsKey(removalTime))
 }
