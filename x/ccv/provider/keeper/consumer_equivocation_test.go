@@ -27,7 +27,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "consumer"
+	chainID := CONSUMER_CHAIN_ID
 
 	signer1 := tmtypes.NewMockPV()
 	signer2 := tmtypes.NewMockPV()
@@ -772,7 +772,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 }
 
 func TestEquivocationEvidenceMinHeightCRUD(t *testing.T) {
-	chainID := consumer
+	chainID := CONSUMER_CHAIN_ID
 	expMinHeight := uint64(12)
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()

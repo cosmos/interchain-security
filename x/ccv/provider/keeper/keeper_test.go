@@ -22,7 +22,10 @@ import (
 	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
-const consumer = "consumer"
+const (
+	CONSUMER_CHAIN_ID = "chain-id"
+	CONSUMER_ID       = "13"
+)
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
 func TestValsetUpdateBlockHeight(t *testing.T) {
@@ -96,7 +99,7 @@ func TestSlashAcks(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := consumer
+	chainID := CONSUMER_CHAIN_ID
 
 	acks := providerKeeper.GetSlashAcks(ctx, chainID)
 	require.Nil(t, acks)
@@ -153,7 +156,7 @@ func TestPendingVSCs(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := consumer
+	chainID := CONSUMER_CHAIN_ID
 
 	pending := providerKeeper.GetPendingVSCPackets(ctx, chainID)
 	require.Len(t, pending, 0)
@@ -301,10 +304,10 @@ func TestGetAllOptedIn(t *testing.T) {
 	}
 
 	for _, expectedOptedInValidator := range expectedOptedInValidators {
-		providerKeeper.SetOptedIn(ctx, "consumerId", expectedOptedInValidator)
+		providerKeeper.SetOptedIn(ctx, CONSUMER_ID, expectedOptedInValidator)
 	}
 
-	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, "consumerId")
+	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, CONSUMER_ID)
 
 	// sort validators first to be able to compare
 	sortOptedInValidators := func(addresses []providertypes.ProviderConsAddress) {
@@ -325,19 +328,19 @@ func TestOptedIn(t *testing.T) {
 	optedInValidator1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
 	optedInValidator2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 
-	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
-	providerKeeper.SetOptedIn(ctx, "consumerId", optedInValidator1)
-	require.True(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
-	providerKeeper.DeleteOptedIn(ctx, "consumerId", optedInValidator1)
-	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
+	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, optedInValidator1)
+	require.True(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
+	providerKeeper.DeleteOptedIn(ctx, CONSUMER_ID, optedInValidator1)
+	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
 
-	providerKeeper.SetOptedIn(ctx, "consumerId", optedInValidator1)
-	providerKeeper.SetOptedIn(ctx, "consumerId", optedInValidator2)
-	require.True(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
-	require.True(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator2))
-	providerKeeper.DeleteAllOptedIn(ctx, "consumerId")
-	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator1))
-	require.False(t, providerKeeper.IsOptedIn(ctx, "consumerId", optedInValidator2))
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, optedInValidator1)
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, optedInValidator2)
+	require.True(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
+	require.True(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator2))
+	providerKeeper.DeleteAllOptedIn(ctx, CONSUMER_ID)
+	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
+	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator2))
 }
 
 // TestConsumerCommissionRate tests the `SetConsumerCommissionRate`, `GetConsumerCommissionRate`, and `DeleteConsumerCommissionRate` methods
@@ -348,31 +351,31 @@ func TestConsumerCommissionRate(t *testing.T) {
 	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
 	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
 
-	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr1)
+	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, CONSUMER_ID, providerAddr1)
 	require.False(t, found)
 	require.Equal(t, math.LegacyZeroDec(), cr)
 
-	providerKeeper.SetConsumerCommissionRate(ctx, "consumerId", providerAddr1, math.LegacyOneDec())
-	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr1)
+	providerKeeper.SetConsumerCommissionRate(ctx, CONSUMER_ID, providerAddr1, math.LegacyOneDec())
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, CONSUMER_ID, providerAddr1)
 	require.True(t, found)
 	require.Equal(t, math.LegacyOneDec(), cr)
 
-	providerKeeper.SetConsumerCommissionRate(ctx, "consumerId", providerAddr2, math.LegacyZeroDec())
-	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr2)
+	providerKeeper.SetConsumerCommissionRate(ctx, CONSUMER_ID, providerAddr2, math.LegacyZeroDec())
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, CONSUMER_ID, providerAddr2)
 	require.True(t, found)
 	require.Equal(t, math.LegacyZeroDec(), cr)
 
-	provAddrs := providerKeeper.GetAllCommissionRateValidators(ctx, "consumerId")
+	provAddrs := providerKeeper.GetAllCommissionRateValidators(ctx, CONSUMER_ID)
 	require.Len(t, provAddrs, 2)
 
 	for _, addr := range provAddrs {
-		providerKeeper.DeleteConsumerCommissionRate(ctx, "consumerId", addr)
+		providerKeeper.DeleteConsumerCommissionRate(ctx, CONSUMER_ID, addr)
 	}
 
-	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr1)
+	_, found = providerKeeper.GetConsumerCommissionRate(ctx, CONSUMER_ID, providerAddr1)
 	require.False(t, found)
 
-	_, found = providerKeeper.GetConsumerCommissionRate(ctx, "consumerId", providerAddr2)
+	_, found = providerKeeper.GetConsumerCommissionRate(ctx, CONSUMER_ID, providerAddr2)
 	require.False(t, found)
 }
 

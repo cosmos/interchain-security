@@ -31,15 +31,15 @@ func TestPrepareConsumerForLaunch(t *testing.T) {
 	defer ctrl.Finish()
 
 	spawnTime := time.Now().UTC()
-	err := providerKeeper.PrepareConsumerForLaunch(ctx, "consumerId", time.Time{}, spawnTime)
+	err := providerKeeper.PrepareConsumerForLaunch(ctx, CONSUMER_ID, time.Time{}, spawnTime)
 	require.NoError(t, err)
 
 	consumers, err := providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
 	require.NoError(t, err)
-	require.Equal(t, providertypes.ConsumerIds{Ids: []string{"consumerId"}}, consumers)
+	require.Equal(t, providertypes.ConsumerIds{Ids: []string{CONSUMER_ID}}, consumers)
 
 	nextSpawnTime := spawnTime.Add(time.Hour)
-	err = providerKeeper.PrepareConsumerForLaunch(ctx, "consumerId", spawnTime, nextSpawnTime)
+	err = providerKeeper.PrepareConsumerForLaunch(ctx, CONSUMER_ID, spawnTime, nextSpawnTime)
 	require.NoError(t, err)
 
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, spawnTime)
@@ -48,7 +48,7 @@ func TestPrepareConsumerForLaunch(t *testing.T) {
 
 	consumers, err = providerKeeper.GetConsumersToBeLaunched(ctx, nextSpawnTime)
 	require.NoError(t, err)
-	require.Equal(t, providertypes.ConsumerIds{Ids: []string{"consumerId"}}, consumers)
+	require.Equal(t, providertypes.ConsumerIds{Ids: []string{CONSUMER_ID}}, consumers)
 }
 
 func TestInitializeConsumer(t *testing.T) {
@@ -865,17 +865,17 @@ func TestConsumerRemovalTime(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	_, err := providerKeeper.GetConsumerRemovalTime(ctx, "consumerId")
+	_, err := providerKeeper.GetConsumerRemovalTime(ctx, CONSUMER_ID)
 	require.Error(t, err)
 
 	expectedRemovalTime := time.Unix(1234, 56789)
-	providerKeeper.SetConsumerRemovalTime(ctx, "consumerId", expectedRemovalTime)
-	actualRemovalTime, err := providerKeeper.GetConsumerRemovalTime(ctx, "consumerId")
+	providerKeeper.SetConsumerRemovalTime(ctx, CONSUMER_ID, expectedRemovalTime)
+	actualRemovalTime, err := providerKeeper.GetConsumerRemovalTime(ctx, CONSUMER_ID)
 	require.NoError(t, err)
 	require.Equal(t, actualRemovalTime, expectedRemovalTime)
 
-	providerKeeper.DeleteConsumerRemovalTime(ctx, "consumerId")
-	_, err = providerKeeper.GetConsumerRemovalTime(ctx, "consumerId")
+	providerKeeper.DeleteConsumerRemovalTime(ctx, CONSUMER_ID)
+	_, err = providerKeeper.GetConsumerRemovalTime(ctx, CONSUMER_ID)
 	require.Error(t, err)
 }
 
