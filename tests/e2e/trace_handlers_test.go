@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -29,7 +28,7 @@ var proposalInStateSteps = []Step{
 					1: ConsumerRemovalProposal{
 						Deposit: 10000001,
 						Chain:   ChainID("foo"),
-						Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+						Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 					},
 				},
 			},
@@ -115,7 +114,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 					Chain:         ChainID("test"),
 					SpawnTime:     0,
 					InitialHeight: clienttypes.Height{RevisionNumber: 5, RevisionHeight: 5},
-					Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+					Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 				},
 			},
 		}},
@@ -127,7 +126,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 			Proposals: &map[uint]Proposal{
 				1: IBCTransferParamsProposal{
 					Deposit: 10000001,
-					Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+					Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 					Params:  IBCTransferParams{true, true},
 				},
 			},
@@ -137,7 +136,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				5: ConsumerRemovalProposal{
 					Deposit: 10000001,
 					Chain:   ChainID("test123"),
-					Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+					Status:  gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 				},
 			},
 			ValBalances: &map[ValidatorID]uint{

@@ -511,12 +511,12 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 
 	consumerId := ""
 	for _, event := range txResponse.Events {
-		if event.Type != "consumer_creation" {
+		if event.Type != "create_consumer" {
 			continue
 		}
 		attr, exists := event.GetAttribute("consumer_id")
 		if !exists {
-			log.Fatalf("no event with consumer_id found in tx content of create-consumer: %v", event)
+			log.Fatalf("no event with consumer_id found in tx content of create_consumer: %v", event)
 		}
 		consumerId = attr.Value
 	}

@@ -2,7 +2,6 @@ package main
 
 import (
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	"strconv"
 )
 
 // start relayer so that all messages are relayed
@@ -34,7 +33,7 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 						propNumber: ConsumerRemovalProposal{
 							Deposit: 10000001,
 							Chain:   ChainID(consumerName),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 					ConsumerChains: &map[ChainID]bool{"consu": true}, // consumer chain not yet removed
@@ -54,7 +53,7 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 						propNumber: ConsumerRemovalProposal{
 							Deposit: 10000001,
 							Chain:   ChainID(consumerName),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:  gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{
@@ -89,7 +88,7 @@ func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []
 						propNumber: ConsumerRemovalProposal{
 							Deposit: 10000001,
 							Chain:   ChainID(consumerName),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 					ConsumerChains: &map[ChainID]bool{"consu": true}, // consumer chain not removed
@@ -109,7 +108,7 @@ func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []
 						propNumber: ConsumerRemovalProposal{
 							Deposit: 10000001,
 							Chain:   ChainID(consumerName),
-							Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_REJECTED)),
+							Status:  gov.ProposalStatus_PROPOSAL_STATUS_REJECTED.String(),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{

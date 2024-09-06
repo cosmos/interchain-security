@@ -4,8 +4,6 @@ package main
 // sanity checks across different ICS versions.
 
 import (
-	"strconv"
-
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
@@ -59,7 +57,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)), // breaking change in SDK: gov.ProposalStatus(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD).String(),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(), // breaking change in SDK: gov.ProposalStatus(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD).String(),
 						},
 					},
 					// not supported across major versions
@@ -128,7 +126,7 @@ func compstepsStartConsumerChain(consumerName string, proposalIndex, chainIndex 
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)), //TODO: CHECK if this is bug on SDK SIDE!!!: should be as before gov.ProposalStatus(gov.ProposalStatus_PROPOSAL_STATUS_PASSED).String(),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(), //TODO: CHECK if this is bug on SDK SIDE!!!: should be as before gov.ProposalStatus(gov.ProposalStatus_PROPOSAL_STATUS_PASSED).String(),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{

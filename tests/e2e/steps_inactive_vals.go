@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strconv"
-
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
@@ -372,7 +370,7 @@ func setupOptInChain() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
@@ -401,7 +399,7 @@ func setupOptInChain() []Step {
 								Chain:         ChainID("consu"),
 								SpawnTime:     0,
 								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+								Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 							},
 						},
 					},
@@ -530,7 +528,7 @@ func stepsInactiveProviderValidatorsGovernance() []Step {
 								Chain:         ChainID("consu"),
 								SpawnTime:     0,
 								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+								Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 							},
 						},
 					},
@@ -554,7 +552,7 @@ func stepsInactiveProviderValidatorsGovernance() []Step {
 								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 								// the proposal should have passed because carol voted for it.
 								// carol alone is enough to pass the quorum, because stake of the other validators is not counted
-								Status: strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+								Status: gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 							},
 						},
 					},
@@ -617,7 +615,7 @@ func stepsInactiveProviderValidatorsGovernanceBasecase() []Step {
 								Chain:         ChainID("consu"),
 								SpawnTime:     0,
 								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+								Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 							},
 						},
 					},
@@ -641,7 +639,7 @@ func stepsInactiveProviderValidatorsGovernanceBasecase() []Step {
 								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 								// the proposal should *not* have passed because only carol voted for it,
 								// and carol is not enough to pass the quorum
-								Status: strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_REJECTED)),
+								Status: gov.ProposalStatus_PROPOSAL_STATUS_REJECTED.String(),
 							},
 						},
 					},
@@ -702,7 +700,7 @@ func stepsMinStake() []Step {
 								Chain:         ChainID("consu"),
 								SpawnTime:     0,
 								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+								Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 							},
 						},
 					},
@@ -726,7 +724,7 @@ func stepsMinStake() []Step {
 								Chain:         ChainID("consu"),
 								SpawnTime:     0,
 								InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-								Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+								Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 							},
 						},
 					},
@@ -820,7 +818,7 @@ func stepsInactiveValsWithTopN() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 				},
@@ -841,7 +839,7 @@ func stepsInactiveValsWithTopN() []Step {
 							Chain:         ChainID("consu"),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 					HasToValidate: &map[ValidatorID][]ChainID{
