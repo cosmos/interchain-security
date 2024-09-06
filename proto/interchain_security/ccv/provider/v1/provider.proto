@@ -32,6 +32,7 @@ message ConsumerAdditionProposal {
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.goproto_stringer) = false;
   option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+  option deprecated = true;
 
   // the title of the proposal
   string title = 1;
@@ -121,6 +122,8 @@ message ConsumerAdditionProposal {
 // Use MsgConsumerRemoval to submit this proposal type.
 message ConsumerRemovalProposal {
   option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+  option deprecated = true;
+
 
   // the title of the proposal
   string title = 1;
@@ -138,6 +141,8 @@ message ConsumerRemovalProposal {
 // ConsumerModificationProposal is a governance proposal on the provider chain to modify parameters of a running
 // consumer chain. If it passes, the consumer chain's state is updated to take into account the newest params.
 message ConsumerModificationProposal {
+  option deprecated = true;
+
   // the title of the proposal
   string title = 1;
   // the description of the proposal
@@ -291,6 +296,8 @@ message AddressList { repeated bytes addresses = 1; }
 // WARNING: This message is deprecated and is not used.
 // ChannelToChain is used to map a CCV channel ID to the consumer chainID
 message ChannelToChain {
+  option deprecated = true;
+  
   string channel_id = 1;
   string chain_id = 2;
 }
