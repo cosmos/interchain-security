@@ -23,12 +23,6 @@ service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
   rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
   rpc SubmitConsumerDoubleVoting(MsgSubmitConsumerDoubleVoting) returns (MsgSubmitConsumerDoubleVotingResponse);
-  rpc ConsumerAddition(MsgConsumerAddition) returns (MsgConsumerAdditionResponse) {
-    option deprecated = true;
-  };
-  rpc ConsumerRemoval(MsgConsumerRemoval) returns (MsgConsumerRemovalResponse) {
-    option deprecated = true;
-  };
   rpc CreateConsumer(MsgCreateConsumer) returns (MsgCreateConsumerResponse);
   rpc UpdateConsumer(MsgUpdateConsumer) returns (MsgUpdateConsumerResponse);
   rpc RemoveConsumer(MsgRemoveConsumer) returns (MsgRemoveConsumerResponse);
@@ -36,15 +30,12 @@ service Msg {
   rpc OptIn(MsgOptIn) returns (MsgOptInResponse);
   rpc OptOut(MsgOptOut) returns (MsgOptOutResponse);
   rpc SetConsumerCommissionRate(MsgSetConsumerCommissionRate) returns (MsgSetConsumerCommissionRateResponse);
-  rpc ConsumerModification(MsgConsumerModification) returns (MsgConsumerModificationResponse) {
-    option deprecated = true;
-  }
   rpc ChangeRewardDenoms(MsgChangeRewardDenoms) returns (MsgChangeRewardDenomsResponse);
 }
 
 
 message MsgAssignConsumerKey {
-  option (cosmos.msg.v1.signer) = "submitter";
+  option (cosmos.msg.v1.signer) = "signer";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
@@ -58,7 +49,7 @@ message MsgAssignConsumerKey {
   // `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`
   string consumer_key = 3;
 
-  string submitter = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // the consumer id of the consumer chain to assign a consensus public key to
   string consumer_id = 5;
@@ -119,6 +110,7 @@ message MsgUpdateParamsResponse {}
 
 // [DEPRECATED] Use `MsgCreateConsumer` instead
 message MsgConsumerAddition {
+  option deprecated = true;
   option (cosmos.msg.v1.signer) = "authority";
 
    // the proposed chain-id of the new consumer chain, must be different from all
@@ -199,13 +191,11 @@ message MsgConsumerAddition {
   bool allow_inactive_vals = 20;
 }
 
-// MsgConsumerAdditionResponse defines response type for MsgConsumerAddition messages
-message MsgConsumerAdditionResponse {}
 
 // [DEPRECATED] Use `MsgRemoveConsumer` instead
 message MsgConsumerRemoval {
+  option deprecated = true;
   option (cosmos.msg.v1.signer) = "authority";
-
   // the chain-id of the consumer chain to be stopped
   string chain_id = 1;
   // the time on the provider chain at which all validators are responsible to
@@ -215,9 +205,6 @@ message MsgConsumerRemoval {
   // signer address
   string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
-
-// MsgConsumerRemovalResponse defines response type for MsgConsumerRemoval messages
-message MsgConsumerRemovalResponse {}
 
 
 // MsgRemoveConsumer defines the message used to remove (and stop) a consumer chain.
@@ -256,7 +243,7 @@ message MsgChangeRewardDenomsResponse {}
 message MsgOptIn {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  option (cosmos.msg.v1.signer) = "submitter";
+  option (cosmos.msg.v1.signer) = "signer";
   // [DEPRECATED] use `consumer_id` instead
   string chain_id = 1 [deprecated = true];
   // the validator address on the provider
@@ -267,7 +254,7 @@ message MsgOptIn {
   // consumer public key at a later stage by issuing a `MsgAssignConsumerKey` message.
   string consumer_key = 3;
   // submitter address
-  string submitter = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // the consumer id of the consumer chain to opt in to
   string consumer_id = 5;
 }
@@ -277,13 +264,13 @@ message MsgOptInResponse {}
 message MsgOptOut {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  option (cosmos.msg.v1.signer) = "submitter";
+  option (cosmos.msg.v1.signer) = "signer";
   // [DEPRECATED] use `consumer_id` instead
   string chain_id = 1 [deprecated = true];
   // the validator address on the provider
   string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // submitter address
-  string submitter = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // the consumer id of the consumer chain to opt out from
   string consumer_id = 4;
 }
@@ -295,7 +282,7 @@ message MsgOptOutResponse {}
 message MsgSetConsumerCommissionRate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  option (cosmos.msg.v1.signer) = "submitter";
+  option (cosmos.msg.v1.signer) = "signer";
 
   // The validator address on the provider
   string provider_addr = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
@@ -309,7 +296,7 @@ message MsgSetConsumerCommissionRate {
     (gogoproto.nullable)   = false
     ];
   // submitter address
-  string submitter = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // the consumer id of the consumer chain to set the commission rate
   string consumer_id = 5;
 }
@@ -320,6 +307,7 @@ message MsgSetConsumerCommissionRateResponse {}
 // [DEPRECATED] Use `MsgUpdateConsumer` instead
 message MsgConsumerModification {
   option (cosmos.msg.v1.signer) = "authority";
+  option deprecated = true;
 
   // the title of the proposal
   string title = 1;

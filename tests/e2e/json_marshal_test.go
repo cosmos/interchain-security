@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -34,7 +33,7 @@ func TestProposalUnmarshal(t *testing.T) {
 		Chain:         ChainID("consu"),
 		SpawnTime:     0,
 		InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-		Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+		Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 	}
 
 	type ProposalAndType struct {
@@ -101,7 +100,7 @@ var testCases = []ChainStateTestCase{
 					Chain:         ChainID("consu"),
 					SpawnTime:     0,
 					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-					Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+					Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 				},
 			},
 		},

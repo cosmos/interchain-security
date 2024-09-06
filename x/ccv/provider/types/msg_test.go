@@ -458,7 +458,7 @@ func TestMsgAssignConsumerKeyValidateBasic(t *testing.T) {
 		name         string
 		chainId      string
 		providerAddr string
-		submitter    string
+		signer       string
 		consumerKey  string
 		consumerId   string
 		expErr       bool
@@ -493,21 +493,21 @@ func TestMsgAssignConsumerKeyValidateBasic(t *testing.T) {
 			name:         "invalid: provider address != submitter address",
 			consumerId:   "1",
 			providerAddr: valOpAddr1.String(),
-			submitter:    acc2,
+			signer:       acc2,
 			expErr:       true,
 		},
 		{
 			name:         "invalid: consumer pubkey empty",
 			consumerId:   "1",
 			providerAddr: valOpAddr1.String(),
-			submitter:    acc1,
+			signer:       acc1,
 			expErr:       true,
 		},
 		{
 			name:         "valid",
 			consumerId:   "1",
 			providerAddr: valOpAddr1.String(),
-			submitter:    acc1,
+			signer:       acc1,
 			consumerKey:  "{\"@type\": \"/cosmos.crypto.ed25519.PubKey\", \"key\": \"e3BehnEIlGUAnJYn9V8gBXuMh4tXO8xxlxyXD1APGyk=\"}",
 			expErr:       false,
 		},
@@ -519,7 +519,7 @@ func TestMsgAssignConsumerKeyValidateBasic(t *testing.T) {
 				ChainId:      tc.chainId,
 				ConsumerKey:  tc.consumerKey,
 				ProviderAddr: tc.providerAddr,
-				Submitter:    tc.submitter,
+				Signer:       tc.signer,
 				ConsumerId:   tc.consumerId,
 			}
 
