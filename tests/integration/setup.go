@@ -13,16 +13,17 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	store "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // Callback for instantiating a new coordinator with a provider test chains
@@ -60,7 +61,7 @@ type CCVTestSuite struct {
 	// The transfer path to the first consumer among multiple.
 	transferPath *ibctesting.Path
 
-	// A map from consumer chain ID to its consumer bundle.
+	// A map from consumer id to its consumer bundle.
 	// The preferred way to access chains, apps, and paths when designing tests around multiple consumers.
 	consumerBundles map[string]*icstestingutils.ConsumerBundle
 	skippedTests    map[string]bool
@@ -149,35 +150,28 @@ func (suite *CCVTestSuite) SetupTest() {
 	//  1. the consumer chain is added to the coordinator
 	//  2. MakeGenesis is called on the provider chain
 	//  3. ibc/testing sets the tendermint header for the consumer chain app
-	providerKeeper.SetPendingConsumerAdditionProp(suite.providerCtx(), &types.ConsumerAdditionProposal{
-		ChainId: icstestingutils.FirstConsumerChainID,
-	})
-	ps := providerKeeper.GetAllPendingConsumerAdditionProps(suite.providerCtx())
-	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
-
-	// remove props so they don't interfere with the rest of the setup
-	// if not removed here, setupConsumerCallback will have 2 proposals for adding the first consumer chain
-	providerKeeper.DeletePendingConsumerAdditionProps(suite.providerCtx(), ps...)
+	providerKeeper.SetConsumerPhase(suite.providerCtx(), icstestingutils.FirstConsumerID, providertypes.CONSUMER_PHASE_INITIALIZED)
+	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerID)
 
 	// start consumer chains
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
 	for i := 0; i < icstestingutils.NumConsumers; i++ {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
-		suite.consumerBundles[bundle.Chain.ChainID] = bundle
+		suite.consumerBundles[bundle.ConsumerId] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
 
 		// check that TopN is correctly set for the consumer
-		topN, found := providerKeeper.GetTopN(suite.providerCtx(), bundle.Chain.ChainID)
-		suite.Require().True(found)
-		suite.Require().Equal(bundle.TopN, topN)
+		powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(suite.providerCtx(), bundle.ConsumerId)
+		suite.Require().NoError(err)
+		suite.Require().Equal(bundle.TopN, powerShapingParameters.Top_N)
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
 	// stored on the provider.
-	for chainID := range suite.consumerBundles {
+	for consumerId := range suite.consumerBundles {
 		consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
 			suite.providerCtx(),
-			chainID,
+			consumerId,
 		)
 
 		suite.Require().True(found, "consumer genesis not found")
@@ -186,7 +180,7 @@ func (suite *CCVTestSuite) SetupTest() {
 			Provider: consumerGenesisState.Provider,
 			NewChain: consumerGenesisState.NewChain,
 		}
-		initConsumerChain(suite, chainID, &genesisState)
+		initConsumerChain(suite, consumerId, &genesisState)
 	}
 
 	// try updating all clients
@@ -221,11 +215,11 @@ func (s *CCVTestSuite) getSentPacket(chain *ibctesting.TestChain, sequence uint6
 // initConsumerChain initializes a consumer chain given a genesis state
 func initConsumerChain(
 	s *CCVTestSuite,
-	chainID string,
+	consumerId string,
 	genesisState *consumertypes.GenesisState,
 ) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	bundle := s.consumerBundles[chainID]
+	bundle := s.consumerBundles[consumerId]
 
 	// run CCV module init genesis
 	s.NotPanics(func() {
@@ -249,7 +243,7 @@ func initConsumerChain(
 	// Set provider endpoint's clientID for each consumer
 	providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
 		s.providerCtx(),
-		chainID,
+		consumerId,
 	)
 	s.Require().True(found, "provider endpoint clientID not found")
 	bundle.Path.EndpointB.ClientID = providerEndpointClientID
@@ -291,7 +285,7 @@ func initConsumerChain(
 	err = bundle.Path.EndpointA.UpdateClient()
 	s.Require().NoError(err)
 
-	if chainID == icstestingutils.FirstConsumerChainID {
+	if consumerId == icstestingutils.FirstConsumerID {
 		// Support tests that were written before multiple consumers were supported.
 		firstBundle := s.getFirstBundle()
 		s.consumerApp = firstBundle.App
@@ -379,14 +373,14 @@ func (suite *CCVTestSuite) SetupAllTransferChannels() {
 	suite.SetupTransferChannel()
 
 	// setup all the remaining consumers transfer channels
-	for chainID := range suite.consumerBundles {
+	for consumerId := range suite.consumerBundles {
 		// skip fist consumer
-		if chainID == suite.consumerChain.ChainID {
+		if consumerId == suite.getFirstBundle().ConsumerId {
 			continue
 		}
 
 		// get the bundle for the chain ID
-		bundle := suite.consumerBundles[chainID]
+		bundle := suite.consumerBundles[consumerId]
 		// setup the transfer channel
 		suite.setupTransferChannel(
 			bundle.TransferPath,
@@ -423,9 +417,9 @@ func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestinguti
 }
 
 // preProposalKeyAssignment assigns keys to all provider validators for
-// the consumer with chainID before the chain is registered, i.e.,
+// the consumer with consumerId before the chain is registered, i.e.,
 // before a client to the consumer is created
-func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
+func preProposalKeyAssignment(s *CCVTestSuite, consumerId string) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	for _, val := range s.providerChain.Vals.Validators {
@@ -445,7 +439,7 @@ func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
 		// as a result, NewTestChainWithValSet in AddConsumer uses providerChain.Signers
 		s.providerChain.Signers[tmPubKey.Address().String()] = privVal
 
-		err = providerKeeper.AssignConsumerKey(s.providerCtx(), chainID, validator, consumerKey)
+		err = providerKeeper.AssignConsumerKey(s.providerCtx(), consumerId, validator, consumerKey)
 		s.Require().NoError(err)
 	}
 }

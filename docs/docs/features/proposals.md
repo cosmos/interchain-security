@@ -2,21 +2,19 @@
 sidebar_position: 3
 ---
 
-
 # ICS Provider Proposals
 
-Interchain security module introduces new proposal types to the provider.
-
-The proposals are used to propose upcoming interchain security events through governance.
+Interchain Security introduces the following new governance proposal types to the provider chain.
 
 ## `ConsumerAdditionProposal`
-:::info
+
+:::tip
 If you are preparing a `ConsumerAdditionProposal` you can find more information in the [consumer onboarding checklist](../consumer-development/onboarding.md).
 :::
 
-Proposal type used to suggest adding a new consumer chain.
-
-When proposals of this type are passed and the `spawn_time` specified in the proposal is reached, all provider chain validators are expected to run infrastructure (validator nodes) for the proposed consumer chain.
+`ConsumerAdditionProposal` is used to add new consumer chains. 
+When proposals of this type pass governance and the `spawn_time` specified in the proposal is reached, all opted in provider validators are expected to run infrastructure (validator nodes) for the proposed consumer chain. 
+Note that for TopN consumer chains, the validators in the top N% of the voting power are automatically opted in at spawn time. 
 
 Minimal example:
 ```js
@@ -48,22 +46,18 @@ Minimal example:
     "validators_power_cap": 0,
     "validator_set_cap": 0,
     "allowlist": [],
-    "denylist": []
+    "denylist": [],
+    "min_stake": 0,
+    "allow_inactive_vals": false
 }
 ```
-More examples can be found in the interchain security testnet repository [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/noble-1/start-proposal-noble-1.json).
+
+More examples can be found in the Interchain Security testnet repository [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/interchain-security/stopped/noble-1/start-proposal-noble-1.json).
 
 ## `ConsumerRemovalProposal`
-Proposal type used to suggest removing an existing consumer chain.
 
-When proposals of this type are passed, the consumer chain in question will be gracefully removed from interchain security and validators will no longer be required to run infrastructure for the specified chain.
-After the consumer chain removal, the chain in question will no longer be secured by the provider's validator set.
-
-:::info
-The chain in question my continue to produce blocks, but the validator set can no longer be slashed for any infractions committed on that chain.
-Additional steps are required to completely offboard a consumer chain, such as re-introducing the staking module and removing the provider's validators from the active set.
-More information will be made available in the [Consumer Offboarding Checklist](../consumer-development/offboarding.md).
-:::
+`ConsumerRemovalProposal` is used to remove an existing consumer chain.
+When proposals of this type pass governance, the consumer chain in question will be gracefully removed from Interchain Security and validators will no longer be required to run infrastructure for the specified chain.
 
 Minimal example:
 ```js
@@ -77,15 +71,17 @@ Minimal example:
 }
 ```
 
+After the consumer chain removal, the consumer chain is no longer secured by the provider chain.
+The consumer chain might continue to produce blocks using the last validator set received from the provider.
+However, its validator set can no longer be slashed for any infractions committed on the consumer.
+Additional steps are required to completely offboard a consumer chain, such as re-introducing the staking module and removing the provider's validators from the active set.
+
 ## `ConsumerModificationProposal`
-Proposal type used to change the power shaping parameters of a running consumer chain, as well as to change a Top N running
-consumer chain to an Opt-In chain and vice versa.
 
-When a `ConsumerModificationProposal` passes for a running consumer chain, the consumer chain would change all its
-parameters to the ones passed in the `ConsumerModificationProposal`.
+`ConsumerModificationProposal` is used to change the power shaping parameters of a running consumer chain, as well as to change a Top N running consumer chain to an Opt-In chain and vice versa.
+When proposals of this type pass governance, the consumer chain in question would change all its parameters to the ones passed in the `ConsumerModificationProposal`.
 
-Assume, a `chain-1` is a Top N chain. If the following `ConsumerModificationProposal` passes, then `chain-1` would become
-an Opt-In chain with a 40% validators power cap, a maximum number of 30 validators, and one denylisted validator.
+For example, given `chain-1` is a TopN consumer chain with, if the following `ConsumerModificationProposal` passes, then `chain-1` would become an Opt-In chain with a 40% validators power cap, a maximum number of 30 validators, and one denylisted validator.
 ```js
 {
     "title": "Modify consumer chain",
@@ -108,13 +104,10 @@ from 35 to 40, then the `ConsumerModificationProposal` would still need to inclu
 To be **safe**, always include `top_N` and all the power shaping parameters in your `ConsumerModificationProposal`.
 :::
 
-## ChangeRewardDenomProposal
+## `ChangeRewardDenomProposal`
 
-Proposal type used to mutate the set of denoms accepted by the provider as rewards.
-
-:::tip
-A `ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the `denomsToAdd` or `denomsToRemove` fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
-:::
+`ChangeRewardDenomProposal` is used to update the set of denoms accepted by the provider as rewards.
+Note that a `ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the `denomsToAdd` or `denomsToRemove` fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
 
 Minimal example:
 ```js
@@ -126,10 +119,8 @@ Minimal example:
 }
 ```
 
-:::tip
 Besides native provider denoms (e.g., `uatom` for the Cosmos Hub), please use the `ibc/*` denom trace format.
-For example, for `untrn` transferred over the path `transfer/channel-569`, the denom trace 
-can be queried using the following command:
+For example, for `untrn` transferred over the path `transfer/channel-569`, the denom trace can be queried using the following command:
 ```bash
 > gaiad query ibc-transfer denom-hash transfer/channel-569/untrn
 hash: 0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5
@@ -143,4 +134,3 @@ Then use the resulting hash in the `ChangeRewardDenomProposal`, e.g.,
   "denomsToRemove": []
 }
 ```
-:::

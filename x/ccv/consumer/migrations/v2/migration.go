@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // MigrateConsumerPacketData migrates consumer packet data according to

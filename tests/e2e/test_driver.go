@@ -5,9 +5,10 @@ import (
 	"log"
 	"reflect"
 
-	v4 "github.com/cosmos/interchain-security/v5/tests/e2e/v4"
 	"github.com/kylelemons/godebug/pretty"
 	"golang.org/x/mod/semver"
+
+	v4 "github.com/cosmos/interchain-security/v6/tests/e2e/v4"
 )
 
 // TestCaseDriver knows how different TC can be executed
@@ -79,7 +80,7 @@ func (td *DefaultDriver) getIcsVersion(chainID ChainID) string {
 
 func (td *DefaultDriver) getTargetDriver(chainID ChainID) Chain {
 	target := Chain{
-		testConfig: td.testCfg,
+		testConfig: &td.testCfg,
 	}
 	icsVersion := td.getIcsVersion(chainID)
 	switch icsVersion {
@@ -95,7 +96,7 @@ func (td *DefaultDriver) getTargetDriver(chainID ChainID) Chain {
 		}
 	default:
 		target.target = Commands{
-			containerConfig:  td.testCfg.containerConfig,
+			containerConfig:  &td.testCfg.containerConfig,
 			validatorConfigs: td.testCfg.validatorConfigs,
 			chainConfigs:     td.testCfg.chainConfigs,
 			target:           td.target,
@@ -221,17 +222,22 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.startConsumerEvidenceDetector(action, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
 		target = td.getTargetDriver(action.Chain)
-		if semver.Compare(semver.Major(target.testConfig.providerVersion), "v5") < 0 {
+		version := target.testConfig.providerVersion
+		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
 			target.submitChangeRewardDenomsLegacyProposal(action, td.verbose)
 		} else {
 			target.submitChangeRewardDenomsProposal(action, td.verbose)
 		}
+	case CreateConsumerChainAction:
+		target.createConsumerChain(action, td.verbose)
+	case UpdateConsumerChainAction:
+		target.updateConsumerChain(action, td.verbose)
 	case OptInAction:
-		target.optIn(action, td.target, td.verbose)
+		target.optIn(action, td.verbose)
 	case OptOutAction:
-		target.optOut(action, td.target, td.verbose)
+		target.optOut(action, td.verbose)
 	case SetConsumerCommissionRateAction:
-		target.setConsumerCommissionRate(action, td.target, td.verbose)
+		target.setConsumerCommissionRate(action, td.verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}

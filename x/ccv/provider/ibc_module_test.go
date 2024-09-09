@@ -3,6 +3,7 @@ package provider_test
 import (
 	"testing"
 
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -13,13 +14,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
-	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider"
+	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // TestOnChanOpenInit tests the provider's OnChanOpenInit method against spec.
@@ -96,17 +96,17 @@ func TestOnChanOpenTry(t *testing.T) {
 			"unexpected client ID mapped to chain ID", func(params *params, keeper *providerkeeper.Keeper) {
 				keeper.SetConsumerClientId(
 					params.ctx,
-					"consumerChainID",
-					"invalidClientID",
+					"consumerId",
+					"invalidClientId",
 				)
 			}, false,
 		},
 		{
 			"other CCV channel exists for this consumer chain",
 			func(params *params, keeper *providerkeeper.Keeper) {
-				keeper.SetChainToChannel(
+				keeper.SetConsumerIdToChannelId(
 					params.ctx,
-					"consumerChainID",
+					"consumerId",
 					"some existing channel ID",
 				)
 			}, false,
@@ -122,7 +122,7 @@ func TestOnChanOpenTry(t *testing.T) {
 		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace, keeperParams.StoreKey)
 
 		providerKeeper.SetPort(ctx, ccv.ProviderPortID)
-		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientIDToConsumer")
+		providerKeeper.SetConsumerClientId(ctx, "consumerId", "clientIdToConsumer")
 
 		// Instantiate valid params as default. Individual test cases mutate these as needed.
 		params := params{
@@ -145,9 +145,9 @@ func TestOnChanOpenTry(t *testing.T) {
 			mocks.MockScopedKeeper.EXPECT().ClaimCapability(
 				params.ctx, params.chanCap, host.ChannelCapabilityPath(params.portID, params.channelID)).AnyTimes(),
 			mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionIDToConsumer").Return(
-				conntypes.ConnectionEnd{ClientId: "clientIDToConsumer"}, true,
+				conntypes.ConnectionEnd{ClientId: "clientIdToConsumer"}, true,
 			).AnyTimes(),
-			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientIDToConsumer").Return(
+			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientIdToConsumer").Return(
 				&ibctmtypes.ClientState{ChainId: "consumerChainID"}, true,
 			).AnyTimes(),
 			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, providertypes.ConsumerRewardsPool).Return(&moduleAcct).AnyTimes(),
@@ -170,13 +170,13 @@ func TestOnChanOpenTry(t *testing.T) {
 			require.NoError(t, err)
 			md := &ccv.HandshakeMetadata{}
 			err = md.Unmarshal([]byte(metadata))
-			require.NoError(t, err)
+			require.NoError(t, err, tc.name)
 			require.Equal(t, moduleAcct.BaseAccount.Address, md.ProviderFeePoolAddr,
 				"returned dist account metadata must match expected")
 			require.Equal(t, ccv.Version, md.Version, "returned ccv version metadata must match expected")
 			ctrl.Finish()
 		} else {
-			require.Error(t, err)
+			require.Error(t, err, tc.name)
 		}
 	}
 }
@@ -309,8 +309,10 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		gomock.InOrder(tc.mockExpectations(ctx, mocks)...)
 
 		if tc.setDuplicateChannel {
-			providerKeeper.SetChainToChannel(ctx, "consumerChainID", "existingChannelID")
+			providerKeeper.SetConsumerIdToChannelId(ctx, "consumerChainID", "existingChannelID")
 		}
+
+		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
 
 		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace, keeperParams.StoreKey)
 
@@ -320,11 +322,11 @@ func TestOnChanOpenConfirm(t *testing.T) {
 
 			require.NoError(t, err)
 			// Validate channel mappings
-			channelID, found := providerKeeper.GetChainToChannel(ctx, "consumerChainID")
+			channelID, found := providerKeeper.GetConsumerIdToChannelId(ctx, "consumerChainID")
 			require.True(t, found)
 			require.Equal(t, "channelID", channelID)
 
-			chainID, found := providerKeeper.GetChannelToChain(ctx, "channelID")
+			chainID, found := providerKeeper.GetChannelIdToConsumerId(ctx, "channelID")
 			require.True(t, found)
 			require.Equal(t, "consumerChainID", chainID)
 

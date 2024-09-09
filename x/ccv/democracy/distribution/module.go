@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,7 +18,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 )
 
 var (

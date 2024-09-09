@@ -6,12 +6,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/google/go-cmp/cmp"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
 // an isolated test case for a proposal submission
@@ -27,10 +27,9 @@ var proposalInStateSteps = []Step{
 			ChainID("provi"): ChainState{
 				Proposals: &map[uint]Proposal{
 					1: ConsumerRemovalProposal{
-						Deposit:  10000001,
-						Chain:    ChainID("foo"),
-						StopTime: 0,
-						Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+						Deposit: 10000001,
+						Chain:   ChainID("foo"),
+						Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 					},
 				},
 			},
@@ -116,7 +115,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 					Chain:         ChainID("test"),
 					SpawnTime:     0,
 					InitialHeight: clienttypes.Height{RevisionNumber: 5, RevisionHeight: 5},
-					Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+					Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 				},
 			},
 		}},
@@ -128,7 +127,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 			Proposals: &map[uint]Proposal{
 				1: IBCTransferParamsProposal{
 					Deposit: 10000001,
-					Status:  strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+					Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 					Params:  IBCTransferParams{true, true},
 				},
 			},
@@ -136,10 +135,9 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 		"consumer removal proposal": {ChainState{
 			Proposals: &map[uint]Proposal{
 				5: ConsumerRemovalProposal{
-					Deposit:  10000001,
-					Chain:    ChainID("test123"),
-					StopTime: 5000000000,
-					Status:   strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+					Deposit: 10000001,
+					Chain:   ChainID("test123"),
+					Status:  gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 				},
 			},
 			ValBalances: &map[ValidatorID]uint{
@@ -167,7 +165,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			err := MarshalAndUnmarshalChainState(tc.chainState)
 			if err != nil {
-				t.Fatalf(err.Error())
+				t.Fatalf("MarshalAndUnmarshalChainState: %s", err.Error())
 			}
 		})
 	}
@@ -188,7 +186,7 @@ func MarshalAndUnmarshalChainState(chainState ChainState) error {
 	diff := cmp.Diff(chainState, *got)
 	if diff != "" {
 		log.Print(string(jsonobj))
-		return fmt.Errorf(diff)
+		return fmt.Errorf("marshaled and unmarshaled ChainState don't match, diff=%s", diff)
 	}
 
 	return nil

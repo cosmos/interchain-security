@@ -11,8 +11,8 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 // TestSlashMeterReplenishment tests the CheckForSlashMeterReplenishment, ReplenishSlashMeter,

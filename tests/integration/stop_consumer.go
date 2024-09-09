@@ -1,13 +1,15 @@
 package integration
 
 import (
-	"cosmossdk.io/math"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // Tests the functionality of stopping a consumer chain at a higher level than unit tests
@@ -75,8 +77,8 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *CCVTestSuite) error {
-				providerKeeper.SetSlashAcks(s.providerCtx(), firstBundle.Chain.ChainID, []string{"validator-1", "validator-2", "validator-3"})
-				providerKeeper.AppendPendingVSCPackets(s.providerCtx(), firstBundle.Chain.ChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
+				providerKeeper.SetSlashAcks(s.providerCtx(), firstBundle.ConsumerId, []string{"validator-1", "validator-2", "validator-3"})
+				providerKeeper.AppendPendingVSCPackets(s.providerCtx(), firstBundle.ConsumerId, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
@@ -88,11 +90,12 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}
 
 	// stop the consumer chain
-	err = providerKeeper.StopConsumerChain(s.providerCtx(), firstBundle.Chain.ChainID, true)
+	providerKeeper.SetConsumerPhase(s.providerCtx(), firstBundle.ConsumerId, types.CONSUMER_PHASE_STOPPED)
+	err = providerKeeper.DeleteConsumerChain(s.providerCtx(), firstBundle.ConsumerId)
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
-	s.checkConsumerChainIsRemoved(firstBundle.Chain.ChainID, true)
+	s.checkConsumerChainIsRemoved(firstBundle.ConsumerId, true)
 }
 
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
@@ -105,7 +108,8 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// stop the consumer chain
-	err := providerKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true)
+	providerKeeper.SetConsumerPhase(s.providerCtx(), s.getFirstBundle().ConsumerId, types.CONSUMER_PHASE_STOPPED)
+	err := providerKeeper.DeleteConsumerChain(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NoError(err)
 
 	err = s.path.EndpointA.UpdateClient()
@@ -126,7 +130,7 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	// s.Require().False(found)
 }
 
-func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel bool) {
+func (s *CCVTestSuite) checkConsumerChainIsRemoved(consumerId string, checkChannel bool) {
 	channelID := s.path.EndpointB.ChannelID
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
@@ -136,18 +140,18 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	}
 
 	// verify consumer chain's states are removed
-	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)
+	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), consumerId)
 	s.Require().False(found)
-	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
-	s.Require().False(found)
-
-	_, found = providerKeeper.GetChainToChannel(s.providerCtx(), chainID)
+	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), consumerId)
 	s.Require().False(found)
 
-	_, found = providerKeeper.GetChannelToChain(s.providerCtx(), channelID)
+	_, found = providerKeeper.GetConsumerIdToChannelId(s.providerCtx(), consumerId)
 	s.Require().False(found)
 
-	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))
-	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), chainID))
-	s.Require().Empty(providerKeeper.GetPendingVSCPackets(s.providerCtx(), chainID))
+	_, found = providerKeeper.GetChannelIdToConsumerId(s.providerCtx(), channelID)
+	s.Require().False(found)
+
+	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), consumerId))
+	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), consumerId))
+	s.Require().Empty(providerKeeper.GetPendingVSCPackets(s.providerCtx(), consumerId))
 }

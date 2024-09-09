@@ -119,7 +119,11 @@ Example of a consumer chain addition proposal.
     // the consumer chain.
     "allowlist": [],
     // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
-    "denylist": []
+    "denylist": [],
+    // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+    "min_stake": 0,
+    // Corresponds to whether inactive validators are allowed to validate the consumer chain.
+    "allow_inactive_vals": false
 }
 ```
 

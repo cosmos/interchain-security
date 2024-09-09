@@ -12,8 +12,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/testutil/crypto"
-	"github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/testutil/crypto"
+	"github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {

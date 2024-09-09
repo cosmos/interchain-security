@@ -2,16 +2,18 @@ package integration
 
 import (
 	"slices"
+	"sort"
 	"testing"
 
-	"cosmossdk.io/math"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 	"github.com/stretchr/testify/require"
 
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
+	"cosmossdk.io/math"
 
-	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v5/app/provider"
+	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // we need a stake multiplier because tokens do not directly correspond to voting power
@@ -119,9 +121,19 @@ func TestMinStake(t *testing.T) {
 			lastVals, err := providerKeeper.GetLastBondedValidators(s.providerChain.GetContext())
 			s.Require().NoError(err)
 
+			// Assuming tc.stakedTokens is defined somewhere in your test case
+			// Create a copy of the tc.stakedTokens slice
+			sortedTokens := make([]int64, len(tc.stakedTokens))
+			copy(sortedTokens, tc.stakedTokens)
+
+			// Sort the copied slice in descending order
+			sort.Slice(sortedTokens, func(i, j int) bool {
+				return sortedTokens[i] > sortedTokens[j]
+			})
+
 			for i, val := range lastVals {
 				// check that the initial state was set correctly
-				require.Equal(s.T(), math.NewInt(tc.stakedTokens[i]), val.Tokens)
+				require.Equal(s.T(), math.NewInt(sortedTokens[i]), val.Tokens)
 			}
 
 			// check the validator set on the consumer chain is the original one
@@ -140,7 +152,14 @@ func TestMinStake(t *testing.T) {
 			// adjust parameters
 
 			// set the minStake according to the test case
-			providerKeeper.SetMinStake(s.providerChain.GetContext(), s.consumerChain.ChainID, tc.minStake)
+			err = providerKeeper.SetConsumerPowerShapingParameters(
+				s.providerChain.GetContext(),
+				s.getFirstBundle().ConsumerId,
+				types.PowerShapingParameters{
+					MinStake: tc.minStake,
+				},
+			)
+			s.Require().NoError(err)
 
 			// delegate and undelegate to trigger a vscupdate
 

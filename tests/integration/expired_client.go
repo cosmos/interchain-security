@@ -3,21 +3,22 @@ package integration
 import (
 	"time"
 
-	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+
+	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
-// TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.
+// TestVSCPacketSendExpiredClient tests queueing of VSCPackets when the consumer client is expired.
 // While the consumer client is expired (or inactive for some reason) all packets will be queued and
 // and cleared once the consumer client is established.
 func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
@@ -36,7 +37,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packet was added to the list of pending VSC packets
-	packets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	packets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(1, len(packets), "unexpected number of pending VSC packets")
 
@@ -44,7 +45,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packet is still in the list of pending VSC packets
-	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(1, len(packets), "unexpected number of pending VSC packets")
 
@@ -55,7 +56,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packets are still in the list of pending VSC packets
-	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(2, len(packets), "unexpected number of pending VSC packets")
 
@@ -66,7 +67,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packets are not in the list of pending VSC packets
-	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	packets = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().Empty(packets, "unexpected pending VSC packets found")
 
 	// check that validator updates work
@@ -105,7 +106,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.nextEpoch()
 
 	// check that the packets are not in the list of pending VSC packets
-	providerPackets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+	providerPackets := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 	s.Require().Empty(providerPackets, "pending VSC packets found")
 
 	// relay all VSC packet from provider to consumer
@@ -203,7 +204,7 @@ func expireClient(s *CCVTestSuite, clientTo ChainType) {
 	checkClientExpired(s, clientTo, true)
 }
 
-// checkClientIsExpired checks whether the client to `clientTo` is expired
+// checkClientExpired checks whether the client to `clientTo` is expired
 func checkClientExpired(s *CCVTestSuite, clientTo ChainType, expectedExpired bool) {
 	var hostEndpoint *ibctesting.Endpoint
 	var hostChain *ibctesting.TestChain
