@@ -41,7 +41,7 @@
       - `list-start-proposals` -- query consumer chains start proposals on provider chain.
         - REST: `/interchain_security/ccv/provider/consumer_chain_start_proposals`
 
-      - `list-stop-proposals` -- query chain ids in consumer addition proposal before voting finishes.
+      - `list-stop-proposals` -- consumer chains stop proposals on provider chain.
         - REST: `/interchain_security/ccv/provider/consumer_chain_stop_proposals`
 
       - `list-proposed-consumer-chains` -- query chain ids in consumer addition proposal before voting finishes.
