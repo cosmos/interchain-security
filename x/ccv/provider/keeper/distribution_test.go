@@ -38,7 +38,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		return *val
 	}
 
-	chainID := "consumer"
+	chainID := CONSUMER_CHAIN_ID
 	expTotalPower := int64(0)
 
 	// verify that the total power returned is equal to zero
@@ -76,7 +76,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 
 func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
 	var (
-		chainID    = "consumer"
+		chainID    = CONSUMER_CHAIN_ID
 		ccvChannel = "channel-0"
 	)
 

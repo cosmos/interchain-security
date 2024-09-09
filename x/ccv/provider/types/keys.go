@@ -719,12 +719,12 @@ func RemovalTimeToConsumerIdsKeyPrefix() byte {
 
 // RemovalTimeToConsumerIdsKey returns the key prefix for storing the removal times of consumer chains
 // that are about to be removed
-func RemovalTimeToConsumerIdsKey(spawnTime time.Time) []byte {
+func RemovalTimeToConsumerIdsKey(removalTime time.Time) []byte {
 	return ccvtypes.AppendMany(
 		// append the prefix
 		[]byte{RemovalTimeToConsumerIdsKeyPrefix()},
 		// append the time
-		sdk.FormatTimeBytes(spawnTime),
+		sdk.FormatTimeBytes(removalTime),
 	)
 }
 
