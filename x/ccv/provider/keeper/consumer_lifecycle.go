@@ -518,8 +518,11 @@ func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err err
 	k.DeleteConsumerRemovalTime(ctx, consumerId)
 
 	// TODO (PERMISSIONLESS) add newly-added state to be deleted
+
 	// Note that we do not delete ConsumerIdToChainIdKey and ConsumerIdToPhase, as well
 	// as consumer metadata, initialization and power-shaping parameters.
+	// This is to enable block explorers and front ends to show information of
+	// consumer chains that were removed without needing an archive node.
 
 	k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_DELETED)
 	k.Logger(ctx).Info("consumer chain deleted from provider", "consumerId", consumerId)
