@@ -674,8 +674,6 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context, idxs ...uint64) {
 
 func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
-	// See consistency with PendingDataPacketsV1Key().
 	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsV1KeyPrefix())
 	keysToDel := [][]byte{}
 	defer iterator.Close()
