@@ -183,7 +183,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	// Set minimum height for equivocation evidence from this consumer chain
 	k.SetEquivocationEvidenceMinHeight(ctx, consumerId, initializationRecord.InitialHeight.RevisionHeight)
 
-	// Consumers start out with the unbonding period from the consumer addition prop
+	// Consumers start out with the unbonding period from the initialization parameters
 	consumerUnbondingPeriod := initializationRecord.UnbondingPeriod
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
