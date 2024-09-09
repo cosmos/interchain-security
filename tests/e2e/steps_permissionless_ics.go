@@ -9,7 +9,7 @@ import (
 
 // stepsPermissionlessICS tests
 // - starting multiple permissionless consumer chains with the same chain ID
-// - opt-in of a validator on two different chains with the same chain ID
+// - that a validator CANNOT opt-in on two different chains with the same chain ID
 // - taking ownership of a consumer chain
 func stepsPermissionlessICS() []Step {
 	s := concatSteps(
@@ -39,8 +39,6 @@ func stepsPermissionlessICS() []Step {
 			// - create the consumer chain
 			// - opt-in a validator
 			// - launch the chain
-			// - TODO (PERMISSIONLESS): 'start the chain'. Note: due to hermes we can't yet start two chains with the same ChainID as it's not yet supported
-
 			{
 				Action: CreateConsumerChainAction{
 					Chain:         ChainID("provi"),
