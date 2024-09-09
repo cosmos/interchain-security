@@ -330,6 +330,8 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
+	// note that providerFeePoolAddrStr is sent to the consumer during the IBC Channel handshake;
+	// see HandshakeMetadata in OnChanOpenTry on the provider-side, and OnChanOpenAck on the consumer-side
 	consumerGenesisParams := ccv.NewParams(
 		true,
 		initializationRecord.BlocksPerDistributionTransmission,
