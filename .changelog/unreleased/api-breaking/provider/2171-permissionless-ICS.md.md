@@ -36,7 +36,13 @@
       - `all-pairs-valconsensus-address [consumer-id]` -- query all pairs of valconsensus address by consumer id.
         - REST: `/interchain_security/ccv/provider/address_pairs/{consumer_id}`
 
-  - Deprecate the following queries and all the legacy governance proposals:
+  - Deprecate the following transactions, queries and all legacy governance proposals:
+
+    - **Transactions:**
+      - [MsgConsumerAddition](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L121) -- deprecated in favor of [MsgCreateConsumer](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L360)
+      - [MsgConsumerRemoval](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L206) -- deprecated in favor of [MsgRemoveConsumer](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L225)
+      - [MsgConsumerModification](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L) -- deprecated in favor of [MsgUpdateConsumer](https://github.com/cosmos/interchain-security/blob/a17a3851b5eb3cec515b711dceae0afe9c14c3f0/proto/interchain_security/ccv/provider/v1/tx.proto#L383)
+
     - **Queries:**
       - `list-start-proposals` -- query consumer chains start proposals on provider chain.
         - REST: `/interchain_security/ccv/provider/consumer_chain_start_proposals`
