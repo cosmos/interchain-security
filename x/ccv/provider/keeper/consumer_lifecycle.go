@@ -60,7 +60,7 @@ func (k Keeper) InitializeConsumer(ctx sdk.Context, consumerId string) (time.Tim
 	return initializationParameters.SpawnTime, true
 }
 
-// BeginBlockLaunchConsumers launches initialized consumers that are ready to launch
+// BeginBlockLaunchConsumers launches initialized consumers chains for which the spawn time has passed
 func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
 	consumerIds, err := k.ConsumeIdsFromTimeQueue(
 		ctx,
@@ -401,7 +401,7 @@ func (k Keeper) StopAndPrepareForConsumerRemoval(ctx sdk.Context, consumerId str
 	return nil
 }
 
-// BeginBlockRemoveConsumers iterates over the pending consumer proposals and stop/removes the chain if the removal time has passed
+// BeginBlockRemoveConsumers removes stopped consumer chain for which the removal time has passed
 func (k Keeper) BeginBlockRemoveConsumers(ctx sdk.Context) error {
 	consumerIds, err := k.ConsumeIdsFromTimeQueue(
 		ctx,
