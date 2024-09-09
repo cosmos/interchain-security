@@ -172,6 +172,7 @@ func (tr *Chain) startChain(
 		cometmockArg = "false"
 	}
 
+	chainHome := string(action.Chain)
 	startChainScript := tr.target.GetTestScriptPath(action.IsConsumer, "start-chain.sh")
 	cmd := tr.target.ExecCommand("/bin/bash",
 		startChainScript, chainConfig.BinaryName, string(vals),
@@ -183,6 +184,7 @@ func (tr *Chain) startChain(
 		// with short timeout_commit (eg. timeout_commit = 1s) some nodes may miss blocks causing the test run to fail
 		tr.testConfig.tendermintConfigOverride,
 		cometmockArg,
+		chainHome,
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -311,7 +313,7 @@ func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bo
 		InitializationParameters: &initParams,
 		PowerShapingParameters:   &powerShapingParams,
 	}
-	tr.UpdateConsumer(action.Chain, action.From, msg)
+	tr.UpdateConsumer(action.Chain, action.From, msg, verbose)
 }
 
 type CreateConsumerChainAction struct {
@@ -333,6 +335,13 @@ type CreateConsumerChainAction struct {
 // createConsumerChain creates and initializes a consumer chain
 func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bool) {
 	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
+	consumerChainCfg := tr.testConfig.chainConfigs[action.ConsumerChain]
+	providerChainCfg := tr.testConfig.chainConfigs[action.Chain]
+
+	if consumerChainCfg.ConsumerId != "" {
+		log.Fatalf("consumer chain already created for '%s'", action.ConsumerChain)
+	}
+
 	params := ccvtypes.DefaultParams()
 	initParams := types.ConsumerInitializationParameters{
 		InitialHeight: action.InitialHeight,
@@ -360,16 +369,20 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 	}
 
 	metadata := types.ConsumerMetadata{
-		Name:        "chain name of " + string(action.Chain),
+		Name:        "chain name of " + string(consumerChainCfg.ChainId),
 		Description: "no description",
 		Metadata:    "no metadata",
 	}
 
 	// create consumer to get a consumer-id
-	consumerId := tr.CreateConsumer(action.Chain, action.ConsumerChain, action.From, metadata, &initParams, &powerShapingParams)
+	consumerId := tr.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, metadata, &initParams, &powerShapingParams)
 	if verbose {
-		fmt.Println("Create consumer chain", string(action.ConsumerChain), " with consumer-id", string(consumerId))
+		fmt.Println("Created consumer chain", string(consumerChainCfg.ChainId), " with consumer-id", string(consumerId))
 	}
+
+	// Set the new created consumer-id on the chain's config
+	consumerChainCfg.ConsumerId = consumerId
+	tr.testConfig.chainConfigs[action.ConsumerChain] = consumerChainCfg
 }
 
 type SubmitConsumerAdditionProposalAction struct {
@@ -390,7 +403,7 @@ type SubmitConsumerAdditionProposalAction struct {
 	AllowInactiveVals   bool
 }
 
-func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, update types.MsgUpdateConsumer) {
+func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, update types.MsgUpdateConsumer, verbose bool) {
 	content, err := json.Marshal(update)
 	if err != nil {
 		log.Fatal("failed marshalling MsgUpdateConsumer: ", err.Error())
@@ -419,7 +432,8 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("update consumer failed ", "error: ", err, "output: ", string(bz))
+		fmt.Println("command failed: ", cmd)
+		log.Fatal("update consumer failed error: %w, output: %s", err, string(bz))
 	}
 
 	// Check transaction
@@ -432,14 +446,19 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 	if txResponse.Code != 0 {
 		log.Fatalf("sending update-consumer transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
 	}
+
+	if verbose {
+		fmt.Println("running 'update-consumer' returned: ", txResponse)
+	}
+
 	tr.waitBlocks(providerChain, 2, 10*time.Second)
 }
 
 // CreateConsumer creates a consumer chain and returns its consumer-id
 func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID, metadata types.ConsumerMetadata, initParams *types.ConsumerInitializationParameters, powerShapingParams *types.PowerShapingParameters) ConsumerID {
-	chainID := string(tr.testConfig.chainConfigs[consumerChain].ChainId)
+
 	msg := types.MsgCreateConsumer{
-		ChainId:                  chainID,
+		ChainId:                  string(consumerChain),
 		Metadata:                 metadata,
 		InitializationParameters: initParams,
 		PowerShapingParameters:   powerShapingParams,
@@ -522,19 +541,7 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 		log.Fatalf("no consumer-id found in consumer creation transaction events for chain '%s'. events: %v", consumerChain, txResponse.Events)
 	}
 
-	cfg, exists := tr.testConfig.chainConfigs[e2e.ChainID(chainID)]
-	if !exists {
-		log.Fatal("no chain config found for consumer chain", chainID)
-	}
-	if cfg.ConsumerId != "" && cfg.ConsumerId != e2e.ConsumerID(consumerId) {
-		log.Fatalf("chain '%s'registered already with a different consumer ID '%s'", chainID, consumerId)
-	}
-
-	// Set the new created consumer-id on the chain's config
-	cfg.ConsumerId = e2e.ConsumerID(consumerId)
-	tr.testConfig.chainConfigs[e2e.ChainID(chainID)] = cfg
-
-	return e2e.ConsumerID(consumerId)
+	return ConsumerID(consumerId)
 }
 
 // submitConsumerAdditionProposal initializes a consumer chain and submits a governance proposal
@@ -544,6 +551,8 @@ func (tr Chain) submitConsumerAdditionProposal(
 ) {
 	params := ccvtypes.DefaultParams()
 	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
+	consumerChainCfg := tr.testConfig.chainConfigs[action.ConsumerChain]
+	providerChainCfg := tr.testConfig.chainConfigs[action.Chain]
 
 	Metadata := types.ConsumerMetadata{
 		Name:        "chain " + string(action.Chain),
@@ -566,8 +575,11 @@ func (tr Chain) submitConsumerAdditionProposal(
 		DistributionTransmissionChannel:   action.DistributionChannel,
 	}
 
-	consumerId := tr.CreateConsumer(action.Chain, action.ConsumerChain, action.From, Metadata, nil, nil)
+	consumerId := tr.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, Metadata, nil, nil)
 	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	// Set the new created consumer-id on the chain's config
+	consumerChainCfg.ConsumerId = consumerId
+	tr.testConfig.chainConfigs[action.ConsumerChain] = consumerChainCfg
 
 	// Update consumer to change owner to governance before submitting the proposal
 	update := &types.MsgUpdateConsumer{
@@ -585,7 +597,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 		AllowInactiveVals:  action.AllowInactiveVals,
 	}
 	update.PowerShapingParameters = &powerShapingParameters
-	tr.UpdateConsumer(action.Chain, action.From, *update)
+	tr.UpdateConsumer(action.Chain, action.From, *update, verbose)
 
 	// - set PowerShaping params TopN > 0 for consumer chain
 	update.PowerShapingParameters.Top_N = action.TopN
@@ -618,10 +630,10 @@ func (tr Chain) submitConsumerAdditionProposal(
 		tr.testConfig.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-proposal", proposalFile,
 		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--chain-id`, string(providerChainCfg.ChainId),
+		`--home`, tr.getValidatorHome(providerChainCfg.ChainId, action.From),
 		`--gas`, `900000`,
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--node`, tr.getValidatorNode(providerChainCfg.ChainId, action.From),
 		`--keyring-backend`, `test`,
 		`-o json`,
 		`-y`,
@@ -651,7 +663,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(action.Chain, 2, 10*time.Second)
+	tr.waitBlocks(providerChainCfg.ChainId, 2, 10*time.Second)
 }
 
 func (tr Chain) submitConsumerAdditionLegacyProposal(
@@ -2885,8 +2897,10 @@ func (tr Chain) startConsumerEvidenceDetector(
 }
 
 type OptInAction struct {
-	Chain     ChainID
-	Validator ValidatorID
+	Chain         ChainID
+	Validator     ValidatorID
+	ExpectError   bool
+	ExpectedError string
 }
 
 func (tr Chain) optIn(action OptInAction, verbose bool) {
@@ -2919,13 +2933,20 @@ func (tr Chain) optIn(action OptInAction, verbose bool) {
 	}
 
 	bz, err := cmd.CombinedOutput()
-	if err != nil {
+	if err != nil && !action.ExpectError {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	if !tr.testConfig.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+	if action.ExpectError && !tr.testConfig.useCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if err != nil && verbose {
 			fmt.Printf("got error during opt in | err: %s | output: %s \n", err, string(bz))
+		}
+		if err == nil || !strings.Contains(string(bz), action.ExpectedError) {
+			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.ExpectedError, (bz))
+		}
+
+		if verbose {
+			fmt.Printf("got expected error during key assignment | err: %s | output: %s \n", err, string(bz))
 		}
 	}
 

@@ -72,7 +72,7 @@ func (res *TestResult) Error() {
 func (tr *TestRunner) Run() error {
 	tr.result = TestResult{}
 	tr.result.Started()
-	fmt.Printf("\n\n=============== running %s ===============\n", tr.config.name)
+	fmt.Printf("\n\n=============== running %s ===============\n", tr.stepChoice.name)
 	fmt.Println(tr.Info())
 	err := tr.checkConfig()
 	if err != nil {
@@ -131,11 +131,11 @@ func CreateTestRunner(config TestConfig, stepChoice StepChoice, target Execution
 // Info returns a header string containing useful information about the test runner
 func (tr *TestRunner) Info() string {
 	return fmt.Sprintf(`
-------------------------------------------
+-------------------------------------------------
 Test name : %s
 Config: %s
 Target: %s
-------------------------------------------`,
+-------------------------------------------------`,
 		tr.stepChoice.name,
 		tr.config.name,
 		tr.target.Info(),
@@ -144,7 +144,7 @@ Target: %s
 
 func (tr *TestRunner) Report() string {
 	return fmt.Sprintf(`
-------------------------------------------
+-------------------------------------------------
 Test name : %s
 Config: %s
 Target: %s
@@ -152,7 +152,7 @@ Target: %s
 - Result: %s
 - Duration: %s
 - StartTime: %s
-------------------------------------------`,
+-------------------------------------------------`,
 		tr.stepChoice.name,
 		tr.config.name,
 		tr.target.Info(),
