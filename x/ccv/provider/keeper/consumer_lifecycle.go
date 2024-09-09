@@ -186,7 +186,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	// Consumers start out with the unbonding period from the initialization parameters
 	consumerUnbondingPeriod := initializationRecord.UnbondingPeriod
 
-	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
+	// Create client state by getting template client from initialization parameters
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = chainId
 	clientState.LatestHeight = initializationRecord.InitialHeight
