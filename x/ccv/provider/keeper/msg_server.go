@@ -386,11 +386,6 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 		return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
 			"cannot set consumer initialization parameters: %s", err.Error())
 	}
-	if !initializationParameters.SpawnTime.IsZero() {
-		// add SpawnTime event attribute
-		eventAttributes = append(eventAttributes,
-			sdk.NewAttribute(types.AttributeConsumerSpawnTime, initializationParameters.SpawnTime.String()))
-	}
 
 	// power-shaping parameters are optional and hence could be nil;
 	// in that case, set the default
@@ -413,6 +408,10 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
 		}
+
+		// add SpawnTime event attribute
+		eventAttributes = append(eventAttributes,
+			sdk.NewAttribute(types.AttributeConsumerSpawnTime, initializationParameters.SpawnTime.String()))
 	}
 
 	// add Phase event attribute
@@ -508,12 +507,6 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
 				"cannot set consumer initialization parameters: %s", err.Error())
 		}
-
-		if !msg.InitializationParameters.SpawnTime.IsZero() {
-			// add SpawnTime event attribute
-			eventAttributes = append(eventAttributes,
-				sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
-		}
 	}
 
 	if msg.PowerShapingParameters != nil {
@@ -569,6 +562,10 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
 		}
+
+		// add SpawnTime event attribute
+		eventAttributes = append(eventAttributes,
+			sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
 	}
 
 	// add Owner event attribute
