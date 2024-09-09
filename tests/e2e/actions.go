@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	evidencetypes "cosmossdk.io/x/evidence/types"
+
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
@@ -2872,16 +2874,53 @@ type StartConsumerEvidenceDetectorAction struct {
 
 func (tr Chain) startConsumerEvidenceDetector(
 	action StartConsumerEvidenceDetectorAction,
+	useRelayer bool,
 	verbose bool,
 ) {
 	chainConfig := tr.testConfig.chainConfigs[action.Chain]
-	// run in detached mode so it will keep running in the background
-	bz, err := tr.target.ExecDetachedCommand(
-		"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+	// the Hermes doesn't support evidence handling for Permissionless ICS yet
+	// TODO: @Simon refactor once https://github.com/informalsystems/hermes/pull/4182 is merged.
+	if useRelayer {
+		// run in detached mode so it will keep running in the background
+		bz, err := tr.target.ExecDetachedCommand(
+			"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+		tr.waitBlocks("provi", 10, 2*time.Minute)
 	}
-	tr.waitBlocks("provi", 10, 2*time.Minute)
+
+	// Get the evidence' infraction height by querying the SDK evidence module
+	// state on the consumer
+	queryEv := fmt.Sprintf(
+		`%s q evidence list %s --node %s -o json`,
+		tr.testConfig.chainConfigs[ChainID("consu")].BinaryName,
+		tr.target.GetQueryNodeRPCAddress(ChainID("consu")),
+	)
+
+	cmd := tr.target.ExecCommand(
+		"/bin/bash", "-c",
+		queryEv,
+	)
+
+	if verbose {
+		fmt.Println("queryEv cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		panic(err)
+	}
+
+	ev := evidencetypes.Equivocation{}
+
+	err = json.Unmarshal(bz, &ev)
+	if err != nil {
+		log.Fatalf("unmarshalling tx containing create-consumer: %s, json: %s", err.Error(), string(bz))
+	}
+
+	fmt.Println(ev.String())
+
 }
 
 type OptInAction struct {
