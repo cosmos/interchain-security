@@ -91,7 +91,7 @@ func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
 }
 
 // ConsumeIdsFromTimeQueue returns from a time queue the consumer ids for which the associated time passed.
-// The number of ids return is limited to 'limit'. The ids returns are removed from the time queue.
+// The number of ids return is limited to 'limit'. The ids returned are removed from the time queue.
 func (k Keeper) ConsumeIdsFromTimeQueue(
 	ctx sdk.Context,
 	timeQueueKeyPrefix byte,
