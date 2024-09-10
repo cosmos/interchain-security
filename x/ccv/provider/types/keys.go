@@ -680,14 +680,14 @@ func ConsumerIdToPowerShapingParametersKey(consumerId string) []byte {
 	return StringIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPowerShapingParameters), consumerId)
 }
 
-// ConsumerIdToPhaseKey returns the key used to store the phase that corresponds to this consumer id
-func ConsumerIdToPhaseKey(consumerId string) []byte {
-	return StringIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPhaseKeyName), consumerId)
-}
-
 // ConsumerIdToPhaseKeyPrefix returns the key prefix used to iterate over all the consumer ids and their phases.
 func ConsumerIdToPhaseKeyPrefix() byte {
 	return mustGetKeyPrefix(ConsumerIdToPhaseKeyName)
+}
+
+// ConsumerIdToPhaseKey returns the key used to store the phase that corresponds to this consumer id
+func ConsumerIdToPhaseKey(consumerId string) []byte {
+	return StringIdWithLenKey(ConsumerIdToPhaseKeyPrefix(), consumerId)
 }
 
 // ConsumerIdToRemovalTimeKeyPrefix returns the key prefix for storing the removal times of consumer chains
