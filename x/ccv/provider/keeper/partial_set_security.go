@@ -6,6 +6,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -471,4 +472,183 @@ func (k Keeper) HasMinPower(ctx sdk.Context, providerAddr types.ProviderConsAddr
 	}
 
 	return power >= minPower
+}
+
+// IsValidatorOptedInToChainId checks if the validator with `providerAddr` is opted into the chain with the specified `chainId`.
+// It returns `found == true` and the corresponding chain's `consumerId` if the validator is opted in. Otherwise, it returns an empty string
+// for `consumerId` and `found == false`.
+func (k Keeper) IsValidatorOptedInToChainId(ctx sdk.Context, providerAddr types.ProviderConsAddress, chainId string) (string, bool) {
+	consumers, err := k.GetOptedInConsumerIds(ctx, providerAddr)
+	if err != nil {
+		k.Logger(ctx).Error("failed to retrieve the consumer ids this validator is opted in to",
+			"providerAddr", providerAddr,
+			"error", err)
+		return "", false
+	}
+
+	for _, consumerId := range consumers.Ids {
+		consumerChainId, err := k.GetConsumerChainId(ctx, consumerId)
+		if err != nil {
+			k.Logger(ctx).Error("cannot find chain id",
+				"consumerId", consumerId,
+				"error", err)
+			continue
+		}
+
+		if consumerChainId == chainId {
+			return consumerId, true
+		}
+
+	}
+	return "", false
+}
+
+//
+// Setters and getters
+//
+
+func (k Keeper) SetOptedIn(
+	ctx sdk.Context,
+	consumerId string,
+	providerConsAddress types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.OptedInKey(consumerId, providerConsAddress), []byte{})
+}
+
+func (k Keeper) DeleteOptedIn(
+	ctx sdk.Context,
+	consumerId string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.OptedInKey(consumerId, providerAddr))
+}
+
+func (k Keeper) IsOptedIn(
+	ctx sdk.Context,
+	consumerId string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Get(types.OptedInKey(consumerId, providerAddr)) != nil
+}
+
+// GetAllOptedIn returns all the opted-in validators on chain `consumerId`
+func (k Keeper) GetAllOptedIn(
+	ctx sdk.Context,
+	consumerId string,
+) (providerConsAddresses []types.ProviderConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.StringIdWithLenKey(types.OptedInKeyPrefix(), consumerId)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerConsAddresses = append(providerConsAddresses, types.NewProviderConsAddress(iterator.Key()[len(key):]))
+	}
+
+	return providerConsAddresses
+}
+
+// DeleteAllOptedIn deletes all the opted-in validators for chain with `consumerId`
+func (k Keeper) DeleteAllOptedIn(
+	ctx sdk.Context,
+	consumerId string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.StringIdWithLenKey(types.OptedInKeyPrefix(), consumerId)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
+
+	var keysToDel [][]byte
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, delKey := range keysToDel {
+		store.Delete(delKey)
+	}
+}
+
+// GetOptedInConsumerIds returns all the consumer ids where the given validator is opted in
+func (k Keeper) GetOptedInConsumerIds(ctx sdk.Context, providerAddr types.ProviderConsAddress) (types.ConsumerIds, error) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ProviderConsAddrToOptedInConsumerIdsKey(providerAddr))
+	if bz == nil {
+		return types.ConsumerIds{}, nil
+	}
+
+	var consumerIds types.ConsumerIds
+	if err := consumerIds.Unmarshal(bz); err != nil {
+		return types.ConsumerIds{}, fmt.Errorf("failed to unmarshal consumer ids: %w", err)
+	}
+
+	return consumerIds, nil
+}
+
+// AppendOptedInConsumerId appends given consumer id to the list of consumers that validator has opted in
+// TODO (PERMISSIONLESS) -- combine it with SetOptedIn
+func (k Keeper) AppendOptedInConsumerId(ctx sdk.Context, providerAddr types.ProviderConsAddress, consumerId string) error {
+	store := ctx.KVStore(k.storeKey)
+
+	consumers, err := k.GetOptedInConsumerIds(ctx, providerAddr)
+	if err != nil {
+		return err
+	}
+
+	consumersWithAppend := types.ConsumerIds{
+		Ids: append(consumers.Ids, consumerId),
+	}
+
+	bz, err := consumersWithAppend.Marshal()
+	if err != nil {
+		return err
+	}
+
+	store.Set(types.ProviderConsAddrToOptedInConsumerIdsKey(providerAddr), bz)
+	return nil
+}
+
+// RemoveOptedInConsumerId removes the consumer id from this validator because it is not opted in anymore
+func (k Keeper) RemoveOptedInConsumerId(ctx sdk.Context, providerAddr types.ProviderConsAddress, consumerId string) error {
+	store := ctx.KVStore(k.storeKey)
+
+	consumers, err := k.GetOptedInConsumerIds(ctx, providerAddr)
+	if err != nil {
+		return err
+	}
+
+	if len(consumers.Ids) == 0 {
+		return fmt.Errorf("no consumer ids found for this provviderAddr: %s", providerAddr.String())
+	}
+
+	// find the index of the consumer we want to remove
+	index := -1
+	for i := 0; i < len(consumers.Ids); i++ {
+		if consumers.Ids[i] == consumerId {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return fmt.Errorf("failed to find consumer id (%s)", consumerId)
+	}
+
+	if len(consumers.Ids) == 1 {
+		store.Delete(types.ProviderConsAddrToOptedInConsumerIdsKey(providerAddr))
+		return nil
+	}
+
+	consumersWithRemoval := types.ConsumerIds{
+		Ids: append(consumers.Ids[:index], consumers.Ids[index+1:]...),
+	}
+
+	bz, err := consumersWithRemoval.Marshal()
+	if err != nil {
+		return err
+	}
+
+	store.Set(types.ProviderConsAddrToOptedInConsumerIdsKey(providerAddr), bz)
+	return nil
 }
