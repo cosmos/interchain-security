@@ -177,10 +177,6 @@ Example:
 				return err
 			}
 
-			// if err := json.Unmarshal(evidenceJson, &ev); err != nil {
-			// 	return fmt.Errorf("duplicate vote evidence unmarshalling failed: %s", err)
-			// }
-
 			ev := tmproto.DuplicateVoteEvidence{}
 			if err := cdc.UnmarshalJSON(evidenceJson, &ev); err != nil {
 				return fmt.Errorf("duplicate vote evidence unmarshalling failed: %s", err)
