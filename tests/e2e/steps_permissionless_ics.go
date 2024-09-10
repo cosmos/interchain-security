@@ -11,6 +11,7 @@ import (
 // - starting multiple permissionless consumer chains with the same chain ID
 // - that a validator CANNOT opt-in on two different chains with the same chain ID
 // - taking ownership of a consumer chain
+// - TopN to permissionless chain transformation
 func stepsPermissionlessICS() []Step {
 	s := concatSteps(
 		[]Step{
