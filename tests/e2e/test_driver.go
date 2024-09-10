@@ -219,7 +219,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case UpdateLightClientAction:
 		target.updateLightClient(action, td.verbose)
 	case StartConsumerEvidenceDetectorAction:
-		target.startConsumerEvidenceDetector(action, td.verbose)
+		target.startConsumerEvidenceDetector(action, false, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
 		target = td.getTargetDriver(action.Chain)
 		version := target.testConfig.providerVersion

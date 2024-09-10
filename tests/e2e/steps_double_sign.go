@@ -89,7 +89,8 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 		// and jail and slashing of bob on the provider
 		{
 			Action: StartConsumerEvidenceDetectorAction{
-				Chain: ChainID(consumerName),
+				Chain:     ChainID(consumerName),
+				Submitter: ValidatorID("bob"),
 			},
 			State: State{
 				ChainID(providerName): ChainState{
