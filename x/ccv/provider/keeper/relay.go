@@ -251,7 +251,10 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
 		}
 
-		nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
+		nextValidators, err := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
+		if err != nil {
+			return fmt.Errorf("computing next validators, consumerId(%s), minPower(%d): %w", consumerId, minPower, err)
+		}
 
 		valUpdates := DiffValidators(currentValidators, nextValidators)
 		err = k.SetConsumerValSet(ctx, consumerId, nextValidators)

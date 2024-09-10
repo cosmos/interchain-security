@@ -168,8 +168,8 @@ func (k Keeper) FilterValidators(
 	ctx sdk.Context,
 	consumerId string,
 	bondedValidators []stakingtypes.Validator,
-	predicate func(providerAddr types.ProviderConsAddress) bool,
-) []types.ConsensusValidator {
+	predicate func(providerAddr types.ProviderConsAddress) (bool, error),
+) ([]types.ConsensusValidator, error) {
 	var nextValidators []types.ConsensusValidator
 	for _, val := range bondedValidators {
 		consAddr, err := val.GetConsAddr()
@@ -177,21 +177,20 @@ func (k Keeper) FilterValidators(
 			continue
 		}
 
-		if predicate(types.NewProviderConsAddress(consAddr)) {
+		ok, err := predicate(types.NewProviderConsAddress(consAddr))
+		if err != nil {
+			return nextValidators, err
+		}
+		if ok {
 			nextValidator, err := k.CreateConsumerValidator(ctx, consumerId, val)
 			if err != nil {
-				// this should never happen but is recoverable if we exclude this validator from the next validator set
-				k.Logger(ctx).Error("could not create consumer validator",
-					"validator", val.GetOperator(),
-					"error", err)
-				continue
+				return nextValidators, err
 			}
-
 			nextValidators = append(nextValidators, nextValidator)
 		}
 	}
 
-	return nextValidators
+	return nextValidators, nil
 }
 
 // ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
@@ -201,7 +200,7 @@ func (k Keeper) ComputeNextValidators(
 	bondedValidators []stakingtypes.Validator,
 	powerShapingParameters types.PowerShapingParameters,
 	minPowerToOptIn int64,
-) []types.ConsensusValidator {
+) ([]types.ConsensusValidator, error) {
 	// sort the bonded validators by number of staked tokens in descending order
 	sort.Slice(bondedValidators, func(i, j int) bool {
 		return bondedValidators[i].GetBondedTokens().GT(bondedValidators[j].GetBondedTokens())
@@ -217,14 +216,27 @@ func (k Keeper) ComputeNextValidators(
 		}
 	}
 
-	nextValidators := k.FilterValidators(ctx, consumerId, bondedValidators,
-		func(providerAddr types.ProviderConsAddress) bool {
-			return k.CanValidateChain(ctx, consumerId, providerAddr, powerShapingParameters.Top_N, minPowerToOptIn) &&
-				k.FulfillsMinStake(ctx, powerShapingParameters.MinStake, providerAddr)
+	nextValidators, err := k.FilterValidators(ctx, consumerId, bondedValidators,
+		func(providerAddr types.ProviderConsAddress) (bool, error) {
+			canValidateChain, err := k.CanValidateChain(ctx, consumerId, providerAddr, powerShapingParameters.Top_N, minPowerToOptIn)
+			if err != nil {
+				return false, err
+			}
+			fulfillsMinStake, err := k.FulfillsMinStake(ctx, powerShapingParameters.MinStake, providerAddr)
+			if err != nil {
+				return false, err
+			}
+			return canValidateChain && fulfillsMinStake, nil
 		})
+	if err != nil {
+		return []types.ConsensusValidator{}, err
+	}
 
 	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, nextValidators)
-	return k.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, nextValidators)
+
+	nextValidators = k.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, nextValidators)
+
+	return nextValidators, nil
 }
 
 // GetLastBondedValidators iterates the last validator powers in the staking module
