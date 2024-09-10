@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -191,6 +192,39 @@ func (k Keeper) FilterValidators(
 	}
 
 	return nextValidators
+}
+
+// ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
+func (k Keeper) ComputeNextValidators(
+	ctx sdk.Context,
+	consumerId string,
+	bondedValidators []stakingtypes.Validator,
+	powerShapingParameters types.PowerShapingParameters,
+	minPowerToOptIn int64,
+) []types.ConsensusValidator {
+	// sort the bonded validators by number of staked tokens in descending order
+	sort.Slice(bondedValidators, func(i, j int) bool {
+		return bondedValidators[i].GetBondedTokens().GT(bondedValidators[j].GetBondedTokens())
+	})
+
+	// if inactive validators are not allowed, only consider the first `MaxProviderConsensusValidators` validators
+	// since those are the ones that participate in consensus
+	if !powerShapingParameters.AllowInactiveVals {
+		// only leave the first MaxProviderConsensusValidators bonded validators
+		maxProviderConsensusVals := k.GetMaxProviderConsensusValidators(ctx)
+		if len(bondedValidators) > int(maxProviderConsensusVals) {
+			bondedValidators = bondedValidators[:maxProviderConsensusVals]
+		}
+	}
+
+	nextValidators := k.FilterValidators(ctx, consumerId, bondedValidators,
+		func(providerAddr types.ProviderConsAddress) bool {
+			return k.CanValidateChain(ctx, consumerId, providerAddr, powerShapingParameters.Top_N, minPowerToOptIn) &&
+				k.FulfillsMinStake(ctx, powerShapingParameters.MinStake, providerAddr)
+		})
+
+	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, nextValidators)
+	return k.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, nextValidators)
 }
 
 // GetLastBondedValidators iterates the last validator powers in the staking module
