@@ -37,13 +37,6 @@ func TestHandleOptIn(t *testing.T) {
 	err := providerKeeper.HandleOptIn(ctx, CONSUMER_ID, providerAddr, "")
 	require.NoError(t, err)
 	require.True(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, providerAddr))
-
-	// validator tries to opt in to another chain with chain id ("chainId") while it is already opted in to
-	// a different chain with the same chain id
-	providerKeeper.SetConsumerPhase(ctx, "consumerId2", providertypes.CONSUMER_PHASE_INITIALIZED)
-	providerKeeper.SetConsumerChainId(ctx, "consumerId2", "chainId")
-	err = providerKeeper.HandleOptIn(ctx, "consumerId2", providerAddr, "")
-	require.ErrorContains(t, err, "validator is already opted in to a chain")
 }
 
 func TestHandleOptInWithConsumerKey(t *testing.T) {
@@ -115,8 +108,6 @@ func TestHandleOptOut(t *testing.T) {
 	// if validator (`providerAddr`) is already opted in, then an opt-out would remove this validator
 	providerKeeper.SetOptedIn(ctx, consumerId, providerAddr)
 	require.True(t, providerKeeper.IsOptedIn(ctx, consumerId, providerAddr))
-	err = providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, consumerId)
-	require.NoError(t, err)
 	err = providerKeeper.HandleOptOut(ctx, consumerId, providerAddr)
 	require.NoError(t, err)
 	require.False(t, providerKeeper.IsOptedIn(ctx, consumerId, providerAddr))
@@ -159,17 +150,9 @@ func TestHandleOptOutFromTopNChain(t *testing.T) {
 
 	// opt in all validators
 	providerKeeper.SetOptedIn(ctx, consumerId, providertypes.NewProviderConsAddress(valAConsAddr))
-	err = providerKeeper.AppendOptedInConsumerId(ctx, providertypes.NewProviderConsAddress(valAConsAddr), consumerId)
-	require.NoError(t, err)
 	providerKeeper.SetOptedIn(ctx, consumerId, providertypes.NewProviderConsAddress(valBConsAddr))
-	err = providerKeeper.AppendOptedInConsumerId(ctx, providertypes.NewProviderConsAddress(valBConsAddr), consumerId)
-	require.NoError(t, err)
 	providerKeeper.SetOptedIn(ctx, consumerId, providertypes.NewProviderConsAddress(valCConsAddr))
-	err = providerKeeper.AppendOptedInConsumerId(ctx, providertypes.NewProviderConsAddress(valCConsAddr), consumerId)
-	require.NoError(t, err)
 	providerKeeper.SetOptedIn(ctx, consumerId, providertypes.NewProviderConsAddress(valDConsAddr))
-	err = providerKeeper.AppendOptedInConsumerId(ctx, providertypes.NewProviderConsAddress(valDConsAddr), consumerId)
-	require.NoError(t, err)
 
 	// validators A and B can opt out because they belong the bottom 30% of validators
 	require.NoError(t, providerKeeper.HandleOptOut(ctx, consumerId, providertypes.NewProviderConsAddress(valAConsAddr)))
@@ -315,76 +298,4 @@ func TestOptedIn(t *testing.T) {
 	providerKeeper.DeleteAllOptedIn(ctx, CONSUMER_ID)
 	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
 	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator2))
-}
-
-// TestOptedInConsumerIds tests the `GetOptedInConsumerIds`, `AppendOptedInConsumerId`, and `RemoveOptedInConsumerId` methods
-func TestGetOptedInConsumerIds(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
-	consumers, err := providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
-	require.NoError(t, err)
-	require.Empty(t, consumers)
-
-	err = providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, "consumerId1")
-	require.NoError(t, err)
-	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
-	require.NoError(t, err)
-	require.Equal(t, providertypes.ConsumerIds{
-		Ids: []string{"consumerId1"},
-	}, consumers)
-
-	err = providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, "consumerId2")
-	require.NoError(t, err)
-	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
-	require.NoError(t, err)
-	require.Equal(t, providertypes.ConsumerIds{
-		Ids: []string{"consumerId1", "consumerId2"},
-	}, consumers)
-
-	err = providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, "consumerId3")
-	require.NoError(t, err)
-	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
-	require.NoError(t, err)
-	require.Equal(t, providertypes.ConsumerIds{
-		Ids: []string{"consumerId1", "consumerId2", "consumerId3"},
-	}, consumers)
-
-	// remove all the consumer ids
-	err = providerKeeper.RemoveOptedInConsumerId(ctx, providerAddr, "consumerId2")
-	require.NoError(t, err)
-	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
-	require.NoError(t, err)
-	require.Equal(t, providertypes.ConsumerIds{
-		Ids: []string{"consumerId1", "consumerId3"},
-	}, consumers)
-
-	err = providerKeeper.RemoveOptedInConsumerId(ctx, providerAddr, "consumerId3")
-	require.NoError(t, err)
-
-	err = providerKeeper.RemoveOptedInConsumerId(ctx, providerAddr, "consumerId1")
-	require.NoError(t, err)
-
-	consumers, err = providerKeeper.GetOptedInConsumerIds(ctx, providerAddr)
-	require.NoError(t, err)
-	require.Empty(t, consumers)
-}
-
-func TestIsValidatorOptedInToChain(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	chainId := "chainId"
-	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
-	_, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
-	require.False(t, found)
-
-	expectedConsumerId := CONSUMER_ID
-	providerKeeper.SetConsumerChainId(ctx, expectedConsumerId, chainId)
-	providerKeeper.SetOptedIn(ctx, expectedConsumerId, providerAddr)
-	providerKeeper.AppendOptedInConsumerId(ctx, providerAddr, expectedConsumerId)
-	actualConsumerId, found := providerKeeper.IsValidatorOptedInToChainId(ctx, providerAddr, chainId)
-	require.True(t, found)
-	require.Equal(t, expectedConsumerId, actualConsumerId)
 }
