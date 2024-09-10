@@ -577,7 +577,7 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 
 func ValidateByteSlice(hash []byte, maxLength int) error {
 	if len(hash) > maxLength {
-		return fmt.Errorf("hash is too long; got: %d, max: %d", len(hash), MaxHashLength)
+		return fmt.Errorf("hash is too long; got: %d, max: %d", len(hash), maxLength)
 	}
 	return nil
 }
