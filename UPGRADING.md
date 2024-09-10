@@ -7,93 +7,137 @@
 Upgrading a provider from v5.1.x requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
 
 ```go
-// InitializeMaxValidatorsForExistingConsumers initializes the max validators
-// parameter for existing consumers to the MaxProviderConsensusValidators parameter.
-// This is necessary to avoid those consumer chains having an excessive amount of validators.
-func InitializeMaxValidatorsForExistingConsumers(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
-	maxVals := providerKeeper.GetParams(ctx).MaxProviderConsensusValidators
-	for _, chainID := range providerKeeper.GetAllRegisteredConsumerChainIDs(ctx) {
-		providerKeeper.SetValidatorSetCap(ctx, chainID, uint32(maxVals))
-	}
-}
-
 // InitializeMaxProviderConsensusParam initializes the MaxProviderConsensusValidators parameter.
+// It is set to 180, which is the current number of validators participating in consensus on the Cosmos Hub.
+// This parameter will be used to govern the number of validators participating in consensus on the Cosmos Hub,
+// and takes over this role from the MaxValidators parameter in the staking module.
 func InitializeMaxProviderConsensusParam(ctx sdk.Context, providerKeeper providerkeeper.Keeper) {
 	params := providerKeeper.GetParams(ctx)
-	if params.MaxProviderConsensusValidators == 0 {
-		params.MaxProviderConsensusValidators = 180
-		providerKeeper.SetParams(ctx, params)
-	}
+	params.MaxProviderConsensusValidators = NewMaxProviderConsensusValidators
+	providerKeeper.SetParams(ctx, params)
 }
 ```
-
-### Governance Proposals
-
-Legacy proposals are not supported anymore by the current version of the provider. Legacy proposals which are still active (voting period or deposit period) and contain one of the following messages that need to be migrated as described below:
-- `ConsumerAdditionProposal` needs to be converted to `MsgConsumerAddition`
-- `ConsumerModificationProposal` needs to be converted to `MsgConsumerModification`
-- `ConsumerRemovalProposal` needs to be converted to `MsgConsumerRemoval`
-- `ChangeRewardDenomsProposal` needs to be converted to `MsgChangeRewardDenoms`
-
-The following shows an example on how to migrate a proposal containing a legacy consumer addition proposal message.
-Migration for the other messages aobve follows the same pattern. The resulting migration code has to be added to the upgrade handler of the provider chain.
-
-#### Migrate Legacy Proposal Content
 
 ```go
-
-// MigrateLegacyConsumerAddition converts a ConsumerAdditionProposal to a MsgConsumerAdditionProposal
-// and returns it as `Any` suitable to replace the legacy message.
-// `authority` contains the signer address
-func MigrateLegacyConsumerAddition(msg providertypes.ConsumerAdditionProposal, authority string) (*codec.Any, error) {
-  sdkMsg := providertypes.MsgConsumerAddition{
-		ChainId:                           msg.ChainId,
-		InitialHeight:                     msg.InitialHeight,
-		GenesisHash:                       msg.GenesisHash,
-		BinaryHash:                        msg.BinaryHash,
-		SpawnTime:                         msg.SpawnTime,
-		UnbondingPeriod:                   msg.UnbondingPeriod,
-		CcvTimeoutPeriod:                  msg.CcvTimeoutPeriod,
-		TransferTimeoutPeriod:             msg.TransferTimeoutPeriod,
-		ConsumerRedistributionFraction:    msg.ConsumerRedistributionFraction,
-		BlocksPerDistributionTransmission: msg.BlocksPerDistributionTransmission,
-		HistoricalEntries:                 msg.HistoricalEntries,
-		DistributionTransmissionChannel:   msg.DistributionTransmissionChannel,
-		Top_N:                             msg.Top_N,
-		ValidatorsPowerCap:                msg.ValidatorsPowerCap,
-		ValidatorSetCap:                   msg.ValidatorSetCap,
-		Allowlist:                         msg.Allowlist,
-		Denylist:                          msg.Denylist,
-		Authority:                         authority,
-		MinStake:                          msg.MinStake,
-		AllowInactiveVals:                 msg.AllowInactiveVals,
+// SetMaxValidators sets the MaxValidators parameter in the staking module to 200,
+// which is the current number of 180 plus 20.
+// This is done in concert with the introduction of the inactive-validators feature
+// in Interchain Security, after which the number of validators
+// participating in consensus on the Cosmos Hub will be governed by the
+// MaxProviderConsensusValidators parameter in the provider module.
+func SetMaxValidators(ctx sdk.Context, stakingKeeper stakingkeeper.Keeper) error {
+	params, err := stakingKeeper.GetParams(ctx)
+	if err != nil {
+		return err
 	}
-	return codec.NewAnyWithValue(&sdkMsg)
-}
-
-func MigrateProposal(proposal proposal govtypes.Proposal) err {
-	for idx, msg := range proposal.GetMessages() {
-		sdkLegacyMsg, isLegacyProposal := msg.GetCachedValue().(*govtypes.MsgExecLegacyContent)
-		if !isLegacyProposal {
-			continue
-		}
-		content, err := govtypes.LegacyContentFromMessage(sdkLegacyMsg)
-		if err != nil {
-			continue
-		}
-
-		msgAdd, ok := content.(*providertypes.ConsumerAdditionProposal)
-		if ok {
-			anyMsg, err := migrateLegacyConsumerAddition(*msgAdd, govKeeper.GetAuthority())
-			if err != nil {
-				return err
-			}
-			proposal.Messages[idx] = anyMsg
-		}
-	}
-	return govKeeper.SetProposal(ctx, proposal)
+	params.MaxValidators = NewMaxValidators
+	return stakingKeeper.SetParams(ctx, params)
 }
 ```
+
+```go
+// InitializeLastProviderConsensusValidatorSet initializes the last provider consensus validator set
+// by setting it to the first 180 validators from the current validator set of the staking module.
+func InitializeLastProviderConsensusValidatorSet(ctx sdk.Context, providerKeeper providerkeeper.Keeper, stakingKeeper stakingkeeper.Keeper) error {
+	vals, err := stakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		return err
+	}
+	// cut the validator set to the first 180 validators
+	if len(vals) > NewMaxProviderConsensusValidators {
+		vals = vals[:NewMaxProviderConsensusValidators]
+	}
+	// create consensus validators for the staking validators
+	lastValidators := []providertypes.ConsensusValidator{}
+	for _, val := range vals {
+		consensusVal, err := providerKeeper.CreateProviderConsensusValidator(ctx, val)
+		if err != nil {
+			return err
+		}
+
+		lastValidators = append(lastValidators, consensusVal)
+	}
+	return providerKeeper.SetLastProviderConsensusValSet(ctx, lastValidators)
+}
+```
+
+```go
+// SetICSConsumerMetadata sets the metadata for launched consumer chains
+func SetICSConsumerMetadata(ctx sdk.Context, providerKeeper providerkeeper.Keeper) error {
+	for _, consumerID := range providerKeeper.GetAllActiveConsumerIds(ctx) {
+		phase := providerKeeper.GetConsumerPhase(ctx, consumerID)
+		if phase != providertypes.CONSUMER_PHASE_LAUNCHED {
+			continue
+		}
+		chainID, err := providerKeeper.GetConsumerChainId(ctx, consumerID)
+		if err != nil {
+			ctx.Logger().Error(
+				fmt.Sprintf("cannot get chain ID for consumer chain, consumerID(%s)", consumerID),
+			)
+			continue
+		}
+
+		// example of setting the metadata for Stride
+		if chainID == "stride-1" {
+			metadata := providertypes.ConsumerMetadata{
+				Name: "Stride",
+				Description: "Description",
+				Metadata: "Metadata",
+			}
+			err = providerKeeper.SetConsumerMetadata(ctx, consumerID, metadata)
+			if err != nil {
+				ctx.Logger().Error(
+					fmt.Sprintf("cannot set consumer metadata, consumerID(%s), chainID(%s): %s", consumerID, chainID, err.Error()),
+				)
+				continue
+			}
+		}
+	}
+}
+```
+
+```go
+// MigrateICSProposals migrates deprecated proposals
+func MigrateICSProposals(ctx sdk.Context, msgServer providertypes.MsgServer, providerKeeper providerkeeper.Keeper, govKeeper govkeeper.Keeper) error {
+	proposals := []govtypesv1.Proposal{}
+	err := govKeeper.Proposals.Walk(ctx, nil, func(key uint64, proposal govtypesv1.Proposal) (stop bool, err error) {
+		proposals = append(proposals, proposal)
+		return false, nil // go through the entire collection
+	})
+	if err != nil {
+		return errorsmod.Wrapf(err, "iterating through proposals")
+	}
+	for _, proposal := range proposals {
+		err := MigrateICSLegacyProposal(ctx, msgServer, providerKeeper, govKeeper, proposal)
+		if err != nil {
+			return errorsmod.Wrapf(err, "migrating legacy proposal %d", proposal.Id)
+		}
+
+		err = MigrateICSProposal(ctx, msgServer, providerKeeper, govKeeper, proposal)
+		if err != nil {
+			return errorsmod.Wrapf(err, "migrating proposal %d", proposal.Id)
+		}
+	}
+	return nil
+}
+
+// MigrateICSLegacyProposal migrates the following proposals 
+// - ConsumerAdditionProposal
+// - ConsumerRemovalProposal
+// - ConsumerModificationProposal
+// - ChangeRewardDenomsProposal
+
+// MigrateICSProposal migrates the following proposals 
+// - MsgConsumerAddition
+// - MsgConsumerRemoval
+// - MsgConsumerModification
+```
+
+For an example, see the [Gaia v20 upgrade handler](https://github.com/cosmos/gaia/blob/e4656093955578b2efa6e8c2ea8dd8823008bba3/app/upgrades/v20/upgrades.go#L43).  
+
+### Consumer
+
+Upgrading the consumer from `v5.0.0` or `v5.2.0` will not require state migration.
 
 ## [v5.1.x](https://github.com/cosmos/interchain-security/releases/tag/v5.1.0)
 
