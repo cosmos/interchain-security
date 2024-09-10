@@ -494,7 +494,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerName, msg.Metadata.Name))
 	}
 
-	// get the previous spawn time so that we can use it in `PrepareConsumerForLaunch`
+	// get the previous spawn time so that we can remove its previously planned spawn time if a new spawn time is provided
 	previousInitializationParameters, err := k.Keeper.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
 		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
@@ -503,6 +503,31 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	previousSpawnTime := previousInitializationParameters.SpawnTime
 
 	if msg.InitializationParameters != nil {
+		phase := k.GetConsumerPhase(ctx, consumerId)
+
+		if phase == types.CONSUMER_PHASE_LAUNCHED {
+			return &resp, errorsmod.Wrap(types.ErrInvalidMsgUpdateConsumer,
+				"cannot update the initialization parameters of an an already launched chain; "+
+					"do not provide any initialization parameters when updating a launched chain")
+		}
+
+		if msg.InitializationParameters.SpawnTime.IsZero() {
+			if phase == types.CONSUMER_PHASE_INITIALIZED {
+				// chain was previously ready to launch at `previousSpawnTime` so we remove the
+				// consumer from getting launched and move it back to the Registered phase
+				err = k.RemoveConsumerToBeLaunched(ctx, consumerId, previousSpawnTime)
+				if err != nil {
+					return &resp, errorsmod.Wrapf(types.ErrInvalidMsgUpdateConsumer,
+						"cannot remove the consumer from being launched: %s", err.Error())
+				}
+				k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
+			}
+		} else {
+			// add SpawnTime event attribute
+			eventAttributes = append(eventAttributes,
+				sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
+		}
+
 		if err = k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters); err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
 				"cannot set consumer initialization parameters: %s", err.Error())
