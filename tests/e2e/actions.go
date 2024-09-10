@@ -2862,8 +2862,9 @@ func (tr Chain) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 	return pathName
 }
 
-// Run an instance of the Hermes relayer using the "evidence" command,
-// which detects evidences committed to the blocks of a consumer chain.
+// detect evidences committed to the blocks of a consumer chain
+// either by running an instance of the Hermes relayer using the "evidence" command,
+// or by queyring manually the consumer chain.
 // Each infraction detected is reported to the provider chain using
 // either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
 type StartConsumerEvidenceDetectorAction struct {
@@ -2888,13 +2889,12 @@ func (tr Chain) startConsumerEvidenceDetector(
 		}
 		tr.waitBlocks("provi", 10, 2*time.Minute)
 	} else {
-
+		// detect and the evidence on the consumer chain
 		consumerBinaryName := tr.testConfig.chainConfigs[action.Chain].BinaryName
 
-		now := time.Now()
-		timeout := now.Add(30 * time.Second)
-		var bz []byte
-		var err error
+		// get the infraction height by querying the SDK evidence module of the consumer
+		timeout := time.Now().Add(30 * time.Second)
+		infractionHeight := int64(0)
 		for {
 			cmd := tr.target.ExecCommand(
 				consumerBinaryName,
@@ -2907,26 +2907,24 @@ func (tr Chain) startConsumerEvidenceDetector(
 				fmt.Println("query evidence cmd:", cmd.String())
 			}
 
-			bz, err = cmd.CombinedOutput()
+			bz, err := cmd.CombinedOutput()
 			if err == nil {
-				break
+				evidence := gjson.Get(string(bz), "evidence")
+				if len(evidence.Array()) > 0 {
+					infractionHeight = evidence.Array()[0].Get("value.height").Int()
+					break
+				}
 			}
 
-			if time.Now().After(timeout) {
+			if err != nil || time.Now().After(timeout) {
 				log.Print("Failed running command: ", cmd)
 				log.Fatal(err, "\n", string(bz))
 			}
 			time.Sleep(2 * time.Second)
 		}
 
-		evidence := gjson.Get(string(bz), "evidence")
-
-		if len(evidence.Array()) != 1 {
-			log.Fatal("no evidence found")
-		}
-
-		infractionHeight := evidence.Array()[0].Get("value").Get("height").Int()
-
+		// get the evidence data from the block
+		// note that the the evidence is added to the next block after the infraction height
 		cmd := tr.target.ExecCommand(
 			consumerBinaryName,
 			"query", "block", "--type=height", strconv.Itoa(int(infractionHeight+1)),
@@ -2935,10 +2933,10 @@ func (tr Chain) startConsumerEvidenceDetector(
 		)
 
 		if verbose {
-			fmt.Println("query evidence cmd:", cmd.String())
+			fmt.Println("query block for evidence cmd:", cmd.String())
 		}
 
-		bz, err = cmd.CombinedOutput()
+		bz, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
 		}
@@ -2970,8 +2968,6 @@ func (tr Chain) startConsumerEvidenceDetector(
 			log.Fatal(err, "\n", string(bz))
 		}
 
-		fmt.Println(string(bz))
-
 		// persist IBC header in json format
 		headerPath := "/temp-header.json"
 		bz, err = tr.target.ExecCommand(
@@ -3002,7 +2998,7 @@ func (tr Chain) startConsumerEvidenceDetector(
 		)
 
 		if verbose {
-			fmt.Println("submit consumer equivocation  cmd:", cmd.String())
+			fmt.Println("submit consumer equivocation cmd:", cmd.String())
 		}
 
 		bz, err = cmd.CombinedOutput()
