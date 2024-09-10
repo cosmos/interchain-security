@@ -2947,7 +2947,6 @@ func (tr Chain) startConsumerEvidenceDetector(
 		}
 
 		if equivocation := evidence[0].Get("duplicate_vote_evidence"); equivocation.String() != "" {
-
 			// persist evidence in the json format
 			evidenceJson := equivocation.Raw
 			evidencePath := "/temp-evidence.json"
@@ -2984,7 +2983,7 @@ func (tr Chain) startConsumerEvidenceDetector(
 				log.Fatal(err, "\n", string(bz))
 			}
 
-			// Submit consumer equivocation
+			// submit consumer equivocation to provider
 			gas := "auto"
 			submitEquivocation := fmt.Sprintf(
 				`%s tx provider submit-consumer-double-voting %s %s %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
@@ -3013,6 +3012,10 @@ func (tr Chain) startConsumerEvidenceDetector(
 				log.Fatal(err, "\n", string(bz))
 			}
 		}
+
+		// TODO: @sainoe handle misbehaviour
+		// else if misb := evidence[0].Get("light_client_attack_evidence"); misb.String() != "" {
+		//}
 		tr.waitBlocks("provi", 3, 1*time.Minute)
 	}
 }
