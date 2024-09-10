@@ -720,5 +720,5 @@ func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validat
 	if err != nil {
 		return nil, err
 	}
-	return ccv.GetLastBondedValidatorsUtil(ctx, k.standaloneStakingKeeper, k.Logger(ctx), maxVals)
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.standaloneStakingKeeper, maxVals)
 }

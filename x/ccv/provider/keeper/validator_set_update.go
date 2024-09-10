@@ -246,12 +246,12 @@ func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validat
 	if err != nil {
 		return nil, err
 	}
-	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx), maxVals)
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, maxVals)
 }
 
 // GetLastProviderConsensusActiveValidators returns the `MaxProviderConsensusValidators` many validators with the largest powers
 // from the last bonded validators in the staking module.
 func (k Keeper) GetLastProviderConsensusActiveValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 	maxVals := k.GetMaxProviderConsensusValidators(ctx)
-	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx), uint32(maxVals))
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, uint32(maxVals))
 }
