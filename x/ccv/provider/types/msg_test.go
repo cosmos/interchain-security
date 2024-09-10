@@ -85,6 +85,77 @@ func TestTruncateString(t *testing.T) {
 	}
 }
 
+func TestValidateConsumerMetadata(t *testing.T) {
+	generateLongString := func(length int) string {
+		result := make([]byte, length)
+		for i := range result {
+			result[i] = byte('a')
+		}
+		return string(result)
+	}
+
+	testCases := []struct {
+		name     string
+		metadata types.ConsumerMetadata
+		valid    bool
+	}{
+		{
+			name: "valid",
+			metadata: types.ConsumerMetadata{
+				Name:        "name",
+				Description: "description",
+				Metadata:    "metadata",
+			},
+			valid: true,
+		},
+		{
+			name: "valid with long strings",
+			metadata: types.ConsumerMetadata{
+				Name:        generateLongString(types.MaxNameLength),
+				Description: generateLongString(types.MaxDescriptionLength),
+				Metadata:    generateLongString(types.MaxMetadataLength),
+			},
+			valid: true,
+		},
+		{
+			name: "invalid name",
+			metadata: types.ConsumerMetadata{
+				Name:        generateLongString(types.MaxNameLength + 1),
+				Description: "description",
+				Metadata:    "metadata",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid description",
+			metadata: types.ConsumerMetadata{
+				Name:        "name",
+				Description: generateLongString(types.MaxDescriptionLength + 1),
+				Metadata:    "metadata",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid metadata",
+			metadata: types.ConsumerMetadata{
+				Name:        "name",
+				Description: "description",
+				Metadata:    generateLongString(types.MaxMetadataLength + 1),
+			},
+			valid: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := types.ValidateConsumerMetadata(tc.metadata)
+		if tc.valid {
+			require.NoError(t, err, tc.name)
+		} else {
+			require.Error(t, err, tc.name)
+		}
+	}
+}
+
 func TestValidateInitializationParameters(t *testing.T) {
 	now := time.Now().UTC()
 	coolStr := "Cosmos Hub is the best place to launch a chain. Interchain Security is awesome."
@@ -363,6 +434,64 @@ func TestValidateByteSlice(t *testing.T) {
 			require.NoError(t, err, tc.name)
 		} else {
 			require.Error(t, err, tc.name)
+		}
+	}
+}
+
+func TestMsgCreateConsumerValidateBasic(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		chainId                string
+		powerShapingParameters *types.PowerShapingParameters
+		expPass                bool
+	}{
+		{
+			"empty chain id",
+			"",
+			nil, // no power-shaping parameters
+			false,
+		},
+		{
+			"empty chain id after trimming",
+			"   	",
+			nil, // no power-shaping parameters
+			false,
+		},
+		{
+			"neutron chain id that cannot be reused",
+			"neutron-1",
+			nil, // no power-shaping parameters
+			false,
+		},
+		{
+			"stride chain id that cannot be reused",
+			"stride-1",
+			nil, // no power-shaping parameters
+			false,
+		},
+		{
+			"valid chain id",
+			"somechain-1",
+			nil, // no power-shaping parameters
+			true,
+		},
+		{
+			"valid chain id and invalid power-shaping parameters",
+			"somechain-1",
+			&types.PowerShapingParameters{Top_N: 51}, // TopN cannot be > 0 in MsgCreateConsumer
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		validConsumerMetadata := types.ConsumerMetadata{Name: "name", Description: "description", Metadata: "metadata"}
+		msg, err := types.NewMsgCreateConsumer("submitter", tc.chainId, validConsumerMetadata, nil, tc.powerShapingParameters)
+		require.NoError(t, err)
+		err = msg.ValidateBasic()
+		if tc.expPass {
+			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)
+		} else {
+			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
 		}
 	}
 }
