@@ -98,9 +98,9 @@ test-e2e-multi-consumer:
 test-e2e-parallel:
 	go run ./tests/e2e/... --include-multi-consumer --parallel
 
-# run E2E compatibility tests against latest release
+# run E2E compatibility tests against consumer running latest release
 test-e2e-compatibility-tests-latest:
-	go run ./tests/e2e/... --tc compatibility -pv $(LATEST_RELEASE)
+	go run ./tests/e2e/... --tc compatibility -cv $(LATEST_RELEASE)
 
 # run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
 test-gaia-e2e:

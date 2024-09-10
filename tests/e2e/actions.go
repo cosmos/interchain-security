@@ -37,6 +37,11 @@ const (
 	V300    = "v3.0.0"
 )
 
+// type aliases
+type (
+	AssignConsumerPubKeyAction = e2e.AssignConsumerPubKeyAction
+)
+
 type SendTokensAction struct {
 	Chain  ChainID
 	From   ValidatorID
@@ -1971,11 +1976,11 @@ func (tr Chain) relayPacketsHermes(
 	action RelayPacketsAction,
 	verbose bool,
 ) {
-	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 4 blocks
 	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
 	// queued and are subsequently relayed.
-	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
-	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
+	tr.waitBlocks(action.ChainA, 4, 90*time.Second)
+	tr.waitBlocks(action.ChainB, 4, 90*time.Second)
 
 	// hermes clear packets ibc0 transfer channel-13
 	cmd := tr.target.ExecCommand("hermes", "clear", "packets",
@@ -2349,7 +2354,7 @@ type UnjailValidatorAction struct {
 // Sends an unjail transaction to the provider chain
 func (tr Chain) unjailValidator(action UnjailValidatorAction, verbose bool) {
 	// wait until downtime_jail_duration has elapsed, to make sure the validator can be unjailed
-	tr.WaitTime(61 * time.Second)
+	tr.WaitTime(65 * time.Second)
 
 	cmd := tr.target.ExecCommand(
 		tr.testConfig.chainConfigs[action.Provider].BinaryName,
@@ -2611,7 +2616,7 @@ func (tr Chain) invokeDoublesignSlash(
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
 		}
-		tr.waitBlocks("provi", 20, 4*time.Minute)
+		tr.waitBlocks("provi", 22, 4*time.Minute)
 	} else { // tr.useCometMock
 		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(action.Chain, action.Validator)
 
@@ -2701,18 +2706,7 @@ func (tr Chain) lightClientAttack(
 	tr.waitBlocks(chain, 1, 10*time.Second)
 }
 
-type AssignConsumerPubKeyAction struct {
-	Chain          ChainID
-	Validator      ValidatorID
-	ConsumerPubkey string
-	// ReconfigureNode will change keys the node uses and restart
-	ReconfigureNode bool
-	// executing the action should raise an error
-	ExpectError   bool
-	ExpectedError string
-}
-
-func (tr Chain) assignConsumerPubKey(action AssignConsumerPubKeyAction, verbose bool) {
+func (tr Chain) assignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.testConfig.validatorConfigs[action.Validator]
 
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
@@ -2722,28 +2716,12 @@ func (tr Chain) assignConsumerPubKey(action AssignConsumerPubKeyAction, verbose 
 		gas = "9000000"
 	}
 
-	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
-		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
-		string(tr.testConfig.chainConfigs[action.Chain].ConsumerId),
-		action.ConsumerPubkey,
-		action.Validator,
-		tr.testConfig.chainConfigs[ChainID("provi")].ChainId,
+	bz, err := tr.target.AssignConsumerPubKey(action, gas,
 		tr.getValidatorHome(ChainID("provi"), action.Validator),
 		tr.getValidatorNode(ChainID("provi"), action.Validator),
-		gas,
+		verbose,
 	)
 
-	cmd := tr.target.ExecCommand(
-		"/bin/bash", "-c",
-		assignKey,
-	)
-
-	if verbose {
-		fmt.Println("assignConsumerPubKey cmd:", cmd.String())
-	}
-
-	bz, err := cmd.CombinedOutput()
 	if err != nil && !action.ExpectError {
 		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
@@ -3111,4 +3089,29 @@ func (tr Chain) AdvanceTimeForChain(chain ChainID, duration time.Duration) {
 
 	// wait for 1 block of the chain to get a block with the advanced timestamp
 	tr.waitBlocks(chain, 1, time.Minute)
+}
+
+func (tr Commands) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, gas, home, node string, verbose bool) ([]byte, error) {
+	assignKey := fmt.Sprintf(
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		tr.chainConfigs[ChainID("provi")].BinaryName,
+		string(tr.chainConfigs[action.Chain].ConsumerId),
+		action.ConsumerPubkey,
+		action.Validator,
+		tr.chainConfigs[ChainID("provi")].ChainId,
+		home,
+		node,
+		gas,
+	)
+
+	cmd := tr.target.ExecCommand(
+		"/bin/bash", "-c",
+		assignKey,
+	)
+
+	if verbose {
+		fmt.Println("assignConsumerPubKey cmd:", cmd.String())
+	}
+
+	return cmd.CombinedOutput()
 }
