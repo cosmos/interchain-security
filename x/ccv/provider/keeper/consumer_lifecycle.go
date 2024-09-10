@@ -25,7 +25,7 @@ import (
 // PrepareConsumerForLaunch prepares to move the launch of a consumer chain from the previous spawn time to spawn time.
 // Previous spawn time can correspond to its zero value if the validator was not previously set for launch.
 func (k Keeper) PrepareConsumerForLaunch(ctx sdk.Context, consumerId string, previousSpawnTime, spawnTime time.Time) error {
-	if !previousSpawnTime.Equal(time.Time{}) {
+	if !previousSpawnTime.IsZero() {
 		// if this is not the first initialization and hence `previousSpawnTime` does not contain the zero value of `Time`
 		// remove the consumer id from the previous spawn time
 		err := k.RemoveConsumerToBeLaunched(ctx, consumerId, previousSpawnTime)
