@@ -522,11 +522,10 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 				}
 				k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
 			}
-		} else {
-			// add SpawnTime event attribute
-			eventAttributes = append(eventAttributes,
-				sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
 		}
+		// add SpawnTime event attribute
+		eventAttributes = append(eventAttributes,
+			sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
 
 		if err = k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters); err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
@@ -587,10 +586,6 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
 				"cannot prepare chain with consumer id (%s) for launch", consumerId)
 		}
-
-		// add SpawnTime event attribute
-		eventAttributes = append(eventAttributes,
-			sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
 	}
 
 	// add Owner event attribute
