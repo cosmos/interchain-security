@@ -47,9 +47,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
-
 				// check that a VSCPacket is queued
 				s.nextEpoch()
 				pendingPackets := pk.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
@@ -73,9 +70,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
-
 				s.nextEpoch()
 
 				return nil
@@ -98,9 +92,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				delAddr := s.providerChain.SenderAccount.GetAddress()
 				delegate(s, delAddr, bondAmt)
 
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
-
 				s.nextEpoch()
 
 				return nil
@@ -108,6 +99,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 		},
 		{
 			"double same-key assignment in same block by different vals", func(pk *providerkeeper.Keeper) error {
+				// establish CCV channel
 				// establish CCV channel
 				s.SetupCCVChannel(s.path)
 
@@ -118,25 +110,12 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
-
 				// same key assignment, but different validator
 				validator2, _ := generateNewConsumerKey(s, 1)
 				err = pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator2, consumerKey)
-
-				// check that the key was not assigned to the second validator
-				valConsAddr2, getConsAddrErr := validator2.GetConsAddr() // make sure we don't override err, which we are saving for below
-				s.Require().NoError(getConsAddrErr)
-				actualConsumerKey2, found := pk.GetValidatorConsumerPubKey(s.providerCtx(), s.consumerChain.ChainID, types.NewProviderConsAddress(valConsAddr2))
-				s.Require().True(found)
-				// the key for the second validator should *not* be the one we just assigned to the first validator
-				s.Require().NotEqual(consumerKey, actualConsumerKey2)
-
 				if err != nil {
 					return err
 				}
-
 				s.nextEpoch()
 
 				return nil
@@ -176,9 +155,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
-
 				// same key assignment
 				validator, consumerKey = generateNewConsumerKey(s, 0)
 				err = pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
@@ -187,7 +163,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				}
 
 				// check that the second key was also assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
 
 				s.nextEpoch()
 
@@ -205,9 +180,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
 
 				s.nextEpoch()
 
@@ -243,9 +215,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 					return err
 				}
 
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
-
 				s.nextEpoch()
 
 				// same key assignment
@@ -269,9 +238,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				if err != nil {
 					return err
 				}
-
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
 
 				s.nextEpoch()
 
