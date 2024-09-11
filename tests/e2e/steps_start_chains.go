@@ -39,9 +39,13 @@ func stepsStartPermissionlessChain(consumerName, consumerChainId string, propose
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID(consumerName),
-				SpawnTime:     uint(time.Minute * 3),
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     uint(time.Minute * 3),
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+				},
 			},
 			State: State{
 				ChainID("provi"): e2e.ChainState{
@@ -102,9 +106,13 @@ func stepsStartPermissionlessChain(consumerName, consumerChainId string, propose
 			Chain:         ChainID("provi"),
 			From:          ValidatorID("alice"),
 			ConsumerChain: ChainID(consumerName),
-			SpawnTime:     0, // launch now
-			InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-			TopN:          0,
+			InitParams: &InitializationParameters{
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				SpawnTime:     0, // launch now
+			},
+			PowerShapingParams: &PowerShapingParameters{
+				TopN: 0,
+			},
 		},
 		State: State{},
 	}

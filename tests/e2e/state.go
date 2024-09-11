@@ -63,7 +63,7 @@ func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 			return
 		}
 		if time.Since(start) > timeout {
-			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
+			panic(fmt.Sprintf("\n\n\nwaitBlocks method on chain '%s' has timed out after: %s\n\n", chain, timeout))
 		}
 		time.Sleep(time.Second)
 	}
