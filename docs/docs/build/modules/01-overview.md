@@ -15,6 +15,8 @@ ICS consists of two main modules:
   * Splits consumer block rewards and sends ICS rewards to the provider chain. 
   * Notifies the provider chain of downtime infractions. 
 
+Note that `x/types` contains types shared by both modules.
+
 In addition, the following modules are added to ICS to extend its functionality:
 
 * [x/democracy](04-democracy.md)
