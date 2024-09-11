@@ -6,15 +6,13 @@
 
 ### BUG FIXES
 
-- [Provider](x/ccv/provider)
-  - Improve provider message validation.
-    ([1dd3885](https://github.com/cosmos/interchain-security/commit/1dd38851dbb9e0d98c61bd11375ee7e140527833))
+- `[x/provider]` Improve provider message validation.
+  ([1dd3885](https://github.com/cosmos/interchain-security/commit/1dd38851dbb9e0d98c61bd11375ee7e140527833))
 
 ### STATE BREAKING
 
-- [Provider](x/ccv/provider)
-  - Improve provider message validation.
-    ([1dd3885](https://github.com/cosmos/interchain-security/commit/1dd38851dbb9e0d98c61bd11375ee7e140527833))
+- `[x/provider]` Improve provider message validation.
+  ([1dd3885](https://github.com/cosmos/interchain-security/commit/1dd38851dbb9e0d98c61bd11375ee7e140527833))
 
 ## v5.1.1
 
@@ -22,15 +20,13 @@
 
 ### API BREAKING
 
-- [Provider](x/ccv/provider)
-  - Fix incorrect message definitions in the proto files of the provider module
-    ([\#2095](https://github.com/cosmos/interchain-security/pull/2095))
+- `[x/provider]` Fix incorrect message definitions in the proto files of the provider module
+  ([\#2095](https://github.com/cosmos/interchain-security/pull/2095))
 
 ### STATE BREAKING
 
-- [Provider](x/ccv/provider)
-  - Fix incorrect message definitions in the proto files of the provider module
-    ([\#2095](https://github.com/cosmos/interchain-security/pull/2095))
+- `[x/provider]` Fix incorrect message definitions in the proto files of the provider module
+  ([\#2095](https://github.com/cosmos/interchain-security/pull/2095))
 
 ## v5.1.0
 
@@ -38,49 +34,45 @@
 
 ### API BREAKING
 
-- General
-  - Remove soft opt-out feature. ([\#1995](https://github.com/cosmos/interchain-security/pull/1995))
-    Backporting of ([\#1964](https://github.com/cosmos/interchain-security/pull/1964)).
-- [Provider](x/ccv/provider)
-  - Change the UX in key assignment by returning an error if a validator tries to
-    reuse the same consumer key.
-    ([\#1998](https://github.com/cosmos/interchain-security/pull/1998))
+- Remove soft opt-out feature. ([\#1995](https://github.com/cosmos/interchain-security/pull/1995))
+Backporting of ([\#1964](https://github.com/cosmos/interchain-security/pull/1964)).
+- `[x/provider]` Change the UX in key assignment by returning an error if a validator tries to
+  reuse the same consumer key.
+  ([\#1998](https://github.com/cosmos/interchain-security/pull/1998))
 
 ### DEPENDENCIES
 
 - Bump [CometBFT](https://github.com/cometbft/cometbft) to
   [v0.38.9](https://github.com/cometbft/cometbft/releases/tag/v0.38.9).
   ([\#2013](https://github.com/cosmos/interchain-security/pull/2013))
-- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
-  [v8.3.2](https://github.com/cosmos/ibc-go/releases/tag/v8.3.2).
-  ([\#2053](https://github.com/cosmos/interchain-security/pull/2053))
 - Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
 [v0.50.8](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.8)
 ([\#2053](https://github.com/cosmos/interchain-security/pull/2053))
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v8.3.2](https://github.com/cosmos/ibc-go/releases/tag/v8.3.2).
+  ([\#2053](https://github.com/cosmos/interchain-security/pull/2053))
 
 ### FEATURES
 
 - Remove soft opt-out feature. ([\#1995](https://github.com/cosmos/interchain-security/pull/1995))
-  Backporting of ([\#1964](https://github.com/cosmos/interchain-security/pull/1964)).
+  - Backporting of ([\#1964](https://github.com/cosmos/interchain-security/pull/1964)).
 
 ### STATE BREAKING
 
-- General
-  - Remove soft opt-out feature. ([\#1995](https://github.com/cosmos/interchain-security/pull/1995))
-    Backporting of ([\#1964](https://github.com/cosmos/interchain-security/pull/1964)).
-  - Bump [CometBFT](https://github.com/cometbft/cometbft) to
-    [v0.38.9](https://github.com/cometbft/cometbft/releases/tag/v0.38.9).
-    ([\#2013](https://github.com/cosmos/interchain-security/pull/2013))
-  - Bump [ibc-go](https://github.com/cosmos/ibc-go) to
-    [v8.3.2](https://github.com/cosmos/ibc-go/releases/tag/v8.3.2).
-    ([\#2053](https://github.com/cosmos/interchain-security/pull/2053))
-  - Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
-    [v0.50.8](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.8)
-    ([\#2053](https://github.com/cosmos/interchain-security/pull/2053))
-- [Provider](x/ccv/provider)
-  - Change the UX in key assignment by returning an error if a validator tries to
-    reuse the same consumer key.
-    ([\#1998](https://github.com/cosmos/interchain-security/pull/1998))
+- Bump [CometBFT](https://github.com/cometbft/cometbft) to
+  [v0.38.9](https://github.com/cometbft/cometbft/releases/tag/v0.38.9).
+  ([\#2013](https://github.com/cosmos/interchain-security/pull/2013))
+- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+[v0.50.8](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.8)
+([\#2053](https://github.com/cosmos/interchain-security/pull/2053))
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v8.3.2](https://github.com/cosmos/ibc-go/releases/tag/v8.3.2).
+  ([\#2053](https://github.com/cosmos/interchain-security/pull/2053))
+- Remove soft opt-out feature. ([\#1995](https://github.com/cosmos/interchain-security/pull/1995))
+  - Backporting of ([\#1964](https://github.com/cosmos/interchain-security/pull/1964)).
+- `[x/provider]` Change the UX in key assignment by returning an error if a validator tries to
+  reuse the same consumer key.
+  ([\#1998](https://github.com/cosmos/interchain-security/pull/1998))
 
 ## v5.0.0
 
@@ -88,36 +80,34 @@
 
 ### DEPENDENCIES
 
-- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
-  [v8.1.x](https://github.com/cosmos/ibc-go/releases/tag/v8.1.0).
-  ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
 - Bump [CometBFT](https://github.com/cometbft/cometbft) to
   [v0.38.4\5](https://github.com/cometbft/cometbft/releases/tag/v0.38.5).
   ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
 - Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
 [v0.50.x](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.4)
 ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v8.1.x](https://github.com/cosmos/ibc-go/releases/tag/v8.1.0).
+  ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
 
 ### FEATURES
 
-- [Consumer](x/ccv/consumer)
-  - Add consumer `MsgUpdateParams` from [cosmos-sdk](https://github.com/cosmos/cosmos-sdk).
-    ([\#1814](https://github.com/cosmos/interchain-security/pull/1814)).
-- [Provider](x/ccv/provider)
-  - Add provider `MsgUpdateParams` from [cosmos-sdk](https://github.com/cosmos/cosmos-sdk).
-    ([\#1698](https://github.com/cosmos/interchain-security/pull/1698)).
+- `[x/consumer]` Add consumer `MsgUpdateParams` from [cosmos-sdk](https://github.com/cosmos/cosmos-sdk).
+([\#1814](https://github.com/cosmos/interchain-security/pull/1814)).
+- `[x/provider]` Add provider `MsgUpdateParams` from [cosmos-sdk](https://github.com/cosmos/cosmos-sdk).
+([\#1698](https://github.com/cosmos/interchain-security/pull/1698)).
 
 ### STATE BREAKING
 
-- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
-  [v8.1.x](https://github.com/cosmos/ibc-go/releases/tag/v8.1.0).
-  ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
 - Bump [CometBFT](https://github.com/cometbft/cometbft) to
   [v0.38.4\5](https://github.com/cometbft/cometbft/releases/tag/v0.38.5).
   ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
 - Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
 [v0.50.x](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.4)
 ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v8.1.x](https://github.com/cosmos/ibc-go/releases/tag/v8.1.0).
+  ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
 - Revert `PutUnbondingOnHold` behavior to ICS@v1
 ([\#1819](https://github.com/cosmos/interchain-security/pull/1819))
 
@@ -395,20 +385,20 @@ May 17, 2024
 - General
   - Split out consumer genesis state to reduce shared data between provider and
     consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
-  - Note: This breaks json format used by augmenting Genesis files of consumer
-    chains with consumer genesis content exported from provider chain. Consumer
-    Genesis content exported from a provider chain using major version 1, 2 or 3
-    of the provider module needs to be transformed with the transformation command
-    introduced by this PR:
-    ```
-    Transform the consumer genesis file from a provider version v1, v2 or v3 to a version supported by this consumer. Result is printed to STDOUT.
-    
-    Example:
-    $ <appd> transform /path/to/ccv_consumer_genesis.json
-    
-    Usage:
-    interchain-security-cd genesis transform [genesis-file] [flags]
-    ```
+    - Note: This breaks json format used by augmenting Genesis files of consumer
+      chains with consumer genesis content exported from provider chain. Consumer
+      Genesis content exported from a provider chain using major version 1, 2 or 3
+      of the provider module needs to be transformed with the transformation command
+      introduced by this PR:
+      ```
+      Transform the consumer genesis file from a provider version v1, v2 or v3 to a version supported by this consumer. Result is printed to STDOUT.
+      
+      Example:
+      $ <appd> transform /path/to/ccv_consumer_genesis.json
+      
+      Usage:
+      interchain-security-cd genesis transform [genesis-file] [flags]
+      ```
   - Refactor shared events, codecs and errors assign to
     consumer and provider dedicated types where possible.
     ([\#1350](https://github.com/cosmos/interchain-security/pull/1350))

@@ -1,4 +1,4 @@
-- Add the _Inactive Provider Validators_ feature (as per 
+- `[x/provider]` Add the _Inactive Provider Validators_ feature (as per 
   [ADR-017](https://cosmos.github.io/interchain-security/adrs/adr-017-allowing-inactive-validators)),
   which entails the following changes on the provider.
   ([\#2079](https://github.com/cosmos/interchain-security/pull/2079))

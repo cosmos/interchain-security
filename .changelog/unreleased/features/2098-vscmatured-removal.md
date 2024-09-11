@@ -1,4 +1,4 @@
-- Remove `VSCMaturedPackets` from the provider module, which entails the following 
+- `[x/provider]` Remove `VSCMaturedPackets` from the provider module, which entails the following 
   changes to the provider. 
   ([\#2098](https://github.com/cosmos/interchain-security/pull/2098))
 
