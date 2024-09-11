@@ -2914,7 +2914,7 @@ func (tr Chain) detectConsumerEvidence(
 		}
 
 		// get the evidence data from the block
-		// note that the the evidence is added to the next block after the infraction height
+		// note that the evidence is added to the next block after the infraction height
 		cmd := tr.target.ExecCommand(
 			consumerBinaryName,
 			"query", "block", "--type=height", strconv.Itoa(int(infractionHeight+1)),
