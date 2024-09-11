@@ -674,9 +674,14 @@ func ConsumerIdToPowerShapingParametersKey(consumerId string) []byte {
 	return StringIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPowerShapingParameters), consumerId)
 }
 
+// ConsumerIdToPhaseKeyPrefix returns the key prefix used to iterate over all the consumer ids and their phases.
+func ConsumerIdToPhaseKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToPhaseKeyName)
+}
+
 // ConsumerIdToPhaseKey returns the key used to store the phase that corresponds to this consumer id
 func ConsumerIdToPhaseKey(consumerId string) []byte {
-	return StringIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPhaseKeyName), consumerId)
+	return StringIdWithLenKey(ConsumerIdToPhaseKeyPrefix(), consumerId)
 }
 
 // ConsumerIdToRemovalTimeKeyPrefix returns the key prefix for storing the removal times of consumer chains
@@ -801,8 +806,8 @@ func StringIdWithLenKey(prefix byte, stringId string) []byte {
 func ParseStringIdWithLenKey(prefix byte, bz []byte) (string, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	if prefixBz := bz[:prefixL]; !bytes.Equal(prefixBz, expectedPrefix) {
+		return "", fmt.Errorf("invalid prefix; expected: %X, got: %X, input %X -- len %d", expectedPrefix, prefixBz, prefix, prefixL)
 	}
 	stringIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
 	stringId := string(bz[prefixL+8 : prefixL+8+int(stringIdL)])

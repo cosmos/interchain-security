@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"sort"
 
@@ -10,8 +11,10 @@ import (
 	"google.golang.org/grpc/status"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/store/prefix"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
@@ -48,37 +51,35 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	var chains []*types.Chain
 
-	consumerIds := []string{}
-	for _, consumerID := range k.GetAllConsumerIds(ctx) {
-		phase := k.GetConsumerPhase(ctx, consumerID)
-		if req.Phase != types.CONSUMER_PHASE_UNSPECIFIED && req.Phase != phase {
-			// ignore consumer chain
-			continue
-		}
-		consumerIds = append(consumerIds, consumerID)
-	}
-
-	// set limit to default value
-	limit := 100
-	if req.Limit != 0 {
-		// update limit if specified
-		limit = int(req.Limit)
-	}
-	if len(consumerIds) > limit {
-		consumerIds = consumerIds[:limit]
-	}
-
-	chains := make([]*types.Chain, len(consumerIds))
-	for i, cID := range consumerIds {
-		c, err := k.GetConsumerChain(ctx, cID)
+	store := ctx.KVStore(k.storeKey)
+	storePrefix := types.ConsumerIdToPhaseKeyPrefix()
+	consumerPhaseStore := prefix.NewStore(store, []byte{storePrefix})
+	pageRes, err := query.Paginate(consumerPhaseStore, req.Pagination, func(key, value []byte) error {
+		consumerId, err := types.ParseStringIdWithLenKey(storePrefix, append([]byte{storePrefix}, key...))
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return status.Error(codes.Internal, err.Error())
 		}
-		chains[i] = &c
+
+		phase := types.ConsumerPhase(binary.BigEndian.Uint32(value))
+		if req.Phase != types.CONSUMER_PHASE_UNSPECIFIED && req.Phase != phase {
+			return nil
+		}
+
+		c, err := k.GetConsumerChain(ctx, consumerId)
+		if err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+		chains = append(chains, &c)
+		return nil
+	})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
+	return &types.QueryConsumerChainsResponse{Chains: chains, Pagination: pageRes}, nil
 }
 
 // GetConsumerChain returns a Chain data structure with all the necessary fields
@@ -594,6 +595,7 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 
 	return &types.QueryConsumerChainResponse{
 		ChainId:            chainId,
+		ConsumerId:         consumerId,
 		OwnerAddress:       ownerAddress,
 		Phase:              phase.String(),
 		Metadata:           metadata,

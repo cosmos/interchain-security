@@ -16,6 +16,17 @@ type (
 	ValidatorID string
 )
 
+type AssignConsumerPubKeyAction struct {
+	Chain          ChainID
+	Validator      ValidatorID
+	ConsumerPubkey string
+	// ReconfigureNode will change keys the node uses and restart
+	ReconfigureNode bool
+	// executing the action should raise an error
+	ExpectError   bool
+	ExpectedError string
+}
+
 type ChainCommands interface {
 	GetBlockHeight(chain ChainID) uint
 	GetBalance(chain ChainID, validator ValidatorID) uint
@@ -40,6 +51,8 @@ type ChainCommands interface {
 	GetQueryNodeIP(chain ChainID) string
 	GetInflationRate(chain ChainID) float64
 	GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64
+	// Action commands
+	AssignConsumerPubKey(action AssignConsumerPubKeyAction, gas, home, node string, verbose bool) ([]byte, error)
 }
 
 // TODO: replace ExecutionTarget with new TargetDriver interface
