@@ -90,7 +90,7 @@ func GetActionGen() *rapid.Generator[any] {
 		CreateLightClientEquivocationAttackActionGen().AsAny(),
 		CreateLightClientAmnesiaAttackActionGen().AsAny(),
 		CreateLightClientLunaticAttackActionGen().AsAny(),
-		GetDetectorConsumerEvidenceActionGen().AsAny(),
+		GetDetectConsumerEvidenceActionGen().AsAny(),
 		GetForkConsumerChainActionGen().AsAny(),
 		GetUpdateLightClientActionGen().AsAny(),
 	)
@@ -504,9 +504,9 @@ func GetForkConsumerChainActionGen() *rapid.Generator[ForkConsumerChainAction] {
 	})
 }
 
-func GetDetectorConsumerEvidenceActionGen() *rapid.Generator[DetectorConsumerEvidenceAction] {
-	return rapid.Custom(func(t *rapid.T) DetectorConsumerEvidenceAction {
-		return DetectorConsumerEvidenceAction{
+func GetDetectConsumerEvidenceActionGen() *rapid.Generator[DetectConsumerEvidenceAction] {
+	return rapid.Custom(func(t *rapid.T) DetectConsumerEvidenceAction {
+		return DetectConsumerEvidenceAction{
 			Chain: GetChainIDGen().Draw(t, "Chain"),
 		}
 	})

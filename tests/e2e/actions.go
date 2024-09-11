@@ -2862,18 +2862,18 @@ func (tr Chain) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 // or by queyring manually the consumer chain.
 // Each infraction detected is reported to the provider chain using
 // either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
-type DetectorConsumerEvidenceAction struct {
+type DetectConsumerEvidenceAction struct {
 	Chain     ChainID
 	Submitter ValidatorID
 }
 
 func (tr Chain) detectConsumerEvidence(
-	action DetectorConsumerEvidenceAction,
+	action DetectConsumerEvidenceAction,
 	useRelayer bool,
 	verbose bool,
 ) {
 	chainConfig := tr.testConfig.chainConfigs[action.Chain]
-	// the Hermes doesn't support evidence handling for Permissionless ICS yet
+	// the Hermes relayer doesn't support evidence handling for Permissionless ICS yet
 	// TODO: @Simon refactor once https://github.com/informalsystems/hermes/pull/4182 is merged.
 	if useRelayer {
 		// run in detached mode so it will keep running in the background

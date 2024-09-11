@@ -377,7 +377,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case UpdateLightClientAction:
 		target := td.getTargetDriver("")
 		target.updateLightClient(action, td.verbose)
-	case DetectorConsumerEvidenceAction:
+	case DetectConsumerEvidenceAction:
 		target := td.getTargetDriver("")
 		target.detectConsumerEvidence(action, false, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
@@ -403,6 +403,9 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case SetConsumerCommissionRateAction:
 		target := td.getTargetDriver("provider")
 		target.setConsumerCommissionRate(action, td.verbose)
+	case SubmitConsumerMisbehaviourAction:
+		target := td.getTargetDriver("provider")
+		target.submitConsumerMisbehaviour(action, td.verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}
