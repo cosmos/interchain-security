@@ -14,12 +14,11 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 )
 
 type ConsumerDemocracyTestSuite struct {

@@ -112,7 +112,6 @@ type UpgradeProposalAction struct {
 }
 
 func (tr *Chain) submitUpgradeProposal(action UpgradeProposalAction, verbose bool) {
-
 	// Get authority address
 	binary := tr.testConfig.chainConfigs[ChainID("sover")].BinaryName
 	cmd := tr.target.ExecCommand(binary,

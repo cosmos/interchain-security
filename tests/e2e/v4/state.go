@@ -7,15 +7,15 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
-	"time"
 
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
-	"gopkg.in/yaml.v2"
-
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
+	"gopkg.in/yaml.v2"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 )
 
 type (
@@ -78,20 +78,6 @@ func (tr Commands) GetBlockHeight(chain ChainID) uint {
 	}
 
 	return uint(blockHeight)
-}
-
-func (tr Commands) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
-	start := time.Now()
-	for {
-		thisBlock := tr.GetBlockHeight(chain)
-		if thisBlock >= block {
-			return
-		}
-		if time.Since(start) > timeout {
-			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
 }
 
 type ValPubKey struct {
@@ -317,7 +303,6 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
 		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		stopTime := gjson.Get(string(bz), `messages.0.content.stop_time`).Time().Sub(containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range chainConfigs {
@@ -328,10 +313,9 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		}
 
 		return ConsumerRemovalProposal{
-			Deposit:  uint(deposit),
-			Status:   status,
-			Chain:    chain,
-			StopTime: int(stopTime.Milliseconds()),
+			Deposit: uint(deposit),
+			Status:  status,
+			Chain:   chain,
 		}
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
 		return ParamsProposal{
@@ -391,7 +375,6 @@ func (tr Commands) GetParam(chain ChainID, param Param) string {
 func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
-
 		"query", "provider", "list-consumer-chains",
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
@@ -534,19 +517,11 @@ func (tr Commands) GetQueryNodeIP(chain ChainID) string {
 	return fmt.Sprintf("%s.253", tr.ChainConfigs[chain].IpPrefix)
 }
 
-func (tr Commands) curlJsonRPCRequest(method, params, address string) {
-	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
-	cmd := tr.Target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
-
-	verbosity := false
-	e2e.ExecuteCommand(cmd, "curlJsonRPCRequest", verbosity)
-}
-
 // GetClientFrozenHeight returns the frozen height for a client with the given client ID
 // by querying the hosting chain with the given chainID
 func (tr Commands) GetClientFrozenHeight(chain ChainID, clientID string) (uint64, uint64) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
+	// cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
 		"query", "ibc", "client", "state", clientID,
@@ -580,7 +555,7 @@ func (tr Commands) GetTrustedHeight(
 	index int,
 ) (uint64, uint64) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
+	// configureNodeCmd := exec.Command("docker", "exec", tc.testConfig.containerConfig.InstanceName, "hermes",
 	configureNodeCmd := tr.Target.ExecCommand("hermes",
 		"--json", "query", "client", "consensus", "--chain", string(chain),
 		`--client`, clientID,
@@ -624,7 +599,7 @@ func (tr Commands) GetTrustedHeight(
 
 func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	//bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+	// bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	bz, err := tr.Target.ExecCommand(binaryName,
 		"query", "provider", "list-proposed-consumer-chains",
@@ -656,10 +631,6 @@ func (tr Commands) GetHasToValidate(validator ValidatorID) []ChainID {
 
 func (tr Commands) GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64 {
 	panic("'GetConsumerCommissionRate' is not implemented in this version")
-}
-
-func uintPtr(i uint) *uint {
-	return &i
 }
 
 func (tr Commands) GetInflationRate(

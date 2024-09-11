@@ -15,10 +15,10 @@ import (
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v5/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v6/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 )
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
@@ -280,7 +280,7 @@ func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 ) {
 	tb.Helper()
 	for _, v := range validators {
-		publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
+		publicKey, err := cryptocodec.FromCmtPubKeyInterface(v.PubKey)
 		require.NoError(tb, err)
 
 		ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)

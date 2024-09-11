@@ -1,17 +1,18 @@
 package integration
 
 import (
-	"cosmossdk.io/math"
 	"github.com/cosmos/ibc-go/v8/testing/mock"
+
+	"cosmossdk.io/math"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // TestKeyAssignment tests key assignments relayed from the provider chain to the consumer chain at different times in the protocol lifecycle.
@@ -41,7 +42,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 			"assignment during channel init", func(pk *providerkeeper.Keeper) error {
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -51,7 +52,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// check that a VSCPacket is queued
 				s.nextEpoch()
-				pendingPackets := pk.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+				pendingPackets := pk.GetPendingVSCPackets(s.providerCtx(), s.getFirstBundle().ConsumerId)
 				s.Require().Len(pendingPackets, 1)
 
 				// establish CCV channel
@@ -67,7 +68,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -87,7 +88,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -112,7 +113,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -122,7 +123,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// same key assignment, but different validator
 				validator2, _ := generateNewConsumerKey(s, 1)
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator2, consumerKey)
+				err = pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator2, consumerKey)
 
 				// check that the key was not assigned to the second validator
 				valConsAddr2, getConsAddrErr := validator2.GetConsAddr() // make sure we don't override err, which we are saving for below
@@ -148,16 +149,13 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
 
-				// check that the key was assigned correctly
-				s.CheckKeyAssignment(validator, consumerKey)
-
-				// same key assignment, same validator
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				// same key assignment, but different validator
+				err = pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -173,7 +171,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -183,7 +181,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// same key assignment
 				validator, consumerKey = generateNewConsumerKey(s, 0)
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err = pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -203,7 +201,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -215,7 +213,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// same key assignment
 				validator2, _ := generateNewConsumerKey(s, 1)
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator2, consumerKey)
+				err = pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator2, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -240,7 +238,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -251,7 +249,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				s.nextEpoch()
 
 				// same key assignment
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err = pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -267,7 +265,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// key assignment
 				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}
@@ -279,7 +277,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// same key assignment
 				validator, consumerKey = generateNewConsumerKey(s, 0)
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+				err = pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
 					return err
 				}

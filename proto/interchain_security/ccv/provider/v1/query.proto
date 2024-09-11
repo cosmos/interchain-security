@@ -1,7 +1,7 @@
 syntax = "proto3";
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v5/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v6/x/ccv/provider/types";
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
@@ -11,14 +11,16 @@ import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos_proto/cosmos.proto";
+import "cosmos/staking/v1beta1/staking.proto";
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
   // whose proposal has been accepted
   rpc QueryConsumerGenesis(QueryConsumerGenesisRequest)
       returns (QueryConsumerGenesisResponse) {
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumer_genesis/{chain_id}";
+    option (google.api.http) = {
+      get: "/interchain_security/ccv/provider/consumer_genesis/{consumer_id}";
+    };
   }
 
   // ConsumerChains queries active consumer chains supported by the provider
@@ -26,21 +28,7 @@ service Query {
   rpc QueryConsumerChains(QueryConsumerChainsRequest)
       returns (QueryConsumerChainsResponse) {
     option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumer_chains";
-  }
-
-  // QueryConsumerChainStarts queries consumer chain start proposals.
-  rpc QueryConsumerChainStarts(QueryConsumerChainStartProposalsRequest)
-      returns (QueryConsumerChainStartProposalsResponse) {
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumer_chain_start_proposals";
-  }
-
-  // QueryConsumerChainStops queries consumer chain stop proposals.
-  rpc QueryConsumerChainStops(QueryConsumerChainStopProposalsRequest)
-      returns (QueryConsumerChainStopProposalsResponse) {
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
+        "/interchain_security/ccv/provider/consumer_chains/{phase}/{limit}";
   }
 
   // QueryValidatorConsumerAddr queries the address
@@ -48,7 +36,7 @@ service Query {
   rpc QueryValidatorConsumerAddr(QueryValidatorConsumerAddrRequest)
       returns (QueryValidatorConsumerAddrResponse) {
     option (google.api.http).get =
-        "/interchain_security/ccv/provider/validator_consumer_addr";
+        "/interchain_security/ccv/provider/validator_consumer_addr/{consumer_id}/{provider_address}";
   }
 
   // QueryProviderAddr returns the provider chain validator
@@ -56,7 +44,7 @@ service Query {
   rpc QueryValidatorProviderAddr(QueryValidatorProviderAddrRequest)
       returns (QueryValidatorProviderAddrResponse) {
     option (google.api.http).get =
-        "/interchain_security/ccv/provider/validator_provider_addr";
+        "/interchain_security/ccv/provider/validator_provider_addr/{consumer_id}/{consumer_address}";
   }
 
   // QueryThrottleState returns the main on-chain state relevant to currently
@@ -76,22 +64,14 @@ service Query {
         "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
 
-  // QueryProposedConsumerChainIDs returns the chain IDs of the proposed consumer chain addition proposals
-  // that are still in the voting period
-  rpc QueryProposedConsumerChainIDs(
-      QueryProposedChainIDsRequest)
-      returns (QueryProposedChainIDsResponse) {
-  option (google.api.http).get =
-      "/interchain_security/ccv/provider/proposed_consumer_chains";
-      }
-
-  // QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
+  // QueryAllPairsValConsAddrByConsumer returns a list of pair valconsensus address
   // between provider and consumer chain
-  rpc QueryAllPairsValConAddrByConsumerChainID (
-    QueryAllPairsValConAddrByConsumerChainIDRequest)
-    returns (QueryAllPairsValConAddrByConsumerChainIDResponse) {
-      option (google.api.http).get =
-    "/interchain_security/ccv/provider/consumer_chain_id";
+  rpc QueryAllPairsValConsAddrByConsumer (
+    QueryAllPairsValConsAddrByConsumerRequest)
+    returns (QueryAllPairsValConsAddrByConsumerResponse) {
+    option (google.api.http) = {
+      get: "/interchain_security/ccv/provider/address_pairs/{consumer_id}";
+    };
     }
 
   // QueryParams returns all current values of provider parameters
@@ -106,8 +86,9 @@ service Query {
   rpc QueryConsumerChainOptedInValidators(
     QueryConsumerChainOptedInValidatorsRequest)
     returns (QueryConsumerChainOptedInValidatorsResponse) {
-      option (google.api.http).get =
-    "/interchain_security/ccv/provider/opted_in_validators/{chain_id}";
+      option (google.api.http) = {
+       get: "/interchain_security/ccv/provider/opted_in_validators/{consumer_id}";
+      };
     }
 
   // QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
@@ -124,17 +105,19 @@ service Query {
   rpc QueryValidatorConsumerCommissionRate(
     QueryValidatorConsumerCommissionRateRequest)
     returns (QueryValidatorConsumerCommissionRateResponse) {
-      option (google.api.http).get =
-    "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}";
+      option (google.api.http) = {
+          get: "/interchain_security/ccv/provider/consumer_commission_rate/{consumer_id}/{provider_address}";
+      };
     }
 
-  // QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
+  // QueryConsumerValidators returns the latest set consumer-validator set for a given consumer ID
   // Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
   // because a VSCPacket could be delayed to be delivered on the consumer chain.
   rpc QueryConsumerValidators(QueryConsumerValidatorsRequest)
       returns (QueryConsumerValidatorsResponse) {
-        option (google.api.http).get =
-            "/interchain_security/ccv/provider/consumer_validators/{chain_id}";
+    option (google.api.http) = {
+        get: "/interchain_security/ccv/provider/consumer_validators/{consumer_id}";
+    };
   }
 
   // QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
@@ -144,35 +127,47 @@ service Query {
         option (google.api.http).get =
             "/interchain_security/ccv/provider/blocks_until_next_epoch";
   }
+
+  // QueryConsumerIdFromClientId returns the consumer id of the chain
+  // associated with the provided client id
+  rpc QueryConsumerIdFromClientId(QueryConsumerIdFromClientIdRequest)
+      returns (QueryConsumerIdFromClientIdResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_id/{client_id}";
+  }
+
+  // QueryConsumerChain returns the consumer chain
+  // associated with the provided consumer id
+  rpc QueryConsumerChain(QueryConsumerChainRequest)
+      returns (QueryConsumerChainResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_chain/{consumer_id}";
+  }
 }
 
-message QueryConsumerGenesisRequest { string chain_id = 1; }
+message QueryConsumerGenesisRequest {
+  string consumer_id = 1;
+}
 
 message QueryConsumerGenesisResponse {
   interchain_security.ccv.v1.ConsumerGenesisState genesis_state = 1
       [ (gogoproto.nullable) = false ];
 }
 
-message QueryConsumerChainsRequest {}
+message QueryConsumerChainsRequest {
+  // The phase of the consumer chains returned (optional)
+  // Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5
+  ConsumerPhase phase = 1;
+  // The limit of consumer chains returned (optional)
+  // default is 100
+  int32 limit = 2;
+}
 
 message QueryConsumerChainsResponse { repeated Chain chains = 1; }
-
-message QueryConsumerChainStartProposalsRequest {}
-
-message QueryConsumerChainStartProposalsResponse {
-  ConsumerAdditionProposals proposals = 1;
-}
-
-message QueryConsumerChainStopProposalsRequest {}
-
-message QueryConsumerChainStopProposalsResponse {
-  ConsumerRemovalProposals proposals = 1;
-}
 
 message Chain {
   string chain_id = 1;
   string client_id = 2;
-  // If chain with `chainID` is a Top-N chain, i.e., enforces at least one validator to validate chain `chainID`
   uint32 top_N = 3;
   // If the chain is a Top-N chain, this is the minimum power required to be in the top N.
   // Otherwise, this is -1.
@@ -187,20 +182,24 @@ message Chain {
   repeated string allowlist = 7;
   // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
   repeated string denylist = 8;
+  // The phase the consumer chain
+  string phase = 9;
+  // The metadata of the consumer chain
+  ConsumerMetadata metadata = 10  [(gogoproto.nullable) = false ];
   // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
-  uint64 min_stake = 9;
+  uint64 min_stake = 11;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
-  bool allow_inactive_vals = 10;
-  
+  bool allow_inactive_vals = 12;
+  string consumer_id = 13;
 }
 
 message QueryValidatorConsumerAddrRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  // The id of the consumer chain
-  string chain_id = 1;
   // The consensus address of the validator on the provider chain
-  string provider_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The id of the consumer chain
+  string consumer_id = 2;
 }
 
 message QueryValidatorConsumerAddrResponse {
@@ -211,10 +210,10 @@ message QueryValidatorConsumerAddrResponse {
 message QueryValidatorProviderAddrRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  // The id of the provider chain
-  string chain_id = 1;
   // The consensus address of the validator on the consumer chain
-  string consumer_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  string consumer_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The id of the consumer chain
+  string consumer_id = 2;
 }
 
 message QueryValidatorProviderAddrResponse {
@@ -242,24 +241,12 @@ message QueryRegisteredConsumerRewardDenomsResponse {
   repeated string denoms = 1;
 }
 
-message QueryProposedChainIDsRequest {}
-
-message QueryProposedChainIDsResponse {
-  repeated ProposedChain proposedChains = 1
-  [ (gogoproto.nullable) = false ];
-}
-
-message ProposedChain {
-  string chainID = 1;
-  uint64 proposalID = 2;
-}
-
-message QueryAllPairsValConAddrByConsumerChainIDRequest {
+message QueryAllPairsValConsAddrByConsumerRequest {
   // The id of the consumer chain
-  string chain_id = 1;
+  string consumer_id = 1;
 }
 
-message QueryAllPairsValConAddrByConsumerChainIDResponse {
+message QueryAllPairsValConsAddrByConsumerResponse {
   repeated PairValConAddrProviderAndConsumer pair_val_con_addr = 1;
 }
 
@@ -278,7 +265,7 @@ message QueryParamsResponse {
 }
 
 message QueryConsumerChainOptedInValidatorsRequest {
-  string chain_id = 1;
+  string consumer_id = 1;
 }
 
 message QueryConsumerChainOptedInValidatorsResponse {
@@ -287,7 +274,7 @@ message QueryConsumerChainOptedInValidatorsResponse {
 }
 
 message QueryConsumerValidatorsRequest {
-  string chain_id = 1;
+  string consumer_id = 1;
 }
 
 message QueryConsumerValidatorsValidator {
@@ -295,13 +282,44 @@ message QueryConsumerValidatorsValidator {
   string provider_address = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // The consumer public key of the validator used on the consumer chain
   tendermint.crypto.PublicKey consumer_key = 2;
+  // [DEPRECATED] use `consumer_power` instead
+  int64 power = 3 [deprecated = true];
+
+  // [DEPRECATED] use `consumer_commission_rate` instead
+  string rate = 4 [ deprecated = true,
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
   // The power of the validator used on the consumer chain
-  int64 power = 3;
+  int64 consumer_power = 5;
   // The rate to charge delegators on the consumer chain, as a fraction
-  string rate = 4 [
+  string consumer_commission_rate = 6 [
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
     ];
+  // The rate to charge delegators on the provider chain, as a fraction
+  string provider_commission_rate = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+    ];
+  // description defines the description terms for the validator
+  cosmos.staking.v1beta1.Description description = 8 [(gogoproto.nullable) = false];
+  // provider_operator_address defines the address of the validator's operator
+  string provider_operator_address = 9 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  // jailed defined whether the validator has been jailed from bonded status or not.
+  bool jailed = 10;
+  // status is the validator status (bonded/unbonding/unbonded).
+  cosmos.staking.v1beta1.BondStatus status = 11;
+  // provider_tokens defines the delegated tokens (incl. self-delegation).
+  string provider_tokens = 12 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+  // The power of the validator used on the provider chain
+  int64 provider_power = 13;
+  // validates_current_epoch defines whether the validator has to validate for the current epoch or not
+  bool validates_current_epoch = 14;
 }
 
 message QueryConsumerValidatorsResponse {
@@ -314,12 +332,12 @@ message QueryConsumerChainsValidatorHasToValidateRequest {
 }
 
 message QueryConsumerChainsValidatorHasToValidateResponse {
-  repeated string consumer_chain_ids = 1;
+  repeated string consumer_ids = 1;
 }
 
 message QueryValidatorConsumerCommissionRateRequest {
-  string chain_id = 1;
-    // The consensus address of the validator on the provider chain
+  string consumer_id = 1;
+  // The consensus address of the validator on the provider chain
   string provider_address = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
 }
 
@@ -336,4 +354,28 @@ message QueryBlocksUntilNextEpochRequest { }
 message QueryBlocksUntilNextEpochResponse {
   // The number of blocks until the next epoch starts
   uint64 blocks_until_next_epoch = 1;
+}
+
+message QueryConsumerIdFromClientIdRequest {
+  // the client id (on the provider) that is tracking the consumer chain
+  // the client id can be found from the consumer chain by querying (i.e., `query ccvconsumer provider-info`)
+  string client_id = 1;
+}
+
+message QueryConsumerIdFromClientIdResponse {
+  // the consumer id of the chain associated with this client id
+  string consumer_id = 1;
+}
+
+message QueryConsumerChainRequest {
+  string consumer_id = 1;
+}
+
+message QueryConsumerChainResponse {
+  string chain_id = 1;
+  string owner_address = 2;
+  string phase = 3;
+  ConsumerMetadata metadata = 4 [ (gogoproto.nullable) = false ];
+  ConsumerInitializationParameters init_params = 5;
+  PowerShapingParameters power_shaping_params = 6;  
 }

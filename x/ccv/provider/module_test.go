@@ -3,22 +3,22 @@ package provider_test
 import (
 	"testing"
 
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"cosmossdk.io/math"
 
-	"github.com/cosmos/interchain-security/v5/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/cosmos/interchain-security/v6/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // Tests the provider's InitGenesis implementation against the spec.
@@ -104,8 +104,6 @@ func TestInitGenesis(t *testing.T) {
 			providerKeeper.GetValidatorSetUpdateId(ctx),
 			nil,
 			tc.consumerStates,
-			nil,
-			nil,
 			types.DefaultParams(),
 			nil,
 			nil,
@@ -174,11 +172,11 @@ func TestInitGenesis(t *testing.T) {
 		numStatesCounted := 0
 		for _, state := range tc.consumerStates {
 			numStatesCounted += 1
-			channelID, found := providerKeeper.GetChainToChannel(ctx, state.ChainId)
+			channelID, found := providerKeeper.GetConsumerIdToChannelId(ctx, state.ChainId)
 			require.True(t, found)
 			require.Equal(t, state.ChannelId, channelID)
 
-			chainID, found := providerKeeper.GetChannelToChain(ctx, state.ChannelId)
+			chainID, found := providerKeeper.GetChannelIdToConsumerId(ctx, state.ChannelId)
 			require.True(t, found)
 			require.Equal(t, state.ChainId, chainID)
 		}

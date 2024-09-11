@@ -2,14 +2,15 @@ package integration
 
 import (
 	"cosmossdk.io/math"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	tmcrypto "github.com/cometbft/cometbft/crypto"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 // TestHandleConsumerDoubleVoting tests the handling of double voting evidence from the consumer chain.
@@ -46,7 +47,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	equivocationEvidenceMinHeight := uint64(s.consumerCtx().BlockHeight() - 1)
 	s.providerApp.GetProviderKeeper().SetEquivocationEvidenceMinHeight(
 		s.providerCtx(),
-		s.consumerChain.ChainID,
+		s.getFirstBundle().ConsumerId,
 		equivocationEvidenceMinHeight,
 	)
 
@@ -60,7 +61,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerCtx().BlockTime(),
 		consuValSet,
 		consuSigner,
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 	)
 
 	consuBadVote := testutil.MakeAndSignVote(
@@ -69,7 +70,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerCtx().BlockTime(),
 		consuValSet,
 		consuSigner,
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 	)
 
 	// create two votes using the provider validator key
@@ -79,7 +80,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerCtx().BlockTime(),
 		provValSet,
 		provSigner,
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 	)
 
 	provBadVote := testutil.MakeAndSignVote(
@@ -88,7 +89,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerCtx().BlockTime(),
 		provValSet,
 		provSigner,
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 	)
 
 	// create two votes using the consumer validator key that both have
@@ -99,7 +100,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerCtx().BlockTime(),
 		consuValSet,
 		consuSigner,
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 	)
 
 	consuVoteOld2 := testutil.MakeAndSignVote(
@@ -108,15 +109,15 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerCtx().BlockTime(),
 		consuValSet,
 		consuSigner,
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 	)
 
 	testCases := []struct {
-		name    string
-		ev      *tmtypes.DuplicateVoteEvidence
-		chainID string
-		pubkey  tmcrypto.PubKey
-		expPass bool
+		name       string
+		ev         *tmtypes.DuplicateVoteEvidence
+		consumerId string
+		pubkey     tmcrypto.PubKey
+		expPass    bool
 	}{
 		{
 			"cannot find consumer chain for the given chain ID - shouldn't pass",
@@ -127,7 +128,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			"chainID",
+			"consumerId",
 			consuVal.PubKey,
 			false,
 		},
@@ -140,7 +141,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			s.consumerChain.ChainID,
+			s.getFirstBundle().ConsumerId,
 			consuVal.PubKey,
 			false,
 		},
@@ -153,7 +154,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			s.consumerChain.ChainID,
+			s.getFirstBundle().ConsumerId,
 			consuVal.PubKey,
 			false,
 		},
@@ -166,7 +167,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			s.consumerChain.ChainID,
+			s.getFirstBundle().ConsumerId,
 			provVal.PubKey,
 			false,
 		},
@@ -180,7 +181,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			s.consumerChain.ChainID,
+			s.getFirstBundle().ConsumerId,
 			consuVal.PubKey,
 			false,
 		},
@@ -197,7 +198,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			s.consumerChain.ChainID,
+			s.getFirstBundle().ConsumerId,
 			consuVal.PubKey,
 			true,
 		},
@@ -211,7 +212,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			s.consumerChain.ChainID,
+			s.getFirstBundle().ConsumerId,
 			provVal.PubKey,
 			true,
 		},
@@ -220,7 +221,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(tc.ev.VoteA.ValidatorAddress.Bytes()))
-			provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
+			provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.getFirstBundle().ConsumerId, consuAddr)
 
 			validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
 			initialTokens := math.LegacyNewDecFromInt(validator.GetTokens())
@@ -232,17 +233,17 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			// we remove the consumer key assigned to the validator otherwise
 			// HandleConsumerDoubleVoting uses the consumer key to verify the signature
 			if tc.ev.VoteA.ValidatorAddress.String() != consuVal.Address.String() {
-				s.providerApp.GetProviderKeeper().DeleteKeyAssignments(provCtx, s.consumerChain.ChainID)
+				s.providerApp.GetProviderKeeper().DeleteKeyAssignments(provCtx, s.getFirstBundle().ConsumerId)
 			}
 
 			// convert validator public key
-			pk, err := cryptocodec.FromTmPubKeyInterface(tc.pubkey)
+			pk, err := cryptocodec.FromCmtPubKeyInterface(tc.pubkey)
 			s.Require().NoError(err)
 
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
 				provCtx,
+				tc.consumerId,
 				tc.ev,
-				tc.chainID,
 				pk,
 			)
 
@@ -304,7 +305,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		s.consumerCtx().BlockTime(),
 		consuValSet,
 		consuSigner,
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 	)
 
 	consuBadVote := testutil.MakeAndSignVote(
@@ -313,7 +314,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		s.consumerCtx().BlockTime(),
 		consuValSet,
 		consuSigner,
-		s.consumerChain.ChainID,
+		s.getFirstBundle().Chain.ChainID,
 	)
 
 	// In order to create an evidence for a consumer chain,
@@ -328,14 +329,13 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		Timestamp:        s.consumerCtx().BlockTime(),
 	}
 
-	chainID := s.consumerChain.ChainID
 	pubKey := consuVal.PubKey
 
 	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(consuVal.Address.Bytes()))
-	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
+	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.getFirstBundle().ConsumerId, consuAddr)
 
 	consuAddr2 := types.NewConsumerConsAddress(sdk.ConsAddress(consuVal2.Address.Bytes()))
-	provAddr2 := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr2)
+	provAddr2 := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.getFirstBundle().ConsumerId, consuAddr2)
 
 	validator, err := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
 	s.Require().NoError(err)
@@ -345,7 +345,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 
 	s.Run("slash undelegations and redelegations when getting double voting evidence", func() {
 		// convert validator public key
-		pk, err := cryptocodec.FromTmPubKeyInterface(pubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(pubKey)
 		s.Require().NoError(err)
 
 		// perform a delegation and an undelegation of the whole amount
@@ -400,8 +400,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		// cause double voting
 		err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
 			s.providerCtx(),
+			s.getFirstBundle().ConsumerId,
 			evidence,
-			chainID,
 			pk,
 		)
 		s.Require().NoError(err)

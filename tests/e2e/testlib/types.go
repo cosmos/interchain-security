@@ -12,6 +12,7 @@ import (
 
 type (
 	ChainID     string
+	ConsumerID  string
 	ValidatorID string
 )
 
@@ -124,7 +125,8 @@ type ValidatorConfig struct {
 // Attributes that are unique to a chain. Allows us to map (part of)
 // the set of strings defined above to a set of viable chains
 type ChainConfig struct {
-	ChainId ChainID
+	ChainId    ChainID
+	ConsumerId ConsumerID
 	// The account prefix configured on the chain. For example, on the Hub, this is "cosmos"
 	AccountPrefix string
 	// Must be unique per chain
@@ -304,10 +306,9 @@ func (p UpgradeProposal) isProposal() {}
 func (p ConsumerAdditionProposal) isProposal() {}
 
 type ConsumerRemovalProposal struct {
-	Deposit  uint
-	Chain    ChainID
-	StopTime int
-	Status   string
+	Deposit uint
+	Chain   ChainID
+	Status  string
 }
 
 func (p ConsumerRemovalProposal) isProposal() {}

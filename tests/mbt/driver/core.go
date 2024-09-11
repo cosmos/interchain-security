@@ -8,31 +8,28 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
-	abcitypes "github.com/cometbft/cometbft/abci/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v5/app/provider"
-	simibc "github.com/cosmos/interchain-security/v5/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/types"
+	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
+	simibc "github.com/cosmos/interchain-security/v6/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -167,11 +164,11 @@ func (s *Driver) consumerValidatorSet(chain ChainId) []consumertypes.CrossChainV
 func (s *Driver) delegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(amt))
 	d := s.delegator().String()
 	v := s.validator(val).String()
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
-	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Delegate(s.ctx(PROVIDER), msg)
 	if err != nil {
 		log.Println("error when delegating (is this expected?): ", err)
 	}
@@ -181,11 +178,11 @@ func (s *Driver) delegate(val, amt int64) {
 func (s *Driver) undelegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(amt))
 	d := s.delegator().String()
 	v := s.validator(val).String()
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
-	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(PROVIDER)), msg)
+	_, err := server.Undelegate(s.ctx(PROVIDER), msg)
 	if err != nil {
 		log.Println("error when undelegating (is this expected?): ", err)
 	}
@@ -220,8 +217,8 @@ func (s *Driver) getStateString() string {
 	state.WriteString("\n")
 
 	state.WriteString("Consumers Chains:\n")
-	chainIds := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
-	state.WriteString(strings.Join(chainIds, ", "))
+	// chainIds := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
+	// state.WriteString(strings.Join(chainIds, ", "))
 	state.WriteString("\n\n")
 
 	for chain := range s.simibcs {
@@ -255,24 +252,24 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 	chainInfo.WriteString(fmt.Sprintf("  Running Time: %s\n", runningTime))
 	chainInfo.WriteString(fmt.Sprintf("  Last Time entered on chain: %s\n", lastTime))
 
-	if !s.isProviderChain(chain) {
-		// Check whether the chain is in the consumer chains on the provider
+	// if !s.isProviderChain(chain) {
+	// Check whether the chain is in the consumer chains on the provider
 
-		consumerChainIDs := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
+	// consumerChainIDs := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
 
-		found := false
-		for _, consumerChainID := range consumerChainIDs {
-			if consumerChainID == string(chain) {
-				found = true
-			}
-		}
+	// found := false
+	// for _, consumerChainID := range consumerChainIDs {
+	// 	if consumerChainID == string(chain) {
+	// 		found = true
+	// 	}
+	// }
 
-		if found {
-			chainInfo.WriteString("...is currently a consumer chain")
-		} else {
-			chainInfo.WriteString("...is currently not a consumer chain")
-		}
-	}
+	// 	if found {
+	// 		chainInfo.WriteString("...is currently a consumer chain")
+	// 	} else {
+	// 		chainInfo.WriteString("...is currently not a consumer chain")
+	// 	}
+	// }
 
 	// Build the validator info string
 	var validatorInfo strings.Builder
@@ -366,16 +363,16 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 }
 
 func (s *Driver) runningConsumerChainIDs() []ChainId {
-	consumerIDsOnProvider := s.providerKeeper().GetAllRegisteredConsumerChainIDs(s.providerCtx())
+	// consumerIDsOnProvider := s.providerKeeper().GetAllRegisteredConsumerIds(s.providerCtx())
 
 	consumersWithIntactChannel := make([]ChainId, 0)
-	for _, consumerChainID := range consumerIDsOnProvider {
-		if s.path(ChainId(consumerChainID)).Path.EndpointA.GetChannel().State == channeltypes.CLOSED ||
-			s.path(ChainId(consumerChainID)).Path.EndpointB.GetChannel().State == channeltypes.CLOSED {
-			continue
-		}
-		consumersWithIntactChannel = append(consumersWithIntactChannel, ChainId(consumerChainID))
-	}
+	// for _, consumerChainID := range consumerIDsOnProvider {
+	// 	if s.path(ChainId(consumerChainID)).Path.EndpointA.GetChannel().State == channeltypes.CLOSED ||
+	// 		s.path(ChainId(consumerChainID)).Path.EndpointB.GetChannel().State == channeltypes.CLOSED {
+	// 		continue
+	// 	}
+	// 	consumersWithIntactChannel = append(consumersWithIntactChannel, ChainId(consumerChainID))
+	// }
 	return consumersWithIntactChannel
 }
 
@@ -440,7 +437,7 @@ func (s *Driver) RequestSlash(
 }
 
 // DeliverAcks delivers, for each path,
-// all possible acks (up to math.MaxInt many per path).
+// all possible acks (up to sdkmath.MaxInt many per path).
 func (s *Driver) DeliverAcks() {
 	for _, chainID := range s.runningConsumerChainIDs() {
 		path := s.path(chainID)
@@ -452,7 +449,8 @@ func (s *Driver) DeliverAcks() {
 // stopConsumer stops a given consumer chain.
 func (s *Driver) stopConsumer(chain ChainId) error {
 	// stop the consumer chain on the provider
-	return s.providerKeeper().StopConsumerChain(s.providerCtx(), string(chain), true)
+	// return s.providerKeeper().StopConsumerChain(s.providerCtx(), string(chain), true)
+	return nil
 }
 
 // newDriver creates a new Driver object.

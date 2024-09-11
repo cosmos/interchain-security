@@ -44,15 +44,15 @@ func request_Query_QueryConsumerGenesis_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
+	val, ok = pathParams["consumer_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	protoReq.ChainId, err = runtime.String(val)
+	protoReq.ConsumerId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
 	msg, err := client.QueryConsumerGenesis(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -71,15 +71,15 @@ func local_request_Query_QueryConsumerGenesis_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
+	val, ok = pathParams["consumer_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	protoReq.ChainId, err = runtime.String(val)
+	protoReq.ConsumerId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
 	msg, err := server.QueryConsumerGenesis(ctx, &protoReq)
@@ -91,6 +91,38 @@ func request_Query_QueryConsumerChains_0(ctx context.Context, marshaler runtime.
 	var protoReq QueryConsumerChainsRequest
 	var metadata runtime.ServerMetadata
 
+	var (
+		val string
+		e   int32
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["phase"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "phase")
+	}
+
+	e, err = runtime.Enum(val, ConsumerPhase_value)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "phase", err)
+	}
+
+	protoReq.Phase = ConsumerPhase(e)
+
+	val, ok = pathParams["limit"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "limit")
+	}
+
+	protoReq.Limit, err = runtime.Int32(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "limit", err)
+	}
+
 	msg, err := client.QueryConsumerChains(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -100,60 +132,74 @@ func local_request_Query_QueryConsumerChains_0(ctx context.Context, marshaler ru
 	var protoReq QueryConsumerChainsRequest
 	var metadata runtime.ServerMetadata
 
+	var (
+		val string
+		e   int32
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["phase"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "phase")
+	}
+
+	e, err = runtime.Enum(val, ConsumerPhase_value)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "phase", err)
+	}
+
+	protoReq.Phase = ConsumerPhase(e)
+
+	val, ok = pathParams["limit"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "limit")
+	}
+
+	protoReq.Limit, err = runtime.Int32(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "limit", err)
+	}
+
 	msg, err := server.QueryConsumerChains(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_Query_QueryConsumerChainStarts_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryConsumerChainStartProposalsRequest
-	var metadata runtime.ServerMetadata
-
-	msg, err := client.QueryConsumerChainStarts(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_Query_QueryConsumerChainStarts_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryConsumerChainStartProposalsRequest
-	var metadata runtime.ServerMetadata
-
-	msg, err := server.QueryConsumerChainStarts(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-func request_Query_QueryConsumerChainStops_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryConsumerChainStopProposalsRequest
-	var metadata runtime.ServerMetadata
-
-	msg, err := client.QueryConsumerChainStops(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_Query_QueryConsumerChainStops_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryConsumerChainStopProposalsRequest
-	var metadata runtime.ServerMetadata
-
-	msg, err := server.QueryConsumerChainStops(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-var (
-	filter_Query_QueryValidatorConsumerAddr_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_Query_QueryValidatorConsumerAddr_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq QueryValidatorConsumerAddrRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_QueryValidatorConsumerAddr_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.ConsumerId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
+	}
+
+	val, ok = pathParams["provider_address"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "provider_address")
+	}
+
+	protoReq.ProviderAddress, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "provider_address", err)
 	}
 
 	msg, err := client.QueryValidatorConsumerAddr(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -165,11 +211,33 @@ func local_request_Query_QueryValidatorConsumerAddr_0(ctx context.Context, marsh
 	var protoReq QueryValidatorConsumerAddrRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_QueryValidatorConsumerAddr_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.ConsumerId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
+	}
+
+	val, ok = pathParams["provider_address"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "provider_address")
+	}
+
+	protoReq.ProviderAddress, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "provider_address", err)
 	}
 
 	msg, err := server.QueryValidatorConsumerAddr(ctx, &protoReq)
@@ -177,19 +245,37 @@ func local_request_Query_QueryValidatorConsumerAddr_0(ctx context.Context, marsh
 
 }
 
-var (
-	filter_Query_QueryValidatorProviderAddr_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_Query_QueryValidatorProviderAddr_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq QueryValidatorProviderAddrRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_QueryValidatorProviderAddr_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.ConsumerId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
+	}
+
+	val, ok = pathParams["consumer_address"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_address")
+	}
+
+	protoReq.ConsumerAddress, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_address", err)
 	}
 
 	msg, err := client.QueryValidatorProviderAddr(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -201,11 +287,33 @@ func local_request_Query_QueryValidatorProviderAddr_0(ctx context.Context, marsh
 	var protoReq QueryValidatorProviderAddrRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_QueryValidatorProviderAddr_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.ConsumerId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
+	}
+
+	val, ok = pathParams["consumer_address"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_address")
+	}
+
+	protoReq.ConsumerAddress, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_address", err)
 	}
 
 	msg, err := server.QueryValidatorProviderAddr(ctx, &protoReq)
@@ -249,56 +357,56 @@ func local_request_Query_QueryRegisteredConsumerRewardDenoms_0(ctx context.Conte
 
 }
 
-func request_Query_QueryProposedConsumerChainIDs_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryProposedChainIDsRequest
+func request_Query_QueryAllPairsValConsAddrByConsumer_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryAllPairsValConsAddrByConsumerRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := client.QueryProposedConsumerChainIDs(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
+	}
+
+	protoReq.ConsumerId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
+	}
+
+	msg, err := client.QueryAllPairsValConsAddrByConsumer(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_Query_QueryProposedConsumerChainIDs_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryProposedChainIDsRequest
+func local_request_Query_QueryAllPairsValConsAddrByConsumer_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryAllPairsValConsAddrByConsumerRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := server.QueryProposedConsumerChainIDs(ctx, &protoReq)
-	return msg, metadata, err
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
 
-}
-
-var (
-	filter_Query_QueryAllPairsValConAddrByConsumerChainID_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
-func request_Query_QueryAllPairsValConAddrByConsumerChainID_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryAllPairsValConAddrByConsumerChainIDRequest
-	var metadata runtime.ServerMetadata
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_QueryAllPairsValConAddrByConsumerChainID_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	val, ok = pathParams["consumer_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	msg, err := client.QueryAllPairsValConAddrByConsumerChainID(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
+	protoReq.ConsumerId, err = runtime.String(val)
 
-}
-
-func local_request_Query_QueryAllPairsValConAddrByConsumerChainID_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryAllPairsValConAddrByConsumerChainIDRequest
-	var metadata runtime.ServerMetadata
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_QueryAllPairsValConAddrByConsumerChainID_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
-	msg, err := server.QueryAllPairsValConAddrByConsumerChainID(ctx, &protoReq)
+	msg, err := server.QueryAllPairsValConsAddrByConsumer(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -332,15 +440,15 @@ func request_Query_QueryConsumerChainOptedInValidators_0(ctx context.Context, ma
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
+	val, ok = pathParams["consumer_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	protoReq.ChainId, err = runtime.String(val)
+	protoReq.ConsumerId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
 	msg, err := client.QueryConsumerChainOptedInValidators(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -359,15 +467,15 @@ func local_request_Query_QueryConsumerChainOptedInValidators_0(ctx context.Conte
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
+	val, ok = pathParams["consumer_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	protoReq.ChainId, err = runtime.String(val)
+	protoReq.ConsumerId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
 	msg, err := server.QueryConsumerChainOptedInValidators(ctx, &protoReq)
@@ -440,15 +548,15 @@ func request_Query_QueryValidatorConsumerCommissionRate_0(ctx context.Context, m
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
+	val, ok = pathParams["consumer_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	protoReq.ChainId, err = runtime.String(val)
+	protoReq.ConsumerId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
 	val, ok = pathParams["provider_address"]
@@ -478,15 +586,15 @@ func local_request_Query_QueryValidatorConsumerCommissionRate_0(ctx context.Cont
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
+	val, ok = pathParams["consumer_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	protoReq.ChainId, err = runtime.String(val)
+	protoReq.ConsumerId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
 	val, ok = pathParams["provider_address"]
@@ -516,15 +624,15 @@ func request_Query_QueryConsumerValidators_0(ctx context.Context, marshaler runt
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
+	val, ok = pathParams["consumer_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	protoReq.ChainId, err = runtime.String(val)
+	protoReq.ConsumerId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
 	msg, err := client.QueryConsumerValidators(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -543,15 +651,15 @@ func local_request_Query_QueryConsumerValidators_0(ctx context.Context, marshale
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
+	val, ok = pathParams["consumer_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
 	}
 
-	protoReq.ChainId, err = runtime.String(val)
+	protoReq.ConsumerId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
 	}
 
 	msg, err := server.QueryConsumerValidators(ctx, &protoReq)
@@ -573,6 +681,114 @@ func local_request_Query_QueryBlocksUntilNextEpoch_0(ctx context.Context, marsha
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.QueryBlocksUntilNextEpoch(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Query_QueryConsumerIdFromClientId_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryConsumerIdFromClientIdRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["client_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "client_id")
+	}
+
+	protoReq.ClientId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "client_id", err)
+	}
+
+	msg, err := client.QueryConsumerIdFromClientId(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Query_QueryConsumerIdFromClientId_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryConsumerIdFromClientIdRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["client_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "client_id")
+	}
+
+	protoReq.ClientId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "client_id", err)
+	}
+
+	msg, err := server.QueryConsumerIdFromClientId(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Query_QueryConsumerChain_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryConsumerChainRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
+	}
+
+	protoReq.ConsumerId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
+	}
+
+	msg, err := client.QueryConsumerChain(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Query_QueryConsumerChain_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryConsumerChainRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer_id")
+	}
+
+	protoReq.ConsumerId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer_id", err)
+	}
+
+	msg, err := server.QueryConsumerChain(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -626,52 +842,6 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		}
 
 		forward_Query_QueryConsumerChains_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_Query_QueryConsumerChainStarts_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_Query_QueryConsumerChainStarts_0(rctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Query_QueryConsumerChainStarts_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_Query_QueryConsumerChainStops_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_Query_QueryConsumerChainStops_0(rctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Query_QueryConsumerChainStops_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -767,7 +937,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 
 	})
 
-	mux.Handle("GET", pattern_Query_QueryProposedConsumerChainIDs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_QueryAllPairsValConsAddrByConsumer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -778,7 +948,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Query_QueryProposedConsumerChainIDs_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Query_QueryAllPairsValConsAddrByConsumer_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -786,30 +956,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			return
 		}
 
-		forward_Query_QueryProposedConsumerChainIDs_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_Query_QueryAllPairsValConAddrByConsumerChainID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_Query_QueryAllPairsValConAddrByConsumerChainID_0(rctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Query_QueryAllPairsValConAddrByConsumerChainID_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_QueryAllPairsValConsAddrByConsumer_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -951,6 +1098,52 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 
 	})
 
+	mux.Handle("GET", pattern_Query_QueryConsumerIdFromClientId_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Query_QueryConsumerIdFromClientId_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Query_QueryConsumerIdFromClientId_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Query_QueryConsumerChain_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Query_QueryConsumerChain_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Query_QueryConsumerChain_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -1029,46 +1222,6 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		}
 
 		forward_Query_QueryConsumerChains_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_Query_QueryConsumerChainStarts_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_Query_QueryConsumerChainStarts_0(rctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Query_QueryConsumerChainStarts_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_Query_QueryConsumerChainStops_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_Query_QueryConsumerChainStops_0(rctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Query_QueryConsumerChainStops_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1152,7 +1305,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
-	mux.Handle("GET", pattern_Query_QueryProposedConsumerChainIDs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_QueryAllPairsValConsAddrByConsumer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1161,34 +1314,14 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Query_QueryProposedConsumerChainIDs_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Query_QueryAllPairsValConsAddrByConsumer_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Query_QueryProposedConsumerChainIDs_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_Query_QueryAllPairsValConAddrByConsumerChainID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_Query_QueryAllPairsValConAddrByConsumerChainID_0(rctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Query_QueryAllPairsValConAddrByConsumerChainID_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_QueryAllPairsValConsAddrByConsumer_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1312,51 +1445,85 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
+	mux.Handle("GET", pattern_Query_QueryConsumerIdFromClientId_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Query_QueryConsumerIdFromClientId_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Query_QueryConsumerIdFromClientId_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Query_QueryConsumerChain_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Query_QueryConsumerChain_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Query_QueryConsumerChain_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
 var (
-	pattern_Query_QueryConsumerGenesis_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "consumer_genesis", "chain_id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryConsumerGenesis_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "consumer_genesis", "consumer_id"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryConsumerChains_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "consumer_chains"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryConsumerChains_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"interchain_security", "ccv", "provider", "consumer_chains", "phase", "limit"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryConsumerChainStarts_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "consumer_chain_start_proposals"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryValidatorConsumerAddr_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"interchain_security", "ccv", "provider", "validator_consumer_addr", "consumer_id", "provider_address"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryConsumerChainStops_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "consumer_chain_stop_proposals"}, "", runtime.AssumeColonVerbOpt(false)))
-
-	pattern_Query_QueryValidatorConsumerAddr_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "validator_consumer_addr"}, "", runtime.AssumeColonVerbOpt(false)))
-
-	pattern_Query_QueryValidatorProviderAddr_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "validator_provider_addr"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryValidatorProviderAddr_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"interchain_security", "ccv", "provider", "validator_provider_addr", "consumer_id", "consumer_address"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_QueryThrottleState_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "throttle_state"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_QueryRegisteredConsumerRewardDenoms_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "registered_consumer_reward_denoms"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryProposedConsumerChainIDs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "proposed_consumer_chains"}, "", runtime.AssumeColonVerbOpt(false)))
-
-	pattern_Query_QueryAllPairsValConAddrByConsumerChainID_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "consumer_chain_id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryAllPairsValConsAddrByConsumer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "address_pairs", "consumer_id"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_QueryParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryConsumerChainOptedInValidators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "opted_in_validators", "chain_id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryConsumerChainOptedInValidators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "opted_in_validators", "consumer_id"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_QueryConsumerChainsValidatorHasToValidate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "consumer_chains_per_validator", "provider_address"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryValidatorConsumerCommissionRate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"interchain_security", "ccv", "provider", "consumer_commission_rate", "chain_id", "provider_address"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryValidatorConsumerCommissionRate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"interchain_security", "ccv", "provider", "consumer_commission_rate", "consumer_id", "provider_address"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryConsumerValidators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "consumer_validators", "chain_id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryConsumerValidators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "consumer_validators", "consumer_id"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_QueryBlocksUntilNextEpoch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "blocks_until_next_epoch"}, "", runtime.AssumeColonVerbOpt(false)))
+
+	pattern_Query_QueryConsumerIdFromClientId_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "consumer_id", "client_id"}, "", runtime.AssumeColonVerbOpt(false)))
+
+	pattern_Query_QueryConsumerChain_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"interchain_security", "ccv", "provider", "consumer_chain", "consumer_id"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
 	forward_Query_QueryConsumerGenesis_0 = runtime.ForwardResponseMessage
 
 	forward_Query_QueryConsumerChains_0 = runtime.ForwardResponseMessage
-
-	forward_Query_QueryConsumerChainStarts_0 = runtime.ForwardResponseMessage
-
-	forward_Query_QueryConsumerChainStops_0 = runtime.ForwardResponseMessage
 
 	forward_Query_QueryValidatorConsumerAddr_0 = runtime.ForwardResponseMessage
 
@@ -1366,9 +1533,7 @@ var (
 
 	forward_Query_QueryRegisteredConsumerRewardDenoms_0 = runtime.ForwardResponseMessage
 
-	forward_Query_QueryProposedConsumerChainIDs_0 = runtime.ForwardResponseMessage
-
-	forward_Query_QueryAllPairsValConAddrByConsumerChainID_0 = runtime.ForwardResponseMessage
+	forward_Query_QueryAllPairsValConsAddrByConsumer_0 = runtime.ForwardResponseMessage
 
 	forward_Query_QueryParams_0 = runtime.ForwardResponseMessage
 
@@ -1381,4 +1546,8 @@ var (
 	forward_Query_QueryConsumerValidators_0 = runtime.ForwardResponseMessage
 
 	forward_Query_QueryBlocksUntilNextEpoch_0 = runtime.ForwardResponseMessage
+
+	forward_Query_QueryConsumerIdFromClientId_0 = runtime.ForwardResponseMessage
+
+	forward_Query_QueryConsumerChain_0 = runtime.ForwardResponseMessage
 )

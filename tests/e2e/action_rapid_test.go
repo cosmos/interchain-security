@@ -261,11 +261,10 @@ func GetSubmitConsumerAdditionProposalActionGen() *rapid.Generator[SubmitConsume
 func GetSubmitConsumerRemovalProposalActionGen() *rapid.Generator[SubmitConsumerRemovalProposalAction] {
 	return rapid.Custom(func(t *rapid.T) SubmitConsumerRemovalProposalAction {
 		return SubmitConsumerRemovalProposalAction{
-			Chain:          GetChainIDGen().Draw(t, "Chain"),
-			From:           GetValidatorIDGen().Draw(t, "From"),
-			Deposit:        rapid.Uint().Draw(t, "Deposit"),
-			ConsumerChain:  GetChainIDGen().Draw(t, "ConsumerChain"),
-			StopTimeOffset: time.Duration(rapid.Int64().Draw(t, "StopTimeOffset")),
+			Chain:         GetChainIDGen().Draw(t, "Chain"),
+			From:          GetValidatorIDGen().Draw(t, "From"),
+			Deposit:       rapid.Uint().Draw(t, "Deposit"),
+			ConsumerChain: GetChainIDGen().Draw(t, "ConsumerChain"),
 		}
 	})
 }

@@ -10,21 +10,22 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	cmttypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/interchain-security/v5/testutil/integration"
 
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 const verbose = false
@@ -404,7 +405,7 @@ func RunItfTrace(t *testing.T, path string) {
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
 
 				// stop the consumer chain
-				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, expectError)
+				// driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, expectError)
 			} else {
 				expectError = false
 				driver.DeliverPacketToConsumer(ChainId(consumerChain), expectError)
@@ -421,7 +422,7 @@ func RunItfTrace(t *testing.T, path string) {
 				driver.DeliverPacketFromConsumer(ChainId(consumerChain), expectError)
 
 				// stop the consumer chain on the provider
-				driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, expectError)
+				// driver.providerKeeper().StopConsumerChain(driver.providerCtx(), consumerChain, expectError)
 			} else {
 				expectError = false
 				driver.DeliverPacketFromConsumer(ChainId(consumerChain), expectError)

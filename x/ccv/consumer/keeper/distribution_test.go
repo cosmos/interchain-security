@@ -4,16 +4,17 @@ import (
 	"strings"
 	"testing"
 
-	"cosmossdk.io/math"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // TestGetEstimatedNextFeeDistribution tests next fee distribution parameters.

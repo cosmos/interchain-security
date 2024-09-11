@@ -33,8 +33,8 @@ install: go.sum
 		go install -ldflags "$(democracyFlags)" ./cmd/interchain-security-cdd
 		go install -ldflags "$(standaloneFlags)" ./cmd/interchain-security-sd
 
-# run all tests: unit, integration, diff, and E2E
-test: test-unit test-integration test-mbt test-e2e
+# run all tests: unit, integration, and E2E
+test: test-unit test-integration test-e2e
 
 # shortcut for local development
 test-dev: test-unit test-integration test-mbt
@@ -163,7 +163,7 @@ sim-full-no-inactive-vals:
 ###                                Linting                                  ###
 ###############################################################################
 golangci_lint_cmd=golangci-lint
-golangci_version=v1.54.1
+golangci_version=v1.60.1
 
 lint:
 	@echo "--> Running linter"

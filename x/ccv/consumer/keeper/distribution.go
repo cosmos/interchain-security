@@ -13,8 +13,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.
@@ -227,7 +227,7 @@ func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh types.LastT
 func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpenInit) (
 	*channeltypes.MsgChannelOpenInitResponse, error,
 ) {
-	return k.ibcCoreKeeper.ChannelOpenInit(sdk.WrapSDKContext(ctx), msg)
+	return k.ibcCoreKeeper.ChannelOpenInit(ctx, msg)
 }
 
 func (k Keeper) TransferChannelExists(ctx sdk.Context, channelID string) bool {

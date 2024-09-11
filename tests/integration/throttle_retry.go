@@ -7,7 +7,7 @@ import (
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // TestSlashRetries tests the throttling v2 retry logic at an integration level.
@@ -167,6 +167,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	stakingVal2Addr, err := providerKeeper.ValidatorAddressCodec().StringToBytes(stakingVal2.GetOperator())
 	s.Require().NoError(err)
 	stakingVal2LastPower, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2Addr)
+	s.Require().NoError(err)
 	s.Require().Equal(int64(1000), stakingVal2LastPower)
 
 	// Apply ack on consumer
@@ -221,6 +222,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	stakingVal2Addr, err = providerKeeper.ValidatorAddressCodec().StringToBytes(stakingVal2.GetOperator())
 	s.Require().NoError(err)
 	stakingVal2LastPower, err = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2Addr)
+	s.Require().NoError(err)
 	s.Require().Equal(int64(0), stakingVal2LastPower)
 
 	// Apply ack on consumer
