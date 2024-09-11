@@ -2900,7 +2900,8 @@ func (tr Chain) detectConsumerEvidence(
 			bz, err := cmd.CombinedOutput()
 			if err == nil {
 				evidence := gjson.Get(string(bz), "evidence")
-				if len(evidence.Array()) > 0 {
+				// we only expect only one evidence
+				if len(evidence.Array()) == 1 {
 					infractionHeight = evidence.Array()[0].Get("value.height").Int()
 					break
 				}
