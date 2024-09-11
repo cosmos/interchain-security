@@ -9,7 +9,7 @@ import (
 
 // stepsPermissionlessICS tests
 // - starting multiple permissionless consumer chains with the same chain ID
-// - that a validator CANNOT opt-in on two different chains with the same chain ID
+// - that a validator CAN opt-in on two different chains with the same chain ID
 // - taking ownership of a consumer chain
 // - TopN to permissionless chain transformation
 func stepsPermissionlessICS() []Step {
@@ -72,11 +72,12 @@ func stepsPermissionlessICS() []Step {
 			},
 		},
 		// Start another permissionless chain with ChainID `consu`
-		// test chain "cons1" is configured with ChainID "consu"
+		// - runs chain "cons1" which is configured with ChainID "consu"
+		// - test that validator 'alice' can opt-in on two chain with same chain ID
 		stepsStartPermissionlessChain(
 			"cons1", "consu",
-			[]string{"consu", "consu"}, // show up both consumer chains "consu" as proposed chains
-			[]ValidatorID{ValidatorID("bob")}, 0),
+			[]string{"consu", "consu"},                                  // show up both consumer chains "consu" as proposed chains
+			[]ValidatorID{ValidatorID("bob"), ValidatorID("alice")}, 0), // alice already validating 'cons2'
 
 		[]Step{
 			{
@@ -89,68 +90,14 @@ func stepsPermissionlessICS() []Step {
 				State: State{
 					ChainID("cons1"): ChainState{
 						ValPowers: &map[ValidatorID]uint{
-							ValidatorID("alice"): 0,
+							ValidatorID("alice"): 100,
 							ValidatorID("bob"):   200,
 							ValidatorID("carol"): 0,
 						},
 					},
 					ChainID("provi"): e2e.ChainState{
 						HasToValidate: &map[ValidatorID][]ChainID{
-							ValidatorID("alice"): {},
-							ValidatorID("bob"):   {"consu"},
-							ValidatorID("carol"): {},
-						},
-					},
-				},
-			},
-		},
-
-		// Test that a validator CANNOT opt-in on a chain with the same ChainID it is already validating
-		[]Step{
-			{
-				Action: OptInAction{
-					Chain:         ChainID("cons2"),
-					Validator:     ValidatorID("alice"),
-					ExpectError:   true,
-					ExpectedError: "already opted in to a chain with the same chain id",
-				},
-				State: State{
-					ChainID("provi"): ChainState{
-						HasToValidate: &map[ValidatorID][]ChainID{
-							ValidatorID("alice"): {},
-							ValidatorID("bob"):   {"consu"},
-							ValidatorID("carol"): {},
-						},
-					},
-					ChainID("cons1"): ChainState{
-						ValPowers: &map[ValidatorID]uint{
-							ValidatorID("alice"): 0, // alice refused to opt in
-							ValidatorID("bob"):   200,
-							ValidatorID("carol"): 0,
-						},
-					},
-				},
-			},
-		},
-		[]Step{
-			{
-				Action: RelayPacketsAction{
-					ChainA:  ChainID("provi"),
-					ChainB:  ChainID("cons1"),
-					Port:    "provider",
-					Channel: 0,
-				},
-				State: State{
-					ChainID("cons1"): ChainState{
-						ValPowers: &map[ValidatorID]uint{
-							ValidatorID("alice"): 0,
-							ValidatorID("bob"):   200,
-							ValidatorID("carol"): 0,
-						},
-					},
-					ChainID("provi"): e2e.ChainState{
-						HasToValidate: &map[ValidatorID][]ChainID{
-							ValidatorID("alice"): {},
+							ValidatorID("alice"): {"consu"},
 							ValidatorID("bob"):   {"consu"},
 							ValidatorID("carol"): {},
 						},
@@ -204,14 +151,14 @@ func stepsPermissionlessICS() []Step {
 				State: State{
 					ChainID("cons1"): ChainState{
 						ValPowers: &map[ValidatorID]uint{
-							ValidatorID("alice"): 0,
+							ValidatorID("alice"): 100,
 							ValidatorID("bob"):   200, // bob is not 'denylisted'
 							ValidatorID("carol"): 0,
 						},
 					},
 					ChainID("provi"): e2e.ChainState{
 						HasToValidate: &map[ValidatorID][]ChainID{
-							ValidatorID("alice"): {},
+							ValidatorID("alice"): {"consu"},
 							ValidatorID("bob"):   {"consu"}, // bob is still a validator on consu chain
 							ValidatorID("carol"): {},
 						},
