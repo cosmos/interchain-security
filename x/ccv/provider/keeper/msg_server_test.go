@@ -1,9 +1,10 @@
 package keeper_test
 
 import (
-	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"testing"
 	"time"
+
+	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	"github.com/stretchr/testify/require"
 
@@ -242,6 +243,7 @@ func TestUpdateConsumer(t *testing.T) {
 			InitializationParameters: &expectedInitializationParameters,
 			PowerShapingParameters:   nil,
 		})
+	require.NoError(t, err)
 	// assert the chain is not scheduled to launch
 	consumerIds, err = providerKeeper.GetConsumersToBeLaunched(ctx, previousSpawnTime)
 	require.NoError(t, err)

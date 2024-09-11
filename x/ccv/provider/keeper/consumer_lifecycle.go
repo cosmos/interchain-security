@@ -335,10 +335,13 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 
 	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
-	nextValidators := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
+	nextValidators, err := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
+	if err != nil {
+		return gen, nil, fmt.Errorf("unable to compute the next validators in MakeConsumerGenesis, consumerId(%s): %w", consumerId, err)
+	}
 	err = k.SetConsumerValSet(ctx, consumerId, nextValidators)
 	if err != nil {
-		return gen, nil, fmt.Errorf("unable to set consumer validator set in MakeConsumerGenesis: %s", err)
+		return gen, nil, fmt.Errorf("unable to set consumer validator set in MakeConsumerGenesis, consumerId(%s): %w", consumerId, err)
 	}
 
 	// get the initial updates with the latest set consumer public keys

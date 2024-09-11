@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -167,8 +168,8 @@ func (k Keeper) FilterValidators(
 	ctx sdk.Context,
 	consumerId string,
 	bondedValidators []stakingtypes.Validator,
-	predicate func(providerAddr types.ProviderConsAddress) bool,
-) []types.ConsensusValidator {
+	predicate func(providerAddr types.ProviderConsAddress) (bool, error),
+) ([]types.ConsensusValidator, error) {
 	var nextValidators []types.ConsensusValidator
 	for _, val := range bondedValidators {
 		consAddr, err := val.GetConsAddr()
@@ -176,21 +177,66 @@ func (k Keeper) FilterValidators(
 			continue
 		}
 
-		if predicate(types.NewProviderConsAddress(consAddr)) {
+		ok, err := predicate(types.NewProviderConsAddress(consAddr))
+		if err != nil {
+			return nextValidators, err
+		}
+		if ok {
 			nextValidator, err := k.CreateConsumerValidator(ctx, consumerId, val)
 			if err != nil {
-				// this should never happen but is recoverable if we exclude this validator from the next validator set
-				k.Logger(ctx).Error("could not create consumer validator",
-					"validator", val.GetOperator(),
-					"error", err)
-				continue
+				return nextValidators, err
 			}
-
 			nextValidators = append(nextValidators, nextValidator)
 		}
 	}
 
-	return nextValidators
+	return nextValidators, nil
+}
+
+// ComputeNextValidators computes the validators for the upcoming epoch based on the currently `bondedValidators`.
+func (k Keeper) ComputeNextValidators(
+	ctx sdk.Context,
+	consumerId string,
+	bondedValidators []stakingtypes.Validator,
+	powerShapingParameters types.PowerShapingParameters,
+	minPowerToOptIn int64,
+) ([]types.ConsensusValidator, error) {
+	// sort the bonded validators by number of staked tokens in descending order
+	sort.Slice(bondedValidators, func(i, j int) bool {
+		return bondedValidators[i].GetBondedTokens().GT(bondedValidators[j].GetBondedTokens())
+	})
+
+	// if inactive validators are not allowed, only consider the first `MaxProviderConsensusValidators` validators
+	// since those are the ones that participate in consensus
+	if !powerShapingParameters.AllowInactiveVals {
+		// only leave the first MaxProviderConsensusValidators bonded validators
+		maxProviderConsensusVals := k.GetMaxProviderConsensusValidators(ctx)
+		if len(bondedValidators) > int(maxProviderConsensusVals) {
+			bondedValidators = bondedValidators[:maxProviderConsensusVals]
+		}
+	}
+
+	nextValidators, err := k.FilterValidators(ctx, consumerId, bondedValidators,
+		func(providerAddr types.ProviderConsAddress) (bool, error) {
+			canValidateChain, err := k.CanValidateChain(ctx, consumerId, providerAddr, powerShapingParameters.Top_N, minPowerToOptIn)
+			if err != nil {
+				return false, err
+			}
+			fulfillsMinStake, err := k.FulfillsMinStake(ctx, powerShapingParameters.MinStake, providerAddr)
+			if err != nil {
+				return false, err
+			}
+			return canValidateChain && fulfillsMinStake, nil
+		})
+	if err != nil {
+		return []types.ConsensusValidator{}, err
+	}
+
+	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, nextValidators)
+
+	nextValidators = k.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, nextValidators)
+
+	return nextValidators, nil
 }
 
 // GetLastBondedValidators iterates the last validator powers in the staking module
@@ -200,12 +246,12 @@ func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validat
 	if err != nil {
 		return nil, err
 	}
-	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx), maxVals)
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, maxVals)
 }
 
 // GetLastProviderConsensusActiveValidators returns the `MaxProviderConsensusValidators` many validators with the largest powers
 // from the last bonded validators in the staking module.
 func (k Keeper) GetLastProviderConsensusActiveValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 	maxVals := k.GetMaxProviderConsensusValidators(ctx)
-	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, k.Logger(ctx), uint32(maxVals))
+	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, uint32(maxVals))
 }

@@ -377,8 +377,9 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	considerAll := func(providerAddr providertypes.ProviderConsAddress) bool { return true }
-	nextValidators := s.providerKeeper().FilterValidators(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
+	considerAll := func(providerAddr providertypes.ProviderConsAddress) (bool, error) { return true, nil }
+	nextValidators, err := s.providerKeeper().FilterValidators(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
+	require.NoError(s.t, err)
 	err = s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
 	require.NoError(s.t, err)
 

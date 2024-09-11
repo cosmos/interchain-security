@@ -330,3 +330,50 @@ func TestChangeRewardDenoms(t *testing.T) {
 	attributes = keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
 	require.Len(t, attributes, 0) // No attributes should be returned since the denom is not registered
 }
+
+func TestHandleSetConsumerCommissionRate(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
+
+	// trying to set a commission rate to a unknown consumer chain
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, "unknownChainID", providerAddr, math.LegacyZeroDec()))
+
+	// setup a pending consumer chain
+	consumerId := "0"
+	providerKeeper.FetchAndIncrementConsumerId(ctx)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
+
+	// check that there's no commission rate set for the validator yet
+	_, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
+	require.False(t, found)
+
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(math.LegacyZeroDec(), nil).Times(1)
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, consumerId, providerAddr, math.LegacyOneDec()))
+
+	// check that the commission rate is now set
+	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
+	require.Equal(t, math.LegacyOneDec(), cr)
+	require.True(t, found)
+
+	// set minimum rate of 1/2
+	commissionRate := math.LegacyNewDec(1).Quo(math.LegacyNewDec(2))
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(commissionRate, nil).AnyTimes()
+
+	// try to set a rate slightly below the minimum
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(
+		ctx,
+		consumerId,
+		providerAddr,
+		commissionRate.Sub(math.LegacyNewDec(1).Quo(math.LegacyNewDec(100)))), // 0.5 - 0.01
+		"commission rate should be rejected (below min), but is not",
+	)
+
+	// set a valid commission equal to the minimum
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, consumerId, providerAddr, commissionRate))
+	// check that the rate was set
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
+	require.Equal(t, commissionRate, cr)
+	require.True(t, found)
+}
