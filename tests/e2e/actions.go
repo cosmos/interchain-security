@@ -267,79 +267,81 @@ func (tr Chain) submitTextProposal(
 }
 
 type UpdateConsumerChainAction struct {
-	Chain               ChainID
-	From                ValidatorID
-	ConsumerChain       ChainID
-	NewOwner            string
+	Chain              ChainID
+	From               ValidatorID
+	ConsumerChain      ChainID
+	NewOwner           string
+	InitParams         *InitializationParameters
+	PowerShapingParams *PowerShapingParameters
+}
+
+type InitializationParameters struct {
 	InitialHeight       clienttypes.Height
 	SpawnTime           uint
 	DistributionChannel string
-	TopN                uint32
-	ValidatorsPowerCap  uint32
-	ValidatorSetCap     uint32
-	Allowlist           []string
-	Denylist            []string
-	MinStake            uint64
-	AllowInactiveVals   bool
+}
+
+type PowerShapingParameters struct {
+	TopN               uint32
+	ValidatorsPowerCap uint32
+	ValidatorSetCap    uint32
+	Allowlist          []string
+	Denylist           []string
+	MinStake           uint64
+	AllowInactiveVals  bool
 }
 
 func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bool) {
-	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
-	params := ccvtypes.DefaultParams()
-	initParams := types.ConsumerInitializationParameters{
-		InitialHeight: action.InitialHeight,
-		GenesisHash:   []byte("gen_hash"),
-		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     spawnTime,
 
-		UnbondingPeriod:                   params.UnbondingPeriod,
-		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
-		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
-		ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
-		BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
-		HistoricalEntries:                 params.HistoricalEntries,
-		DistributionTransmissionChannel:   action.DistributionChannel,
+	var initParams *types.ConsumerInitializationParameters
+	if action.InitParams != nil {
+		spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.InitParams.SpawnTime) * time.Millisecond)
+		params := ccvtypes.DefaultParams()
+		initParams = &types.ConsumerInitializationParameters{
+			InitialHeight: action.InitParams.InitialHeight,
+			GenesisHash:   []byte("gen_hash"),
+			BinaryHash:    []byte("bin_hash"),
+			SpawnTime:     spawnTime,
+
+			UnbondingPeriod:                   params.UnbondingPeriod,
+			CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
+			TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
+			ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
+			BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
+			HistoricalEntries:                 params.HistoricalEntries,
+			DistributionTransmissionChannel:   action.InitParams.DistributionChannel,
+		}
 	}
-
 	powerShapingParams := types.PowerShapingParameters{
-		Top_N:              action.TopN,
-		ValidatorsPowerCap: action.ValidatorsPowerCap,
-		ValidatorSetCap:    action.ValidatorSetCap,
-		Allowlist:          action.Allowlist,
-		Denylist:           action.Denylist,
-		MinStake:           action.MinStake,
-		AllowInactiveVals:  action.AllowInactiveVals,
+		Top_N:              action.PowerShapingParams.TopN,
+		ValidatorsPowerCap: action.PowerShapingParams.ValidatorsPowerCap,
+		ValidatorSetCap:    action.PowerShapingParams.ValidatorSetCap,
+		Allowlist:          action.PowerShapingParams.Allowlist,
+		Denylist:           action.PowerShapingParams.Denylist,
+		MinStake:           action.PowerShapingParams.MinStake,
+		AllowInactiveVals:  action.PowerShapingParams.AllowInactiveVals,
 	}
 
 	consumerId := tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId
 	msg := types.MsgUpdateConsumer{
 		ConsumerId:               string(consumerId),
 		NewOwnerAddress:          action.NewOwner,
-		InitializationParameters: &initParams,
+		InitializationParameters: initParams,
 		PowerShapingParameters:   &powerShapingParams,
 	}
 	tr.UpdateConsumer(action.Chain, action.From, msg, verbose)
 }
 
 type CreateConsumerChainAction struct {
-	Chain               ChainID
-	From                ValidatorID
-	ConsumerChain       ChainID
-	InitialHeight       clienttypes.Height
-	SpawnTime           uint
-	DistributionChannel string
-	TopN                uint32
-	ValidatorsPowerCap  uint32
-	ValidatorSetCap     uint32
-	Allowlist           []string
-	Denylist            []string
-	MinStake            uint64
-	AllowInactiveVals   bool
+	Chain              ChainID
+	From               ValidatorID
+	ConsumerChain      ChainID
+	InitParams         *InitializationParameters
+	PowerShapingParams *PowerShapingParameters
 }
 
 // createConsumerChain creates and initializes a consumer chain
 func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bool) {
-	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	consumerChainCfg := tr.testConfig.chainConfigs[action.ConsumerChain]
 	providerChainCfg := tr.testConfig.chainConfigs[action.Chain]
 
@@ -347,30 +349,33 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 		log.Fatalf("consumer chain already created for '%s'", action.ConsumerChain)
 	}
 
-	params := ccvtypes.DefaultParams()
-	initParams := types.ConsumerInitializationParameters{
-		InitialHeight: action.InitialHeight,
-		GenesisHash:   []byte("gen_hash"),
-		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     spawnTime,
+	var initParams *types.ConsumerInitializationParameters
+	if action.InitParams != nil {
+		spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.InitParams.SpawnTime) * time.Millisecond)
+		params := ccvtypes.DefaultParams()
+		initParams = &types.ConsumerInitializationParameters{
+			InitialHeight: action.InitParams.InitialHeight,
+			GenesisHash:   []byte("gen_hash"),
+			BinaryHash:    []byte("bin_hash"),
+			SpawnTime:     spawnTime,
 
-		UnbondingPeriod:                   params.UnbondingPeriod,
-		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
-		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
-		ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
-		BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
-		HistoricalEntries:                 params.HistoricalEntries,
-		DistributionTransmissionChannel:   action.DistributionChannel,
+			UnbondingPeriod:                   params.UnbondingPeriod,
+			CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
+			TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
+			ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
+			BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
+			HistoricalEntries:                 params.HistoricalEntries,
+			DistributionTransmissionChannel:   action.InitParams.DistributionChannel,
+		}
 	}
-
-	powerShapingParams := types.PowerShapingParameters{
-		Top_N:              action.TopN,
-		ValidatorsPowerCap: action.ValidatorsPowerCap,
-		ValidatorSetCap:    action.ValidatorSetCap,
-		Allowlist:          action.Allowlist,
-		Denylist:           action.Denylist,
-		MinStake:           action.MinStake,
-		AllowInactiveVals:  action.AllowInactiveVals,
+	powerShapingParams := &types.PowerShapingParameters{
+		Top_N:              action.PowerShapingParams.TopN,
+		ValidatorsPowerCap: action.PowerShapingParams.ValidatorsPowerCap,
+		ValidatorSetCap:    action.PowerShapingParams.ValidatorSetCap,
+		Allowlist:          action.PowerShapingParams.Allowlist,
+		Denylist:           action.PowerShapingParams.Denylist,
+		MinStake:           action.PowerShapingParams.MinStake,
+		AllowInactiveVals:  action.PowerShapingParams.AllowInactiveVals,
 	}
 
 	metadata := types.ConsumerMetadata{
@@ -380,7 +385,7 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 	}
 
 	// create consumer to get a consumer-id
-	consumerId := tr.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, metadata, &initParams, &powerShapingParams)
+	consumerId := tr.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, metadata, initParams, powerShapingParams)
 	if verbose {
 		fmt.Println("Created consumer chain", string(consumerChainCfg.ChainId), " with consumer-id", string(consumerId))
 	}

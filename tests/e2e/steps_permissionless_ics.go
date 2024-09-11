@@ -45,9 +45,13 @@ func stepsPermissionlessICS() []Step {
 					Chain:         ChainID("provi"),
 					From:          ValidatorID("alice"),
 					ConsumerChain: ChainID("cons2"), // test chain "cons2" is configured with ChainID "consu"
-					SpawnTime:     uint(time.Minute * 3),
-					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-					TopN:          0,
+					InitParams: &InitializationParameters{
+						InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+						SpawnTime:     uint(time.Minute * 3),
+					},
+					PowerShapingParams: &PowerShapingParameters{
+						TopN: 0,
+					},
 				},
 				State: State{},
 			},
@@ -163,9 +167,13 @@ func stepsPermissionlessICS() []Step {
 					From:          ValidatorID("bob"),
 					ConsumerChain: ChainID("cons1"),
 					NewOwner:      getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
-					SpawnTime:     0, // launch now
-					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-					TopN:          0,
+					InitParams: &InitializationParameters{
+						InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+						SpawnTime:     0, // launch now
+					},
+					PowerShapingParams: &PowerShapingParameters{
+						TopN: 0,
+					},
 				},
 				State: State{},
 			},
@@ -174,11 +182,15 @@ func stepsPermissionlessICS() []Step {
 					Chain:         ChainID("provi"),
 					From:          ValidatorID("carol"),
 					ConsumerChain: ChainID("cons1"),
-					SpawnTime:     0,
-					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-					TopN:          0,
-					Allowlist:     []string{getDefaultValidators()[ValidatorID("carol")].ValconsAddress},
-					Denylist:      []string{getDefaultValidators()[ValidatorID("bob")].ValconsAddress},
+					InitParams: &InitializationParameters{
+						InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+						SpawnTime:     0,
+					},
+					PowerShapingParams: &PowerShapingParameters{
+						TopN:      0,
+						Allowlist: []string{getDefaultValidators()[ValidatorID("carol")].ValconsAddress},
+						Denylist:  []string{getDefaultValidators()[ValidatorID("bob")].ValconsAddress},
+					},
 				},
 				State: State{},
 			},
