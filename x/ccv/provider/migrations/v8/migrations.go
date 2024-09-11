@@ -305,15 +305,6 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		// set phase to launched
 		pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
 
-		// This is to migrate everything under `ProviderConsAddrToOptedInConsumerIdsKey`
-		// `OptedIn` was already re-keyed earlier (see above) and hence we can use `consumerId` here.
-		for _, providerConsAddr := range pk.GetAllOptedIn(ctx, consumerId) {
-			err := pk.AppendOptedInConsumerId(ctx, providerConsAddr, consumerId)
-			if err != nil {
-				return err
-			}
-		}
-
 		// set clientId -> consumerId mapping
 		// consumer to client was already re-keyed so we can use `consumerId` here
 		// however, during the rekeying, the reverse index was not set

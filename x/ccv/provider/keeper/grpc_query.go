@@ -348,7 +348,10 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 			}
 		}
 
-		consumerValSet = k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
+		consumerValSet, err = k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute the next validators for chain %s: %s", consumerId, err))
+		}
 
 		// sort the address of the validators by ascending lexical order as they were persisted to the store
 		sort.Slice(consumerValSet, func(i, j int) bool {
@@ -476,7 +479,10 @@ func (k Keeper) hasToValidate(
 	if err != nil {
 		return false, err
 	}
-	nextValidators := k.ComputeNextValidators(ctx, consumerId, lastVals, powerShapingParameters, minPowerToOptIn)
+	nextValidators, err := k.ComputeNextValidators(ctx, consumerId, lastVals, powerShapingParameters, minPowerToOptIn)
+	if err != nil {
+		return false, err
+	}
 	for _, v := range nextValidators {
 		consAddr := sdk.ConsAddress(v.ProviderConsAddr)
 		if provAddr.ToSdkConsAddr().Equals(consAddr) {

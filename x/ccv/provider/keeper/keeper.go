@@ -735,69 +735,6 @@ func (k Keeper) GetAllActiveConsumerIds(ctx sdk.Context) []string {
 	return consumerIds
 }
 
-func (k Keeper) SetOptedIn(
-	ctx sdk.Context,
-	consumerId string,
-	providerConsAddress types.ProviderConsAddress,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.OptedInKey(consumerId, providerConsAddress), []byte{})
-}
-
-func (k Keeper) DeleteOptedIn(
-	ctx sdk.Context,
-	consumerId string,
-	providerAddr types.ProviderConsAddress,
-) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.OptedInKey(consumerId, providerAddr))
-}
-
-func (k Keeper) IsOptedIn(
-	ctx sdk.Context,
-	consumerId string,
-	providerAddr types.ProviderConsAddress,
-) bool {
-	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.OptedInKey(consumerId, providerAddr)) != nil
-}
-
-// GetAllOptedIn returns all the opted-in validators on chain `consumerId`
-func (k Keeper) GetAllOptedIn(
-	ctx sdk.Context,
-	consumerId string,
-) (providerConsAddresses []types.ProviderConsAddress) {
-	store := ctx.KVStore(k.storeKey)
-	key := types.StringIdWithLenKey(types.OptedInKeyPrefix(), consumerId)
-	iterator := storetypes.KVStorePrefixIterator(store, key)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		providerConsAddresses = append(providerConsAddresses, types.NewProviderConsAddress(iterator.Key()[len(key):]))
-	}
-
-	return providerConsAddresses
-}
-
-// DeleteAllOptedIn deletes all the opted-in validators for chain with `consumerId`
-func (k Keeper) DeleteAllOptedIn(
-	ctx sdk.Context,
-	consumerId string,
-) {
-	store := ctx.KVStore(k.storeKey)
-	key := types.StringIdWithLenKey(types.OptedInKeyPrefix(), consumerId)
-	iterator := storetypes.KVStorePrefixIterator(store, key)
-
-	var keysToDel [][]byte
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		keysToDel = append(keysToDel, iterator.Key())
-	}
-	for _, delKey := range keysToDel {
-		store.Delete(delKey)
-	}
-}
-
 // SetConsumerCommissionRate sets a per-consumer chain commission rate
 // for the given validator address
 func (k Keeper) SetConsumerCommissionRate(
