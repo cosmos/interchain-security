@@ -176,8 +176,6 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	for _, v := range lastVals {
 		consAddr, _ := v.GetConsAddr()
 		providerKeeper.SetOptedIn(providerChain.GetContext(), consumerId, providertypes.NewProviderConsAddress(consAddr))
-		err = providerKeeper.AppendOptedInConsumerId(providerChain.GetContext(), providertypes.NewProviderConsAddress(consAddr), consumerId)
-		s.Require().NoError(err)
 	}
 
 	// commit the state on the provider chain

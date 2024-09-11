@@ -102,7 +102,7 @@ func CmdConsumerChains() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				req.Limit = int32(limit)
+				req.Pagination.Limit = uint64(limit)
 			}
 
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)

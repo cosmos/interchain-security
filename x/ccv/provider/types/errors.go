@@ -6,8 +6,6 @@ import (
 
 // Provider sentinel errors
 var (
-	ErrInvalidConsumerAdditionProposal         = errorsmod.Register(ModuleName, 1, "invalid consumer addition proposal")
-	ErrInvalidConsumerRemovalProp              = errorsmod.Register(ModuleName, 2, "invalid consumer removal proposal")
 	ErrUnknownConsumerId                       = errorsmod.Register(ModuleName, 3, "no consumer chain with this consumer id")
 	ErrUnknownConsumerChannelId                = errorsmod.Register(ModuleName, 4, "no consumer chain with this channel id")
 	ErrInvalidConsumerId                       = errorsmod.Register(ModuleName, 6, "invalid consumer id")
@@ -15,12 +13,9 @@ var (
 	ErrCannotAssignDefaultKeyAssignment        = errorsmod.Register(ModuleName, 11, "cannot re-assign default key assignment")
 	ErrInvalidConsumerRewardDenom              = errorsmod.Register(ModuleName, 14, "invalid consumer reward denom")
 	ErrInvalidConsumerClient                   = errorsmod.Register(ModuleName, 16, "ccv channel is not built on correct client")
-	ErrConsumerChainNotFound                   = errorsmod.Register(ModuleName, 18, "consumer chain not found")
 	ErrCannotOptOutFromTopN                    = errorsmod.Register(ModuleName, 20, "cannot opt out from a Top N chain")
-	ErrInvalidConsumerModificationProposal     = errorsmod.Register(ModuleName, 22, "invalid consumer modification proposal")
 	ErrNoUnbondingTime                         = errorsmod.Register(ModuleName, 23, "provider unbonding time not found")
 	ErrUnauthorized                            = errorsmod.Register(ModuleName, 25, "unauthorized")
-	ErrBlankConsumerChainID                    = errorsmod.Register(ModuleName, 26, "consumer chain id must not be blank")
 	ErrInvalidPhase                            = errorsmod.Register(ModuleName, 27, "cannot perform action in the current phase of consumer chain")
 	ErrInvalidConsumerMetadata                 = errorsmod.Register(ModuleName, 28, "invalid consumer metadata")
 	ErrInvalidPowerShapingParameters           = errorsmod.Register(ModuleName, 29, "invalid power shaping parameters")

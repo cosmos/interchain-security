@@ -297,6 +297,16 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "ChainId: %s", err.Error())
 	}
 
+	// With permissionless ICS, we can have multiple consumer chains with the exact same chain id.
+	// However, as we already have the Neutron and Stride Top N chains running, as a first step we would like to
+	// prevent permissionless chains from re-using the chain ids of Neutron and Stride. Note that this is just a
+	// preliminary measure that will be removed later on as part of:
+	// TODO (#2242): find a better way of ignoring past misbehaviors
+	if msg.ChainId == "neutron-1" || msg.ChainId == "stride-1" {
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer,
+			"cannot reuse chain ids of existing Neutron and Stride Top N consumer chains")
+	}
+
 	if err := ValidateConsumerMetadata(msg.Metadata); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "Metadata: %s", err.Error())
 	}
@@ -567,7 +577,7 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 
 func ValidateByteSlice(hash []byte, maxLength int) error {
 	if len(hash) > maxLength {
-		return fmt.Errorf("hash is too long; got: %d, max: %d", len(hash), MaxHashLength)
+		return fmt.Errorf("hash is too long; got: %d, max: %d", len(hash), maxLength)
 	}
 	return nil
 }

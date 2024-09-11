@@ -788,14 +788,15 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				})
 			}
 
-			nextValidators := k.FilterValidators(ctx, CONSUMERID, bondedValidators,
-				func(providerAddr types.ProviderConsAddress) bool {
-					return true
+			nextValidators, err := k.FilterValidators(ctx, CONSUMERID, bondedValidators,
+				func(providerAddr types.ProviderConsAddress) (bool, error) {
+					return true, nil
 				})
-			valSet, error := k.GetConsumerValSet(ctx, CONSUMERID)
-			require.NoError(t, error)
+			require.NoError(t, err)
+			valSet, err := k.GetConsumerValSet(ctx, CONSUMERID)
+			require.NoError(t, err)
 			updates = providerkeeper.DiffValidators(valSet, nextValidators)
-			err := k.SetConsumerValSet(ctx, CONSUMERID, nextValidators)
+			err = k.SetConsumerValSet(ctx, CONSUMERID, nextValidators)
 			require.NoError(t, err)
 
 			consumerValset.apply(updates)

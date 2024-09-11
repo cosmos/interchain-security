@@ -316,7 +316,8 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 
 	providerKeeper.SetOptedIn(ctx, "3", providertypes.NewProviderConsAddress(consAddr))
 
-	providerKeeper.BeginBlockLaunchConsumers(ctx)
+	err := providerKeeper.BeginBlockLaunchConsumers(ctx)
+	require.NoError(t, err)
 
 	// first chain was successfully launched
 	phase := providerKeeper.GetConsumerPhase(ctx, "0")
@@ -351,41 +352,140 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 	require.False(t, found)
 }
 
-// TestGetConsumersReadyToLaunch tests that the ready to-be-launched consumer chains are returned
-func TestGetConsumersReadyToLaunch(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
+func TestConsumeIdsFromTimeQueue(t *testing.T) {
+	expectedConsumerIds := []string{"1", "2", "3", "4"}
+	timestamps := []time.Time{time.Unix(10, 0), time.Unix(20, 0), time.Unix(30, 0)}
 
-	// no chains to-be-launched exist
-	require.Empty(t, providerKeeper.GetConsumersReadyToLaunch(ctx, 5))
+	testCases := []struct {
+		name       string
+		ts         time.Time
+		limit      int
+		expOutcome func(sdk.Context, []string, func(sdk.Context, time.Time) (providertypes.ConsumerIds, error))
+	}{
+		{
+			name:  "timestamp too early",
+			ts:    time.Unix(9, 999999999),
+			limit: 3,
+			expOutcome: func(ctx sdk.Context, ids []string, getIds func(sdk.Context, time.Time) (providertypes.ConsumerIds, error)) {
+				require.Empty(t, ids)
+			},
+		},
+		{
+			name:  "first timestamp",
+			ts:    timestamps[0],
+			limit: 2,
+			expOutcome: func(ctx sdk.Context, ids []string, getIds func(sdk.Context, time.Time) (providertypes.ConsumerIds, error)) {
+				require.Equal(t, expectedConsumerIds[0:2], ids)
 
-	err := providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId1", time.Unix(10, 0))
-	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId2", time.Unix(20, 0))
-	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeLaunched(ctx, "consumerId3", time.Unix(30, 0))
-	require.NoError(t, err)
+				// check that all consumers where removed
+				consumerIds, err := getIds(ctx, timestamps[0])
+				require.NoError(t, err)
+				require.Empty(t, consumerIds)
+			},
+		},
+		{
+			name:  "first timestamp, with limit",
+			ts:    timestamps[0],
+			limit: 1,
+			expOutcome: func(ctx sdk.Context, ids []string, getIds func(sdk.Context, time.Time) (providertypes.ConsumerIds, error)) {
+				require.Equal(t, expectedConsumerIds[0:1], ids)
 
-	// time has not yet reached the spawn time of "consumerId1"
-	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
-	require.Empty(t, providerKeeper.GetConsumersReadyToLaunch(ctx, 3))
+				// second consumer remained
+				ret, err := getIds(ctx, timestamps[0])
+				require.NoError(t, err)
+				require.Equal(t, providertypes.ConsumerIds{
+					Ids: []string{expectedConsumerIds[1]},
+				}, ret)
+			},
+		},
+		{
+			name:  "second timestamp",
+			ts:    timestamps[1],
+			limit: 3,
+			expOutcome: func(ctx sdk.Context, ids []string, getIds func(sdk.Context, time.Time) (providertypes.ConsumerIds, error)) {
+				require.Equal(t, expectedConsumerIds[0:3], ids)
 
-	// time has reached the spawn time of "consumerId1"
-	ctx = ctx.WithBlockTime(time.Unix(10, 0))
-	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 3))
+				// check that all consumers where removed
+				ret, err := getIds(ctx, timestamps[0])
+				require.NoError(t, err)
+				require.Empty(t, ret)
+				ret, err = getIds(ctx, timestamps[1])
+				require.NoError(t, err)
+				require.Empty(t, ret)
+			},
+		},
+		{
+			name:  "third timestamp, with limit",
+			ts:    timestamps[1],
+			limit: 3,
+			expOutcome: func(ctx sdk.Context, ids []string, getIds func(sdk.Context, time.Time) (providertypes.ConsumerIds, error)) {
+				require.Equal(t, expectedConsumerIds[0:3], ids)
 
-	// time has reached the spawn time of "consumerId1" and "consumerId2"
-	ctx = ctx.WithBlockTime(time.Unix(20, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 3))
+				// 4th consumer remained
+				ret, err := getIds(ctx, timestamps[0])
+				require.NoError(t, err)
+				require.Empty(t, ret)
+				ret, err = getIds(ctx, timestamps[1])
+				require.NoError(t, err)
+				require.Empty(t, ret)
+				ret, err = getIds(ctx, timestamps[2])
+				require.NoError(t, err)
+				require.Equal(t, providertypes.ConsumerIds{
+					Ids: []string{expectedConsumerIds[3]},
+				}, ret)
+			},
+		},
+	}
 
-	// time has reached the spawn time of all chains
-	ctx = ctx.WithBlockTime(time.Unix(30, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 3))
+	// test for consumers to be launched
+	for _, tc := range testCases {
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
 
-	// limit the number of returned consumer chains
-	require.Equal(t, []string{}, providerKeeper.GetConsumersReadyToLaunch(ctx, 0))
-	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 1))
-	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetConsumersReadyToLaunch(ctx, 2))
+		callCases := []struct {
+			timeQueueKeyPrefix byte
+			getIds             func(sdk.Context, time.Time) (providertypes.ConsumerIds, error)
+			deleteAllIds       func(sdk.Context, time.Time)
+			appendId           func(sdk.Context, string, time.Time) error
+		}{
+			{
+				timeQueueKeyPrefix: providertypes.SpawnTimeToConsumerIdsKeyPrefix(),
+				getIds:             providerKeeper.GetConsumersToBeLaunched,
+				deleteAllIds:       providerKeeper.DeleteAllConsumersToBeLaunched,
+				appendId:           providerKeeper.AppendConsumerToBeLaunched,
+			},
+			{
+				timeQueueKeyPrefix: providertypes.RemovalTimeToConsumerIdsKeyPrefix(),
+				getIds:             providerKeeper.GetConsumersToBeRemoved,
+				deleteAllIds:       providerKeeper.DeleteAllConsumersToBeRemoved,
+				appendId:           providerKeeper.AppendConsumerToBeRemoved,
+			},
+		}
+		for _, cc := range callCases {
+			err := cc.appendId(ctx, expectedConsumerIds[0], timestamps[0])
+			require.NoError(t, err)
+			err = cc.appendId(ctx, expectedConsumerIds[1], timestamps[0])
+			require.NoError(t, err)
+			err = cc.appendId(ctx, expectedConsumerIds[2], timestamps[1])
+			require.NoError(t, err)
+			err = cc.appendId(ctx, expectedConsumerIds[3], timestamps[2])
+			require.NoError(t, err)
+
+			ctx = ctx.WithBlockTime(tc.ts)
+
+			consumerIds, err := providerKeeper.ConsumeIdsFromTimeQueue(
+				ctx,
+				cc.timeQueueKeyPrefix,
+				cc.getIds,
+				cc.deleteAllIds,
+				cc.appendId,
+				tc.limit,
+			)
+			require.NoError(t, err)
+
+			tc.expOutcome(ctx, consumerIds, cc.getIds)
+		}
+	}
 }
 
 // Tests the CreateConsumerClient method against the spec,
@@ -751,7 +851,8 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 	// Test execution
 	//
 
-	providerKeeper.BeginBlockRemoveConsumers(ctx)
+	err = providerKeeper.BeginBlockRemoveConsumers(ctx)
+	require.NoError(t, err)
 
 	// Only the 3rd (final) proposal is still stored as pending
 	phase := providerKeeper.GetConsumerPhase(ctx, consumerIds[0])
@@ -761,37 +862,6 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 	// third chain had a removal time in the future and hence did not get deleted
 	phase = providerKeeper.GetConsumerPhase(ctx, consumerIds[2])
 	require.Equal(t, providertypes.CONSUMER_PHASE_STOPPED, phase)
-}
-
-func TestGetConsumersReadyToStop(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// no chains to-be-stopped exist
-	require.Empty(t, providerKeeper.GetConsumersReadyToStop(ctx, 3))
-
-	err := providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId1", time.Unix(10, 0))
-	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId2", time.Unix(20, 0))
-	require.NoError(t, err)
-	err = providerKeeper.AppendConsumerToBeRemoved(ctx, "consumerId3", time.Unix(30, 0))
-	require.NoError(t, err)
-
-	// time has not yet reached the removal time of "consumerId1"
-	ctx = ctx.WithBlockTime(time.Unix(9, 999999999))
-	require.Empty(t, providerKeeper.GetConsumersReadyToStop(ctx, 3))
-
-	// time has reached the removal time of "consumerId1"
-	ctx = ctx.WithBlockTime(time.Unix(10, 0))
-	require.Equal(t, []string{"consumerId1"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
-
-	// time has reached the removal time of "consumerId1" and "consumerId2"
-	ctx = ctx.WithBlockTime(time.Unix(20, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
-
-	// time has reached the removal time of all chains
-	ctx = ctx.WithBlockTime(time.Unix(30, 0))
-	require.Equal(t, []string{"consumerId1", "consumerId2", "consumerId3"}, providerKeeper.GetConsumersReadyToStop(ctx, 3))
 }
 
 // Tests the DeleteConsumerChain method against the spec,

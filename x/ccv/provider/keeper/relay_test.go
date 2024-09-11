@@ -532,7 +532,8 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 
 	// Increase the block time by `unbondingTime` so the chain actually gets deleted
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
-	providerKeeper.BeginBlockRemoveConsumers(ctx)
+	err = providerKeeper.BeginBlockRemoveConsumers(ctx)
+	require.NoError(t, err)
 
 	// Pending VSC packets should be deleted in DeleteConsumerChain
 	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, CONSUMER_ID))
@@ -583,7 +584,8 @@ func TestOnTimeoutPacketStopsChain(t *testing.T) {
 
 	// increase the block time by `unbondingTime` so the chain actually gets deleted
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
-	providerKeeper.BeginBlockRemoveConsumers(ctx)
+	err = providerKeeper.BeginBlockRemoveConsumers(ctx)
+	require.NoError(t, err)
 
 	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t, ctx, providerKeeper, CONSUMER_ID, "channelID", false)
 }
@@ -635,7 +637,8 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 
 	// increase the block time by `unbondingTime` so the chain actually gets deleted
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
-	providerKeeper.BeginBlockRemoveConsumers(ctx)
+	err = providerKeeper.BeginBlockRemoveConsumers(ctx)
+	require.NoError(t, err)
 
 	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t, ctx, providerKeeper, CONSUMER_ID, "channelID", false)
 }

@@ -43,121 +43,6 @@ type Chain struct {
 	testConfig *TestConfig
 }
 
-func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
-	chainState := ChainState{}
-
-	if modelState.ValBalances != nil {
-		valBalances := tr.GetBalances(chain, *modelState.ValBalances)
-		chainState.ValBalances = &valBalances
-	}
-
-	if modelState.Proposals != nil {
-		proposals := tr.GetProposals(chain, *modelState.Proposals)
-		chainState.Proposals = &proposals
-	}
-
-	if modelState.ProposedConsumerChains != nil {
-		proposedConsumerChains := tr.GetProposedConsumerChains(chain)
-		chainState.ProposedConsumerChains = &proposedConsumerChains
-	}
-
-	if modelState.ValPowers != nil {
-		tr.waitBlocks(chain, 1, 10*time.Second)
-		powers := tr.GetValPowers(chain, *modelState.ValPowers)
-		chainState.ValPowers = &powers
-	}
-
-	if modelState.StakedTokens != nil {
-		representPowers := tr.GetStakedTokens(chain, *modelState.StakedTokens)
-		chainState.StakedTokens = &representPowers
-	}
-
-	if modelState.IBCTransferParams != nil {
-		params := tr.target.GetIBCTransferParams(chain)
-		chainState.IBCTransferParams = &params
-	}
-
-	if modelState.Rewards != nil {
-		rewards := tr.GetRewards(chain, *modelState.Rewards)
-		chainState.Rewards = &rewards
-	}
-
-	if modelState.ConsumerChains != nil {
-		chains := tr.target.GetConsumerChains(chain)
-		chainState.ConsumerChains = &chains
-	}
-
-	if modelState.AssignedKeys != nil {
-		assignedKeys := tr.GetConsumerAddresses(chain, *modelState.AssignedKeys)
-		chainState.AssignedKeys = &assignedKeys
-	}
-
-	if modelState.ProviderKeys != nil {
-		providerKeys := tr.GetProviderAddresses(chain, *modelState.ProviderKeys)
-		chainState.ProviderKeys = &providerKeys
-	}
-
-	if modelState.RegisteredConsumerRewardDenoms != nil {
-		registeredConsumerRewardDenoms := tr.target.GetRegisteredConsumerRewardDenoms(chain)
-		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
-	}
-
-	if modelState.ClientsFrozenHeights != nil {
-		chainClientsFrozenHeights := map[string]clienttypes.Height{}
-		for id := range *modelState.ClientsFrozenHeights {
-			chainClientsFrozenHeights[id] = tr.GetClientFrozenHeight(chain, id)
-		}
-		chainState.ClientsFrozenHeights = &chainClientsFrozenHeights
-	}
-
-	if modelState.HasToValidate != nil {
-		hasToValidate := map[ValidatorID][]ChainID{}
-		for validatorId := range *modelState.HasToValidate {
-			hasToValidate[validatorId] = tr.target.GetHasToValidate(validatorId)
-		}
-		chainState.HasToValidate = &hasToValidate
-	}
-
-	if modelState.InflationRateChange != nil {
-		// get the inflation rate now
-		inflationRateNow := tr.target.GetInflationRate(chain)
-
-		// wait a block
-		tr.waitBlocks(chain, 1, 10*time.Second)
-
-		// get the new inflation rate
-		inflationRateAfter := tr.target.GetInflationRate(chain)
-
-		// calculate the change
-		inflationRateChange := inflationRateAfter - inflationRateNow
-		var inflationRateChangeDirection int
-		if inflationRateChange > 0 {
-			inflationRateChangeDirection = 1
-		} else if inflationRateChange < 0 {
-			inflationRateChangeDirection = -1
-		} else {
-			inflationRateChangeDirection = 0
-		}
-		chainState.InflationRateChange = &inflationRateChangeDirection
-	}
-
-	if modelState.ConsumerCommissionRates != nil {
-		consumerCommissionRates := tr.GetConsumerCommissionRates(chain, *modelState.ConsumerCommissionRates)
-		chainState.ConsumerCommissionRates = &consumerCommissionRates
-	}
-
-	if modelState.ConsumerPendingPacketQueueSize != nil {
-		pendingPacketQueueSize := tr.target.GetPendingPacketQueueSize(chain)
-		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
-	}
-
-	if *verbose {
-		log.Println("Done getting chain state:\n" + pretty.Sprint(chainState))
-	}
-
-	return chainState
-}
-
 func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 	if tr.testConfig.useCometmock {
 		// call advance_blocks method on cometmock
@@ -316,7 +201,7 @@ func (tr Chain) getValidatorIP(chain ChainID, validator ValidatorID) string {
 }
 
 func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
-	return `/` + string(tr.testConfig.chainConfigs[chain].ChainId) + `/validator` + fmt.Sprint(validator)
+	return `/` + string(chain) + `/validator` + fmt.Sprint(validator)
 }
 
 func (tr Chain) curlJsonRPCRequest(method, params, address string) {
@@ -926,7 +811,7 @@ func (tr Commands) GetHasToValidate(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	arr := gjson.Get(string(bz), "consumer_chain_ids").Array()
+	arr := gjson.Get(string(bz), "consumer_ids").Array()
 	chains := []ChainID{}
 	for _, c := range arr {
 		for _, chain := range tr.chainConfigs {
