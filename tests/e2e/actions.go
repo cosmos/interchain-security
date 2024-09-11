@@ -2889,7 +2889,7 @@ func (tr Chain) startConsumerEvidenceDetector(
 		}
 		tr.waitBlocks("provi", 10, 2*time.Minute)
 	} else {
-		// detect and the evidence on the consumer chain
+		// detect the evidence on the consumer chain
 		consumerBinaryName := tr.testConfig.chainConfigs[action.Chain].BinaryName
 
 		// get the infraction height by querying the SDK evidence module of the consumer
