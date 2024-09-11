@@ -59,7 +59,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	pageRes, err := query.Paginate(consumerPhaseStore, req.Pagination, func(key, value []byte) error {
 		consumerId, err := types.ParseStringIdWithLenKey(storePrefix, append([]byte{storePrefix}, key...))
 		if err != nil {
-			status.Error(codes.Internal, err.Error())
+			return status.Error(codes.Internal, err.Error())
 		}
 
 		phase := types.ConsumerPhase(binary.BigEndian.Uint32(value))
