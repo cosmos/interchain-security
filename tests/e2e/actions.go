@@ -1997,8 +1997,8 @@ func (tr Chain) relayPacketsHermes(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.ChainA, 1, 30*time.Second)
-	tr.waitBlocks(action.ChainB, 1, 30*time.Second)
+	tr.waitBlocks(action.ChainA, 2, 30*time.Second)
+	tr.waitBlocks(action.ChainB, 2, 30*time.Second)
 }
 
 type RelayRewardPacketsToProviderAction struct {
@@ -2616,7 +2616,7 @@ func (tr Chain) invokeDoublesignSlash(
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
 		}
-		tr.waitBlocks("provi", 22, 4*time.Minute)
+		tr.waitBlocks("provi", 25, 4*time.Minute)
 	} else { // tr.useCometMock
 		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(action.Chain, action.Validator)
 
