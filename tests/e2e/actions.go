@@ -2857,26 +2857,162 @@ func (tr Chain) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 	return pathName
 }
 
-// Run an instance of the Hermes relayer using the "evidence" command,
-// which detects evidences committed to the blocks of a consumer chain.
+// detect evidences committed to the blocks of a consumer chain
+// either by running an instance of the Hermes relayer using the "evidence" command,
+// or by queyring manually the consumer chain.
 // Each infraction detected is reported to the provider chain using
 // either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
-type StartConsumerEvidenceDetectorAction struct {
-	Chain ChainID
+type DetectorConsumerEvidenceAction struct {
+	Chain     ChainID
+	Submitter ValidatorID
 }
 
-func (tr Chain) startConsumerEvidenceDetector(
-	action StartConsumerEvidenceDetectorAction,
+func (tr Chain) detectConsumerEvidence(
+	action DetectorConsumerEvidenceAction,
+	useRelayer bool,
 	verbose bool,
 ) {
 	chainConfig := tr.testConfig.chainConfigs[action.Chain]
-	// run in detached mode so it will keep running in the background
-	bz, err := tr.target.ExecDetachedCommand(
-		"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+	// the Hermes doesn't support evidence handling for Permissionless ICS yet
+	// TODO: @Simon refactor once https://github.com/informalsystems/hermes/pull/4182 is merged.
+	if useRelayer {
+		// run in detached mode so it will keep running in the background
+		bz, err := tr.target.ExecDetachedCommand(
+			"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+		tr.waitBlocks("provi", 10, 2*time.Minute)
+	} else {
+		// detect the evidence on the consumer chain
+		consumerBinaryName := tr.testConfig.chainConfigs[action.Chain].BinaryName
+
+		// get the infraction height by querying the SDK evidence module of the consumer
+		timeout := time.Now().Add(30 * time.Second)
+		infractionHeight := int64(0)
+		for {
+			cmd := tr.target.ExecCommand(
+				consumerBinaryName,
+				"query", "evidence", "list",
+				`--node`, tr.target.GetQueryNode(action.Chain),
+				`-o`, `json`,
+			)
+
+			if verbose {
+				fmt.Println("query evidence cmd:", cmd.String())
+			}
+
+			bz, err := cmd.CombinedOutput()
+			if err == nil {
+				evidence := gjson.Get(string(bz), "evidence")
+				// we only expect only one evidence
+				if len(evidence.Array()) == 1 {
+					infractionHeight = evidence.Array()[0].Get("value.height").Int()
+					break
+				}
+			}
+
+			if err != nil || time.Now().After(timeout) {
+				log.Print("Failed running command: ", cmd)
+				log.Fatal(err, "\n", string(bz))
+			}
+			time.Sleep(2 * time.Second)
+		}
+
+		// get the evidence data from the block
+		// note that the evidence is added to the next block after the infraction height
+		cmd := tr.target.ExecCommand(
+			consumerBinaryName,
+			"query", "block", "--type=height", strconv.Itoa(int(infractionHeight+1)),
+			`--node`, tr.target.GetQueryNode(action.Chain),
+			`-o`, `json`,
+		)
+
+		if verbose {
+			fmt.Println("query block for evidence cmd:", cmd.String())
+		}
+
+		bz, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+
+		evidence := gjson.Get(string(bz), "evidence.evidence").Array()
+		if len(evidence) == 0 {
+			log.Fatal("expected at least one evidence in block but found zero")
+		}
+
+		if equivocation := evidence[0].Get("duplicate_vote_evidence"); equivocation.String() != "" {
+			// persist evidence in the json format
+			evidenceJson := equivocation.Raw
+			evidencePath := "/temp-evidence.json"
+			bz, err = tr.target.ExecCommand(
+				"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, evidenceJson, evidencePath),
+			).CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+
+			// query IBC header at the infraction height
+			cmd = tr.target.ExecCommand(
+				consumerBinaryName,
+				"query", "ibc", "client", "header", "--height", strconv.Itoa(int(infractionHeight)),
+				`--node`, tr.target.GetQueryNode(action.Chain),
+				`-o`, `json`,
+			)
+
+			if verbose {
+				fmt.Println("query IBC header cmd:", cmd.String())
+			}
+
+			bz, err = cmd.CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+
+			// persist IBC header in json format
+			headerPath := "/temp-header.json"
+			bz, err = tr.target.ExecCommand(
+				"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, string(bz), headerPath),
+			).CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+
+			// submit consumer equivocation to provider
+			gas := "auto"
+			submitEquivocation := fmt.Sprintf(
+				`%s tx provider submit-consumer-double-voting %s %s %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+				tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
+				string(tr.testConfig.chainConfigs[action.Chain].ConsumerId),
+				evidencePath,
+				headerPath,
+				action.Submitter,
+				tr.testConfig.chainConfigs[ChainID("provi")].ChainId,
+				tr.getValidatorHome(ChainID("provi"), action.Submitter),
+				tr.getValidatorNode(ChainID("provi"), action.Submitter),
+				gas,
+			)
+
+			cmd = tr.target.ExecCommand(
+				"/bin/bash", "-c",
+				submitEquivocation,
+			)
+
+			if verbose {
+				fmt.Println("submit consumer equivocation cmd:", cmd.String())
+			}
+
+			bz, err = cmd.CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+		} else {
+			log.Fatal("invalid evidence type", evidence[0].String())
+		}
+
+		tr.waitBlocks("provi", 3, 1*time.Minute)
 	}
-	tr.waitBlocks("provi", 10, 2*time.Minute)
 }
 
 type OptInAction struct {

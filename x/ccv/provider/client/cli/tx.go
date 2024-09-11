@@ -170,23 +170,22 @@ Example:
 			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			submitter := clientCtx.GetFromAddress()
+			cdc := codec.NewProtoCodec(clientCtx.InterfaceRegistry)
 
-			ev := tmproto.DuplicateVoteEvidence{}
-			evidenceJson, err := os.ReadFile(args[0])
+			evidenceJson, err := os.ReadFile(args[1])
 			if err != nil {
 				return err
 			}
 
-			if err := json.Unmarshal(evidenceJson, &ev); err != nil {
+			ev := tmproto.DuplicateVoteEvidence{}
+			if err := cdc.UnmarshalJSON(evidenceJson, &ev); err != nil {
 				return fmt.Errorf("duplicate vote evidence unmarshalling failed: %s", err)
 			}
 
-			headerJson, err := os.ReadFile(args[1])
+			headerJson, err := os.ReadFile(args[2])
 			if err != nil {
 				return err
 			}
-
-			cdc := codec.NewProtoCodec(clientCtx.InterfaceRegistry)
 
 			header := ibctmtypes.Header{}
 			if err := cdc.UnmarshalJSON(headerJson, &header); err != nil {

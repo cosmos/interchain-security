@@ -219,7 +219,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 		// run Hermes relayer instance to detect the ICS misbehaviour
 		// and jail alice on the provider
 		{
-			Action: StartConsumerEvidenceDetectorAction{
+			Action: DetectorConsumerEvidenceAction{
 				Chain: ChainID(consumerName),
 			},
 			State: State{
