@@ -11,10 +11,12 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	e2e "github.com/cosmos/interchain-security/v5/tests/e2e/testlib"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
+
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 // type aliases
@@ -38,122 +40,7 @@ type State map[ChainID]ChainState
 
 type Chain struct {
 	target     e2e.TargetDriver
-	testConfig TestConfig
-}
-
-func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
-	chainState := ChainState{}
-
-	if modelState.ValBalances != nil {
-		valBalances := tr.GetBalances(chain, *modelState.ValBalances)
-		chainState.ValBalances = &valBalances
-	}
-
-	if modelState.Proposals != nil {
-		proposals := tr.GetProposals(chain, *modelState.Proposals)
-		chainState.Proposals = &proposals
-	}
-
-	if modelState.ProposedConsumerChains != nil {
-		proposedConsumerChains := tr.GetProposedConsumerChains(chain)
-		chainState.ProposedConsumerChains = &proposedConsumerChains
-	}
-
-	if modelState.ValPowers != nil {
-		tr.waitBlocks(chain, 1, 10*time.Second)
-		powers := tr.GetValPowers(chain, *modelState.ValPowers)
-		chainState.ValPowers = &powers
-	}
-
-	if modelState.StakedTokens != nil {
-		representPowers := tr.GetStakedTokens(chain, *modelState.StakedTokens)
-		chainState.StakedTokens = &representPowers
-	}
-
-	if modelState.IBCTransferParams != nil {
-		params := tr.target.GetIBCTransferParams(chain)
-		chainState.IBCTransferParams = &params
-	}
-
-	if modelState.Rewards != nil {
-		rewards := tr.GetRewards(chain, *modelState.Rewards)
-		chainState.Rewards = &rewards
-	}
-
-	if modelState.ConsumerChains != nil {
-		chains := tr.target.GetConsumerChains(chain)
-		chainState.ConsumerChains = &chains
-	}
-
-	if modelState.AssignedKeys != nil {
-		assignedKeys := tr.GetConsumerAddresses(chain, *modelState.AssignedKeys)
-		chainState.AssignedKeys = &assignedKeys
-	}
-
-	if modelState.ProviderKeys != nil {
-		providerKeys := tr.GetProviderAddresses(chain, *modelState.ProviderKeys)
-		chainState.ProviderKeys = &providerKeys
-	}
-
-	if modelState.RegisteredConsumerRewardDenoms != nil {
-		registeredConsumerRewardDenoms := tr.target.GetRegisteredConsumerRewardDenoms(chain)
-		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
-	}
-
-	if modelState.ClientsFrozenHeights != nil {
-		chainClientsFrozenHeights := map[string]clienttypes.Height{}
-		for id := range *modelState.ClientsFrozenHeights {
-			chainClientsFrozenHeights[id] = tr.GetClientFrozenHeight(chain, id)
-		}
-		chainState.ClientsFrozenHeights = &chainClientsFrozenHeights
-	}
-
-	if modelState.HasToValidate != nil {
-		hasToValidate := map[ValidatorID][]ChainID{}
-		for validatorId := range *modelState.HasToValidate {
-			hasToValidate[validatorId] = tr.target.GetHasToValidate(validatorId)
-		}
-		chainState.HasToValidate = &hasToValidate
-	}
-
-	if modelState.InflationRateChange != nil {
-		// get the inflation rate now
-		inflationRateNow := tr.target.GetInflationRate(chain)
-
-		// wait a block
-		tr.waitBlocks(chain, 1, 10*time.Second)
-
-		// get the new inflation rate
-		inflationRateAfter := tr.target.GetInflationRate(chain)
-
-		// calculate the change
-		inflationRateChange := inflationRateAfter - inflationRateNow
-		var inflationRateChangeDirection int
-		if inflationRateChange > 0 {
-			inflationRateChangeDirection = 1
-		} else if inflationRateChange < 0 {
-			inflationRateChangeDirection = -1
-		} else {
-			inflationRateChangeDirection = 0
-		}
-		chainState.InflationRateChange = &inflationRateChangeDirection
-	}
-
-	if modelState.ConsumerCommissionRates != nil {
-		consumerCommissionRates := tr.GetConsumerCommissionRates(chain, *modelState.ConsumerCommissionRates)
-		chainState.ConsumerCommissionRates = &consumerCommissionRates
-	}
-
-	if modelState.ConsumerPendingPacketQueueSize != nil {
-		pendingPacketQueueSize := tr.target.GetPendingPacketQueueSize(chain)
-		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
-	}
-
-	if *verbose {
-		log.Println("Done getting chain state:\n" + pretty.Sprint(chainState))
-	}
-
-	return chainState
+	testConfig *TestConfig
 }
 
 func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
@@ -207,7 +94,7 @@ func (tr Chain) GetBalances(chain ChainID, modelState map[ValidatorID]uint) map[
 
 func (tr Chain) GetClientFrozenHeight(chain ChainID, clientID string) clienttypes.Height {
 	revNumber, revHeight := tr.target.GetClientFrozenHeight(chain, clientID)
-	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+	return clienttypes.Height{RevisionHeight: revHeight, RevisionNumber: revNumber}
 }
 
 func (tr Chain) GetProposedConsumerChains(chain ChainID) []string {
@@ -314,7 +201,7 @@ func (tr Chain) getValidatorIP(chain ChainID, validator ValidatorID) string {
 }
 
 func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
-	return `/` + string(tr.testConfig.chainConfigs[chain].ChainId) + `/validator` + fmt.Sprint(validator)
+	return `/` + string(chain) + `/validator` + fmt.Sprint(validator)
 }
 
 func (tr Chain) curlJsonRPCRequest(method, params, address string) {
@@ -335,7 +222,7 @@ func intPtr(i int) *int {
 }
 
 type Commands struct {
-	containerConfig  ContainerConfig // FIXME only needed for 'Now' time tracking
+	containerConfig  *ContainerConfig
 	validatorConfigs map[ValidatorID]ValidatorConfig
 	chainConfigs     map[ChainID]ChainConfig
 	target           e2e.PlatformDriver
@@ -465,6 +352,30 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Title:       title,
 			Description: description,
 		}
+	case "/interchain_security.ccv.provider.v1.MsgUpdateConsumer":
+		consumerId := rawContent.Get("consumer_id").String()
+		consumerChainId := ChainID("")
+		for _, chainCfg := range tr.chainConfigs {
+			if chainCfg.ConsumerId == e2e.ConsumerID(consumerId) {
+				consumerChainId = chainCfg.ChainId
+				break
+			}
+		}
+
+		updateProposal := ConsumerAdditionProposal{
+			Deposit: uint(deposit),
+			Chain:   consumerChainId,
+			Status:  status,
+		}
+		if rawContent.Get("initialization_parameters").Exists() {
+			spawnTime := rawContent.Get("initialization_parameters.spawn_time").Time().Sub(tr.containerConfig.Now)
+			updateProposal.SpawnTime = int(spawnTime.Milliseconds())
+			updateProposal.InitialHeight = clienttypes.Height{
+				RevisionNumber: rawContent.Get("initialization_parameters.initial_height.revision_number").Uint(),
+				RevisionHeight: rawContent.Get("initialization_parameters.initial_height.revision_height").Uint(),
+			}
+		}
+		return updateProposal
 	case "/interchain_security.ccv.provider.v1.MsgConsumerAddition":
 		chainId := rawContent.Get("chain_id").String()
 		spawnTime := rawContent.Get("spawn_time").Time().Sub(tr.containerConfig.Now)
@@ -498,23 +409,21 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Title:         title,
 			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 		}
-	case "/interchain_security.ccv.provider.v1.MsgConsumerRemoval":
-		chainId := rawContent.Get("chain_id").String()
-		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.Now)
+	case "/interchain_security.ccv.provider.v1.MsgRemoveConsumer":
+		consumerId := rawContent.Get("consumer_id").String()
 
 		var chain ChainID
 		for i, conf := range tr.chainConfigs {
-			if string(conf.ChainId) == chainId {
+			if string(conf.ConsumerId) == consumerId {
 				chain = i
 				break
 			}
 		}
 
 		return ConsumerRemovalProposal{
-			Deposit:  uint(deposit),
-			Status:   status,
-			Chain:    chain,
-			StopTime: int(stopTime.Milliseconds()),
+			Deposit: uint(deposit),
+			Status:  status,
+			Chain:   chain,
 		}
 	case "/ibc.applications.transfer.v1.MsgUpdateParams":
 		var params IBCTransferParams
@@ -732,7 +641,6 @@ func (tr Commands) GetIBCTransferParams(chain ChainID) IBCTransferParams {
 func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	binaryName := tr.chainConfigs[chain].BinaryName
 	cmd := tr.target.ExecCommand(binaryName,
-
 		"query", "provider", "list-consumer-chains",
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
@@ -746,8 +654,13 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 	arr := gjson.Get(string(bz), "chains").Array()
 	chains := make(map[ChainID]bool)
 	for _, c := range arr {
-		id := c.Get("chain_id").String()
-		chains[ChainID(id)] = true
+		phase := c.Get("phase").String()
+		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
+			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] ||
+			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_LAUNCHED)] {
+			id := c.Get("chain_id").String()
+			chains[ChainID(id)] = true
+		}
 	}
 
 	return chains
@@ -755,10 +668,11 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 
 func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	consumerId := tr.chainConfigs[consumerChain].ConsumerId
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-consumer-key",
-		string(consumerChain), tr.validatorConfigs[validator].ValconsAddress,
+		string(consumerId), tr.validatorConfigs[validator].ValconsAddress,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
@@ -773,10 +687,12 @@ func (tr Commands) GetConsumerAddress(consumerChain ChainID, validator Validator
 
 func (tr Commands) GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	consumerId := tr.chainConfigs[consumerChain].ConsumerId
+
 	cmd := tr.target.ExecCommand(binaryName,
 
 		"query", "provider", "validator-provider-key",
-		string(consumerChain), tr.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
+		string(consumerId), tr.validatorConfigs[validator].ConsumerValconsAddressOnProvider,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)
@@ -895,10 +811,15 @@ func (tr Commands) GetHasToValidate(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	arr := gjson.Get(string(bz), "consumer_chain_ids").Array()
+	arr := gjson.Get(string(bz), "consumer_ids").Array()
 	chains := []ChainID{}
 	for _, c := range arr {
-		chains = append(chains, ChainID(c.String()))
+		for _, chain := range tr.chainConfigs {
+			if chain.ConsumerId == ConsumerID(c.String()) {
+				chains = append(chains, chain.ChainId)
+				break
+			}
+		}
 	}
 
 	return chains
@@ -969,20 +890,25 @@ func (tr Commands) GetTrustedHeight(
 
 func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	binaryName := tr.chainConfigs[chain].BinaryName
-	bz, err := tr.target.ExecCommand(binaryName,
-		"query", "provider", "list-proposed-consumer-chains",
+	cmd := tr.target.ExecCommand(binaryName,
+		"query", "provider", "list-consumer-chains",
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
-	).CombinedOutput()
+	)
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	arr := gjson.Get(string(bz), "proposedChains").Array()
+	arr := gjson.Get(string(bz), "chains").Array()
 	chains := []string{}
 	for _, c := range arr {
-		cid := c.Get("chainID").String()
-		chains = append(chains, cid)
+		cid := c.Get("chain_id").String()
+		phase := c.Get("phase").String()
+		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
+			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] {
+			chains = append(chains, cid)
+		}
 	}
 
 	return chains
@@ -1013,9 +939,11 @@ func (tr Commands) GetQueryNodeIP(chain ChainID) string {
 // GetConsumerCommissionRate returns the commission rate of the given validator on the given consumerChain
 func (tr Commands) GetConsumerCommissionRate(consumerChain ChainID, validator ValidatorID) float64 {
 	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
+	consumerId := tr.chainConfigs[consumerChain].ConsumerId
+
 	cmd := tr.target.ExecCommand(binaryName,
 		"query", "provider", "validator-consumer-commission-rate",
-		string(consumerChain), tr.validatorConfigs[validator].ValconsAddress,
+		string(consumerId), tr.validatorConfigs[validator].ValconsAddress,
 		`--node`, tr.GetQueryNode(ChainID("provi")),
 		`-o`, `json`,
 	)

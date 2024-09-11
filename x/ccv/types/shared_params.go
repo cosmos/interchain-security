@@ -4,8 +4,9 @@ import (
 	fmt "fmt"
 	"time"
 
-	"cosmossdk.io/math"
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+
+	"cosmossdk.io/math"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 )
@@ -77,7 +78,7 @@ func ValidateChannelIdentifier(i interface{}) error {
 	return ibchost.ChannelIdentifierValidator(value)
 }
 
-func ValidateBech32(i interface{}) error {
+func ValidateAccAddress(i interface{}) error {
 	value, ok := i.(string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)

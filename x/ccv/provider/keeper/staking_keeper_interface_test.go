@@ -4,13 +4,15 @@ import (
 	"sort"
 	"testing"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 )
 
 // TestStakingKeeperInterface tests
@@ -107,7 +109,7 @@ func TestStakingKeeperInterface(t *testing.T) {
 					return nil
 				}).AnyTimes()
 			actualValPowers := []int64{}
-			err := providerKeeper.IterateBondedValidatorsByPower(ctx, func(index int64, validator types.ValidatorI) (stop bool) {
+			err := providerKeeper.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
 				counter++
 				actualValPowers = append(actualValPowers, validator.GetTokens().Int64())
 				return false

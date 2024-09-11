@@ -19,20 +19,19 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*govv1beta1.Content)(nil),
 		&ConsumerAdditionProposal{},
-	)
-	registry.RegisterImplementations(
-		(*govv1beta1.Content)(nil),
 		&ConsumerRemovalProposal{},
-	)
-	registry.RegisterImplementations(
-		(*govv1beta1.Content)(nil),
 		&ConsumerModificationProposal{},
+		&ChangeRewardDenomsProposal{},
 	)
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
-		&MsgAssignConsumerKey{},
 		&MsgConsumerAddition{},
 		&MsgConsumerRemoval{},
+		&MsgConsumerModification{},
+		&MsgAssignConsumerKey{},
+		&MsgCreateConsumer{},
+		&MsgUpdateConsumer{},
+		&MsgRemoveConsumer{},
 		&MsgChangeRewardDenoms{},
 		&MsgUpdateParams{},
 	)
@@ -40,10 +39,6 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*govv1beta1.Content)(nil),
 		&EquivocationProposal{},
-	)
-	registry.RegisterImplementations(
-		(*govv1beta1.Content)(nil),
-		&ChangeRewardDenomsProposal{},
 	)
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
@@ -81,9 +76,6 @@ var (
 	// The actual codec used for serialization should be provided to x/ibc transfer and
 	// defined at the application level.
 	ModuleCdc = codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
-
-	// AminoCdc is a amino codec created to support amino json compatible msgs.
-	AminoCdc = codec.NewAminoCodec(amino)
 )
 
 func init() {

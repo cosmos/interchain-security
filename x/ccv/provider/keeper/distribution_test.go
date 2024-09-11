@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"testing"
 
-	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -11,12 +10,14 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 func TestComputeConsumerTotalVotingPower(t *testing.T) {
@@ -37,7 +38,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 		return *val
 	}
 
-	chainID := "consumer"
+	chainID := CONSUMER_CHAIN_ID
 	expTotalPower := int64(0)
 
 	// verify that the total power returned is equal to zero
@@ -50,7 +51,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 	// set 5 validators to the consumer chain
 	for i := 0; i < 5; i++ {
 		val := createVal(int64(i))
-		keeper.SetConsumerValidator(
+		err := keeper.SetConsumerValidator(
 			ctx,
 			chainID,
 			providertypes.ConsensusValidator{
@@ -58,6 +59,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 				Power:            val.VotingPower,
 			},
 		)
+		require.NoError(t, err)
 
 		expTotalPower += val.VotingPower
 	}
@@ -74,7 +76,7 @@ func TestComputeConsumerTotalVotingPower(t *testing.T) {
 
 func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
 	var (
-		chainID    = "consumer"
+		chainID    = CONSUMER_CHAIN_ID
 		ccvChannel = "channel-0"
 	)
 
@@ -225,13 +227,13 @@ func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
 			defer ctrl.Finish()
 
 			tc.expectedCalls(ctx, mocks, tc.packet)
-			_, err := keeper.IdentifyConsumerChainIDFromIBCPacket(
+			_, err := keeper.IdentifyConsumerIdFromIBCPacket(
 				ctx,
 				tc.packet,
 			)
 
 			if tc.expCCVChannel {
-				keeper.SetChainToChannel(ctx, chainID, ccvChannel)
+				keeper.SetConsumerIdToChannelId(ctx, chainID, ccvChannel)
 			}
 
 			if !tc.expErr {
@@ -295,4 +297,83 @@ func TestIsEligibleForConsumerRewards(t *testing.T) {
 	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 0))
 	require.True(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 1))
 	require.False(t, keeper.IsEligibleForConsumerRewards(ctx.WithBlockHeight(numberOfBlocks+1), 2))
+}
+
+func TestChangeRewardDenoms(t *testing.T) {
+	keeper, ctx, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+	// Test adding a new denomination
+	denomsToAdd := []string{"denom1"}
+	denomsToRemove := []string{}
+	attributes := keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
+
+	require.Len(t, attributes, 1)
+	require.Equal(t, providertypes.AttributeAddConsumerRewardDenom, attributes[0].Key)
+	require.Equal(t, "denom1", attributes[0].Value)
+	require.True(t, keeper.ConsumerRewardDenomExists(ctx, "denom1"))
+
+	// Test adding a denomination that is already registered
+	attributes = keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
+	require.Len(t, attributes, 0) // No attributes should be returned since the denom is already registered
+
+	// Test removing a registered denomination
+	denomsToAdd = []string{}
+	denomsToRemove = []string{"denom1"}
+	attributes = keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
+
+	require.Len(t, attributes, 1)
+	require.Equal(t, providertypes.AttributeRemoveConsumerRewardDenom, attributes[0].Key)
+	require.Equal(t, "denom1", attributes[0].Value)
+	require.False(t, keeper.ConsumerRewardDenomExists(ctx, "denom1"))
+
+	// Test removing a denomination that is not registered
+	attributes = keeper.ChangeRewardDenoms(ctx, denomsToAdd, denomsToRemove)
+	require.Len(t, attributes, 0) // No attributes should be returned since the denom is not registered
+}
+
+func TestHandleSetConsumerCommissionRate(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerAddr := providertypes.NewProviderConsAddress([]byte("providerAddr"))
+
+	// trying to set a commission rate to a unknown consumer chain
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, "unknownChainID", providerAddr, math.LegacyZeroDec()))
+
+	// setup a pending consumer chain
+	consumerId := "0"
+	providerKeeper.FetchAndIncrementConsumerId(ctx)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
+
+	// check that there's no commission rate set for the validator yet
+	_, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
+	require.False(t, found)
+
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(math.LegacyZeroDec(), nil).Times(1)
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, consumerId, providerAddr, math.LegacyOneDec()))
+
+	// check that the commission rate is now set
+	cr, found := providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
+	require.Equal(t, math.LegacyOneDec(), cr)
+	require.True(t, found)
+
+	// set minimum rate of 1/2
+	commissionRate := math.LegacyNewDec(1).Quo(math.LegacyNewDec(2))
+	mocks.MockStakingKeeper.EXPECT().MinCommissionRate(ctx).Return(commissionRate, nil).AnyTimes()
+
+	// try to set a rate slightly below the minimum
+	require.Error(t, providerKeeper.HandleSetConsumerCommissionRate(
+		ctx,
+		consumerId,
+		providerAddr,
+		commissionRate.Sub(math.LegacyNewDec(1).Quo(math.LegacyNewDec(100)))), // 0.5 - 0.01
+		"commission rate should be rejected (below min), but is not",
+	)
+
+	// set a valid commission equal to the minimum
+	require.NoError(t, providerKeeper.HandleSetConsumerCommissionRate(ctx, consumerId, providerAddr, commissionRate))
+	// check that the rate was set
+	cr, found = providerKeeper.GetConsumerCommissionRate(ctx, consumerId, providerAddr)
+	require.Equal(t, commissionRate, cr)
+	require.True(t, found)
 }

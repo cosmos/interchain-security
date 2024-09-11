@@ -4,15 +4,13 @@ import (
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
+
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	v4 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v4"
-	v5 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v5"
-	v6 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v6"
-	v7 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v7"
-	v8 "github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations/v8"
+	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	v7 "github.com/cosmos/interchain-security/v6/x/ccv/provider/migrations/v7"
+	v8 "github.com/cosmos/interchain-security/v6/x/ccv/provider/migrations/v8"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -55,24 +53,23 @@ func (m Migrator) Migrate2to3(ctx sdktypes.Context) error {
 // Migrate3to4 migrates x/ccvprovider state from consensus version 3 to 4.
 // The migration consists of provider chain params additions.
 func (m Migrator) Migrate3to4(ctx sdktypes.Context) error {
-	v4.MigrateParams(ctx, m.paramSpace)
-	return nil
+	return fmt.Errorf("state migration failed: " +
+		"first run provider@v4.3.x in production to migrate from consensus version 3 to 4")
 }
 
 // Migrate4to5 migrates x/ccvprovider state from consensus version 4 to 5.
 // The migration consists of setting a top N of 95 for all registered consumer chains.
 func (m Migrator) Migrate4to5(ctx sdktypes.Context) error {
-	v5.MigrateTopNForRegisteredChains(ctx, m.providerKeeper)
-	return nil
+	return fmt.Errorf("state migration failed: " +
+		"first run provider@v4.3.x in production to migrate from consensus version 4 to 5")
 }
 
 // Migrate5to6 migrates x/ccvprovider state from consensus version 5 to 6.
 // It consists of setting the `NumberOfEpochsToStartReceivingRewards` param, as well as
 // computing and storing the minimal power in the top N for all registered consumer chains.
 func (m Migrator) Migrate5to6(ctx sdktypes.Context) error {
-	v6.MigrateParams(ctx, m.paramSpace)
-	v6.MigrateMinPowerInTopN(ctx, m.providerKeeper)
-	return nil
+	return fmt.Errorf("state migration failed: " +
+		"first run provider@v4.3.x in production to migrate from consensus version 5 to 6")
 }
 
 // Migrate6to7 migrates x/ccvprovider state from consensus version 6 to 7.
@@ -90,6 +87,9 @@ func (m Migrator) Migrate7to8(ctx sdktypes.Context) error {
 	store := ctx.KVStore(m.storeKey)
 	v8.CompleteUnbondingOps(ctx, store, m.providerKeeper)
 	if err := v8.MigrateConsumerAddrsToPrune(ctx, store, m.providerKeeper); err != nil {
+		return err
+	}
+	if err := v8.MigrateLaunchedConsumerChains(ctx, store, m.providerKeeper); err != nil {
 		return err
 	}
 	v8.CleanupState(store)

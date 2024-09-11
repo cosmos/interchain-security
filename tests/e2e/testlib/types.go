@@ -12,8 +12,20 @@ import (
 
 type (
 	ChainID     string
+	ConsumerID  string
 	ValidatorID string
 )
+
+type AssignConsumerPubKeyAction struct {
+	Chain          ChainID
+	Validator      ValidatorID
+	ConsumerPubkey string
+	// ReconfigureNode will change keys the node uses and restart
+	ReconfigureNode bool
+	// executing the action should raise an error
+	ExpectError   bool
+	ExpectedError string
+}
 
 type ChainCommands interface {
 	GetBlockHeight(chain ChainID) uint
@@ -39,6 +51,8 @@ type ChainCommands interface {
 	GetQueryNodeIP(chain ChainID) string
 	GetInflationRate(chain ChainID) float64
 	GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64
+	// Action commands
+	AssignConsumerPubKey(action AssignConsumerPubKeyAction, gas, home, node string, verbose bool) ([]byte, error)
 }
 
 // TODO: replace ExecutionTarget with new TargetDriver interface
@@ -124,7 +138,8 @@ type ValidatorConfig struct {
 // Attributes that are unique to a chain. Allows us to map (part of)
 // the set of strings defined above to a set of viable chains
 type ChainConfig struct {
-	ChainId ChainID
+	ChainId    ChainID
+	ConsumerId ConsumerID
 	// The account prefix configured on the chain. For example, on the Hub, this is "cosmos"
 	AccountPrefix string
 	// Must be unique per chain
@@ -304,10 +319,9 @@ func (p UpgradeProposal) isProposal() {}
 func (p ConsumerAdditionProposal) isProposal() {}
 
 type ConsumerRemovalProposal struct {
-	Deposit  uint
-	Chain    ChainID
-	StopTime int
-	Status   string
+	Deposit uint
+	Chain   ChainID
+	Status  string
 }
 
 func (p ConsumerRemovalProposal) isProposal() {}

@@ -1,6 +1,6 @@
 package main
 
-// stepsDowntime tests validator jailing and slashing.
+// stepsMultiConsumerDowntimeFromConsumer tests validator jailing and slashing.
 // No slashing should occur for downtime slash initiated from the consumer chain
 // validators will simply be jailed in those cases
 // If an infraction is committed on the provider chain then the validator will be slashed

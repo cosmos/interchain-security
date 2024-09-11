@@ -1,7 +1,7 @@
 package types
 
 import (
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 func NewConsumerStates(
@@ -12,6 +12,7 @@ func NewConsumerStates(
 	genesis ccv.ConsumerGenesisState,
 	pendingValsetChanges []ccv.ValidatorSetChangePacketData,
 	slashDowntimeAck []string,
+	phase ConsumerPhase,
 ) ConsumerState {
 	return ConsumerState{
 		ChainId:              chainID,
@@ -21,5 +22,6 @@ func NewConsumerStates(
 		PendingValsetChanges: pendingValsetChanges,
 		ConsumerGenesis:      genesis,
 		SlashDowntimeAck:     slashDowntimeAck,
+		Phase:                phase,
 	}
 }

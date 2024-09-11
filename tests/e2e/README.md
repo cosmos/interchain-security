@@ -187,6 +187,63 @@ which is done in `getChainState`.
 Typically, this is ultimately done, like actions, by issuing commands to the chain binary
 inside the docker container. See how this is done e.g. for `getBalance`.
 
+## Defining extra validators
+
+In `config.go`, you can define extra validators that are not part of the default test configuration, for example
+for tests that need more than 3 validators.
+
+To create a configuration for a new validator, it suffices to add a new `ValidatorConfig`. For example, this is the validator config for alice:
+
+```
+ValidatorID("alice"): {
+			Mnemonic:                 "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
+			DelAddress:               "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
+			DelAddressOnConsumer:     "consumer19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtz33vu",
+			ValoperAddress:           "cosmosvaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtrgtng",
+			ValoperAddressOnConsumer: "consumervaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddy6jwzg",
+			ValconsAddress:           "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+			ValconsAddressOnConsumer: "consumervalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xpvpagq",
+			PrivValidatorKey:         `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
+			NodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
+			IpSuffix:                 "4",
+
+			// consumer chain assigned key
+			ConsumerMnemonic:                 "exile install vapor thing little toss immune notable lounge december final easy strike title end program interest quote cloth forget forward job october twenty",
+			ConsumerDelAddress:               "consumer1eeeggku6dzk3mv7wph3zq035rhtd890sh9rl32",
+			ConsumerDelAddressOnProvider:     "cosmos1eeeggku6dzk3mv7wph3zq035rhtd890sjswszd",
+			ConsumerValoperAddress:           "consumervaloper1eeeggku6dzk3mv7wph3zq035rhtd890scaqql7",
+			ConsumerValoperAddressOnProvider: "cosmosvaloper1eeeggku6dzk3mv7wph3zq035rhtd890shy69w7",
+			ConsumerValconsAddress:           "consumervalcons1muys5jyqk4xd27e208nym85kn0t4zjcfk9q5ce",
+			ConsumerValconsAddressOnProvider: "cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe",
+			ConsumerValPubKey:                `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="}`,
+			ConsumerPrivValidatorKey:         `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`,
+			ConsumerNodeKey:                  `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"F966RL9pi20aXRzEBe4D0xRQJtZt696Xxz44XUON52cFc83FMn1WXJbP6arvA2JPyn2LA3DLKCFHSgALrCGXGA=="}}`,
+			UseConsumerKey:                   false,
+		},
+```
+
+Here is a short guide for generating this config for a new validator:
+```
+# Commands
+interchain-security-pd init bob --home ./bob
+cat ./bob/config/priv_validator_key.json # gets you the private key 
+interchain-security-pd tendermint show-address  --home ./bob # returns valcons
+interchain-security-pd keys add bob --keyring-backend test --home ./bob --output json # gives mnemonic, account address
+interchain-security-pd keys show bob --keyring-backend test --bech=val --home ./bob --output json # returns valoper address
+cat ./bob/config/node_key.json # returns the node key
+```
+
+Fill these values into the `ValidatorConfig` struct in `config.go`.
+To get the values for the consumer chain, you can simply run the command in question using the
+`interchain-security-cd` binary.
+For example,
+```
+interchain-security-cd tendermint show-address  --home ./bob
+```
+will return the validator consensus address on the consumer chain.
+
+One important note is that the `IPSuffix` field should be unique for each validator.
+
 ## Traces
 
 It is possible to dump the test cases (in the form of actions+state checks)

@@ -5,9 +5,10 @@ import (
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 // The functions here are meant to provide a generic interface to a validator set that
@@ -112,7 +113,7 @@ func (k Keeper) getTotalPower(ctx sdk.Context, prefix []byte) (math.Int, error) 
 	totalPower := math.ZeroInt()
 	validators, err := k.getValSet(ctx, prefix)
 	if err != nil {
-		panic(fmt.Errorf("retrieving validator set: %w", err))
+		return totalPower, err
 	}
 	for _, val := range validators {
 		totalPower = totalPower.Add(math.NewInt(val.Power))

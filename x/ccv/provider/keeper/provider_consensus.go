@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 // SetLastProviderConsensusValidator sets the given validator to be stored
@@ -16,14 +16,14 @@ import (
 func (k Keeper) SetLastProviderConsensusValidator(
 	ctx sdk.Context,
 	validator types.ConsensusValidator,
-) {
-	k.setValidator(ctx, types.LastProviderConsensusValsPrefix(), validator)
+) error {
+	return k.setValidator(ctx, types.LastProviderConsensusValsPrefix(), validator)
 }
 
 // SetLastProviderConsensusValSet resets the stored last validator set sent to the consensus engine on the provider
 // to the provided `nextValidators`.
-func (k Keeper) SetLastProviderConsensusValSet(ctx sdk.Context, nextValidators []types.ConsensusValidator) {
-	k.setValSet(ctx, types.LastProviderConsensusValsPrefix(), nextValidators)
+func (k Keeper) SetLastProviderConsensusValSet(ctx sdk.Context, nextValidators []types.ConsensusValidator) error {
+	return k.setValSet(ctx, types.LastProviderConsensusValsPrefix(), nextValidators)
 }
 
 // DeleteLastProviderConsensusValidator removes the validator with `providerConsAddr` address
@@ -65,7 +65,7 @@ func (k Keeper) CreateProviderConsensusValidator(ctx sdk.Context, val stakingtyp
 	if err != nil {
 		return types.ConsensusValidator{}, fmt.Errorf("getting consensus address: %w", err)
 	}
-	pubKey, err := val.TmConsPublicKey()
+	pubKey, err := val.CmtConsPublicKey()
 	if err != nil {
 		return types.ConsensusValidator{}, fmt.Errorf("getting consensus public key: %w", err)
 	}

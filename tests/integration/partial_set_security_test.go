@@ -5,14 +5,15 @@ import (
 	"sort"
 	"testing"
 
-	"cosmossdk.io/math"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
 	"github.com/stretchr/testify/require"
 
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
+	"cosmossdk.io/math"
 
-	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v5/app/provider"
+	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // we need a stake multiplier because tokens do not directly correspond to voting power
@@ -151,7 +152,14 @@ func TestMinStake(t *testing.T) {
 			// adjust parameters
 
 			// set the minStake according to the test case
-			providerKeeper.SetMinStake(s.providerChain.GetContext(), s.consumerChain.ChainID, tc.minStake)
+			err = providerKeeper.SetConsumerPowerShapingParameters(
+				s.providerChain.GetContext(),
+				s.getFirstBundle().ConsumerId,
+				types.PowerShapingParameters{
+					MinStake: tc.minStake,
+				},
+			)
+			s.Require().NoError(err)
 
 			// delegate and undelegate to trigger a vscupdate
 

@@ -246,6 +246,12 @@ var stepChoices = map[string]StepChoice{
 		description: "test minting without inactive validators as a sanity check",
 		testConfig:  MintTestCfg,
 	},
+	"permissionless-ics": {
+		name:        "permissionless-ics",
+		steps:       stepsPermissionlessICS(),
+		description: "test permissionless ics",
+		testConfig:  PermissionlessTestCfg,
+	},
 	"inactive-vals-outside-max-validators": {
 		name:        "inactive-vals-outside-max-validators",
 		steps:       stepsInactiveValsTopNReproduce(),
@@ -533,6 +539,7 @@ func printReport(runners []TestRunner, duration time.Duration) {
 	}
 	numTotalTests := len(runners)
 	report := `
+
 =================================================
 TEST RESULTS
 -------------------------------------------------
@@ -570,19 +577,6 @@ Summary:
 		len(remainingTests), numTotalTests,
 	)
 
-	report += fmt.Sprintln("\nFAILED TESTS:")
-	for _, t := range failedTests {
-		report += t.Report()
-	}
-	report += fmt.Sprintln("\n\nPASSED TESTS:")
-	for _, t := range passedTests {
-		report += t.Report()
-	}
-
-	report += fmt.Sprintln("\n\nREMAINING TESTS:")
-	for _, t := range remainingTests {
-		report += t.Report()
-	}
 	report += "=================================================="
 	fmt.Print(report)
 }

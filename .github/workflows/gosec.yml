@@ -28,4 +28,4 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: -exclude-dir=tests -exclude-dir=app -exclude-generated ./...
+          args: "-exclude=G115 -exclude-dir=tests -exclude-dir=testutil -exclude-dir=app -exclude-generated ./..."

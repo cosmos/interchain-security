@@ -10,6 +10,7 @@ import (
 
 	"cosmossdk.io/core/appmodule"
 	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -20,11 +21,11 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/client/cli"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/migrations"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/simulation"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client/cli"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/migrations"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/simulation"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 var (
@@ -171,11 +172,16 @@ func (AppModule) ConsensusVersion() uint64 { return 8 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx context.Context) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx) // Create clients to consumer chains that are due to be spawned via pending consumer addition proposals
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	am.keeper.BeginBlockInit(sdkCtx)
-	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
-	am.keeper.BeginBlockCCR(sdkCtx)
+	// Create clients to consumer chains that are due to be spawned
+	if err := am.keeper.BeginBlockLaunchConsumers(sdkCtx); err != nil {
+		return err
+	}
+	// Stop and remove state for any consumer chains that are due to be stopped
+	if err := am.keeper.BeginBlockRemoveConsumers(sdkCtx); err != nil {
+		return err
+	}
 	// Check for replenishing slash meter before any slash packets are processed for this block
 	am.keeper.BeginBlockCIS(sdkCtx)
 	// BeginBlock logic needed for the  Reward Distribution sub-protocol

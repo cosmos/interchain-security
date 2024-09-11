@@ -12,7 +12,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -31,11 +30,12 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
-	"github.com/cosmos/interchain-security/v5/testutil/integration"
-	simibc "github.com/cosmos/interchain-security/v5/testutil/simibc"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v6/testutil/integration"
+	simibc "github.com/cosmos/interchain-security/v6/testutil/simibc"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 const (
@@ -156,7 +156,7 @@ func getAppBytesAndSenders(
 
 		sumBonded = sumBonded.Add(tokens)
 
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(val.PubKey)
 		if err != nil {
 			log.Panicf("error getting pubkey for val %v", val)
 		}
@@ -377,9 +377,11 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 		stakingValidators = append(stakingValidators, v)
 	}
 
-	considerAll := func(providerAddr providertypes.ProviderConsAddress) bool { return true }
-	nextValidators := s.providerKeeper().FilterValidators(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
-	s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
+	considerAll := func(providerAddr providertypes.ProviderConsAddress) (bool, error) { return true, nil }
+	nextValidators, err := s.providerKeeper().FilterValidators(s.providerCtx(), string(consumerChainId), stakingValidators, considerAll)
+	require.NoError(s.t, err)
+	err = s.providerKeeper().SetConsumerValSet(s.providerCtx(), string(consumerChainId), nextValidators)
+	require.NoError(s.t, err)
 
 	err = s.providerKeeper().SetConsumerGenesis(
 		providerChain.GetContext(),
@@ -388,7 +390,10 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	require.NoError(s.t, err, "Error setting consumer genesis on provider for chain %v", consumerChain.ChainID)
 
 	// set the top N percentage to 100 to simulate a full consumer
-	s.providerKeeper().SetTopN(providerChain.GetContext(), consumerChain.ChainID, 100)
+	err = s.providerKeeper().SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerChain.ChainID, providertypes.PowerShapingParameters{
+		Top_N: 100,
+	})
+	require.NoError(s.t, err, "Error setting consumer top N for chain %v", consumerChain.ChainID)
 
 	// Client ID is set in InitGenesis and we treat it as a black box. So
 	// must query it to use it with the endpoint.
