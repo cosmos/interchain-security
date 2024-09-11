@@ -221,18 +221,18 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			State: State{
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
+						ValidatorID("alice"): 0, // alice is jailed
 						ValidatorID("bob"):   20,
 					},
 					StakedTokens: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511000000,
+						ValidatorID("alice"): 485450000, // alice is slashed
 						ValidatorID("bob"):   20000000,
 					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   0, // bob is jailed
+						ValidatorID("bob"):   0,
 					},
 				},
 			},
