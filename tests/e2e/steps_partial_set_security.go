@@ -46,9 +46,13 @@ func stepsOptInChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+				},
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -119,9 +123,13 @@ func stepsOptInChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0, // launch now
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     0, // launch now
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+				},
 			},
 			State: State{},
 		},
@@ -1031,13 +1039,17 @@ func stepsValidatorSetCappedChain() []Step {
 		},
 		{
 			Action: CreateConsumerChainAction{
-				Chain:           ChainID("provi"),
-				From:            ValidatorID("alice"),
-				ConsumerChain:   ChainID("consu"),
-				SpawnTime:       uint(time.Minute * 10), // set spawn-time far in the future
-				InitialHeight:   clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:            0,
-				ValidatorSetCap: 2,
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN:            0,
+					ValidatorSetCap: 2,
+				},
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -1108,13 +1120,17 @@ func stepsValidatorSetCappedChain() []Step {
 		{
 			// Update with SpawnTime 0 will trigger launch of consumer chain
 			Action: UpdateConsumerChainAction{
-				Chain:           ChainID("provi"),
-				From:            ValidatorID("alice"),
-				ConsumerChain:   ChainID("consu"),
-				SpawnTime:       0, // launch now
-				InitialHeight:   clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:            0,
-				ValidatorSetCap: 2,
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     0, // launch now
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN:            0,
+					ValidatorSetCap: 2,
+				},
 			},
 			State: State{},
 		},
@@ -1472,9 +1488,13 @@ func stepsValidatorsAllowlistedChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+				},
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -1547,13 +1567,17 @@ func stepsValidatorsAllowlistedChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0, // launch now
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
-				// only "alice" and "bob" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
-				Allowlist: []string{
-					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-					"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     0, // launch now
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+					// only "alice" and "bob" are allowlisted (see `getDefaultValidators` in `tests/e2e/config.go`)
+					Allowlist: []string{
+						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+						"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+					},
 				},
 			},
 			State: State{},
@@ -1652,13 +1676,17 @@ func stepsValidatorsDenylistedChain() []Step {
 		},
 		{
 			Action: CreateConsumerChainAction{
-				Chain:           ChainID("provi"),
-				From:            ValidatorID("alice"),
-				ConsumerChain:   ChainID("consu"),
-				SpawnTime:       uint(time.Minute * 10), // set spawn-time far in the future
-				InitialHeight:   clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:            0,
-				ValidatorSetCap: 2,
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN:            0,
+					ValidatorSetCap: 2,
+				},
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -1731,10 +1759,14 @@ func stepsValidatorsDenylistedChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0, // launch now
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
-				Denylist:      []string{"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"},
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     0, // launch now
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN:     0,
+					Denylist: []string{"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"},
+				},
 			},
 			State: State{},
 		},
@@ -1836,9 +1868,13 @@ func stepsModifyChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     uint(time.Minute * 10), // set spawn-time far in the future
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+				},
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -1911,9 +1947,13 @@ func stepsModifyChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0, // launch now
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     0, // launch now
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+				},
 			},
 			State: State{},
 		},
@@ -1992,13 +2032,14 @@ func stepsModifyChain() []Step {
 		// 1. set `ValidatorsPowerCap` to 40%
 		{
 			Action: UpdateConsumerChainAction{
-				Chain:              ChainID("provi"),
-				From:               ValidatorID("alice"),
-				ConsumerChain:      ChainID("consu"),
-				SpawnTime:          0,
-				InitialHeight:      clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:               0,
-				ValidatorsPowerCap: 40,
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				InitParams:    nil,
+				PowerShapingParams: &PowerShapingParameters{
+					TopN:               0,
+					ValidatorsPowerCap: 40,
+				},
 			},
 			State: State{},
 		},
@@ -2031,13 +2072,14 @@ func stepsModifyChain() []Step {
 		// 2. set the `ValidatorSetCap` to a maximum of 2 validators
 		{
 			Action: UpdateConsumerChainAction{
-				Chain:           ChainID("provi"),
-				From:            ValidatorID("alice"),
-				ConsumerChain:   ChainID("consu"),
-				SpawnTime:       0,
-				InitialHeight:   clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:            0,
-				ValidatorSetCap: 2,
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				InitParams:    nil,
+				PowerShapingParams: &PowerShapingParameters{
+					TopN:            0,
+					ValidatorSetCap: 2,
+				},
 			},
 			State: State{},
 		},
@@ -2073,12 +2115,13 @@ func stepsModifyChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0,
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
-				Allowlist: []string{
-					"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-					"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+				InitParams:    nil,
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+					Allowlist: []string{
+						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+						"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+					},
 				},
 			},
 			State: State{},
@@ -2113,11 +2156,12 @@ func stepsModifyChain() []Step {
 				Chain:         ChainID("provi"),
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
-				SpawnTime:     0,
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
-				// only "alice" is denylisted (see `getDefaultValidators` in `tests/e2e/config.go`)
-				Denylist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"},
+				InitParams:    nil,
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+					// only "alice" is denylisted (see `getDefaultValidators` in `tests/e2e/config.go`)
+					Denylist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"},
+				},
 			},
 			State: State{},
 		},
@@ -2153,9 +2197,10 @@ func stepsModifyChain() []Step {
 				From:          ValidatorID("alice"),
 				ConsumerChain: ChainID("consu"),
 				NewOwner:      "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				SpawnTime:     0,
-				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-				TopN:          0,
+				InitParams:    nil,
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+				},
 			},
 			State: State{},
 		},

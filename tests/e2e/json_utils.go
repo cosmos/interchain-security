@@ -264,8 +264,8 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.DetectorConsumerEvidenceAction":
-		var a DetectorConsumerEvidenceAction
+	case "main.DetectConsumerEvidenceAction":
+		var a DetectConsumerEvidenceAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
 			return a, nil
