@@ -111,7 +111,7 @@ Example:
 			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			submitter := clientCtx.GetFromAddress()
-			misbJson, err := os.ReadFile(args[0])
+			misbJson, err := os.ReadFile(args[1])
 			if err != nil {
 				return err
 			}

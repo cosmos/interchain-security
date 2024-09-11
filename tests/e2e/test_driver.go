@@ -403,6 +403,8 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case SetConsumerCommissionRateAction:
 		target := td.getTargetDriver("provider")
 		target.setConsumerCommissionRate(action, td.verbose)
+	case SubmitConsumerMisbehaviourAction:
+		target.submitConsumerMisbehaviour(action, td.verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}

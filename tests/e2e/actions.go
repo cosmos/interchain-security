@@ -2868,7 +2868,7 @@ func (tr Chain) detectConsumerEvidence(
 	verbose bool,
 ) {
 	chainConfig := tr.testConfig.chainConfigs[action.Chain]
-	// the Hermes doesn't support evidence handling for Permissionless ICS yet
+	// the Hermes relayer doesn't support evidence handling for Permissionless ICS yet
 	// TODO: @Simon refactor once https://github.com/informalsystems/hermes/pull/4182 is merged.
 	if useRelayer {
 		// run in detached mode so it will keep running in the background

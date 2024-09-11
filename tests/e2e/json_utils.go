@@ -270,6 +270,12 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
+	case "main.SubmitConsumerMisbehaviourAction":
+		var a SubmitConsumerMisbehaviourAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
 	case "main.UpdateLightClientAction":
 		var a UpdateLightClientAction
 		err := json.Unmarshal(rawAction, &a)
