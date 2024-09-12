@@ -95,8 +95,8 @@
   [v0.38.11](https://github.com/cometbft/cometbft/releases/tag/v0.38.11).
   ([\#2200](https://github.com/cosmos/interchain-security/pull/2200))
 - Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
-[v0.50.9](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.9)
-([\#2200](https://github.com/cosmos/interchain-security/pull/2200))
+  [v0.50.9](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.9)
+  ([\#2200](https://github.com/cosmos/interchain-security/pull/2200))
 - Bump [ibc-go](https://github.com/cosmos/ibc-go) to
   [v8.5.0](https://github.com/cosmos/ibc-go/releases/tag/v8.5.0).
   ([\#2200](https://github.com/cosmos/interchain-security/pull/2200))
