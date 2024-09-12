@@ -248,7 +248,10 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 			// set the minimal power of validators in the top N in the store
 			k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
 
-			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
+			err := k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
+			if err != nil {
+				return fmt.Errorf("opting in topN validators, consumerId(%s), minPower(%d): %w", consumerId, minPower, err)
+			}
 		}
 
 		nextValidators, err := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)

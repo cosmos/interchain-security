@@ -330,8 +330,14 @@ func (k Keeper) MakeConsumerGenesis(
 			"consumerId", consumerId,
 			"minPower", minPower,
 		)
-		k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
+
+		// set the minimal power of validators in the top N in the store
 		k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
+
+		err = k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
+		if err != nil {
+			return gen, nil, fmt.Errorf("unable to opt in topN validators in MakeConsumerGenesis, consumerId(%s): %w", consumerId, err)
+		}
 	}
 
 	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals

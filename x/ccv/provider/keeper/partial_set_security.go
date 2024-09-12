@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
@@ -101,40 +103,43 @@ func (k Keeper) HandleOptOut(ctx sdk.Context, consumerId string, providerAddr ty
 }
 
 // OptInTopNValidators opts in to `consumerId` all the `bondedValidators` that have at least `minPowerToOptIn` power
-func (k Keeper) OptInTopNValidators(ctx sdk.Context, consumerId string, bondedValidators []stakingtypes.Validator, minPowerToOptIn int64) {
+func (k Keeper) OptInTopNValidators(
+	ctx sdk.Context,
+	consumerId string,
+	bondedValidators []stakingtypes.Validator,
+	minPowerToOptIn int64,
+) error {
 	for _, val := range bondedValidators {
 		// log the validator
-		k.Logger(ctx).Debug("Checking whether to opt in validator because of top N", "validator", val.GetOperator())
+		k.Logger(ctx).Debug("Checking whether to opt in validator because of top N",
+			"consumerId", consumerId,
+			"validator", val.GetOperator(),
+		)
 
 		valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
 		if err != nil {
-			k.Logger(ctx).Error("could not retrieve validator address from operator address",
-				"validator operator address", val.GetOperator(),
-				"error", err.Error())
-			continue
+			return fmt.Errorf("converting operator address to validator address, consumerId(%s), validator(%s): %w",
+				consumerId, val.GetOperator(), err)
 		}
 		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddr)
 		if err != nil {
-			k.Logger(ctx).Error("could not retrieve last power of validator",
-				"validator operator address", val.GetOperator(),
-				"error", err.Error())
-			continue
+			return fmt.Errorf("getting validator power, consumerId(%s), validator(%s): %w",
+				consumerId, val.GetOperator(), err)
 		}
 		if power >= minPowerToOptIn {
 			consAddr, err := val.GetConsAddr()
 			if err != nil {
-				k.Logger(ctx).Error("could not retrieve validator consensus address",
-					"validator operator address", val.GetOperator(),
-					"error", err.Error())
-				continue
+				return fmt.Errorf("getting validator consensus address, consumerId(%s), validator(%s): %w",
+					consumerId, val.GetOperator(), err)
 			}
 
-			k.Logger(ctx).Debug("Opting in validator", "validator", val.GetOperator())
+			k.Logger(ctx).Debug("Opting in validator", "consumerId", consumerId, "validator", val.GetOperator())
 
-			// if validator already exists it gets overwritten
+			// if validator is already opted in, it gets overwritten
 			k.SetOptedIn(ctx, consumerId, types.NewProviderConsAddress(consAddr))
 		} // else validators that do not belong to the top N validators but were opted in, remain opted in
 	}
+	return nil
 }
 
 //
