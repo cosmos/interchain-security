@@ -17,6 +17,7 @@ const (
 	AttributeInitialHeight             = "initial_height"
 	AttributeTrustingPeriod            = "trusting_period"
 	AttributeUnbondingPeriod           = "unbonding_period"
+	AttributeValsetHash                = "valset_hash"
 	AttributeProviderValidatorAddress  = "provider_validator_address"
 	AttributeConsumerConsensusPubKey   = "consumer_consensus_pub_key"
 	AttributeAddConsumerRewardDenom    = "add_consumer_reward_denom"
