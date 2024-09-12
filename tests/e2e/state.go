@@ -7,6 +7,7 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -56,17 +57,7 @@ func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 	}
 	startBlock := tr.target.GetBlockHeight(chain)
 
-	start := time.Now()
-	for {
-		thisBlock := tr.target.GetBlockHeight(chain)
-		if thisBlock >= startBlock+blocks {
-			return
-		}
-		if time.Since(start) > timeout {
-			panic(fmt.Sprintf("\n\n\nwaitBlocks method on chain '%s' has timed out after: %s\n\n", chain, timeout))
-		}
-		time.Sleep(time.Second)
-	}
+	tr.waitUntilBlock(chain, startBlock+blocks, timeout)
 }
 
 func (tr Chain) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
@@ -658,8 +649,13 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_LAUNCHED)] {
-			id := c.Get("chain_id").String()
-			chains[ChainID(id)] = true
+			id := c.Get("consumer_id").String()
+			for chainRef, cfg := range tr.chainConfigs {
+				if cfg.ConsumerId == ConsumerID(id) {
+					// note: 'chainRef' is the reference the test uses and not necessarily matching chain id
+					chains[chainRef] = true
+				}
+			}
 		}
 	}
 
@@ -814,9 +810,11 @@ func (tr Commands) GetHasToValidate(
 	arr := gjson.Get(string(bz), "consumer_ids").Array()
 	chains := []ChainID{}
 	for _, c := range arr {
-		for _, chain := range tr.chainConfigs {
+		for chainRef, chain := range tr.chainConfigs {
 			if chain.ConsumerId == ConsumerID(c.String()) {
-				chains = append(chains, chain.ChainId)
+				// we report the test chain reference which might not match the chain ID
+				// to support testing consumer chains with same chain ID
+				chains = append(chains, chainRef)
 				break
 			}
 		}
@@ -903,14 +901,21 @@ func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	arr := gjson.Get(string(bz), "chains").Array()
 	chains := []string{}
 	for _, c := range arr {
-		cid := c.Get("chain_id").String()
 		phase := c.Get("phase").String()
 		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] {
-			chains = append(chains, cid)
+			cid := ConsumerID(c.Get("consumer_id").String())
+			for chainRef, chainCfg := range tr.chainConfigs {
+				if chainCfg.ConsumerId == cid {
+					chains = append(chains, string(chainRef))
+				}
+			}
 		}
 	}
 
+	sort.Slice(chains, func(i, j int) bool {
+		return chains[i] < chains[j]
+	})
 	return chains
 }
 
