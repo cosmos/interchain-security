@@ -45,6 +45,35 @@ type Chain struct {
 	testConfig *TestConfig
 }
 
+// waitForTx waits until a transaction is seen in a block or panics if a timeout occurs
+func (tr Chain) waitForTx(chain ChainID, txResponse []byte, timeout time.Duration) e2e.TxResponse {
+	// remove any gas estimate as when command is run with gas=auto the output contains gas estimation mixed with json output
+	re, err := regexp.Compile("gas estimate: [0-9]+")
+	if err != nil {
+		panic(fmt.Sprintf("error compiling regexp: %s", err.Error()))
+	}
+	txResponse = re.ReplaceAll(txResponse, []byte{})
+
+	// check transaction
+	response := e2e.GetTxResponse(txResponse)
+	if response.Code != 0 {
+		log.Fatalf("sending transaction failed with error code %d, Log:'%s'", response.Code, response.RawLog)
+	}
+
+	// wait for the transaction
+	start := time.Now()
+	for {
+		res, err := tr.target.QueryTransaction(chain, response.TxHash)
+		if err == nil {
+			return e2e.GetTxResponse(res)
+		}
+		if time.Since(start) > timeout {
+			log.Printf("query transaction failed with err=%s, resp=%s", err.Error(), res)
+			panic(fmt.Sprintf("\n\nwaitForTx on chain '%s' has timed out after: %s\n\n", chain, timeout))
+		}
+	}
+}
+
 func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 	if tr.testConfig.useCometmock {
 		// call advance_blocks method on cometmock
@@ -203,6 +232,15 @@ func (tr Chain) curlJsonRPCRequest(method, params, address string) {
 
 	verbosity := false
 	e2e.ExecuteCommand(cmd, "curlJsonRPCRequest", verbosity)
+}
+
+func (tr Chain) GetConsumerCommissionRates(chain ChainID, modelState map[ValidatorID]float64) map[ValidatorID]float64 {
+	actualState := map[ValidatorID]float64{}
+	for k := range modelState {
+		actualState[k] = tr.target.GetConsumerCommissionRate(chain, k)
+	}
+
+	return actualState
 }
 
 func uintPtr(i uint) *uint {
@@ -971,11 +1009,13 @@ func (tr Commands) GetConsumerCommissionRate(consumerChain ChainID, validator Va
 	return rate
 }
 
-func (tr Chain) GetConsumerCommissionRates(chain ChainID, modelState map[ValidatorID]float64) map[ValidatorID]float64 {
-	actualState := map[ValidatorID]float64{}
-	for k := range modelState {
-		actualState[k] = tr.target.GetConsumerCommissionRate(chain, k)
-	}
-
-	return actualState
+// QueryTransaction returns the content of the transaction or an error e.g. when a transaction coudl
+func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error) {
+	binaryName := tr.chainConfigs[chain].BinaryName
+	cmd := tr.target.ExecCommand(binaryName,
+		"query", "tx", txhash,
+		`--node`, tr.GetQueryNode(chain),
+		`-o`, `json`,
+	)
+	return cmd.CombinedOutput()
 }

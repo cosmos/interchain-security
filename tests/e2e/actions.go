@@ -17,15 +17,12 @@ import (
 
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	"github.com/tidwall/gjson"
-	"golang.org/x/mod/semver"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/tidwall/gjson"
+	"golang.org/x/mod/semver"
 )
 
 const (
@@ -40,20 +37,15 @@ const (
 // type aliases
 type (
 	AssignConsumerPubKeyAction = e2e.AssignConsumerPubKeyAction
+	TxResponse                 = e2e.TxResponse
 )
 
 type SendTokensAction struct {
-	Chain  ChainID
-	From   ValidatorID
-	To     ValidatorID
-	Amount uint
-}
-
-type TxResponse struct {
-	TxHash string      `json:"txhash"`
-	Code   int         `json:"code"`
-	RawLog string      `json:"raw_log"`
-	Events []sdk.Event `json:"events"`
+	Chain     ChainID
+	From      ValidatorID
+	To        ValidatorID
+	Amount    uint
+	ExpectErr bool
 }
 
 func (tr Chain) sendTokens(
@@ -92,6 +84,7 @@ func (tr Chain) sendTokens(
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
+		`-o`, `json`,
 		`-y`,
 	)
 	if verbose {
@@ -102,8 +95,14 @@ func (tr Chain) sendTokens(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(action.Chain, 2, 30*time.Second)
+	if action.ExpectErr {
+		if e2e.GetTxResponse(bz).Code == 0 {
+			log.Fatalf("`tx bank send` did not fail as expected: %v", string(bz))
+		}
+	} else {
+		// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+		tr.waitForTx(action.Chain, bz, 30*time.Second)
+	}
 }
 
 type StartChainAction struct {
@@ -495,25 +494,11 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("command failed: ", cmd)
-		log.Fatalf("update consumer failed error: %s, output: %s", err, string(bz))
+		log.Fatalf("update consumer failed with error: %s, output: %s", err.Error(), string(bz))
 	}
 
-	// Check transaction
-	txResponse := &TxResponse{}
-	err = json.Unmarshal(bz, txResponse)
-	if err != nil {
-		log.Fatalf("unmarshalling tx response on update-consumer: %s, json: %s", err.Error(), string(bz))
-	}
-
-	if txResponse.Code != 0 {
-		log.Fatalf("sending update-consumer transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
-	}
-
-	if verbose {
-		fmt.Println("running 'update-consumer' returned: ", txResponse)
-	}
-
-	tr.waitBlocks(providerChain, 2, 10*time.Second)
+	// Wait for transaction
+	tr.waitForTx(providerChain, bz, 10*time.Second)
 }
 
 // CreateConsumer creates a consumer chain and returns its consumer-id
@@ -557,36 +542,7 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 		log.Fatal("create consumer failed ", "error: ", err, "output: ", string(bz))
 	}
 
-	txResponse := &TxResponse{}
-	err = json.Unmarshal(bz, txResponse)
-	if err != nil {
-		log.Fatalf("unmarshalling tx response on create-consumer: %s, json: %s", err.Error(), string(bz))
-	}
-
-	if txResponse.Code != 0 {
-		log.Fatalf("sending transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
-	}
-
-	// TODO: introduce waitForTx (see issue #2198)
-	tr.waitBlocks(providerChain, 2, 10*time.Second)
-
-	// Get Consumer ID from transaction
-	cmd = tr.target.ExecCommand(
-		tr.testConfig.chainConfigs[providerChain].BinaryName,
-		"query", "tx", txResponse.TxHash,
-		`--node`, tr.getValidatorNode(providerChain, validator),
-		"--output", "json",
-	)
-	bz, err = cmd.CombinedOutput()
-	if err != nil {
-		log.Fatalf("not able to query tx containing creation-consumer: tx: %s, err: %s, out: %s",
-			txResponse.TxHash, err.Error(), string(bz))
-	}
-
-	err = json.Unmarshal(bz, txResponse)
-	if err != nil {
-		log.Fatalf("unmarshalling tx containing create-consumer: %s, json: %s", err.Error(), string(bz))
-	}
+	txResponse := tr.waitForTx(providerChain, bz, 10*time.Second)
 
 	consumerId := ""
 	for _, event := range txResponse.Events {
@@ -599,6 +555,7 @@ func (tr Chain) CreateConsumer(providerChain, consumerChain ChainID, validator V
 		}
 		consumerId = attr.Value
 	}
+
 	if consumerId == "" {
 		log.Fatalf("no consumer-id found in consumer creation transaction events for chain '%s'. events: %v", consumerChain, txResponse.Events)
 	}
@@ -710,12 +667,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 		log.Fatal("executing submit-proposal failed:", err, "\n", string(bz))
 	}
 
-	txResponse := &TxResponse{}
-	err = json.Unmarshal(bz, txResponse)
-	if err != nil {
-		log.Fatalf("failed unmarshalling tx response on submit consumer update: %s, json: %s", err.Error(), string(bz))
-	}
-
+	txResponse := e2e.GetTxResponse(bz)
 	if txResponse.Code != 0 {
 		log.Fatalf("gov submit consumer update transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
 	}
@@ -2164,20 +2116,21 @@ func (tr Chain) unbondTokens(
 		`--node`, tr.getValidatorNode(action.Chain, action.Sender),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
+		`-o`, `json`,
 		`-y`,
 	)
 
-	if verbose {
-		fmt.Println("unbond cmd:", cmd.String())
-	}
-
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal(err, "cmd '%s' failed with:\n", string(bz))
+	}
+	if verbose {
+		fmt.Printf("unbond cmd: '%s' returned:\n'%s'", cmd.String(), string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(action.Chain, 2, 20*time.Second)
+	tr.waitForTx(action.Chain, bz, 20*time.Second)
+	//tr.waitBlocks(action.Chain, 2, 20*time.Second)
 }
 
 type CancelUnbondTokensAction struct {
@@ -2780,7 +2733,9 @@ func (tr Chain) assignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verb
 		verbose,
 	)
 
-	if err != nil && !action.ExpectError {
+	if err == nil {
+		tr.waitForTx(tr.testConfig.chainConfigs[ChainID("provi")].ChainId, bz, 30*time.Second)
+	} else if !action.ExpectError {
 		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 
@@ -2844,8 +2799,11 @@ func (tr Chain) assignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verb
 		tr.testConfig.validatorConfigs[action.Validator] = valCfg
 	}
 
+	if !action.ExpectError {
+		tr.waitForTx(e2e.ChainID("provi"), bz, 30*time.Second)
+	}
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
+	//tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
 }
 
 // SlashMeterReplenishmentAction polls the slash meter on provider until value is achieved
@@ -3286,25 +3244,27 @@ func (tr Chain) AdvanceTimeForChain(chain ChainID, duration time.Duration) {
 }
 
 func (tr Commands) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, gas, home, node string, verbose bool) ([]byte, error) {
-	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
-		tr.chainConfigs[ChainID("provi")].BinaryName,
-		string(tr.chainConfigs[action.Chain].ConsumerId),
-		action.ConsumerPubkey,
-		action.Validator,
-		tr.chainConfigs[ChainID("provi")].ChainId,
-		home,
-		node,
-		gas,
-	)
-
+	consumerId := string(tr.chainConfigs[action.Chain].ConsumerId)
+	binaryName := tr.chainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.target.ExecCommand(
-		"/bin/bash", "-c",
-		assignKey,
+		binaryName,
+
+		"tx", "provider", "assign-consensus-key",
+		consumerId,
+		action.ConsumerPubkey,
+
+		`--from`, fmt.Sprintf("validator%s", action.Validator),
+		`--chain-id`, string(tr.chainConfigs[ChainID("provi")].ChainId),
+		`--home`, home,
+		`--node`, node,
+		`--gas`, gas,
+		`--keyring-backend`, `test`,
+		`-y`,
+		`-o`, `json`,
 	)
 
 	if verbose {
-		fmt.Println("assignConsumerPubKey cmd:", cmd.String())
+		fmt.Println("transferIbcToken cmd:", cmd.String())
 	}
 
 	return cmd.CombinedOutput()

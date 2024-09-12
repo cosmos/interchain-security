@@ -29,10 +29,11 @@ func stepsDelegate(consumerName string) []Step {
 		},
 		{
 			Action: SendTokensAction{
-				Chain:  ChainID(consumerName),
-				From:   ValidatorID("alice"),
-				To:     ValidatorID("bob"),
-				Amount: 1,
+				Chain:     ChainID(consumerName),
+				From:      ValidatorID("alice"),
+				To:        ValidatorID("bob"),
+				Amount:    1,
+				ExpectErr: true,
 			},
 			State: State{
 				ChainID(consumerName): ChainState{

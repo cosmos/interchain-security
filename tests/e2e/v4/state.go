@@ -646,3 +646,15 @@ func (tr Commands) GetInflationRate(
 ) float64 {
 	panic("'GetInflationRate' is not implemented in this version")
 }
+
+// QueryTransaction returns the content of the transaction or an error e.g. when a transaction coudl
+func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error) {
+	binaryName := tr.ChainConfigs[chain].BinaryName
+	cmd := tr.Target.ExecCommand(binaryName,
+		"query", "tx", txhash,
+		`--node`, tr.GetQueryNode(chain),
+		`-o`, `json`,
+	)
+	fmt.Println("@@@ running cmd ", cmd)
+	return cmd.CombinedOutput()
+}

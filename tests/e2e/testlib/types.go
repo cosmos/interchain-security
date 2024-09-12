@@ -51,6 +51,7 @@ type ChainCommands interface {
 	GetQueryNodeIP(chain ChainID) string
 	GetInflationRate(chain ChainID) float64
 	GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64
+	QueryTransaction(chain ChainID, txhash string) ([]byte, error)
 	// Action commands
 	AssignConsumerPubKey(action AssignConsumerPubKeyAction, gas, home, node string, verbose bool) ([]byte, error)
 }
