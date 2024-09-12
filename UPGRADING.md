@@ -1,6 +1,6 @@
 # Upgrading Replicated Security
 
-## Unreleased
+## v6.0.x
 
 ### Provider
 
