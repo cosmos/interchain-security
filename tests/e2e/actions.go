@@ -2290,7 +2290,7 @@ func (tr Chain) invokeDowntimeSlash(action DowntimeSlashAction, verbose bool) {
 	// Bring validator down
 	tr.setValidatorDowntime(action.Chain, action.Validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.Chain, 11, 3*time.Minute)
+	tr.waitBlocks(action.Chain, 16, 3*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.Chain, action.Validator, false, verbose)
 }
