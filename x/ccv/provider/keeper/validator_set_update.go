@@ -261,6 +261,8 @@ func (k Keeper) GetLastProviderConsensusActiveValidators(ctx sdk.Context) ([]sta
 // the validator updates to be sent to the consumer chain.
 // For TopN consumer chains, it automatically opts in all validators that
 // belong to the top N of the active validators.
+//
+// TODO add unit test for ComputeConsumerNextValSet
 func (k Keeper) ComputeConsumerNextValSet(
 	ctx sdk.Context,
 	bondedValidators []stakingtypes.Validator,

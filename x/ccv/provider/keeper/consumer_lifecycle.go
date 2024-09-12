@@ -179,6 +179,8 @@ func (k Keeper) ConsumeIdsFromTimeQueue(
 
 // LaunchConsumer launches the chain with the provided consumer id by creating the consumer client and the respective
 // consumer genesis file
+//
+// TODO add unit test for LaunchConsumer
 func (k Keeper) LaunchConsumer(
 	ctx sdk.Context,
 	bondedValidators []stakingtypes.Validator,
