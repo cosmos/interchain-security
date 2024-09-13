@@ -119,13 +119,23 @@ message MsgUpdateParams {
 }
 ```
 
-## Begin-Block
+## BeginBlock
 
-> TBA
+In the `BeginBlock` of the consumer module the following actions are performed:
 
-## End-Block
+- Store in state the block height to VSC id mapping needed for sending to the provider the height of infractions committed on the consumer chain.
+- Track historical entries. This is the same lofic as in the `x/staking` module.
 
-> TBA
+## EndBlock
+
+In the `EndBlock` of the consumer module the following actions are performed:
+
+- If `PreCCV` state is active, i.e., the consumer chain is a previously standalone chain
+  that was just upgraded to include the consumer module, then execute the [changeover logic](../../consumer-development/changeover-procedure.md).
+- Otherwise, distribute block rewards internally and once every [BlocksPerDistributionTransmission](#blocksperdistributiontransmission) send 
+  ICS rewards to the provider chain.
+- Send slash packets to the provider chain reporting infractions validators commited on the consumer chain.
+- Send to the consensus engine validator updates reveived from the provider chain.
 
 ## Hooks
 

@@ -470,13 +470,37 @@ message MsgSubmitConsumerDoubleVoting {
 }
 ```
 
-## Begin-Block
+## BeginBlock
 
-> TBA
+In the `BeginBlock` of the provider module the following actions are performed:
 
-## End-Block
+- Launch every consumer chain that has a spawn time that already passed. 
+  - Compute the initial validator set.
+  - Create the genesis state for the consumer module. 
+    Note that the genesis state contains the [consumer module parameters](./03-consumer.md#parameters) and 
+    both the client state and consensus state needed for creating a provider client on the consumer chain.
+  - Create a consumer client.
+- Remove every stopped consumer chain for which the removal time has passed.
+- Replenish the throttling meter if necessary.
+- Distribute ICS rewards to the opted in validators.  
 
-> TBA
+Note that for every consumer chain, the computation of its initial validator set is based on the consumer's [power shaping parameters](../../features/power-shaping.md)
+and the [validators that opted in on that consumer](../../features/partial-set-security.md).
+
+## EndBlock
+
+In the `EndBlock` of the provider module the following actions are performed:
+
+- Store in state the VSC id to block height mapping needed for determining the height of infractions on consumer chains.
+- Prune the no-longer needed public keys assigned by validators to use when validating on consumer chains.
+- Send validator updates to the consensus engine. 
+  The maximum number of validators is set through the [MaxProviderConsensusValidators](#maxproviderconsensusvalidators) param.
+- At the begining of every epoch, 
+  - for every launched consumer chain, compute the next consumer validator set and send it to the consumer chain via an IBC packet;
+  - increment the VSC id.
+
+Note that for every consumer chain, the computation of its validator set is based on the consumer's [power shaping parameters](../../features/power-shaping.md)
+and the [validators that opted in on that consumer](../../features/partial-set-security.md).
 
 ## Hooks
 
