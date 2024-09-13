@@ -398,7 +398,9 @@ The provider module contains the following parameters.
 | ------ | ------------- |
 | string | "0.66"        |
 
-`TrustingPeriodFraction` is used to used to compute the trusting period of IBC clients (for both provider and consumer chains) as `UnbondingPeriod / TrustingPeriodFraction`.
+`TrustingPeriodFraction` is used to used to compute the trusting period of IBC clients 
+(for both provider and consumer chains) as `UnbondingPeriod / TrustingPeriodFraction`.
+Note that a light clients must be updated within the trusting period in order to avoid being frozen.
 
 The param is set as a string, and converted to a `sdk.Dec` when used.
 
