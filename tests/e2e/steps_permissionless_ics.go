@@ -184,7 +184,7 @@ func stepsPermissionlessICS() []Step {
 				},
 				State: State{
 					ChainID("provi"): e2e.ChainState{
-						ConsumerChains: &map[ChainID]bool{"cons2": true}, // Consumer chain "consu1" is now removed
+						ConsumerChains: &map[ChainID]bool{"cons2": true}, // Consumer chain "cons1" is now removed
 						HasToValidate: &map[ValidatorID][]ChainID{
 							ValidatorID("alice"): {"cons1"},
 							ValidatorID("bob"):   {"cons1"}, // bob is still a validator on consu chain
