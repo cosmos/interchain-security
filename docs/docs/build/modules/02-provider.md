@@ -131,6 +131,251 @@ message MsgUpdateConsumer {
 }
 ```
 
+### MsgRemoveConsumer
+
+`MsgRemoveConsumer` enables the owner of a _launched_ consumer chain to remove it from the provider chain. 
+The message will first stop the consumer chain, which means the provider will stop sending it validator updates over IBC.
+Then, once the unbonding period elapses, the consumer chain is removed from the provider state. 
+
+```proto
+message MsgRemoveConsumer {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  // the consumer id of the consumer chain to be stopped
+  string consumer_id = 1;
+  // the address of the owner of the consumer chain to be stopped
+  string owner = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+```
+
+### MsgOptIn
+
+`MsgOptIn` enables a validator to opt in to validate a consumer chain. 
+Note that _validators can opt in to validate consumer chains that are not launched yet_.
+The signer of the message needs to match the validator address on the provider.
+
+Note that opting in doesn't guarantee a spot in the consumer chain's validator set. 
+Use the `has-to-validate` query to check if the validator is part of the consumer chain's validator set.
+For more details, check out the [validator guide to Partial Set Security](../../validators/partial-set-security-for-validators.md).
+
+Note that since the introduction of the 
+[Permissionless ICS feature](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics) 
+the `chain_id` field is deprecated. 
+Users should use `consumer_id` instead. 
+You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
+
+The `consumer_key` field is optional. 
+It enables the validator to set the consensus public key to use on the consumer chain.
+The validator can assing (or re-assing) this key also later via [MsgAssignConsumerKey](#msgassignconsumerkey).
+
+:::warning
+Validators are strongly recommended to assign a separate key for each consumer chain
+and **not** reuse the provider key across consumer chains for security reasons.
+
+This is especially important since the introduction of the 
+[Permissionless ICS feature](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics) 
+that allows multiple consumer chains to have the same chain ID. 
+A validator using the same consensus key to validate on two chains with the same chain ID might get slashed for double signing. 
+:::
+
+```proto
+message MsgOptIn {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
+  // the validator address on the provider
+  string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // (optional) The consensus public key to use on the consumer in json string format corresponding to proto-any,
+  // for example `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`.
+  // This field is optional and can remain empty (i.e., `consumer_key = ""`). A validator can always change the
+  // consumer public key at a later stage by issuing a `MsgAssignConsumerKey` message.
+  string consumer_key = 3;
+  // submitter address
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the consumer id of the consumer chain to opt in to
+  string consumer_id = 5;
+}
+```
+
+### MsgAssignConsumerKey
+
+`MsgAssignConsumerKey` enables a validator to assign the consensus public key to use on a consumer chain.
+Without assigning a specific key, the validator will need to use the same key as on the provider chain. 
+
+:::warning
+Validators are strongly recommended to assign a separate key for each consumer chain
+and **not** reuse the provider key across consumer chains for security reasons.
+
+This is especially important since the introduction of the 
+[Permissionless ICS feature](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics) 
+that allows multiple consumer chains to have the same chain ID. 
+A validator using the same consensus key to validate on two chains with the same chain ID might get slashed for double signing. 
+:::
+
+The signer of the message needs to match the validator address on the provider. 
+
+Note that since the introduction of the 
+[Permissionless ICS feature](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics) 
+the `chain_id` field is deprecated. 
+Users should use `consumer_id` instead. 
+You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
+
+For more details, check out the [description of the Key Assignment feature](../../features/key-assignment.md).
+
+```proto
+message MsgAssignConsumerKey {
+  option (cosmos.msg.v1.signer) = "signer";
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
+  // The validator address on the provider
+  string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The consensus public key to use on the consumer.
+  // in json string format corresponding to proto-any, ex:
+  // `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`
+  string consumer_key = 3;
+
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // the consumer id of the consumer chain to assign a consensus public key to
+  string consumer_id = 5;
+}
+```
+### MsgOptOut
+
+`MsgOptOut` enables a validator to opt out from validating a launched consumer chain. 
+The signer of the message needs to match the validator address on the provider. 
+
+Note that since the introduction of the 
+[Permissionless ICS feature](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics) 
+the `chain_id` field is deprecated. 
+Users should use `consumer_id` instead. 
+You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
+
+For more details on optin out, check out the [validator guide to Partial Set Security](../../validators/partial-set-security-for-validators.md).
+
+```proto
+message MsgOptOut {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 1 [deprecated = true];
+  // the validator address on the provider
+  string provider_addr = 2 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // submitter address
+  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the consumer id of the consumer chain to opt out from
+  string consumer_id = 4;
+}
+```
+
+### MsgSetConsumerCommissionRate
+
+`MsgSetConsumerCommissionRate` enables validators to set a per-consumer chain commission rate. 
+The `rate` is a decimal in `[minRate, 1]`, with `minRate` corresponding to the minimum commission rate set on the
+provider chain (see `min_commission_rate` in `interchain-security-pd query staking params`).
+
+The signer of the message needs to match the validator address on the provider. 
+
+Note that since the introduction of the 
+[Permissionless ICS feature](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics) 
+the `chain_id` field is deprecated. 
+Users should use `consumer_id` instead. 
+You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
+
+For more details on setting per-consumer chain commission rates, check out the [validator guide to Partial Set Security](../../validators/partial-set-security-for-validators.md).
+
+```proto
+message MsgSetConsumerCommissionRate {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // The validator address on the provider
+  string provider_addr = 1 [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // [DEPRECATED] use `consumer_id` instead
+  string chain_id = 2 [deprecated = true];
+  // The rate to charge delegators on the consumer chain, as a fraction
+  string rate = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+    ];
+  // submitter address
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // the consumer id of the consumer chain to set the commission rate
+  string consumer_id = 5;
+}
+```
+
+### MsgSubmitConsumerMisbehaviour
+
+`MsgSubmitConsumerMisbehaviour` enables users to submit to the provider evidence of a light client attack that occured on a consumer chain. 
+This message can be submitted directly by users, e.g., via the CLI command `tx provider submit-consumer-misbehaviour`, 
+or by a relayer that can be set to automatically detect consumer chain misbehaviors, e.g., [Hermes](https://github.com/informalsystems/hermes).
+
+Note that since the introduction of the 
+[Permissionless ICS feature](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics) 
+the `chain_id` field is deprecated. 
+Users should use `consumer_id` instead. 
+You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
+
+For more details on reporting light client attacks that occured on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
+
+```proto
+message MsgSubmitConsumerMisbehaviour {
+  option (cosmos.msg.v1.signer) = "submitter";
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // The Misbehaviour of the consumer chain wrapping
+  // two conflicting IBC headers
+  ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 2;
+  // the consumer id of the consumer chain where the misbehaviour occurred
+  string consumer_id = 3;
+}
+```
+
+### MsgSubmitConsumerDoubleVoting
+
+`MsgSubmitConsumerDoubleVoting` enables users to submit to the provider evidence of a double signing infraction that occured on a consumer chain. 
+This message can be submitted directly by users, e.g., via the CLI command `tx provider submit-consumer-double-voting`, 
+or by a relayer that can be set to automatically detect consumer chain misbehaviors, e.g., [Hermes](https://github.com/informalsystems/hermes).
+
+Note that since the introduction of the 
+[Permissionless ICS feature](https://cosmos.github.io/interchain-security/adrs/adr-019-permissionless-ics) 
+the `chain_id` field is deprecated. 
+Users should use `consumer_id` instead. 
+You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
+
+For more details on reporting double signing infractions that occured on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
+
+```proto
+message MsgSubmitConsumerDoubleVoting {
+  option (cosmos.msg.v1.signer) = "submitter";
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string submitter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // The equivocation of the consumer chain wrapping
+  // an evidence of a validator that signed two conflicting votes
+  tendermint.types.DuplicateVoteEvidence duplicate_vote_evidence = 2;
+  // The light client header of the infraction block
+  ibc.lightclients.tendermint.v1.Header infraction_block_header = 3;
+  // the consumer id of the consumer chain where the double-voting took place
+  string consumer_id = 4;
+}
+```
+
 ## Begin-Block
 
 ## End-Block
