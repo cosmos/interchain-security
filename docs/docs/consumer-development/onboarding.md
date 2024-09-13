@@ -30,36 +30,32 @@ This should include (at minimum):
 
 Example of such a repository can be found [here](https://github.com/hyphacoop/ics-testnets/tree/main/game-of-chains-2022/sputnik).
 
-## 3. Submit a Governance Proposal
+## 3. Submit `MsgCreateConsumer` (and `MsgUpdateConsumer`) messages
 
-Before you submit a `ConsumerChainAddition` proposal, please consider allowing at least a day between your proposal passing and the chain spawn time. This will allow the validators, other node operators and the community to prepare for the chain launch.
-If possible, please set your spawn time so people from different parts of the globe can be available in case of emergencies. Ideally, you should set your spawn time to be between 12:00 UTC and 20:00 UTC so most validator operators are available and ready to respond to any issues.
+Before you start your chain, you need to submit a `MsgCreateConsumer` message that generates and returns back the
+`consumerId` that should be used in any upcoming interactions by the consumer chain or the validators that interact
+with your chain. 
+Additionally, you need to decider whether your chain should be an Opt-In chain or a Top N chain (see [Partial Set Security](../features/partial-set-security.md))
+and act accordingly (see [Permissionless ICS](../features/permissionless.md).
 
-Additionally, reach out to the community via the [forum](https://forum.cosmos.network/) to formalize your intention to become an ICS consumer, gather community support and accept feedback from the community, validators and developers.
+If you create a Top N chain through, please consider allowing at least a day between your proposal passing and the chain spawn time.
+This will allow the validators, other node operators and the community to prepare for the chain launch.
+If possible, please set your spawn time so people from different parts of the globe can be available in case of emergencies.
+Ideally, you should set your spawn time to be between 12:00 UTC and 20:00 UTC so most validator operators are available and ready to respond to any issues.
+
+Additionally, for a Top N chain, reach out to the community via the [forum](https://forum.cosmos.network/) to formalize your intention to become an ICS consumer,
+gather community support and accept feedback from the community, validators and developers.
 
 - [ ] determine your chain's spawn time
-- [ ] determine consumer chain parameters to be put in the proposal
+- [ ] determine consumer chain parameters
 - [ ] take note to include a link to your onboarding repository
 - [ ] describe the purpose and benefits of running your chain
-- [ ] determine whether your chain should be an Opt-In chain or a Top N chain (see [Partial Set Security](../features/partial-set-security.md))
 - [ ] if desired, decide on power-shaping parameters (see [Power Shaping](../features/power-shaping.md))
 
-Example of a consumer chain addition proposal.
-
+Example of initialization parameters:
 ```js
-// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
-// If it passes, if the top_N parameter is not equal to 0, the top N% of validators by voting power on the provider chain are expected to validate the consumer chain at spawn time.
-// Otherwise, only validators that opted in during the proposal period are expected to validate the consumer chain at spawn time.
-// It is recommended that spawn time occurs after the proposal end time.
+// ConsumerInitializationParameters provided in MsgCreateConsumer or MsgUpdateConsumer
 {
-    // Title of the proposal
-    "title": "Add consumer chain",
-    // Description of the proposal
-    // format the text as a .md file and include the file in your onboarding repository
-    "description": ".md description of your chain and all other relevant information",
-    // Proposed chain-id of the new consumer chain.
-    // Must be unique from all other consumer chain ids of the executing provider chain.
-    "chain_id": "newchain-1",
     // Initial height of new consumer chain.
     // For a completely new chain, this will be {0,1}.
     "initial_height" : {
@@ -100,7 +96,14 @@ Example of a consumer chain addition proposal.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
     // it is most relevant for chains performing a standalone to consumer changeover
     // in order to maintain the existing ibc transfer channel
-    "distribution_transmission_channel": "channel-123",
+    "distribution_transmission_channel": "channel-123"
+}
+```
+
+Example of power-shaping parameters:
+```js
+// PowerShaping parameters provided in MsgCreateConsumer or MsgUpdateConsumer
+{
     // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
     // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
     // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
