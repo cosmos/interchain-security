@@ -49,7 +49,7 @@ In case the provider chain halts or experiences difficulties, the consumer chain
 As the validators run separate infrastructure on these networks, **_the provider chain liveness does not impact the liveness of consumer chains_**.
 
 Every consumer chain communicates with the provider chain via a CCV channel -- an IBC ordered channel.
-If any of the packets sent over the CCV channel timeout (see the [CCVTimeoutPeriod param](./introduction/params.md#ccvtimeoutperiod)), then the channel is closed and, consequently, the consumer chain transitions to a Proof of Authority (PoA) chain. 
+If any of the packets sent over the CCV channel timeout (see the [CCVTimeoutPeriod param](./build/modules/03-consumer.md#ccvtimeoutperiod)), then the channel is closed and, consequently, the consumer chain transitions to a Proof of Authority (PoA) chain. 
 This means that the validator set on the consumer will no longer be updated with information from the provider. 
 
 ### What happens to provider if any of the consumers are down?
@@ -109,7 +109,7 @@ Also note that validators can assign consensus keys before a consumer chain is l
 
 ### What are the benefits for validators running consumer chains?
 
-The consumer chains sends a portion of its block rewards (e.g., transaction fees and inflation) to the provider chain as defined by the [ConsumerRedistributionFraction param](./introduction/params.md#consumerredistributionfraction). 
+The consumer chains sends a portion of its block rewards (e.g., transaction fees and inflation) to the provider chain as defined by the [ConsumerRedistributionFraction param](./build/modules/03-consumer.md#consumerredistributionfraction). 
 These rewards are sent periodically to the provider (via IBC transfers), where they are distributed **ONLY** to the _opted in_ validators and their delegators. For more details, see the [Reward Distribution feature](./features/reward-distribution.md).
 
 ### Can validators set per consumer chain commission rates?
