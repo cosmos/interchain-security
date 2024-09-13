@@ -29,6 +29,48 @@ The following diagram describes the phases of a consumer chain from the perspect
 
 ![Phases of a consumer chain](../../adrs/figures/adr19_phases_of_a_consumer_chain.png)
 
+## IBC Callbacks
+
+The consumer module is an IBC application that implements the [IBC module callback](https://ibc.cosmos.network/v8/ibc/apps/apps/#create-a-custom-ibc-application-module).
+
+### OnChanOpenInit
+
+`OnChanOpenInit` returns an error. `MsgChannelOpenInit` should be sent to the consumer. 
+
+### OnChanOpenTry
+
+`OnChanOpenTry` validates the parameters of the _CCV channel_ -- an ordered IBC channel connected on the `provider` port 
+and with the counterparty port set to `consumer` -- and asserts that the counterparty version matches the expected version 
+(only verions `1` is supported).
+
+If the validation passes, the provider module verifies that the underlying client is the expected client of the consumer chain 
+(i.e., the client created during the consumer chain launch) and that no other CCV channel exists for this consumer chain.
+
+Finally, it sets the [ProviderFeePoolAddr](./03-consumer.md#providerfeepooladdrstr) as part of the metadata.
+
+### OnChanOpenAck
+
+`OnChanOpenAck` returns an error. `MsgChannelOpenAck` should be sent to the consumer. 
+
+### OnChanOpenConfirm
+
+`OnChanOpenConfirm` first verifies that no other CCV channel exists for this consumer chain. Note that this is a sanity check.
+Then, it sets the channel mapping in the state.
+
+### OnChanCloseInit
+
+`OnChanCloseInit` returns an error. `MsgChannelCloseInit` should be sent to the consumer. 
+
+### OnChanCloseConfirm
+
+`OnChanCloseConfirm` is a no-op.
+
+### OnRecvPacket
+
+### OnAcknowledgementPacket
+
+### OnTimeoutPacket
+
 ## Messages
 
 ### MsgUpdateParams
@@ -401,7 +443,11 @@ message MsgSubmitConsumerDoubleVoting {
 
 ## Hooks
 
+> TBA
+
 ## Events
+
+> TBA
 
 ## Parameters
 
@@ -503,3 +549,9 @@ _bonded validators_, i.e., validators that have stake locked on the provider cha
 and _active validator_, i.e., validators that participate actively in the provider chain's consensus. 
 
 ## Client
+
+### CLI
+
+### gRPC
+
+### REST

@@ -25,6 +25,54 @@ As a result, the misbehaving validator is punished on the provider chain.
 
 ## State Transitions
 
+## IBC Callbacks
+
+The consumer module is an IBC application that implements the [IBC module callback](https://ibc.cosmos.network/v8/ibc/apps/apps/#create-a-custom-ibc-application-module).
+
+### OnChanOpenInit
+
+`OnChanOpenInit` first verifies that the CCV channel was not already created. 
+Then, it validates the channel parameters -- an ordered IBC channel connected on the `consumer` port 
+and with the counterparty port set to `provider` -- and asserts that the version matches the expected version 
+(only verions `1` is supported).
+
+Finally, it verifies that the underlying client is the expected client of the provider chain 
+(i.e., provided in the consumer module genesis state). 
+
+### OnChanOpenTry
+
+`OnChanOpenTry` returns an error. `MsgChannelOpenTry` should be sent to the provider. 
+
+### OnChanOpenAck
+
+`OnChanOpenAck` first verifies that the CCV channel was not already created. 
+Then it verifies that the counterparty version matches the expected version 
+(only verions `1` is supported).
+
+If the verification passes, it stores the [ProviderFeePoolAddr](#providerfeepooladdrstr) in the state.
+
+Finally, if the [DistributionTransmissionChannel](#distributiontransmissionchannel) parameter is not set,
+it initiate the opening handshake for a token transfer channel over the same connection as the CCV channel
+by calling the `ChannelOpenInit` method of the IBC module.
+
+### OnChanOpenConfirm
+
+`OnChanOpenConfirm` returns an error. `MsgChanOpenConfirm` should be sent to the provider. 
+
+### OnChanCloseInit
+
+`OnChanCloseInit` allow relayers to close duplicate OPEN channels, if the channel handshake is completed.
+
+### OnChanCloseConfirm
+
+`OnChanCloseConfirm` is a no-op.
+
+### OnRecvPacket
+
+### OnAcknowledgementPacket
+
+### OnTimeoutPacket
+
 ## Messages
 
 ### MsgUpdateParams
@@ -50,7 +98,11 @@ message MsgUpdateParams {
 
 ## Hooks
 
+> TBA
+
 ## Events
+
+> TBA
 
 ## Parameters
 
@@ -170,3 +222,9 @@ It is recommended that every consumer chain set and unbonding period shorter tha
 For more details, see [ADR-008](../adrs/adr-008-throttle-retries.md).
 
 ## Client
+
+### CLI
+
+### gRPC
+
+### REST
