@@ -343,8 +343,8 @@ func (k Keeper) OnRecvSlashPacket(
 		return ccv.V1Result, nil
 	}
 
-	// Check that the validator belongs to the consumer chain valset
-	if !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
+	// Check that chain is launched and the validator belongs to the consumer chain valset
+	if k.GetConsumerPhase(ctx, consumerId) == providertypes.CONSUMER_PHASE_LAUNCHED && !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
 		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
 			providerConsAddr.String(), consumerId)
 		// drop packet but return a slash ack so that the consumer can send another slash packet
