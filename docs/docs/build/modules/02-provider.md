@@ -6,9 +6,28 @@ sidebar_position: 2
 
 ## Overview
 
+The ICS provider module enables a proof-of-stake chain (known as the provider chain) 
+to share (parts of) its security with other chains (known as consumer chains).
+This basically mean that consumer chains can run as proof-of-stake chains using 
+(parts of) the stake locked on the provider as collateral.  
+
+The provider module has the following functionalities:
+
+- The permissionless creation of consumer chains.
+- The customization of the consumer chains validator sets. 
+- The option for validators to opt in to validate the consumer chains they want.
+- The distribution of rewards from consumer chains to the opted in validators.
+- The slashing and jailing of validators commiting infractions on consumer chains based on cryptographic evidence.
+
 ## State 
 
 ## State Transitions
+
+### Consumer chain phases
+
+The following diagram describes the phases of a consumer chain from the perspective of the provider module:
+
+![Phases of a consumer chain](../../adrs/figures/adr19_phases_of_a_consumer_chain.png)
 
 ## Messages
 

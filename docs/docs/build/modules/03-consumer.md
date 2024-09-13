@@ -6,11 +6,43 @@ sidebar_position: 3
 
 ## Overview
 
+The ICS consumer module enables consumer chains to use stake locked on a provider chain 
+as collateral for their own proof-of-stake based block production. 
+
+The consumer module established a IBC ordered channel to the provider chain. 
+This channel is used by the provider chain to regularly sent validator updates the the consumer chain. 
+The consumer sends these updates to its own consensus engine. 
+This means that the consumer module acts as a staking module of the consumer chain. 
+
+Regularly, the consumer module sends a part of the consumer chain's block rewards 
+to the provider chain as ICS rewards.
+
+If one of the validators in the consumer chain's validator set is missing enough blocks (i.e., downtime infraction),
+the consumer module notifies the provider chain by sending an IBC packet to the provider module. 
+As a result, the misbehaving validator is punished on the provider chain.
+
 ## State 
 
 ## State Transitions
 
 ## Messages
+
+### MsgUpdateParams
+
+`MsgUpdateParams` updates the [consumer module parameters](#parameters). 
+The params are updated through a governance proposal where the signer is the gov module account address.
+
+```proto
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // signer is the address of the governance account.
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/consumer parameters to update.
+  interchain_security.ccv.v1.ConsumerParams params = 2 [(gogoproto.nullable) = false];
+}
+```
 
 ## Begin-Block
 
