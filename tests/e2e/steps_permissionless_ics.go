@@ -185,13 +185,9 @@ func stepsPermissionlessICS() []Step {
 				State: State{
 					ChainID("provi"): e2e.ChainState{
 						ConsumerChains: &map[ChainID]bool{"cons2": true}, // Consumer chain "cons1" is now removed
-						// Note: current behavior is that the chain is enqueued for deletion and will be triggered
-						// when unbonding-period has passed.
-						// I't is still reported as a chain to be validated until it's finally deleted.
-						// This behaviour is currently discussed and might change.
 						HasToValidate: &map[ValidatorID][]ChainID{
-							ValidatorID("alice"): {"cons1"},
-							ValidatorID("bob"):   {"cons1"},
+							ValidatorID("alice"): {},
+							ValidatorID("bob"):   {},
 							ValidatorID("carol"): {},
 						},
 					},
