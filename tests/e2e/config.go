@@ -527,7 +527,7 @@ func DefaultTestConfig() TestConfig {
 				IpPrefix:       "7.7.8",
 				VotingWaitTime: 20,
 				GenesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"20\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"30\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
