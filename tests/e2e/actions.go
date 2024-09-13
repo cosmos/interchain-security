@@ -395,6 +395,58 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 	tr.testConfig.chainConfigs[action.ConsumerChain] = consumerChainCfg
 }
 
+type RemoveConsumerChainAction struct {
+	Chain         ChainID
+	From          ValidatorID
+	ConsumerChain ChainID
+}
+
+func (tr Chain) removeConsumerChain(action RemoveConsumerChainAction, verbose bool) {
+	consumerId := tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId
+	if consumerId == "" {
+		log.Fatal("failed removing consumer chain. no consumer-id found for chain: ",
+			action.ConsumerChain)
+	}
+
+	// Send consumer chain removal
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "provider", "remove-consumer", string(consumerId),
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		"--output", "json",
+		`-y`,
+	)
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println("command failed:", cmd)
+		log.Fatalf("remove consumer failed error: %s, output: %s", err.Error(), string(bz))
+	}
+
+	// Check transaction
+	txResponse := &TxResponse{}
+	err = json.Unmarshal(bz, txResponse)
+	if err != nil {
+		log.Fatalf("unmarshalling tx response on remove-consumer: %s, json: %s", err.Error(), string(bz))
+	}
+
+	if txResponse.Code != 0 {
+		log.Fatalf("sending remove-consumer transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
+	}
+
+	if verbose {
+		fmt.Println("running 'remove-consumer' returned: ", txResponse)
+	}
+
+	tr.waitBlocks(action.Chain, 2, 10*time.Second)
+
+}
+
 type SubmitConsumerAdditionProposalAction struct {
 	PreCCV              bool
 	Chain               ChainID
@@ -884,6 +936,7 @@ type SubmitConsumerModificationProposalAction struct {
 	Denylist           []string
 	AllowInactiveVals  bool
 	MinStake           uint64
+	NewOwner           string
 }
 
 func (tr Chain) submitConsumerModificationProposal(
@@ -900,8 +953,9 @@ func (tr Chain) submitConsumerModificationProposal(
 	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
 	msg := types.MsgUpdateConsumer{
-		Owner:      authority,
-		ConsumerId: consumerId,
+		Owner:           authority,
+		ConsumerId:      consumerId,
+		NewOwnerAddress: action.NewOwner,
 		PowerShapingParameters: &types.PowerShapingParameters{
 			Top_N:              action.TopN,
 			ValidatorsPowerCap: action.ValidatorsPowerCap,
@@ -1981,12 +2035,11 @@ func (tr Chain) relayPacketsHermes(
 	action RelayPacketsAction,
 	verbose bool,
 ) {
-	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 4 blocks
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
 	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
 	// queued and are subsequently relayed.
-	tr.waitBlocks(action.ChainA, 4, 90*time.Second)
-	tr.waitBlocks(action.ChainB, 4, 90*time.Second)
-
+	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
+	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
 	// hermes clear packets ibc0 transfer channel-13
 	cmd := tr.target.ExecCommand("hermes", "clear", "packets",
 		"--chain", string(tr.testConfig.chainConfigs[action.ChainA].ChainId),

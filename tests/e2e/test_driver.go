@@ -125,6 +125,10 @@ func (td *DefaultDriver) getState(modelState State) State {
 }
 
 func (td *DefaultDriver) GetChainState(chain ChainID, modelState ChainState) e2e.ChainState {
+	if _, exists := td.testCfg.chainConfigs[chain]; !exists {
+		log.Fatalf("getting chain state failed. unknown chain: '%s'", chain)
+	}
+
 	chainState := ChainState{}
 	chainDriver := td.getTargetDriver(chain)
 	// providerDriver is the target driver for the provider chain
@@ -394,6 +398,9 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case UpdateConsumerChainAction:
 		target := td.getTargetDriver(action.Chain)
 		target.updateConsumerChain(action, td.verbose)
+	case RemoveConsumerChainAction:
+		target := td.getTargetDriver(action.Chain)
+		target.removeConsumerChain(action, td.verbose)
 	case OptInAction:
 		target := td.getTargetDriver("provider")
 		target.optIn(action, td.verbose)
