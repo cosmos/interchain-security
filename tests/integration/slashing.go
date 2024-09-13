@@ -408,21 +408,31 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	// Check expected behavior for handling SlashPackets for downtime infractions
 	slashPacketData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
-	// Expect packet to be handled if the validator didn't opt in
+	// Expect the packet to bounce if the slash meter is negative
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(-1))
+	// Only reaches the bouncing code if it fails in the check that chain is launched and the validator is not a consumer validator,
+	// so we set the chain as stopped.
+	providerKeeper.SetConsumerPhase(suite.providerCtx(), firstBundle.ConsumerId, providertypes.CONSUMER_PHASE_STOPPED)
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err)
+	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected bounced result")
+
+	// Expect packet not to bounce if the chain is launched
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(-1))
+	providerKeeper.SetConsumerPhase(suite.providerCtx(), firstBundle.ConsumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
+	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 
+	// Also test what happens if the chain is launched but we have a consumer validator. In this case the check that the
+	// chain is launched and the validator is not a consumer validator fails, and hence the packet bounces due to the
+	// negative slash meter.
 	err = providerKeeper.SetConsumerValidator(ctx, firstBundle.ConsumerId, providertypes.ConsensusValidator{
 		ProviderConsAddr: validAddress,
 	})
 	suite.Require().NoError(err)
-
-	// Expect the packet to bounce if the slash meter is negative
-	providerKeeper.SetSlashMeter(ctx, math.NewInt(-1))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err)
-	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected successful ack")
+	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected bounced result")
 
 	// Expect the packet to be handled if the slash meter is positive
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(0))

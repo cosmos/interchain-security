@@ -448,6 +448,11 @@ func (k Keeper) hasToValidate(
 	provAddr types.ProviderConsAddress,
 	consumerId string,
 ) (bool, error) {
+	// only ask validators to validate active chains
+	if !k.IsConsumerActive(ctx, consumerId) {
+		return false, nil
+	}
+
 	// if the validator was sent as part of the packet in the last epoch, it has to validate
 	if k.IsConsumerValidator(ctx, consumerId, provAddr) {
 		return true, nil
