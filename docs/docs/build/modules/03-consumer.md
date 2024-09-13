@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# x/consumer
+# x/ccv/consumer
 
 ## Overview
 
@@ -121,7 +121,11 @@ message MsgUpdateParams {
 
 ## Begin-Block
 
+> TBA
+
 ## End-Block
+
+> TBA
 
 ## Hooks
 

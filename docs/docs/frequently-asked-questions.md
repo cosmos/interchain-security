@@ -62,13 +62,13 @@ The ICS protocol is concerned only with validator set management, and the only c
 As any other Cosmos SDK chains, **_consumer chains can issue their own token_** and manage inflation parameters. 
 Note that the ICS protocol does not impact the transaction fee system on the consumer chains. 
 This means consumer chains can use any token (including their own token) to pay gas fees.
-For more details, see the [democracy modules](./features/democracy-modules.md#tokenomics).
+For more details, see the [democracy modules](./build/modules/04-democracy.md#tokenomics).
 
 ### Can consumer chains have their own governance?
 
 Yes. ICS allows consumer chains to **_separate governance from block production_**.
 Validator operators (with their stake locked on the provider) are responsible for block production, while _representatives_ (aka governators, governors) are responsible for on-chain governance. 
-For more details, see the [democracy modules](./features/democracy-modules.md).
+For more details, see the [democracy modules](./build/modules/04-democracy.md).
 
 ### Can a consumer chain modify its power shaping parameters?
 

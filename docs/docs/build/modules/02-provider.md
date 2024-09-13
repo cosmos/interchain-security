@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# x/provider
+# x/ccv/provider
 
 ## Overview
 
@@ -472,7 +472,11 @@ message MsgSubmitConsumerDoubleVoting {
 
 ## Begin-Block
 
+> TBA
+
 ## End-Block
+
+> TBA
 
 ## Hooks
 
