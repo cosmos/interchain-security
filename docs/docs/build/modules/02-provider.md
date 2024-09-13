@@ -386,4 +386,99 @@ message MsgSubmitConsumerDoubleVoting {
 
 ## Parameters
 
+The provider module contains the following parameters.
+
+### `TemplateClient`
+
+`TemplateClient` is a template of an IBC `ClientState` used for launching consumer chains. 
+
+### TrustingPeriodFraction
+
+| Type   | Default value |
+| ------ | ------------- |
+| string | "0.66"        |
+
+`TrustingPeriodFraction` is used to used to compute the trusting period of IBC clients (for both provider and consumer chains) as `UnbondingPeriod / TrustingPeriodFraction`.
+
+The param is set as a string, and converted to a `sdk.Dec` when used.
+
+### CcvTimeoutPeriod
+
+| Type          | Default value      |
+| ------------- | ------------------ |
+| time.Duration | 2419200s (4 weeks) |
+
+`CcvTimeoutPeriod` is the period used to compute the timeout timestamp when sending IBC packets. 
+For more details, see the [IBC specification of Channel & Packet Semantics](https://github.com/cosmos/ibc/blob/main/spec/core/ics-004-channel-and-packet-semantics/README.md#sending-packets).
+
+:::warning
+If a sent packet is not relayed within this period, then the packet times out. The CCV channel used by the interchain security protocol is closed, and the corresponding consumer is removed.
+:::
+
+`CcvTimeoutPeriod` may have different values on the provider and consumer chains.
+`CcvTimeoutPeriod` on the provider **must** be larger than consumer unbonding period.
+
+### SlashMeterReplenishPeriod
+
+| Type          | Default value  |
+| ------------- | -------------- |
+| time.Duration | 3600s (1 hour) |
+
+`SlashMeterReplenishPeriod` is the time interval at which the meter for [jail throttling](https://cosmos.github.io/interchain-security/adrs/adr-008-throttle-retries) is replenished. 
+The meter is replenished to an amount equal to the allowance for that block, or `SlashMeterReplenishFraction * CurrentTotalVotingPower`.
+
+### SlashMeterReplenishFraction
+
+| Type   | Default value |
+| ------ | ------------- |
+| string | "0.05"        |
+
+`SlashMeterReplenishFraction` is the fraction (in range `[0, 1]`) of total voting power that is replenished to the slash meter when a replenishment occurs.
+This param also serves as a maximum fraction of total voting power that the slash meter can hold.
+
+The param is set as a string, and converted to a `sdk.Dec` when used.
+
+### ConsumerRewardDenomRegistrationFee
+
+`ConsumerRewardDenomRegistrationFee` is deprecated. 
+
+### BlocksPerEpoch
+
+| Type  | Default value |
+| ----- | ------------- |
+| int64 | 600           |
+
+`BlocksPerEpoch` is the number of blocks in an ICS epoch. 
+The provider sends validator updates to the consumer chains only once per epoch.
+
+:::warning
+It is recommended for the length of an ICS epoch to not exceed a day. 
+Large epochs would lead to delays in validator updates sent to the consumer chains, 
+which might impact the security of the consumer chains. 
+:::
+
+### NumberOfEpochsToStartReceivingRewards
+
+| Type  | Default value |
+| ----- | ------------- |
+| int64 | 24            |
+
+`NumberOfEpochsToStartReceivingRewards` is the number of ICS epochs that a validator 
+needs to wait after opting in on a consumer chain before being eligible to ICS reawards 
+from that consumer.
+
+### MaxProviderConsensusValidators
+
+| Type  | Default value |
+| ----- | ------------- |
+| int64 | 180            |
+
+`MaxProviderConsensusValidators` is the maximum number of validators sent to 
+the provider consensus enginer. 
+This was introduced with the [Inactive Provider Validators feature](https://cosmos.github.io/interchain-security/adrs/adr-017-allowing-inactive-validators) 
+and it replaces the `MaxValidators` staking module parameter.  
+As a result, the provider chain can differentiate between 
+_bonded validators_, i.e., validators that have stake locked on the provider chain, 
+and _active validator_, i.e., validators that participate actively in the provider chain's consensus. 
+
 ## Client
