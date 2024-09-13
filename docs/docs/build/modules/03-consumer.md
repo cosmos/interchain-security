@@ -69,9 +69,36 @@ by calling the `ChannelOpenInit` method of the IBC module.
 
 ### OnRecvPacket
 
+`OnRecvPacket` unmarshals the IBC packet data into a `ValidatorSetChangePacketData` struct (see below) and executes the handling logic.
+
+- If it is the first packet received, sets the underlying IBC channel as the canonical CCV channel.
+- Collects validator updates to be sent to the consensus engine at the end of the block.
+- Store in state the block height to VSC id (i.e., `valset_update_id`) mapping.
+- Removed the outstanding downtime flags from the validator for which the jailing 
+  for downtime infractions was acknowledged by the provider chain (see the `slash_acks` field in `ValidatorSetChangePacketData`).
+
+```proto
+message ValidatorSetChangePacketData {
+  repeated .tendermint.abci.ValidatorUpdate validator_updates = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "yaml:\"validator_updates\""
+  ];
+  uint64 valset_update_id = 2;
+  // consensus address of consumer chain validators
+  // successfully jailed on the provider chain
+  repeated string slash_acks = 3;
+}
+``` 
+
 ### OnAcknowledgementPacket
 
+`OnAcknowledgementPacket` enables the consumer module to confirm that the provider module received 
+the previously sent `SlashPacket` and it unblocks the sending of the next `SlashPacket`. 
+This functionality is needed for throttling jailing on the provider chain. For more details, see [ADR-008](../../adrs/adr-008-throttle-retries.md).
+
 ### OnTimeoutPacket
+
+`OnTimeoutPacket` is a no-op.
 
 ## Messages
 

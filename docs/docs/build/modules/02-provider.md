@@ -67,9 +67,42 @@ Then, it sets the channel mapping in the state.
 
 ### OnRecvPacket
 
+`OnRecvPacket` unmarshals the IBC packet data into a `SlashPacketData` struct (see below) and executes the handling logic.
+
+- Validate the fields in `SlashPacketData`:
+  - `validator` has a valid address and a non-zero power;
+  - `infraction` is either downtime or double-singing;
+  - the provider has in state a mapping from `valset_update_id` to a block height.
+- If it is a double-signing infraction, then just log it and return.
+- Verify that the consumer chain is launched and the validator is opted in. 
+- Update the meter used for jail throttling. 
+- Jail the validator on the provider chain. 
+- Store in state the ACK that the downtime infraction was handled. 
+  This will be sent to the consumer with the next validator updates to enable it 
+  to send other downtime infractions for this validator.
+
+```proto
+message SlashPacketData {
+  tendermint.abci.Validator validator = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "yaml:\"validator\""
+  ];
+  // map to the infraction block height on the provider
+  uint64 valset_update_id = 2;
+  // tell if the slashing is for a downtime or a double-signing infraction
+  cosmos.staking.v1beta1.Infraction infraction = 3;
+}
+```
+
+Note that IBC packets with `VSCMaturedPacketData` data are dropped. For more details, check out [ADR 018](../../adrs/adr-018-remove-vscmatured.md).
+
 ### OnAcknowledgementPacket
 
+`OnAcknowledgementPacket` stops and eventually removes the consumer chain associated with the channel on which the `MsgAcknowledgement` message was received.
+
 ### OnTimeoutPacket
+
+`OnTimeoutPacket` stops and eventually removes the consumer chain associated with the channel on which the `MsgTimeout` message was received.
 
 ## Messages
 
