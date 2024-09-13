@@ -23,7 +23,7 @@ import (
 
 const (
 	CONSUMER_CHAIN_ID = "chain-id"
-	CONSUMER_ID       = "13"
+	CONSUMER_ID       = "0"
 )
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
