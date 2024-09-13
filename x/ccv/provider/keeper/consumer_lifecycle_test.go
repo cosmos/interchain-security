@@ -322,7 +322,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 	// fifth chain corresponds to an Opt-In chain with no opted-in validators and hence the
 	// chain launch is NOT successful
 	phase = providerKeeper.GetConsumerPhase(ctx, "4")
-	require.Equal(t, providertypes.CONSUMER_PHASE_INITIALIZED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_REGISTERED, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "4")
 	require.False(t, found)
 }

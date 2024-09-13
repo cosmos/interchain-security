@@ -97,6 +97,21 @@ func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
 			ctx.Logger().Error("could not launch chain",
 				"consumerId", consumerId,
 				"error", err)
+
+			// reset spawn time to zero so that owner can try again later
+			initializationRecord, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+			if err != nil {
+				return errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
+					"getting initialization parameters, consumerId(%s): %s", consumerId, err.Error())
+			}
+			initializationRecord.SpawnTime = time.Time{}
+			err = k.SetConsumerInitializationParameters(ctx, consumerId, initializationRecord)
+			if err != nil {
+				return fmt.Errorf("setting consumer initialization parameters, consumerId(%s): %w", consumerId, err)
+			}
+			// also set the phase to registered
+			k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
+
 			continue
 		}
 
