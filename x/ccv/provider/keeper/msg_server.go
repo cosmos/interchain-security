@@ -406,7 +406,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	if spawnTime, initialized := k.Keeper.InitializeConsumer(ctx, consumerId); initialized {
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime); err != nil {
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
-				"cannot prepare chain with consumer id (%s) for launch", consumerId)
+				"prepare consumer for launch, consumerId(%s), spawnTime(%s): %s", consumerId, spawnTime, err.Error())
 		}
 
 		// add SpawnTime event attribute
@@ -584,7 +584,8 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	if spawnTime, initialized := k.Keeper.InitializeConsumer(ctx, consumerId); initialized {
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime); err != nil {
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
-				"cannot prepare chain with consumer id (%s) for launch", consumerId)
+				"prepare consumer for launch, consumerId(%s), previousSpawnTime(%s), spawnTime(%s): %s",
+				consumerId, previousSpawnTime, spawnTime, err.Error())
 		}
 	}
 
