@@ -19,7 +19,7 @@ This means that the voting power of validators validating (aka producing blocks)
 Moreover, if these validators misbehave on the consumer chains, they get punished on the provider chain. 
 ICS is currently differentiating between two types of infractions -- equivocation and downtime. 
 Depending on the infraction type, the misbehaving validators might be jailed (i.e., removed from the provider validator set) and / or slashed (i.e., a portion of their stake on the provider is being burned).
-For example, validators double sining on consumer chains get slashed and are permanently jailed, 
+For example, validators double signing on consumer chains get slashed and are permanently jailed, 
 while validators not validating sufficient blocks are temporarily jailed.
 
 This means that ICS consumer chains get their economical security from the provider.
