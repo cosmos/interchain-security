@@ -37,6 +37,7 @@ jobs:
               Makefile
 
         - name: Generate testing docs
+          if: env.GIT_DIFF
           run: make testing-docs
 
         - name: Check for changes
