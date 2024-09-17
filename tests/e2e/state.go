@@ -7,6 +7,7 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -43,121 +44,6 @@ type Chain struct {
 	testConfig *TestConfig
 }
 
-func (tr Chain) GetChainState(chain ChainID, modelState ChainState) ChainState {
-	chainState := ChainState{}
-
-	if modelState.ValBalances != nil {
-		valBalances := tr.GetBalances(chain, *modelState.ValBalances)
-		chainState.ValBalances = &valBalances
-	}
-
-	if modelState.Proposals != nil {
-		proposals := tr.GetProposals(chain, *modelState.Proposals)
-		chainState.Proposals = &proposals
-	}
-
-	if modelState.ProposedConsumerChains != nil {
-		proposedConsumerChains := tr.GetProposedConsumerChains(chain)
-		chainState.ProposedConsumerChains = &proposedConsumerChains
-	}
-
-	if modelState.ValPowers != nil {
-		tr.waitBlocks(chain, 1, 10*time.Second)
-		powers := tr.GetValPowers(chain, *modelState.ValPowers)
-		chainState.ValPowers = &powers
-	}
-
-	if modelState.StakedTokens != nil {
-		representPowers := tr.GetStakedTokens(chain, *modelState.StakedTokens)
-		chainState.StakedTokens = &representPowers
-	}
-
-	if modelState.IBCTransferParams != nil {
-		params := tr.target.GetIBCTransferParams(chain)
-		chainState.IBCTransferParams = &params
-	}
-
-	if modelState.Rewards != nil {
-		rewards := tr.GetRewards(chain, *modelState.Rewards)
-		chainState.Rewards = &rewards
-	}
-
-	if modelState.ConsumerChains != nil {
-		chains := tr.target.GetConsumerChains(chain)
-		chainState.ConsumerChains = &chains
-	}
-
-	if modelState.AssignedKeys != nil {
-		assignedKeys := tr.GetConsumerAddresses(chain, *modelState.AssignedKeys)
-		chainState.AssignedKeys = &assignedKeys
-	}
-
-	if modelState.ProviderKeys != nil {
-		providerKeys := tr.GetProviderAddresses(chain, *modelState.ProviderKeys)
-		chainState.ProviderKeys = &providerKeys
-	}
-
-	if modelState.RegisteredConsumerRewardDenoms != nil {
-		registeredConsumerRewardDenoms := tr.target.GetRegisteredConsumerRewardDenoms(chain)
-		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
-	}
-
-	if modelState.ClientsFrozenHeights != nil {
-		chainClientsFrozenHeights := map[string]clienttypes.Height{}
-		for id := range *modelState.ClientsFrozenHeights {
-			chainClientsFrozenHeights[id] = tr.GetClientFrozenHeight(chain, id)
-		}
-		chainState.ClientsFrozenHeights = &chainClientsFrozenHeights
-	}
-
-	if modelState.HasToValidate != nil {
-		hasToValidate := map[ValidatorID][]ChainID{}
-		for validatorId := range *modelState.HasToValidate {
-			hasToValidate[validatorId] = tr.target.GetHasToValidate(validatorId)
-		}
-		chainState.HasToValidate = &hasToValidate
-	}
-
-	if modelState.InflationRateChange != nil {
-		// get the inflation rate now
-		inflationRateNow := tr.target.GetInflationRate(chain)
-
-		// wait a block
-		tr.waitBlocks(chain, 1, 10*time.Second)
-
-		// get the new inflation rate
-		inflationRateAfter := tr.target.GetInflationRate(chain)
-
-		// calculate the change
-		inflationRateChange := inflationRateAfter - inflationRateNow
-		var inflationRateChangeDirection int
-		if inflationRateChange > 0 {
-			inflationRateChangeDirection = 1
-		} else if inflationRateChange < 0 {
-			inflationRateChangeDirection = -1
-		} else {
-			inflationRateChangeDirection = 0
-		}
-		chainState.InflationRateChange = &inflationRateChangeDirection
-	}
-
-	if modelState.ConsumerCommissionRates != nil {
-		consumerCommissionRates := tr.GetConsumerCommissionRates(chain, *modelState.ConsumerCommissionRates)
-		chainState.ConsumerCommissionRates = &consumerCommissionRates
-	}
-
-	if modelState.ConsumerPendingPacketQueueSize != nil {
-		pendingPacketQueueSize := tr.target.GetPendingPacketQueueSize(chain)
-		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
-	}
-
-	if *verbose {
-		log.Println("Done getting chain state:\n" + pretty.Sprint(chainState))
-	}
-
-	return chainState
-}
-
 func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 	if tr.testConfig.useCometmock {
 		// call advance_blocks method on cometmock
@@ -171,17 +57,7 @@ func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 	}
 	startBlock := tr.target.GetBlockHeight(chain)
 
-	start := time.Now()
-	for {
-		thisBlock := tr.target.GetBlockHeight(chain)
-		if thisBlock >= startBlock+blocks {
-			return
-		}
-		if time.Since(start) > timeout {
-			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
-		}
-		time.Sleep(time.Second)
-	}
+	tr.waitUntilBlock(chain, startBlock+blocks, timeout)
 }
 
 func (tr Chain) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
@@ -316,7 +192,7 @@ func (tr Chain) getValidatorIP(chain ChainID, validator ValidatorID) string {
 }
 
 func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
-	return `/` + string(tr.testConfig.chainConfigs[chain].ChainId) + `/validator` + fmt.Sprint(validator)
+	return `/` + string(chain) + `/validator` + fmt.Sprint(validator)
 }
 
 func (tr Chain) curlJsonRPCRequest(method, params, address string) {
@@ -773,8 +649,13 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_LAUNCHED)] {
-			id := c.Get("chain_id").String()
-			chains[ChainID(id)] = true
+			id := c.Get("consumer_id").String()
+			for chainRef, cfg := range tr.chainConfigs {
+				if cfg.ConsumerId == ConsumerID(id) {
+					// note: 'chainRef' is the reference the test uses and not necessarily matching chain id
+					chains[chainRef] = true
+				}
+			}
 		}
 	}
 
@@ -926,12 +807,14 @@ func (tr Commands) GetHasToValidate(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	arr := gjson.Get(string(bz), "consumer_chain_ids").Array()
+	arr := gjson.Get(string(bz), "consumer_ids").Array()
 	chains := []ChainID{}
 	for _, c := range arr {
-		for _, chain := range tr.chainConfigs {
+		for chainRef, chain := range tr.chainConfigs {
 			if chain.ConsumerId == ConsumerID(c.String()) {
-				chains = append(chains, chain.ChainId)
+				// we report the test chain reference which might not match the chain ID
+				// to support testing consumer chains with same chain ID
+				chains = append(chains, chainRef)
 				break
 			}
 		}
@@ -1018,14 +901,21 @@ func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	arr := gjson.Get(string(bz), "chains").Array()
 	chains := []string{}
 	for _, c := range arr {
-		cid := c.Get("chain_id").String()
 		phase := c.Get("phase").String()
 		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] {
-			chains = append(chains, cid)
+			cid := ConsumerID(c.Get("consumer_id").String())
+			for chainRef, chainCfg := range tr.chainConfigs {
+				if chainCfg.ConsumerId == cid {
+					chains = append(chains, string(chainRef))
+				}
+			}
 		}
 	}
 
+	sort.Slice(chains, func(i, j int) bool {
+		return chains[i] < chains[j]
+	})
 	return chains
 }
 

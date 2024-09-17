@@ -17,6 +17,7 @@ import (
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
+	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
 	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
@@ -558,6 +559,7 @@ func TestQueryConsumerChain(t *testing.T) {
 
 	expRes := types.QueryConsumerChainResponse{
 		ChainId:            chainId,
+		ConsumerId:         consumerId,
 		OwnerAddress:       providerKeeper.GetAuthority(),
 		Metadata:           types.ConsumerMetadata{Name: chainId},
 		Phase:              types.CONSUMER_PHASE_REGISTERED.String(),
@@ -663,7 +665,7 @@ func TestQueryConsumerChains(t *testing.T) {
 		name         string
 		setup        func(ctx sdk.Context, pk keeper.Keeper)
 		phase_filter types.ConsumerPhase
-		limit        int32
+		limit        uint64
 		expConsumers []*types.Chain
 	}{
 		{
@@ -675,7 +677,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			name:         "expect an amount of consumer equal to the limit",
 			setup:        func(ctx sdk.Context, pk keeper.Keeper) {},
 			expConsumers: consumers[:3],
-			limit:        int32(3),
+			limit:        3,
 		},
 		{
 			name: "expect registered consumers when phase filter is set to Registered",
@@ -720,14 +722,19 @@ func TestQueryConsumerChains(t *testing.T) {
 			tc.setup(ctx, pk)
 			req := types.QueryConsumerChainsRequest{
 				Phase: tc.phase_filter,
-				Limit: tc.limit,
+				Pagination: &sdkquery.PageRequest{
+					Limit: tc.limit,
+				},
 			}
 			expectedResponse := types.QueryConsumerChainsResponse{
 				Chains: tc.expConsumers,
 			}
 			res, err := pk.QueryConsumerChains(ctx, &req)
 			require.NoError(t, err)
-			require.Equal(t, &expectedResponse, res, tc.name)
+			require.Equal(t, expectedResponse.GetChains(), res.GetChains(), tc.name)
+			if tc.limit != 0 {
+				require.Len(t, res.GetChains(), int(tc.limit), tc.name)
+			}
 		})
 	}
 }

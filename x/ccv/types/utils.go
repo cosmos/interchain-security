@@ -12,7 +12,6 @@ import (
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/log"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -128,7 +127,7 @@ func GetConsAddrFromBech32(bech32str string) (sdk.ConsAddress, error) {
 
 // GetLastBondedValidatorsUtil iterates the last validator powers in the staking module
 // and returns the first maxVals many validators with the largest powers.
-func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, logger log.Logger, maxVals uint32) ([]stakingtypes.Validator, error) {
+func GetLastBondedValidatorsUtil(ctx sdk.Context, stakingKeeper StakingKeeper, maxVals uint32) ([]stakingtypes.Validator, error) {
 	// get the bonded validators from the staking module, sorted by power
 	bondedValidators, err := stakingKeeper.GetBondedValidatorsByPower(ctx)
 	if err != nil {

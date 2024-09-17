@@ -346,8 +346,10 @@ func TestFilterValidatorsConsiderAll(t *testing.T) {
 	consumerID := CONSUMER_ID
 
 	// no consumer validators returned if we have no bonded validators
-	considerAll := func(providerAddr types.ProviderConsAddress) bool { return true }
-	require.Empty(t, providerKeeper.FilterValidators(ctx, consumerID, []stakingtypes.Validator{}, considerAll))
+	considerAll := func(providerAddr types.ProviderConsAddress) (bool, error) { return true, nil }
+	validators, err := providerKeeper.FilterValidators(ctx, consumerID, []stakingtypes.Validator{}, considerAll)
+	require.NoError(t, err)
+	require.Empty(t, validators)
 
 	var expectedValidators []types.ConsensusValidator
 
@@ -375,7 +377,8 @@ func TestFilterValidatorsConsiderAll(t *testing.T) {
 	})
 
 	bondedValidators := []stakingtypes.Validator{valA, valB}
-	actualValidators := providerKeeper.FilterValidators(ctx, consumerID, bondedValidators, considerAll)
+	actualValidators, err := providerKeeper.FilterValidators(ctx, consumerID, bondedValidators, considerAll)
+	require.NoError(t, err)
 	require.Equal(t, expectedValidators, actualValidators)
 }
 
@@ -386,10 +389,13 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	consumerID := CONSUMER_ID
 
 	// no consumer validators returned if we have no opted-in validators
-	require.Empty(t, providerKeeper.FilterValidators(ctx, consumerID, []stakingtypes.Validator{},
-		func(providerAddr types.ProviderConsAddress) bool {
-			return providerKeeper.IsOptedIn(ctx, consumerID, providerAddr)
-		}))
+	validators, err := providerKeeper.FilterValidators(ctx, consumerID, []stakingtypes.Validator{},
+		func(providerAddr types.ProviderConsAddress) (bool, error) {
+			return providerKeeper.IsOptedIn(ctx, consumerID, providerAddr), nil
+
+		})
+	require.NoError(t, err)
+	require.Empty(t, validators)
 
 	var expectedValidators []types.ConsensusValidator
 
@@ -424,10 +430,11 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 
 	// the expected actual validators are the opted-in validators but with the correct power and consumer public keys set
 	bondedValidators := []stakingtypes.Validator{valA, valB}
-	actualValidators := providerKeeper.FilterValidators(ctx, consumerID, bondedValidators,
-		func(providerAddr types.ProviderConsAddress) bool {
-			return providerKeeper.IsOptedIn(ctx, consumerID, providerAddr)
+	actualValidators, err := providerKeeper.FilterValidators(ctx, consumerID, bondedValidators,
+		func(providerAddr types.ProviderConsAddress) (bool, error) {
+			return providerKeeper.IsOptedIn(ctx, consumerID, providerAddr), nil
 		})
+	require.NoError(t, err)
 
 	// sort validators first to be able to compare
 	sortValidators := func(validators []types.ConsensusValidator) {
@@ -443,10 +450,11 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	// create a staking validator C that is not opted in, hence `expectedValidators` remains the same
 	valC := createStakingValidator(ctx, mocks, 3, 3)
 	bondedValidators = []stakingtypes.Validator{valA, valB, valC}
-	actualValidators = providerKeeper.FilterValidators(ctx, consumerID, bondedValidators,
-		func(providerAddr types.ProviderConsAddress) bool {
-			return providerKeeper.IsOptedIn(ctx, consumerID, providerAddr)
+	actualValidators, err = providerKeeper.FilterValidators(ctx, consumerID, bondedValidators,
+		func(providerAddr types.ProviderConsAddress) (bool, error) {
+			return providerKeeper.IsOptedIn(ctx, consumerID, providerAddr), nil
 		})
+	require.NoError(t, err)
 
 	sortValidators(actualValidators)
 	sortValidators(expectedValidators)

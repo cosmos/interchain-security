@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
-// GetTemplateClient returns the template client for provider proposals
+// GetTemplateClient returns the template consumer client
 func (k Keeper) GetTemplateClient(ctx sdk.Context) *ibctmtypes.ClientState {
 	params := k.GetParams(ctx)
 	return params.TemplateClient

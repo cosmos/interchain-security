@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
 	"testing"
@@ -24,7 +23,7 @@ import (
 
 const (
 	CONSUMER_CHAIN_ID = "chain-id"
-	CONSUMER_ID       = "13"
+	CONSUMER_ID       = "0"
 )
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
@@ -291,56 +290,6 @@ func TestSetSlashLog(t *testing.T) {
 	providerKeeper.SetSlashLog(ctx, addrWithDoubleSigns)
 	require.True(t, providerKeeper.GetSlashLog(ctx, addrWithDoubleSigns))
 	require.False(t, providerKeeper.GetSlashLog(ctx, addrWithoutDoubleSigns))
-}
-
-func TestGetAllOptedIn(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	expectedOptedInValidators := []providertypes.ProviderConsAddress{
-		providertypes.NewProviderConsAddress([]byte("providerAddr1")),
-		providertypes.NewProviderConsAddress([]byte("providerAddr2")),
-		providertypes.NewProviderConsAddress([]byte("providerAddr3")),
-	}
-
-	for _, expectedOptedInValidator := range expectedOptedInValidators {
-		providerKeeper.SetOptedIn(ctx, CONSUMER_ID, expectedOptedInValidator)
-	}
-
-	actualOptedInValidators := providerKeeper.GetAllOptedIn(ctx, CONSUMER_ID)
-
-	// sort validators first to be able to compare
-	sortOptedInValidators := func(addresses []providertypes.ProviderConsAddress) {
-		sort.Slice(addresses, func(i, j int) bool {
-			return bytes.Compare(addresses[i].ToSdkConsAddr(), addresses[j].ToSdkConsAddr()) < 0
-		})
-	}
-	sortOptedInValidators(expectedOptedInValidators)
-	sortOptedInValidators(actualOptedInValidators)
-	require.Equal(t, expectedOptedInValidators, actualOptedInValidators)
-}
-
-// TestOptedIn tests the `SetOptedIn`, `IsOptedIn`, `DeleteOptedIn` and `DeleteAllOptedIn` methods
-func TestOptedIn(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	optedInValidator1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
-	optedInValidator2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
-
-	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
-	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, optedInValidator1)
-	require.True(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
-	providerKeeper.DeleteOptedIn(ctx, CONSUMER_ID, optedInValidator1)
-	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
-
-	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, optedInValidator1)
-	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, optedInValidator2)
-	require.True(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
-	require.True(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator2))
-	providerKeeper.DeleteAllOptedIn(ctx, CONSUMER_ID)
-	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator1))
-	require.False(t, providerKeeper.IsOptedIn(ctx, CONSUMER_ID, optedInValidator2))
 }
 
 // TestConsumerCommissionRate tests the `SetConsumerCommissionRate`, `GetConsumerCommissionRate`, and `DeleteConsumerCommissionRate` methods

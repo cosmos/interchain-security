@@ -4,8 +4,7 @@ BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
 # Fetch tags and get the latest ICS version by filtering tags by vX.Y.Z and vX.Y.Z-lsm
 # using lazy set to only execute commands when variable is used
-# Note: v.5.0.0 is currently excluded from the list as it's a pre-release and will be added back once it's out of pre-release status
-LATEST_RELEASE ?= $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm --no-contains v5.0.0 | head -n 1)
+LATEST_RELEASE ?= $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm  | head -n 1)
 
 # don't override user values
 ifeq (,$(VERSION))
@@ -98,9 +97,9 @@ test-e2e-multi-consumer:
 test-e2e-parallel:
 	go run ./tests/e2e/... --include-multi-consumer --parallel
 
-# run E2E compatibility tests against latest release
+# run E2E compatibility tests against consumer running latest release
 test-e2e-compatibility-tests-latest:
-	go run ./tests/e2e/... --tc compatibility -pv $(LATEST_RELEASE)
+	go run ./tests/e2e/... --tc compatibility -cv $(LATEST_RELEASE)
 
 # run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
 test-gaia-e2e:

@@ -1,3 +1,409 @@
+## v4.4.0
+
+*July 16, 2024*
+
+### API BREAKING
+
+- Remove soft opt-out feature. 
+  ([\#1964](https://github.com/cosmos/interchain-security/pull/1964))
+
+### FEATURES
+
+- Remove soft opt-out feature. 
+  ([\#1964](https://github.com/cosmos/interchain-security/pull/1964))
+
+### STATE BREAKING
+
+- Remove soft opt-out feature. 
+  ([\#1964](https://github.com/cosmos/interchain-security/pull/1964))
+
+## v4.3.1
+
+*July 4, 2024*
+
+### BUG FIXES
+
+- [Provider](x/ccv/provider)
+  - Add missing check for the minimum height of evidence in the consumer double-vote handler.
+    [#2007](https://github.com/cosmos/interchain-security/pull/2007)
+
+### STATE BREAKING
+
+- [Provider](x/ccv/provider)
+  - Add missing check for the minimum height of evidence in the consumer double-vote handler.
+    [#2007](https://github.com/cosmos/interchain-security/pull/2007)
+
+## v4.3.0
+
+*June 20, 2024*
+
+### BUG FIXES
+
+- General
+  - Write unbonding period advisory to stderr instead of stdout
+    ([\#1921](https://github.com/cosmos/interchain-security/pull/1921))
+- [Provider](x/ccv/provider)
+  - Apply audit suggestions that include a bug fix in the way we compute the
+    maximum capped power.
+    ([\#1925](https://github.com/cosmos/interchain-security/pull/1925))
+  - Replace `GetAllConsumerChains` with lightweight version
+    (`GetAllRegisteredConsumerChainIDs`) that doesn't call into the staking module
+    ([\#1946](https://github.com/cosmos/interchain-security/pull/1946))
+
+### DEPENDENCIES
+
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v7.6.0](https://github.com/cosmos/ibc-go/releases/tag/v7.6.0).
+  ([\#1974](https://github.com/cosmos/interchain-security/pull/1974))
+
+### FEATURES
+
+- [Provider](x/ccv/provider)
+  - Allow consumer chains to change their PSS parameters.
+    ([\#1932](https://github.com/cosmos/interchain-security/pull/1932))
+
+### IMPROVEMENTS
+
+- [Provider](x/ccv/provider)
+  - Only start distributing rewards to validators after they have been validating
+    for a fixed number of blocks. Introduces the `NumberOfEpochsToStartReceivingRewards` param.
+    ([\#1929](https://github.com/cosmos/interchain-security/pull/1929))
+
+### STATE BREAKING
+
+- General
+  - Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+    [v7.6.0](https://github.com/cosmos/ibc-go/releases/tag/v7.6.0).
+    ([\#1974](https://github.com/cosmos/interchain-security/pull/1974))
+- [Provider](x/ccv/provider)
+  - Apply audit suggestions that include a bug fix in the way we compute the
+    maximum capped power. ([\#1925](https://github.com/cosmos/interchain-security/pull/1925))
+  - Only start distributing rewards to validators after they have been validating
+    for a fixed number of blocks. Introduces the `NumberOfEpochsToStartReceivingRewards` param.
+    ([\#1929](https://github.com/cosmos/interchain-security/pull/1929))
+  - Allow consumer chains to change their PSS parameters.
+    ([\#1932](https://github.com/cosmos/interchain-security/pull/1932))
+
+## v4.2.0
+
+May 17, 2024
+
+### API BREAKING
+
+- [Provider](x/ccv/provider)
+  - Assigning a key that is already assigned by the same validator will now be a no-op instead of throwing an error.
+    ([\#1732](https://github.com/cosmos/interchain-security/pull/1732))
+  - Changes the `list-consumer-chains` query to include a `min_power_in_top_N` field, as well as fields for all power shaping parameters of the consumer.
+    ([\#1863](https://github.com/cosmos/interchain-security/pull/1863))
+
+### DEPENDENCIES
+
+- Bump [CometBFT](https://github.com/cometbft/cometbft) to
+  [v0.37.6](https://github.com/cometbft/cometbft/releases/tag/v0.37.6).
+  ([\#1876](https://github.com/cosmos/interchain-security/pull/1876))
+- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+  [v0.47.11](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.11).
+  ([\#1876](https://github.com/cosmos/interchain-security/pull/1876))
+
+### FEATURES
+
+- [Provider](x/ccv/provider)
+  - Enable Opt In and Top N chains through gov proposals.
+    ([\#1587](https://github.com/cosmos/interchain-security/pull/1587))
+  - Adding the Partial Set Security (PSS) feature cf. [ADR 015](https://cosmos.github.io/interchain-security/adrs/adr-015-partial-set-security).
+    PSS enables consumer chains to join ICS as _Top N_ or _Opt In_ chains and enables validators to opt to validate the consumer chains they want.
+    ([\#1809](https://github.com/cosmos/interchain-security/pull/1809))
+  - Introduce power-shaping features for consumer chains. The features: (i) allow us to cap the total number of validators that can validate the consumer chain, (ii) set a cap on the maximum voting power (percentage-wise) a validator can have on a consumer chain, and (iii) introduce allowlist and denylists to restrict which validators are allowed or not to validate a consumer chain.
+    ([\#1830](https://github.com/cosmos/interchain-security/pull/1830))
+  - Changes the `list-consumer-chains` query to include a `min_power_in_top_N` field, as well as fields for all power shaping parameters of the consumer.
+    ([\#1863](https://github.com/cosmos/interchain-security/pull/1863))
+  - Introduces the `consumer-validators` query to retrieve the latest set consumer-validator set for a consumer chain.
+    ([\#1863](https://github.com/cosmos/interchain-security/pull/1867))
+
+### STATE BREAKING
+
+- [Provider](x/ccv/provider)
+  - Enable Opt In and Top N chains through gov proposals.
+    ([\#1587](https://github.com/cosmos/interchain-security/pull/1587))
+  - Assigning a key that is already assigned by the same validator will now be a no-op instead of throwing an error.
+    ([\#1732](https://github.com/cosmos/interchain-security/pull/1732))
+  - Adding the Partial Set Security feature cf. [ADR 015](https://cosmos.github.io/interchain-security/adrs/adr-015-partial-set-security).
+    ([\#1809](https://github.com/cosmos/interchain-security/pull/1809))
+  - Introduce power-shaping features for consumer chains. The features: (i) allow us to cap the total number of validators that can validate the consumer chain, (ii) set a cap on the maximum voting power (percentage-wise) a validator can have on a consumer chain, and (iii) introduce allowlist and denylists to restrict which validators are allowed or not to validate a consumer chain.
+    ([\#1830](https://github.com/cosmos/interchain-security/pull/1830))
+
+## v4.1.1
+
+*April 22, 2024*
+
+### BUG FIXES
+
+- [Provider](x/ccv/provider)
+  - Fix the output format of QueryAllPairsValConAddrByConsumerChainID to be consumer addresses instead of bytes
+    ([\#1722](https://github.com/cosmos/interchain-security/pull/1722))
+
+## v4.1.0
+
+*April 17, 2024*
+
+### DEPENDENCIES
+
+- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+  [v0.47.10](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.10).
+  ([\#1663](https://github.com/cosmos/interchain-security/pull/1663))
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v7.4.0](https://github.com/cosmos/ibc-go/releases/tag/v7.4.0).
+  ([\#1764](https://github.com/cosmos/interchain-security/pull/1764))
+
+### FEATURES
+
+- [Provider](x/ccv/provider)
+  - Introduce epochs (i.e., send a VSCPacket every X blocks instead of in every
+    block) so that we reduce the cost of relaying IBC packets needed for ICS.
+    ([\#1516](https://github.com/cosmos/interchain-security/pull/1516))
+  - Introduce the gRPC query `/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}`
+    and CLI command `interchain-security-pd q provider oldest_unconfirmed_vsc`
+    to retrieve the send timestamp of the oldest unconfirmed VSCPacket by chain id.
+    ([\#1740](https://github.com/cosmos/interchain-security/pull/1740))
+
+### IMPROVEMENTS
+
+- [Provider](x/ccv/provider)
+  - Added query for current values of all provider parameters
+    ([\#1605](https://github.com/cosmos/interchain-security/pull/1605))
+
+### STATE BREAKING
+
+- General
+  - Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+    [v7.4.0](https://github.com/cosmos/ibc-go/releases/tag/v7.4.0).
+    ([\#1764](https://github.com/cosmos/interchain-security/pull/1764))
+- [Provider](x/ccv/provider)
+  - Introduce epochs (i.e., send a VSCPacket every X blocks instead of in every
+    block) so that we reduce the cost of relaying IBC packets needed for ICS.
+    ([\#1516](https://github.com/cosmos/interchain-security/pull/1516))
+
+## v4.0.0
+
+*January 22, 2024*
+
+### API BREAKING
+
+- [Consumer](x/ccv/consumer)
+  - Fix a bug in consmer genesis file transform CLI command.
+    ([\#1458](https://github.com/cosmos/interchain-security/pull/1458))
+
+### BUG FIXES
+
+- General
+  - Fix a bug in consmer genesis file transform CLI command.
+    ([\#1458](https://github.com/cosmos/interchain-security/pull/1458))
+  - Improve validation of IBC packet data and provider messages. Also,
+    enable the provider to validate consumer packets before handling them.
+    ([\#1460](https://github.com/cosmos/interchain-security/pull/1460))
+- [Consumer](x/ccv/consumer)
+  - Avoid jailing validators immediately once they can no longer opt-out from
+    validating consumer chains.
+    ([\#1549](https://github.com/cosmos/interchain-security/pull/1549))
+  - Fix the validation of VSCPackets to not fail due to marshaling to string using Bech32.
+    ([\#1570](https://github.com/cosmos/interchain-security/pull/1570))
+
+### DEPENDENCIES
+
+- Bump Golang to v1.21 
+  ([\#1557](https://github.com/cosmos/interchain-security/pull/1557))
+- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+  [v0.47.7](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.7).
+  ([\#1558](https://github.com/cosmos/interchain-security/pull/1558))
+- Bump [CometBFT](https://github.com/cometbft/cometbft) to
+  [v0.37.4](https://github.com/cometbft/cometbft/releases/tag/v0.37.4).
+  ([\#1558](https://github.com/cosmos/interchain-security/pull/1558))
+
+### FEATURES
+
+- [Provider](x/ccv/provider)
+  - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
+    ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
+
+### STATE BREAKING
+
+- [Consumer](x/ccv/consumer)
+  - Avoid jailing validators immediately once they can no longer opt-out from
+    validating consumer chains.
+    ([\#1549](https://github.com/cosmos/interchain-security/pull/1549))
+  - Fix the validation of VSCPackets to not fail due to marshaling to string using Bech32.
+    ([\#1570](https://github.com/cosmos/interchain-security/pull/1570))
+- [Provider](x/ccv/provider)
+  - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
+    ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
+
+## v3.3.0
+
+*January 5, 2024*
+
+### API BREAKING
+
+- [Provider](x/ccv/provider)
+  - Deprecate equivocation proposals.
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+### DEPENDENCIES
+
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v7.3.1](https://github.com/cosmos/ibc-go/releases/tag/v7.3.1).
+  ([\#1373](https://github.com/cosmos/interchain-security/pull/1373))
+
+### FEATURES
+
+- General
+  - Add Quint model of Replicated Security.
+    ([\#1336](https://github.com/cosmos/interchain-security/pull/1336))
+- [Provider](x/ccv/provider)
+  - Update how consumer-assigned keys are checked when a validator is
+    created on the provider.
+    ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
+  - Introduce the cryptographic verification of equivocation feature to the provider
+    (cf. [ADR-005](docs/docs/adrs/adr-005-cryptographic-equivocation-verification.md)
+    & [ADR-013](docs/docs/adrs/adr-013-equivocation-slashing.md)).
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+### IMPROVEMENTS
+
+- General
+  - Split out consumer genesis state to reduce shared data between provider and
+    consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
+    - Note: This breaks json format used by augmenting Genesis files of consumer
+      chains with consumer genesis content exported from provider chain. Consumer
+      Genesis content exported from a provider chain using major version 1, 2 or 3
+      of the provider module needs to be transformed with the transformation command
+      introduced by this PR:
+      ```
+      Transform the consumer genesis file from a provider version v1, v2 or v3 to a version supported by this consumer. Result is printed to STDOUT.
+      
+      Example:
+      $ <appd> transform /path/to/ccv_consumer_genesis.json
+      
+      Usage:
+      interchain-security-cd genesis transform [genesis-file] [flags]
+      ```
+  - Refactor shared events, codecs and errors assign to
+    consumer and provider dedicated types where possible.
+    ([\#1350](https://github.com/cosmos/interchain-security/pull/1350))
+- [Provider](x/ccv/provider)
+  - Add `QueryAllPairsValConAddrByConsumerChainID` method to get list of all pairs `valConsensus` address by `Consummer chainID`. ([\#1503](https://github.com/cosmos/interchain-security/pull/1503))
+
+### STATE BREAKING
+
+- General
+  - Split out consumer genesis state to reduce shared data between provider and
+    consumer. ([\#1324](https://github.com/cosmos/interchain-security/pull/1324))
+  - Improve validation of IBC packet data and provider messages. Also,
+    enable the provider to validate consumer packets before handling them.
+    ([\#1460](https://github.com/cosmos/interchain-security/pull/1460))
+- [Provider](x/ccv/provider)
+  - Change the states by adding a consumer key for each chain that is
+    not yet registered meaning for which the gov proposal has not passed.
+    ([\#1339](https://github.com/cosmos/interchain-security/pull/1339))
+  - Introduce the cryptographic verification of equivocation feature to the provider
+    (cf. [ADR-005](docs/docs/adrs/adr-005-cryptographic-equivocation-verification.md)
+    & [ADR-013](docs/docs/adrs/adr-013-equivocation-slashing.md)).
+    ([\#1340](https://github.com/cosmos/interchain-security/pull/1340))
+
+## v3.2.0
+
+*November 24, 2023*
+
+### BUG FIXES
+
+- [Consumer](x/ccv/consumer)
+  - Fix deletion of pending packets that may cause duplicate sends
+    ([\#1146](https://github.com/cosmos/interchain-security/pull/1146))
+  - Remove `idx` field from the `ccv.ConsumerPacketData` type as this would break the
+    wire ([\#1150](https://github.com/cosmos/interchain-security/pull/1150))
+  - Validate token transfer messages before calling `Transfer()`.
+    ([\#1244](https://github.com/cosmos/interchain-security/pull/1244))
+  - Remove incorrect address validation on `ProviderFeePoolAddrStr` param.
+    ([\#1262](https://github.com/cosmos/interchain-security/pull/1262))
+  - Increment consumer consensus version and register consumer migration.
+    ([\#1295](https://github.com/cosmos/interchain-security/pull/1295))
+
+### DEPENDENCIES
+
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
+  ([\#1196](https://github.com/cosmos/interchain-security/pull/1196))
+- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+  [v0.47.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.4).
+  ([\#1258](https://github.com/cosmos/interchain-security/pull/1258))
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v7.3.0](https://github.com/cosmos/ibc-go/releases/tag/v7.3.0).
+  ([\#1258](https://github.com/cosmos/interchain-security/pull/1258))
+- Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+  [v0.47.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.5).
+  ([\#1259](https://github.com/cosmos/interchain-security/pull/1259))
+
+### FEATURES
+
+- [Consumer](x/ccv/consumer)
+  - Add the consumer-side changes for jail throttling with retries (cf. ADR 008).
+    ([\#1024](https://github.com/cosmos/interchain-security/pull/1024))
+  - Introduce the gRPC query `/interchain_security/ccv/consumer/provider-info`
+    and CLI command `interchain-security-cd q ccvconsumer provider-info`
+    to retrieve provider info from the consumer chain.
+    ([\#1164](https://github.com/cosmos/interchain-security/pull/1164))
+- [Provider](x/ccv/provider)
+  - Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported
+    genesis. ([\#1076](https://github.com/cosmos/interchain-security/pull/1076))
+  - Add a governance proposal for setting on the provider the denominations for
+    rewards from consumer chains.
+    ([\#1280](https://github.com/cosmos/interchain-security/pull/1280))
+
+### IMPROVEMENTS
+
+- General
+  - Update the default consumer unbonding period to 2 weeks.
+    ([\#1244](https://github.com/cosmos/interchain-security/pull/1244))
+- [Consumer](x/ccv/consumer)
+  - Optimize pending packets storage on consumer, with migration.
+    ([\#1037](https://github.com/cosmos/interchain-security/pull/1037))
+
+### STATE BREAKING
+
+- General
+  - Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+    [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
+    ([\#1196](https://github.com/cosmos/interchain-security/pull/1196))
+  - Update the default consumer unbonding period to 2 weeks.
+    ([\#1244](https://github.com/cosmos/interchain-security/pull/1244))
+  - Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+    [v0.47.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.4).
+    ([\#1258](https://github.com/cosmos/interchain-security/pull/1258))
+  - Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+    [v7.3.0](https://github.com/cosmos/ibc-go/releases/tag/v7.3.0).
+    ([\#1258](https://github.com/cosmos/interchain-security/pull/1258))
+  - Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to
+    [v0.47.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.5).
+    ([\#1259](https://github.com/cosmos/interchain-security/pull/1259))
+- [Consumer](x/ccv/consumer)
+  - Add the consumer-side changes for jail throttling with retries (cf. ADR 008).
+    ([\#1024](https://github.com/cosmos/interchain-security/pull/1024))
+  - Optimize pending packets storage on consumer, with migration.
+    ([\#1037](https://github.com/cosmos/interchain-security/pull/1037))
+  - Fix deletion of pending packets that may cause duplicate sends
+    ([\#1146](https://github.com/cosmos/interchain-security/pull/1146))
+  - Remove `idx` field from the `ccv.ConsumerPacketData` type as this would break the
+    wire ([\#1150](https://github.com/cosmos/interchain-security/pull/1150))
+  - Validate token transfer messages before calling `Transfer()`.
+    ([\#1244](https://github.com/cosmos/interchain-security/pull/1244))
+  - Remove incorrect address validation on `ProviderFeePoolAddrStr` param.
+    ([\#1262](https://github.com/cosmos/interchain-security/pull/1262))
+  - Increment consumer consensus version and register consumer migration.
+    ([\#1295](https://github.com/cosmos/interchain-security/pull/1295))
+- [Provider](x/ccv/provider)
+  - Add a governance proposal for setting on the provider the denominations for
+    rewards from consumer chains.
+    ([\#1280](https://github.com/cosmos/interchain-security/pull/1280))
+
 ## v3.1.0
 
 Date July 11th, 2023

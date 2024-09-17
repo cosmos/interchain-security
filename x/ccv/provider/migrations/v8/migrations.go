@@ -247,8 +247,20 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		// set ownership -- all existing chains are owned by gov
 		pk.SetConsumerOwnerAddress(ctx, consumerId, pk.GetAuthority())
 
-		// Note: ConsumerMetadata will be populated in the upgrade handler
-		// Note: InitializationParameters is not needed since the chain is already launched
+		// Note: ConsumerMetadata will be populated in the upgrade handler.
+		// Still, add some default values as every chain should have the metadata set.
+		if err := pk.SetConsumerMetadata(ctx, consumerId, providertypes.ConsumerMetadata{
+			Name:        chainId,
+			Description: "TBA",
+			Metadata:    "TBA",
+		}); err != nil {
+			return err
+		}
+		// Note: InitializationParameters are not needed since the chain is already launched.
+		// Just add the default values.
+		if err := pk.SetConsumerInitializationParameters(ctx, consumerId, providertypes.ConsumerInitializationParameters{}); err != nil {
+			return err
+		}
 
 		// migrate power shaping params
 		topNKey := providertypes.StringIdWithLenKey(LegacyTopNKeyPrefix, chainId)
@@ -292,15 +304,6 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 
 		// set phase to launched
 		pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
-
-		// This is to migrate everything under `ProviderConsAddrToOptedInConsumerIdsKey`
-		// `OptedIn` was already re-keyed earlier (see above) and hence we can use `consumerId` here.
-		for _, providerConsAddr := range pk.GetAllOptedIn(ctx, consumerId) {
-			err := pk.AppendOptedInConsumerId(ctx, providerConsAddr, consumerId)
-			if err != nil {
-				return err
-			}
-		}
 
 		// set clientId -> consumerId mapping
 		// consumer to client was already re-keyed so we can use `consumerId` here

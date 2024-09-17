@@ -386,11 +386,6 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 		return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
 			"cannot set consumer initialization parameters: %s", err.Error())
 	}
-	if !initializationParameters.SpawnTime.IsZero() {
-		// add SpawnTime event attribute
-		eventAttributes = append(eventAttributes,
-			sdk.NewAttribute(types.AttributeConsumerSpawnTime, initializationParameters.SpawnTime.String()))
-	}
 
 	// power-shaping parameters are optional and hence could be nil;
 	// in that case, set the default
@@ -411,8 +406,12 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	if spawnTime, initialized := k.Keeper.InitializeConsumer(ctx, consumerId); initialized {
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime); err != nil {
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
-				"cannot prepare chain with consumer id (%s) for launch", consumerId)
+				"prepare consumer for launch, consumerId(%s), spawnTime(%s): %s", consumerId, spawnTime, err.Error())
 		}
+
+		// add SpawnTime event attribute
+		eventAttributes = append(eventAttributes,
+			sdk.NewAttribute(types.AttributeConsumerSpawnTime, initializationParameters.SpawnTime.String()))
 	}
 
 	// add Phase event attribute
@@ -495,7 +494,7 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerName, msg.Metadata.Name))
 	}
 
-	// get the previous spawn time so that we can use it in `PrepareConsumerForLaunch`
+	// get the previous spawn time so that we can remove its previously planned spawn time if a new spawn time is provided
 	previousInitializationParameters, err := k.Keeper.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
 		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
@@ -504,15 +503,33 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	previousSpawnTime := previousInitializationParameters.SpawnTime
 
 	if msg.InitializationParameters != nil {
+		phase := k.GetConsumerPhase(ctx, consumerId)
+
+		if phase == types.CONSUMER_PHASE_LAUNCHED {
+			return &resp, errorsmod.Wrap(types.ErrInvalidMsgUpdateConsumer,
+				"cannot update the initialization parameters of an an already launched chain; "+
+					"do not provide any initialization parameters when updating a launched chain")
+		}
+
+		if msg.InitializationParameters.SpawnTime.IsZero() {
+			if phase == types.CONSUMER_PHASE_INITIALIZED {
+				// chain was previously ready to launch at `previousSpawnTime` so we remove the
+				// consumer from getting launched and move it back to the Registered phase
+				err = k.RemoveConsumerToBeLaunched(ctx, consumerId, previousSpawnTime)
+				if err != nil {
+					return &resp, errorsmod.Wrapf(types.ErrInvalidMsgUpdateConsumer,
+						"cannot remove the consumer from being launched: %s", err.Error())
+				}
+				k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
+			}
+		}
+		// add SpawnTime event attribute
+		eventAttributes = append(eventAttributes,
+			sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
+
 		if err = k.Keeper.SetConsumerInitializationParameters(ctx, msg.ConsumerId, *msg.InitializationParameters); err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInitializationParameters,
 				"cannot set consumer initialization parameters: %s", err.Error())
-		}
-
-		if !msg.InitializationParameters.SpawnTime.IsZero() {
-			// add SpawnTime event attribute
-			eventAttributes = append(eventAttributes,
-				sdk.NewAttribute(types.AttributeConsumerSpawnTime, msg.InitializationParameters.SpawnTime.String()))
 		}
 	}
 
@@ -567,7 +584,8 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	if spawnTime, initialized := k.Keeper.InitializeConsumer(ctx, consumerId); initialized {
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, previousSpawnTime, spawnTime); err != nil {
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
-				"cannot prepare chain with consumer id (%s) for launch", consumerId)
+				"prepare consumer for launch, consumerId(%s), previousSpawnTime(%s), spawnTime(%s): %s",
+				consumerId, previousSpawnTime, spawnTime, err.Error())
 		}
 	}
 

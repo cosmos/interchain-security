@@ -145,8 +145,6 @@ const (
 
 	RemovalTimeToConsumerIdsKeyName = "RemovalTimeToConsumerIdsKeyName"
 
-	ProviderConsAddrToOptedInConsumerIdsKeyName = "ProviderConsAddrToOptedInConsumerIdsKeyName"
-
 	ClientIdToConsumerIdKeyName = "ClientIdToConsumerIdKey"
 )
 
@@ -375,12 +373,8 @@ func getKeyPrefixes() map[string]byte {
 		// For a specific removal time, it might store multiple consumer chain ids for chains that are to be removed.
 		RemovalTimeToConsumerIdsKeyName: 52,
 
-		// ProviderConsAddrToOptedInConsumerIdsKeyName is the key for storing all the consumer ids that a validator
-		// is currently opted in to.
-		ProviderConsAddrToOptedInConsumerIdsKeyName: 53,
-
 		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
-		ClientIdToConsumerIdKeyName: 54,
+		ClientIdToConsumerIdKeyName: 53,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -680,9 +674,14 @@ func ConsumerIdToPowerShapingParametersKey(consumerId string) []byte {
 	return StringIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPowerShapingParameters), consumerId)
 }
 
+// ConsumerIdToPhaseKeyPrefix returns the key prefix used to iterate over all the consumer ids and their phases.
+func ConsumerIdToPhaseKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToPhaseKeyName)
+}
+
 // ConsumerIdToPhaseKey returns the key used to store the phase that corresponds to this consumer id
 func ConsumerIdToPhaseKey(consumerId string) []byte {
-	return StringIdWithLenKey(mustGetKeyPrefix(ConsumerIdToPhaseKeyName), consumerId)
+	return StringIdWithLenKey(ConsumerIdToPhaseKeyPrefix(), consumerId)
 }
 
 // ConsumerIdToRemovalTimeKeyPrefix returns the key prefix for storing the removal times of consumer chains
@@ -719,12 +718,12 @@ func RemovalTimeToConsumerIdsKeyPrefix() byte {
 
 // RemovalTimeToConsumerIdsKey returns the key prefix for storing the removal times of consumer chains
 // that are about to be removed
-func RemovalTimeToConsumerIdsKey(spawnTime time.Time) []byte {
+func RemovalTimeToConsumerIdsKey(removalTime time.Time) []byte {
 	return ccvtypes.AppendMany(
 		// append the prefix
 		[]byte{RemovalTimeToConsumerIdsKeyPrefix()},
 		// append the time
-		sdk.FormatTimeBytes(spawnTime),
+		sdk.FormatTimeBytes(removalTime),
 	)
 }
 
@@ -740,12 +739,6 @@ func ParseTime(prefix byte, bz []byte) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return timestamp, nil
-}
-
-// ProviderConsAddrToOptedInConsumerIdsKey returns the key for storing all the consumer ids that `providerAddr`
-// has opted-in to
-func ProviderConsAddrToOptedInConsumerIdsKey(providerAddr ProviderConsAddress) []byte {
-	return append([]byte{mustGetKeyPrefix(ProviderConsAddrToOptedInConsumerIdsKeyName)}, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
 // ClientIdToConsumerIdKey returns the consumer id that corresponds to this client id
@@ -813,8 +806,8 @@ func StringIdWithLenKey(prefix byte, stringId string) []byte {
 func ParseStringIdWithLenKey(prefix byte, bz []byte) (string, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	if prefixBz := bz[:prefixL]; !bytes.Equal(prefixBz, expectedPrefix) {
+		return "", fmt.Errorf("invalid prefix; expected: %X, got: %X, input %X -- len %d", expectedPrefix, prefixBz, prefix, prefixL)
 	}
 	stringIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
 	stringId := string(bz[prefixL+8 : prefixL+8+int(stringIdL)])
