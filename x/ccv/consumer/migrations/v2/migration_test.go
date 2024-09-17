@@ -83,5 +83,5 @@ func setPendingPackets(ctx sdk.Context, store storetypes.KVStore, packets consum
 	if err != nil {
 		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
 	}
-	store.Set([]byte{consumertypes.PendingDataPacketsBytePrefix}, bz)
+	store.Set(consumertypes.PendingDataPacketsV1KeyPrefix(), bz)
 }
