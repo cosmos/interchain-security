@@ -319,15 +319,6 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 	}
 }
 
-// CheckKeyAssignmentCorrectly checks if the key was assigned correctly.
-func (s *CCVTestSuite) CheckKeyAssignment(validator stakingtypes.Validator, consumerKey tmprotocrypto.PublicKey) {
-	valConsAddr, err := validator.GetConsAddr()
-	s.Require().NoError(err)
-	actualConsumerKey, found := s.providerApp.GetProviderKeeper().GetValidatorConsumerPubKey(s.providerCtx(), s.consumerChain.ChainID, types.NewProviderConsAddress(valConsAddr))
-	s.Require().True(found)
-	s.Require().Equal(consumerKey, actualConsumerKey)
-}
-
 // generateNewConsumerKey generate new consumer key for the validator with valIndex
 func generateNewConsumerKey(s *CCVTestSuite, valIndex int) (stakingtypes.Validator, tmprotocrypto.PublicKey) {
 	// get validator

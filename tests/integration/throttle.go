@@ -23,13 +23,15 @@ const fullSlashMeterString = "1.0"
 // TestBasicSlashPacketThrottling tests slash packet throttling with a single consumer,
 // two slash packets, and no VSC matured packets. The most basic scenario.
 // @Long Description@
-// It sets up various test cases, all CCV channels and validator powers. Also, the initial value of the slash meter is retrieved, and the test verifies it
-// has the expected value. All validators are retrieved as well, and it's ensured that none of them are jailed from the start.
-// The test then creates a slash packet for the first validator and sends it from the consumer to the provider.
-// Afterward, it asserts that validator 0 is jailed, has no power, and that the slash meter and allowance have the expected values.
-// Then, a second slash packet is created for a different validator, and the test validates that the second validator is
-// not jailed after sending the second slash packet. Next, it replenishes the slash meter until it is positive.
-// Lastly, it asserts that validator 2 is jailed once the slash packet is retried and that it has no more voting power.
+// * Set up various test cases, all CCV channels and validator powers.
+// * Retrieve the initial value of the slash meter, and the test verify it has the expected value.
+// * All validators are retrieved as well, and it's ensured that none of them are jailed from the start.
+// * Create a slash packet for the first validator and send it from the consumer to the provider.
+// * Asserts that validator 0 is jailed, has no power, and that the slash meter and allowance have the expected values.
+// * Then, create a second slash packet for a different validator, and check if the second validator is
+// not jailed after sending the second slash packet.
+// * Replenishes the slash meter until it is positive.
+// * Assert that validator 2 is jailed once the slash packet is retried and that it has no more voting power.
 func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 	// setupValidatePowers gives the default 4 validators 25% power each (1000 power).
 	// Note this in test cases.
@@ -204,14 +206,16 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 // TestMultiConsumerSlashPacketThrottling tests slash packet throttling in the context of multiple
 // consumers sending slash packets to the provider, with VSC matured packets sprinkled around.
 // @Long Description@
-// It sets up all CCV channels and validator powers. It then chooses three consumer bundles from the available bundles. Next, the slash
-// packets are sent from each of the chosen consumer bundles to the provider chain. They will each slash a different validator. The test
-// then confirms that the slash packet for the first consumer was handled first, and afterward, the slash packets for the second and
-// third consumers were bounced. It then checks the total power of validators in the provider chain to ensure it reflects the expected
-// state after the first validator has been jailed. The slash meter is then replenished, and one of the two queued. The slash meter
-// is then replenished, and one of the two queued slash packet entries is handled when both are retried. The total power is then updated
-// and verified again. Then, the slash meter is replenished one more time, and the final slash packet is handled. Lastly, the test
-// confirms that all validators are jailed.
+// * Set up all CCV channels and validator powers.
+// * Choose three consumer bundles from the available bundles.
+// * Send the slash packets from each of the chosen consumer bundles to the provider chain. They will each slash a different validator.
+// * Confirm that the slash packet for the first consumer was handled first, and afterward, the slash packets for the second and
+// third consumers were bounced.
+// * Check the total power of validators in the provider chain to ensure it reflects the expected state after the first validator has been jailed.
+// * Replenish the slash meter and handle one of the two queued slash packet entries when both are retried.
+// * Verify again that the total power is updated.
+// * Replenish the slash meter one more time, and handle the final slash packet.
+// * Confirm that all validators are jailed.
 func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	// Setup test
 	s.SetupAllCCVChannels()
@@ -334,10 +338,12 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 
 // TestPacketSpam confirms that the provider can handle a large number of incoming slash packets in a single block.
 // @Long Description@
-// It sets up all CCV channels and validator powers. Then the parameters related to the handling of slash packets are set.
-// The slash packets for the first three validators are then prepared, and 500 slash packets are created, alternating between
-// downtime and double-sign infractions. The test then simulates the reception of the 500 packets by the provider chain within
-// the same block. Lastly, it verifies that the first three validators have been jailed as expected. This confirms that the
+// * Set up all CCV channels and validator powers.
+// * Set the parameters related to the handling of slash packets.
+// * Prepare the slash packets for the first three validators, and create 500 slash packets, alternating between
+// downtime and double-sign infractions.
+// * Simulate the reception of the 500 packets by the provider chain within the same block.
+// * Verify that the first three validators have been jailed as expected. This confirms that the
 // system correctly processed the slash packets and applied the penalties.
 func (s *CCVTestSuite) TestPacketSpam() {
 	// Setup ccv channels to all consumers
@@ -408,9 +414,9 @@ func (s *CCVTestSuite) TestPacketSpam() {
 // TestDoubleSignDoesNotAffectThrottling tests that a large number of double sign slash packets
 // do not affect the throttling mechanism.
 // @Long Description@
-// This test sets up a scenario where 3 validators are slashed for double signing, and the 4th is not.
-// It then sends 500 double sign slash packets from a consumer to the provider in a single block.
-// The test confirms that the slash meter is not affected by this, and that no validators are jailed.
+// * Set up a scenario where 3 validators are slashed for double signing, and the 4th is not.
+// * Send 500 double sign slash packets from a consumer to the provider in a single block.
+// * Confirm that the slash meter is not affected by this, and that no validators are jailed.
 func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
@@ -493,12 +499,12 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small power can be handled by the provider chain
 // in a non-throttled manner.
 // @Long Description@
-// It sets up all CCV channels and delegates tokens to four validators, giving the first validator a larger amount of power.
-// The slash meter is then initialized, and the test verifies that none of the validators are jailed before the slash packets are processed.
-// It then sets up default signing information for the three smaller validators to prepare them for being jailed.
-// The slash packets for the small validators are then constructed and sent.
-// Lastly, the test verifies validator powers after processing the slash packets. It confirms that the large validator remains unaffected and
-// that the three smaller ones have been penalized and jailed.
+// * Set up all CCV channels and delegate tokens to four validators, giving the first validator a larger amount of power.
+// * Initialize the slash meter, and verify that none of the validators are jailed before the slash packets are processed.
+// * Set up default signing information for the three smaller validators to prepare them for being jailed.
+// * The slash packets for the small validators are then constructed and sent.
+// * Verify validator powers after processing the slash packets.
+// * Confirm that the large validator remains unaffected and that the three smaller ones have been penalized and jailed.
 func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	s.SetupAllCCVChannels()
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -573,9 +579,9 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 // TestSlashMeterAllowanceChanges tests scenarios where the slash meter allowance is expected to change.
 // @Long Description@
-// It sets up all CCV channels, verifies the initial slash meter allowance, and updates the power of validators.
-// Then, it confirms that the value of the slash meter allowance is adjusted correctly after updating the validators' powers.
-// Lastly, it changes the replenish fraction and asserts the new expected allowance.
+// * Set up all CCV channels, verify the initial slash meter allowance, and update the power of validators.
+// * Confirm that the value of the slash meter allowance is adjusted correctly after updating the validators' powers.
+// * Change the replenish fraction and assert the new expected allowance.
 //
 // TODO: This should be a unit test, or replaced by TestTotalVotingPowerChanges.
 func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
@@ -601,11 +607,11 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 
 // TestSlashAllValidators is similar to TestSlashSameValidator, but 100% of validators' power is jailed in a single block.
 // @Long Description@
-// It sets up all CCV channels and validator powers. Then the slash meter parameters are set.
-// One slash packet is created for each validator, and then an additional five more for each validator
+// * Set up all CCV channels and validator powers.
+// * Set the slash meter parameters.
+// * Create one slash packet for each validator, and then an additional five more for each validator
 // in order to test the system's ability to handle multiple slashing events in a single block.
-// The test then receives and processes each slashing packet in the provider chain
-// and afterward, it checks that all validators are jailed as expected.
+// * Receive and process each slashing packet in the provider chain and check that all validators are jailed as expected.
 //
 // Note: This edge case should not occur in practice, but it is useful to validate that
 // the slash meter can allow any number of slash packets to be handled in a single block when

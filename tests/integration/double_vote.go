@@ -15,10 +15,11 @@ import (
 
 // TestHandleConsumerDoubleVoting tests the handling of double voting evidence from the consumer chain.
 // @Long Description@
-// The test sets up a CCV channel, creates various double voting scenarios, and submits these to the provider chain.
-// It checks if the provider chain correctly processes the evidence, jails and tombstones validators as needed, and applies the
-// correct slashing penalties. Finally, it verifies that invalid evidence is properly rejected and does not result in
-// incorrect penalties.
+// * Set up a CCV channel.
+// * Create various double voting scenarios and submit those to the provider chain.
+// * Check if the provider chain correctly processes the evidence, jail and tombstone validators as needed, and apply the
+// correct slashing penalties.
+// * Verify that invalid evidence is properly rejected and does not result in incorrect penalties.
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -273,10 +274,12 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 
 // TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations tests the handling of double voting evidence from the consumer chain and checks if slashing, undelegations, and redelegations are correctly processed.
 // @Long Description@
-// The test sets up a CCV channel, creates various double voting scenarios, and submits these to the provider chain.
-// It verifies that the evidence is processed correctly, ensures that the provider chain slashes the validator appropriately, and that
-// it handles undelegations and redelegations accurately. Then the test confirms that the validator’s staking status reflects these
-// actions. It also checks if the slashing penalties are applied correctly and updates the validator’s balance and delegations as expected.
+// * Set up a CCV channel.
+// * Create various double voting scenarios and submit those to the provider chain.
+// * Verify that the evidence is processed correctly.
+// * Ensure that the provider chain slashes the validator appropriately, and that it handles undelegations and redelegations accurately.
+// * Confirm that the validator’s staking status reflects these actions.
+// * Check if the slashing penalties are applied correctly and update the validator’s balance and delegations as expected.
 func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0

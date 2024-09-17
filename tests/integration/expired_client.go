@@ -20,11 +20,12 @@ import (
 
 // TestVSCPacketSendExpiredClient tests queueing of VSCPackets when the consumer client is expired.
 // @Long Description@
-// The test sets up a CCV channel and expires the client on consumer chain. Then, it bonds tokens to provider,
-// sends CCV packet to consumer and checks pending packets. While the consumer client is expired (or inactive for some reason)
-// all packets will be queued. The packet sending and checks are then repeated. After that more tokens are bonded on
-// provider to change validator powers. Finally expired client is upgraded to the consumer
-// and all packets are cleared once the consumer client is established.
+// * Set up a CCV channel and expire the client on consumer chain.
+// * Bond tokens to provider, send CCV packet to consumer and check pending packets.
+// * While the consumer client is expired (or inactive for some reason) all packets will be queued.
+// * The packet sending and checks are then repeated.
+// * More tokens are bonded on provider to change validator powers.
+// * Upgrade expired client to the consumer and all packets are cleared once the consumer client is established.
 func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
@@ -89,9 +90,11 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 
 // TestConsumerPacketSendExpiredClient tests the consumer sending packets when the provider client is expired.
 // @Long Description@
-// The test sets up a CCV channel and bonds tokens on provider, then it sends CCV packet to consumer and rebonds tokens on
-// provider. Then it checks for pending VSC packets and relays all VSC packets to consumer. After that the provider client
-// is expired. Finally it confirms that while the provider client is expired all packets will be queued and then cleared
+// * Set up a CCV channel and bond tokens on provider.
+// * Send CCV packet to consumer and rebond tokens on provider.
+// * Check for pending VSC packets and relay all VSC packets to consumer.
+// * The provider client is then expired.
+// * Confirm that while the provider client is expired all packets will be queued and then cleared
 // once the provider client is upgraded.
 func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()

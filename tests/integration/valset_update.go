@@ -16,9 +16,10 @@ import (
 
 // TestPacketRoundtrip tests a CCV packet roundtrip when tokens are bonded on the provider.
 // @Long Description@
-// It sets up CCV and transfer channels. Some tokens are then bonded on the provider side in order to change validator power.
-// The test then relays a packet from the provider chain to the consumer chain.
-// Lastly, it relays a matured packet from the consumer chain back to the provider chain.
+// * Set up CCV and transfer channels.
+// * Bond some tokens on the provider side in order to change validator power.
+// * Relay a packet from the provider chain to the consumer chain.
+// * Relays a matured packet from the consumer chain back to the provider chain.
 func (s *CCVTestSuite) TestPacketRoundtrip() {
 	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
@@ -43,15 +44,18 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 
 // TestQueueAndSendVSCMaturedPackets tests the behavior of EndBlock QueueVSCMaturedPackets call and its integration with SendPackets call.
 // @Long Description@
-// It sets up CCV channel and then creates and simulates the sending of three VSC packets
-// from the provider chain to the consumer chain at different times. The first packet is sent, and its processing is validated.
-// After simulating the passage of one hour, the second packet is sent and its processing is validated. Then after simulating the
-// passage of 24 more hours, the third packet is sent and its processing is validated. The test then retrieves all packet maturity
-// times from the consumer, and this is used to check the maturity status of the packets sent earlier.
-// The test then advances the time so that the first two packets reach their unbonding period, while the third packet does not.
-// Next it ensures first two packets are unbonded, their maturity times are deleted, and that VSCMatured packets are queued.
-// The third packet is still in the store and has not yet been processed for unbonding.
-// Finally, the test checks that the packet commitments for the processed packets are correctly reflected in the consumer chain's state.
+// * Set up CCV channel.
+// * Create and simulate the sending of three VSC packets from the provider chain to the consumer chain at different times.
+// * Send the first packet and validate its processing.
+// * Simulate the passage of one hour.
+// * Send the second packet and validate its processing.
+// * Simulate the passage of 24 more hours.
+// * Send the third packet and validate its processing.
+// * Retrieve all packet maturity times from the consumer, and use this to check the maturity status of the packets sent earlier.
+// * Advance the time so that the first two packets reach their unbonding period, while the third packet does not.
+// * Ensure first two packets are unbonded, their maturity times are deleted, and that VSCMatured packets are queued.
+// * The third packet is still in the store and has not yet been processed for unbonding.
+// * Checks that the packet commitments for the processed packets are correctly reflected in the consumer chain's state.
 func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 

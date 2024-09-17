@@ -72,9 +72,9 @@ func (suite *ConsumerDemocracyTestSuite) SetupTest() {
 
 // TestDemocracyRewardsDistribution checks that rewards to democracy representatives, community pool, and provider redistribution account are done correctly.
 // @Long Description@
-// * Sets up a democracy consumer chain
-// * Creates a new block
-// * Checks that rewards to democracy representatives, community pool, and provider redistribution account are distributed in the right proportions
+// * Set up a democracy consumer chain.
+// * Create a new block.
+// * Check that rewards to democracy representatives, community pool, and provider redistribution account are distributed in the right proportions.
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	s.consumerChain.NextBlock()
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
@@ -184,13 +184,13 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 // can be executed on democracy consumer chains.
 // @Long Description@
 // For context, see the whitelist for proposals in app/consumer-democracy/proposals_whitelisting.go.
-// * Sets up a democracy consumer chain
-// * Submits a proposal containing changes to the auth and mint module parameters
-// * Checks that the proposal is not executed, since the change to the auth module is not whitelisted.
-// * Submits a proposal containing changes *only* to the mint module parameters
-// * Checks that the proposal is executed, since the change to the mint module is whitelisted.
-// * Submits a proposal containing changes *only* to the auth module parameters
-// * Checks that again, the proposal is not executed, since the change to the auth module is not whitelisted.
+// * Set up a democracy consumer chain.
+// * Submit a proposal containing changes to the auth and mint module parameters.
+// * Check that the proposal is not executed, since the change to the auth module is not whitelisted.
+// * Submit a proposal containing changes *only* to the mint module parameters.
+// * Check that the proposal is executed, since the change to the mint module is whitelisted.
+// * Submit a proposal containing changes *only* to the auth module parameters.
+// * Check that again, the proposal is not executed, since the change to the auth module is not whitelisted.
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
 	params, err := govKeeper.Params.Get(s.consumerCtx())
@@ -288,9 +288,9 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 
 // TestDemocracyMsgUpdateParams checks that the consumer parameters can be updated through a governance proposal.
 // @Long Description@
-// * Sets up a democracy consumer chain
-// * Submits a proposal containing changes to the consumer module parameters
-// * Checks that the proposal is executed, and the parameters are updated
+// * Set up a democracy consumer chain.
+// * Submit a proposal containing changes to the consumer module parameters.
+// * Check that the proposal is executed, and the parameters are updated.
 func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
 	params, err := govKeeper.Params.Get(s.consumerCtx())

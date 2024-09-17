@@ -14,15 +14,15 @@ import (
 
 // TestStopConsumerChain tests the functionality of stopping a consumer chain at a higher level than unit tests.
 // @Long Description@
-// It retrieves a validator from the provider chain's validators and then the delegator address.
-// Then the test sets up test operations, populating the provider chain states using the following operations:
+// * Retrieve a validator from the provider chain's validators and then the delegator address.
+// * Set up test operations, populating the provider chain states using the following operations:
 //   - Setup CCV channels; establishes the CCV channel and sets channelToChain, chainToChannel, and initHeight mapping for the consumer chain ID.
 //   - Delegate the total bond amount to the chosen validator.
 //   - Undelegate the shares in four consecutive blocks evenly; create UnbondingOp and UnbondingOpIndex entries for the consumer chain ID.
 //   - Set SlashAck state for the consumer chain ID.
 //
-// After, the setup operations are executed, and the consumer chain is stopped. Finally, the test checks that the state
-// associated with the consumer chain is properly cleaned up after it is stopped.
+// * After, the setup operations are executed, and the consumer chain is stopped.
+// * Check that the state associated with the consumer chain is properly cleaned up after it is stopped.
 func (s *CCVTestSuite) TestStopConsumerChain() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
@@ -110,8 +110,8 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 
 // TestStopConsumerOnChannelClosed tests stopping a consumer chain correctly.
 // @Long Description@
-// This test sets up CCV channel and transfer channel, and sends empty VSC packet.
-// Then it stops the consumer chain and verifies that the provider chain's channel end is closed
+// * Set up CCV channel and transfer channel, and send empty VSC packet.
+// * Stop the consumer chain and verify that the provider chain's channel end is closed.
 //
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
 func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {

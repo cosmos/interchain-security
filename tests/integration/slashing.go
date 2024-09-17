@@ -32,14 +32,17 @@ import (
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed from consumer to provider,
 // handled by provider, with a VSC and jailing eventually effective on consumer and provider.
 // @Long Description@
-// It sets up CCV channels and retrieves consumer validators. A validator is selected and its consensus address is created.
-// The test then retrieves the provider consensus address that corresponds to the consumer consensus address of the validator.
-// Also the validator's current state is retrieved, including its token balance, and the validator's signing information is set to ensure
-// it will be jailed for downtime. The slashing packet is then created and sent from the consumer chain to the provider chain with a specified
-// timeout. The packet is then received and the test also verifies that the validator was removed from the provider validator set.
-// After, the test relays VSC packets from the provider chain to each consumer chain and verifies that the consumer chains correctly
-// process these packets. The validator's balance and status on the provider chain are checked to ensure it was jailed correctly but not slashed,
-// and its unjailing time is updated. The outstanding downtime flag is reset on the consumer chain, and lastly, the test ensures that the consumer
+// * Set up CCV channels and retrieve consumer validators.
+// * Select a validator and create its consensus address.
+// * Retrieve the provider consensus address that corresponds to the consumer consensus address of the validator.
+// * The validator's current state is also retrieved, including its token balance,
+// * Set validator's signing information is to ensure it will be jailed for downtime.
+// * Create the slashing packet and send it from the consumer chain to the provider chain with a specified timeout.
+// * Receive the packet and verify that the validator was removed from the provider validator set.
+// * Relay VSC packets from the provider chain to each consumer chain and verify that the consumer chains correctly process these packets.
+// * Check the validator's balance and status on the provider chain to ensure it was jailed correctly but not slashed,
+// and its unjailing time is updated.
+// * Reset the outstanding downtime flag on the consumer chain, and ensure that the consumer
 // chain acknowledges receipt of the packet from the provider chain.
 //
 // Note: This method does not test the actual slash packet sending logic for downtime
@@ -177,9 +180,9 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 
 // TestSlashPacketAcknowledgement tests the handling of a slash packet acknowledgement.
 // @Long Description@
-// It sets up a provider and consumer chain, with channel initialization between them performed,
-// then sends a slash packet with randomized fields from the consumer to the provider.
-// The provider processes the packet
+// * Set up a provider and consumer chain, with channel initialization between them performed.
+// * Send a slash packet with randomized fields from the consumer to the provider.
+// * The provider processes the packet
 func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
@@ -224,10 +227,11 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 
 // TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with integration tests.
 // @Long Description@
-// It retrieves a validator from provider chain's validators and checks if it's bonded.
-// The signing information for the validator is then set. The provider processes the downtime slashing packet from the consumer.
-// The test then checks that the validator has been jailed as a result of the downtime slashing packet being processed.
-// It also verifies that the validator’s signing information is updated and that the jailing duration is set correctly.
+// * Retrieve a validator from provider chain's validators and checks if it's bonded.
+// * Set tThe signing information for the validator.
+// * The provider processes the downtime slashing packet from the consumer.
+// * Check that the validator has been jailed as a result of the downtime slashing packet being processed.
+// * Verify that the validator’s signing information is updated and that the jailing duration is set correctly.
 //
 // Note that only downtime slash packets are processed by HandleSlashPacket.
 func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
@@ -272,9 +276,9 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting.
 // @Long Description@
-// It sets up all CCV channels and expects panic if the channel is not established via dest channel of packet.
-// After the correct channelID is added to the packet, a panic shouldn't occur anymore.
-// The test creates an instance of SlashPacketData and then verifies correct processing and error handling
+// * Set up all CCV channels and expect panic if the channel is not established via dest channel of packet.
+// * After the correct channelID is added to the packet, a panic shouldn't occur anymore.
+// * Create an instance of SlashPacketData and then verify correct processing and error handling
 // for slashing packets received by the provider chain.
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
@@ -376,13 +380,14 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 // TestValidatorDowntime tests if a slash packet is sent and if the outstanding slashing flag is switched
 // when a validator has downtime on the slashing module.
 // @Long Description@
-// It sets up all CCV channel and send an empty VSC packet, then retrieves the address of a validator.
-// Validator signs blocks for the duration of the signedBlocksWindow and a slash packet is constructed to be sent and committed.
-// The test simulates the validator missing blocks and then verifies that the validator is jailed and the jailed time is correctly updated.
-// Also it ensures that the missed block counters are reset. After it checks that there is a pending slash packet in the queue, the test sends
-// the pending packets. Then checks if slash record is created and verifies that the consumer queue still contains the packet since no
-// acknowledgment has been received from the provider. It verifies that the slash packet was sent and check that the outstanding
-// slashing flag prevents the jailed validator to keep missing block.
+// * Set up all CCV channel and send an empty VSC packet, then retrieve the address of a validator.
+// * Validator signs blocks for the duration of the signedBlocksWindow and a slash packet is constructed to be sent and committed.
+// * Simulate the validator missing blocks and then verify that the validator is jailed and the jailed time is correctly updated.
+// * Ensure that the missed block counters are reset.
+// * Check that there is a pending slash packet in the queue, and then send the pending packets.
+// * Check if slash record is created and verify that the consumer queue still contains the packet since no
+// acknowledgment has been received from the provider.
+// * Verify that the slash packet was sent and check that the outstanding slashing flag prevents the jailed validator to keep missing block.
 func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// initial setup
 	suite.SetupCCVChannel(suite.path)
@@ -496,10 +501,13 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 
 // TestValidatorDoubleSigning tests if a slash packet is sent when a double-signing evidence is handled by the evidence module.
 // @Long Description@
-// It sets up all CCV channel and sends an empty VSC packet, then creates a validator public key and address. Then the infraction parameters are set and
-// evidence of double signing is created. Validator signing-info are also added to the store and the slash packet is constructed.
-// The test then simulates double signing and sends the slash packet. It then verifies the handling of slash packet, and after
-// it checks if slash record was created and if it's waiting for reply. Lastly the test confirms that the queue is not cleared and the slash packet is sent
+// * Set up all CCV channel and send an empty VSC packet.
+// * Create a validator public key and address.
+// * Set the infraction parameters and create evidence of double signing.
+// * Add validator signing-info are also to the store and construct the slash packet.
+// * Simulate double signing and sends the slash packet.
+// * Verify the handling of slash packet, and check if slash record was created and if it's waiting for reply.
+// * Confirm that the queue is not cleared and the slash packet is sent.
 func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// initial setup
 	suite.SetupCCVChannel(suite.path)
@@ -588,10 +596,12 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 // TestQueueAndSendSlashPacket tests the integration of QueueSlashPacket with SendPackets.
 // In normal operation slash packets are queued in BeginBlock and sent in EndBlock.
 // @Long Description@
-// It sets up all CCV channels and then queues slash packets for both downtime and double-signing infractions.
-// Then, it checks that the correct number of slash requests are stored in the queue, including duplicates for downtime infractions.
-// After the CCV channel for sending actual slash packets is prepared, the slash packets are sent, and the test checks that the outstanding downtime flags
-// are correctly set for validators that were slashed for downtime infractions. Lastly, the test ensures that the pending data packets queue is empty.
+// * Set up all CCV channels and then queue slash packets for both downtime and double-signing infractions.
+// * Check that the correct number of slash requests are stored in the queue, including duplicates for downtime infractions.
+// * Prepare the CCV channel for sending actual slash packets.
+// * Send the slash packets and check that the outstanding downtime flags are correctly set for validators that were slashed
+// for downtime infractions.
+// * Ensure that the pending data packets queue is empty.
 func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	suite.SetupCCVChannel(suite.path)
 
@@ -673,9 +683,10 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 // have any undesired behavior when a slash packet is queued before the CCV channel is established.
 // Then once the CCV channel is established, the slash packet should be sent soon after.
 // @Long Description@
-// It checks that no pending packets exist and that there's no slash record found. Then it triggers a slashing event which queues a slash packet.
-// The slash packet should be queued but not sent, and it should stay like that until the CCV channel is established and the packet is sent.
-// The test then verifies that a slashing record now exists, indicating that the slashing packet has been successfully sent.
+// * Check that no pending packets exist and that there's no slash record found.
+// * Triggers a slashing event which queues a slash packet.
+// * The slash packet should be queued but not sent, and it should stay like that until the CCV channel is established and the packet is sent.
+// *Verify that a slashing record now exists, indicating that the slashing packet has been successfully sent.
 func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 

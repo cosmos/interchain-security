@@ -23,13 +23,12 @@ import (
 
 // TestRewardsDistribution tests the distribution of rewards from the consumer chain to the provider chain.
 // @Long Description@
-// The test sets up a provider and consumer chain and completes the channel initialization.
-// Then, it sends tokens into the FeeCollector on the consumer chain,
-// and checks that these tokens distributed correctly across the provider and consumer chain.
-// It first checks that the tokens are distributed purely on the consumer chain,
-// then advances the block height to make the consumer chain send a packet with rewards to the provider chain.
-// It does not whitelist the consumer denom, so the tokens are expected to stay in
-// the ConsumerRewardsPool on the provider chain.
+// * Set up a provider and consumer chain and completes the channel initialization.
+// * Send tokens into the FeeCollector on the consumer chain,
+// and check that these tokens distributed correctly across the provider and consumer chain.
+// * Check that the tokens are distributed purely on the consumer chain,
+// then advance the block height to make the consumer chain send a packet with rewards to the provider chain.
+// * Don't whitelist the consumer denom, so that the tokens stay in the ConsumerRewardsPool on the provider chain.
 func (s *CCVTestSuite) TestRewardsDistribution() {
 	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupCCVChannel(s.path)
@@ -196,12 +195,10 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
 // @Long Description@
-// The test sets up a provider and consumer chain and completes the channel initialization.
-// It fills the fee pool on the consumer chain,
-// then corrupts the transmission channel and tries to send rewards to the provider chain,
-// which should fail.
-// The test then advances the block height to trigger a retry of the reward transmission,
-// and confirms that this time, the transmission is successful.
+// * Set up a provider and consumer chain and complete the channel initialization.
+// * Fill the fee pool on the consumer chain, then corrupt the transmission channel
+// and try to send rewards to the provider chain, which should fail.
+// * Advance the block height to trigger a retry of the reward transmission, and confirm that this time, the transmission is successful.
 func (s *CCVTestSuite) TestSendRewardsRetries() {
 	// TODO: this setup can be consolidated with other tests in the file
 
@@ -275,13 +272,14 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 
 // TestEndBlockRD tests that the last transmission block height is correctly updated after the expected number of block have passed.
 // @Long Description@
-// The test first sets up CCV and transmission channels between the provider
-// and consumer chains. It then fills the fee pool on the consumer chain, prepares the system for reward
-// distribution, and optionally corrupts the transmission channel to simulate failure scenarios.
-// After advancing the block height, the test verifies whether the LBTH is updated correctly
-// and if the escrow balance changes as expected. The test also checks that the IBC transfer
-// transfer states are discarded if the reward distribution to the provider has failed.
-
+// * Set up CCV and transmission channels between the provider and consumer chains.
+// * Fill the fee pool on the consumer chain, prepare the system for reward
+// distribution, and optionally corrupt the transmission channel to simulate failure scenarios.
+// * After advancing the block height, verify whether the LBTH is updated correctly
+// and if the escrow balance changes as expected.
+// * Check that the IBC transfer states are discarded if the reward distribution
+// to the provider has failed.
+//
 // Note: this method is effectively a unit test for EndBLockRD(), but is written as an integration test to avoid excessive mocking.
 func (s *CCVTestSuite) TestEndBlockRD() {
 	testCases := []struct {
@@ -403,8 +401,8 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 
 // TestSendRewardsToProvider is effectively a unit test for SendRewardsToProvider(), but is written as an integration test to avoid excessive mocking.
 // @Long Description@
-// The test first sets up CCV and transmission channels between the provider and consumer chains.
-// Then it verifies the SendRewardsToProvider() function under various scenarios and checks if the
+// * Set up CCV and transmission channels between the provider and consumer chains.
+// * Verify the SendRewardsToProvider() function under various scenarios and checks if the
 // function handles each scenario correctly by ensuring the expected number of token transfers.
 func (s *CCVTestSuite) TestSendRewardsToProvider() {
 	testCases := []struct {
@@ -549,9 +547,10 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 
 // TestIBCTransferMiddleware tests the logic of the IBC transfer OnRecvPacket callback.
 // @Long Description@
-// The test first sets up IBC and transfer channels. Then it simulates various scenarios of token transfers from the provider chain to
-// the consumer chain, and evaluates how the middleware processes these transfers. It ensures that token transfers are handled correctly and
-// rewards are allocated as expected.
+// * Set up IBC and transfer channels.
+// * Simulate various scenarios of token transfers from the provider chain to
+// the consumer chain, and evaluate how the middleware processes these transfers.
+// * Ensure that token transfers are handled correctly and rewards are allocated as expected.
 func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 	var (
 		data        transfertypes.FungibleTokenPacketData
@@ -738,10 +737,10 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 // TestAllocateTokens is a happy-path test of the consumer rewards pool allocation
 // to opted-in validators and the community pool.
 // @Long Description@
-// The test sets up a provider chain and multiple consumer chains, and initializes the channels between them.
-// It funds the consumer rewards pools on the provider chain and allocates rewards to the consumer chains.
-// Then, it begins a new block to cause rewards to be distributed to the validators and the community pool,
-// and checks that the rewards are allocated as expected.
+// * Set up a provider chain and multiple consumer chains, and initialize the channels between them.
+// * Fund the consumer rewards pools on the provider chain and allocate rewards to the consumer chains.
+// * Begin a new block to cause rewards to be distributed to the validators and the community pool,
+// and check that the rewards are allocated as expected.
 func (s *CCVTestSuite) TestAllocateTokens() {
 	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupAllCCVChannels()
@@ -873,15 +872,15 @@ func (s *CCVTestSuite) prepareRewardDist() {
 
 // TestAllocateTokensToConsumerValidators tests the allocation of tokens to consumer validators.
 // @Long Description@
-// The test exclusively uses the provider chain.
-// It sets up a current set of consumer validators, then calls the AllocateTokensToConsumerValidators
+// * The test exclusively uses the provider chain.
+// * Set up a current set of consumer validators, then call the AllocateTokensToConsumerValidators
 // function to allocate a number of tokens to the validators.
-// The test then checks that the expected number of tokens were allocated to the validators.
-// The test covers the following scenarios:
-// - The tokens to be allocated are empty
-// - The consumer validator set is empty
-// - The tokens are allocated to a single validator
-// - The tokens are allocated to multiple validators
+// * Check that the expected number of tokens were allocated to the validators.
+// * The test covers the following scenarios:
+//   - The tokens to be allocated are empty
+//   - The consumer validator set is empty
+//   - The tokens are allocated to a single validator
+//   - The tokens are allocated to multiple validators
 func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	distributionKeeper := s.providerApp.GetTestDistributionKeeper()
@@ -1020,11 +1019,13 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 // TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights tests AllocateTokensToConsumerValidators test with
 // consumer validators that have different heights.
 // @Long Description@
-// It sets up a context where the consumer validators have different join heights and verifies that rewards are
-// correctly allocated only to validators who have been active long enough. It ensures that rewards are evenly distributed
-// among eligible validators, that validators can withdraw their rewards correctly, and that no rewards are allocated to validators
-// who do not meet the required join height criteria. It confirms that validators that have been consumer validators
-// for some time receive rewards, while validators that recently became consumer validators do not receive rewards.
+// * Set up a context where the consumer validators have different join heights and verify that rewards are
+// correctly allocated only to validators who have been active long enough.
+// * Ensure that rewards are evenly distributed among eligible validators, that validators
+// can withdraw their rewards correctly, and that no rewards are allocated to validators
+// who do not meet the required join height criteria.
+// * Confirm that validators that have been consumer validators for some time receive rewards,
+// while validators that recently became consumer validators do not receive rewards.
 func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights() {
 	// Note this test is an adaptation of a `TestAllocateTokensToConsumerValidators` testcase.
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -1138,11 +1139,13 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 
 // TestMultiConsumerRewardsDistribution tests the rewards distribution of multiple consumers chains.
 // @Long Description@
-// It sets up multiple consumer and transfer channels and verifies the distribution of rewards from
-// various consumer chains to the provider's reward pool. It ensures that the consumer reward pools are
-// correctly populated and that rewards are properly transferred to the provider. The test checks that
-// the provider's reward pool balance reflects the accumulated rewards from all consumer chains after
-// processing IBC transfer packets and relaying committed packets.
+// * Set up multiple consumer and transfer channels and verify the distribution of rewards from
+// various consumer chains to the provider's reward pool.
+// * Ensure that the consumer reward pools are correctly populated
+// and that rewards are properly transferred to the provider.
+// * Checks that the provider's reward pool balance reflects the accumulated
+// rewards from all consumer chains after processing IBC transfer packets and relaying
+// committed packets.
 func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 	s.SetupAllCCVChannels()
 	s.SetupAllTransferChannels()
