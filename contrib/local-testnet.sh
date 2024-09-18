@@ -636,7 +636,18 @@ hermes clear packets  --chain provider --port provider --channel channel-0
 sleep 3
 
 ## provider and consumer should share the same valset
-interchain-security-pd q comet-validator-set --node tcp://${NODE_IP}:${RPC_LADDR_BASEPORT}
+PROV_VOTING_POWER=$(interchain-security-pd q comet-validator-set \
+    --node tcp://${NODE_IP}:${RPC_LADDR_BASEPORT} \
+    -o json | jq -r '.validators[].voting_power' | tr '\n' ' ')
+ 
+CONSU_VOTING_POWER=$(interchain-security-cd q comet-validator-set \
+    --node tcp://${NODE_IP}:${CRPC_LADDR_PORT} \
+    -o json | jq -r '.validators[].voting_power' | tr '\n' ' ')
 
-interchain-security-cd q comet-validator-set --node tcp://${NODE_IP}:${CRPC_LADDR_PORT}
+if [ "$PROV_VOTING_POWER" != "$CONSU_VOTING_POWER" ]; then
+    echo "the provider and consumer validator set should be the same\
+    -- verify that the CCV channel was correctly established"
+    exit 1
+fi
 
+echo "consumer $CONSUMER_ID launched and CCV channel established!"
