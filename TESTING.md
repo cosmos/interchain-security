@@ -24,7 +24,7 @@ When adding an integration test, write a brief description as a docstring in the
 // that goes into more detail and describes the scenario.
 ```
 
-Then, run `make docs-test` to update the test documentation.
+Then, run `make build-testing-docs` to update the test documentation.
 
 ## Model-Based Tests (MBT)
 
