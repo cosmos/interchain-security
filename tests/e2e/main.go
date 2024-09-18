@@ -252,6 +252,12 @@ var stepChoices = map[string]StepChoice{
 		description: "test permissionless ics",
 		testConfig:  PermissionlessTestCfg,
 	},
+	"permissionless-topN": {
+		name:        "permissionless-topN",
+		steps:       stepsPermissionlessTopN(),
+		description: "test permissionless ics topN transformation",
+		testConfig:  PermissionlessTestCfg,
+	},
 	"inactive-vals-outside-max-validators": {
 		name:        "inactive-vals-outside-max-validators",
 		steps:       stepsInactiveValsTopNReproduce(),

@@ -8,16 +8,19 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	_go "github.com/cosmos/ics23/go"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
@@ -143,28 +146,6 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 	ctx = ctx.WithBlockTime(now)
 
 	// initialize registration, initialization, and update records
-	consumerMetadata := []providertypes.ConsumerMetadata{
-		{
-			Name:        "name",
-			Description: "spawn time passed",
-		},
-		{
-			Name:        "title",
-			Description: "spawn time passed",
-		},
-		{
-			Name:        "title",
-			Description: "spawn time not passed",
-		},
-		{
-			Name:        "title",
-			Description: "opt-in chain with at least one validator opted in",
-		},
-		{
-			Name:        "title",
-			Description: "opt-in chain with no validator opted in",
-		},
-	}
 	chainIds := []string{"chain0", "chain1", "chain2", "chain3", "chain4"}
 
 	initializationParameters := []providertypes.ConsumerInitializationParameters{
@@ -272,25 +253,11 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 		},
 	}
 
-	// Expect client creation for only the first, second, and fifth proposals (spawn time already passed and valid)
-	expectedCalls := testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain0", clienttypes.NewHeight(3, 4))
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))...)
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain3", clienttypes.NewHeight(3, 4))...)
-
-	// The fifth chain would have spawn time passed and hence needs the mocks but the client will not be
-	// created because `chain4` is an Opt In chain and has no validator opted in
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain4", clienttypes.NewHeight(3, 4))...)
-
-	gomock.InOrder(expectedCalls...)
-
 	// set up all the records
 	for i, chainId := range chainIds {
 		providerKeeper.SetConsumerChainId(ctx, fmt.Sprintf("%d", i), chainId)
 	}
 
-	for i, r := range consumerMetadata {
-		providerKeeper.SetConsumerMetadata(ctx, fmt.Sprintf("%d", i), r)
-	}
 	for i, r := range initializationParameters {
 		err := providerKeeper.SetConsumerInitializationParameters(ctx, fmt.Sprintf("%d", i), r)
 		require.NoError(t, err)
@@ -311,10 +278,18 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 
 	valAddr, _ := sdk.ValAddressFromBech32(validator.GetOperator())
 	mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAddr).Return(int64(1), nil).AnyTimes()
-	// for the validator, expect a call to GetValidatorByConsAddr with its consensus address
-	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(gomock.Any(), consAddr).Return(validator, nil).AnyTimes()
 
 	providerKeeper.SetOptedIn(ctx, "3", providertypes.NewProviderConsAddress(consAddr))
+
+	// Expect genesis and client creation for only the first, second, and fifth chains (spawn time already passed and valid)
+	expectedCalls := testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain0", clienttypes.NewHeight(3, 4))...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain3", clienttypes.NewHeight(3, 4))...)
+
+	gomock.InOrder(expectedCalls...)
 
 	err := providerKeeper.BeginBlockLaunchConsumers(ctx)
 	require.NoError(t, err)
@@ -347,7 +322,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 	// fifth chain corresponds to an Opt-In chain with no opted-in validators and hence the
 	// chain launch is NOT successful
 	phase = providerKeeper.GetConsumerPhase(ctx, "4")
-	require.Equal(t, providertypes.CONSUMER_PHASE_INITIALIZED, phase)
+	require.Equal(t, providertypes.CONSUMER_PHASE_REGISTERED, phase)
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "4")
 	require.False(t, found)
 }
@@ -488,8 +463,6 @@ func TestConsumeIdsFromTimeQueue(t *testing.T) {
 	}
 }
 
-// Tests the CreateConsumerClient method against the spec,
-// with more granularity than what's covered in TestHandleCreateConsumerChainProposal.
 func TestCreateConsumerClient(t *testing.T) {
 	type testCase struct {
 		description string
@@ -502,12 +475,11 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "No state mutation, new client should be created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-				providerKeeper.SetConsumerPhase(ctx, "0", providertypes.CONSUMER_PHASE_INITIALIZED)
+				providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_INITIALIZED)
 
 				// Valid client creation is asserted with mock expectations here
-				testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1) // returns empty validator set
 				gomock.InOrder(
-					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
+					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, CONSUMER_CHAIN_ID, clienttypes.NewHeight(4, 5))...,
 				)
 			},
 			expClientCreated: true,
@@ -515,13 +487,10 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "chain for this consumer id has already launched, and hence client was created, NO new one is created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-				providerKeeper.SetConsumerPhase(ctx, "0", providertypes.CONSUMER_PHASE_LAUNCHED)
+				providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_LAUNCHED)
 
 				// Expect none of the client creation related calls to happen
-				mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
 				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-				mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(), gomock.Any()).Times(0)
-				testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 0) // returns empty validator set
 			},
 			expClientCreated: false,
 		},
@@ -537,18 +506,16 @@ func TestCreateConsumerClient(t *testing.T) {
 		tc.setup(&providerKeeper, ctx, &mocks)
 
 		// Call method with same arbitrary values as defined above in mock expectations.
-		providerKeeper.SetConsumerChainId(ctx, "0", "chainID")
-		err := providerKeeper.SetConsumerMetadata(ctx, "0", testkeeper.GetTestConsumerMetadata())
-		require.NoError(t, err)
-		err = providerKeeper.SetConsumerInitializationParameters(ctx, "0", testkeeper.GetTestInitializationParameters())
-		require.NoError(t, err)
-		err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "0", testkeeper.GetTestPowerShapingParameters())
+		providerKeeper.SetConsumerChainId(ctx, CONSUMER_ID, CONSUMER_CHAIN_ID)
+		err := providerKeeper.SetConsumerInitializationParameters(ctx, CONSUMER_ID, testkeeper.GetTestInitializationParameters())
 		require.NoError(t, err)
 
-		err = providerKeeper.CreateConsumerClient(ctx, "0")
+		err = providerKeeper.CreateConsumerClient(ctx, CONSUMER_ID, []byte{})
 		if tc.expClientCreated {
 			require.NoError(t, err)
-			testCreatedConsumerClient(t, ctx, providerKeeper, "0", "clientID")
+			clientId, found := providerKeeper.GetConsumerClientId(ctx, CONSUMER_ID)
+			require.True(t, found)
+			require.Equal(t, "clientID", clientId)
 		} else {
 			require.Error(t, err)
 		}
@@ -558,30 +525,14 @@ func TestCreateConsumerClient(t *testing.T) {
 	}
 }
 
-// Executes test assertions for a created consumer client.
-//
-// Note: Separated from TestCreateConsumerClient to also be called from TestCreateConsumerChainProposal.
-func testCreatedConsumerClient(t *testing.T,
-	ctx sdk.Context, providerKeeper providerkeeper.Keeper, consumerId, expectedClientID string,
-) {
-	t.Helper()
-	// ClientID should be stored.
-	clientId, found := providerKeeper.GetConsumerClientId(ctx, consumerId)
-	require.True(t, found, "consumer client not found")
-	require.Equal(t, expectedClientID, clientId)
-
-	// Only assert that consumer genesis was set,
-	// more granular tests on consumer genesis should be defined in TestMakeConsumerGenesis
-	_, ok := providerKeeper.GetConsumerGenesis(ctx, consumerId)
-	require.True(t, ok)
-}
-
 // TestMakeConsumerGenesis tests the MakeConsumerGenesis keeper method.
 // An expected genesis state is hardcoded in json, unmarshaled, and compared
 // against an actual consumer genesis state constructed by a provider keeper.
 func TestMakeConsumerGenesis(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+
 	moduleParams := providertypes.Params{
 		TemplateClient: &ibctmtypes.ClientState{
 			TrustLevel:    ibctmtypes.DefaultTrustLevel,
@@ -641,73 +592,80 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		NumberOfEpochsToStartReceivingRewards: 24,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
-	defer ctrl.Finish()
-
-	//
-	// Other setup not covered by custom template client state
-	//
-	ctx = ctx.WithChainID("testchain1") // consumerId is obtained from ctx
-	ctx = ctx.WithBlockHeight(5)        // RevisionHeight obtained from ctx
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1)
-	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
 
 	// matches params from jsonString
-	consumerMetadata := providertypes.ConsumerMetadata{
-		Name:        "name",
-		Description: "description",
-	}
-
 	ccvTimeoutPeriod := time.Duration(2419200000000000)
 	transferTimeoutPeriod := time.Duration(3600000000000)
-	unbondingPeriod := time.Duration(1728000000000000)
+	consumerUnbondingPeriod := time.Duration(1728000000000000)
+	providerUnbondingPeriod := time.Duration(1814400000000000)
+	trustingPeriod := time.Duration(1197504000000000)
+	providerChainId := "provider-1"
+	providerRevisionNumber := uint64(1)
+	providerRevisionHeight := int64(5)
+
 	initializationParameters := providertypes.ConsumerInitializationParameters{
 		BlocksPerDistributionTransmission: 1000,
 		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		ConsumerRedistributionFraction:    "0.75",
 		HistoricalEntries:                 10000,
-		UnbondingPeriod:                   unbondingPeriod,
+		UnbondingPeriod:                   consumerUnbondingPeriod,
 	}
-	providerKeeper.SetConsumerChainId(ctx, "0", "testchain1")
-	err := providerKeeper.SetConsumerMetadata(ctx, "0", consumerMetadata)
-	require.NoError(t, err)
-	err = providerKeeper.SetConsumerInitializationParameters(ctx, "0", initializationParameters)
-	require.NoError(t, err)
-	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, "0", providertypes.PowerShapingParameters{})
+
+	//
+	// Other setup not covered by custom template client state
+	//
+	ctx = ctx.WithChainID(providerChainId)            // consumerId is obtained from ctx
+	ctx = ctx.WithBlockHeight(providerRevisionHeight) // RevisionHeight obtained from ctx
+	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, providerUnbondingPeriod)...)
+
+	providerKeeper.SetConsumerChainId(ctx, CONSUMER_ID, CONSUMER_CHAIN_ID)
+	err := providerKeeper.SetConsumerInitializationParameters(ctx, CONSUMER_ID, initializationParameters)
 	require.NoError(t, err)
 
-	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, "0")
+	_, pks, _ := ibctesting.GenerateKeys(t, 2)
+	var ppks [2]tmprotocrypto.PublicKey
+	for i, pk := range pks {
+		ppks[i], _ = cryptocodec.ToCmtProtoPublicKey(pk)
+	}
+	initialValUpdates := []abci.ValidatorUpdate{
+		{PubKey: ppks[0], Power: 1},
+		{PubKey: ppks[1], Power: 2},
+	}
+
+	actualGenesis, err := providerKeeper.MakeConsumerGenesis(ctx, CONSUMER_ID, initialValUpdates)
 	require.NoError(t, err)
 
 	// JSON string with tabs, newlines and spaces for readability
-	jsonString := `{
+	jsonString := fmt.Sprintf(`{
 		"params": {
 			"enabled": true,
-			"blocks_per_distribution_transmission": 1000,
-			"ccv_timeout_period": 2419200000000000,
-			"transfer_timeout_period": 3600000000000,
-			"consumer_redistribution_fraction": "0.75",
-			"historical_entries": 10000,
-			"unbonding_period": 1728000000000000,
+			"blocks_per_distribution_transmission": %d,
+			"ccv_timeout_period": %d,
+			"transfer_timeout_period": %d,
+			"consumer_redistribution_fraction": "%s",
+			"historical_entries": %d,
+			"unbonding_period": %d,
 			"soft_opt_out_threshold": "0",
 			"reward_denoms": [],
 			"provider_reward_denoms": [],
-			"retry_delay_period": 3600000000000
+			"retry_delay_period": %d
 		},
 		"new_chain": true,
 		"provider" : {
 			"client_state": {
-				"chain_id": "testchain1",
+				"chain_id": "%s",
 				"trust_level": {
 					"numerator": 1,
 					"denominator": 3
 				},
-				"trusting_period": 1197504000000000,
-				"unbonding_period": 1814400000000000,
-				"max_clock_drift": 10000000000,
+				"trusting_period": %d,
+				"unbonding_period": %d,
+				"max_clock_drift": %d,
 				"frozen_height": {},
 				"latest_height": {
-					"revision_height": 5
+					"revision_number": %d,
+					"revision_height": %d
 				},
 				"proof_specs": [
 					{
@@ -752,25 +710,30 @@ func TestMakeConsumerGenesis(t *testing.T) {
 				},
 				"next_validators_hash": "E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"
 			},
-			"initial_val_set": [
-				{
-					"pub_key": {
-						"type": "tendermint/PubKeyEd25519",
-						"value": "dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="
-					},
-					"power": 1
-				}
-			]
+			"initial_val_set": [{}]
 		}
-	}`
+	}`,
+		initializationParameters.BlocksPerDistributionTransmission,
+		ccvTimeoutPeriod.Nanoseconds(),
+		transferTimeoutPeriod.Nanoseconds(),
+		initializationParameters.ConsumerRedistributionFraction,
+		initializationParameters.HistoricalEntries,
+		consumerUnbondingPeriod.Nanoseconds(),
+		ccvtypes.DefaultRetryDelayPeriod.Nanoseconds(),
+		providerChainId,
+		trustingPeriod.Nanoseconds(),
+		providerUnbondingPeriod.Nanoseconds(),
+		providertypes.DefaultMaxClockDrift.Nanoseconds(),
+		providerRevisionNumber,
+		providerRevisionHeight,
+	)
 
 	var expectedGenesis ccvtypes.ConsumerGenesisState
 	err = json.Unmarshal([]byte(jsonString), &expectedGenesis) // ignores tabs, newlines and spaces
 	require.NoError(t, err)
+	expectedGenesis.Provider.InitialValSet = initialValUpdates
 
 	// Zeroing out different fields that are challenging to mock
-	actualGenesis.Provider.InitialValSet = []abci.ValidatorUpdate{}
-	expectedGenesis.Provider.InitialValSet = []abci.ValidatorUpdate{}
 	actualGenesis.Provider.ConsensusState = &ibctmtypes.ConsensusState{}
 	expectedGenesis.Provider.ConsensusState = &ibctmtypes.ConsensusState{}
 
@@ -808,7 +771,6 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 	for i := range consumerIds {
 		chainId := chainIds[i]
 		// A consumer chain is setup corresponding to each consumerId, making these mocks necessary
-		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1)
 		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
 			chainId, clienttypes.NewHeight(2, 3))...)
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, chainId)...)
@@ -838,7 +800,7 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 		providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
 		providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")
 
-		err = providerKeeper.CreateConsumerClient(ctx, consumerId)
+		err = providerKeeper.CreateConsumerClient(ctx, consumerId, []byte{})
 		require.NoError(t, err)
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")
 		require.NoError(t, err)

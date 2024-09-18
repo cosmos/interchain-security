@@ -227,39 +227,15 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) error {
 			continue
 		}
 
-		currentValidators, err := k.GetConsumerValSet(ctx, consumerId)
+		currentValSet, err := k.GetConsumerValSet(ctx, consumerId)
 		if err != nil {
-			return fmt.Errorf("getting consumer validators, consumerId(%s): %w", consumerId, err)
-		}
-		powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-		if err != nil {
-			return fmt.Errorf("getting consumer power shaping parameters, consumerId(%s): %w", consumerId, err)
+			return fmt.Errorf("getting consumer current validator set, consumerId(%s): %w", consumerId, err)
 		}
 
-		minPower := int64(0)
-		if powerShapingParameters.Top_N > 0 {
-			// in a Top-N chain, we automatically opt in all validators that belong to the top N
-			// of the active validators
-			minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
-			if err != nil {
-				return fmt.Errorf("computing min power to opt in, consumerId(%s): %w", consumerId, err)
-			}
-
-			// set the minimal power of validators in the top N in the store
-			k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
-
-			k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
-		}
-
-		nextValidators, err := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
+		// compute consumer next validator set
+		valUpdates, err := k.ComputeConsumerNextValSet(ctx, bondedValidators, activeValidators, consumerId, currentValSet)
 		if err != nil {
-			return fmt.Errorf("computing next validators, consumerId(%s), minPower(%d): %w", consumerId, minPower, err)
-		}
-
-		valUpdates := DiffValidators(currentValidators, nextValidators)
-		err = k.SetConsumerValSet(ctx, consumerId, nextValidators)
-		if err != nil {
-			return fmt.Errorf("setting consumer validator set, consumerId(%s): %w", consumerId, err)
+			return fmt.Errorf("computing consumer next validator set, consumerId(%s): %w", consumerId, err)
 		}
 
 		// check whether there are changes in the validator set
@@ -367,8 +343,8 @@ func (k Keeper) OnRecvSlashPacket(
 		return ccv.V1Result, nil
 	}
 
-	// Check that the validator belongs to the consumer chain valset
-	if !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
+	// Check that chain is launched and the validator belongs to the consumer chain valset
+	if k.GetConsumerPhase(ctx, consumerId) == providertypes.CONSUMER_PHASE_LAUNCHED && !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
 		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
 			providerConsAddr.String(), consumerId)
 		// drop packet but return a slash ack so that the consumer can send another slash packet

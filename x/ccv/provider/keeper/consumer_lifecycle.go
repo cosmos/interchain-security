@@ -16,6 +16,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
@@ -62,6 +63,9 @@ func (k Keeper) InitializeConsumer(ctx sdk.Context, consumerId string) (time.Tim
 
 // BeginBlockLaunchConsumers launches initialized consumers chains for which the spawn time has passed
 func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
+	bondedValidators := []stakingtypes.Validator{}
+	activeValidators := []stakingtypes.Validator{}
+
 	consumerIds, err := k.ConsumeIdsFromTimeQueue(
 		ctx,
 		types.SpawnTimeToConsumerIdsKeyPrefix(),
@@ -73,13 +77,41 @@ func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
 	if err != nil {
 		return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "getting consumers ready to laumch: %s", err.Error())
 	}
+	if len(consumerIds) > 0 {
+		// get the bonded validators from the staking module
+		bondedValidators, err = k.GetLastBondedValidators(ctx)
+		if err != nil {
+			return fmt.Errorf("getting last bonded validators: %w", err)
+		}
+		// get the provider active validators
+		activeValidators, err = k.GetLastProviderConsensusActiveValidators(ctx)
+		if err != nil {
+			return fmt.Errorf("getting last provider active validators: %w", err)
+		}
+	}
+
 	for _, consumerId := range consumerIds {
 		cachedCtx, writeFn := ctx.CacheContext()
-		err = k.LaunchConsumer(cachedCtx, consumerId)
+		err = k.LaunchConsumer(cachedCtx, bondedValidators, activeValidators, consumerId)
 		if err != nil {
 			ctx.Logger().Error("could not launch chain",
 				"consumerId", consumerId,
 				"error", err)
+
+			// reset spawn time to zero so that owner can try again later
+			initializationRecord, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+			if err != nil {
+				return errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
+					"getting initialization parameters, consumerId(%s): %s", consumerId, err.Error())
+			}
+			initializationRecord.SpawnTime = time.Time{}
+			err = k.SetConsumerInitializationParameters(ctx, consumerId, initializationRecord)
+			if err != nil {
+				return fmt.Errorf("setting consumer initialization parameters, consumerId(%s): %w", consumerId, err)
+			}
+			// also set the phase to registered
+			k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_REGISTERED)
+
 			continue
 		}
 
@@ -162,29 +194,64 @@ func (k Keeper) ConsumeIdsFromTimeQueue(
 
 // LaunchConsumer launches the chain with the provided consumer id by creating the consumer client and the respective
 // consumer genesis file
-func (k Keeper) LaunchConsumer(ctx sdk.Context, consumerId string) error {
-	err := k.CreateConsumerClient(ctx, consumerId)
+//
+// TODO add unit test for LaunchConsumer
+func (k Keeper) LaunchConsumer(
+	ctx sdk.Context,
+	bondedValidators []stakingtypes.Validator,
+	activeValidators []stakingtypes.Validator,
+	consumerId string,
+) error {
+	// compute consumer initial validator set
+	initialValUpdates, err := k.ComputeConsumerNextValSet(ctx, bondedValidators, activeValidators, consumerId, []types.ConsensusValidator{})
 	if err != nil {
-		return err
+		return fmt.Errorf("computing consumer next validator set, consumerId(%s): %w", consumerId, err)
+	}
+	if len(initialValUpdates) == 0 {
+		return fmt.Errorf("cannot launch consumer with no validator opted in, consumerId(%s)", consumerId)
 	}
 
-	consumerGenesis, found := k.GetConsumerGenesis(ctx, consumerId)
-	if !found {
-		return errorsmod.Wrapf(types.ErrNoConsumerGenesis, "consumer genesis could not be found for consumer id: %s", consumerId)
+	// create consumer genesis
+	genesisState, err := k.MakeConsumerGenesis(ctx, consumerId, initialValUpdates)
+	if err != nil {
+		return fmt.Errorf("creating consumer genesis state, consumerId(%s): %w", consumerId, err)
+	}
+	err = k.SetConsumerGenesis(ctx, consumerId, genesisState)
+	if err != nil {
+		return fmt.Errorf("setting consumer genesis state, consumerId(%s): %w", consumerId, err)
 	}
 
-	if len(consumerGenesis.Provider.InitialValSet) == 0 {
-		return errorsmod.Wrapf(types.ErrInvalidConsumerGenesis, "consumer genesis initial validator set is empty - no validators opted in consumer id: %s", consumerId)
+	// compute the hash of the consumer initial validator updates
+	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialValUpdates)
+	if err != nil {
+		return fmt.Errorf("unable to create initial validator set from initial validator updates: %w", err)
+	}
+	valsetHash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
+
+	// create the consumer client and the genesis
+	err = k.CreateConsumerClient(ctx, consumerId, valsetHash)
+	if err != nil {
+		return fmt.Errorf("crating consumer client, consumerId(%s): %w", consumerId, err)
 	}
 
 	k.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_LAUNCHED)
+
+	k.Logger(ctx).Info("consumer successfully launched",
+		"consumerId", consumerId,
+		"valset size", len(initialValUpdates),
+		"valsetHash", string(valsetHash),
+	)
 
 	return nil
 }
 
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
+func (k Keeper) CreateConsumerClient(
+	ctx sdk.Context,
+	consumerId string,
+	valsetHash []byte,
+) error {
 	initializationRecord, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
 		return err
@@ -219,20 +286,11 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	clientState.TrustingPeriod = trustPeriod
 	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
-	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, consumerId)
-	if err != nil {
-		return err
-	}
-	err = k.SetConsumerGenesis(ctx, consumerId, consumerGen)
-	if err != nil {
-		return err
-	}
-
 	// Create consensus state
 	consensusState := ibctmtypes.NewConsensusState(
 		ctx.BlockTime(),
 		commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)),
-		validatorSetHash, // use the hash of the updated initial valset
+		valsetHash,
 	)
 
 	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
@@ -241,7 +299,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 	}
 	k.SetConsumerClientId(ctx, consumerId, clientID)
 
-	k.Logger(ctx).Info("consumer chain launched (client created)",
+	k.Logger(ctx).Info("consumer client created",
 		"consumer id", consumerId,
 		"client id", clientID,
 	)
@@ -256,6 +314,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 			sdk.NewAttribute(types.AttributeInitialHeight, initializationRecord.InitialHeight.String()),
 			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
 			sdk.NewAttribute(types.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
+			sdk.NewAttribute(types.AttributeValsetHash, string(valsetHash)),
 		),
 	)
 
@@ -267,93 +326,13 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, consumerId string) error {
 func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
 	consumerId string,
-) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
+	initialValidatorUpdates []abci.ValidatorUpdate,
+) (gen ccv.ConsumerGenesisState, err error) {
 	initializationRecord, err := k.GetConsumerInitializationParameters(ctx, consumerId)
 	if err != nil {
-		return gen, nil, errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
-			"cannot retrieve initialization parameters: %s", err.Error())
+		return gen, errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
+			"getting initialization parameters, consumerId(%s): %s", consumerId, err.Error())
 	}
-	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
-	if err != nil {
-		return gen, nil, errorsmod.Wrapf(ccv.ErrInvalidConsumerState,
-			"cannot retrieve power shaping parameters: %s", err.Error())
-	}
-
-	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
-	if err != nil {
-		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "unbonding time not found: %s", err)
-	}
-	height := clienttypes.GetSelfHeight(ctx)
-
-	clientState := k.GetTemplateClient(ctx)
-	// this is the counter party chain ID for the consumer
-	clientState.ChainId = ctx.ChainID()
-	// this is the latest height the client was updated at, i.e.,
-	// the height of the latest consensus state (see below)
-	clientState.LatestHeight = height
-	trustPeriod, err := ccv.CalculateTrustPeriod(providerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
-	if err != nil {
-		return gen, nil, errorsmod.Wrapf(sdkerrors.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
-	}
-	clientState.TrustingPeriod = trustPeriod
-	clientState.UnbondingPeriod = providerUnbondingPeriod
-
-	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
-	if err != nil {
-		return gen, nil, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
-	}
-
-	// get the bonded validators from the staking module
-	bondedValidators, err := k.GetLastBondedValidators(ctx)
-	if err != nil {
-		return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last bonded validators: %s", err)
-	}
-
-	minPower := int64(0)
-	if powerShapingParameters.Top_N > 0 {
-		// get the consensus active validators
-		// we do not want to base the power calculation for the top N
-		// on inactive validators, too, since the top N will be a percentage of the active set power
-		// otherwise, it could be that inactive validators are forced to validate
-		activeValidators, err := k.GetLastProviderConsensusActiveValidators(ctx)
-		if err != nil {
-			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting last active bonded validators: %s", err)
-		}
-
-		// in a Top-N chain, we automatically opt in all validators that belong to the top N
-		minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
-		if err != nil {
-			return gen, nil, err
-		}
-		// log the minimum power in top N
-		k.Logger(ctx).Info("minimum power in top N at consumer genesis",
-			"consumerId", consumerId,
-			"minPower", minPower,
-		)
-		k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
-		k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
-	}
-
-	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
-	nextValidators, err := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
-	if err != nil {
-		return gen, nil, fmt.Errorf("unable to compute the next validators in MakeConsumerGenesis, consumerId(%s): %w", consumerId, err)
-	}
-	err = k.SetConsumerValSet(ctx, consumerId, nextValidators)
-	if err != nil {
-		return gen, nil, fmt.Errorf("unable to set consumer validator set in MakeConsumerGenesis, consumerId(%s): %w", consumerId, err)
-	}
-
-	// get the initial updates with the latest set consumer public keys
-	initialUpdatesWithConsumerKeys := DiffValidators([]types.ConsensusValidator{}, nextValidators)
-
-	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
-	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
-	if err != nil {
-		return gen, nil, fmt.Errorf("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis: %s", err)
-	}
-	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
-
 	// note that providerFeePoolAddrStr is sent to the consumer during the IBC Channel handshake;
 	// see HandshakeMetadata in OnChanOpenTry on the provider-side, and OnChanOpenAck on the consumer-side
 	consumerGenesisParams := ccv.NewParams(
@@ -371,13 +350,40 @@ func (k Keeper) MakeConsumerGenesis(
 		ccv.DefaultRetryDelayPeriod,
 	)
 
+	// create provider client state and consensus state for the consumer to be able
+	// to create a provider client
+
+	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
+	if err != nil {
+		return gen, errorsmod.Wrapf(types.ErrNoUnbondingTime, "unbonding time not found: %s", err)
+	}
+	height := clienttypes.GetSelfHeight(ctx)
+
+	clientState := k.GetTemplateClient(ctx)
+	// this is the counter party chain ID for the consumer
+	clientState.ChainId = ctx.ChainID()
+	// this is the latest height the client was updated at, i.e.,
+	// the height of the latest consensus state (see below)
+	clientState.LatestHeight = height
+	trustPeriod, err := ccv.CalculateTrustPeriod(providerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
+	if err != nil {
+		return gen, errorsmod.Wrapf(sdkerrors.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
+	}
+	clientState.TrustingPeriod = trustPeriod
+	clientState.UnbondingPeriod = providerUnbondingPeriod
+
+	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
+	if err != nil {
+		return gen, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+	}
+
 	gen = *ccv.NewInitialConsumerGenesisState(
 		clientState,
 		consState.(*ibctmtypes.ConsensusState),
-		initialUpdatesWithConsumerKeys,
+		initialValidatorUpdates,
 		consumerGenesisParams,
 	)
-	return gen, hash, nil
+	return gen, nil
 }
 
 // StopAndPrepareForConsumerRemoval sets the phase of the chain to stopped and prepares to get the state of the

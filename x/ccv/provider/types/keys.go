@@ -151,7 +151,7 @@ const (
 // getKeyPrefixes returns a constant map of all the byte prefixes for existing keys
 func getKeyPrefixes() map[string]byte {
 	return map[string]byte{
-		// ParametersKey is the is the key for storing provider's parameters.
+		// ParametersKey is the key for storing provider's parameters.
 		// note that this was set to the max uint8 type value 0xFF in order to protect
 		// from using the ICS v5.0.0 provider module by mistake
 		ParametersKeyName: byte(0xFF),
@@ -337,7 +337,7 @@ func getKeyPrefixes() map[string]byte {
 		// consumer validators addresses that need to be pruned.
 		ConsumerAddrsToPruneV2KeyName: 41,
 
-		// LastProviderConsensusValsKey is the byte prefix for storing the last validator set
+		// LastProviderConsensusValsKey is the key for storing the last validator set
 		// sent to the consensus engine of the provider chain
 		LastProviderConsensusValsKeyName: 42,
 
