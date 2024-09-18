@@ -38,7 +38,7 @@ jobs:
 
         - name: Generate testing docs
           if: env.GIT_DIFF
-          run: make testing-docs
+          run: make build-testing-docs
 
         - name: Check for changes
           id: check_changes
