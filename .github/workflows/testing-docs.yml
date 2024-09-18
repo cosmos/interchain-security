@@ -41,6 +41,7 @@ jobs:
           run: make build-testing-docs
 
         - name: Check for changes
+          if: env.GIT_DIFF
           id: check_changes
           run: |
             git show HEAD:scripts/test_doc/test_documentation.md > committed_file.md
