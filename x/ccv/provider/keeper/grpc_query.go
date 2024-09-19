@@ -30,8 +30,8 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	gen, ok := k.GetConsumerGenesis(ctx, consumerId)
@@ -141,8 +141,8 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	providerAddrTmp, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
@@ -230,8 +230,8 @@ func (k Keeper) QueryAllPairsValConsAddrByConsumer(
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// list of pairs valconsensus addr <providerValConAddrs : consumerValConAddrs>
@@ -275,8 +275,8 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	optedInVals := []string{}
@@ -302,8 +302,8 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -507,8 +507,8 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	consAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
@@ -569,8 +569,8 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 

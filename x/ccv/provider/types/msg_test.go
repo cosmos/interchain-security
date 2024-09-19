@@ -13,20 +13,6 @@ import (
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
-func TestValidateConsumerId(t *testing.T) {
-	// empty consumer id
-	require.Error(t, types.ValidateConsumerId(""))
-
-	// not a `uint64` where `uint64` is in the range [0, 2^64)
-	require.Error(t, types.ValidateConsumerId("a"))
-	require.Error(t, types.ValidateConsumerId("-2545"))
-	require.Error(t, types.ValidateConsumerId("18446744073709551616")) // 2^64
-
-	// valid consumer id
-	require.NoError(t, types.ValidateConsumerId("0"))
-	require.NoError(t, types.ValidateConsumerId("18446744073709551615")) // 2^64 - 1
-}
-
 func TestValidateStringField(t *testing.T) {
 	testCases := []struct {
 		name      string
