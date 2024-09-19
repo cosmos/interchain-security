@@ -25,6 +25,7 @@ func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.ConsumerParams {
 		k.GetRewardDenoms(ctx),
 		k.GetProviderRewardDenoms(ctx),
 		k.GetRetryDelayPeriod(ctx),
+		k.GetConsumerId(ctx),
 	)
 }
 
@@ -135,4 +136,11 @@ func (k Keeper) GetRetryDelayPeriod(ctx sdk.Context) time.Duration {
 	var period time.Duration
 	k.paramStore.Get(ctx, ccvtypes.KeyRetryDelayPeriod, &period)
 	return period
+}
+
+func (k Keeper) GetConsumerId(ctx sdk.Context) string {
+	// var cId string
+	// k.paramStore.Get(ctx, ccvtypes.KeyRetryDelayPeriod, &cId)
+	// return cId
+	return ""
 }
