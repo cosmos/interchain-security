@@ -14,6 +14,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}
@@ -113,6 +114,8 @@ func (im IBCMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
+	logger := im.keeper.Logger(ctx)
+
 	// executes the IBC transfer OnRecv logic
 	ack := im.app.OnRecvPacket(ctx, packet, relayer)
 
@@ -121,12 +124,6 @@ func (im IBCMiddleware) OnRecvPacket(
 	// that the packet data is valid and can be safely
 	// deserialized without checking errors.
 	if ack.Success() {
-		// execute the middleware logic only if the sender is a consumer chain
-		consumerId, err := im.keeper.IdentifyConsumerIdFromIBCPacket(ctx, packet)
-		if err != nil {
-			return ack
-		}
-
 		// extract the coin info received from the packet data
 		var data ibctransfertypes.FungibleTokenPacketData
 		_ = types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
@@ -135,6 +132,29 @@ func (im IBCMiddleware) OnRecvPacket(
 		receiver, _ := sdk.AccAddressFromBech32(data.Receiver)
 		if receiver.String() != im.keeper.GetConsumerRewardsPoolAddressStr(ctx) {
 			return ack
+		}
+
+		consumerId := ""
+		// check if the transfer has the reward memo
+		if rewardMemo, err := ccvtypes.GetRewardMemoFromTransferMemo(data.Memo); err != nil {
+			// check if the transfer is on a channel with the same underlying
+			// client as the CCV channel
+			consumerId, err = im.keeper.IdentifyConsumerIdFromIBCPacket(ctx, packet)
+			if err != nil {
+				if data.Memo == "consumer chain rewards distribution" {
+					// log error message
+					logger.Error(
+						"received token transfer with ICS reward from unknown consumer",
+						"packet", packet.String(),
+						"fungibleTokenPacketData", data.String(),
+						"error", err.Error(),
+					)
+
+				}
+				return ack
+			}
+		} else {
+			consumerId = rewardMemo.ConsumerId
 		}
 
 		coinAmt, _ := math.NewIntFromString(data.Amount)
