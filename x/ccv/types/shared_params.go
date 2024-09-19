@@ -118,15 +118,19 @@ func CalculateTrustPeriod(unbondingPeriod time.Duration, defaultTrustPeriodFract
 }
 
 // ValidateConsumerId validates the provided consumer id and returns an error if it is not valid
-func ValidateConsumerId(consumerId string) error {
-	if strings.TrimSpace(consumerId) == "" {
+func ValidateConsumerId(i interface{}) error {
+	str, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	if strings.TrimSpace(str) == "" {
 		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot be blank")
 	}
 
 	// check that `consumerId` corresponds to a `uint64`
-	_, err := strconv.ParseUint(consumerId, 10, 64)
+	_, err := strconv.ParseUint(str, 10, 64)
 	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id (%s) cannot be parsed: %s", consumerId, err.Error())
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id (%s) cannot be parsed: %s", str, err.Error())
 	}
 
 	return nil

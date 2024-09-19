@@ -54,6 +54,7 @@ var (
 	KeyRewardDenoms                      = []byte("RewardDenoms")
 	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
 	KeyRetryDelayPeriod                  = []byte("RetryDelayPeriod")
+	KeyConsumerId                        = []byte("ConsumerId")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -180,6 +181,8 @@ func (p *ConsumerParams) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.ProviderRewardDenoms, ValidateDenoms),
 		paramtypes.NewParamSetPair(KeyRetryDelayPeriod,
 			p.RetryDelayPeriod, ValidateDuration),
+		paramtypes.NewParamSetPair(KeyConsumerId,
+			p.ConsumerId, ValidateConsumerId),
 	}
 }
 
