@@ -79,12 +79,21 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	// To avoid large iterations over all the consumer IDs, iterate only over
 	// chains with an IBC client created.
 	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
-
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
 		// of non-whitelisted denominations.
 		alloc := k.GetConsumerRewardsAllocation(ctx, consumerId)
 		if alloc.Rewards.IsZero() {
+			continue
+		}
+
+		chainId, err := k.GetConsumerChainId(ctx, consumerId)
+		if err != nil {
+			k.Logger(ctx).Error(
+				"cannot get consumer chain id in AllocateTokens",
+				"consumerId", consumerId,
+				"error", err.Error(),
+			)
 			continue
 		}
 
@@ -95,11 +104,18 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			err := k.distributionKeeper.FundCommunityPool(context.Context(ctx), rewardsToSend, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 			if err != nil {
 				k.Logger(ctx).Error(
-					"fail to allocate rewards from consumer chain %s to community pool: %s",
-					consumerId,
-					err,
+					"fail to allocate ICS rewards to community pool",
+					"consumerId", consumerId,
+					"chainId", chainId,
+					"error", err.Error(),
 				)
 			}
+			k.Logger(ctx).Info(
+				"allocated ICS rewards to community pool",
+				"consumerId", consumerId,
+				"chainId", chainId,
+				"amount", rewardsToSend.String(),
+			)
 
 			// set the consumer allocation to the remaining reward decimals
 			alloc.Rewards = rewardsChange
@@ -114,9 +130,10 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		communityTax, err := k.distributionKeeper.GetCommunityTax(ctx)
 		if err != nil {
 			k.Logger(ctx).Error(
-				"cannot get community tax while allocating rewards from consumer chain %s: %s",
-				consumerId,
-				err,
+				"cannot get community tax while allocating ICS rewards",
+				"consumerId", consumerId,
+				"chainId", chainId,
+				"error", err.Error(),
 			)
 			continue
 		}
@@ -134,9 +151,10 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ConsumerRewardsPool, distrtypes.ModuleName, validatorsRewardsTrunc)
 		if err != nil {
 			k.Logger(ctx).Error(
-				"cannot send rewards to distribution module account %s: %s",
-				consumerId,
-				err,
+				"cannot send ICS rewards to distribution module account",
+				"consumerId", consumerId,
+				"chainId", chainId,
+				"error", err.Error(),
 			)
 			continue
 		}
@@ -153,9 +171,10 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		err = k.distributionKeeper.FundCommunityPool(context.Context(ctx), remainingRewards, k.accountKeeper.GetModuleAccount(ctx, types.ConsumerRewardsPool).GetAddress())
 		if err != nil {
 			k.Logger(ctx).Error(
-				"fail to allocate rewards from consumer chain %s to community pool: %s",
-				consumerId,
-				err,
+				"fail to allocate ICS rewards to community pool",
+				"consumerId", consumerId,
+				"chainId", chainId,
+				"error", err.Error(),
 			)
 			continue
 		}
@@ -163,6 +182,27 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 		// set consumer allocations to the remaining rewards decimals
 		alloc.Rewards = validatorsRewardsChange.Add(remainingChanges...)
 		k.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
+
+		k.Logger(ctx).Info(
+			"distributed ICS rewards successfully",
+			"consumerId", consumerId,
+			"chainId", chainId,
+			"total rewards", consumerRewards.String(),
+			"sent for distribution", validatorsRewardsTrunc.String(),
+			"sent to CP", remainingRewards.String(),
+		)
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeDistributedRewards,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(types.AttributeConsumerId, consumerId),
+				sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
+				sdk.NewAttribute(types.AttributeRewardTotal, consumerRewards.String()),
+				sdk.NewAttribute(types.AttributeRewardDistributed, validatorsRewardsTrunc.String()),
+				sdk.NewAttribute(types.AttributeRewardCommunityPool, remainingRewards.String()),
+			),
+		)
 	}
 }
 
@@ -339,6 +379,23 @@ func (k Keeper) IdentifyConsumerIdFromIBCPacket(ctx sdk.Context, packet channelt
 	}
 
 	return consumerId, nil
+}
+
+// GetSourceChainIdFromIBCPacket returns the chain ID of the chain that sent this packet
+func (k Keeper) GetSourceChainIdFromIBCPacket(ctx sdk.Context, packet channeltypes.Packet) (string, error) {
+	channel, ok := k.channelKeeper.GetChannel(ctx, packet.DestinationPort, packet.DestinationChannel)
+	if !ok {
+		return "", errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", packet.DestinationChannel)
+	}
+	if len(channel.ConnectionHops) != 1 {
+		return "", errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
+	}
+	connectionID := channel.ConnectionHops[0]
+	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	if err != nil {
+		return "", err
+	}
+	return tmClient.ChainId, nil
 }
 
 // HandleSetConsumerCommissionRate sets a per-consumer chain commission rate for the given provider address
