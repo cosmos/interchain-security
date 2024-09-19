@@ -144,3 +144,8 @@ func (k Keeper) GetConsumerId(ctx sdk.Context) string {
 	// return cId
 	return ""
 }
+
+func (k Keeper) GetConsumerId(ctx sdk.Context) string {
+	params := k.GetConsumerParams(ctx)
+	return params.ConsumerId
+}
