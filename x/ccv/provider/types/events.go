@@ -12,6 +12,8 @@ const (
 	EventTypeCreateConsumer            = "create_consumer"
 	EventTypeUpdateConsumer            = "update_consumer"
 	EventTypeRemoveConsumer            = "remove_consumer"
+	EventTypeReceivedRewards           = "received_ics_rewards"
+	EventTypeDistributedRewards        = "distributed_ics_rewards"
 
 	AttributeInfractionHeight          = "infraction_height"
 	AttributeInitialHeight             = "initial_height"
@@ -31,4 +33,10 @@ const (
 	AttributeConsumerSpawnTime         = "consumer_spawn_time"
 	AttributeConsumerPhase             = "consumer_phase"
 	AttributeConsumerTopN              = "consumer_topn"
+	AttributeRewardDenom               = "reward_denom"
+	AttributeRewardAmount              = "reward_amount"
+	AttributeRewardDistribution        = "reward_distribution"
+	AttributeRewardTotal               = "total_rewards"
+	AttributeRewardDistributed         = "distributed_rewards"
+	AttributeRewardCommunityPool       = "community_pool_rewards"
 )
