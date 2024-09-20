@@ -1,20 +1,12 @@
-<!--
-  A release notes template that should be adapted for every release
-    - release: v6.0.0
-    - release branch: v6.0.x
-    - the last release: v5.2.0
-    - the last release branch: v5.2.x
--->
+# Interchain Security v6.1.0  Release Notes
 
-# Interchain Security v6.0.0  Release Notes
-
-❗ ***Note this release is ONLY relevant to providers***
+⚠️ ***This release in the v6 release series should be used instead of the deprecated [v6.0.0](https://github.com/cosmos/interchain-security/releases/tag/v6.0.0) release.***
 
 ## 📝 Changelog
 
-Check out the [changelog](https://github.com/cosmos/interchain-security/blob/v6.0.0/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/<v-last>...v6.0.0) from last release.
+Check out the [changelog](https://github.com/cosmos/interchain-security/blob/v6.1.0/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/v5.2.0...v6.1.0) from last release.
 
-Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/v6.0.x/UPGRADING.md) when migrating from `v5.2.x` to `v6.0.x`.
+Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/v6.1.x/UPGRADING.md) when migrating from `v5.2.x` to `v6.1.x`.
 
 ## 🚀 Highlights
 

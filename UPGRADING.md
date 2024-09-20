@@ -1,6 +1,8 @@
 # Upgrading Replicated Security
 
-## v6.0.x
+## v6.1.x
+
+_Note that [v6.0.0](https://github.com/cosmos/interchain-security/releases/tag/v6.0.0) is deprecated and should not be used in production_.
 
 ### Provider
 
