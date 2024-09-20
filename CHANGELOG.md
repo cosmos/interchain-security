@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v6.1.0
+
+*September 20, 2024*
+
+### BUG FIXES
+
+- Remove duplicate event emission on cached context.
+  ([\#2282](https://github.com/cosmos/interchain-security/pull/2282))
+- `[x/provider]` Add patch to enable ICS rewards from Stride to be distributed.
+  ([\#2288](https://github.com/cosmos/interchain-security/pull/2288))
+
+### STATE BREAKING
+
+- `[x/provider]` Add patch to enable ICS rewards from Stride to be distributed.
+  ([\#2288](https://github.com/cosmos/interchain-security/pull/2288))
+
 ## v6.0.0
 
 *September 12, 2024*
