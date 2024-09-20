@@ -140,7 +140,7 @@ func (im IBCMiddleware) OnRecvPacket(
 					return ack
 				}
 				// accept the packet as a potential ICS reward
-				consumerId := "1" // consumer ID of Stride
+				consumerId = "1" // consumer ID of Stride
 				// sanity check: make sure this is the consumer ID for Stride
 				chainId, err := im.keeper.GetConsumerChainId(ctx, consumerId)
 				if err != nil || srcChainId != chainId {

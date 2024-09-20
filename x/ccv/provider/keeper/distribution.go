@@ -187,9 +187,9 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 			"distributed ICS rewards successfully",
 			"consumerId", consumerId,
 			"chainId", chainId,
-			"total rewards", consumerRewards.String(),
-			"sent for distribution", validatorsRewardsTrunc.String(),
-			"sent to CP", remainingRewards.String(),
+			"total-rewards", consumerRewards.String(),
+			"sent-to-distribution", validatorsRewardsTrunc.String(),
+			"sent-to-CP", remainingRewards.String(),
 		)
 
 		ctx.EventManager().EmitEvent(
