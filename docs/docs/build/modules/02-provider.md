@@ -21,6 +21,332 @@ The provider module has the following functionalities:
 
 ## State 
 
+For clarity, the description of the the provider module state is split into features.
+For a more accurate description, check out the `x/ccv/provider/types/keys.go` file, which contains the definitions of the keys. 
+
+### Consumer Lifecycle
+
+#### ConsumerId
+
+`ConsumerId` is the consumer ID of the next consumer chain to be created.
+
+Format: `byte(43) -> uint64`
+
+#### ConsumerIdToChainId
+
+`ConsumerIdToChainId` is the chain ID of a given consumer chain. 
+
+Format: `byte(44) | len(consumerId) | []byte(consumerId) -> string`
+
+#### ConsumerIdToOwnerAddress
+
+`ConsumerIdToOwnerAddress` is the account address of the owner of a given consumer chain. 
+
+Format: `byte(45) | len(consumerId) | []byte(consumerId) -> string`
+
+#### ConsumerIdToMetadataKey
+
+`ConsumerIdToMetadataKey` is the metadata of a given consumer chain. 
+
+Format: `byte(46) | len(consumerId) | []byte(consumerId) -> ConsumerMetadata`
+
+#### ConsumerIdToPhase
+
+`ConsumerIdToPhase` is the phase of a given consumer chain. 
+
+Format: `byte(49) | len(consumerId) | []byte(consumerId) -> ConsumerPhase`, where `ConsumerPhase` is defined as 
+
+```proto
+enum ConsumerPhase {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // UNSPECIFIED defines an empty phase.
+  CONSUMER_PHASE_UNSPECIFIED = 0;
+  // REGISTERED defines the phase in which a consumer chain has been assigned a unique consumer id.
+  // A chain in this phase cannot yet launch.
+  CONSUMER_PHASE_REGISTERED = 1;
+  // INITIALIZED defines the phase in which a consumer chain has set all the needed parameters to launch but
+  // has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
+  CONSUMER_PHASE_INITIALIZED = 2;
+  // LAUNCHED defines the phase in which a consumer chain is running and consuming a subset of the validator
+  // set of the provider.
+  CONSUMER_PHASE_LAUNCHED = 3;
+  // STOPPED defines the phase in which a previously-launched chain has stopped.
+  CONSUMER_PHASE_STOPPED = 4;
+  // DELETED defines the phase in which the state of a stopped chain has been deleted.
+  CONSUMER_PHASE_DELETED = 5;
+}
+```
+
+#### ConsumerIdToRemovalTime
+
+`ConsumerIdToRemovalTime` is the removal time of a given consumer chain in the stopped phase. 
+
+Format: `byte(50) | len(consumerId) | []byte(consumerId) -> time.Time`
+
+#### SpawnTimeToConsumerIds
+
+`SpawnTimeToConsumerIds` are the IDs of initialized consumer chains ready to be launched at a timestamp `ts`. 
+
+Format: `byte(51) | ts -> ConsumerIds`, where `ConsumerIds` is defined as 
+
+```proto
+message ConsumerIds { 
+  repeated string ids = 1; 
+}
+```
+
+#### RemovalTimeToConsumerIds
+
+`RemovalTimeToConsumerIds` are the IDs of stopped consumer chains ready to be removed at a timestamp `ts`. 
+
+Format: `byte(52) | ts -> ConsumerIds`, where `ConsumerIds` is defined as 
+
+### Consumer Launch
+
+#### ConsumerIdToInitializationParameters
+
+`ConsumerIdToInitializationParameters` are the initialization parameters of a given consumer chain. 
+
+Format: `byte(47) | len(consumerId) | []byte(consumerId) -> ConsumerInitializationParameters`
+
+#### ConsumerIdToChannelId
+
+`ConsumerIdToChannelId` is the ID of the CCV channel associated with a consumer chain. 
+
+Format: `byte(5) | []byte(consumerId) -> string`
+
+#### ChannelIdToConsumerId
+
+`ChannelIdToConsumerId` is the consumer ID associated with a CCV channel. 
+
+Format: `byte(6) | []byte(channelId) -> string`
+
+#### ConsumerIdToClientId
+
+`ConsumerIdToClientId` is the ID of the client associated with a consumer chain. 
+This is the underlying client of the corresponding CCV channel.
+
+Format: `byte(7) | []byte(consumerId) -> string`
+
+#### ClientIdToConsumerId
+
+`ClientIdToConsumerId` is the consumer ID associated with an IBC client (i.e., the underlying client of the corresponding CCV channel).
+
+Format: `byte(53) | len(clientId) | []byte(clientId) -> string`
+
+#### ConsumerGenesis
+
+`ConsumerGenesis` is the genesis state of the consumer module associated with a consumer chain.
+
+Format: `byte(14) | []byte(consumerId) -> ConsumerGenesisState`
+
+
+### Key Assingment
+
+#### ConsumerValidators
+
+> TODO: `ConsumerValidators` and `ConsumerValidator` are too similar. 
+
+`ConsumerValidators` is the public key assigned by a given validator with `addr` as its provider consensus address (i.e., `sdk.ConsAddress`) on a given consumer chain.
+
+Format: `byte(22) | len(consumerId) | []byte(consumerId) | addr -> crypto.PublicKey`, where `crypto` is `"github.com/cometbft/cometbft/proto/tendermint/crypto"`.
+
+#### ValidatorsByConsumerAddr
+
+`ValidatorsByConsumerAddr` is the consensus address on the provider chain of a validator with `addr` as its consensus address on a given consumer chain.
+
+Format: `byte(23) | len(consumerId) | []byte(consumerId) | addr -> sdk.ConsAddress`.
+
+#### ConsumerAddrsToPruneV2
+
+`ConsumerAddrsToPruneV2` stores the list of consumer consensus addresses that can be prunned at a timestamp `ts` as they are no longer needed.
+
+Format: `byte(40) | len(consumerId) | []byte(consumerId) | ts -> AddressList`, where `AddressList` is defined as 
+
+```proto
+message AddressList { 
+  repeated bytes addresses = 1; 
+}
+```
+
+### Power Shaping
+
+#### ConsumerIdToPowerShapingParameters
+
+`ConsumerIdToPowerShapingParameters` are the power-shaping parameters of a given consumer chain. 
+
+Format: `byte(48) | len(consumerId) | []byte(consumerId) -> PowerShapingParameters`
+
+#### ConsumerValidator
+
+`ConsumerValidator` is the `ConsensusValidator` record of a provider validator on a given consumer chain, i.e., 
+
+```proto
+message ConsensusValidator {
+  // validator's consensus address on the provider chain
+  bytes provider_cons_addr = 1;
+  // voting power the validator has during this epoch
+  int64 power = 2;
+  // public key the validator uses on the consumer chain during this epoch
+  tendermint.crypto.PublicKey public_key = 3;
+  // height the validator had when it FIRST became a consumer validator
+  int64 join_height = 4;
+}
+```
+
+Format: `byte(31) | len(consumerId) | []byte(consumerId) | addr -> ConsensusValidator`, with `addr` the validator's consensus address on the provider chain.
+
+#### OptedIn
+
+`OptedIn` is the list of provider validators that opted in to validate on a given consumer chain. 
+Note that opting in doesn't guarantee a spot in the consumer validator set.
+
+Format: `byte(32) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, with `addr` the validator's consensus address on the provider chain.
+
+#### Allowlist
+
+`Allowlist` is the list of provider validators that are eligible to validate a given consumer chain.
+
+Format: `byte(36) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, with `addr` the validator's consensus address on the provider chain.
+
+#### Denylist
+
+`Denylist` is the list of provider validators that are not eligible to validate a given consumer chain. 
+Note that validator can opt in regardless of whether they are eligible or not.
+
+Format: `byte(37) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, with `addr` the validator's consensus address on the provider chain.
+
+#### MinimumPowerInTopN
+
+`MinimumPowerInTopN` is the minimum voting power a provider validator must have to be required to validate a given TopN consumer chain. 
+
+Format: `byte(40) | len(consumerId) | []byte(consumerId) -> uint64`
+
+### Validator Set Updates
+
+#### ValidatorSetUpdateId
+
+`ValidatorSetUpdateId` is an incrementing sequence number that is used as a unique identifier for validator set updates sent to the consumer chains. 
+The validator set update ID is incremented every epoch. 
+
+Format: `byte(2) -> uint64`
+
+#### PendingVSCs
+
+`PendingVSCs` is the list of `VSCPackets` that are queued to be sent to a given consumer chain. 
+
+Format: `byte(17) | []byte(consumerId) -> ValidatorSetChangePackets`, where `ValidatorSetChangePackets` is defined as 
+
+```proto
+message ValidatorSetChangePackets {
+  repeated ValidatorSetChangePacketData list = 1
+      [ (gogoproto.nullable) = false ];
+}
+```
+
+#### LastProviderConsensusVals
+
+`LastProviderConsensusVals` is the last validator set sent to the consensus engine of the provider chain.
+
+Format: `byte(42) | addr -> ConsensusValidator`, with `addr` the validator's consensus address on the provider chain and `ConsensusValidator` defined as
+
+```proto
+message ConsensusValidator {
+  // validator's consensus address on the provider chain
+  bytes provider_cons_addr = 1;
+  // voting power the validator has during this epoch
+  int64 power = 2;
+  // public key the validator uses on the consumer chain during this epoch
+  tendermint.crypto.PublicKey public_key = 3;
+  // height the validator had when it FIRST became a consumer validator
+  int64 join_height = 4;
+}
+```
+
+### Reward Distribution
+
+#### ConsumerRewardDenoms
+
+`ConsumerRewardDenoms` is storing the list of whitelisted denoms that are accepted as ICS rewards. 
+Note that denoms that are not whitelisted can still be transfer to the `consumer_rewards_pool` account on the provider module, but they will not be distributed to validators and their delegators. 
+
+Format: `byte(27) | []byte(denom) -> []byte{}`
+
+#### ConsumerRewardsAllocation
+
+`ConsumerRewardsAllocation` is the allocation of ICS rewards for a given consumer chain. 
+This is used to distribute ICS rewards only to the validators that are part of the consumer chain validator set. 
+
+Format: `byte(38) | []byte(consumerId) -> ConsumerRewardsAllocation`, where `ConsumerRewardsAllocation` is defined as 
+
+```proto
+message ConsumerRewardsAllocation {
+  repeated cosmos.base.v1beta1.DecCoin rewards = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"
+  ];
+}
+```
+
+####  ConsumerCommissionRate
+
+`ConsumerCommissionRate` is the commission rate set by a provider validator for a given consumer chain. 
+
+Format: `byte(39) | len(consumerId) | []byte(consumerId) | addr -> math.LegacyDec`, with `addr` the validator's consensus address on the provider chain and `math` is `"cosmossdk.io/math"`.
+
+### Consumer Infractions
+
+#### SlashMeter
+
+`SlashMeter` is the meter used for the throttling mechanism as the allowance of voting power that can be jailed over time. 
+It is decremented by the amount of voting power jailed whenever a validator is jailed for downtime, and periodically replenished as decided by on-chain params. 
+See [ADR 002](../../adrs/adr-002-throttle.md) for more details.
+
+Format: `byte(3) -> math.Int` 
+
+#### SlashMeterReplenishTimeCandidate
+
+`SlashMeterReplenishTimeCandidate` is the next UTC time the `SlashMeter` could potentially be replenished. 
+Note that this value is the next time the `SlashMeter` will be replenished if and only if the `SlashMeter` is not full. 
+Otherwise this value will be updated in every future block until the slash meter becomes not full.
+
+Format: `byte(4) -> time.Time`
+
+#### ValsetUpdateBlockHeight
+
+`ValsetUpdateBlockHeight` is the block height associated with a validator set update ID `vscId`. 
+This is used for mapping infraction heights on consumer chains to heights on the provider chain via the validator set update IDs (together with [InitChainHeight](#initchainheight)). 
+
+Format: `byte(13) | vscId -> uint64`
+
+#### InitChainHeight
+
+`InitChainHeight` is the block height on the provider when the CCV channel of a given consumer chain was established (i.e., the channel opening handshake was completed).
+This is used for mapping infraction heights on consumer chains to heights on the provider chain (together with [ValsetUpdateBlockHeight](#valsetupdateblockheight)). 
+
+Format: `byte(16) | []byte(consumerId) -> uint64`
+
+#### SlashAcks
+
+`SlashAcks` are addresses of validators for which `SlashPackets` for downtime infractions received from a given consumer chain were handled.
+These addresses are sent together with the validator updates to the consumer chain as confirmation that the downtime infractions were dealt with. 
+
+Format: `byte(15) | []byte(consumerId) -> SlashAcks`, where `SlashAcks` is defined as
+
+```proto
+message SlashAcks { 
+  repeated string addresses = 1; 
+}
+```
+
+#### EquivocationEvidenceMinHeight
+
+`EquivocationEvidenceMinHeight` is the minimum height of a valid evidence of equivocation on a given consumer chain. 
+
+Format: `byte(29) | []byte(consumerId) -> uint64`
+
 ## State Transitions
 
 ### Consumer chain phases
@@ -599,7 +925,7 @@ from that consumer.
 
 | Type  | Default value |
 | ----- | ------------- |
-| int64 | 180            |
+| int64 | 180           |
 
 `MaxProviderConsensusValidators` is the maximum number of validators sent to 
 the provider consensus enginer. 
