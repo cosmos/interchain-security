@@ -23,6 +23,178 @@ As a result, the misbehaving validator is punished on the provider chain.
 
 ## State 
 
+### Provider Connection
+
+#### ProviderClientID
+
+`ProviderClientID` is the ID of the provider client on which the CCV channel is built.
+
+Format: `byte(3) -> string`
+
+#### ProviderChannelID
+
+`ProviderChannelID` is the ID of the CCV channel. 
+
+Format: `byte(4) -> string`
+
+### Changeover
+
+#### PreCCV
+
+`PreCCV` is the flag set when the consumer chain is in the process of a standalone to consumer chain changeover. 
+
+Format: `byte(7) -> uint64`
+
+#### InitialValSet
+
+`InitialValSet` is the initial validator set on the consumer chain.
+
+Format: `byte(8) -> GenesisState`
+
+Note that only the `InitialValSet` field of the `ProviderInfo` field of `GenesisState` is set, i.e., 
+
+```proto
+message GenesisState {
+  ...
+  ProviderInfo provider = 14
+      [ (gogoproto.nullable) = false ];
+}
+
+message ProviderInfo {
+  // InitialValset filled in on new chain and on restart.
+  repeated .tendermint.abci.ValidatorUpdate initial_val_set = 3
+      [ (gogoproto.nullable) = false ];
+}
+```
+
+#### InitGenesisHeight
+
+`InitGenesisHeight` is the height when the consumer module was initialized (i.e., the `InitGenesis` method was called). 
+
+Format: `byte(17) -> uint64`
+
+#### PrevStandaloneChain
+
+`PrevStandaloneChain` is the flag set when the consumer chain was previously a standalone chain.
+
+Format: `byte(19) -> []byte{}`
+
+### Validator Updates
+
+#### PendingChanges
+
+`PendingChanges` are the validator updates received from the provider that were not yet sent to the consensus engine.
+
+Format: `byte(5) -> ValidatorSetChangePacketData`
+
+Note that only the `ValidatorUpdates` field of `ValidatorSetChangePacketData` is set.
+
+#### CrossChainValidator
+
+`CrossChainValidator` is the internal state of a consumer validator with consensus address `addr`. 
+
+Format: `byte(16) | addr -> CrossChainValidator`, where `CrossChainValidator` is defined as 
+
+```proto
+message CrossChainValidator {
+  bytes address = 1;
+  int64 power = 2;
+  // pubkey is the consensus public key of the validator, as a Protobuf Any.
+  google.protobuf.Any pubkey = 3 [
+    (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey",
+    (gogoproto.moretags) = "yaml:\"consensus_pubkey\""
+  ];
+  // deprecated
+  bool opted_out = 4 [deprecated = true];
+}
+```
+
+#### HistoricalInfo
+
+`HistoricalInfo` is the header and validator information for a given block. 
+For more details, see the [Cosmos SDK docs](https://docs.cosmos.network/v0.50/build/modules/staking#historicalinfo).
+
+Format: `byte(11) | height -> HistoricalInfo`, where `HistoricalInfo` is define in the staking module as 
+
+```proto
+message HistoricalInfo {
+  tendermint.types.Header header = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  repeated Validator      valset = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+```
+
+### Reward Distribution
+
+#### LastDistributionTransmission
+
+`LastDistributionTransmission` is the block height of the last attempt to send ICS rewards to the provider module. 
+
+Format: `byte(1) -> LastTransmissionBlockHeight`, where `LastTransmissionBlockHeight` is defined as 
+
+```proto
+message LastTransmissionBlockHeight { 
+  int64 height = 1; 
+}
+```
+
+### Downtime Infractions
+
+#### OutstandingDowntime
+
+`OutstandingDowntime` is the flag set when a `SlashPacket` is queued to be sent to the provider for a downtime infraction of a validator with consensus address `addr`. 
+The flag is unset when receiving from the provider a `VSCPacket` with a slash acknowledgement (see `SlashAcks` in `ValidatorSetChangePacketData`).
+
+Format: `byte(14) | addr -> []byte{}`
+
+#### HeightValsetUpdateID
+
+`HeightValsetUpdateID` is the validator set update ID associated with a block height.
+
+Format: `byte(13) | height -> uint64`
+
+#### PendingPacketsIndex
+
+`PendingPacketsIndex` is the next index available to store packet data to be sent to the provider chain (see below). 
+
+Format: `byte(20) -> uint64`
+
+#### PendingDataPacketsV1
+
+`PendingDataPacketsV1` is the queue of packet data to be sent to the provider chain.
+In general, packets in this queue will be sent to the provider in the end blocker, unless 
+
+- the CCV channel is not yet established;
+- the provider client is expired;
+- the last slash packet sent was not yet acknowledged by the provider chain.  
+
+Format: `byte(15) | index -> ConsumerPacketData`, where `index` is the index of the packet in the queue and `ConsumerPacketData` is defined as 
+
+```proto
+message ConsumerPacketData {
+  ConsumerPacketDataType type = 1;
+
+  oneof data {
+    SlashPacketData slashPacketData = 2;
+    VSCMaturedPacketData vscMaturedPacketData = 3;
+  }
+}
+```
+
+#### SlashRecord
+
+`SlashRecord` is the record storing the state of a SlashPacket sent to the provider chain that was not yet acknowledged.
+See [ADR 008](../../adrs/adr-008-throttle-retries.md) for more details.
+
+Format: `byte(21) -> SlashRecord`, where `SlashRecord` is defined as 
+
+```proto
+message SlashRecord {
+  bool waiting_on_reply = 1;
+  google.protobuf.Timestamp send_time = 2
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
+```
+
 ## State Transitions
 
 ## IBC Callbacks
