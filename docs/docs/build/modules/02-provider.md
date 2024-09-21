@@ -22,7 +22,7 @@ The provider module has the following functionalities:
 ## State 
 
 For clarity, the description of the the provider module state is split into features.
-For a more accurate description, check out the `x/ccv/provider/types/keys.go` file, which contains the definitions of the keys. 
+For a more accurate description, check out the `x/ccv/provider/types/keys.go` file, which contains the definitions of all the keys. 
 
 ### Consumer Lifecycle
 

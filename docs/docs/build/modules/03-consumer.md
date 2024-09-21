@@ -23,6 +23,9 @@ As a result, the misbehaving validator is punished on the provider chain.
 
 ## State 
 
+For clarity, the description of the the consumer module state is split into features.
+For a more accurate description, check out the `x/ccv/consumer/types/keys.go` file, which contains the definitions of all the keys. 
+
 ### Provider Connection
 
 #### ProviderClientID
