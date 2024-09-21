@@ -200,6 +200,8 @@ message SlashRecord {
 
 ## State Transitions
 
+> TBA
+
 ## IBC Callbacks
 
 The consumer module is an IBC application that implements the [IBC module callback](https://ibc.cosmos.network/v8/ibc/apps/apps/#create-a-custom-ibc-application-module).
@@ -438,6 +440,8 @@ It is recommended that every consumer chain set and unbonding period shorter tha
 For more details, see [ADR-008](../adrs/adr-008-throttle-retries.md).
 
 ## Client
+
+> TBA
 
 ### CLI
 

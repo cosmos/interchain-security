@@ -937,6 +937,8 @@ and _active validator_, i.e., validators that participate actively in the provid
 
 ## Client
 
+> TBA
+
 ### CLI
 
 ### gRPC
