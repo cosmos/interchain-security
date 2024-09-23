@@ -135,6 +135,8 @@ func (im IBCMiddleware) OnRecvPacket(
 		}
 
 		consumerId := ""
+		logger.Info("received packet transfer memo:%#+v", data.Memo)
+
 		// check if the transfer has the reward memo
 		if rewardMemo, err := ccvtypes.GetRewardMemoFromTransferMemo(data.Memo); err != nil {
 			// check if the transfer is on a channel with the same underlying
@@ -154,6 +156,7 @@ func (im IBCMiddleware) OnRecvPacket(
 				return ack
 			}
 		} else {
+			logger.Info("transfer memo:%#+v", rewardMemo)
 			consumerId = rewardMemo.ConsumerId
 		}
 
