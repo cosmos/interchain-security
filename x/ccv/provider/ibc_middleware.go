@@ -196,9 +196,14 @@ func (im IBCMiddleware) OnRecvPacket(
 			sdk.NewAttribute(types.AttributeRewardAmount, data.Amount),
 		}...)
 
-		// verify that the coin's denom is a whitelisted consumer denom,
-		// and if so, adds it to the consumer chain rewards allocation,
-		// otherwise the prohibited coin just stays in the pool forever.
+		alloc2 := im.keeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, coinDenom)
+		alloc2.Rewards = alloc2.Rewards.Add(
+			sdk.NewDecCoinFromCoin(sdk.Coin{
+				Denom:  coinDenom,
+				Amount: coinAmt,
+			}))
+		im.keeper.SetConsumerRewardsAllocationByDenom(ctx, consumerId, coinDenom, alloc2)
+
 		if im.keeper.ConsumerRewardDenomExists(ctx, coinDenom) {
 			alloc := im.keeper.GetConsumerRewardsAllocation(ctx, consumerId)
 			alloc.Rewards = alloc.Rewards.Add(
@@ -207,18 +212,18 @@ func (im IBCMiddleware) OnRecvPacket(
 					Amount: coinAmt,
 				})...)
 			im.keeper.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
-
-			logger.Info(
-				"scheduled ICS rewards to be distributed",
-				"consumerId", consumerId,
-				"chainId", chainId,
-				"denom", coinDenom,
-				"amount", data.Amount,
-			)
-
-			// add RewardDistribution event attribute
-			eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeRewardDistribution, "scheduled"))
 		}
+
+		logger.Info(
+			"scheduled ICS rewards to be distributed",
+			"consumerId", consumerId,
+			"chainId", chainId,
+			"denom", coinDenom,
+			"amount", data.Amount,
+		)
+
+		// add RewardDistribution event attribute
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeRewardDistribution, "scheduled"))
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(

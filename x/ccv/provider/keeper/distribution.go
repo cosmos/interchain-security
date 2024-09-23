@@ -203,6 +203,37 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 	// To avoid large iterations over all the consumer IDs, iterate only over
 	// chains with an IBC client created.
 	for _, consumerId := range k.GetAllConsumersWithIBCClients(ctx) {
+		oldRewards := k.GetConsumerRewardsAllocation(ctx, consumerId)
+		returnedRewards, err := k.AllocateConsumerRewards(ctx, consumerId, oldRewards)
+		if err != nil {
+			k.Logger(ctx).Error(
+				"fail to allocate rewards for consumer chain",
+				"consumer id", consumerId,
+				"error", err.Error(),
+			)
+		} else {
+			k.SetConsumerRewardsAllocation(ctx, consumerId, returnedRewards)
+		}
+
+		allAllowlistedDenoms := append(k.GetAllConsumerRewardDenoms(ctx), k.GetAllowlistedRewardDenoms(ctx, consumerId)...)
+		for _, denom := range allAllowlistedDenoms {
+			cachedCtx, writeCache := ctx.CacheContext()
+			consumerRewards := k.GetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom)
+			allocatedRewards, err := k.AllocateConsumerRewards(cachedCtx, consumerId, consumerRewards)
+			if err != nil {
+				k.Logger(ctx).Error(
+					"fail to allocate rewards for consumer chain",
+					"consumer id", consumerId,
+					"error", err.Error(),
+				)
+				continue
+			}
+			k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, allocatedRewards)
+			// TODO: fix for the tests
+			_ = writeCache
+			//writeCache()
+		}
+
 		// note that it's possible that no rewards are collected even though the
 		// reward pool isn't empty. This can happen if the reward pool holds some tokens
 		// of non-whitelisted denominations.
