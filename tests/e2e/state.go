@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -285,12 +286,28 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 
-	denomCondition := `total.#(denom!="stake").amount`
-	if isNativeDenom {
-		denomCondition = `total.#(denom=="stake").amount`
+	denom := "stake"
+	if !isNativeDenom {
+		denom = "ibc"
 	}
 
-	return gjson.Get(string(bz), denomCondition).Float()
+	denomCondition := fmt.Sprintf(`total.#(%%"*%s*")`, denom)
+	amount := strings.Split(gjson.Get(string(bz), denomCondition).String(), denom)[0]
+
+	fmt.Println("denomCondition:", denomCondition)
+	fmt.Println("json:", gjson.Parse(string(bz)))
+
+	res := float64(0)
+	if amount != "" {
+		res, err = strconv.ParseFloat(amount, 64)
+		if err != nil {
+			log.Fatal("failed parsing consumer reward:", err)
+		}
+	}
+
+	fmt.Println("res", res)
+
+	return res
 }
 
 // interchain-securityd query gov proposals
