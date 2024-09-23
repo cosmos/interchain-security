@@ -234,7 +234,6 @@ message MsgChangeRewardDenoms {
   repeated string denoms_to_remove = 2;
   // authority is the address of the governance account
   string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-
 }
 
 // MsgChangeRewardDenomsResponse defines response type for MsgChangeRewardDenoms messages
@@ -360,6 +359,9 @@ message MsgCreateConsumer {
   ConsumerInitializationParameters initialization_parameters = 4;
 
   PowerShapingParameters power_shaping_parameters = 5;
+
+  // allowlisted reward denoms of the consumer
+  AllowlistedRewardDenoms allowlisted_reward_denoms = 7;
 }
 
 // MsgCreateConsumerResponse defines response type for MsgCreateConsumer
@@ -388,6 +390,9 @@ message MsgUpdateConsumer {
 
   // the power-shaping parameters of the consumer when updated
   PowerShapingParameters power_shaping_parameters = 6;
+
+  // allowlisted reward denoms of the consumer (if provided they overwrite previously set reward denoms)
+  AllowlistedRewardDenoms allowlisted_reward_denoms = 7;
 }
 
 // MsgUpdateConsumerResponse defines response type for MsgUpdateConsumer messages
