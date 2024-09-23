@@ -495,7 +495,7 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("command failed: ", cmd)
-		log.Fatal("update consumer failed error: %w, output: %s", err, string(bz))
+		log.Fatalf("update consumer failed error: %s, output: %s", err, string(bz))
 	}
 
 	// Check transaction
