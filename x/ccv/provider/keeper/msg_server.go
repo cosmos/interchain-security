@@ -414,6 +414,18 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 			sdk.NewAttribute(types.AttributeConsumerSpawnTime, initializationParameters.SpawnTime.String()))
 	}
 
+	if msg.AllowlistedRewardDenoms != nil {
+		// if allowlisted denoms are provided, they overwrite the previously written ones
+		k.DeleteAllowlistedRewardDenom(ctx, consumerId)
+		for _, denom := range msg.AllowlistedRewardDenoms.Denoms {
+			k.SetAllowlistedRewardDenom(ctx, consumerId, denom)
+		}
+
+		if len(k.GetAllowlistedRewardDenoms(ctx, consumerId)) > 3 {
+			return &resp, errorsmod.Wrapf(types.ErrInvalidMsgCreateConsumer, "a consumer chain cannot allowlist more than 3 denom")
+		}
+	}
+
 	// add Phase event attribute
 	phase := k.GetConsumerPhase(ctx, consumerId)
 	eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeConsumerPhase, phase.String()))
@@ -586,6 +598,18 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
 				"prepare consumer for launch, consumerId(%s), previousSpawnTime(%s), spawnTime(%s): %s",
 				consumerId, previousSpawnTime, spawnTime, err.Error())
+		}
+	}
+
+	if msg.AllowlistedRewardDenoms != nil {
+		// if allowlisted denoms are provided, they overwrite the previously written ones
+		k.DeleteAllowlistedRewardDenom(ctx, consumerId)
+		for _, denom := range msg.AllowlistedRewardDenoms.Denoms {
+			k.SetAllowlistedRewardDenom(ctx, consumerId, denom)
+		}
+
+		if len(k.GetAllowlistedRewardDenoms(ctx, consumerId)) > 3 {
+			return &resp, errorsmod.Wrapf(types.ErrInvalidMsgCreateConsumer, "a consumer chain cannot allowlist more than 3 denom")
 		}
 	}
 
