@@ -1,8 +1,6 @@
 package main
 
-import (
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-)
+import gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
 const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"
 
@@ -176,6 +174,81 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 				},
 			},
 		},
+		// Check that consumer rewards are only distributed
+		// if they come from a consumer client associated with a consumer id.
+		//
+		// Create a second consumer client on the provider
+		{
+			Action: CreateIbcClientAction{
+				ChainA: ChainID("provi"),
+				ChainB: ChainID(consumerName),
+			},
+			State: State{},
+		},
+		// Create a second IBC connection between the 2nd consumer client
+		// and the existing provider client on the consumer
+		{
+			Action: AddIbcConnectionAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				ClientA: 1,
+				ClientB: 0, // already created during the CCV handshake
+			},
+			State: State{},
+		},
+		// Create a second IBC transfer channel
+		{
+			Action: AddIbcChannelAction{
+				ChainA:      ChainID("provi"),
+				ChainB:      ChainID(consumerName),
+				ConnectionA: 1,
+				PortA:       "transfer",
+				PortB:       "transfer",
+				Order:       "unordered",
+				Version:     "ics20-1",
+			},
+			State: State{},
+		},
+		// Transfer tokens from the consumer to the consumer reward pool
+		// of the provider via the 2nd transfer channel
+		{
+			Action: TransferIbcTokenAction{
+				Chain:   ChainID(consumerName),
+				From:    ValidatorID("carol"),
+				DstAddr: "cosmos1ap0mh6xzfn8943urr84q6ae7zfnar48am2erhd", // consumer reward pool address
+				Amount:  1000000,
+				Channel: 2,                                     // new transfer channel
+				Memo:    "consumer chain rewards distribution", // use old memo
+			},
+			State: State{},
+		},
+		// Relay the transfer packet from the second transfer
+		// channel and check that tokens are not distributed
+		// since the packet isn't associated to a consumer id
+		{
+			Action: RelayRewardPacketsToProviderAction{
+				ConsumerChain: ChainID(consumerName),
+				ProviderChain: ChainID("provi"),
+				Port:          "transfer",
+				Channel:       2,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+
+					Rewards: &Rewards{
+						IsRewarded: map[ValidatorID]bool{
+							ValidatorID("alice"): false,
+							ValidatorID("bob"):   false,
+							ValidatorID("carol"): false,
+						},
+						IsIncrementalReward: false,
+						IsNativeDenom:       false,
+					},
+				},
+			},
+		},
+		// Relay pending consumer rewards sent via the 1st transfer channel
+		// and check that they are distributed to the validators.
 		{
 			Action: RelayRewardPacketsToProviderAction{
 				ConsumerChain: ChainID(consumerName),
@@ -185,9 +258,9 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 			},
 			State: State{
 				ChainID("provi"): ChainState{
-					// Check that ARE NOT minted and sent to provider chain and distributed to validators and their delegators on provider chain
-					// the tokens are not sent because the test configuration does not allow sending tokens
 					Rewards: &Rewards{
+						// expectRegisteredRewardDistribution == true
+						// expect "provi" validators to get rewards from "democ"
 						IsRewarded: map[ValidatorID]bool{
 							ValidatorID("alice"): expectRegisteredRewardDistribution,
 							ValidatorID("bob"):   expectRegisteredRewardDistribution,

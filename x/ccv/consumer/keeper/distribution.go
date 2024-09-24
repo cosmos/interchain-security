@@ -125,6 +125,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 	if err != nil {
 		return err
 	}
+
 	// iterate over all whitelisted reward denoms
 	for _, denom := range k.AllowedRewardDenoms(ctx) {
 		// get the balance of the denom in the toSendToProviderTokens address
