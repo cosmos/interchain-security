@@ -196,22 +196,33 @@ func (im IBCMiddleware) OnRecvPacket(
 			sdk.NewAttribute(types.AttributeRewardAmount, data.Amount),
 		}...)
 
-		alloc2 := im.keeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, coinDenom)
-		alloc2.Rewards = alloc2.Rewards.Add(
+		alloc, err := im.keeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, coinDenom)
+		if err != nil {
+			logger.Error(
+				"cannot get consumer rewards by denom",
+				"consumerId", consumerId,
+				"packet", packet.String(),
+				"fungibleTokenPacketData", data.String(),
+				"denom", coinDenom,
+				"error", err.Error(),
+			)
+		}
+
+		alloc.Rewards = alloc.Rewards.Add(
 			sdk.NewDecCoinFromCoin(sdk.Coin{
 				Denom:  coinDenom,
 				Amount: coinAmt,
 			}))
-		im.keeper.SetConsumerRewardsAllocationByDenom(ctx, consumerId, coinDenom, alloc2)
-
-		if im.keeper.ConsumerRewardDenomExists(ctx, coinDenom) {
-			alloc := im.keeper.GetConsumerRewardsAllocation(ctx, consumerId)
-			alloc.Rewards = alloc.Rewards.Add(
-				sdk.NewDecCoinsFromCoins(sdk.Coin{
-					Denom:  coinDenom,
-					Amount: coinAmt,
-				})...)
-			im.keeper.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
+		err = im.keeper.SetConsumerRewardsAllocationByDenom(ctx, consumerId, coinDenom, alloc)
+		if err != nil {
+			logger.Error(
+				"cannot set consumer rewards by denom",
+				"consumerId", consumerId,
+				"packet", packet.String(),
+				"fungibleTokenPacketData", data.String(),
+				"denom", coinDenom,
+				"error", err.Error(),
+			)
 		}
 
 		logger.Info(

@@ -681,67 +681,6 @@ func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, consumerId string) {
 	store.Delete(types.ConsumerIdToClientIdKey(consumerId))
 }
 
-// GetAllowlistedRewardDenoms returns the allowlisted reward denom for the given consumer id.
-func (k Keeper) GetAllowlistedRewardDenoms(ctx sdk.Context, consumerId string) []string {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerIdToAllowlistedRewardDenomKey(consumerId))
-	if bz == nil {
-		return []string{}
-	}
-
-	var denoms types.AllowlistedRewardDenoms
-	if err := denoms.Unmarshal(bz); err != nil {
-		// An error here would indicate something is very wrong,
-		// the PendingVSCPackets are assumed to be correctly serialized in AppendPendingVSCPackets.
-		panic(fmt.Errorf("cannot unmarshal pending validator set changes: %w", err))
-	}
-	return denoms.Denoms
-}
-
-// SetAllowlistedRewardDenom sets the allowlisted reward denom for the given consumer id.
-func (k Keeper) SetAllowlistedRewardDenom(ctx sdk.Context, consumerId string, denom string) error {
-	denoms := k.GetAllowlistedRewardDenoms(ctx, consumerId)
-	// TODO: check nil and so on
-	denoms = append(denoms, denom)
-	store := ctx.KVStore(k.storeKey)
-	dDenoms := types.AllowlistedRewardDenoms{Denoms: denoms}
-	bz, err := dDenoms.Marshal()
-	if err != nil {
-		return err
-	}
-	store.Set(types.ConsumerIdToAllowlistedRewardDenomKey(consumerId), bz)
-	return nil
-}
-
-// DeleteAllowlistedRewardDenom deletes the allowlisted reward denom for the given consumer id.
-func (k Keeper) DeleteAllowlistedRewardDenom(ctx sdk.Context, consumerId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerIdToAllowlistedRewardDenomKey(consumerId))
-}
-
-// GetConsumerRewardsAllocationByDenom returns the consumer rewards allocation for the given consumer id and denom
-func (k Keeper) GetConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId string, denom string) (pool types.ConsumerRewardsAllocation) {
-	store := ctx.KVStore(k.storeKey)
-	b := store.Get(types.ConsumerRewardsAllocationByDenomKey(consumerId, denom))
-	k.cdc.MustUnmarshal(b, &pool)
-	return
-}
-
-// SetConsumerRewardsAllocationByDenom sets the consumer rewards allocation for the given consumer id and denom
-func (k Keeper) SetConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId string, denom string, pool types.ConsumerRewardsAllocation) {
-	store := ctx.KVStore(k.storeKey)
-	b := k.cdc.MustMarshal(&pool) // why is this MUST MARSHALLL??
-	store.Set(types.ConsumerRewardsAllocationByDenomKey(consumerId, denom), b)
-}
-
-// DeleteConsumerRewardsAllocationByDenom deletes the consumer rewards allocation for the given consumer id and denom
-func (k Keeper) DeleteConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId string, denom string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerRewardsAllocationByDenomKey(consumerId, denom))
-}
-
-///
-
 // SetSlashLog updates validator's slash log for a consumer chain
 // If an entry exists for a given validator address, at least one
 // double signing slash packet was received by the provider from at least one consumer chain

@@ -19,6 +19,8 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
+const MaxAllowlistedRewardDenomsPerChain = 3
+
 type msgServer struct {
 	*Keeper
 }
@@ -415,14 +417,15 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	}
 
 	if msg.AllowlistedRewardDenoms != nil {
-		// if allowlisted denoms are provided, they overwrite the previously written ones
-		k.DeleteAllowlistedRewardDenom(ctx, consumerId)
-		for _, denom := range msg.AllowlistedRewardDenoms.Denoms {
-			k.SetAllowlistedRewardDenom(ctx, consumerId, denom)
+		if len(msg.AllowlistedRewardDenoms.Denoms) > MaxAllowlistedRewardDenomsPerChain {
+			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
+				fmt.Sprintf("a consumer chain cannot allowlist more than %d reward denoms", MaxAllowlistedRewardDenomsPerChain))
 		}
 
-		if len(k.GetAllowlistedRewardDenoms(ctx, consumerId)) > 3 {
-			return &resp, errorsmod.Wrapf(types.ErrInvalidMsgCreateConsumer, "a consumer chain cannot allowlist more than 3 denom")
+		err := k.UpdateAllowlistedRewardDenoms(ctx, consumerId, msg.AllowlistedRewardDenoms.Denoms)
+		if err != nil {
+			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
+				"cannot update allowlisted reward denoms: %s", err.Error())
 		}
 	}
 
@@ -602,14 +605,14 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	}
 
 	if msg.AllowlistedRewardDenoms != nil {
-		// if allowlisted denoms are provided, they overwrite the previously written ones
-		k.DeleteAllowlistedRewardDenom(ctx, consumerId)
-		for _, denom := range msg.AllowlistedRewardDenoms.Denoms {
-			k.SetAllowlistedRewardDenom(ctx, consumerId, denom)
+		if len(msg.AllowlistedRewardDenoms.Denoms) > MaxAllowlistedRewardDenomsPerChain {
+			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
+				fmt.Sprintf("a consumer chain cannot allowlist more than %d reward denoms", MaxAllowlistedRewardDenomsPerChain))
 		}
 
-		if len(k.GetAllowlistedRewardDenoms(ctx, consumerId)) > 3 {
-			return &resp, errorsmod.Wrapf(types.ErrInvalidMsgCreateConsumer, "a consumer chain cannot allowlist more than 3 denom")
+		if err := k.UpdateAllowlistedRewardDenoms(ctx, consumerId, msg.AllowlistedRewardDenoms.Denoms); err != nil {
+			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
+				"cannot update allowlisted reward denoms: %s", err.Error())
 		}
 	}
 

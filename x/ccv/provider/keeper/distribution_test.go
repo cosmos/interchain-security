@@ -377,3 +377,62 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 	require.Equal(t, commissionRate, cr)
 	require.True(t, found)
 }
+
+// TestAllowlistedRewardDenoms tests the `GetAllowlistedRewardDenoms`, `SetAllowlistedRewardDenom`,
+// `UpdateAllowlistedRewardDenoms` and `DeleteAllowlistedRewardDenom` methods.
+func TestAllowlistedRewardDenoms(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+	denoms, err := providerKeeper.GetAllowlistedRewardDenoms(ctx, consumerId)
+	require.Empty(t, denoms)
+	require.NoError(t, err)
+
+	denomsToSet := []string{"denom1", "denom2", "denom3"}
+	providerKeeper.SetAllowlistedRewardDenom(ctx, consumerId, "denom1")
+	providerKeeper.SetAllowlistedRewardDenom(ctx, consumerId, "denom2")
+	providerKeeper.SetAllowlistedRewardDenom(ctx, consumerId, "denom3")
+
+	denoms, err = providerKeeper.GetAllowlistedRewardDenoms(ctx, consumerId)
+	require.Equal(t, denomsToSet, denoms)
+	require.NoError(t, err)
+
+	updatedDenoms := []string{"updatedDenom1", "updatedDenom2"}
+	err = providerKeeper.UpdateAllowlistedRewardDenoms(ctx, consumerId, updatedDenoms)
+	require.NoError(t, err)
+	denoms, err = providerKeeper.GetAllowlistedRewardDenoms(ctx, consumerId)
+	require.Equal(t, updatedDenoms, denoms)
+	require.NoError(t, err)
+
+	providerKeeper.DeleteAllowlistedRewardDenom(ctx, consumerId)
+	denoms, err = providerKeeper.GetAllowlistedRewardDenoms(ctx, consumerId)
+	require.Empty(t, denoms)
+	require.NoError(t, err)
+}
+
+// TestConsumerRewardsAllocationByDenom tests the `*ConsumerRewardsAllocationByDenom* methods
+func TestConsumerRewardsAllocationByDenom(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+	denom := "denom"
+	rewards, err := providerKeeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, denom)
+	require.Empty(t, rewards.Rewards)
+	require.NoError(t, err)
+
+	rewardAllocation := providertypes.ConsumerRewardsAllocation{
+		Rewards: sdk.NewDecCoins(sdk.NewDecCoin("uatom", math.NewInt(1000))),
+	}
+
+	err = providerKeeper.SetConsumerRewardsAllocationByDenom(ctx, consumerId, denom, rewardAllocation)
+	rewards, err = providerKeeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, denom)
+	require.Equal(t, rewardAllocation, rewards)
+	require.NoError(t, err)
+
+	providerKeeper.DeleteConsumerRewardsAllocationByDenom(ctx, consumerId, denom)
+	rewards, err = providerKeeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, denom)
+	require.Empty(t, rewards.Rewards)
+	require.NoError(t, err)
+}

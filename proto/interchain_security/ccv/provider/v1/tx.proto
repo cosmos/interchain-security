@@ -234,6 +234,7 @@ message MsgChangeRewardDenoms {
   repeated string denoms_to_remove = 2;
   // authority is the address of the governance account
   string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
 }
 
 // MsgChangeRewardDenomsResponse defines response type for MsgChangeRewardDenoms messages
