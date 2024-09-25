@@ -155,10 +155,10 @@ func (tr Chain) GetRewards(chain ChainID, modelState Rewards) Rewards {
 		currentBlock = 1
 	}
 	for k := range modelState.IsRewarded {
-		receivedRewards[k] = tr.target.GetReward(chain, k, nextBlock, modelState.IsNativeDenom) > tr.target.GetReward(chain, k, currentBlock, modelState.IsNativeDenom)
+		receivedRewards[k] = tr.target.GetReward(chain, k, nextBlock, modelState.Denom) > tr.target.GetReward(chain, k, currentBlock, modelState.Denom)
 	}
 
-	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, IsNativeDenom: modelState.IsNativeDenom}
+	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, Denom: modelState.Denom}
 }
 
 func (tr Chain) GetConsumerAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
@@ -253,7 +253,7 @@ func (tr Commands) GetBlockHeight(chain ChainID) uint {
 	return uint(blockHeight)
 }
 
-func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
+func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, denom string) float64 {
 	valCfg := tr.validatorConfigs[validator]
 	delAddresss := valCfg.DelAddress
 	if chain != ChainID("provi") {
@@ -284,11 +284,6 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 	if err != nil {
 		log.Println("running cmd: ", cmd)
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
-	}
-
-	denom := "stake"
-	if !isNativeDenom {
-		denom = "ibc"
 	}
 
 	denomCondition := fmt.Sprintf(`total.#(%%"*%s*")`, denom)

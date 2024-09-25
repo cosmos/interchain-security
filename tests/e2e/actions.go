@@ -2536,14 +2536,14 @@ func (tr Chain) registerRepresentative(
 
 type SubmitChangeRewardDenomsProposalAction struct {
 	Chain   ChainID
-	Denom   string
+	Denoms  []string
 	Deposit uint
 	From    ValidatorID
 }
 
 func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
 	changeRewMsg := types.MsgChangeRewardDenoms{
-		DenomsToAdd:    []string{action.Denom},
+		DenomsToAdd:    action.Denoms,
 		DenomsToRemove: []string{"stake"},
 		Authority:      "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
 	}
@@ -2604,7 +2604,7 @@ func (tr Chain) submitChangeRewardDenomsLegacyProposal(action SubmitChangeReward
 		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
 			Title:          "Change reward denoms",
 			Description:    "Change reward denoms",
-			DenomsToAdd:    []string{action.Denom},
+			DenomsToAdd:    action.Denoms,
 			DenomsToRemove: []string{"stake"},
 		},
 		Deposit: fmt.Sprint(action.Deposit) + `stake`,
@@ -3378,7 +3378,7 @@ func (tr Chain) transferIbcToken(
 		fmt.Sprint(action.Amount)+`stake`,
 		action.Memo,
 		action.From,
-		string(tr.testConfig.chainConfigs[action.Chain].ConsumerId),
+		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
 		tr.getValidatorHome(action.Chain, action.From),
 		tr.getValidatorNode(action.Chain, action.From),
 		gas,

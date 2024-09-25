@@ -149,8 +149,8 @@ func (im IBCMiddleware) OnRecvPacket(
 						"fungibleTokenPacketData", data.String(),
 						"error", err.Error(),
 					)
-
 				}
+
 				return ack
 			}
 		} else {
