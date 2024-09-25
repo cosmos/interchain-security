@@ -14,7 +14,6 @@ import (
 // * creates a transfer channel between the two chains
 // * transitions the standalone chain to a consumer chain
 // * confirms that no extra transfer channel is created, thus only one transfer channel and one CCV channel exist.
-// testing
 func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 
