@@ -461,9 +461,6 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 			continue
 		}
 
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		// write cache
 		writeFn()
 
@@ -589,15 +586,13 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 
 	for _, prop := range propsToExecute {
 		// stop consumer chain in a cached context to handle errors
-		cachedCtx, writeFn, err := k.StopConsumerChainInCachedCtx(ctx, prop)
+		_, writeFn, err := k.StopConsumerChainInCachedCtx(ctx, prop)
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer chain could not be stopped: %w", err)
 			continue
 		}
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
+
 		// write cache
 		writeFn()
 

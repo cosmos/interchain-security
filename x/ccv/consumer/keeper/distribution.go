@@ -34,9 +34,6 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	if err := k.SendRewardsToProvider(cachedCtx); err != nil {
 		k.Logger(ctx).Error("attempt to sent rewards to provider failed", "error", err)
 	} else {
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		// write cache
 		writeCache()
 	}
