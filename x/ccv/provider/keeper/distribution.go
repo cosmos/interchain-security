@@ -314,7 +314,15 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 				)
 				continue
 			}
-			k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, allocatedRewards)
+			err = k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, allocatedRewards)
+			if err != nil {
+				k.Logger(ctx).Error(
+					"fail to set rewards for consumer chain",
+					"consumer id", consumerId,
+					"error", err.Error(),
+				)
+				continue
+			}
 			writeCache()
 		}
 	}
