@@ -937,10 +937,1149 @@ and _active validator_, i.e., validators that participate actively in the provid
 
 ## Client
 
-> TBA
-
 ### CLI
 
+A user can interact with the `provider` module using the CLI.
+
+#### Query
+
+The `query` commands allow users to query `provider` state.
+
+```bash
+simd query provider --help
+```
+
+##### Consumer Genesis
+The `consumer-genesis` command allows to query for consumer chain genesis state by consumer id
+
+```bash
+interchain-security-pd query provider consumer-genesis [consumer-id] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider consumer-genesis 0
+```
+
+Example Output:
+
+```bash
+new_chain: true
+params:
+  blocks_per_distribution_transmission: "1000"
+  ccv_timeout_period: 2419200s
+  consumer_id: "0"
+  consumer_redistribution_fraction: "0.75"
+  distribution_transmission_channel: ""
+  enabled: true
+  historical_entries: "10000"
+  provider_fee_pool_addr_str: ""
+  provider_reward_denoms: []
+  retry_delay_period: 3600s
+  reward_denoms: []
+  soft_opt_out_threshold: "0"
+  transfer_timeout_period: 3600s
+  unbonding_period: 1209600s
+provider:
+  client_state:
+    allow_update_after_expiry: false
+    allow_update_after_misbehaviour: false
+    chain_id: provider
+    frozen_height:
+      revision_height: "0"
+      revision_number: "0"
+    latest_height:
+      revision_height: "25"
+      revision_number: "0"
+    max_clock_drift: 10s
+    proof_specs:
+    - inner_spec:
+        child_order:
+        - 0
+        - 1
+        child_size: 33
+        empty_child: null
+        hash: SHA256
+        max_prefix_length: 12
+        min_prefix_length: 4
+      leaf_spec:
+        hash: SHA256
+        length: VAR_PROTO
+        prefix: AA==
+        prehash_key: NO_HASH
+        prehash_value: SHA256
+      max_depth: 0
+      min_depth: 0
+      prehash_key_before_comparison: false
+    - inner_spec:
+        child_order:
+        - 0
+        - 1
+        child_size: 32
+        empty_child: null
+        hash: SHA256
+        max_prefix_length: 1
+        min_prefix_length: 1
+      leaf_spec:
+        hash: SHA256
+        length: VAR_PROTO
+        prefix: AA==
+        prehash_key: NO_HASH
+        prehash_value: SHA256
+      max_depth: 0
+      min_depth: 0
+      prehash_key_before_comparison: false
+    trust_level:
+      denominator: "3"
+      numerator: "1"
+    trusting_period: 1197504s
+    unbonding_period: 1814400s
+    upgrade_path:
+    - upgrade
+    - upgradedIBCState
+  consensus_state:
+    next_validators_hash: 632730A03DEF630F77B61DF4092629007AE020B789713158FABCB104962FA54F
+    root:
+      hash: Jcck4b/HHJOcjcVjTdMi8qHB4SeCpWpfLiN9DtB99oA=
+    timestamp: "2024-09-25T09:18:40.262655625Z"
+  initial_val_set:
+  - power: "500"
+    pub_key:
+      ed25519: RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10=
+  - power: "500"
+    pub_key:
+      ed25519: Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=
+  - power: "500"
+    pub_key:
+      ed25519: mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI=
+```
+
+##### List Consumer Chains
+The `list-consumer-chains` command allows to query consumer chains for provider chain.
+An optional integer parameter can be passed for phase filtering of consumer chains,
+		(Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5).`
+
+```bash
+interchain-security-pd query provider list-consumer-chains [phase] [limit] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider list-consumer-chains 3
+```
+
+Example Output:
+
+```
+chains:
+- allow_inactive_vals: true
+  allowlist: []
+  chain_id: pion-1
+  client_id: 07-tendermint-0
+  consumer_id: "0"
+  denylist: ["cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"]
+  metadata:
+    description: description of your chain and all other relevant information
+    metadata: some metadata about your chain
+    name: pion-1
+  min_power_in_top_N: "500"
+  min_stake: "0"
+  phase: CONSUMER_PHASE_LAUNCHED
+  top_N: 60
+  validator_set_cap: 0
+  validators_power_cap: 0
+pagination:
+  next_key: null
+  total: "1"
+```
+
+##### Validator Consumer Key Assignment
+The `validator-consumer-key` command allows to query assigned validator consensus public key for a consumer chain
+
+```bash
+interchain-security-pd query provider validator-consumer-key [consumerId] [provider-validator-address] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider validator-consumer-key 3 cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6
+```
+
+##### Validator Provider Key
+The `validator-provider-key` command allows to query validator consensus public key for the provider chain
+
+
+```bash
+interchain-security-pd query provider validator-provider-key [consumer-id] [consumer-validator-address] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider validator-provider-key 0 cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6
+```
+
+
+Example Output:
+ 
+ ```bash
+consumer_address: cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk
+```
+
+##### Throttle State
+The `throttle-state` command allows to query on-chain state relevant to slash packet throttling
+
+
+```bash
+interchain-security-pd query provider throttle-state [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider throttle-state
+```
+
+Example Output:
+
+```bash
+next_replenish_candidate: "2024-09-26T07:59:51.336971970Z"
+slash_meter: "1500"
+slash_meter_allowance: "1511"
+```
+
+##### Registered Consumer Reward Denoms
+The `registered-consumer-reward-denoms` command allows to query registered consumer reward denoms
+
+```bash
+interchain-security-pd query provider registered-consumer-reward-denoms [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider registered-consumer-reward-denoms
+```
+
+Example Output:
+
+```bash
+denoms:
+- ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9
+- ibc/D549749C93524DA1831A4B3C850DFC1BA9060261BEDFB224B3B0B4744CD77A70
+```
+
+##### All Pairs Valconsensus Address
+The `all-pairs-valconsensus-address` command allows to query all pairs of valconsensus address by consumer ID.
+
+```bash
+interchain-security-pd query provider all-pairs-valconsensus-address [consumer-id] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider all-pairs-valconsensus-address [consumer-id]
+```
+
+```bash
+interchain-security-pd query provider all-pairs-valconsensus-address 0
+```
+
+Example Output:
+
+```
+pair_val_con_addr:
+- consumer_address: cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk
+  consumer_key:
+    ed25519: Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=
+  provider_address: cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6
+```
+
+##### Provider Parameters
+The `params` command allows to query provider parameters information
+
+```bash
+interchain-security-pd query provider params [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider params
+```
+
+Example Output:
+
+```bash
+blocks_per_epoch: "3"
+ccv_timeout_period: 2419200s
+consumer_reward_denom_registration_fee:
+  amount: "10000000"
+  denom: stake
+max_provider_consensus_validators: "180"
+number_of_epochs_to_start_receiving_rewards: "24"
+slash_meter_replenish_fraction: "1.0"
+slash_meter_replenish_period: 3600s
+template_client:
+  allow_update_after_expiry: false
+  allow_update_after_misbehaviour: false
+  chain_id: ""
+  frozen_height:
+    revision_height: "0"
+    revision_number: "0"
+  latest_height:
+    revision_height: "0"
+    revision_number: "0"
+  max_clock_drift: 10s
+  proof_specs:
+  - inner_spec:
+      child_order:
+      - 0
+      - 1
+      child_size: 33
+      empty_child: null
+      hash: SHA256
+      max_prefix_length: 12
+      min_prefix_length: 4
+    leaf_spec:
+      hash: SHA256
+      length: VAR_PROTO
+      prefix: AA==
+      prehash_key: NO_HASH
+      prehash_value: SHA256
+    max_depth: 0
+    min_depth: 0
+    prehash_key_before_comparison: false
+  - inner_spec:
+      child_order:
+      - 0
+      - 1
+      child_size: 32
+      empty_child: null
+      hash: SHA256
+      max_prefix_length: 1
+      min_prefix_length: 1
+    leaf_spec:
+      hash: SHA256
+      length: VAR_PROTO
+      prefix: AA==
+      prehash_key: NO_HASH
+      prehash_value: SHA256
+    max_depth: 0
+    min_depth: 0
+    prehash_key_before_comparison: false
+  trust_level:
+    denominator: "3"
+    numerator: "1"
+  trusting_period: 0s
+  unbonding_period: 0s
+  upgrade_path:
+  - upgrade
+  - upgradedIBCState
+trusting_period_fraction: "0.66"
+```
+
+##### Consumer Opted In Validators
+The `consumer-opted-in-validators` command allows to query opted-in validators for a given consumer chain
+
+```bash
+interchain-security-pd query provider consumer-opted-in-validators [consumer-id] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider consumer-opted-in-validators 0
+```
+
+Example Output:
+
+```bash
+validators_provider_addresses:
+- cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq
+- cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39
+- cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6
+```
+
+##### Consumer Validators
+The `consumer-validators` command allows to query the last set consumer-validator set for a given consumer chain
+
+```bash
+interchain-security-pd query provider consumer-validators [consumer-id] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider consumer-validators 0
+```
+
+Example Output:
+
+```
+validators:
+- consumer_commission_rate: "0.100000000000000000"
+  consumer_key:
+    ed25519: RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10=
+  consumer_power: "511"
+  description:
+    details: ""
+    identity: ""
+    moniker: validatoralice
+    security_contact: ""
+    website: ""
+  jailed: false
+  power: "0"
+  provider_address: cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq
+  provider_commission_rate: "0.100000000000000000"
+  provider_operator_address: cosmosvaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtrgtng
+  provider_power: "511"
+  provider_tokens: "511000000"
+  rate: "0.000000000000000000"
+  status: BOND_STATUS_BONDED
+  validates_current_epoch: true
+- consumer_commission_rate: "0.100000000000000000"
+  consumer_key:
+    ed25519: mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI=
+  consumer_power: "500"
+  description:
+    details: ""
+    identity: ""
+    moniker: validatorbob
+    security_contact: ""
+    website: ""
+  jailed: false
+  power: "0"
+  provider_address: cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39
+  provider_commission_rate: "0.100000000000000000"
+  provider_operator_address: cosmosvaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qakmjnw
+  provider_power: "500"
+  provider_tokens: "500000000"
+  rate: "0.000000000000000000"
+  status: BOND_STATUS_BONDED
+  validates_current_epoch: true
+```
+
+##### Has to Validate
+The `has-to-validate` command allows to query the consumer chains list a given validator has to validate
+
+```bash
+interchain-security-pd query provider has-to-validate [provider-validator-address] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider has-to-validate cosmoscons1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+```
+
+Example Output:
+
+```
+consumer_ids:
+- "0"
+- "2"
+```
+
+##### Validator Consumer Commission Rate
+The `validator-consumer-commission-rate` command allows to query the consumer commission rate a validator charges on a consumer chain
+
+```bash
+interchain-security-pd query provider validator-consumer-commission-rate [consumer-id] [provider-validator-address] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider validator-consumer-commission-rate 3 cosmoscons1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+```
+
+Example Output:
+
+```bash
+rate: "0.750000000000000000"
+```
+
+##### Blocks Until Next Epoch
+The `blocks-until-next-epoch` command allows to query the number of blocks until the next epoch begins and validator updates are sent to consumer chains
+
+```bash
+interchain-security-pd query provider blocks-until-next-epoch [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider blocks-until-next-epoch
+```
+
+Example Output:
+
+```bash
+blocks_until_next_epoch: "286"
+```
+
+##### Consumer Id From Client Id
+The `consumer-id-from-client-id` command allows to query the consumer id of the chain associated with the provided client id
+
+```bash
+interchain-security-pd query provider consumer-id-from-client-id [client-id] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider consumer-id-from-client-id 07-tendermint-0
+```
+
+Example Output:
+
+```bash
+consumer_id: "0"
+```
+
+##### Consumer Chain
+The `consumer-chain` command allows to query the consumer chain associated with the consumer id
+
+```bash
+interchain-security-pd query provider consumer-chain [consumer-id] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd query provider consumer-chain 0
+```
+
+```bash
+chain_id: pion-1
+consumer_id: "0"
+init_params:
+  binary_hash: YmluX2hhc2g=
+  blocks_per_distribution_transmission: "1000"
+  ccv_timeout_period: 2419200s
+  consumer_redistribution_fraction: "0.75"
+  distribution_transmission_channel: ""
+  genesis_hash: Z2VuX2hhc2g=
+  historical_entries: "10000"
+  initial_height:
+    revision_height: "1"
+    revision_number: "0"
+  spawn_time: "2024-09-26T06:55:14.616054Z"
+  transfer_timeout_period: 3600s
+  unbonding_period: 1209600s
+metadata:
+    description: description of your chain and all other relevant information
+    metadata: some metadata about your chain
+    name: pion-1
+owner_address: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
+phase: CONSUMER_PHASE_LAUNCHED
+power_shaping_params:
+  allow_inactive_vals: false
+  allowlist: []
+  denylist: []
+  min_stake: "0"
+  top_N: 100
+  validator_set_cap: 0
+  validators_power_cap: 0
+```
+
+#### Transactions
+
+The `tx` commands allows users to interact with the `provider` module.
+
+```bash
+simd tx provider --help
+```
+
+##### Assign Consumer Key
+
+The `assign-consensus-key` command allows to assign a consensus public key to use for a consumer chain.
+
+```bash
+interchain-security-pd tx provider assign-consensus-key [consumer-id] [consumer-pubkey] [flags]
+```
+
+Example
+
+```bash
+interchain-security-pd tx provider assign-consensus-key 3 \
+  '{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}' \
+  --chain-id provider  \
+  --from mykey \
+   --gas="auto" \
+  --gas-adjustment="1.2" \
+  --gas-prices="0.025stake" \
+  --from=mykey
+```
+
+Note that the consumer pubkey can be obtained by using `interchain-security-cd tendermint show-validator` command.
+
+##### Create Consumer
+
+The `create-consumer` command allows to create a consumer chain.
+
+```bash
+interchain-security-pd tx provider create-consumer [consumer-parameters] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd tx provider create-consumer path/to/create-consumer-msg.json \
+  --chain-id provider  \
+  --from mykey \
+   --gas="auto" \
+  --gas-adjustment="1.2" \
+  --gas-prices="0.025stake" \
+  --from=mykey
+```
+where `create-consumer-msg.json` contains:
+
+```json
+{
+	"chain_id" : "pion-1",                  
+	"metadata": {
+        "name": "pion-1",
+        "description":"description of your chain and all other relevant information",
+        "metadata": "some metadata about your chain"
+    }
+}
+```
+
+##### Update Consumer
+
+The `update-consumer` command allows to update a consumer chain.
+
+```bash
+interchain-security-pd tx provider update-consumer [consumer-parameters] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd tx provider update-consumer path/to/update-consumer.json \
+  --chain-id provider  \
+  --from mykey \
+   --gas="auto" \
+  --gas-adjustment="1.2" \
+  --gas-prices="0.025stake" \
+  --from=mykey
+```
+
+where `update-consumer-msg.json` contains:
+
+```json
+{
+	"consumer_id" : "0",
+    "owner_address": "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s",                  
+	"metadata": {
+        "name": "pion-1",
+        "description":"description of your chain and all other relevant information",
+        "metadata": "some metadata about your"
+    },
+    "initialization_parameters":{
+        "initial_height":{
+            "revision_number": 0,
+            "revision_height": 1
+           },
+        "genesis_hash":"2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
+        "binary_hash": "6EF05C2F38BE62A833E5AB51EBF3BA72D1BC1664D7E4A2E3253DA54BE07CF38A",
+        "spawn_time": "2024-09-29T12:57:43Z",
+        "unbonding_period":"2419200s",
+        "ccv_timeout_period": "2419200s",
+        "transfer_timeout_period": "3600s",
+        "consumer_redistribution_fraction": "0.75",
+        "blocks_per_distribution_transmission": "1500",
+        "historical_entries":"1000",
+        "distribution_transmission_channel": ""
+    },
+    "power_shaping_parameters":{
+        "top_N":50,
+        "validators_power_cap":50,
+        "validator_set_cap":50,
+        "allowlist":["cosmosvalcons1l9qq4m300z8c5ez86ak2mp8znftewkwgjlxh88"],
+        "denylist":[],
+        "min_stake": "1000",
+        "allow_inactive_vals":true
+    }
+}
+```
+
+##### Remove Consumer
+
+The `remove-consumer` command allows to remove a consumer chain.
+
+```bash
+interchain-security-pd tx provider remove-consumer [consumer-id] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd tx provider remove-consumer 3
+```
+
+##### Opt In
+
+The `opt-in` command allows a validator to opt in to a consumer chain and optionally set a consensus public key.
+
+```bash
+interchain-security-pd tx provider opt-in [consumer-id] [consumer-pubkey] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd tx provider opt-in 3 \
+  '{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}' \
+  --chain-id provider  \
+  --from mykey \
+   --gas="auto" \
+  --gas-adjustment="1.2" \
+  --gas-prices="0.025stake" \
+  --from=mykey
+```
+
+##### Opt Out
+
+The `opt-out` command allows a validator to opt in to a consumer chain and optionally set a consensus public key.
+
+```bash
+interchain-security-pd tx provider opt-out [consumer-id] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd tx provider opt-out 3 \
+  --chain-id provider  \
+  --from mykey \
+   --gas="auto" \
+  --gas-adjustment="1.2" \
+  --gas-prices="0.025stake" \
+  --from=mykey
+```
+
+##### Set Consumer Commission Rate
+
+The `set-consumer-commission-rate` command allows to set a per-consumer chain commission rate.
+
+```bash
+interchain-security-pd tx provider set-consumer-commission-rate [consumer-id] [commission-rate] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd tx provider set-consumer-commission-rate 3 0.5 \
+  --chain-id provider  \
+  --from mykey \
+   --gas="auto" \
+  --gas-adjustment="1.2" \
+  --gas-prices="0.025stake" \
+  --from=mykey
+```
+
+##### Submit Consumer Double Voting
+
+The `submit-consumer-double-voting` command allows to submit a double voting evidence for a consumer chain.
+
+```bash
+interchain-security-pd tx provider submit-consumer-double-voting [consumer-id] [evidence] [infraction_header] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd tx provider submit-consumer-double-voting 3 path/to/evidence.json path/to/infraction_header.json \
+  --chain-id provider  \
+  --from mykey \
+   --gas="auto" \
+  --gas-adjustment="1.2" \
+  --gas-prices="0.025stake" \
+  --from=mykey
+```
+
+where `evidence.json` contains:
+
+```json
+{
+  "vote_a": {
+    "type": "SIGNED_MSG_TYPE_PREVOTE",
+    "height": "59",
+    "round": 0,
+    "block_id": {
+      "hash": "paTPgLrLCZmw5ctQWlaMLJhXLckafakKN9skJbTiCHA=",
+      "part_set_header": {
+        "total": 1,
+        "hash": "pVOTT8MO00rk0HAeVQgzdP3wjIOzN5X5tfPLTtXIn2g="
+      }
+    },
+    "timestamp": "2024-09-26T09:34:47.146234009Z",
+    "validator_address": "mb06cu8SzQJOdYSzrJAK43Q8at8=",
+    "validator_index": 1,
+    "signature": "Z9C1oU5AEyFqXVmQ0LKNlaVa+tGh++95EB5HYe0i61PlREOmo/OTLlWedr8kuAThBu/1CpaLz446hYjISAKqBQ==",
+    "extension": null,
+    "extension_signature": null
+  },
+  "vote_b": {
+    "type": "SIGNED_MSG_TYPE_PREVOTE",
+    "height": "59",
+    "round": 0,
+    "block_id": {
+      "hash": "07tksQsQ0gVBphgP4eeyGII9tEaLUuCauQcmwar9ktk=",
+      "part_set_header": {
+        "total": 1,
+        "hash": "nND/ClxCtoSJ9fC7Jyy884ab+nDh+PnHwI28T2fELCE="
+      }
+    },
+    "timestamp": "2024-09-26T09:34:47.051976301Z",
+    "validator_address": "mb06cu8SzQJOdYSzrJAK43Q8at8=",
+    "validator_index": 1,
+    "signature": "QscqC9ilH4gL7+3GPqLMWly+UkO+p0JgcinDZtfHOM4fYosZhx+TzhLrrXNExYpwX3D8qQHmJlLCcXLqbo7aCA==",
+    "extension": null,
+    "extension_signature": null
+  },
+  "total_voting_power": "1500",
+  "validator_power": "500",
+  "timestamp": "2024-09-26T09:34:45.945436342Z"
+}
+
+```
+
+where `infraction_header.json` contains:
+
+```json
+{
+  "signed_header": {
+    "header": {
+      "version": {
+        "block": "11",
+        "app": "0"
+      },
+      "chain_id": "consu",
+      "height": "59",
+      "time": "2024-09-26T09:34:45.945436342Z",
+      "last_block_id": {
+        "hash": "t8HcmkQbchpGE1CxqdhcogoT+yD5VIm+cRGLcosTtxE=",
+        "part_set_header": {
+          "total": 1,
+          "hash": "fTediSh8XttUUoxWJLPIxO6iWecqdMMsegD2svBtR5E="
+        }
+      },
+      "last_commit_hash": "2U4mFcB6+FffQeFPUaHkd+eBtEV5/5d3Zy0Lk58dwIs=",
+      "data_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "validators_hash": "D26N3CL1zQt7yn+JUQ8Dcb2vCYG7QmHMiMfY+nGxhts=",
+      "next_validators_hash": "D26N3CL1zQt7yn+JUQ8Dcb2vCYG7QmHMiMfY+nGxhts=",
+      "consensus_hash": "BICRvH3cKD93v7+R1zxE2ljD34qcvIZ0Bdi389qtoi8=",
+      "app_hash": "k/RW/WMOYCS89VBhKMHIRYb30a30JkZ+puyp9ESTBiA=",
+      "last_results_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "evidence_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "proposer_address": "mb06cu8SzQJOdYSzrJAK43Q8at8="
+    },
+    "commit": {
+      "height": "59",
+      "round": 0,
+      "block_id": {
+        "hash": "07tksQsQ0gVBphgP4eeyGII9tEaLUuCauQcmwar9ktk=",
+        "part_set_header": {
+          "total": 1,
+          "hash": "nND/ClxCtoSJ9fC7Jyy884ab+nDh+PnHwI28T2fELCE="
+        }
+      },
+      "signatures": [
+        {
+          "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+          "validator_address": "BsDz5HzFx0gmkIjcLzZBHTqqJ8Y=",
+          "timestamp": "2024-09-26T09:34:47.271500717Z",
+          "signature": "bXA2WgQVVlHAkn9mGIfoUvgn3C+EJCzNGTAjnhoQJwLkh1Okg3oYmwZRz+UGbc95kXyVO7kQSXhavt0ZPcJ4AA=="
+        },
+        {
+          "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+          "validator_address": "mb06cu8SzQJOdYSzrJAK43Q8at8=",
+          "timestamp": "2024-09-26T09:34:47.305955426Z",
+          "signature": "YG1OcUhpTKFz+Uo8halNmkw0s6n333+m53laZvyQSHM5gqOG4h8jzij2u9sU4H404OJMgdj+1GTxuHmQ8jWFBg=="
+        },
+        {
+          "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+          "validator_address": "tBw6QBQpY6pbEt3RxOWJDAs5JrE=",
+          "timestamp": "2024-09-26T09:34:47.255694467Z",
+          "signature": "EYOC/yo+RaosEVhwBy0bZFjVwHCR7rRZo/FmTRWpAIXZHBVrIiX3iVzRUwn78lsfbaoT97TsqRX61bAiJDM6BA=="
+        }
+      ]
+    }
+  },
+  "validator_set": {
+    "validators": [
+      {
+        "address": "BsDz5HzFx0gmkIjcLzZBHTqqJ8Y=",
+        "pub_key": {
+          "ed25519": "RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="
+        },
+        "voting_power": "500",
+        "proposer_priority": "-1000"
+      },
+      {
+        "address": "mb06cu8SzQJOdYSzrJAK43Q8at8=",
+        "pub_key": {
+          "ed25519": "mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="
+        },
+        "voting_power": "500",
+        "proposer_priority": "500"
+      },
+      {
+        "address": "tBw6QBQpY6pbEt3RxOWJDAs5JrE=",
+        "pub_key": {
+          "ed25519": "Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="
+        },
+        "voting_power": "500",
+        "proposer_priority": "500"
+      }
+    ],
+    "proposer": {
+      "address": "BsDz5HzFx0gmkIjcLzZBHTqqJ8Y=",
+      "pub_key": {
+        "ed25519": "RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="
+      },
+      "voting_power": "500",
+      "proposer_priority": "-1000"
+    },
+    "total_voting_power": "0"
+  },
+  "trusted_height": {
+    "revision_number": "0",
+    "revision_height": "0"
+  },
+  "trusted_validators": null
+}
+
+```
+##### Submit Consumer Double Voting
+
+The `submit-consumer-misbehaviour` command allows to submit an IBC misbehaviour for a consumer chain.
+
+```bash
+interchain-security-pd tx provider submit-consumer-misbehaviour [consumer-id] [misbehaviour] [flags]
+```
+
+Example:
+
+```bash
+interchain-security-pd tx provider submit-consumer-misbehaviour 3 path/to/consumer-misbehaviour.json
+  --chain-id provider  \
+  --from mykey \
+   --gas="auto" \
+  --gas-adjustment="1.2" \
+  --gas-prices="0.025stake" \
+  --from=mykey
+```
+
+where `consumer-misbehaviour.json` contains:
+
+```json
+{
+  "client_id": "07-tendermint-0",
+  "header_1": {
+    "signed_header": {
+      "header": {
+        "version": {
+          "block": "11",
+          "app": "0"
+        },
+        "chain_id": "consu",
+        "height": "95",
+        "time": "2024-09-26T09:15:52.845591095Z",
+        "last_block_id": {
+          "hash": "PUph0B9N9X+LdrstqOoGf+W+OS6oHetQUa+0fpcRnF8=",
+          "part_set_header": {
+            "total": 1,
+            "hash": "SlVkAlM1uq3DjgTk0NbZftLlFwOEJrau1Wnhg3jEH3A="
+          }
+        },
+        "last_commit_hash": "Hxe4aLTULJ7qxJ10XsQfluKyU1Rn+d+cgDeTm2AATqU=",
+        "data_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+        "validators_hash": "+003y0s55+pbijWbJyVVgfNnquSaGGnQmC1hGRUIIjk=",
+        "next_validators_hash": "+003y0s55+pbijWbJyVVgfNnquSaGGnQmC1hGRUIIjk=",
+        "consensus_hash": "BICRvH3cKD93v7+R1zxE2ljD34qcvIZ0Bdi389qtoi8=",
+        "app_hash": "uGHlqLiNp+ZCjE889JDFKnrNkRpZ5xZ5OOamXrCNcOc=",
+        "last_results_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+        "evidence_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+        "proposer_address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk="
+      },
+      "commit": {
+        "height": "95",
+        "round": 0,
+        "block_id": {
+          "hash": "hkUUob+4UVRE4uJW53fY9UYViGTs2v6P5Sb/hUFYyak=",
+          "part_set_header": {
+            "total": 1,
+            "hash": "0tx9pRIzYJ3vwrYyOgMC8zxf/sSJUtNVm9DBKM8Yxo0="
+          }
+        },
+        "signatures": [
+          {
+            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+            "validator_address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+            "timestamp": "2024-09-26T09:15:53.852414554Z",
+            "signature": "iiQCCxsCOoNVb2smAVmDO62o9HLf+I4rWk8o86uA1ZoFun/lk1bwrocaMp1It1SjVo/szYsX6Hp5rP1IwcAjDg=="
+          }
+        ]
+      }
+    },
+    "validator_set": {
+      "validators": [
+        {
+          "address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+          "pub_key": {
+            "ed25519": "ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="
+          },
+          "voting_power": "511",
+          "proposer_priority": "0"
+        }
+      ],
+      "proposer": {
+        "address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+        "pub_key": {
+          "ed25519": "ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="
+        },
+        "voting_power": "511",
+        "proposer_priority": "0"
+      },
+      "total_voting_power": "0"
+    },
+    "trusted_height": {
+      "revision_number": "0",
+      "revision_height": "20"
+    },
+    "trusted_validators": {
+      "validators": [
+        {
+          "address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+          "pub_key": {
+            "ed25519": "ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="
+          },
+          "voting_power": "500",
+          "proposer_priority": "0"
+        }
+      ],
+      "proposer": {
+        "address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+        "pub_key": {
+          "ed25519": "ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="
+        },
+        "voting_power": "500",
+        "proposer_priority": "0"
+      },
+      "total_voting_power": "0"
+    }
+  },
+  "header_2": {
+    "signed_header": {
+      "header": {
+        "version": {
+          "block": "11",
+          "app": "0"
+        },
+        "chain_id": "consu",
+        "height": "95",
+        "time": "2024-09-26T09:15:54.044450012Z",
+        "last_block_id": {
+          "hash": "MG9B1h4R9Xb4GRjvaNydD5NSqT37OOjGDcatCZpBlco=",
+          "part_set_header": {
+            "total": 1,
+            "hash": "3jQh26/9EuNAAEL6v2tRuGhKtkotoyTqGtduOOn++vk="
+          }
+        },
+        "last_commit_hash": "s1hUy5e7i+GrH5IGW1ck4YHK2CDTY4fjnSiNMInJBWc=",
+        "data_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+        "validators_hash": "+003y0s55+pbijWbJyVVgfNnquSaGGnQmC1hGRUIIjk=",
+        "next_validators_hash": "+003y0s55+pbijWbJyVVgfNnquSaGGnQmC1hGRUIIjk=",
+        "consensus_hash": "BICRvH3cKD93v7+R1zxE2ljD34qcvIZ0Bdi389qtoi8=",
+        "app_hash": "bWRmShMthwEAB3lIVMgB673gH5vTdoqfn223M3Xrk6Q=",
+        "last_results_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+        "evidence_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+        "proposer_address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk="
+      },
+      "commit": {
+        "height": "95",
+        "round": 0,
+        "block_id": {
+          "hash": "z3MJTCXppRYoIEPOrneYzw/U0CSiYF3zsUv67ynxM6Q=",
+          "part_set_header": {
+            "total": 1,
+            "hash": "BFSlw7bqXxBHl9O5O9sCUB01nbe0T0KGOmv7yyr8KYU="
+          }
+        },
+        "signatures": [
+          {
+            "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+            "validator_address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+            "timestamp": "2024-09-26T09:15:55.054809888Z",
+            "signature": "oi+TQ0yoDEeXyBchFIql9AGxbufnx3FzDKsCp4B8tx42ropD8tyotKOjk0OMuZQC5aMMRndRfKiYYsWiOrcpAg=="
+          }
+        ]
+      }
+    },
+    "validator_set": {
+      "validators": [
+        {
+          "address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+          "pub_key": {
+            "ed25519": "ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="
+          },
+          "voting_power": "511",
+          "proposer_priority": "0"
+        }
+      ],
+      "proposer": {
+        "address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+        "pub_key": {
+          "ed25519": "ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="
+        },
+        "voting_power": "511",
+        "proposer_priority": "0"
+      },
+      "total_voting_power": "0"
+    },
+    "trusted_height": {
+      "revision_number": "0",
+      "revision_height": "20"
+    },
+    "trusted_validators": {
+      "validators": [
+        {
+          "address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+          "pub_key": {
+            "ed25519": "ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="
+          },
+          "voting_power": "500",
+          "proposer_priority": "0"
+        }
+      ],
+      "proposer": {
+        "address": "3wkKSIC1TNV7KnnmTZ6Wm9dRSwk=",
+        "pub_key": {
+          "ed25519": "ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="
+        },
+        "voting_power": "500",
+        "proposer_priority": "0"
+      },
+      "total_voting_power": "0"
+    }
+  }
+}
+
+```
+
+
 ### gRPC
+
+A user can query the `provider` module using gRPC endpoints.
+
 
 ### REST
