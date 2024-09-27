@@ -101,7 +101,7 @@ func CreateSubmitChangeRewardDenomsProposalActionGen() *rapid.Generator[SubmitCh
 		return SubmitChangeRewardDenomsProposalAction{
 			From:    GetValidatorIDGen().Draw(t, "From"),
 			Deposit: rapid.Uint().Draw(t, "Deposit"),
-			Denoms:  rapid.SliceOf(rapid.String()).Draw(t, "Denoms"),
+			Denom:   rapid.String().Draw(t, "Denom"),
 		}
 	})
 }

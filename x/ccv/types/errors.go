@@ -22,10 +22,4 @@ var (
 	ErrDuplicateConsumerChain      = errorsmod.Register(ModuleName, 14, "consumer chain already exists")
 	ErrConsumerChainNotFound       = errorsmod.Register(ModuleName, 15, "consumer chain not found")
 	ErrInvalidDoubleVotingEvidence = errorsmod.Register(ModuleName, 16, "invalid consumer double voting evidence")
-<<<<<<< HEAD
-=======
-	ErrStoreKeyNotFound            = errorsmod.Register(ModuleName, 17, "store key not found")
-	ErrStoreUnmarshal              = errorsmod.Register(ModuleName, 18, "cannot unmarshal value from store")
-	ErrInvalidConsumerId           = errorsmod.Register(ModuleName, 19, "invalid consumer id")
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 )

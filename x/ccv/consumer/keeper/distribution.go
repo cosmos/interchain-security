@@ -117,11 +117,6 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 
 	sentCoins := sdk.NewCoins()
 	var allBalances sdk.Coins
-	rewardMemo, err := ccv.CreateTransferMemo(k.GetConsumerId(ctx), ctx.ChainID())
-	if err != nil {
-		return err
-	}
-
 	// iterate over all whitelisted reward denoms
 	for _, denom := range k.AllowedRewardDenoms(ctx) {
 		// get the balance of the denom in the toSendToProviderTokens address
@@ -138,7 +133,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 				Receiver:         providerAddr,                  // provider fee pool address to send to
 				TimeoutHeight:    timeoutHeight,                 // timeout height disabled
 				TimeoutTimestamp: timeoutTimestamp,
-				Memo:             rewardMemo,
+				Memo:             "consumer chain rewards distribution",
 			}
 
 			// validate MsgTransfer before calling Transfer()

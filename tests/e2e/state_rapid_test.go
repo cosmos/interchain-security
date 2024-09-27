@@ -104,8 +104,8 @@ func GetRewardsGen() *rapid.Generator[Rewards] {
 	return rapid.Custom(func(t *rapid.T) Rewards {
 		return Rewards{
 			IsIncrementalReward: rapid.Bool().Draw(t, "IsIncrementalReward"),
-			// Denom:       rapid.Str,
-			IsRewarded: rapid.MapOf(GetValidatorIDGen(), rapid.Bool()).Draw(t, "IsRewarded"),
+			IsNativeDenom:       rapid.Bool().Draw(t, "IsNativeDenom"),
+			IsRewarded:          rapid.MapOf(GetValidatorIDGen(), rapid.Bool()).Draw(t, "IsRewarded"),
 		}
 	})
 }

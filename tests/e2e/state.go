@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -329,113 +328,13 @@ func (tr TestConfig) getRewards(chain ChainID, modelState Rewards) Rewards {
 		currentBlock = 1
 	}
 	for k := range modelState.IsRewarded {
-<<<<<<< HEAD
 		receivedRewards[k] = tr.getReward(chain, k, nextBlock, modelState.IsNativeDenom) > tr.getReward(chain, k, currentBlock, modelState.IsNativeDenom)
-=======
-		receivedRewards[k] = tr.target.GetReward(chain, k, nextBlock, modelState.Denom) > tr.target.GetReward(chain, k, currentBlock, modelState.Denom)
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 
-	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, Denom: modelState.Denom}
+	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, IsNativeDenom: modelState.IsNativeDenom}
 }
 
-<<<<<<< HEAD
 func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
-=======
-func (tr Chain) GetConsumerAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
-	actualState := map[ValidatorID]string{}
-	for k := range modelState {
-		actualState[k] = tr.target.GetConsumerAddress(chain, k)
-	}
-
-	return actualState
-}
-
-func (tr Chain) GetProviderAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
-	actualState := map[ValidatorID]string{}
-	for k := range modelState {
-		actualState[k] = tr.target.GetProviderAddressFromConsumer(chain, k)
-	}
-
-	return actualState
-}
-
-func (tr Chain) getValidatorNode(chain ChainID, validator ValidatorID) string {
-	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
-	if tr.testConfig.useCometmock {
-		return tr.target.GetQueryNode(chain)
-	}
-
-	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
-}
-
-func (tr Chain) getValidatorIP(chain ChainID, validator ValidatorID) string {
-	return tr.testConfig.chainConfigs[chain].IpPrefix + "." + tr.testConfig.validatorConfigs[validator].IpSuffix
-}
-
-func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
-	return `/` + string(chain) + `/validator` + fmt.Sprint(validator)
-}
-
-func (tr Chain) curlJsonRPCRequest(method, params, address string) {
-	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
-
-	cmd := tr.target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
-
-	verbosity := false
-	e2e.ExecuteCommand(cmd, "curlJsonRPCRequest", verbosity)
-}
-
-func uintPtr(i uint) *uint {
-	return &i
-}
-
-func intPtr(i int) *int {
-	return &i
-}
-
-type Commands struct {
-	containerConfig  *ContainerConfig
-	validatorConfigs map[ValidatorID]ValidatorConfig
-	chainConfigs     map[ChainID]ChainConfig
-	target           e2e.PlatformDriver
-}
-
-func (tr Commands) ExecCommand(name string, arg ...string) *exec.Cmd {
-	return tr.target.ExecCommand(name, arg...)
-}
-
-func (tr Commands) ExecDetachedCommand(name string, args ...string) *exec.Cmd {
-	return tr.target.ExecDetachedCommand(name, args...)
-}
-
-func (tr Commands) GetTestScriptPath(isConsumer bool, script string) string {
-	return tr.target.GetTestScriptPath(isConsumer, script)
-}
-
-func (tr Commands) GetBlockHeight(chain ChainID) uint {
-	binaryName := tr.chainConfigs[chain].BinaryName
-	bz, err := tr.target.ExecCommand(binaryName,
-
-		"query", "tendermint-validator-set",
-
-		`--node`, tr.GetQueryNode(chain),
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	blockHeightRegex := regexp.MustCompile(`block_height: "(\d+)"`)
-	blockHeight, err := strconv.Atoi(blockHeightRegex.FindStringSubmatch(string(bz))[1])
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return uint(blockHeight)
-}
-
-func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, denom string) float64 {
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	valCfg := tr.validatorConfigs[validator]
 	delAddresss := valCfg.DelAddress
 	if chain != ChainID("provi") {
@@ -462,23 +361,12 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	denomCondition := fmt.Sprintf(`total.#(%%"*%s*")`, denom)
-	amount := strings.Split(gjson.Get(string(bz), denomCondition).String(), denom)[0]
-
-	fmt.Println("denomCondition:", denomCondition)
-	fmt.Println("json:", gjson.Parse(string(bz)))
-
-	res := float64(0)
-	if amount != "" {
-		res, err = strconv.ParseFloat(amount, 64)
-		if err != nil {
-			log.Fatal("failed parsing consumer reward:", err)
-		}
+	denomCondition := `total.#(denom!="stake").amount`
+	if isNativeDenom {
+		denomCondition = `total.#(denom=="stake").amount`
 	}
 
-	fmt.Println("res", res)
-
-	return res
+	return gjson.Get(string(bz), denomCondition).Float()
 }
 
 func (tr TestConfig) getBalance(chain ChainID, validator ValidatorID) uint {
