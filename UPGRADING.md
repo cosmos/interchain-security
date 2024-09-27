@@ -2,6 +2,28 @@
 
 This guide provides instructions for upgrading to specific versions of Replicated Security.
 
+## [v4.5.x](https://github.com/cosmos/interchain-security/releases/tag/v4.5.0)
+
+### Consumer
+
+Upgrading a consumer from v4.4.x to v4.5.x requires state migrations. The following migrators should be added to the upgrade handler of the consumer chain:
+
+
+```go
+// InitializeConsumerId sets the consumer Id parameter in the consumer module,
+// to the consumer id for which the consumer is registered on the provider chain.
+// The consumer id can be obtained in by querying the provider, e.g. by using the
+// QueryConsumerIdFromClientId query.
+func InitializeConsumerId(ctx sdk.Context, consumerKeeper consumerkeeper.Keeper) error {
+	params, err := consumerKeeper.GetConsumerParams(ctx)
+	if err != nil {
+		return err
+	}
+	params.ConsumerId = ConsumerId
+	return consumerKeeper.SetParams(ctx, params)
+}
+```
+
 ## [v4.4.x](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0)
 
 ### Provider
