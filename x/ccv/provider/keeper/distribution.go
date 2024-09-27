@@ -81,15 +81,11 @@ func (k Keeper) GetAllowlistedRewardDenoms(ctx sdk.Context, consumerId string) (
 	return denoms.Denoms, nil
 }
 
-// SetAllowlistedRewardDenom sets the allowlisted reward denom for the given consumer id.
-func (k Keeper) SetAllowlistedRewardDenom(ctx sdk.Context, consumerId string, denom string) error {
-	currentDenoms, err := k.GetAllowlistedRewardDenoms(ctx, consumerId)
-	if err != nil {
-		return err
-	}
+// SetAllowlistedRewardDenoms sets the allowlisted reward denoms for the given consumer id.
+func (k Keeper) SetAllowlistedRewardDenoms(ctx sdk.Context, consumerId string, rewardDenoms []string) error {
 	store := ctx.KVStore(k.storeKey)
-	updatedDenoms := types.AllowlistedRewardDenoms{Denoms: append(currentDenoms, denom)}
-	bz, err := updatedDenoms.Marshal()
+	allowlistedUpdatedDenoms := types.AllowlistedRewardDenoms{Denoms: rewardDenoms}
+	bz, err := allowlistedUpdatedDenoms.Marshal()
 	if err != nil {
 		return err
 	}
@@ -97,22 +93,16 @@ func (k Keeper) SetAllowlistedRewardDenom(ctx sdk.Context, consumerId string, de
 	return nil
 }
 
-// DeleteAllowlistedRewardDenom deletes the allowlisted reward denom for the given consumer id.
-func (k Keeper) DeleteAllowlistedRewardDenom(ctx sdk.Context, consumerId string) {
+// DeleteAllowlistedRewardDenoms deletes the allowlisted reward denom for the given consumer id.
+func (k Keeper) DeleteAllowlistedRewardDenoms(ctx sdk.Context, consumerId string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerIdToAllowlistedRewardDenomKey(consumerId))
 }
 
 // UpdateAllowlistedRewardDenoms updates the allowlisted reward denoms for this consumer chain with the provided `rewardDenoms`
 func (k Keeper) UpdateAllowlistedRewardDenoms(ctx sdk.Context, consumerId string, rewardDenoms []string) error {
-	k.DeleteAllowlistedRewardDenom(ctx, consumerId)
-	for _, denom := range rewardDenoms {
-		err := k.SetAllowlistedRewardDenom(ctx, consumerId, denom)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	k.DeleteAllowlistedRewardDenoms(ctx, consumerId)
+	return k.SetAllowlistedRewardDenoms(ctx, consumerId, rewardDenoms)
 }
 
 // GetConsumerRewardsAllocationByDenom returns the consumer rewards allocation for the given consumer id and denom
@@ -251,7 +241,7 @@ func (k Keeper) AllocateConsumerRewards(ctx sdk.Context, consumerId string, allo
 		"consumerId", consumerId,
 		"chainId", chainId,
 		"total-rewards", consumerRewards.String(),
-		"sent-to-distribution", validatorsRewardsTrunc.String(),
+		"sent-to-validators", validatorsRewardsTrunc.String(),
 		"sent-to-CP", remainingRewards.String(),
 	)
 
@@ -289,6 +279,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 				"fail to retrieve the allowlisted reward denoms for consumer chain",
 				"consumer id", consumerId,
 				"error", err.Error())
+			continue
 		}
 
 		allAllowlistedDenoms := append(allConsumerRewardDenoms, consumerAllowlistedRewardDenoms...)
@@ -304,8 +295,9 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 					"denom", denom,
 					"error", err.Error(),
 				)
+				continue
 			}
-			allocatedRewards, err := k.AllocateConsumerRewards(cachedCtx, consumerId, consumerRewards)
+			remainingRewardDec, err := k.AllocateConsumerRewards(cachedCtx, consumerId, consumerRewards)
 			if err != nil {
 				k.Logger(ctx).Error(
 					"fail to allocate rewards for consumer chain",
@@ -314,7 +306,7 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 				)
 				continue
 			}
-			err = k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, allocatedRewards)
+			err = k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, remainingRewardDec)
 			if err != nil {
 				k.Logger(ctx).Error(
 					"fail to set rewards for consumer chain",

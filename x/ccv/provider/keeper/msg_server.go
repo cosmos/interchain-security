@@ -19,8 +19,6 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
-const MaxAllowlistedRewardDenomsPerChain = 3
-
 type msgServer struct {
 	*Keeper
 }
@@ -417,9 +415,9 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	}
 
 	if msg.AllowlistedRewardDenoms != nil {
-		if len(msg.AllowlistedRewardDenoms.Denoms) > MaxAllowlistedRewardDenomsPerChain {
+		if len(msg.AllowlistedRewardDenoms.Denoms) > types.MaxAllowlistedRewardDenomsPerChain {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
-				fmt.Sprintf("a consumer chain cannot allowlist more than %d reward denoms", MaxAllowlistedRewardDenomsPerChain))
+				fmt.Sprintf("a consumer chain cannot allowlist more than %d reward denoms", types.MaxAllowlistedRewardDenomsPerChain))
 		}
 
 		err := k.UpdateAllowlistedRewardDenoms(ctx, consumerId, msg.AllowlistedRewardDenoms.Denoms)
@@ -605,9 +603,9 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	}
 
 	if msg.AllowlistedRewardDenoms != nil {
-		if len(msg.AllowlistedRewardDenoms.Denoms) > MaxAllowlistedRewardDenomsPerChain {
+		if len(msg.AllowlistedRewardDenoms.Denoms) > types.MaxAllowlistedRewardDenomsPerChain {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
-				fmt.Sprintf("a consumer chain cannot allowlist more than %d reward denoms", MaxAllowlistedRewardDenomsPerChain))
+				fmt.Sprintf("a consumer chain cannot allowlist more than %d reward denoms", types.MaxAllowlistedRewardDenomsPerChain))
 		}
 
 		if err := k.UpdateAllowlistedRewardDenoms(ctx, consumerId, msg.AllowlistedRewardDenoms.Denoms); err != nil {

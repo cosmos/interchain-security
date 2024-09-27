@@ -379,7 +379,7 @@ func TestHandleSetConsumerCommissionRate(t *testing.T) {
 }
 
 // TestAllowlistedRewardDenoms tests the `GetAllowlistedRewardDenoms`, `SetAllowlistedRewardDenom`,
-// `UpdateAllowlistedRewardDenoms` and `DeleteAllowlistedRewardDenom` methods.
+// `UpdateAllowlistedRewardDenoms` and `DeleteAllowlistedRewardDenoms` methods.
 func TestAllowlistedRewardDenoms(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -390,9 +390,7 @@ func TestAllowlistedRewardDenoms(t *testing.T) {
 	require.NoError(t, err)
 
 	denomsToSet := []string{"denom1", "denom2", "denom3"}
-	providerKeeper.SetAllowlistedRewardDenom(ctx, consumerId, "denom1")
-	providerKeeper.SetAllowlistedRewardDenom(ctx, consumerId, "denom2")
-	providerKeeper.SetAllowlistedRewardDenom(ctx, consumerId, "denom3")
+	providerKeeper.SetAllowlistedRewardDenoms(ctx, consumerId, denomsToSet)
 
 	denoms, err = providerKeeper.GetAllowlistedRewardDenoms(ctx, consumerId)
 	require.Equal(t, denomsToSet, denoms)
@@ -405,7 +403,7 @@ func TestAllowlistedRewardDenoms(t *testing.T) {
 	require.Equal(t, updatedDenoms, denoms)
 	require.NoError(t, err)
 
-	providerKeeper.DeleteAllowlistedRewardDenom(ctx, consumerId)
+	providerKeeper.DeleteAllowlistedRewardDenoms(ctx, consumerId)
 	denoms, err = providerKeeper.GetAllowlistedRewardDenoms(ctx, consumerId)
 	require.Empty(t, denoms)
 	require.NoError(t, err)

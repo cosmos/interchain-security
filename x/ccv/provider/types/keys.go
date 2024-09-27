@@ -33,6 +33,10 @@ const (
 	// This address receives rewards from consumer chains
 	ConsumerRewardsPool = "consumer_rewards_pool"
 
+	// MaxAllowlistedRewardDenomsPerChain corresponds to the maximum number of reward denoms
+	// a consumer chain can allowlist
+	MaxAllowlistedRewardDenomsPerChain = 3
+
 	// Names for the store keys.
 	// Used for storing the byte prefixes in the constant map.
 	// See getKeyPrefixes().

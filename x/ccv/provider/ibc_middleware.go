@@ -206,6 +206,7 @@ func (im IBCMiddleware) OnRecvPacket(
 				"denom", coinDenom,
 				"error", err.Error(),
 			)
+			return ack
 		}
 
 		alloc.Rewards = alloc.Rewards.Add(
@@ -223,6 +224,7 @@ func (im IBCMiddleware) OnRecvPacket(
 				"denom", coinDenom,
 				"error", err.Error(),
 			)
+			return ack
 		}
 
 		logger.Info(
