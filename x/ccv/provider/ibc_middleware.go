@@ -14,6 +14,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}
@@ -123,34 +124,6 @@ func (im IBCMiddleware) OnRecvPacket(
 	// that the packet data is valid and can be safely
 	// deserialized without checking errors.
 	if ack.Success() {
-		// execute the middleware logic only if the sender is a consumer chain
-		consumerId, err := im.keeper.IdentifyConsumerIdFromIBCPacket(ctx, packet)
-		if err != nil {
-			// Check if the packet is received on a canonical transfer channels
-			// of one of the known consumer chains.
-			// Note: this is a patch for the Cosmos Hub for consumers such as Stride
-			// TODO: remove once the known consumer chains upgrade to send ICS rewards
-			// with the consumer ID added to the memo field
-			if ctx.ChainID() == "cosmoshub-4" && // this patch is only for the Cosmos Hub
-				packet.DestinationChannel == "channel-391" { // canonical transfer channel Stride <> Cosmos Hub
-				// check source chain ID
-				srcChainId, err := im.keeper.GetSourceChainIdFromIBCPacket(ctx, packet)
-				if err != nil || srcChainId != "stride-1" {
-					// ignore packet if it's not from Stride
-					return ack
-				}
-				// accept the packet as a potential ICS reward
-				consumerId = "1" // consumer ID of Stride
-				// sanity check: make sure this is the consumer ID for Stride
-				chainId, err := im.keeper.GetConsumerChainId(ctx, consumerId)
-				if err != nil || srcChainId != chainId {
-					return ack
-				}
-			} else {
-				return ack
-			}
-		}
-
 		// extract the coin info received from the packet data
 		var data ibctransfertypes.FungibleTokenPacketData
 		_ = types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
@@ -161,6 +134,32 @@ func (im IBCMiddleware) OnRecvPacket(
 			return ack
 		}
 
+		consumerId := ""
+		// check if the transfer has the reward memo
+		if rewardMemo, err := ccvtypes.GetRewardMemoFromTransferMemo(data.Memo); err != nil {
+			// check if the transfer is on a channel with the same underlying
+			// client as the CCV channel
+			consumerId, err = im.keeper.IdentifyConsumerIdFromIBCPacket(ctx, packet)
+			if err != nil {
+				if data.Memo == "consumer chain rewards distribution" {
+					// log error message
+					logger.Error(
+						"received token transfer with ICS reward from unknown consumer",
+						"packet", packet.String(),
+						"fungibleTokenPacketData", data.String(),
+						"error", err.Error(),
+					)
+				}
+
+				return ack
+			}
+		} else {
+			logger.Info("transfer memo:%#+v", rewardMemo)
+			consumerId = rewardMemo.ConsumerId
+		}
+
+		coinAmt, _ := math.NewIntFromString(data.Amount)
+		coinDenom := GetProviderDenom(data.Denom, packet)
 		chainId, err := im.keeper.GetConsumerChainId(ctx, consumerId)
 		if err != nil {
 			logger.Error(
@@ -172,9 +171,6 @@ func (im IBCMiddleware) OnRecvPacket(
 			)
 			return ack
 		}
-
-		coinAmt, _ := math.NewIntFromString(data.Amount)
-		coinDenom := GetProviderDenom(data.Denom, packet)
 
 		logger.Info(
 			"received ICS rewards from consumer chain",

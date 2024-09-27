@@ -24,6 +24,7 @@ func GetConsumerParamsLegacy(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSub
 		getRewardDenoms(ctx, paramSpace),
 		getProviderRewardDenoms(ctx, paramSpace),
 		getRetryDelayPeriod(ctx, paramSpace),
+		"0",
 	)
 }
 

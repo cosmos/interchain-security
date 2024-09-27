@@ -40,8 +40,8 @@ func stepsInactiveProviderValidators() []Step {
 							ValidatorID("carol"): 300000000,
 						},
 						Rewards: &Rewards{
-							IsNativeDenom:       true, // check for rewards in the provider denom
-							IsIncrementalReward: true, // we need to get incremental rewards
+							Denom:               "stake", // check for rewards in the provider denom
+							IsIncrementalReward: true,    // we need to get incremental rewards
 							// if we would look at total rewards, alice would trivially also get rewards,
 							// because she gets rewards in the first block due to being in the genesis
 							IsRewarded: map[ValidatorID]bool{
@@ -100,8 +100,8 @@ func stepsInactiveProviderValidators() []Step {
 						},
 						// check that bob and carol get rewards, but alice does not
 						Rewards: &Rewards{
-							IsNativeDenom:       true, // check for rewards in the provider denom
-							IsIncrementalReward: true, // check rewards since block 1
+							Denom:               "stake", // check for rewards in the provider denom
+							IsIncrementalReward: true,    // check rewards since block 1
 							IsRewarded: map[ValidatorID]bool{
 								ValidatorID("alice"): false,
 								ValidatorID("bob"):   true,
@@ -143,8 +143,8 @@ func stepsInactiveProviderValidators() []Step {
 				State: State{
 					ChainID("provi"): ChainState{
 						Rewards: &Rewards{
-							IsNativeDenom:       true, // check for rewards in the provider denom
-							IsIncrementalReward: true, // check rewards for currently produced blocks only
+							Denom:               "stake", // check for rewards in the provider denom
+							IsIncrementalReward: true,    // check rewards for currently produced blocks only
 							IsRewarded: map[ValidatorID]bool{
 								ValidatorID("alice"): true,  // alice is participating right now, so gets rewards
 								ValidatorID("bob"):   false, // bob does not get rewards since he is not participating in consensus
@@ -176,8 +176,8 @@ func stepsInactiveProviderValidators() []Step {
 						},
 						// check that between two blocks now, alice does not get rewarded with the native denom
 						Rewards: &Rewards{
-							IsNativeDenom:       true, // check for rewards in the provider denom
-							IsIncrementalReward: true, // check rewards for currently produced blocks only
+							Denom:               "stake", // check for rewards in the provider denom
+							IsIncrementalReward: true,    // check rewards for currently produced blocks only
 							IsRewarded: map[ValidatorID]bool{
 								ValidatorID("alice"): false,
 								ValidatorID("bob"):   true,
@@ -787,8 +787,8 @@ func stepsInactiveValsWithTopN() []Step {
 						ValidatorID("carol"): 300000000,
 					},
 					Rewards: &Rewards{
-						IsNativeDenom:       true, // check for rewards in the provider denom
-						IsIncrementalReward: true, // we need to get incremental rewards
+						Denom:               "stake", // check for rewards in the provider denom
+						IsIncrementalReward: true,    // we need to get incremental rewards
 						// if we would look at total rewards, alice would trivially also get rewards,
 						// because she gets rewards in the first block due to being in the genesis
 						IsRewarded: map[ValidatorID]bool{

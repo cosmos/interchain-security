@@ -346,6 +346,7 @@ func (k Keeper) MakeConsumerGenesis(
 		[]string{},
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,
+		consumerId,
 	)
 
 	// create provider client state and consensus state for the consumer to be able
