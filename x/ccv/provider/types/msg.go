@@ -80,11 +80,17 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot be blank")
 	}
+<<<<<<< HEAD
 	// It is possible to assign keys for consumer chains that are not yet approved.
 	// This can only be done by a signing validator, but it is still sensible
 	// to limit the chainID size to prevent abuse.
 	if 128 < len(msg.ChainId) {
 		return errorsmod.Wrapf(ErrInvalidConsumerChainID, "chainId cannot exceed 128 length")
+=======
+
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerId: %s", err.Error())
+>>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
@@ -94,11 +100,319 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 		return ErrInvalidConsumerConsensusPubKey
 	}
 	if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
+<<<<<<< HEAD
 		return ErrInvalidConsumerConsensusPubKey
+=======
+		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerKey: %s", err.Error())
+	}
+
+	return nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
+	emptyDenomsToAdd := len(msg.DenomsToAdd) == 0
+	emptyDenomsToRemove := len(msg.DenomsToRemove) == 0
+	// Return error if both sets are empty or nil
+	if emptyDenomsToAdd && emptyDenomsToRemove {
+		return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "both DenomsToAdd and DenomsToRemove are empty")
+	}
+
+	denomMap := map[string]struct{}{}
+	for _, denom := range msg.DenomsToAdd {
+		// validate the denom
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
+			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "DenomsToAdd: invalid denom(%s)", denom)
+		}
+		denomMap[denom] = struct{}{}
+	}
+	for _, denom := range msg.DenomsToRemove {
+		// validate the denom
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
+			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "DenomsToRemove: invalid denom(%s)", denom)
+		}
+		// denom cannot be in both sets
+		if _, found := denomMap[denom]; found {
+			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms,
+				"denom(%s) cannot be both added and removed", denom)
+		}
+	}
+
+	return nil
+}
+
+func NewMsgSubmitConsumerMisbehaviour(
+	consumerId string,
+	submitter sdk.AccAddress,
+	misbehaviour *ibctmtypes.Misbehaviour,
+) (*MsgSubmitConsumerMisbehaviour, error) {
+	return &MsgSubmitConsumerMisbehaviour{
+		Submitter:    submitter.String(),
+		Misbehaviour: misbehaviour,
+		ConsumerId:   consumerId,
+	}, nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerMisbehaviour, "ConsumerId: %s", err.Error())
+	}
+
+	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerMisbehaviour, "Misbehaviour: %s", err.Error())
+>>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 	return nil
 }
 
+<<<<<<< HEAD
+=======
+func NewMsgSubmitConsumerDoubleVoting(
+	consumerId string,
+	submitter sdk.AccAddress,
+	ev *tmtypes.DuplicateVoteEvidence,
+	header *ibctmtypes.Header,
+) (*MsgSubmitConsumerDoubleVoting, error) {
+	return &MsgSubmitConsumerDoubleVoting{
+		Submitter:             submitter.String(),
+		DuplicateVoteEvidence: ev,
+		InfractionBlockHeader: header,
+		ConsumerId:            consumerId,
+	}, nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
+	if dve, err := cmttypes.DuplicateVoteEvidenceFromProto(msg.DuplicateVoteEvidence); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "DuplicateVoteEvidence: %s", err.Error())
+	} else {
+		if err = dve.ValidateBasic(); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "DuplicateVoteEvidence: %s", err.Error())
+		}
+	}
+
+	if err := ValidateHeaderForConsumerDoubleVoting(msg.InfractionBlockHeader); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "ValidateTendermintHeader: %s", err.Error())
+	}
+
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "ConsumerId: %s", err.Error())
+	}
+
+	return nil
+}
+
+// NewMsgOptIn creates a new NewMsgOptIn instance.
+func NewMsgOptIn(consumerId string, providerValidatorAddress sdk.ValAddress, consumerConsensusPubKey, signer string) (*MsgOptIn, error) {
+	return &MsgOptIn{
+		ConsumerId:   consumerId,
+		ProviderAddr: providerValidatorAddress.String(),
+		ConsumerKey:  consumerConsensusPubKey,
+		Signer:       signer,
+	}, nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgOptIn) ValidateBasic() error {
+	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ChainId: %s", err.Error())
+	}
+
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ConsumerId: %s", err.Error())
+	}
+
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ProviderAddr: %s", err.Error())
+	}
+
+	if msg.ConsumerKey != "" {
+		if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ConsumerKey: %s", err.Error())
+		}
+	}
+	return nil
+}
+
+// NewMsgOptOut creates a new NewMsgOptIn instance.
+func NewMsgOptOut(consumerId string, providerValidatorAddress sdk.ValAddress, signer string) (*MsgOptOut, error) {
+	return &MsgOptOut{
+		ConsumerId:   consumerId,
+		ProviderAddr: providerValidatorAddress.String(),
+		Signer:       signer,
+	}, nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgOptOut) ValidateBasic() error {
+	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ChainId: %s", err.Error())
+	}
+
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ConsumerId: %s", err.Error())
+	}
+
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ProviderAddr: %s", err.Error())
+	}
+
+	return nil
+}
+
+// NewMsgSetConsumerCommissionRate creates a new MsgSetConsumerCommissionRate msg instance.
+func NewMsgSetConsumerCommissionRate(
+	consumerId string,
+	commission math.LegacyDec,
+	providerValidatorAddress sdk.ValAddress,
+	signer string,
+) *MsgSetConsumerCommissionRate {
+	return &MsgSetConsumerCommissionRate{
+		ConsumerId:   consumerId,
+		Rate:         commission,
+		ProviderAddr: providerValidatorAddress.String(),
+		Signer:       signer,
+	}
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
+	if err := validateDeprecatedChainId(msg.ChainId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ChainId: %s", err.Error())
+	}
+
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ConsumerId: %s", err.Error())
+	}
+
+	if err := validateProviderAddress(msg.ProviderAddr, msg.Signer); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ProviderAddr: %s", err.Error())
+	}
+
+	if msg.Rate.IsNegative() || msg.Rate.GT(math.LegacyOneDec()) {
+		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "consumer commission rate should be in the range [0, 1]")
+	}
+
+	return nil
+}
+
+// NewMsgCreateConsumer creates a new MsgCreateConsumer instance
+func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
+	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
+) (*MsgCreateConsumer, error) {
+	return &MsgCreateConsumer{
+		Submitter:                submitter,
+		ChainId:                  chainId,
+		Metadata:                 metadata,
+		InitializationParameters: initializationParameters,
+		PowerShapingParameters:   powerShapingParameters,
+	}, nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgCreateConsumer) ValidateBasic() error {
+	if err := ValidateStringField("ChainId", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "ChainId: %s", err.Error())
+	}
+
+	// With permissionless ICS, we can have multiple consumer chains with the exact same chain id.
+	// However, as we already have the Neutron and Stride Top N chains running, as a first step we would like to
+	// prevent permissionless chains from re-using the chain ids of Neutron and Stride. Note that this is just a
+	// preliminary measure that will be removed later on as part of:
+	// TODO (#2242): find a better way of ignoring past misbehaviors
+	if msg.ChainId == "neutron-1" || msg.ChainId == "stride-1" {
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer,
+			"cannot reuse chain ids of existing Neutron and Stride Top N consumer chains")
+	}
+
+	if err := ValidateConsumerMetadata(msg.Metadata); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "Metadata: %s", err.Error())
+	}
+
+	if msg.InitializationParameters != nil {
+		if err := ValidateInitializationParameters(*msg.InitializationParameters); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "InitializationParameters: %s", err.Error())
+		}
+	}
+
+	if msg.PowerShapingParameters != nil {
+		if msg.PowerShapingParameters.Top_N != 0 {
+			return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
+				"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
+		}
+		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "PowerShapingParameters: %s", err.Error())
+		}
+	}
+
+	return nil
+}
+
+// NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
+func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *ConsumerMetadata,
+	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
+) (*MsgUpdateConsumer, error) {
+	return &MsgUpdateConsumer{
+		Owner:                    owner,
+		ConsumerId:               consumerId,
+		NewOwnerAddress:          ownerAddress,
+		Metadata:                 metadata,
+		InitializationParameters: initializationParameters,
+		PowerShapingParameters:   powerShapingParameters,
+	}, nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgUpdateConsumer) ValidateBasic() error {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "ConsumerId: %s", err.Error())
+	}
+
+	// Note that NewOwnerAddress is validated when handling the message in UpdateConsumer
+
+	if msg.Metadata != nil {
+		if err := ValidateConsumerMetadata(*msg.Metadata); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "Metadata: %s", err.Error())
+		}
+	}
+
+	if msg.InitializationParameters != nil {
+		if err := ValidateInitializationParameters(*msg.InitializationParameters); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "InitializationParameters: %s", err.Error())
+		}
+	}
+
+	if msg.PowerShapingParameters != nil {
+		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "PowerShapingParameters: %s", err.Error())
+		}
+	}
+
+	return nil
+}
+
+// NewMsgRemoveConsumer creates a new MsgRemoveConsumer instance
+func NewMsgRemoveConsumer(owner, consumerId string) (*MsgRemoveConsumer, error) {
+	return &MsgRemoveConsumer{
+		Owner:      owner,
+		ConsumerId: consumerId,
+	}, nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgRemoveConsumer) ValidateBasic() error {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
+		return err
+	}
+	return nil
+}
+
+//
+// Validation methods
+//
+
+>>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 // ParseConsumerKeyFromJson parses the consumer key from a JSON string,
 // this replaces deserializing a protobuf any.
 func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
@@ -194,6 +508,7 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 	return nil
 }
 
+<<<<<<< HEAD
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerDoubleVoting) GetSignBytes() []byte {
 	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
@@ -217,6 +532,18 @@ func NewMsgOptIn(chainID string, providerValidatorAddress sdk.ValAddress, consum
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
 	}, nil
+=======
+// ValidateStringField validates that a string `field` satisfies the following properties:
+//   - is not empty
+//   - has at most `maxLength` characters
+func ValidateStringField(nameOfTheField, field string, maxLength int) error {
+	if strings.TrimSpace(field) == "" {
+		return fmt.Errorf("%s cannot be empty", nameOfTheField)
+	} else if len(field) > maxLength {
+		return fmt.Errorf("%s is too long; got: %d, max: %d", nameOfTheField, len(field), maxLength)
+	}
+	return nil
+>>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 }
 
 // Route implements the sdk.Msg interface.
