@@ -54,6 +54,7 @@ var (
 	KeyRewardDenoms                      = []byte("RewardDenoms")
 	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
 	KeyRetryDelayPeriod                  = []byte("RetryDelayPeriod")
+	KeyConsumerId                        = []byte("ConsumerId")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -68,6 +69,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	consumerRedistributionFraction string, historicalEntries int64,
 	consumerUnbondingPeriod time.Duration,
 	rewardDenoms, providerRewardDenoms []string, retryDelayPeriod time.Duration,
+	consumerId string,
 ) ConsumerParams {
 	return ConsumerParams{
 		Enabled:                           enabled,
@@ -84,6 +86,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		RewardDenoms:         rewardDenoms,
 		ProviderRewardDenoms: providerRewardDenoms,
 		RetryDelayPeriod:     retryDelayPeriod,
+		ConsumerId:           consumerId,
 	}
 }
 
@@ -104,6 +107,7 @@ func DefaultParams() ConsumerParams {
 		rewardDenoms,
 		provideRewardDenoms,
 		DefaultRetryDelayPeriod,
+		"0",
 	)
 }
 
@@ -145,6 +149,9 @@ func (p ConsumerParams) Validate() error {
 	if err := ValidateDuration(p.RetryDelayPeriod); err != nil {
 		return err
 	}
+	if err := ValidateConsumerId(p.ConsumerId); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -174,6 +181,8 @@ func (p *ConsumerParams) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.ProviderRewardDenoms, ValidateDenoms),
 		paramtypes.NewParamSetPair(KeyRetryDelayPeriod,
 			p.RetryDelayPeriod, ValidateDuration),
+		paramtypes.NewParamSetPair(KeyConsumerId,
+			p.ConsumerId, ValidateConsumerId),
 	}
 }
 

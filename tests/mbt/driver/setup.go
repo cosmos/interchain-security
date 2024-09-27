@@ -491,6 +491,7 @@ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.Te
 		[]string{},
 		[]string{},
 		ccvtypes.DefaultRetryDelayPeriod,
+		"",
 	)
 
 	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, valUpdates, params)
