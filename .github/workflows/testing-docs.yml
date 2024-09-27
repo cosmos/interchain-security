@@ -67,5 +67,4 @@ jobs:
 
               git push origin "$branch"
 
-              exit 1
             fi
