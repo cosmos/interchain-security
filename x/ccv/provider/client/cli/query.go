@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/version"
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
@@ -102,7 +103,9 @@ func CmdConsumerChains() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				req.Pagination.Limit = uint64(limit)
+				req.Pagination = &query.PageRequest{
+					Limit: uint64(limit),
+				}
 			}
 
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
