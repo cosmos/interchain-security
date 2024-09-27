@@ -110,7 +110,8 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(37), providertypes.DenylistKeyPrefix())
 	i++
-	require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
+	// DEPRECATED
+	//require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
 	i++
 	require.Equal(t, byte(39), providertypes.ConsumerCommissionRateKeyPrefix())
 	i++
@@ -198,7 +199,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.AllowlistKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.DenylistKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.OptedInKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.ConsumerRewardsAllocationKey("13"),
 		providertypes.ConsumerCommissionRateKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.MinimumPowerInTopNKey("13"),
 		providertypes.ConsumerAddrsToPruneV2Key("13", time.Time{}),

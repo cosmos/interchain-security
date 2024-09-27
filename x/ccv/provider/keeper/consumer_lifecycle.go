@@ -486,7 +486,6 @@ func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err err
 	k.DeleteAllOptedIn(ctx, consumerId)
 	k.DeleteConsumerValSet(ctx, consumerId)
 
-	k.DeleteConsumerRewardsAllocation(ctx, consumerId)
 	k.DeleteConsumerRemovalTime(ctx, consumerId)
 
 	// TODO (PERMISSIONLESS) add newly-added state to be deleted

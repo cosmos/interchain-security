@@ -119,7 +119,7 @@ const (
 
 	DenylistKeyName = "DenylistKey"
 
-	ConsumerRewardsAllocationKeyName = "ConsumerRewardsAllocationKey"
+	DeprecatedConsumerRewardsAllocationKeyName = "DeprecatedConsumerRewardsAllocationKey"
 
 	ConsumerCommissionRateKeyName = "ConsumerCommissionRateKey"
 
@@ -331,7 +331,8 @@ func getKeyPrefixes() map[string]byte {
 
 		// ConsumerRewardsAllocationKey is the key for storing for each consumer the ICS rewards
 		// allocated to the consumer rewards pool
-		ConsumerRewardsAllocationKeyName: 38,
+		// [DEPRECATED]
+		DeprecatedConsumerRewardsAllocationKeyName: 38,
 
 		// ConsumerCommissionRateKey is the key for storing the commission rate
 		// per validator per consumer chain
@@ -604,11 +605,6 @@ func OptedInKeyPrefix() byte {
 // OptedInKey returns the key used to store whether a validator is opted in on a consumer chain.
 func OptedInKey(consumerId string, providerAddr ProviderConsAddress) []byte {
 	return StringIdAndConsAddrKey(OptedInKeyPrefix(), consumerId, providerAddr.ToSdkConsAddr())
-}
-
-// ConsumerRewardsAllocationKey returns the key used to store the ICS rewards per consumer chain
-func ConsumerRewardsAllocationKey(consumerId string) []byte {
-	return append([]byte{mustGetKeyPrefix(ConsumerRewardsAllocationKeyName)}, []byte(consumerId)...)
 }
 
 // ConsumerCommissionRateKeyPrefix returns the key prefix for storing the commission rate per validator per consumer chain.

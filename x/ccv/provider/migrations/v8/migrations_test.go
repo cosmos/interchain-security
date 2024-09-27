@@ -203,8 +203,6 @@ func StoreChainDataUsingChainIdAsKey(ctx sdk.Context, store storetypes.KVStore, 
 
 	providerKeeper.SetDenylist(ctx, data.ChainId, data.ProviderAddr)
 
-	providerKeeper.SetConsumerRewardsAllocation(ctx, data.ChainId, data.ConsumerRewardsAllocation)
-
 	providerKeeper.SetConsumerCommissionRate(ctx, data.ChainId, data.ProviderAddr, data.ConsumerCommissionRate)
 
 	providerKeeper.SetMinimumPowerInTopN(ctx, data.ChainId, data.MinimumPowerInTopN)
@@ -291,8 +289,6 @@ func GetChainDataUsingStringId(ctx sdk.Context, providerKeeper providerkeeper.Ke
 		}
 	}
 
-	data.ConsumerRewardsAllocation = providerKeeper.GetConsumerRewardsAllocation(ctx, id)
-
 	consumerCommissionRate, found := providerKeeper.GetConsumerCommissionRate(ctx, id, providerAddr)
 	if found {
 		data.ConsumerCommissionRate = consumerCommissionRate
@@ -328,21 +324,20 @@ func CreateTestChainData(chainId string, clientId string, channelId string) Chai
 			Params:   types.ConsumerParams{ConsumerRedistributionFraction: "redistribution fraction"},
 			NewChain: true,
 		},
-		SlashAcks:                 []string{"slashAck1", "slashAck2"},
-		InitChainHeight:           uint64(123),
-		PendingVSCPackets:         []types.ValidatorSetChangePacketData{{ValsetUpdateId: uint64(456)}},
-		ProviderAddr:              providertypes.NewProviderConsAddress([]byte("provider cons address")),
-		ConsumerKey:               crypto.PublicKey{Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{4}}},
-		ConsumerAddr:              providertypes.NewConsumerConsAddress([]byte("consumer cons address")),
-		EquivocationMinHeight:     uint64(789),
-		ConsensusValidator:        providertypes.ConsensusValidator{},
-		ConsumerRewardsAllocation: providertypes.ConsumerRewardsAllocation{Rewards: sdk.NewDecCoins(sdk.NewDecCoin("uatom", math.NewInt(1000)))},
-		ConsumerCommissionRate:    math.LegacyNewDec(1),
-		MinimumPowerInTopN:        int64(123456789),
-		PruneTs:                   time.Now().UTC(),
-		TopN:                      uint32(67),
-		ValidatorsPowerCap:        uint32(30),
-		ValidatorSetCap:           uint32(100),
+		SlashAcks:              []string{"slashAck1", "slashAck2"},
+		InitChainHeight:        uint64(123),
+		PendingVSCPackets:      []types.ValidatorSetChangePacketData{{ValsetUpdateId: uint64(456)}},
+		ProviderAddr:           providertypes.NewProviderConsAddress([]byte("provider cons address")),
+		ConsumerKey:            crypto.PublicKey{Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{4}}},
+		ConsumerAddr:           providertypes.NewConsumerConsAddress([]byte("consumer cons address")),
+		EquivocationMinHeight:  uint64(789),
+		ConsensusValidator:     providertypes.ConsensusValidator{},
+		ConsumerCommissionRate: math.LegacyNewDec(1),
+		MinimumPowerInTopN:     int64(123456789),
+		PruneTs:                time.Now().UTC(),
+		TopN:                   uint32(67),
+		ValidatorsPowerCap:     uint32(30),
+		ValidatorSetCap:        uint32(100),
 	}
 }
 

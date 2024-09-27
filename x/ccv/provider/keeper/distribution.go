@@ -411,27 +411,6 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 
 // consumer reward pools getter and setter
 
-// GetConsumerRewardsAllocation returns the consumer rewards allocation for the given consumer id
-func (k Keeper) GetConsumerRewardsAllocation(ctx sdk.Context, consumerId string) (pool types.ConsumerRewardsAllocation) {
-	store := ctx.KVStore(k.storeKey)
-	b := store.Get(types.ConsumerRewardsAllocationKey(consumerId))
-	k.cdc.MustUnmarshal(b, &pool)
-	return
-}
-
-// SetConsumerRewardsAllocation sets the consumer rewards allocation for the given consumer id
-func (k Keeper) SetConsumerRewardsAllocation(ctx sdk.Context, consumerId string, pool types.ConsumerRewardsAllocation) {
-	store := ctx.KVStore(k.storeKey)
-	b := k.cdc.MustMarshal(&pool)
-	store.Set(types.ConsumerRewardsAllocationKey(consumerId), b)
-}
-
-// DeleteConsumerRewardsAllocation deletes the consumer rewards allocation for the given consumer id
-func (k Keeper) DeleteConsumerRewardsAllocation(ctx sdk.Context, consumerId string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerRewardsAllocationKey(consumerId))
-}
-
 // GetConsumerRewardsPool returns the balance
 // of the consumer rewards pool module account
 func (k Keeper) GetConsumerRewardsPool(ctx sdk.Context) sdk.Coins {

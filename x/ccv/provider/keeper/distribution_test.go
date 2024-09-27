@@ -245,42 +245,6 @@ func TestIdentifyConsumerChainIDFromIBCPacket(t *testing.T) {
 	}
 }
 
-func TestSetConsumerRewardsAllocation(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	ctx := keeperParams.Ctx
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mocks := testkeeper.NewMockedKeepers(ctrl)
-	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-
-	rewardAllocation := providertypes.ConsumerRewardsAllocation{
-		Rewards: sdk.NewDecCoins(sdk.NewDecCoin("uatom", math.NewInt(1000))),
-	}
-
-	providerKeeper.SetConsumerRewardsAllocation(ctx, "consumer-1", rewardAllocation)
-
-	alloc := providerKeeper.GetConsumerRewardsAllocation(ctx, "consumer-1")
-	require.Equal(t, rewardAllocation, alloc)
-}
-
-func TestGetConsumerRewardsAllocationNil(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	ctx := keeperParams.Ctx
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mocks := testkeeper.NewMockedKeepers(ctrl)
-	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-
-	alloc := providerKeeper.GetConsumerRewardsAllocation(ctx, "consumer-1")
-
-	expectedRewardAllocation := providertypes.ConsumerRewardsAllocation{
-		Rewards: nil,
-	}
-	require.Equal(t, expectedRewardAllocation, alloc)
-}
-
 func TestIsEligibleForConsumerRewards(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
