@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -253,10 +254,10 @@ func (tr Chain) GetRewards(chain ChainID, modelState Rewards) Rewards {
 		currentBlock = 1
 	}
 	for k := range modelState.IsRewarded {
-		receivedRewards[k] = tr.target.GetReward(chain, k, nextBlock, modelState.IsNativeDenom) > tr.target.GetReward(chain, k, currentBlock, modelState.IsNativeDenom)
+		receivedRewards[k] = tr.target.GetReward(chain, k, nextBlock, modelState.Denom) > tr.target.GetReward(chain, k, currentBlock, modelState.Denom)
 	}
 
-	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, IsNativeDenom: modelState.IsNativeDenom}
+	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, Denom: modelState.Denom}
 }
 
 func (tr Chain) GetConsumerAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
@@ -347,7 +348,7 @@ func (tr Commands) GetBlockHeight(chain ChainID) uint {
 	return uint(blockHeight)
 }
 
-func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
+func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, denom string) float64 {
 	valCfg := tr.validatorConfigs[validator]
 	delAddresss := valCfg.DelAddress
 	if chain != ChainID("provi") {
@@ -375,12 +376,23 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 
-	denomCondition := `total.#(denom!="stake").amount`
-	if isNativeDenom {
-		denomCondition = `total.#(denom=="stake").amount`
+	denomCondition := fmt.Sprintf(`total.#(%%"*%s*")`, denom)
+	amount := strings.Split(gjson.Get(string(bz), denomCondition).String(), denom)[0]
+
+	fmt.Println("denomCondition:", denomCondition)
+	fmt.Println("json:", gjson.Parse(string(bz)))
+
+	res := float64(0)
+	if amount != "" {
+		res, err = strconv.ParseFloat(amount, 64)
+		if err != nil {
+			log.Fatal("failed parsing consumer reward:", err)
+		}
 	}
 
-	return gjson.Get(string(bz), denomCondition).Float()
+	fmt.Println("res", res)
+
+	return res
 }
 
 // interchain-securityd query gov proposals

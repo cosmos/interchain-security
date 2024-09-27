@@ -208,7 +208,22 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case OptOutAction:
 		target.optOut(action, td.target, td.verbose)
 	case SetConsumerCommissionRateAction:
+<<<<<<< HEAD
 		target.setConsumerCommissionRate(action, td.target, td.verbose)
+=======
+		target := td.getTargetDriver("provider")
+		target.setConsumerCommissionRate(action, td.verbose)
+	case SubmitConsumerMisbehaviourAction:
+		target := td.getTargetDriver("provider")
+		target.submitConsumerMisbehaviour(action, td.verbose)
+	case CreateIbcClientAction:
+		// use default for hermes actions
+		target := td.getTargetDriver("")
+		target.createIbcClientHermes(action, td.verbose)
+	case TransferIbcTokenAction:
+		target := td.getTargetDriver(action.Chain)
+		target.transferIbcToken(action, td.verbose)
+>>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
 	}

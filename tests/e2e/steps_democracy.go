@@ -1,12 +1,19 @@
 package main
 
+<<<<<<< HEAD
 import (
 	"strconv"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
+=======
+import gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+>>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 
-const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"
+var consumerRewardDenoms = []string{
+	"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9", // transfer channel-1
+	"ibc/D549749C93524DA1831A4B3C850DFC1BA9060261BEDFB224B3B0B4744CD77A70", // transfer channel-2
+}
 
 func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool) []Step {
 	return []Step{
@@ -29,7 +36,7 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 							ValidatorID("carol"): false,
 						},
 						IsIncrementalReward: true,
-						IsNativeDenom:       true,
+						Denom:               "stake",
 					},
 					// Check that delegating on gov-consumer does not change validator powers
 					ValPowers: &map[ValidatorID]uint{
@@ -68,7 +75,7 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 							ValidatorID("carol"): true,
 						},
 						IsIncrementalReward: true,
-						IsNativeDenom:       true,
+						Denom:               "stake",
 					},
 				},
 			},
@@ -143,7 +150,7 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 							ValidatorID("carol"): false,
 						},
 						IsIncrementalReward: false,
-						IsNativeDenom:       false,
+						Denom:               consumerRewardDenoms[0],
 					},
 					// Check that the denom is not registered on provider chain
 					RegisteredConsumerRewardDenoms: &[]string{},
@@ -152,7 +159,12 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 		},
 		{
 			Action: SubmitChangeRewardDenomsProposalAction{
+<<<<<<< HEAD
 				Denom:   consumerRewardDenom,
+=======
+				Chain:   ChainID("provi"),
+				Denoms:  consumerRewardDenoms,
+>>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 				Deposit: 10000001,
 				From:    ValidatorID("bob"),
 			},
@@ -173,10 +185,11 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 			State: State{
 				ChainID("provi"): ChainState{
 					// Check that the denom is registered on provider chain
-					RegisteredConsumerRewardDenoms: &[]string{consumerRewardDenom},
+					RegisteredConsumerRewardDenoms: &consumerRewardDenoms,
 				},
 			},
 		},
+		// Relay pending consumer rewards sent via the transfer channel-1
 		{
 			Action: RelayRewardPacketsToProviderAction{
 				ConsumerChain: ChainID(consumerName),
@@ -186,8 +199,115 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 			},
 			State: State{
 				ChainID("provi"): ChainState{
-					// Check that ARE NOT minted and sent to provider chain and distributed to validators and their delegators on provider chain
-					// the tokens are not sent because the test configuration does not allow sending tokens
+					Rewards: &Rewards{
+						// expectRegisteredRewardDistribution == true
+						// expect rewards to be distributed since IBC denoms are registered
+						// and transfer channel-1 is associated to the consumer id
+						IsRewarded: map[ValidatorID]bool{
+							ValidatorID("alice"): expectRegisteredRewardDistribution,
+							ValidatorID("bob"):   expectRegisteredRewardDistribution,
+							ValidatorID("carol"): expectRegisteredRewardDistribution,
+						},
+						IsIncrementalReward: false,
+						Denom:               consumerRewardDenoms[0],
+					},
+				},
+			},
+		},
+		// Create a second consumer client on the provider
+		{
+			Action: CreateIbcClientAction{
+				ChainA: ChainID("provi"),
+				ChainB: ChainID(consumerName),
+			},
+			State: State{},
+		},
+		// Create a new IBC connection between the 2nd consumer client
+		// and the existing provider client on the consumer
+		{
+			Action: AddIbcConnectionAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				ClientA: 1,
+				ClientB: 0, // already created during the CCV handshake
+			},
+			State: State{},
+		},
+		// Create IBC transfer channel-2
+		{
+			Action: AddIbcChannelAction{
+				ChainA:      ChainID("provi"),
+				ChainB:      ChainID(consumerName),
+				ConnectionA: 1,
+				PortA:       "transfer",
+				PortB:       "transfer",
+				Order:       "unordered",
+				Version:     "ics20-1",
+			},
+			State: State{},
+		},
+		// Transfer tokens from the consumer to the consumer reward pool
+		// of the provider via the transfer channel-2
+		{
+			Action: TransferIbcTokenAction{
+				Chain:   ChainID(consumerName),
+				From:    ValidatorID("carol"),
+				DstAddr: "cosmos1ap0mh6xzfn8943urr84q6ae7zfnar48am2erhd", // consumer reward pool address
+				Amount:  1000000,
+				Channel: 2,
+				Memo:    "consumer chain rewards distribution", // no consumer Id in memo
+			},
+			State: State{},
+		},
+		// Relay the transfer packets from channel-2
+		// and check that tokens are not distributed
+		// since the packet isn't associated to a consumer id
+		{
+			Action: RelayRewardPacketsToProviderAction{
+				ConsumerChain: ChainID(consumerName),
+				ProviderChain: ChainID("provi"),
+				Port:          "transfer",
+				Channel:       2,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					Rewards: &Rewards{
+						IsRewarded: map[ValidatorID]bool{
+							ValidatorID("alice"): false,
+							ValidatorID("bob"):   false,
+							ValidatorID("carol"): false,
+						},
+						IsIncrementalReward: true,
+						Denom:               "stake",
+					},
+				},
+			},
+		},
+		// Transfer tokens from the consumer to the consumer reward pool
+		// of the provider via the transfer channel-2 using the correct memo
+		// to identify the consumer
+		{
+			Action: TransferIbcTokenAction{
+				Chain:   ChainID(consumerName),
+				From:    ValidatorID("carol"),
+				DstAddr: "cosmos1ap0mh6xzfn8943urr84q6ae7zfnar48am2erhd", // consumer reward pool address
+				Amount:  1000000,
+				Channel: 2,
+				Memo:    `{"provider":{"consumerId":"0","chainId":"democ","memo":"ICS rewards"}}`,
+			},
+			State: State{},
+		},
+		// Relay the transfer packets from channel-2
+		// and check that tokens are distributed
+		{
+			Action: RelayRewardPacketsToProviderAction{
+				ConsumerChain: ChainID(consumerName),
+				ProviderChain: ChainID("provi"),
+				Port:          "transfer",
+				Channel:       2,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
 					Rewards: &Rewards{
 						IsRewarded: map[ValidatorID]bool{
 							ValidatorID("alice"): expectRegisteredRewardDistribution,
@@ -195,7 +315,7 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 							ValidatorID("carol"): expectRegisteredRewardDistribution,
 						},
 						IsIncrementalReward: false,
-						IsNativeDenom:       false,
+						Denom:               consumerRewardDenoms[1],
 					},
 				},
 			},

@@ -7,7 +7,16 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+<<<<<<< HEAD
 	"time"
+=======
+	"strings"
+
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/kylelemons/godebug/pretty"
+	"github.com/tidwall/gjson"
+	"gopkg.in/yaml.v2"
+>>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -167,7 +176,7 @@ func (tr Commands) GetValPower(chain ChainID, validator ValidatorID) uint {
 	return 0
 }
 
-func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
+func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, denom string) float64 {
 	valCfg := tr.ValidatorConfigs[validator]
 	delAddresss := valCfg.DelAddress
 	if chain != ChainID("provi") {
@@ -181,25 +190,32 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 	}
 
 	binaryName := tr.ChainConfigs[chain].BinaryName
-	bz, err := tr.Target.ExecCommand(binaryName,
-
+	cmd := tr.Target.ExecCommand(binaryName,
 		"query", "distribution", "rewards",
 		delAddresss,
-
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
-	).CombinedOutput()
+	)
+
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+		log.Println("running cmd: ", cmd)
+		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 
-	denomCondition := `total.#(denom!="stake").amount`
-	if isNativeDenom {
-		denomCondition = `total.#(denom=="stake").amount`
+	denomCondition := fmt.Sprintf(`total.#(%%"*%s*")`, denom)
+	amount := strings.Split(gjson.Get(string(bz), denomCondition).String(), denom)[0]
+
+	res := float64(0)
+	if amount != "" {
+		res, err = strconv.ParseFloat(amount, 64)
+		if err != nil {
+			log.Fatal("failed parsing consumer reward:", err)
+		}
 	}
 
-	return gjson.Get(string(bz), denomCondition).Float()
+	return res
 }
 
 func (tr Commands) GetBalance(chain ChainID, validator ValidatorID) uint {
