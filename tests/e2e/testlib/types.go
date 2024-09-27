@@ -8,6 +8,7 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 type (
@@ -27,7 +28,83 @@ type AssignConsumerPubKeyAction struct {
 	ExpectedError string
 }
 
+type SubmitConsumerAdditionProposalAction struct {
+	PreCCV              bool
+	Chain               ChainID
+	From                ValidatorID
+	Deposit             uint
+	ConsumerChain       ChainID
+	SpawnTime           uint
+	InitialHeight       clienttypes.Height
+	DistributionChannel string
+	TopN                uint32
+	ValidatorsPowerCap  uint32
+	ValidatorSetCap     uint32
+	Allowlist           []string
+	Denylist            []string
+	MinStake            uint64
+	AllowInactiveVals   bool
+}
+
+type SubmitConsumerRemovalProposalAction struct {
+	Chain          ChainID
+	From           ValidatorID
+	Deposit        uint
+	ConsumerChain  ChainID
+	StopTimeOffset time.Duration // offset from time.Now()
+}
+
+type StartChainAction struct {
+	Chain      ChainID
+	Validators []StartChainValidator
+	// Genesis changes specific to this action, appended to genesis changes defined in chain config
+	GenesisChanges string
+	IsConsumer     bool
+}
+
+type StartChainValidator struct {
+	Id         ValidatorID
+	Allocation uint
+	Stake      uint
+}
+
+type StartConsumerChainAction struct {
+	ConsumerChain  ChainID
+	ProviderChain  ChainID
+	Validators     []StartChainValidator
+	GenesisChanges string
+}
+
+type ChangeoverChainAction struct {
+	SovereignChain ChainID
+	ProviderChain  ChainID
+	Validators     []StartChainValidator
+	GenesisChanges string
+}
+
+type StartSovereignChainAction struct {
+	Chain      ChainID
+	Validators []StartChainValidator
+	// Genesis changes specific to this action, appended to genesis changes defined in chain config
+	GenesisChanges string
+}
+
+type DelegateTokensAction struct {
+	Chain  ChainID
+	From   ValidatorID
+	To     ValidatorID
+	Amount uint
+}
+
+type UnbondTokensAction struct {
+	Chain      ChainID
+	Sender     ValidatorID
+	UnbondFrom ValidatorID
+	Amount     uint
+}
+
 type ChainCommands interface {
+	// State commands - functions use by test driver to get state information
 	GetBlockHeight(chain ChainID) uint
 	GetBalance(chain ChainID, validator ValidatorID) uint
 	GetConsumerChains(chain ChainID) map[ChainID]bool
@@ -52,9 +129,27 @@ type ChainCommands interface {
 	GetInflationRate(chain ChainID) float64
 	GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64
 	QueryTransaction(chain ChainID, txhash string) ([]byte, error)
-	// Action commands
-	AssignConsumerPubKey(action AssignConsumerPubKeyAction, gas, home, node string, verbose bool) ([]byte, error)
+
+	CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID, metadata types.ConsumerMetadata, initParams *types.ConsumerInitializationParameters, powerShapingParams *types.PowerShapingParameters) ([]byte, error)
+	UpdateConsumer(providerChain ChainID, validator ValidatorID, update types.MsgUpdateConsumer, verbose bool) ([]byte, error)
+	SubmitGovProposal(chain ChainID, from ValidatorID, command string, proposal string, verbose bool) ([]byte, error)
+	AssignConsumerPubKey(identifier string, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error)
 }
+
+type ActionCommands interface {
+	SubmitConsumerAdditionProposal(action SubmitConsumerAdditionProposalAction, verbose bool)
+	AssignConsumerPubKey(action AssignConsumerPubKeyAction, verbose bool)
+	StartChain(action StartChainAction, verbose bool)
+	StartConsumerChain(action StartConsumerChainAction, verbose bool)
+	SubmitConsumerRemovalProposal(action SubmitConsumerRemovalProposalAction, verbose bool)
+	DelegateTokens(action DelegateTokensAction, verbose bool)
+	UnbondTokens(action UnbondTokensAction, verbose bool)
+}
+type ChainIF interface {
+	ActionCommands
+}
+
+type ActionHandler func(action interface{}, verbose bool) error
 
 // TODO: replace ExecutionTarget with new TargetDriver interface
 type PlatformDriver interface {
@@ -72,7 +167,6 @@ type TargetDriver interface {
 // TODO: this should not be here. mv 'Now' to a better suited type here and then move ContainerConfig back
 type ContainerConfig struct {
 	ContainerName string
-	InstanceName  string
 	CcvVersion    string
 	Now           time.Time
 }

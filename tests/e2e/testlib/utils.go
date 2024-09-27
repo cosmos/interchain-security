@@ -99,3 +99,11 @@ func ExecuteCommand(cmd *exec.Cmd, cmdName string, verbose bool) {
 		log.Fatal(err)
 	}
 }
+
+func UintPtr(i uint) *uint {
+	return &i
+}
+
+func IntPtr(i int) *int {
+	return &i
+}

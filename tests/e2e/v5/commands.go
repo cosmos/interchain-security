@@ -1,15 +1,20 @@
-package v4
+package v5
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
@@ -17,6 +22,8 @@ import (
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 type (
@@ -42,6 +49,7 @@ type (
 type State map[ChainID]ChainState
 
 type Commands struct {
+	Verbose          bool
 	ContainerConfig  ContainerConfig // FIXME only needed for 'Now' time tracking
 	ValidatorConfigs map[ValidatorID]ValidatorConfig
 	ChainConfigs     map[ChainID]ChainConfig
@@ -86,7 +94,11 @@ type ValPubKey struct {
 }
 
 type TmValidatorSetYaml struct {
-	Total      string `yaml:"total"`
+	BlockHeight string `yaml:"block_height"`
+	Pagination  struct {
+		NextKey string `yaml:"next_key"`
+		Total   string `yaml:"total"`
+	} `yaml:"pagination"`
 	Validators []struct {
 		Address     string    `yaml:"address"`
 		VotingPower string    `yaml:"voting_power"`
@@ -95,10 +107,10 @@ type TmValidatorSetYaml struct {
 }
 
 func (tr Commands) GetValPower(chain ChainID, validator ValidatorID) uint {
-	/* 	if *verbose {
-	   		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
-	   	}
-	*/
+	if tr.Verbose {
+		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
+	}
+
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	command := tr.Target.ExecCommand(binaryName,
 
@@ -117,15 +129,15 @@ func (tr Commands) GetValPower(chain ChainID, validator ValidatorID) uint {
 		log.Fatalf("yaml.Unmarshal returned an error while unmarshalling validator set: %v, input: %s", err, string(bz))
 	}
 
-	total, err := strconv.Atoi(valset.Total)
+	total, err := strconv.Atoi(valset.Pagination.Total)
 	if err != nil {
-		log.Fatalf("v4: strconv.Atoi returned an error while converting total for validator set: %v, input: %s, validator set: %s, src: %s",
-			err, valset.Total, pretty.Sprint(valset), string(bz))
+		log.Fatalf("v4: strconv.Atoi returned an error while converting total for validator set: %v,\n input: %s,\n validator set: %s,\n src: %s",
+			err, valset.Pagination.Total, pretty.Sprint(valset), string(bz))
 	}
 
 	if total != len(valset.Validators) {
 		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue. Validator set: %v",
-			valset.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
+			valset.Pagination.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
 	}
 
 	for _, val := range valset.Validators {
@@ -233,43 +245,56 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 	noProposalRegex := regexp.MustCompile(`doesn't exist: key not found`)
 
 	binaryName := tr.ChainConfigs[chain].BinaryName
-	bz, err := tr.Target.ExecCommand(binaryName,
-
+	cmd := tr.Target.ExecCommand(binaryName,
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
-
 		`--node`, tr.GetQueryNode(chain),
-		`-o`, `json`,
-	).CombinedOutput()
+		`-o`, `json`)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println("Error getting governance proposal", proposal, "\n\t cmd: ", cmd, "\n\t err:", err, "\n\t out: ", string(bz))
+	}
 
 	prop := TextProposal{}
-
+	propRaw := string(bz)
 	if err != nil {
 		if noProposalRegex.Match(bz) {
 			return prop
 		}
 
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal("Error parsing proposal\n", propRaw)
 	}
 
-	propType := gjson.Get(string(bz), `messages.0.content.@type`).String()
-	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
-	status := gjson.Get(string(bz), `status`).String()
+	// for legacy proposal types submitted using "tx submit-legacyproposal" (cosmos-sdk/v1/MsgExecLegacyContent)
+	propType := gjson.Get(propRaw, `proposal.messages.0.value.content.type`).String()
+	rawContent := gjson.Get(propRaw, `proposal.messages.0.value.content.value`)
 
-	// This is a breaking change in the query output for proposals: bug in SDK??
-	proposal_value, exists := gov.ProposalStatus_value[status]
+	// for current (>= v47) prop types submitted using "tx submit-proposal"
+	if propType == "" {
+		propType = gjson.Get(propRaw, `proposal.messages.0.type`).String()
+		rawContent = gjson.Get(propRaw, `proposal.messages.0.value`)
+	}
+
+	deposit := gjson.Get(propRaw, `proposal.total_deposit.#(denom=="stake").amount`).Uint()
+	status := gjson.Get(propRaw, `proposal.status`).String()
+
+	x, err := strconv.Atoi(status)
+	if err != nil {
+		panic("error converting proposal status:" + err.Error())
+	}
+
+	status, exists := gov.ProposalStatus_name[int32(x)]
 	if !exists {
-		panic("invalid proposal status value: " + status)
+		panic("invalid proposal status value:" + string(bz))
 	}
-	status = strconv.Itoa(int(proposal_value))
 
 	chainConfigs := tr.ChainConfigs
 	containerConfig := tr.ContainerConfig
 
 	switch propType {
 	case "/cosmos.gov.v1beta1.TextProposal":
-		title := gjson.Get(string(bz), `content.title`).String()
-		description := gjson.Get(string(bz), `content.description`).String()
+		title := rawContent.Get("title").String()
+		description := rawContent.Get("description").String()
 
 		return TextProposal{
 			Deposit:     uint(deposit),
@@ -278,8 +303,8 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Description: description,
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		spawnTime := gjson.Get(string(bz), `messages.0.content.spawn_time`).Time().Sub(containerConfig.Now)
+		chainId := rawContent.Get(`chain_id`).String()
+		spawnTime := rawContent.Get(`spawn_time`).Time().Sub(containerConfig.Now)
 
 		var chain ChainID
 		for i, conf := range chainConfigs {
@@ -295,13 +320,13 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Chain:     chain,
 			SpawnTime: int(spawnTime.Milliseconds()),
 			InitialHeight: clienttypes.Height{
-				RevisionNumber: gjson.Get(string(bz), `messages.0.content.initial_height.revision_number`).Uint(),
-				RevisionHeight: gjson.Get(string(bz), `messages.0.content.initial_height.revision_height`).Uint(),
+				RevisionNumber: rawContent.Get("initial_height.revision_number").Uint(),
+				RevisionHeight: rawContent.Get("initial_height.revision_height").Uint(),
 			},
 		}
 	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
-		height := gjson.Get(string(bz), `messages.0.content.plan.height`).Uint()
-		title := gjson.Get(string(bz), `messages.0.content.plan.name`).String()
+		height := rawContent.Get("plan.height").Uint()
+		title := rawContent.Get("plan.name").String()
 		return UpgradeProposal{
 			Deposit:       uint(deposit),
 			Status:        status,
@@ -310,7 +335,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
+		chainId := rawContent.Get(`chain_id`).String()
 
 		var chain ChainID
 		for i, conf := range chainConfigs {
@@ -329,13 +354,13 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 		return ParamsProposal{
 			Deposit:  uint(deposit),
 			Status:   status,
-			Subspace: gjson.Get(string(bz), `messages.0.content.changes.0.subspace`).String(),
-			Key:      gjson.Get(string(bz), `messages.0.content.changes.0.key`).String(),
-			Value:    gjson.Get(string(bz), `messages.0.content.changes.0.value`).String(),
+			Subspace: rawContent.Get(`changes.0.subspace`).String(),
+			Key:      rawContent.Get(`changes.0.key`).String(),
+			Value:    rawContent.Get(`changes.0.value`).String(),
 		}
 	}
 
-	log.Fatal("unknown proposal type", string(bz))
+	log.Fatal("received unknown proposal type: '", propType, "', proposal JSON:", propRaw)
 
 	return nil
 }
@@ -499,17 +524,8 @@ func (tr Commands) GetPendingPacketQueueSize(chain ChainID) uint {
 	return uint(len(packetData))
 }
 
-func (tr Commands) GetValidatorIP(chain ChainID, validator ValidatorID) string {
-	return tr.ChainConfigs[chain].IpPrefix + "." + tr.ValidatorConfigs[validator].IpSuffix
-}
-
-// getQueryNode returns query node tcp address on chain.
-func (tr Commands) GetQueryNode(chain ChainID) string {
-	return fmt.Sprintf("tcp://%s", tr.GetQueryNodeRPCAddress(chain))
-}
-
-func (tr Commands) GetQueryNodeRPCAddress(chain ChainID) string {
-	return fmt.Sprintf("%s:26658", tr.GetQueryNodeIP(chain))
+func (tr Commands) GetValidatorHome(chain ChainID, validator ValidatorID) string {
+	return `/` + string(chain) + `/validator` + fmt.Sprint(validator)
 }
 
 // getQueryNodeIP returns query node IP for chain,
@@ -628,6 +644,109 @@ func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	return chains
 }
 
+func (tr Commands) AssignConsumerPubKey(chain string, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error) {
+	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
+	cmd := tr.Target.ExecCommand(
+		binaryName,
+		"tx", "provider", "assign-consensus-key",
+		chain,
+		pubKey,
+
+		`--from`, fmt.Sprintf("validator%s", from),
+		`--chain-id`, string(tr.ChainConfigs[ChainID("provi")].ChainId),
+		`--home`, home,
+		`--node`, node,
+		`--gas`, gas,
+		`--keyring-backend`, `test`,
+		`-y`,
+		`-o`, `json`,
+	)
+
+	if verbose {
+		fmt.Println("assignConsumerPubKey cmd:", cmd.String())
+	}
+
+	return cmd.CombinedOutput()
+}
+
+// SubmitGovProposal sends a gov legacy-proposal transaction with given command and proposal content
+func (tr Commands) SubmitGovProposal(chain ChainID, from ValidatorID, command string, proposal string, verbose bool) ([]byte, error) {
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	cmd := tr.Target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, proposal, "/temp-proposal.json"))
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("submit legacy-proposal failed err='%s'\n%s\n", err.Error(), string(bz))
+	}
+
+	cmd = tr.Target.ExecCommand(
+		tr.ChainConfigs[chain].BinaryName,
+		"tx", "gov", "submit-legacy-proposal", command, "/temp-proposal.json",
+		`--from`, `validator`+fmt.Sprint(from),
+		`--chain-id`, string(tr.ChainConfigs[chain].ChainId),
+		`--home`, tr.GetValidatorHome(chain, from),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(chain, from),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("running cmd:", cmd.String())
+		fmt.Println("proposal content json:", proposal)
+	}
+	return cmd.CombinedOutput()
+}
+
+func (tr Commands) SubmitConsumerAdditionProposal(
+	action e2e.SubmitConsumerAdditionProposalAction,
+	verbose bool,
+) ([]byte, error) {
+
+	spawnTime := tr.ContainerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
+	params := ccvtypes.DefaultParams()
+	prop := client.ConsumerAdditionProposalJSON{
+		Title:                             "Propose the addition of a new chain",
+		Summary:                           "Gonna be a great chain",
+		ChainId:                           string(tr.ChainConfigs[action.ConsumerChain].ChainId),
+		InitialHeight:                     action.InitialHeight,
+		GenesisHash:                       []byte("gen_hash"),
+		BinaryHash:                        []byte("bin_hash"),
+		SpawnTime:                         spawnTime,
+		ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
+		BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
+		HistoricalEntries:                 params.HistoricalEntries,
+		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
+		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
+		UnbondingPeriod:                   params.UnbondingPeriod,
+		Deposit:                           fmt.Sprint(action.Deposit) + `stake`,
+		DistributionTransmissionChannel:   action.DistributionChannel,
+		TopN:                              action.TopN,
+		ValidatorsPowerCap:                action.ValidatorsPowerCap,
+		ValidatorSetCap:                   action.ValidatorSetCap,
+		Allowlist:                         action.Allowlist,
+		Denylist:                          action.Denylist,
+		MinStake:                          action.MinStake,
+		AllowInactiveVals:                 action.AllowInactiveVals,
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("p rop json contains single quote")
+	}
+
+	bz, err = tr.SubmitGovProposal(action.Chain, action.From, "consumer-addition", jsonStr, verbose)
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal output:", string(bz))
+	}
+	return bz, err
+}
+
 // Breaking forward compatibility
 func (tr Commands) GetIBCTransferParams(chain ChainID) IBCTransferParams {
 	panic("'GetIBCTransferParams' is not implemented in this version")
@@ -647,6 +766,14 @@ func (tr Commands) GetInflationRate(
 	panic("'GetInflationRate' is not implemented in this version")
 }
 
+func (tr Commands) CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID, metadata providertypes.ConsumerMetadata, initParams *types.ConsumerInitializationParameters, powerShapingParams *types.PowerShapingParameters) ([]byte, error) {
+	panic("'CreateConsumer' is not implemented in this version")
+}
+
+func (tr Commands) UpdateConsumer(providerChain ChainID, validator ValidatorID, update providertypes.MsgUpdateConsumer, verbose bool) ([]byte, error) {
+	panic("'UpdateConsumer' is not implemented in this version")
+}
+
 // QueryTransaction returns the content of the transaction or an error e.g. when a transaction coudl
 func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error) {
 	binaryName := tr.ChainConfigs[chain].BinaryName
@@ -655,6 +782,29 @@ func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error
 		`--node`, tr.GetQueryNode(chain),
 		`-o`, `json`,
 	)
-	fmt.Println("@@@ running cmd ", cmd)
 	return cmd.CombinedOutput()
+}
+
+// TODO: refactor the following APIs as they are not version dependent commands on the target
+func (tr Commands) GetValidatorIP(chain ChainID, validator ValidatorID) string {
+	return tr.ChainConfigs[chain].IpPrefix + "." + tr.ValidatorConfigs[validator].IpSuffix
+}
+
+// getQueryNode returns query node tcp address on chain.
+func (tr Commands) GetQueryNode(chain ChainID) string {
+	return fmt.Sprintf("tcp://%s", tr.GetQueryNodeRPCAddress(chain))
+}
+
+func (tr Commands) GetQueryNodeRPCAddress(chain ChainID) string {
+	return fmt.Sprintf("%s:26658", tr.GetQueryNodeIP(chain))
+}
+
+func (tr Commands) getValidatorNode(chain ChainID, validator ValidatorID) string {
+	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
+	// TODO: @bermuell Fix this !!!
+	/* 	if tr.useCometmock {
+		return tr.target.GetQueryNode(chain)
+	}
+	*/
+	return "tcp://" + tr.GetValidatorIP(chain, validator) + ":26658"
 }
