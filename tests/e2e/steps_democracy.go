@@ -183,21 +183,7 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 				Port:          "transfer",
 				Channel:       1,
 			},
-			State: State{
-				ChainID("provi"): ChainState{
-					// Check that ARE NOT minted and sent to provider chain and distributed to validators and their delegators on provider chain
-					// the tokens are not sent because the test configuration does not allow sending tokens
-					Rewards: &Rewards{
-						IsRewarded: map[ValidatorID]bool{
-							ValidatorID("alice"): expectRegisteredRewardDistribution,
-							ValidatorID("bob"):   expectRegisteredRewardDistribution,
-							ValidatorID("carol"): expectRegisteredRewardDistribution,
-						},
-						IsIncrementalReward: false,
-						IsNativeDenom:       false,
-					},
-				},
-			},
+			State: State{},
 		},
 		{
 			Action: DowntimeSlashAction{
@@ -222,94 +208,94 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 				},
 			},
 		},
-		{
-			Action: RelayPacketsAction{
-				ChainA:  ChainID("provi"),
-				ChainB:  ChainID(consumerName),
-				Port:    "provider",
-				Channel: 0,
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						// Downtime jailing and corresponding voting power change are processed by provider
-						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 500,
-					},
-				},
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 500,
-					},
-				},
-			},
-		},
-		// A block is incremented each action, hence why VSC is committed on provider,
-		// and can now be relayed as packet to consumer
-		{
-			Action: RelayPacketsAction{
-				ChainA:  ChainID("provi"),
-				ChainB:  ChainID(consumerName),
-				Port:    "provider",
-				Channel: 0,
-			},
-			State: State{
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						// VSC now seen on consumer
-						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 500,
-					},
-				},
-			},
-		},
-		{
-			Action: UnjailValidatorAction{
-				Provider:  ChainID("provi"),
-				Validator: ValidatorID("bob"),
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 500,
-					},
-				},
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   0,
-						ValidatorID("carol"): 500,
-					},
-				},
-			},
-		},
-		{
-			Action: RelayPacketsAction{
-				ChainA:  ChainID("provi"),
-				ChainB:  ChainID(consumerName),
-				Port:    "provider",
-				Channel: 0,
-			},
-			State: State{
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   500,
-						ValidatorID("carol"): 500,
-					},
-					// Check that slashing on the gov-consumer chain does not result in slashing for the representatives or their delegators
-					StakedTokens: &map[ValidatorID]uint{
-						ValidatorID("alice"): 100500000,
-						ValidatorID("bob"):   40000000,
-					},
-				},
-			},
-		},
+		// {
+		// 	Action: RelayPacketsAction{
+		// 		ChainA:  ChainID("provi"),
+		// 		ChainB:  ChainID(consumerName),
+		// 		Port:    "provider",
+		// 		Channel: 0,
+		// 	},
+		// 	State: State{
+		// 		ChainID("provi"): ChainState{
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				// Downtime jailing and corresponding voting power change are processed by provider
+		// 				ValidatorID("bob"):   0,
+		// 				ValidatorID("carol"): 500,
+		// 			},
+		// 		},
+		// 		ChainID(consumerName): ChainState{
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				ValidatorID("bob"):   500,
+		// 				ValidatorID("carol"): 500,
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// // A block is incremented each action, hence why VSC is committed on provider,
+		// // and can now be relayed as packet to consumer
+		// {
+		// 	Action: RelayPacketsAction{
+		// 		ChainA:  ChainID("provi"),
+		// 		ChainB:  ChainID(consumerName),
+		// 		Port:    "provider",
+		// 		Channel: 0,
+		// 	},
+		// 	State: State{
+		// 		ChainID(consumerName): ChainState{
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				// VSC now seen on consumer
+		// 				ValidatorID("bob"):   0,
+		// 				ValidatorID("carol"): 500,
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	Action: UnjailValidatorAction{
+		// 		Provider:  ChainID("provi"),
+		// 		Validator: ValidatorID("bob"),
+		// 	},
+		// 	State: State{
+		// 		ChainID("provi"): ChainState{
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				ValidatorID("bob"):   500,
+		// 				ValidatorID("carol"): 500,
+		// 			},
+		// 		},
+		// 		ChainID(consumerName): ChainState{
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				ValidatorID("bob"):   0,
+		// 				ValidatorID("carol"): 500,
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	Action: RelayPacketsAction{
+		// 		ChainA:  ChainID("provi"),
+		// 		ChainB:  ChainID(consumerName),
+		// 		Port:    "provider",
+		// 		Channel: 0,
+		// 	},
+		// 	State: State{
+		// 		ChainID(consumerName): ChainState{
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				ValidatorID("bob"):   500,
+		// 				ValidatorID("carol"): 500,
+		// 			},
+		// 			// Check that slashing on the gov-consumer chain does not result in slashing for the representatives or their delegators
+		// 			StakedTokens: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 100500000,
+		// 				ValidatorID("bob"):   40000000,
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 }

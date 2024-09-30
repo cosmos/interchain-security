@@ -441,10 +441,330 @@ For more details, see [ADR-008](../adrs/adr-008-throttle-retries.md).
 
 ## Client
 
-> TBA
-
 ### CLI
+
+A user can interact with the `consumer` module using the CLI.
+
+#### Query
+
+The `query` commands allow users to query `consumer` state.
+
+##### Next Fee Distribution
+
+The `next-fee-distribution` command allows to query next fee distribution data.
+
+```bash
+interchain-security-cd query ccvconsumer next-fee-distribution [flags]
+```
+
+Example:
+
+```bash
+interchain-security-cd query ccvconsumer next-fee-distribution
+```
+
+Example Output:
+
+```bash
+data:
+  currentHeight: "967"
+  distribution_fraction: "0.75"
+  lastHeight: "960"
+  nextHeight: "980"
+  toConsumer: ""
+  toProvider: ""
+  total: ""
+```
+
+##### Provider Info
+
+The `provider-info` command allows to query provider info.
+
+```bash
+interchain-security-cd query ccvconsumer provider-info [flags]
+```
+
+Example:
+
+```bash
+interchain-security-cd query ccvconsumer provider-info
+```
+
+Example Output:
+
+```bash
+provider_address: "cosmos1abcd1234..."
+```
+
+##### Throttle State
+
+The `throttle-state` command allows to query throttle state.
+
+```bash
+interchain-security-cd query ccvconsumer provider-info [flags]
+```
+
+Example:
+
+```bash
+interchain-security-cd query ccvconsumer provider-info
+```
+
+Example Output:
+
+```bash
+packet_data_queue: []
+slash_record: null
+```
+
+##### Params
+
+The `params` command allows to query consumer module parameters.
+
+```bash
+interchain-security-cd query ccvconsumer params [flags]
+```
+
+Example:
+
+```bash
+interchain-security-cd query ccvconsumer params
+```
+
+Example Output:
+
+```bash
+provider_address: "cosmos1abcd1234..."
+```
 
 ### gRPC
 
+A user can query the `consumer` module using gRPC endpoints.
+
+#### Next Fee Distribution
+
+The `QueryNextFeeDistribution` endpoint queries next fee distribution data.
+
+```bash
+interchain_security.ccv.consumer.v1.Query/QueryNextFeeDistribution
+```
+
+Example:
+
+```bash
+grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/QueryNextFeeDistribution
+```
+
+Example Output:
+
+```json
+{
+  "data": {
+    "currentHeight": "402",
+    "lastHeight": "400",
+    "nextHeight": "420",
+    "distributionFraction": "0.75"
+  }
+}
+```
+
+#### Provider Info
+
+The `QueryProviderInfo` endpoint queries provider info.
+
+```bash
+interchain_security.ccv.consumer.v1.Query/QueryProviderInfo
+```
+
+Example:
+
+```bash
+grpcurl -plaintext interchain_security.ccv.consumer.v1.Query/QueryProviderInfo
+```
+
+Example Output:
+
+```json
+{
+  "consumer": {
+    "chainID": "pion-1",
+    "clientID": "07-tendermint-0",
+    "connectionID": "connection-0",
+    "channelID": "channel-0"
+  },
+  "provider": {
+    "chainID": "provider",
+    "clientID": "07-tendermint-0",
+    "connectionID": "connection-0",
+    "channelID": "channel-0"
+  }
+}
+```
+
+#### Throttle State
+
+The `QueryThrottleState` endpoint queries throttle state.
+
+```bash
+interchain_security.ccv.consumer.v1.Query/QueryThrottleState
+```
+
+Example:
+
+```bash
+grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/QueryThrottleState
+```
+
+Example Output:
+
+```json
+{
+  "consumer": {
+    "chainID": "pion-1",
+    "clientID": "07-tendermint-0",
+    "connectionID": "connection-0",
+    "channelID": "channel-0"
+  },
+  "provider": {
+    "chainID": "provider",
+    "clientID": "07-tendermint-0",
+    "connectionID": "connection-0",
+    "channelID": "channel-0"
+  }
+}
+```
+
+#### Params
+
+The `QueryParams` endpoint queries consumer module parameters.
+
+```bash
+interchain_security.ccv.consumer.v1.Query/QueryParams
+```
+
+Example:
+
+```bash
+grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/QueryParams
+```
+
+Example Output:
+
+```bash
+```
+
 ### REST
+
+A user can query the `consumer` module using REST endpoints.
+
+#### Next Fee Distribution
+
+The `next-fee-distribution` endpoint queries next fee distribution data.
+
+```bash
+/interchain_security/ccv/consumer/next-fee-distribution
+```
+
+Example:
+
+```bash
+curl http://localhost:1317/interchain_security/ccv/consumer/next-fee-distribution
+```
+
+Example Output:
+
+```json
+{
+  "data": {
+    "currentHeight": "402",
+    "lastHeight": "400",
+    "nextHeight": "420",
+    "distributionFraction": "0.75"
+  }
+}
+```
+
+#### Provider Info
+
+The `QueryProviderInfo` endpoint queries provider info.
+
+```bash
+/interchain_security/ccv/consumer/provider-info
+```
+
+Example:
+
+```bash
+curl http://localhost:1317/interchain_security/ccv/consumer/provider-info
+```
+
+Example Output:
+
+```json
+{
+  "consumer": {
+    "chainID": "pion-1",
+    "clientID": "07-tendermint-0",
+    "connectionID": "connection-0",
+    "channelID": "channel-0"
+  },
+  "provider": {
+    "chainID": "provider",
+    "clientID": "07-tendermint-0",
+    "connectionID": "connection-0",
+    "channelID": "channel-0"
+  }
+}
+```
+
+#### Throttle State
+
+The `throttle_state` endpoint queries throttle state.
+
+```bash
+/interchain_security/ccv/consumer/throttle_state
+```
+
+Example:
+
+```bash
+curl http://localhost:1317/interchain_security/ccv/consumer/throttle_state
+```
+
+Example Output:
+
+```json
+{
+  "consumer": {
+    "chainID": "pion-1",
+    "clientID": "07-tendermint-0",
+    "connectionID": "connection-0",
+    "channelID": "channel-0"
+  },
+  "provider": {
+    "chainID": "provider",
+    "clientID": "07-tendermint-0",
+    "connectionID": "connection-0",
+    "channelID": "channel-0"
+  }
+}
+```
+
+#### Params
+
+The `params` endpoint queries consumer module parameters.
+
+```bash
+/interchain_security/ccv/consumer/params
+```
+
+Example:
+
+```bash
+curl http://localhost:1317/interchain_security/ccv/consumer/params
+```
+
+Example Output:
+
+```bash
+```
