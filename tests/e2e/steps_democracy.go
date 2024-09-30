@@ -300,8 +300,8 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 				ChainID("provi"): ChainState{
 					Rewards: &Rewards{
 						IsRewarded: map[ValidatorID]bool{
-							// rewards are distributed regardless whitelisted `provider_reward_denoms`
-							// consumer parameter
+							// rewards should be distributed regardless
+							// of the `provider_reward_denoms` consumer parameter
 							ValidatorID("alice"): true,
 							ValidatorID("bob"):   true,
 							ValidatorID("carol"): true,
