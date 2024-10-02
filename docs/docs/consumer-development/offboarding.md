@@ -4,21 +4,11 @@ title: Offboarding Checklist
 ---
 # Consumer Offboarding
 
-To offboard a consumer chain simply submit a `ConsumerRemovalProposal` governance proposal listing a `stop_time`. After stop time passes, the provider chain will remove the chain from the ICS protocol (it will stop sending validator set updates).
+To offboard a consumer chain, the owner of the chain has to submit a `MsgRemoveConsumer` message with the chain's `consumerId`.
+If the chain is a Top N chain, the `MsgRemoveConsumer` has to be submitted through a governance proposal.
+Otherwise, the message can be submitted simply by the owner of the consumer chain.
 
-```js
-// ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
-// If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
-// operation funds are released.
-{
-    // the title of the proposal
-    "title": "This was a great chain",
-    "description": "Here is a .md formatted string specifying removal details",
-    // the chain-id of the consumer chain to be stopped
-    "chain_id": "consumerchain-1",
-    // the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
-    "stop_time": "2023-03-07T12:40:00.000000Z",
-}
-```
-
-More information will be listed in a future version of this document.
+When the `MsgRemoveConsumer` executes, the provider chain will stop the chain from the ICS protocol (it will stop
+sending validator set updates) and the chain is considered to be in the stopped phase.
+At this phase, validators cannot opt in, change keys, etc. and validators stop receiving rewards.
+After the chain is stopped, and an unbonding period of time passes, part of the state of the chain is deleted and the chain is considered deleted.
