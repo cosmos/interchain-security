@@ -461,13 +461,14 @@ The `next-fee-distribution` command allows to query next fee distribution data.
 interchain-security-cd query ccvconsumer next-fee-distribution [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-cd query ccvconsumer next-fee-distribution
 ```
 
-Example Output:
+Output:
 
 ```bash
 data:
@@ -480,6 +481,8 @@ data:
   total: ""
 ```
 
+</details>
+
 ##### Provider Info
 
 The `provider-info` command allows to query provider info.
@@ -488,13 +491,14 @@ The `provider-info` command allows to query provider info.
 interchain-security-cd query ccvconsumer provider-info [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-cd query ccvconsumer provider-info
 ```
 
-Example Output:
+Output:
 
 ```bash
 consumer:
@@ -509,6 +513,8 @@ provider:
   connectionID: connection-0
 ```
 
+</details>
+
 ##### Throttle State
 
 The `throttle-state` command allows to query on-chain state relevant with slash packet throttling.
@@ -517,13 +523,14 @@ The `throttle-state` command allows to query on-chain state relevant with slash 
 interchain-security-cd query ccvconsumer throttle-state [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-cd query ccvconsumer throttle-state
 ```
 
-Example Output:
+Output:
 
 ```bash
 packet_data_queue:
@@ -539,6 +546,8 @@ slash_record:
   waiting_on_reply: true
 ```
 
+</details>
+
 ##### Params
 
 The `params` command allows to query consumer module parameters.
@@ -547,13 +556,14 @@ The `params` command allows to query consumer module parameters.
 interchain-security-cd query ccvconsumer params [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-cd query ccvconsumer params
 ```
 
-Example Output:
+Output:
 
 ```bash
 params:
@@ -573,6 +583,8 @@ params:
   unbonding_period: 1209600s
 ```
 
+</details>
+
 ### gRPC
 
 A user can query the `consumer` module using gRPC endpoints.
@@ -585,13 +597,14 @@ The `QueryNextFeeDistribution` endpoint queries next fee distribution data.
 interchain_security.ccv.consumer.v1.Query/QueryNextFeeDistribution
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/QueryNextFeeDistribution
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -604,6 +617,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Provider Info
 
 The `QueryProviderInfo` endpoint queries provider info.
@@ -612,13 +627,14 @@ The `QueryProviderInfo` endpoint queries provider info.
 interchain_security.ccv.consumer.v1.Query/QueryProviderInfo
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/QueryProviderInfo
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -637,22 +653,24 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Throttle State
 
 The `QueryThrottleState` endpoint queries on-chain state relevant with slash packet throttling.
-
 
 ```bash
 interchain_security.ccv.consumer.v1.Query/QueryThrottleState
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/QueryThrottleState
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -676,6 +694,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Params
 
 The `QueryParams` endpoint queries consumer module parameters.
@@ -684,13 +704,14 @@ The `QueryParams` endpoint queries consumer module parameters.
 interchain_security.ccv.consumer.v1.Query/QueryParams
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/QueryParams
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -710,6 +731,8 @@ Example Output:
   }
 }
 ```
+
+</details>
 
 ### REST
 
@@ -723,13 +746,14 @@ The `next-fee-distribution` endpoint queries next fee distribution data.
 /interchain_security/ccv/consumer/next-fee-distribution
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/consumer/next-fee-distribution
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -742,6 +766,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Provider Info
 
 The `QueryProviderInfo` endpoint queries provider info.
@@ -750,13 +776,14 @@ The `QueryProviderInfo` endpoint queries provider info.
 /interchain_security/ccv/consumer/provider-info
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/consumer/provider-info
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -774,6 +801,8 @@ Example Output:
   }
 }
 ```
+
+</details>
 
 #### Throttle State
 
@@ -784,13 +813,14 @@ The `throttle_state` endpoint queries on-chain state relevant with slash packet 
 /interchain_security/ccv/consumer/throttle_state
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/consumer/throttle_state
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -809,6 +839,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Params
 
 The `params` endpoint queries consumer module parameters.
@@ -817,13 +849,14 @@ The `params` endpoint queries consumer module parameters.
 /interchain_security/ccv/consumer/params
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/consumer/params
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -843,3 +876,5 @@ Example Output:
   }
 }
 ```
+
+</details>

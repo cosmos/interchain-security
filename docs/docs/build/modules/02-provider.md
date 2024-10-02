@@ -957,13 +957,14 @@ The `consumer-genesis` command allows to query for consumer chain genesis state 
 interchain-security-pd query provider consumer-genesis [consumer-id] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider consumer-genesis 0
 ```
 
-Example Output:
+Output:
 
 ```bash
 new_chain: true
@@ -1056,6 +1057,8 @@ provider:
       ed25519: mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI=
 ```
 
+</details>
+
 ##### List Consumer Chains
 
 The `list-consumer-chains` command allows to query consumer chains supported by the provider chain.
@@ -1065,13 +1068,14 @@ An optional integer parameter can be passed for phase filtering of consumer chai
 interchain-security-pd query provider list-consumer-chains [phase] [limit] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider list-consumer-chains 3
 ```
 
-Example Output:
+Output:
 
 ```bash
 chains:
@@ -1096,6 +1100,8 @@ pagination:
   total: "1"
 ```
 
+</details>
+
 ##### Validator Consumer Key Assignment
 
 The `validator-consumer-key` command allows to query assigned validator consensus public key for a consumer chain.
@@ -1104,18 +1110,20 @@ The `validator-consumer-key` command allows to query assigned validator consensu
 interchain-security-pd query provider validator-consumer-key [consumer-id] [provider-validator-address] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider validator-consumer-key 0 cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6
 ```
 
-Example Output:
+Output:
  
  ```bash
 consumer_address: cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk
  ```
 
+</details>
 
 ##### Validator Provider Key
 
@@ -1126,18 +1134,20 @@ The `validator-provider-key` command allows to query validator consensus public 
 interchain-security-pd query provider validator-provider-key [consumer-id] [consumer-validator-address] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider validator-provider-key 0 cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk
 ```
 
-
-Example Output:
+Output:
  
  ```bash
 provider_address: cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj
 ```
+
+</details>
 
 ##### Throttle State
 
@@ -1148,19 +1158,22 @@ The `throttle-state` command allows to query on-chain state relevant to slash pa
 interchain-security-pd query provider throttle-state [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider throttle-state
 ```
 
-Example Output:
+Output:
 
 ```bash
 next_replenish_candidate: "2024-09-26T07:59:51.336971970Z"
 slash_meter: "1500"
 slash_meter_allowance: "1511"
 ```
+
+</details>
 
 ##### Registered Consumer Reward Denoms
 
@@ -1170,19 +1183,22 @@ The `registered-consumer-reward-denoms` command allows to query registered consu
 interchain-security-pd query provider registered-consumer-reward-denoms [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider registered-consumer-reward-denoms
 ```
 
-Example Output:
+Output:
 
 ```bash
 denoms:
 - ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9
 - ibc/D549749C93524DA1831A4B3C850DFC1BA9060261BEDFB224B3B0B4744CD77A70
 ```
+
+</details>
 
 ##### All Pairs Valconsensus Address
 
@@ -1192,13 +1208,14 @@ The `all-pairs-valconsensus-address` command allows to query all pairs of valcon
 interchain-security-pd query provider all-pairs-valconsensus-address [consumer-id] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider all-pairs-valconsensus-address 0
 ```
 
-Example Output:
+Output:
 
 ```bash
 pair_val_con_addr:
@@ -1208,6 +1225,8 @@ pair_val_con_addr:
   provider_address: cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6
 ```
 
+</details>
+
 ##### Provider Parameters
 
 The `params` command allows to query provider parameters information.
@@ -1216,13 +1235,14 @@ The `params` command allows to query provider parameters information.
 interchain-security-pd query provider params [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider params
 ```
 
-Example Output:
+Output:
 
 ```bash
 blocks_per_epoch: "3"
@@ -1293,6 +1313,8 @@ template_client:
 trusting_period_fraction: "0.66"
 ```
 
+</details>
+
 ##### Consumer Opted In Validators
 
 The `consumer-opted-in-validators` command allows to query opted-in validators for a given consumer chain.
@@ -1301,13 +1323,14 @@ The `consumer-opted-in-validators` command allows to query opted-in validators f
 interchain-security-pd query provider consumer-opted-in-validators [consumer-id] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider consumer-opted-in-validators 0
 ```
 
-Example Output:
+Output:
 
 ```bash
 validators_provider_addresses:
@@ -1315,6 +1338,8 @@ validators_provider_addresses:
 - cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39
 - cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6
 ```
+
+</details>
 
 ##### Consumer Validators
 
@@ -1324,13 +1349,14 @@ The `consumer-validators` command allows to query the last set consumer-validato
 interchain-security-pd query provider consumer-validators [consumer-id] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider consumer-validators 0
 ```
 
-Example Output:
+Output:
 
 ```bash
 validators:
@@ -1376,6 +1402,8 @@ validators:
   validates_current_epoch: true
 ```
 
+</details>
+
 ##### Has to Validate
 
 The `has-to-validate` command allows to query the consumer chains list a given validator has to validate.
@@ -1384,19 +1412,22 @@ The `has-to-validate` command allows to query the consumer chains list a given v
 interchain-security-pd query provider has-to-validate [provider-validator-address] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider has-to-validate cosmoscons1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 ```
 
-Example Output:
+Output:
 
 ```bash
 consumer_ids:
 - "0"
 - "2"
 ```
+
+</details>
 
 ##### Validator Consumer Commission Rate
 
@@ -1406,17 +1437,20 @@ The `validator-consumer-commission-rate` command allows to query the consumer co
 interchain-security-pd query provider validator-consumer-commission-rate [consumer-id] [provider-validator-address] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider validator-consumer-commission-rate 0 cosmoscons1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 ```
 
-Example Output:
+Output:
 
 ```bash
 rate: "0.750000000000000000"
 ```
+
+</details>
 
 ##### Blocks Until Next Epoch
 
@@ -1426,17 +1460,20 @@ The `blocks-until-next-epoch` command allows to query the number of blocks until
 interchain-security-pd query provider blocks-until-next-epoch [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider blocks-until-next-epoch
 ```
 
-Example Output:
+Output:
 
 ```bash
 blocks_until_next_epoch: "286"
 ```
+
+</details>
 
 ##### Consumer Id From Client Id
 
@@ -1446,17 +1483,20 @@ The `consumer-id-from-client-id` command allows to query the consumer id of the 
 interchain-security-pd query provider consumer-id-from-client-id [client-id] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider consumer-id-from-client-id 07-tendermint-0
 ```
 
-Example Output:
+Output:
 
 ```bash
 consumer_id: "0"
 ```
+
+</details>
 
 ##### Consumer Chain
 
@@ -1466,11 +1506,14 @@ The `consumer-chain` command allows to query the consumer chain associated with 
 interchain-security-pd query provider consumer-chain [consumer-id] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd query provider consumer-chain 0
 ```
+
+Output: 
 
 ```bash
 chain_id: pion-1
@@ -1505,6 +1548,8 @@ power_shaping_params:
   validators_power_cap: 0
 ```
 
+</details>
+
 #### Transactions
 
 The `tx` commands allows users to interact with the `provider` module.
@@ -1521,7 +1566,8 @@ The `assign-consensus-key` command allows to assign a consensus public key to us
 interchain-security-pd tx provider assign-consensus-key [consumer-id] [consumer-pubkey] [flags]
 ```
 
-Example
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider assign-consensus-key 0 \
@@ -1533,6 +1579,8 @@ interchain-security-pd tx provider assign-consensus-key 0 \
   --gas-prices="0.025stake" \
 ```
 
+</details>
+
 Note that the consumer pubkey can be obtained by using `interchain-security-cd tendermint show-validator` command.
 
 ##### Create Consumer
@@ -1543,7 +1591,8 @@ The `create-consumer` command allows to create a consumer chain.
 interchain-security-pd tx provider create-consumer [consumer-parameters] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider create-consumer path/to/create-consumer-msg.json \
@@ -1567,6 +1616,8 @@ where `create-consumer-msg.json` contains:
 }
 ```
 
+</details>
+
 ##### Update Consumer
 
 The `update-consumer` command allows to update a consumer chain.
@@ -1575,7 +1626,8 @@ The `update-consumer` command allows to update a consumer chain.
 interchain-security-pd tx provider update-consumer [consumer-parameters] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider update-consumer path/to/update-consumer.json \
@@ -1625,6 +1677,8 @@ where `update-consumer-msg.json` contains:
 }
 ```
 
+</details>
+
 ##### Remove Consumer
 
 The `remove-consumer` command allows to remove a consumer chain.
@@ -1633,11 +1687,14 @@ The `remove-consumer` command allows to remove a consumer chain.
 interchain-security-pd tx provider remove-consumer [consumer-id] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider remove-consumer 0
 ```
+
+</details>
 
 ##### Opt In
 
@@ -1647,7 +1704,8 @@ The `opt-in` command allows a validator to opt in to a consumer chain and option
 interchain-security-pd tx provider opt-in [consumer-id] [consumer-pubkey] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider opt-in 0 \
@@ -1659,6 +1717,8 @@ interchain-security-pd tx provider opt-in 0 \
   --gas-prices="0.025stake" \
 ```
 
+</details>
+
 ##### Opt Out
 
 The `opt-out` command allows validators to opt out from consumer chains.
@@ -1667,7 +1727,8 @@ The `opt-out` command allows validators to opt out from consumer chains.
 interchain-security-pd tx provider opt-out [consumer-id] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider opt-out 0 \
@@ -1678,6 +1739,8 @@ interchain-security-pd tx provider opt-out 0 \
   --gas-prices="0.025stake" \
 ```
 
+</details>
+
 ##### Set Consumer Commission Rate
 
 The `set-consumer-commission-rate` command allows to set a per-consumer chain commission rate.
@@ -1686,7 +1749,8 @@ The `set-consumer-commission-rate` command allows to set a per-consumer chain co
 interchain-security-pd tx provider set-consumer-commission-rate [consumer-id] [commission-rate] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider set-consumer-commission-rate 0 0.5 \
@@ -1697,6 +1761,8 @@ interchain-security-pd tx provider set-consumer-commission-rate 0 0.5 \
   --gas-prices="0.025stake" \
 ```
 
+</details>
+
 ##### Submit Consumer Double Voting
 
 The `submit-consumer-double-voting` command allows to submit a double voting evidence for a consumer chain.
@@ -1705,7 +1771,8 @@ The `submit-consumer-double-voting` command allows to submit a double voting evi
 interchain-security-pd tx provider submit-consumer-double-voting [consumer-id] [evidence] [infraction_header] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider submit-consumer-double-voting 0 path/to/evidence.json path/to/infraction_header.json \
@@ -1760,10 +1827,9 @@ where `evidence.json` contains:
   "validator_power": "500",
   "timestamp": "2024-09-26T09:34:45.945436342Z"
 }
-
 ```
 
-where `infraction_header.json` contains:
+and `infraction_header.json` contains:
 
 ```json
 {
@@ -1868,8 +1934,9 @@ where `infraction_header.json` contains:
   },
   "trusted_validators": null
 }
-
 ```
+
+</details>
 
 ##### Submit Consumer Misbehaviour
 
@@ -1879,7 +1946,8 @@ The `submit-consumer-misbehaviour` command allows to submit an IBC misbehaviour 
 interchain-security-pd tx provider submit-consumer-misbehaviour [consumer-id] [misbehaviour] [flags]
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 interchain-security-pd tx provider submit-consumer-misbehaviour 0 path/to/consumer-misbehaviour.json
@@ -2084,8 +2152,9 @@ where `consumer-misbehaviour.json` contains:
     }
   }
 }
-
 ```
+
+</details>
 
 ### gRPC
 
@@ -2099,14 +2168,15 @@ The `QueryConsumerGenesis` endpoint queries a consumer chain genesis state by co
 interchain_security.ccv.provider.v1.Query/QueryConsumerGenesis
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 \
   interchain_security.ccv.provider.v1.Query/QueryConsumerGenesis 
 ```
 
-Example Output:
+Output:
 
 
 ```json
@@ -2213,6 +2283,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### List Consumer Chains
 
 The `QueryConsumerChains` endpoint queries consumer chains supported by the provider chain.
@@ -2222,13 +2294,14 @@ An optional integer parameter can be passed for phase filtering of consumer chai
 interchain_security.ccv.provider.v1.Query/QueryConsumerChains
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"phase": "1"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerChains
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2262,6 +2335,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Validator Consumer Key Assignment
 
 The `QueryValidatorConsumerAddr` endpoint queries the address assigned by a validator for a consumer chain.
@@ -2271,19 +2346,22 @@ The `QueryValidatorConsumerAddr` endpoint queries the address assigned by a vali
 interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerAddr
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"consumer_id": "0", "provider_address": "cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerAddr
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "consumerAddress": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
 }
 ```
+
+</details>
 
 #### Validator Provider Key
 
@@ -2293,19 +2371,21 @@ The `QueryValidatorProviderAddr` endpoint queries the provider chain address giv
 interchain_security.ccv.provider.v1.Query/QueryValidatorProviderAddr
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"consumer_id": "0", "provider_address": "cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryValidatorProviderAddr
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "consumerAddress": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
   }
 ```
+</details>
 
 #### Throttle State
 
@@ -2315,13 +2395,14 @@ The `QueryThrottleState` queries the main on-chain state relevant to slash packe
 interchain_security.ccv.provider.v1.Query/QueryThrottleState
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext localhost:9090 interchain_security.ccv.provider.v1.Query/QueryThrottleState
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2331,6 +2412,8 @@ Example Output:
 }
 ```
 
+</details>
+
 ##### Registered Consumer Reward Denoms
 
 The `QueryRegisteredConsumerRewardDenoms` command allows to query registered consumer reward denoms
@@ -2339,13 +2422,14 @@ The `QueryRegisteredConsumerRewardDenoms` command allows to query registered con
 interchain_security.ccv.provider.v1.Query/QueryRegisteredConsumerRewardDenoms
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext localhost:9090 interchain_security.ccv.provider.v1.Query/QueryRegisteredConsumerRewardDenoms
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2357,6 +2441,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### All Pairs Valconsensus Address
 
 The `QueryAllPairsValConsAddrByConsumer` endpoint queries the list of pair valconsensus address between provider and consumer chain.
@@ -2365,13 +2451,14 @@ The `QueryAllPairsValConsAddrByConsumer` endpoint queries the list of pair valco
 interchain_security.ccv.provider.v1.Query/QueryAllPairsValConsAddrByConsumer
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryAllPairsValConsAddrByConsumer
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2387,6 +2474,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Provider Parameters
 
 The `QueryParams` endpoint queries all current values of provider parameters.
@@ -2395,13 +2484,14 @@ The `QueryParams` endpoint queries all current values of provider parameters.
 interchain_security.ccv.provider.v1.Query/QueryParams
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext localhost:9090 interchain_security.ccv.provider.v1.Query/QueryParams
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2474,6 +2564,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Consumer Opted In Validators
 
 The `QueryConsumerChainOptedInValidators` endpoint queries opted-in validators for a given consumer chain.
@@ -2482,13 +2574,14 @@ The `QueryConsumerChainOptedInValidators` endpoint queries opted-in validators f
 interchain_security.ccv.provider.v1.Query/QueryConsumerChainOptedInValidators
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
  grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerChainOptedInValidators
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2500,6 +2593,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Consumer Validators
 
 The `QueryConsumerValidators` endpoint queries the latest set consumer-validator set for a given consumer ID.
@@ -2509,13 +2604,14 @@ Note that this does not necessarily mean that the consumer chain is using this v
 interchain_security.ccv.provider.v1.Query/QueryConsumerValidators
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerValidators
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2578,6 +2674,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Has to Validate
 
 The `QueryConsumerChainsValidatorHasToValidate` endpoint queries a list of consumer chains that a given validator must validate.
@@ -2586,13 +2684,14 @@ The `QueryConsumerChainsValidatorHasToValidate` endpoint queries a list of consu
 interchain_security.ccv.provider.v1.Query/QueryConsumerChainsValidatorHasToValidate
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"provider_address": "cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerChainsValidatorHasToValidate
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2603,6 +2702,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Validator Consumer Commission Rate
 
 The `QueryValidatorConsumerCommissionRate` endpoint queries the consumer commission rate a validator charges on a consumer chain.
@@ -2611,19 +2712,22 @@ The `QueryValidatorConsumerCommissionRate` endpoint queries the consumer commiss
 interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerCommissionRate
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"consumer_id": "0", "provider_address": "cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerCommissionRate
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "rate": "750000000000000000"
 }
 ```
+
+</details>
 
 #### Blocks Until Next Epoch
 
@@ -2633,19 +2737,22 @@ The `QueryBlocksUntilNextEpoch` endpoint allows to query the number of blocks un
 interchain_security.ccv.provider.v1.Query/QueryBlocksUntilNextEpoch
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext localhost:9090 interchain_security.ccv.provider.v1.Query/QueryBlocksUntilNextEpoch
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "blocks_until_next_epoch":"4"
 }
 ```
+
+</details>
 
 #### Consumer Id From Client Id
 
@@ -2655,19 +2762,22 @@ The `QueryConsumerIdFromClientId` endpoint allows to query the consumer id of th
 interchain_security.ccv.provider.v1.Query/QueryConsumerIdFromClientId
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"client_id":"07-tendermint-0"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerIdFromClientId
 ```
 
-Example Output:
+Output:
 
 ```bash
 {
   "consumerId": "0"
 }
 ```
+
+</details>
 
 #### Consumer Chain
 
@@ -2677,7 +2787,8 @@ The `QueryConsumerChain` command allows to query the consumer chain associated w
 interchain_security.ccv.provider.v1.Query/QueryConsumerChain
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerChain
@@ -2717,6 +2828,8 @@ grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.
 }
 ```
 
+</details>
+
 ### REST
 
 A user can query the `provider` module using REST endpoints.
@@ -2730,13 +2843,14 @@ The `consumer_genesis` endpoint queries a consumer chain genesis state by consum
 interchain_security/ccv/provider/consumer_genesis/{consumer_id}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/consumer_genesis/0
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2842,6 +2956,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### List Consumer Chains
 
 The `consumer_chains` endpoint queries consumer chains supported by the provider chain.
@@ -2851,13 +2967,14 @@ An optional integer parameter can be passed for phase filtering of consumer chai
 interchain_security/ccv/provider/consumer_chains/{phase}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/consumer_chains/3
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2891,28 +3008,32 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Validator Consumer Key Assignment
 
 The `validator_consumer_addr` endpoint queries the address assigned by a validator for a consumer chain.
-
 
 ```bash
 /interchain_security/ccv/provider/validator_consumer_addr/{consumer_id}/{provider_address}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/validator_consumer_addr/0/cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "consumerAddress": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
 }
 ```
+
+</details>
 
 #### Validator Provider Key
 
@@ -2922,19 +3043,22 @@ The `validator_provider_addr` endpoint queries the provider chain address given 
 /interchain_security/ccv/provider/validator_provider_addr/{consumer_id}/{consumer_address}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/validator_provider_addr/0/cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "providerAddress": "cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj"
 }
 ```
+
+</details>
 
 #### Throttle State
 
@@ -2944,13 +3068,14 @@ The `throttle_state` queries the main on-chain state relevant to slash packet th
 "/interchain_security/ccv/provider/throttle_state"
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/throttle_state
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2960,6 +3085,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Registered Consumer Reward Denoms
 
 The `registered_consumer_reward_denoms` endpoint allows to query registered consumer reward denoms
@@ -2968,13 +3095,14 @@ The `registered_consumer_reward_denoms` endpoint allows to query registered cons
 interchain_security/ccv/provider/registered_consumer_reward_denoms
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/registered_consumer_reward_denoms
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -2986,6 +3114,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### All Pairs Valconsensus Address
 
 The `address_pairs` endpoint queries the list of pair valconsensus address between provider and consumer chain.
@@ -2994,13 +3124,14 @@ The `address_pairs` endpoint queries the list of pair valconsensus address betwe
 interchain_security/ccv/provider/address_pairs/{consumer_id}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/address_pairs/0
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -3016,6 +3147,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Provider Parameters
 
 The `params` endpoint queries all current values of provider parameters
@@ -3024,13 +3157,14 @@ The `params` endpoint queries all current values of provider parameters
 interchain_security/ccv/provider/params
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/params   
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -3103,6 +3237,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Consumer Opted In Validators
 
 The `opted_in_validators` endpoint queries opted-in validators for a given consumer chain
@@ -3111,13 +3247,14 @@ The `opted_in_validators` endpoint queries opted-in validators for a given consu
 /interchain_security/ccv/provider/opted_in_validators/{consumer_id}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/opted_in_validators/0
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -3129,6 +3266,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Consumer Validators
 
 The `consumer_validators` endpoint queries the latest set consumer-validator set for a given consumer ID
@@ -3138,13 +3277,14 @@ Note that this does not necessarily mean that the consumer chain is using this v
 /interchain_security/ccv/provider/consumer_validators/{consumer_id}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/consumer_validators/0
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -3207,6 +3347,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Has to Validate
 
 The `consumer_chains_per_validator` endpoint queries a list of consumer chains that a given validator must validate.
@@ -3215,13 +3357,14 @@ The `consumer_chains_per_validator` endpoint queries a list of consumer chains t
 interchain_security/ccv/provider/consumer_chains_per_validator/{provider_address}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/consumer_chains_per_validator/cosmosvalcons1znhu88l6dsvexunfem4u0392kwqyvdkrj66wph
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -3232,6 +3375,8 @@ Example Output:
 }
 ```
 
+</details>
+
 #### Validator Consumer Commission Rate
 
 The `consumer_commission_rate` endpoint queries the consumer commission rate a validator charges on a consumer chain.
@@ -3240,19 +3385,22 @@ The `consumer_commission_rate` endpoint queries the consumer commission rate a v
 /interchain_security/ccv/provider/consumer_commission_rate/{consumer_id}/{provider_address}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/consumer_commission_rate/0/cosmosvalcons1znhu88l6dsvexunfem4u0392kwqyvdkrj66wph
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "rate": "0.100000000000000000"
 }
 ```
+
+</details>
 
 #### Blocks Until Next Epoch
 
@@ -3262,19 +3410,22 @@ The `blocks_until_next_epoch` endpoint allows to query the number of blocks unti
 interchain_security/ccv/provider/blocks_until_next_epoch
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/blocks_until_next_epoch
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "blocks_until_next_epoch":"3"
 }
 ```
+
+</details>
 
 #### Consumer Id From Client Id
 
@@ -3284,19 +3435,22 @@ The `consumer_id` endpoint allows to query the consumer id of the chain associat
 /interchain_security/ccv/provider/consumer_id/{client_id}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/consumer_id/07-tendermint-0
 ```
 
-Example Output:
+Output:
 
 ```json
 {
   "consumer_id":"0"
 }
 ```
+
+</details>
 
 #### Consumer Chain
 
@@ -3306,13 +3460,14 @@ The `consumer_chain` endpoint allows to query the consumer chain associated with
 interchain_security/ccv/provider/consumer_chain/{consumer_id}
 ```
 
-Example:
+<details>
+  <summary>Example</summary>
 
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/consumer_chain/0
 ```
 
-Example Output:
+Output:
 
 ```json
 {
@@ -3347,3 +3502,5 @@ Example Output:
   }
 }
 ```
+
+</details>
