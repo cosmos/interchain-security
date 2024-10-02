@@ -13,7 +13,7 @@ title: Permissionless ICS
 Accepted
 
 ## Context
-Currently, a consumer chain can join _Interchain Security_ (ICS) only through a [governance proposal](../features/proposals.md).
+Currently, a consumer chain can join _Interchain Security_ (ICS) only through a governance proposal.
 A governance proposal was needed before the introduction of [Partial Set Security](../features/partial-set-security.md) (PSS)
 because validators were required to validate a consumer chain. However, after the introduction of PSS, a consumer chain can
 be either _Top N_ or _Opt In_. If a chain is an Opt In chain, then no validator is required to validate this chain unless they choose to.
@@ -171,7 +171,7 @@ message MsgCreateConsumer {
 }
 ```
 
-Note that `metadata` is a required field, while the `initialization_parameterrs` and `power_shaping_parameters` are optional and can later be set using `MsgUpdateConsumer`.
+Note that `metadata` is a required field, while the `initialization_parameters` and `power_shaping_parameters` are optional and can later be set using `MsgUpdateConsumer`.
 
 `metadata` is of the following type:
 ```protobuf
@@ -341,7 +341,7 @@ The figures below depict some examples of some of the phases a consumer chain re
 
 
 ### Additional Modifications
-We need to perform multiple migrations. All state needs to be reindex based on a `consumerId` instead of the `chainId`.
+We need to perform multiple migrations. All state needs to be reindexed based on a `consumerId` instead of the `chainId`.
 Because we only have two consumer chains (i.e., Neutron and Stride) at the moment, this is not going to be an expensive migration even if we have some live
 consumer chains that are being voted upon. Similarly, all the messages, queries, etc. would need to be changed to operate on a `consumerId` instead of a `chainId`.
 
