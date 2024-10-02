@@ -133,6 +133,7 @@ func LastDistributionTransmissionKey() []byte {
 }
 
 // UnbondingTimeKey returns the key for storing the unbonding period
+// TODO remove as it's never used
 func UnbondingTimeKey() []byte {
 	return []byte{UnbondingTimeByteKey}
 }
@@ -212,6 +213,7 @@ func InitGenesisHeightKey() []byte {
 
 // StandaloneTransferChannelIDKey returns the key to the transfer channelID that existed from a standalone chain
 // changing over to a consumer
+// TODO remove as it's never used
 func StandaloneTransferChannelIDKey() []byte {
 	return []byte{StandaloneTransferChannelIDByteKey}
 }

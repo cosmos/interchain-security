@@ -94,7 +94,7 @@ func (tr *TestRunner) Run() error {
 	}
 
 	tr.result.Passed()
-	err = tr.teardownEnvironment()
+	// err = tr.teardownEnvironment()
 	fmt.Printf("==========================================\n")
 	return err
 }

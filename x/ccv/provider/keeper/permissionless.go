@@ -70,10 +70,10 @@ func (k Keeper) GetConsumerOwnerAddress(ctx sdk.Context, consumerId string) (str
 	return string(bz), nil
 }
 
-// SetConsumerOwnerAddress sets the chain id associated with this consumer id
-func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId, chainId string) {
+// SetConsumerOwnerAddress sets the owner address associated with this consumer id
+func (k Keeper) SetConsumerOwnerAddress(ctx sdk.Context, consumerId, owner string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(chainId))
+	store.Set(types.ConsumerIdToOwnerAddressKey(consumerId), []byte(owner))
 }
 
 // DeleteConsumerOwnerAddress deletes the owner address associated with this consumer id
