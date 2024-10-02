@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 5
 ---
 
 # Partial Set Security
@@ -19,6 +19,6 @@ Validators are never forced to validate these chains and simply opt in if they w
 Because of this, Opt-In chains can be **_launch completely permissionlessly_** by sending a transaction to the provider chain. 
 As a trade-off though, Opt-In chains do not get a fixed amount of security as a relation of the market cap of the provider as top N chains do, so Opt-In chains might want to keep an eye on how many validators have opted in to validate their chain and adjust their reward emissions accordingly to incentivize validators.
 
-Note that Top N consumer chains can become Opt-In chains or vice versa via a [`ConsumerModificationProposal`](./proposals.md#consumermodificationproposal).
+Note that Top N consumer chains can become Opt-In chains or vice versa via a [`MsgUpdateConsumer`](./permissionless.md) message.
 
 Partial Set Security is handled only by the provider chain - the consumer chains are simply sent validator sets, and they are not aware that this represents only a subset of the provider chain's validator set.

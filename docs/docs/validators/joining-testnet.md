@@ -17,10 +17,6 @@ For general information about running cosmos-sdk based chains check out the [val
 
 ## Joining the provider chain
 
-:::info
-At present, all validators of the provider chain must also validate all governance approved consumer chains. The consumer chains cannot have a validator set different than the provider, which means they cannot introduce validators that are not also validating the provider chain.
-:::
-
 A comprehensive guide is available [here](https://github.com/cosmos/testnets/tree/master/interchain-security/provider).
 
 ## Initialization
@@ -131,8 +127,6 @@ Additional scripts to setup your nodes are available [here](https://github.com/c
 ## Joining consumer chains
 
 :::tip
-Once you reach the active set on the provider chain, you will be required to validate all available consumer chains.
-
 We strongly recommend that you assign a separate key for each consumer chain.
 Check out this [guide](../features/key-assignment.md) to learn more about key assignment in interchain security.
 :::
@@ -174,7 +168,7 @@ Then, let the provider know which key you will be using for the consumer chain:
 
 ```bash
 # machine running the provider chain
-gaiad tx provider assign-consensus-key consumer-1 '<consumer_pubkey>' --from <key_moniker> --home $NODE_HOME --gas 900000 -b sync -y -o json
+gaiad tx provider assign-consensus-key consumer-id '<consumer_pubkey>' --from <key_moniker> --home $NODE_HOME --gas 900000 -b sync -y -o json
 ```
 
 After this step, you are ready to copy the consumer genesis into your nodes's `/config` folder, start your consumer chain node and catch up to the network.

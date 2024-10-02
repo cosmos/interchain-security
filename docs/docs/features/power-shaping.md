@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 6
 ---
 
 # Power Shaping
@@ -22,16 +22,38 @@ Note that this parameter only applies to Opt In consumer chains (i.e., with Top 
 
 ### Capping the validator powers
 
-The consumer chain can specify a maximum fraction of the total voting power any of its validators should have.
-This is a security measure that makes it harder for a single large validator to take over a consumer chain: 
-It mitigates the risk of an Opt In chain with only a few validators being dominated by a validator with a large amount of stake.
-For example, setting this fraction to 33% would mean that no single validator can have more than 33% of the total voting power on the consumer, and thus no single validator would be able to stop the consumer by going offline.
+The consumer chain can specify a _power cap_ which corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain.
+The validators-power cap is intended as a safeguard against a validator having too much power on the consumer chain and
+hence "taking over" the consumer chain.
+For example, if the validators-power cap is set to 32%, then no single validator can have more than 32% of the total voting
+power on the consumer, and thus no single validator would be able to halt the consumer by going offline.
 
-:::warning
-This parameter is a soft cap, and the actual power of a validator can exceed this fraction if the validator set is small (e.g. there are only 3 validators and the cap is 20%).
-:::
+To respect this power cap, the voting powers of the validators that run the consumer chain are decremented or incremented
+accordingly. It is important to note that the voting powers of validators on the provider do **not** change.
+For example, assume that the provider chain has among others, validators `A`, `B`, `C`, and `D` with voting powers 100, 1, 1, 1 respectively.
+Assume that only those 4 validators opt in on a consumer chain. Without a power cap set, validator `A`
+would have 100 / (100 + 1 + 1 + 1) = ~97% of the total voting power on the consumer chain, while
+validators `B`, `C`, and `D` would have 1 /(100 + 1 + 1 + 1) = ~1% of the total voting power on the consumer chain.
+If the power cap is set to 30%, then the voting power of `A` would be reduced from 100 to 30 on the consumer
+chain, the voting power of `B` would be increased from 1 to 25, and the power of `C` and `D` would be increased from
+1 to 24. After those modifications, `A` would have 30 / (30 + 25 + 24 + 24) = ~29% of the total voting power of the
+consumer chain, `B` would have 25 / (30 + 25 + 24 + 24) = ~25%, and `C` and `D` would both have 24 / (30 + 25 + 24 + 24) = ~23%.
+Naturally, there are many ways to change the voting powers of validators to respect the power cap, and ICS chooses
+one of them.
 
-Note that rewards are distributed proportionally to validators with respect to their capped voting power on the consumer, not their total voting power on the provider.
+Note that respecting the power cap might NOT always be possible. For example, if we have a consumer
+chain with only 5 validators and the power cap is set to 10%, then it is not possible to respect the
+power cap. If the voting power of each validator is capped to a maximum of 10% of the total consumer
+chain's voting power, then the total voting power of the consumer chain would add up to 50% which obviously does not
+make sense (percentages should add up to 100%). In cases where it is not feasible to respect the power cap, all
+validators on the consumer chain will have equal voting power in order to minimize the power of a single validator.
+Thus, in the example of 5 validators and a power cap set to 10%, all validators would end up having 20%
+of the total voting power on the consumer chain. Therefore, power-cap operates on a best-effort basis.
+
+Note that rewards are distributed proportionally to validators with respect to their capped voting power on the consumer
+and **not** their voting power on the provider.
+For more information, read on [Reward Distribution](./reward-distribution.md#reward-distribution-with-power-capping).
+
 
 ### Allowlist and denylist
 
@@ -60,13 +82,13 @@ By default, this parameter is set to `false`, i.e., validators outside of the pr
 
 ## Setting Power Shaping Parameters
 
-All the power shaping parameters can be set by the consumer chain in the `ConsumerAdditionProposal` (see [Onboarding](../consumer-development/onboarding.md#3-submit-a-governance-proposal)).
+All the power shaping parameters can be set by the consumer chain in the `MsgCreateConsumer` or `MsgUpdateConsumer` messages.
 They operate _solely on the provider chain_, meaning the consumer chain simply receives the validator set after these rules have been applied and does not have any knowledge about whether they are applied.
 
 When setting power shaping parameters, please consider the following guidelines:
 
 * **Do not cap the validator set size too low.** 
-  Notice that this number is the **maximum* number of validators that will ever validate the consumer chain. 
+  Notice that this number is the **maximum** number of validators that will ever validate the consumer chain. 
   If this number is too low, the chain will be very limited in the amount of stake that secures it. 
   The validator set size cap should only be used if there are strong reasons to prefer fewer validators. 
 * **Be aware of the interaction between capping the validator powers capping the validator set size.** 
@@ -82,7 +104,7 @@ When setting power shaping parameters, please consider the following guidelines:
 In general, when setting these parameters, consider that the voting power distribution in the future might be very different from the one right now,
 and that the chain should be secure even if the power distribution changes significantly.
 
-The power shaping parameters of a running consumer chain can be changed through a [`ConsumerModificationProposal`](./proposals.md#consumermodificationproposal).
+The power shaping parameters of a launched consumer chain can be changed through a [`MsgUpdateConsumer`](./permissionless.md) message.
 
 The power shaping parameters can be seen by querying the list of consumer chains:
 

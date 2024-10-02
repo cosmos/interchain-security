@@ -14,43 +14,44 @@ Opt-In chain and also on the [power-shaping features](../features/power-shaping.
 to keep track of all the chains it has to validate.
 
 
-Once a `ConsumerAdditionProposal` passes, relevant validators need to prepare to run the consumer chain binaries (these will be linked in their proposals) and set up validator nodes on governance-approved consumer chains.
-
 Provider chain and consumer chains represent standalone chains that only share part of the validator set.
 
-:::info
-To validate a consumer chain and be eligible for rewards, validators are required to be in the active set of the provider chain (first 180 validators for Cosmos Hub).
-:::
-
 ## Startup sequence overview
-Consumer chains cannot start and be secured by the validator set of the provider unless a `ConsumerAdditionProposal` is passed.
-Each proposal contains defines a `spawn_time` - the timestamp when the consumer chain genesis is finalized and the consumer chain clients get initialized on the provider.
+An Opt In consumer chain cannot start and be secured by the validator set of the provider unless there is at least
+one validator opted in on the chain at `spawn_time`.
+A Top N consumer chain cannot start unless the governance proposal containing the `MsgUpdateConsumer` has passed.
+
+Each chain defines a `spawn_time` - the timestamp when the consumer chain genesis is finalized and the consumer chain clients get initialized on the provider.
 
 :::tip
 Validators are required to run consumer chain binaries only after `spawn_time` has passed.
 :::
 
-Please note that any additional instructions pertaining to specific consumer chain launches will be available before spawn time. The chain start will be stewarded by the Cosmos Hub team and the teams developing their respective consumer chains.
+Please note that any additional instructions pertaining to specific consumer chain launches will be available before spawn time.
+The chain start will be stewarded by the Cosmos Hub team and the teams developing their respective consumer chains.
 
 The image below illustrates the startup sequence
-![startup](../../figures/hypha-consumer-start-process.svg)
+![startup](../../figures/hypha-consumer-start-process.png)
 
 ### 1. Consumer Chain init + 2. Genesis generation
-Consumer chain team initializes the chain genesis.json and prepares binaries which will be listed in the `ConsumerAdditionProposal`
+Consumer chain team initializes the chain genesis.json and prepares binaries which will be listed in the initialization
+parameters of either `MsgCreateConsumer` or `MsgUpdateConsumer`.
 
-### 3. Submit Proposal
-Consumer chain team (or their advocates) submits a `ConsumerAdditionProposal`.
+### 3. Create the chain on the provider
+Consumer chain team (or their advocates) submits a `MsgCreateConsumer` message (and potentially later a 
+governance proposal with a `MsgUpdateConsumer` message if it is a Top N chain).
 The most important parameters for validators are:
 - `spawn_time` - the time after which the consumer chain must be started
 - `genesis_hash` - hash of the pre-ccv genesis.json; the file does not contain any validator info -> the information is available only after the proposal is passed and `spawn_time` is reached
 - `binary_hash` - hash of the consumer chain binary used to validate the software builds
 
 ### 4. CCV Genesis state generation
-After reaching `spawn_time` the provider chain will automatically create the CCV validator states that will be used to populate the corresponding fields in the consumer chain `genesis.json`. The CCV validator set consists of the validator set on the provider at `spawn_time`.
+After reaching `spawn_time` the provider chain will automatically create the CCV validator states that will be used to populate the corresponding fields in the consumer chain `genesis.json`.
+The CCV validator set consists of the validator set on the provider at `spawn_time`.
 
 The state can be queried on the provider chain (in this case the Cosmos Hub):
 ```bash
- gaiad query provider consumer-genesis <consumer chain ID> -o json > ccvconsumer_genesis.json
+ gaiad query provider consumer-genesis <consumer-id> -o json > ccvconsumer_genesis.json
 ```
 
 This is used by the launch coordinator to create the final `genesis.json` that will be distributed to validators in step 5.

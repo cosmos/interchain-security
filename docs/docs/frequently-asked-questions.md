@@ -72,11 +72,11 @@ For more details, see the [democracy modules](./build/modules/04-democracy.md).
 
 ### Can a consumer chain modify its power shaping parameters?
 
-Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
+Yes, by issuing a `MsgUpdateConsumer`.
 
 ### Can a Top N consumer chain become Opt-In or vice versa? 
 
-Yes, by issuing a [`ConsumerModificationProposal`](./features/proposals.md#consumermodificationproposal).
+Yes, by issuing a `MsgUpdateConsumer` (see [Permissionless ICS](./features/permissionless.md#transform-an-opt-in-chain-to-top-n-and-vice-versa))
 
 ## Validators
 
@@ -88,7 +88,7 @@ An important note is that validator the top N% of the provider chain validator s
 
 ### Can validators opt in to an Opt-in chain after the spawn time if nobody else opted in?
 
-No, the consumer chain will be removed if nobody opted in by the spawn time. At least one validator, regardless of its voting power, must opt in before the spawn time in order for the chain can start.
+No, the consumer chain does not launch if nobody opted in by the spawn time. At least one validator, regardless of its voting power, must opt in before the spawn time in order for the chain can start.
 
 ### How does a validator know which consumers chains it has to validate?
 

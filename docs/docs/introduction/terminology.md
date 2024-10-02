@@ -4,7 +4,8 @@ sidebar_position: 2
 
 # Terminology
 
-You may have heard of one or multiple buzzwords thrown around in the cosmos and wider crypto ecosystem such shared security, interchain security, replicated security, cross chain validation, and mesh security. These terms will be clarified below.
+You may have heard of one or multiple buzzwords thrown around in the cosmos and wider crypto ecosystem such shared security, interchain security and replicated security.
+These and other terms are clarified below.
 
 ## Shared Security
 
@@ -33,9 +34,10 @@ A major feature of Interchain Security (also referred to as "Interchain Security
 This subset can be determined by the top N% validators by voting power, or by validators opting in to validate the consumer chain. 
 PSS allows for more flexible security tradeoffs than Replicated Security.
 
-## Mesh Security
+## Permissionless ICS
 
-A protocol built on IBC that allows delegators on a Cosmos chain to re-delegate their stake to validators in another chain's own validator set, using the original chain's token (which remains bonded on the original chain). For a deeper exploration of Mesh Security, see [Replicated vs. Mesh Security on the Informal Blog](https://informal.systems/blog/replicated-vs-mesh-security).
+[Permissionless ICS](../features/permissionless.md) is the latest version of ICS that allows to launch Opt In chains in
+a permissionless way (i.e., without requiring a governance proposal).
 
 ## Consumer Chain
 
