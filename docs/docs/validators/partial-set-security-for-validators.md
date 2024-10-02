@@ -21,23 +21,18 @@ to opt in to a consumer chain. In other words, validators can opt in, in both Op
 
 A validator can opt in to a consumer chain by issuing the following message:
 ```bash
-interchain-security-pd tx provider opt-in <consumer-chain-id> <optional consumer-pub-key>
+interchain-security-pd tx provider opt-in <consumer-id> <optional consumer-pub-key>
 ```
 
 where
-- `consumer-chain-id` is the string identifier of the consumer chain the validator wants to opt in to;
+- `consumer-id` is the consumer id identifier of the consumer chain the validator wants to opt in to;
 - `consumer-pub-key` corresponds to the public key the validator wants to use on the consumer chain, and it has the
 following format `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"<key>"}`.
 
-A validator can opt in to an existing consumer chain that is already running, or to a [proposed](../features/proposals.md)
-consumer chain that is still being voted on. A validator can use the following command to retrieve the currently existing
-consumer chains:
+A validator can opt in to any active consumer chain, so a validator can opt in to a chain even before it launches.
+A validator can use the following command to retrieve the currently existing consumer chains:
 ```bash
 interchain-security-pd query provider list-consumer-chains
-```
-and this command to see the currently proposed consumer chains:
-```bash
-interchain-security-pd query provider list-proposed-consumer-chains
 ```
 
 By setting the `consumer-pub-key`, a validator can both opt in to a chain and assign a
@@ -60,7 +55,7 @@ A validator can opt out from a consumer by issuing the following message:
 interchain-security-pd tx provider opt-out <consumer-chain-id>
 ```
 where
-- `consumer-chain-id` is the string identifier of the consumer chain.
+- `consumer-id` is the consumer identifier of the consumer chain.
 
 The opting out mechanism has the following rules:
 
@@ -80,11 +75,11 @@ If all validators opt out from an Opt-In chain, the chain will halt with a conse
 A validator can choose to set a different commission rate on each of the consumer chains.
 This can be done with the following command:
 ```bash
-interchain-security-pd tx provider set-consumer-commission-rate <consumer-chain-id> <commission-rate>
+interchain-security-pd tx provider set-consumer-commission-rate <consumer-id> <commission-rate>
 ```
 where
 
-- `consumer-chain-id` is the string identifier of the consumer chain;
+- `consumer-id` is the consumer identifier of the consumer chain;
 - `comission-rate` decimal in `[minRate, 1]` where `minRate` corresponds to the minimum commission rate set on the
 provider chain (see `min_commission_rate` in `interchain-security-pd query staking params`).
 
@@ -136,17 +131,17 @@ they will not be opted in automatically.
 
 With the following query:
 ```bash
-interchain-security-pd query provider consumer-opted-in-validators <consumer-chain-id>
+interchain-security-pd query provider consumer-opted-in-validators <consumer-id>
 ```
-we can see all the opted-in validators on `consumer-chain-id` that were manually or automatically opted in.
+we can see all the opted-in validators on `consumer-id` that were manually or automatically opted in.
 
 ### How to retrieve all the consumer validators on a consumer chain?
 
 With the following query:
 ```bash
-interchain-security-pd query provider consumer-validators <consumer-chain-id>
+interchain-security-pd query provider consumer-validators <consumer-id>
 ```
-we can see all the _consumer validators_ (i.e., validator set) of `consumer-chain-id`. The consumer validators are the 
+we can see all the _consumer validators_ (i.e., validator set) of `consumer-id`. The consumer validators are the 
 ones that are currently (or in the future, see warning) validating the consumer chain. A _consumer validator_ is an opted-in
 validator but not vice versa. For example, an opted-in validator `V` might not be a consumer validator because `V` is
 denylisted or because `V` is removed due to a validator-set cap. 
@@ -160,6 +155,6 @@ point in time.
 
 Using the following query:
 ```bash
-interchain-security-pd query provider validator-consumer-commission-rate <consumer-chain-id> <provider-validator-address>
+interchain-security-pd query provider validator-consumer-commission-rate <consumer-id> <provider-validator-address>
 ```
-we retrieve the commission rate set by validator with `provider-validator-address` address on `consumer-chain-id`.
+we retrieve the commission rate set by validator with `provider-validator-address` address on `consumer-id`.

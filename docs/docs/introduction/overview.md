@@ -4,8 +4,10 @@ sidebar_position: 1
 
 # Overview
 
-Interchain Security (ICS) is an open source IBC application that allows a Cosmos proof-of-stake chain -- known as the _provider chain_ -- to share (parts of) its economic security with other chains -- known as _consumer chains_ -- that can use the stake locked on the provider as collateral for block production.
-Consumer chains will therefore inherit security and decentralization from the provider.
+Interchain Security (ICS) is an open source IBC application that allows Cosmos chains to lease their proof-of-stake security to one another.
+
+ICS allows anyone to launch a _consumer_ chain using a subset, or even the entire, validator set from the _provider_ chain.
+This way, provider chain validators start validating the consumer chain as well and so consumer chains inherit security and decentralization from the provider.
 
 ## Why Interchain Security?
 

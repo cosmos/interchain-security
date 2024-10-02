@@ -4,7 +4,8 @@ sidebar_position: 2
 
 # Terminology
 
-You may have heard of one or multiple buzzwords thrown around in the cosmos and wider crypto ecosystem such shared security, interchain security, replicated security, cross chain validation, and mesh security. These terms will be clarified below.
+You may have heard of one or multiple buzzwords thrown around in the cosmos and wider crypto ecosystem such shared security, interchain security and replicated security.
+These and other terms are clarified below.
 
 ## Shared Security
 
@@ -33,11 +34,15 @@ A major feature of Interchain Security (also referred to as "Interchain Security
 This subset can be determined by the top N% validators by voting power, or by validators opting in to validate the consumer chain. 
 PSS allows for more flexible security tradeoffs than Replicated Security.
 
-### Permissionless ICS
+## Permissionless ICS
 
-A major feature of Interchain Security that enables users to permissionlessly launch opt-in consumer chains.
-Given that validators are free to choose whether they want to run a given opt-in consumer chain, it is only natural to also enable projects to launch as opt-in consumer chains by simply submitting transactions to the provider chain and, thus, avoiding the need to go through the process of governance. 
-Note that TopN consumer chains will still need to go through governance. 
+[Permissionless ICS](../features/permissionless.md) is the latest version of ICS that allows to launch Opt In chains in
+a permissionless way (i.e., without requiring a governance proposal).
+
+## Consumer Chain
+
+Chain that is secured by the validator set of the provider, instead of its own.
+Interchain Security allows a subset of the provider chain's validator set to validate blocks on the consumer chain.
 
 ## Standalone Chain
 
