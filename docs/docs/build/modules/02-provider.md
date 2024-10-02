@@ -946,7 +946,7 @@ A user can interact with the `provider` module using the CLI.
 The `query` commands allow users to query `provider` state.
 
 ```bash
-simd query provider --help
+interchain-security-pd query provider --help
 ```
 
 ##### Consumer Genesis
@@ -1392,7 +1392,7 @@ interchain-security-pd query provider has-to-validate cosmoscons1gghjut3ccd8ay0z
 
 Example Output:
 
-```
+```bash
 consumer_ids:
 - "0"
 - "2"
@@ -1510,7 +1510,7 @@ power_shaping_params:
 The `tx` commands allows users to interact with the `provider` module.
 
 ```bash
-simd tx provider --help
+interchain-security-pd tx provider --help
 ```
 
 ##### Assign Consumer Key
@@ -1528,10 +1528,9 @@ interchain-security-pd tx provider assign-consensus-key 0 \
   '{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}' \
   --chain-id provider  \
   --from mykey \
-   --gas="auto" \
+  --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
-  --from=mykey
 ```
 
 Note that the consumer pubkey can be obtained by using `interchain-security-cd tendermint show-validator` command.
@@ -1550,10 +1549,9 @@ Example:
 interchain-security-pd tx provider create-consumer path/to/create-consumer-msg.json \
   --chain-id provider  \
   --from mykey \
-   --gas="auto" \
+  --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
-  --from=mykey
 ```
 
 where `create-consumer-msg.json` contains:
@@ -1586,7 +1584,6 @@ interchain-security-pd tx provider update-consumer path/to/update-consumer.json 
    --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
-  --from=mykey
 ```
 
 where `update-consumer-msg.json` contains:
@@ -1594,37 +1591,37 @@ where `update-consumer-msg.json` contains:
 ```json
 {
 	"consumer_id" : "0",
-    "owner_address": "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s",                  
+  "owner_address": "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s",                  
 	"metadata": {
         "name": "pion-1",
         "description":"description of your chain and all other relevant information",
         "metadata": "some metadata about your"
     },
-    "initialization_parameters":{
-        "initial_height":{
-            "revision_number": 0,
-            "revision_height": 1
-           },
-        "genesis_hash":"2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
-        "binary_hash": "6EF05C2F38BE62A833E5AB51EBF3BA72D1BC1664D7E4A2E3253DA54BE07CF38A",
-        "spawn_time": "2024-09-29T12:57:43Z",
-        "unbonding_period":"2419200s",
-        "ccv_timeout_period": "2419200s",
-        "transfer_timeout_period": "3600s",
-        "consumer_redistribution_fraction": "0.75",
-        "blocks_per_distribution_transmission": "1500",
-        "historical_entries":"1000",
-        "distribution_transmission_channel": ""
-    },
-    "power_shaping_parameters":{
-        "top_N":50,
-        "validators_power_cap":50,
-        "validator_set_cap":50,
-        "allowlist":["cosmosvalcons1l9qq4m300z8c5ez86ak2mp8znftewkwgjlxh88"],
-        "denylist":[],
-        "min_stake": "1000",
-        "allow_inactive_vals":true
-    }
+  "initialization_parameters":{
+      "initial_height":{
+          "revision_number": 0,
+          "revision_height": 1
+          },
+      "genesis_hash":"2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
+      "binary_hash": "6EF05C2F38BE62A833E5AB51EBF3BA72D1BC1664D7E4A2E3253DA54BE07CF38A",
+      "spawn_time": "2024-09-29T12:57:43Z",
+      "unbonding_period":"2419200s",
+      "ccv_timeout_period": "2419200s",
+      "transfer_timeout_period": "3600s",
+      "consumer_redistribution_fraction": "0.75",
+      "blocks_per_distribution_transmission": "1500",
+      "historical_entries":"1000",
+      "distribution_transmission_channel": ""
+  },
+  "power_shaping_parameters":{
+      "top_N":50,
+      "validators_power_cap":50,
+      "validator_set_cap":50,
+      "allowlist":["cosmosvalcons1l9qq4m300z8c5ez86ak2mp8znftewkwgjlxh88"],
+      "denylist":[],
+      "min_stake": "1000",
+      "allow_inactive_vals":true
+  }
 }
 ```
 
@@ -1657,15 +1654,14 @@ interchain-security-pd tx provider opt-in 0 \
   '{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}' \
   --chain-id provider  \
   --from mykey \
-   --gas="auto" \
+  --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
-  --from=mykey
 ```
 
 ##### Opt Out
 
-The `opt-out` command allows a validator to opt in to a consumer chain and optionally set a consensus public key.
+The `opt-out` command allows validators to opt out from consumer chains.
 
 ```bash
 interchain-security-pd tx provider opt-out [consumer-id] [flags]
@@ -1680,7 +1676,6 @@ interchain-security-pd tx provider opt-out 0 \
    --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
-  --from=mykey
 ```
 
 ##### Set Consumer Commission Rate
@@ -1700,7 +1695,6 @@ interchain-security-pd tx provider set-consumer-commission-rate 0 0.5 \
    --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
-  --from=mykey
 ```
 
 ##### Submit Consumer Double Voting
@@ -1720,7 +1714,6 @@ interchain-security-pd tx provider submit-consumer-double-voting 0 path/to/evide
    --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
-  --from=mykey
 ```
 
 where `evidence.json` contains:
@@ -1878,7 +1871,7 @@ where `infraction_header.json` contains:
 
 ```
 
-##### Submit Consumer Double Voting
+##### Submit Consumer Misbehaviour
 
 The `submit-consumer-misbehaviour` command allows to submit an IBC misbehaviour for a consumer chain.
 
@@ -1895,7 +1888,6 @@ interchain-security-pd tx provider submit-consumer-misbehaviour 0 path/to/consum
    --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
-  --from=mykey
 ```
 
 where `consumer-misbehaviour.json` contains:
@@ -2298,13 +2290,13 @@ Example Output:
 The `QueryValidatorProviderAddr` endpoint queries the provider chain address given a consumer chain validator address.
 
 ```bash
-interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerAddr
+interchain_security.ccv.provider.v1.Query/QueryValidatorProviderAddr
 ```
 
 Example:
 
 ```bash
-grpcurl -plaintext -d '{"consumer_id": "0", "provider_address": "cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerAddr
+grpcurl -plaintext -d '{"consumer_id": "0", "provider_address": "cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryValidatorProviderAddr
 ```
 
 Example Output:
@@ -2510,7 +2502,7 @@ Example Output:
 
 #### Consumer Validators
 
-The `consumer_validators` endpoint queries the latest set consumer-validator set for a given consumer ID
+The `QueryConsumerValidators` endpoint queries the latest set consumer-validator set for a given consumer ID.
 Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment because a VSCPacket could be delayed to be delivered on the consumer chain.
 
 ```bash
@@ -2635,7 +2627,7 @@ Example Output:
 
 #### Blocks Until Next Epoch
 
-The `QueryBlocksUntilNextEpoch` endpoint allows to query the number of blocks until the next epoch begins and validator updates are sent to consumer chains
+The `QueryBlocksUntilNextEpoch` endpoint allows to query the number of blocks until the next epoch begins and validator updates are sent to consumer chains.
 
 ```bash
 interchain_security.ccv.provider.v1.Query/QueryBlocksUntilNextEpoch
@@ -2657,7 +2649,7 @@ Example Output:
 
 #### Consumer Id From Client Id
 
-The `QueryConsumerIdFromClientId` endpoint allows to query the consumer id of the chain associated with the provided client id
+The `QueryConsumerIdFromClientId` endpoint allows to query the consumer id of the chain associated with the provided client id.
 
 ```bash
 interchain_security.ccv.provider.v1.Query/QueryConsumerIdFromClientId
@@ -2732,16 +2724,16 @@ A user can query the `provider` module using REST endpoints.
 
 #### Consumer Genesis
 
-The `QueryConsumerGenesis` endpoint queries a consumer chain genesis state by consumer id.
+The `consumer_genesis` endpoint queries a consumer chain genesis state by consumer id.
 
 ```bash
-interchain_security.ccv.provider.v1.Query/QueryConsumerGenesis
+interchain_security/ccv/provider/consumer_genesis/{consumer_id}
 ```
 
 Example:
 
 ```bash
-grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerGenesis
+curl http://localhost:1317/interchain_security/ccv/provider/consumer_genesis/0
 ```
 
 Example Output:
@@ -2856,7 +2848,7 @@ The `consumer_chains` endpoint queries consumer chains supported by the provider
 An optional integer parameter can be passed for phase filtering of consumer chains, (Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5).`
 
 ```bash
-interchain_security.ccv.provider.v1.Query/QueryConsumerChains/{phase}
+interchain_security/ccv/provider/consumer_chains/{phase}
 ```
 
 Example:
@@ -3319,6 +3311,8 @@ Example:
 ```bash
 curl http://localhost:1317/interchain_security/ccv/provider/consumer_chain/0
 ```
+
+Example Output:
 
 ```json
 {
