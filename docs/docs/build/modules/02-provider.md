@@ -1141,7 +1141,7 @@ provider_address: cosmosvalcons1h7zs5nwruzvhyzkktvhwypfuxlch6nrrw4jjmj
 
 ##### Throttle State
 
-The `throttle-state` command allows to command on-chain state relevant to slash packet throttling.
+The `throttle-state` command allows to query on-chain state relevant to slash packet throttling.
 
 
 ```bash

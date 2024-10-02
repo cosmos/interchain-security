@@ -449,6 +449,10 @@ A user can interact with the `consumer` module using the CLI.
 
 The `query` commands allow users to query `consumer` state.
 
+```bash
+interchain-security-cd query ccvconsumer --help
+```
+
 ##### Next Fee Distribution
 
 The `next-fee-distribution` command allows to query next fee distribution data.
@@ -493,12 +497,21 @@ interchain-security-cd query ccvconsumer provider-info
 Example Output:
 
 ```bash
-provider_address: "cosmos1abcd1234..."
+consumer:
+  chainID: pion-1
+  channelID: channel-0
+  clientID: 07-tendermint-0
+  connectionID: connection-0
+provider:
+  chainID: provider
+  channelID: channel-0
+  clientID: 07-tendermint-0
+  connectionID: connection-0
 ```
 
 ##### Throttle State
 
-The `throttle-state` command allows to query throttle state.
+The `throttle-state` command allows to query on-chain state relevant with slash packet throttling.
 
 ```bash
 interchain-security-cd query ccvconsumer provider-info [flags]
