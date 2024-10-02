@@ -115,8 +115,6 @@ func (k Keeper) BeginBlockLaunchConsumers(ctx sdk.Context) error {
 			continue
 		}
 
-		// the cached context is created with a new EventManager, so we merge the events into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		writeFn()
 	}
 	return nil
@@ -348,6 +346,7 @@ func (k Keeper) MakeConsumerGenesis(
 		[]string{},
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,
+		consumerId,
 	)
 
 	// create provider client state and consensus state for the consumer to be able
@@ -434,8 +433,6 @@ func (k Keeper) BeginBlockRemoveConsumers(ctx sdk.Context) error {
 			continue
 		}
 
-		// the cached context is created with a new EventManager so we merge the event into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		writeFn()
 	}
 	return nil

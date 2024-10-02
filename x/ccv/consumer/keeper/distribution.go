@@ -35,9 +35,6 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	if err := k.SendRewardsToProvider(cachedCtx); err != nil {
 		k.Logger(ctx).Error("attempt to sent rewards to provider failed", "error", err)
 	} else {
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		// write cache
 		writeCache()
 	}
@@ -121,6 +118,11 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 
 	sentCoins := sdk.NewCoins()
 	var allBalances sdk.Coins
+	rewardMemo, err := ccv.CreateTransferMemo(k.GetConsumerId(ctx), ctx.ChainID())
+	if err != nil {
+		return err
+	}
+
 	// iterate over all whitelisted reward denoms
 	for _, denom := range k.AllowedRewardDenoms(ctx) {
 		// get the balance of the denom in the toSendToProviderTokens address
@@ -137,7 +139,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 				Receiver:         providerAddr,                  // provider fee pool address to send to
 				TimeoutHeight:    timeoutHeight,                 // timeout height disabled
 				TimeoutTimestamp: timeoutTimestamp,
-				Memo:             "consumer chain rewards distribution",
+				Memo:             rewardMemo,
 			}
 
 			// validate MsgTransfer before calling Transfer()

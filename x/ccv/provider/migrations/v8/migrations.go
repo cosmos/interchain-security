@@ -156,10 +156,10 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 
 		// channelId -> chainId
 		channelId, found := pk.GetConsumerIdToChannelId(ctx, chainId)
-		if !found {
-			return errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "cannot find channel id associated with consumer id: %s", consumerId)
+		if found {
+			// if not found, then the CCV channel was not yet established
+			pk.SetChannelToConsumerId(ctx, channelId, consumerId)
 		}
-		pk.SetChannelToConsumerId(ctx, channelId, consumerId)
 
 		// chainId -> channelId
 		rekeyFromChainIdToConsumerId(store, LegacyChainToChannelKeyPrefix, chainId, consumerId)

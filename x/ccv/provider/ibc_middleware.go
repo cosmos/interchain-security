@@ -14,6 +14,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}
@@ -113,6 +114,8 @@ func (im IBCMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
+	logger := im.keeper.Logger(ctx)
+
 	// executes the IBC transfer OnRecv logic
 	ack := im.app.OnRecvPacket(ctx, packet, relayer)
 
@@ -121,12 +124,6 @@ func (im IBCMiddleware) OnRecvPacket(
 	// that the packet data is valid and can be safely
 	// deserialized without checking errors.
 	if ack.Success() {
-		// execute the middleware logic only if the sender is a consumer chain
-		consumerId, err := im.keeper.IdentifyConsumerIdFromIBCPacket(ctx, packet)
-		if err != nil {
-			return ack
-		}
-
 		// extract the coin info received from the packet data
 		var data ibctransfertypes.FungibleTokenPacketData
 		_ = types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
@@ -137,8 +134,63 @@ func (im IBCMiddleware) OnRecvPacket(
 			return ack
 		}
 
+		consumerId := ""
+		// check if the transfer has the reward memo
+		if rewardMemo, err := ccvtypes.GetRewardMemoFromTransferMemo(data.Memo); err != nil {
+			// check if the transfer is on a channel with the same underlying
+			// client as the CCV channel
+			consumerId, err = im.keeper.IdentifyConsumerIdFromIBCPacket(ctx, packet)
+			if err != nil {
+				if data.Memo == "consumer chain rewards distribution" {
+					// log error message
+					logger.Error(
+						"received token transfer with ICS reward from unknown consumer",
+						"packet", packet.String(),
+						"fungibleTokenPacketData", data.String(),
+						"error", err.Error(),
+					)
+				}
+
+				return ack
+			}
+		} else {
+			logger.Info("transfer memo:%#+v", rewardMemo)
+			consumerId = rewardMemo.ConsumerId
+		}
+
 		coinAmt, _ := math.NewIntFromString(data.Amount)
 		coinDenom := GetProviderDenom(data.Denom, packet)
+		chainId, err := im.keeper.GetConsumerChainId(ctx, consumerId)
+		if err != nil {
+			logger.Error(
+				"cannot get consumer chain id in transfer middleware",
+				"consumerId", consumerId,
+				"packet", packet.String(),
+				"fungibleTokenPacketData", data.String(),
+				"error", err.Error(),
+			)
+			return ack
+		}
+
+		logger.Info(
+			"received ICS rewards from consumer chain",
+			"consumerId", consumerId,
+			"chainId", chainId,
+			"denom", coinDenom,
+			"amount", data.Amount,
+		)
+
+		// initialize an empty slice to store event attributes
+		eventAttributes := []sdk.Attribute{}
+
+		// add event attributes
+		eventAttributes = append(eventAttributes, []sdk.Attribute{
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(types.AttributeConsumerId, consumerId),
+			sdk.NewAttribute(types.AttributeConsumerChainId, chainId),
+			sdk.NewAttribute(types.AttributeRewardDenom, coinDenom),
+			sdk.NewAttribute(types.AttributeRewardAmount, data.Amount),
+		}...)
 
 		// verify that the coin's denom is a whitelisted consumer denom,
 		// and if so, adds it to the consumer chain rewards allocation,
@@ -151,7 +203,25 @@ func (im IBCMiddleware) OnRecvPacket(
 					Amount: coinAmt,
 				})...)
 			im.keeper.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
+
+			logger.Info(
+				"scheduled ICS rewards to be distributed",
+				"consumerId", consumerId,
+				"chainId", chainId,
+				"denom", coinDenom,
+				"amount", data.Amount,
+			)
+
+			// add RewardDistribution event attribute
+			eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeRewardDistribution, "scheduled"))
 		}
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeUpdateConsumer,
+				eventAttributes...,
+			),
+		)
 	}
 
 	return ack
