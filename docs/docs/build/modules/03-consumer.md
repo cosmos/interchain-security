@@ -514,20 +514,29 @@ provider:
 The `throttle-state` command allows to query on-chain state relevant with slash packet throttling.
 
 ```bash
-interchain-security-cd query ccvconsumer provider-info [flags]
+interchain-security-cd query ccvconsumer throttle-state [flags]
 ```
 
 Example:
 
 ```bash
-interchain-security-cd query ccvconsumer provider-info
+interchain-security-cd query ccvconsumer throttle-state
 ```
 
 Example Output:
 
 ```bash
-packet_data_queue: []
-slash_record: null
+packet_data_queue:
+- slashPacketData:
+    infraction: INFRACTION_DOWNTIME
+    validator:
+      address: mb06cu8SzQJOdYSzrJAK43Q8at8=
+      power: "500"
+    valset_update_id: "48"
+  type: CONSUMER_PACKET_TYPE_SLASH
+slash_record:
+  send_time: "2024-10-02T07:58:24.405645924Z"
+  waiting_on_reply: true
 ```
 
 ##### Params
@@ -547,7 +556,21 @@ interchain-security-cd query ccvconsumer params
 Example Output:
 
 ```bash
-provider_address: "cosmos1abcd1234..."
+params:
+  blocks_per_distribution_transmission: "1000"
+  ccv_timeout_period: 2419200s
+  consumer_id: "0"
+  consumer_redistribution_fraction: "0.75"
+  distribution_transmission_channel: channel-1
+  enabled: true
+  historical_entries: "10000"
+  provider_fee_pool_addr_str: cosmos1ap0mh6xzfn8943urr84q6ae7zfnar48am2erhd
+  provider_reward_denoms: []
+  retry_delay_period: 3600s
+  reward_denoms: []
+  soft_opt_out_threshold: "0"
+  transfer_timeout_period: 3600s
+  unbonding_period: 1209600s
 ```
 
 ### gRPC
@@ -592,7 +615,7 @@ interchain_security.ccv.consumer.v1.Query/QueryProviderInfo
 Example:
 
 ```bash
-grpcurl -plaintext interchain_security.ccv.consumer.v1.Query/QueryProviderInfo
+grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/QueryProviderInfo
 ```
 
 Example Output:
@@ -616,7 +639,8 @@ Example Output:
 
 #### Throttle State
 
-The `QueryThrottleState` endpoint queries throttle state.
+The `QueryThrottleState` endpoint queries on-chain state relevant with slash packet throttling.
+
 
 ```bash
 interchain_security.ccv.consumer.v1.Query/QueryThrottleState
@@ -632,18 +656,23 @@ Example Output:
 
 ```json
 {
-  "consumer": {
-    "chainID": "pion-1",
-    "clientID": "07-tendermint-0",
-    "connectionID": "connection-0",
-    "channelID": "channel-0"
+  "slashRecord": {
+    "waitingOnReply": true,
+    "sendTime": "2024-10-02T07:58:24.405645924Z"
   },
-  "provider": {
-    "chainID": "provider",
-    "clientID": "07-tendermint-0",
-    "connectionID": "connection-0",
-    "channelID": "channel-0"
-  }
+  "packetDataQueue": [
+    {
+      "type": "CONSUMER_PACKET_TYPE_SLASH",
+      "slashPacketData": {
+        "validator": {
+          "address": "mb06cu8SzQJOdYSzrJAK43Q8at8=",
+          "power": "500"
+        },
+        "valsetUpdateId": "48",
+        "infraction": "INFRACTION_DOWNTIME"
+      }
+    }
+  ]
 }
 ```
 
@@ -663,7 +692,23 @@ grpcurl -plaintext localhost:9090 interchain_security.ccv.consumer.v1.Query/Quer
 
 Example Output:
 
-```bash
+```json
+{
+  "params": {
+    "enabled": true,
+    "blocksPerDistributionTransmission": "1000",
+    "distributionTransmissionChannel": "channel-1",
+    "providerFeePoolAddrStr": "cosmos1ap0mh6xzfn8943urr84q6ae7zfnar48am2erhd",
+    "ccvTimeoutPeriod": "2419200s",
+    "transferTimeoutPeriod": "3600s",
+    "consumerRedistributionFraction": "0.75",
+    "historicalEntries": "10000",
+    "unbondingPeriod": "1209600s",
+    "softOptOutThreshold": "0",
+    "retryDelayPeriod": "3600s",
+    "consumerId": "0"
+  }
+}
 ```
 
 ### REST
@@ -732,7 +777,8 @@ Example Output:
 
 #### Throttle State
 
-The `throttle_state` endpoint queries throttle state.
+The `throttle_state` endpoint queries on-chain state relevant with slash packet throttling.
+
 
 ```bash
 /interchain_security/ccv/consumer/throttle_state
@@ -779,5 +825,21 @@ curl http://localhost:1317/interchain_security/ccv/consumer/params
 
 Example Output:
 
-```bash
+```json
+{
+  "params": {
+    "enabled": true,
+    "blocksPerDistributionTransmission": "1000",
+    "distributionTransmissionChannel": "channel-1",
+    "providerFeePoolAddrStr": "cosmos1ap0mh6xzfn8943urr84q6ae7zfnar48am2erhd",
+    "ccvTimeoutPeriod": "2419200s",
+    "transferTimeoutPeriod": "3600s",
+    "consumerRedistributionFraction": "0.75",
+    "historicalEntries": "10000",
+    "unbondingPeriod": "1209600s",
+    "softOptOutThreshold": "0",
+    "retryDelayPeriod": "3600s",
+    "consumerId": "0"
+  }
+}
 ```
